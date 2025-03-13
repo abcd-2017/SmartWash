@@ -3,9 +3,8 @@ package com.smartwash.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.entity.RechargeRecords;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.smartwash.from.recharge_records_from.SearchRechargeRecordsFrom;
-import com.smartwash.vo.recharge_records_vo.RechargeRecordsVo;
-import com.smartwash.vo.schools_vo.SchoolsVo;
+import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
+import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 
 /**
  * <p>

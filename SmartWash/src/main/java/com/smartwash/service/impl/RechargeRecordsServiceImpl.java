@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.RechargeRecords;
-import com.smartwash.from.recharge_records_from.SearchRechargeRecordsFrom;
+import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.mapper.RechargeRecordsMapper;
 import com.smartwash.service.IRechargeRecordsService;
-import com.smartwash.vo.recharge_records_vo.RechargeRecordsVo;
+import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 

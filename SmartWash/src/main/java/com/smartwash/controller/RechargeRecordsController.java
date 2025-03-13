@@ -3,9 +3,9 @@ package com.smartwash.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
-import com.smartwash.from.recharge_records_from.SearchRechargeRecordsFrom;
+import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.service.IRechargeRecordsService;
-import com.smartwash.vo.recharge_records_vo.RechargeRecordsVo;
+import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

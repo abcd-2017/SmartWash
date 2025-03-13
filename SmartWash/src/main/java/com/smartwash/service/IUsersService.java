@@ -3,10 +3,10 @@ package com.smartwash.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Users;
-import com.smartwash.from.users_from.AddUserFrom;
-import com.smartwash.from.users_from.SearchUserFrom;
-import com.smartwash.from.users_from.UpdateUserFrom;
-import com.smartwash.vo.users_vo.UserVo;
+import com.smartwash.from.users.AddUserFrom;
+import com.smartwash.from.users.SearchUserFrom;
+import com.smartwash.from.users.UpdateUserFrom;
+import com.smartwash.vo.users.UserVo;
 
 /**
  * <p>

@@ -4,11 +4,11 @@ package com.smartwash.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.entity.Users;
-import com.smartwash.from.users_from.AddUserFrom;
-import com.smartwash.from.users_from.SearchUserFrom;
-import com.smartwash.from.users_from.UpdateUserFrom;
+import com.smartwash.from.users.AddUserFrom;
+import com.smartwash.from.users.SearchUserFrom;
+import com.smartwash.from.users.UpdateUserFrom;
 import com.smartwash.service.IUsersService;
-import com.smartwash.vo.users_vo.UserVo;
+import com.smartwash.vo.users.UserVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
@@ -56,11 +56,11 @@ public class UsersController {
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateUserFrom usersFrom) {
         Users user = usersService.getById(usersFrom.getUserId());
-        if ((!Objects.equals(user.getStudentId(), usersFrom.getStudentId())) && (StringUtils.hasText(usersFrom.getStudentId()) && (usersService.getUserByStudentId(usersFrom.getStudentId()) != null))) {
+        if ((!Objects.equals(user.getStudentId(), usersFrom.getStudentId())) && (usersService.getUserByStudentId(usersFrom.getStudentId()) != null)) {
             return Result.fail("该学号已注册账号");
         }
-        if (!Objects.equals(user.getCampusCard(), usersFrom.getCampusCard()) && StringUtils.hasText(usersFrom.getCampusCard()) && usersService.getUserByCampusCard(usersFrom.getCampusCard()) != null) {
-                return Result.fail("该校园卡已绑定账号");
+        if (!Objects.equals(user.getCampusCard(), usersFrom.getCampusCard()) && usersService.getUserByCampusCard(usersFrom.getCampusCard()) != null) {
+            return Result.fail("该校园卡已绑定账号");
         }
         usersService.updateUser(usersFrom);
         return Result.ok("修改成功");

@@ -3,18 +3,21 @@ package com.smartwash.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
-import com.smartwash.from.schools_from.AddSchoolsFrom;
-import com.smartwash.from.schools_from.SearchSchoolsFrom;
-import com.smartwash.from.schools_from.UpdateSchoolsFrom;
-import com.smartwash.service.ISchoolsService;
-import com.smartwash.vo.schools_vo.SchoolsVo;
+import com.smartwash.entity.LaundryItems;
+import com.smartwash.from.laundry_item.AddLaundryItemsFrom;
+import com.smartwash.from.laundry_item.SearchLaundryItemsFrom;
+import com.smartwash.from.laundry_item.UpdateLaundryItemsFrom;
+import com.smartwash.service.ILaundryItemsService;
+import com.smartwash.vo.laudry.LaundryPackageVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 /**
  * <p>
- * 衣物种类及价格
+ * 衣物套餐
  * </p>
  *
  * @author
@@ -24,36 +27,37 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/laundryItems")
 public class LaundryItemsController {
     @Autowired
-    private ISchoolsService schoolsService;
+    private ILaundryItemsService laundryItemsService;
 
-    //获取所有学校
+    //获取所有套餐
     @GetMapping("/all")
-    public Result<Page<SchoolsVo>> getAll(SearchSchoolsFrom schoolsFrom) {
-        return Result.ok(schoolsService.getAllSchools(schoolsFrom));
+    public Result<Page<LaundryPackageVo>> getAll(SearchLaundryItemsFrom laundryPackageFrom) {
+        return Result.ok(laundryItemsService.getAllLaundryPackage(laundryPackageFrom));
     }
 
-    //添加学校
+    //添加套餐
     @PostMapping("/add")
-    public Result<String> addSchool(@RequestBody @Valid AddSchoolsFrom addSchoolsFrom) {
-        if (schoolsService.getSearchByName(addSchoolsFrom.getSchoolName()) != null) {
-            return Result.fail("该学校已经存在了");
+    public Result<String> addSchool(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
+        if (laundryItemsService.getSearchByName(addLaundryPackageFrom.getItemName()) != null) {
+            return Result.fail("该套餐已经存在了");
         }
-        schoolsService.addSchools(addSchoolsFrom);
+        laundryItemsService.addLaundryPackage(addLaundryPackageFrom);
         return Result.ok("添加成功");
     }
 
-    //修改学校
+    //修改套餐
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
-        if (schoolsService.getSearchByName(schoolsFrom.getSchoolName()) != null) {
-            return Result.fail("该学校已经存在了");
+    public Result<String> updateSchool(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
+        LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
+        if (!Objects.equals(laundryItems.getItemName(), laundryItems.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
+            return Result.fail("该套餐已经存在了");
         }
-        schoolsService.updateSchool(schoolsFrom);
+        laundryItemsService.updateLaundryPackage(laundryPackageFrom);
         return Result.ok("修改成功");
     }
 
     @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> deleteSchools(@PathVariable("ids") String ids) {
-        return Result.ok(schoolsService.deleteSchools(ids));
+    public Result<Boolean> deleteLaundryPackage(@PathVariable("ids") String ids) {
+        return Result.ok(laundryItemsService.deleteLaundryPackage(ids));
     }
 }

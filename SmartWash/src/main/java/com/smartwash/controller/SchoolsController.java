@@ -3,11 +3,11 @@ package com.smartwash.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
-import com.smartwash.from.schools_from.AddSchoolsFrom;
-import com.smartwash.from.schools_from.SearchSchoolsFrom;
-import com.smartwash.from.schools_from.UpdateSchoolsFrom;
+import com.smartwash.from.schools.AddSchoolsFrom;
+import com.smartwash.from.schools.SearchSchoolsFrom;
+import com.smartwash.from.schools.UpdateSchoolsFrom;
 import com.smartwash.service.ISchoolsService;
-import com.smartwash.vo.schools_vo.SchoolsVo;
+import com.smartwash.vo.schools.SchoolsVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
