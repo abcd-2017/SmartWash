@@ -1,5 +1,6 @@
 package com.smartwash.vo.recharge_records;
 
+import com.smartwash.vo.users.UserVo;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 public class RechargeRecordsVo {
     private Long recordId;
 
-    private Long userId;
+    private UserVo users;
 
     private BigDecimal amount;
 

@@ -2,4 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.UsersMapper">
 
+    <select id="getUsersByPhoneNumber" resultType="com.smartwash.entity.Users"
+            parameterType="java.lang.String">
+        select *
+        from users
+        where phone_number LIKE CONCAT('%', #{phoneNumber}, '%')
+    </select>
+    <select id="getUserByPhoneNumber" resultType="com.smartwash.entity.Users" parameterType="java.lang.String">
+        select * from users where phone_number = #{phoneNumber}
+    </select>
 </mapper>

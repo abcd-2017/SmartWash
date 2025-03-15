@@ -39,7 +39,7 @@ public class LaundryItemsController {
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
         if (laundryItemsService.getSearchByName(addLaundryPackageFrom.getItemName()) != null) {
-            return Result.fail("该套餐已经存在了");
+            return Result.failMsg("该套餐已经存在了");
         }
         laundryItemsService.addLaundryPackage(addLaundryPackageFrom);
         return Result.ok("添加成功");
@@ -50,7 +50,7 @@ public class LaundryItemsController {
     public Result<String> updateSchool(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
         LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
         if (!Objects.equals(laundryItems.getItemName(), laundryItems.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
-            return Result.fail("该套餐已经存在了");
+            return Result.failMsg("该套餐已经存在了");
         }
         laundryItemsService.updateLaundryPackage(laundryPackageFrom);
         return Result.ok("修改成功");

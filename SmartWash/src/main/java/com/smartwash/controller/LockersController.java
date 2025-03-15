@@ -50,9 +50,9 @@ public class LockersController {
     //添加存储柜
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddLockerFrom addLockerFrom) {
-//        if (lockersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
-//            return Result.fail("给存储柜名已被使用");
-//        }
+        if (lockersService.getLockerById(addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber()) != null) {
+            return Result.failMsg("给存储柜名已被使用");
+        }
         lockersService.addLockers(addLockerFrom);
         return Result.ok("添加成功");
     }
@@ -60,10 +60,6 @@ public class LockersController {
     //修改存储柜
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateLockerFrom lockerFrom) {
-//        Lockers user = lockersService.getById(LockersFrom.getAdminId());
-//        if (!Objects.equals(user.getUsername(), LockersFrom.getUsername()) && LockersService.getAdminUserByName(LockersFrom.getUsername()) != null) {
-//            return Result.fail("给存储柜名已被使用");
-//        }
         lockersService.updateLockers(lockerFrom);
         return Result.ok("修改成功");
     }

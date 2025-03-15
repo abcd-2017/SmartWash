@@ -40,13 +40,13 @@ public class UsersController {
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddUserFrom addUsersFrom) {
         if (StringUtils.hasText(addUsersFrom.getPhoneNumber()) && usersService.getUserByPhone(addUsersFrom.getPhoneNumber()) != null) {
-            return Result.fail("该手机号已被使用");
+            return Result.failMsg("该手机号已被使用");
         }
         if (StringUtils.hasText(addUsersFrom.getStudentId()) && usersService.getUserByStudentId(addUsersFrom.getStudentId()) != null) {
-            return Result.fail("该学号已注册账号");
+            return Result.failMsg("该学号已注册账号");
         }
         if (StringUtils.hasText(addUsersFrom.getCampusCard()) && usersService.getUserByCampusCard(addUsersFrom.getCampusCard()) != null) {
-            return Result.fail("该校园卡已绑定账号");
+            return Result.failMsg("该校园卡已绑定账号");
         }
         usersService.addUsers(addUsersFrom);
         return Result.ok("添加成功");
@@ -57,10 +57,10 @@ public class UsersController {
     public Result<String> updateSchool(@RequestBody @Valid UpdateUserFrom usersFrom) {
         Users user = usersService.getById(usersFrom.getUserId());
         if ((!Objects.equals(user.getStudentId(), usersFrom.getStudentId())) && (usersService.getUserByStudentId(usersFrom.getStudentId()) != null)) {
-            return Result.fail("该学号已注册账号");
+            return Result.failMsg("该学号已注册账号");
         }
         if (!Objects.equals(user.getCampusCard(), usersFrom.getCampusCard()) && usersService.getUserByCampusCard(usersFrom.getCampusCard()) != null) {
-            return Result.fail("该校园卡已绑定账号");
+            return Result.failMsg("该校园卡已绑定账号");
         }
         usersService.updateUser(usersFrom);
         return Result.ok("修改成功");

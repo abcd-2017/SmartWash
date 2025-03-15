@@ -1,16 +1,28 @@
 package com.smartwash.service;
 
-import com.smartwash.entity.Payments;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.smartwash.entity.Payments;
+import com.smartwash.from.payment.AddPaymentFrom;
+import com.smartwash.from.payment.SearchPaymentFrom;
+import com.smartwash.from.payment.UpdatePaymentFrom;
+import com.smartwash.vo.payment.PaymentVo;
 
 /**
  * <p>
- *  服务类
+ * 服务类
  * </p>
  *
- * @author 
+ * @author
  * @since 2025-03-06
  */
 public interface IPaymentsService extends IService<Payments> {
 
+    Boolean addPayment(AddPaymentFrom paymentFrom);
+
+    Boolean updatePayment(UpdatePaymentFrom paymentsFrom);
+
+    Boolean deletePayments(String ids);
+
+    Page<PaymentVo> getAllPayments(SearchPaymentFrom paymentFrom);
 }

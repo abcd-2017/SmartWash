@@ -36,7 +36,7 @@ public class SchoolsController {
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddSchoolsFrom addSchoolsFrom) {
         if (schoolsService.getSearchByName(addSchoolsFrom.getSchoolName()) != null) {
-            return Result.fail("该学校已经存在了");
+            return Result.failMsg("该学校已经存在了");
         }
         schoolsService.addSchools(addSchoolsFrom);
         return Result.ok("添加成功");
@@ -46,7 +46,7 @@ public class SchoolsController {
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
         if (schoolsService.getSearchByName(schoolsFrom.getSchoolName()) != null) {
-            return Result.fail("该学校已经存在了");
+            return Result.failMsg("该学校已经存在了");
         }
         schoolsService.updateSchool(schoolsFrom);
         return Result.ok("修改成功");

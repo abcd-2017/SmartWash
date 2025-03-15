@@ -2,4 +2,64 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.OrdersMapper">
 
+    <select id="getOrderByOrderNo" resultType="com.smartwash.entity.Orders" parameterType="java.lang.String">
+        select *
+        from orders
+        where order_no = #{orderNo};
+
+    </select>
+
+    <select id="searchOrders" resultType="com.smartwash.vo.order.OrdersVo">
+        SELECT
+        o.order_id AS orderId,
+        u.user_id AS "userVo.userId",
+        u.phone_number AS "userVo.phoneNumber",
+        u.student_id AS "userVo.studentId",
+        u.campus_card AS "userVo.campusCard",
+        u.balance AS "userVo.balance",
+        s.school_id AS "schoolsVo.schoolId",
+        s.school_name AS "schoolsVo.schoolName",
+        s.location AS "schoolsVo.location",
+        l.locker_id AS "lockersVo.lockerId",
+        l.locker_number AS "lockersVo.lockerNumber",
+        l.status AS "lockersVo.lockerStatus",
+        lp.item_id AS "laundryPackageVo.itemId",
+        lp.item_name AS "laundryPackageVo.itemName",
+        lp.base_price AS "laundryPackageVo.basePrice",
+        o.order_no AS orderNo,
+        o.total_price AS totalPrice,
+        o.created_at AS createdAt,
+        o.updated_at AS updatedAt,
+        o.status AS status,
+        o.pickup_code AS pickupCode
+        FROM orders o
+        JOIN users u ON o.user_id = u.user_id
+        JOIN schools s ON o.school_id = s.school_id
+        LEFT JOIN lockers l ON o.locker_id = l.locker_id
+        LEFT JOIN laundry_items lp ON o.laundry_items_id = lp.item_id
+        <where>
+            <if test="searchForm.phoneNumber != null and searchForm.phoneNumber != ''">
+                AND u.phone_number = #{searchForm.phoneNumber}
+            </if>
+            <if test="searchForm.schoolName != null and searchForm.schoolName != ''">
+                AND s.school_name LIKE CONCAT('%', #{searchForm.schoolName}, '%')
+            </if>
+            <if test="searchForm.orderNo != null and searchForm.orderNo != ''">
+                AND o.order_no LIKE CONCAT('%', #{searchForm.orderNo}, '%')
+            </if>
+            <if test="searchForm.laundryItemsId != null">
+                AND o.laundry_items_id = #{searchForm.laundryItemsId}
+            </if>
+            <if test="searchForm.startTime != null">
+                AND o.created_at &gt;= #{searchForm.startTime}
+            </if>
+            <if test="searchForm.endTime != null">
+                AND o.created_at &lt;= #{searchForm.endTime}
+            </if>
+            <if test="searchForm.status != null and searchForm.status != ''">
+                AND o.status = #{searchForm.status}
+            </if>
+        </where>
+    </select>
+
 </mapper>

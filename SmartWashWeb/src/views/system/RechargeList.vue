@@ -12,10 +12,10 @@
           />
         </el-form-item>
 
-        <el-form-item label="用户ID">
+        <el-form-item label="手机号">
           <el-input
-            v-model.number="listQuery.userId"
-            placeholder="输入用户ID"
+            v-model.number="listQuery.phoneNumber"
+            placeholder="输入用户手机号"
             clearable
             style="width: 120px"
           />
@@ -76,7 +76,9 @@
       highlight-current-row
     >
       <el-table-column prop="recordId" label="记录ID" width="100" />
-      <el-table-column prop="userId" label="用户ID" width="120" />
+      <el-table-column label="手机号" width="120">
+        <template #default="{ row }">{{ row.users.phoneNumber }}</template>
+      </el-table-column>
       <el-table-column label="充值金额" width="150">
         <template #default="{ row }">￥{{ row.amount.toFixed(2) }}</template>
       </el-table-column>
@@ -135,7 +137,7 @@ const listQuery = reactive({
   page: 1,
   size: 10,
   recordId: null,
-  userId: null,
+  phoneNumber: null,
   amount: null,
   rechargeType: null,
   startTime: null,

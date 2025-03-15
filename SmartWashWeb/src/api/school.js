@@ -25,7 +25,7 @@ export function addSchool(data) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '添加学校失败')
+            throw new Error(res.message || '添加学校失败')
         }
     })
 }
@@ -40,7 +40,7 @@ export function updateSchool(data) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '更新学校失败')
+            throw new Error(res.message || '更新学校失败')
         }
     })
 }
@@ -54,7 +54,7 @@ export function deleteSchool(id) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '删除学校失败')
+            throw new Error(res.message || '删除学校失败')
         }
     })
 }

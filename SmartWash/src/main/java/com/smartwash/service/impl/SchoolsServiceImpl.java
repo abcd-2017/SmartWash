@@ -3,17 +3,23 @@ package com.smartwash.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.common.LockerStatusEnum;
+import com.smartwash.entity.Lockers;
 import com.smartwash.entity.Schools;
 import com.smartwash.from.schools.AddSchoolsFrom;
 import com.smartwash.from.schools.SearchSchoolsFrom;
 import com.smartwash.from.schools.UpdateSchoolsFrom;
 import com.smartwash.mapper.SchoolsMapper;
+import com.smartwash.service.ILockersService;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.schools.SchoolsVo;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,6 +32,8 @@ import java.util.List;
  */
 @Service
 public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> implements ISchoolsService {
+    @Autowired
+    private ILockersService lockersService;
 
     //获取所有学校
     @Override
@@ -52,10 +60,30 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     //添加学校
     @Override
+    @Transactional
     public Boolean addSchools(AddSchoolsFrom addSchoolsFrom) {
         Schools schools = new Schools();
         BeanUtils.copyProperties(addSchoolsFrom, schools);
-        return save(schools);
+
+        //添加学校
+        save(schools);
+
+        //插入选中存储柜数量的存储柜
+        List<Lockers> lockerList = new ArrayList<>();
+        // 假设每个学校的柜子编号从1开始（如果学校已有数据，编号逻辑可做调整）
+        for (int i = 1; i <= addSchoolsFrom.getLockerCount(); i++) {
+            Lockers locker = new Lockers();
+            locker.setSchoolId(schools.getSchoolId());
+            locker.setLockerNumber(i);
+            locker.setStatus(LockerStatusEnum.FREE.getValue()); // '0'表示空闲状态
+            lockerList.add(locker);
+        }
+        int insertedCount = 0;
+        for (Lockers locker : lockerList) {
+            lockersService.save(locker);
+            insertedCount++;
+        }
+        return true;
     }
 
     //修改学校
@@ -68,10 +96,13 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     //删除学校
     @Override
+    @Transactional
     public Boolean deleteSchools(String ids) {
         String[] idList = ids.split(",");
         for (String id : idList) {
-            removeById(Integer.parseInt(id));
+            Long schoolId = Long.parseLong(id);
+            removeById(schoolId);
+            lockersService.deleteLockersBySchoolId(schoolId);
         }
         return true;
     }

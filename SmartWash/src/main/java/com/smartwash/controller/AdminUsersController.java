@@ -38,7 +38,7 @@ public class AdminUsersController {
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddAdminUserFrom adminUserFrom) {
         if (adminUsersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
-            return Result.fail("给管理员用户名已被使用");
+            return Result.failMsg("给管理员用户名已被使用");
         }
         adminUsersService.addAdminUsers(adminUserFrom);
         return Result.ok("添加成功");
@@ -49,7 +49,7 @@ public class AdminUsersController {
     public Result<String> updateSchool(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
         if (!Objects.equals(user.getUsername(), adminUsersFrom.getUsername()) && adminUsersService.getAdminUserByName(adminUsersFrom.getUsername()) != null) {
-            return Result.fail("给管理员用户名已被使用");
+            return Result.failMsg("给管理员用户名已被使用");
         }
         adminUsersService.updateAdminUsers(adminUsersFrom);
         return Result.ok("修改成功");

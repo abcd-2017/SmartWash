@@ -30,9 +30,7 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
     @Override
     public Page<LockersVo> getAllLockers(SearchLockersFrom lockersFrom) {
         Page<Lockers> page = new Page<>(lockersFrom.getPage(), lockersFrom.getSize());
-        LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<>();
-
-        queryWrapper.and(lockersFrom.getLockerId() != null, b -> b.eq(Lockers::getLockerId, lockersFrom.getLockerId()));
+        LambdaQueryWrapper<Lockers> queryWrapper = getLockersLambdaQueryWrapper(lockersFrom);
 
         List<Lockers> Lockers = this.list(page, queryWrapper);
         Page<LockersVo> LockersVoPage = new Page<>();
@@ -46,12 +44,38 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         return LockersVoPage;
     }
 
+    private static LambdaQueryWrapper<Lockers> getLockersLambdaQueryWrapper(SearchLockersFrom lockersFrom) {
+        LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<>();
+
+        queryWrapper.and(lockersFrom.getLockerId() != null, b -> b.eq(Lockers::getLockerId, lockersFrom.getLockerId()));
+        queryWrapper.and(lockersFrom.getSchoolId() != null, b -> b.eq(Lockers::getSchoolId, lockersFrom.getSchoolId()));
+        queryWrapper.and(lockersFrom.getStatus() != null, b -> b.eq(Lockers::getStatus, lockersFrom.getStatus()));
+        queryWrapper.and(lockersFrom.getStartTime() != null, b -> b.ge(Lockers::getLastUsedAt, lockersFrom.getStartTime()));
+        queryWrapper.and(lockersFrom.getEndTime() != null, b -> b.le(Lockers::getLastUsedAt, lockersFrom.getEndTime()));
+        return queryWrapper;
+    }
+
     //添加存储柜
     @Override
     public Boolean addLockers(AddLockerFrom lockerFrom) {
         Lockers Lockers = new Lockers();
         BeanUtils.copyProperties(lockerFrom, Lockers);
         return save(Lockers);
+    }
+
+    //根据学校id删除存储柜
+    @Override
+    public Boolean deleteLockersBySchoolId(Long schoolId) {
+        LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<Lockers>().eq(Lockers::getSchoolId, schoolId);
+        return remove(queryWrapper);
+    }
+
+    //判断当前学校的这个柜号有没有被使用
+    @Override
+    public Lockers getLockerById(Long schoolId, Integer lockerNumber) {
+        LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<Lockers>().
+                eq(Lockers::getSchoolId, schoolId).and(q -> q.eq(Lockers::getLockerNumber, lockerNumber));
+        return getOne(queryWrapper);
     }
 
     //修改存储柜

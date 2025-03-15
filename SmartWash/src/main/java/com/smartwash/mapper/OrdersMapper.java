@@ -1,16 +1,24 @@
 package com.smartwash.mapper;
 
-import com.smartwash.entity.Orders;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartwash.entity.Orders;
+import com.smartwash.from.order.SearchOrderFrom;
+import com.smartwash.vo.order.OrdersVo;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
- *  Mapper 接口
+ * Mapper 接口
  * </p>
  *
- * @author 
+ * @author
  * @since 2025-03-06
  */
 public interface OrdersMapper extends BaseMapper<Orders> {
 
+    Orders getOrderByOrderNo(String orderNo);
+
+    Page<OrdersVo> searchOrders(Page<OrdersVo> page, @Param("searchForm") SearchOrderFrom searchForm);
 }

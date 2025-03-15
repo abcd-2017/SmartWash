@@ -39,7 +39,7 @@ public class RolesController {
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddRolesFrom addRolesFrom) {
         if (StringUtils.hasText(addRolesFrom.getRoleName()) && rolesService.getByRoleName(addRolesFrom.getRoleName()) != null) {
-            return Result.fail("该角色名重复");
+            return Result.failMsg("该角色名重复");
         }
         rolesService.addRoles(addRolesFrom);
         return Result.ok("添加成功");
@@ -50,7 +50,7 @@ public class RolesController {
     public Result<String> updateSchool(@RequestBody @Valid UpdateRolesFrom rolesFrom) {
         Roles user = rolesService.getById(rolesFrom.getRoleId());
         if (!Objects.equals(user.getRoleName(), rolesFrom.getRoleName()) && rolesService.getByRoleName(rolesFrom.getRoleName()) != null) {
-            return Result.fail("该角色名重复");
+            return Result.failMsg("该角色名重复");
         }
         rolesService.updateRoles(rolesFrom);
         return Result.ok("修改成功");

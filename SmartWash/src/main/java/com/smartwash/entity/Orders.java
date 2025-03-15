@@ -1,21 +1,22 @@
 package com.smartwash.entity;
 
-import java.math.BigDecimal;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.time.LocalDateTime;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 /**
  * <p>
- * 
+ *
  * </p>
  *
- * @author 
+ * @author
  * @since 2025-03-06
  */
 @Data
@@ -34,6 +35,8 @@ public class Orders implements Serializable {
     private Long schoolId;
 
     private Long lockerId;
+
+    private String orderNo;
 
     private Long laundryItemsId;
 

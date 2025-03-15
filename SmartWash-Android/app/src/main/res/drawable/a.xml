@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- 背景 -->
+    <rect width="512" height="512" rx="128" fill="#2563EB"/>
+
+    <!-- 智能柜形状 -->
+    <rect x="96" y="96" width="320" height="320" rx="32" fill="white" opacity="0.1"/>
+
+    <!-- T恤图标 -->
+    <path d="M256 144C288 144 314 170 314 202C314 234 288 260 256 260C224 260 198 234 198 202C198 170 224 144 256 144Z" fill="white"/>
+    <path d="M198 250V368C198 376.8 205.2 384 214 384H298C306.8 384 314 376.8 314 368V250M198 250C198 282 224 308 256 308C288 308 314 282 314 250M198 250C198 218 224 192 256 192C288 192 314 218 314 250" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- 水滴效果 -->
+    <circle cx="160" cy="352" r="16" fill="#60A5FA"/>
+    <circle cx="352" cy="352" r="16" fill="#60A5FA"/>
+    <circle cx="256" cy="384" r="16" fill="#60A5FA"/>
+</svg>

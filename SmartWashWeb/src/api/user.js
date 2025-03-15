@@ -25,7 +25,7 @@ export function addUser(data) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '添加用户失败')
+            throw new Error(res.message || '添加用户失败')
         }
     })
 }
@@ -40,7 +40,7 @@ export function updateUser(data) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '更新用户失败')
+            throw new Error(res.message || '更新用户失败')
         }
     })
 }
@@ -54,7 +54,7 @@ export function deleteUser(id) {
         if (res.code === 200) {
             return res.data
         } else {
-            throw new Error(res.data || '删除用户失败')
+            throw new Error(res.message || '删除用户失败')
         }
     })
 }

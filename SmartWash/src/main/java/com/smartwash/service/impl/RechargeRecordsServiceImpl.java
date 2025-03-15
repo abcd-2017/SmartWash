@@ -4,12 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.RechargeRecords;
+import com.smartwash.entity.Users;
 import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.mapper.RechargeRecordsMapper;
+import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
+import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -23,6 +28,8 @@ import java.util.List;
  */
 @Service
 public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMapper, RechargeRecords> implements IRechargeRecordsService {
+    @Autowired
+    private UsersMapper usersMapper;
 
     //获取所有充值记录
     @Override
@@ -36,17 +43,27 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         rechargeRecordsVoPage.setRecords(rechargeRecords.stream().map(it -> {
             RechargeRecordsVo recordsVo = new RechargeRecordsVo();
             BeanUtils.copyProperties(it, recordsVo);
+            Users users = usersMapper.selectById(it.getUserId());
+            UserVo userVo = new UserVo();
+            userVo.setUserId(users.getUserId());
+            userVo.setPhoneNumber(users.getPhoneNumber());
+            recordsVo.setUsers(userVo);
             return recordsVo;
         }).toList());
 
         return rechargeRecordsVoPage;
     }
 
-    private static LambdaQueryWrapper<RechargeRecords> getRechargeRecordsLambdaQueryWrapper(SearchRechargeRecordsFrom rechargeRecordsFrom) {
+    private LambdaQueryWrapper<RechargeRecords> getRechargeRecordsLambdaQueryWrapper(SearchRechargeRecordsFrom rechargeRecordsFrom) {
         LambdaQueryWrapper<RechargeRecords> queryWrapper = new LambdaQueryWrapper<>();
 
+        if (StringUtils.hasText(rechargeRecordsFrom.getPhoneNumber())) {
+            Users user = usersMapper.getUserByPhoneNumber(rechargeRecordsFrom.getPhoneNumber());
+            Long userId = user == null ? -1 : user.getUserId();
+            queryWrapper.eq(RechargeRecords::getUserId, userId);
+        }
+
         queryWrapper.and(rechargeRecordsFrom.getRecordId() != null, b -> b.eq(RechargeRecords::getRecordId, rechargeRecordsFrom.getRecordId()));
-        queryWrapper.and(rechargeRecordsFrom.getUserId() != null, b -> b.eq(RechargeRecords::getUserId, rechargeRecordsFrom.getUserId()));
         queryWrapper.and(rechargeRecordsFrom.getStartTime() != null, b -> b.ge(RechargeRecords::getRechargeTime, rechargeRecordsFrom.getStartTime()));
         queryWrapper.and(rechargeRecordsFrom.getEndTime() != null, b -> b.le(RechargeRecords::getRechargeTime, rechargeRecordsFrom.getEndTime()));
         queryWrapper.and(rechargeRecordsFrom.getRechargeType() != null, b -> b.eq(RechargeRecords::getRechargeType, rechargeRecordsFrom.getRechargeType()));

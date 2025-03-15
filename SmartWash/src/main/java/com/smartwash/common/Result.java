@@ -54,6 +54,10 @@ public class Result<T> {
         return Result.fail(null);
     }
 
+    public static Result failMsg(String msg) {
+        return build(null, ResultCodeEnum.FAIL.getCode(), msg);
+    }
+
     /**
      * 操作失败
      *

@@ -25,4 +25,8 @@ public interface ILockersService extends IService<Lockers> {
     Boolean deleteLockers(String ids);
 
     Boolean addLockers(AddLockerFrom addLockerFrom);
+
+    Boolean deleteLockersBySchoolId(Long schoolId);
+
+    Lockers getLockerById(Long schoolId, Integer lockerNumber);
 }

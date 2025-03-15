@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class SearchRechargeRecordsFrom extends BaseSearchFrom {
     private Long recordId;
 
-    private Long userId;
+    private String phoneNumber;
 
     private BigDecimal amount;
 

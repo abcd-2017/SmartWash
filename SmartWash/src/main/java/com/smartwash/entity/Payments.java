@@ -40,6 +40,4 @@ public class Payments implements Serializable {
     private String status;
 
     private LocalDateTime paidAt;
-
-
 }

@@ -7,7 +7,12 @@ import Home from '@/views/Home.vue'
 import SchoolList from "@/views/system/SchoolList.vue"
 import UserList from "@/views/system/UserList.vue"
 import RechargeList from "@/views/system/RechargeList.vue"
-
+import LaundryList from "@/views/system/LaundryList.vue"
+import RoleList from "@/views/system/RoleList.vue"
+import AdminUserList from "@/views/system/AdminUserList.vue"
+import LockerList from "@/views/system/LockerList.vue"
+import PaymentList from "@/views/system/PaymentList.vue"
+import OrderList from "@/views/system/OrderList.vue"
 const routes = [{
     path: '/',
     component: Layout,
@@ -42,6 +47,54 @@ const routes = [{
             component: RechargeList,
             meta: {
                 title: '充值记录',
+                showInMenu: true
+            }
+        }, {
+            path: '/laundry',
+            name: 'LaundryList',
+            component: LaundryList,
+            meta: {
+                title: '洗护套餐',
+                showInMenu: true
+            }
+        }, {
+            path: '/roles',
+            name: 'RoleList',
+            component: RoleList,
+            meta: {
+                title: '角色管理',
+                showInMenu: true
+            }
+        }, {
+            path: '/adminUsers',
+            name: 'AdminUserList',
+            component: AdminUserList,
+            meta: {
+                title: '管理员角色管理',
+                showInMenu: true
+            }
+        }, {
+            path: '/lockers',
+            name: 'LockerList',
+            component: LockerList,
+            meta: {
+                title: '寄存柜管理',
+                showInMenu: true
+            }
+        }, {
+            path: '/payment',
+            name: 'PaymentList',
+            component: PaymentList,
+            meta: {
+                title: '支付记录',
+                showInMenu: true
+            }
+        }, {
+            path: '/orders',
+            name: 'OrderList',
+            component: OrderList,
+            meta: {
+                title: '订单管理',
                 showInMenu: true
             }
         }
