@@ -10,7 +10,7 @@ public class UpdateAdminUserFrom {
 
     private String username;
 
-    private String passwordHash;
+    private String password;
 
     private Long roleId;
 }

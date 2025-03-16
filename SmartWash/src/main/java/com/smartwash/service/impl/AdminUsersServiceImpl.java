@@ -1,7 +1,6 @@
 package com.smartwash.service.impl;
 
 
-import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -16,6 +15,7 @@ import com.smartwash.service.IRolesService;
 import com.smartwash.vo.admin_users.AdminUserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -57,32 +57,42 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
 
     @Override
     public Boolean addAdminUsers(AddAdminUserFrom addAdminUsersFrom) {
-        AdminUsers AdminUsers = new AdminUsers();
+        AdminUsers adminUsers = new AdminUsers();
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         //如果密码为空，设置初始密码
         String password = "";
         if (StringUtils.hasText(addAdminUsersFrom.getPasswordHash())) {
-            password = SecureUtil.md5(addAdminUsersFrom.getPasswordHash());
+            password = encoder.encode(addAdminUsersFrom.getPasswordHash());
         } else {
-            password = SecureUtil.md5(DefaultConstant.ADMIN_DEFAULT_PASSWORD);
+            password = encoder.encode(DefaultConstant.ADMIN_DEFAULT_PASSWORD);
         }
-        BeanUtils.copyProperties(addAdminUsersFrom, AdminUsers);
-        AdminUsers.setPasswordHash(password);
-        return save(AdminUsers);
+        BeanUtils.copyProperties(addAdminUsersFrom, adminUsers);
+        adminUsers.setPasswordHash(password);
+        return save(adminUsers);
     }
 
     @Override
     public Boolean updateAdminUsers(UpdateAdminUserFrom adminUserFrom) {
-        AdminUsers AdminUsers = getById(adminUserFrom.getAdminId());
-        BeanUtils.copyProperties(adminUserFrom, AdminUsers);
-        if (StringUtils.hasText(adminUserFrom.getPasswordHash())) {
-            AdminUsers.setPasswordHash(SecureUtil.md5(adminUserFrom.getPasswordHash()));
+        AdminUsers adminUsers = getById(adminUserFrom.getAdminId());
+        BeanUtils.copyProperties(adminUserFrom, adminUsers);
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        if (StringUtils.hasText(adminUserFrom.getPassword())) {
+            adminUsers.setPasswordHash(encoder.encode(adminUserFrom.getPassword()));
         }
-        return updateById(AdminUsers);
+        return updateById(adminUsers);
     }
 
     @Override
     public AdminUsers getAdminUserByName(String username) {
         return getOne(new LambdaQueryWrapper<AdminUsers>().eq(AdminUsers::getUsername, username));
+    }
+
+    @Override
+    public AdminUserVo getUserById(Long userId) {
+        AdminUsers users = getById(userId);
+        AdminUserVo adminUserVo = new AdminUserVo();
+        BeanUtils.copyProperties(users, adminUserVo);
+        return adminUserVo;
     }
 
     @Override

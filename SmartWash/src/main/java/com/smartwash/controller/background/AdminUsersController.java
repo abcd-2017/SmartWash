@@ -1,4 +1,4 @@
-package com.smartwash.controller;
+package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
@@ -7,6 +7,8 @@ import com.smartwash.from.admin_users.AddAdminUserFrom;
 import com.smartwash.from.admin_users.SearchAdminUserFrom;
 import com.smartwash.from.admin_users.UpdateAdminUserFrom;
 import com.smartwash.service.IAdminUsersService;
+import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.SecurityUtil;
 import com.smartwash.vo.admin_users.AdminUserVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,12 @@ import java.util.Objects;
  * @since 2025-03-06
  */
 @RestController
-@RequestMapping("/adminUsers")
+@RequestMapping("/admin/adminUsers")
 public class AdminUsersController {
     @Autowired
     private IAdminUsersService adminUsersService;
+    @Autowired
+    private SecurityUtil securityUtil;
 
     //获取所有管理员用户
     @GetMapping("/all")
@@ -42,6 +46,12 @@ public class AdminUsersController {
         }
         adminUsersService.addAdminUsers(adminUserFrom);
         return Result.ok("添加成功");
+    }
+
+    @GetMapping("/getAdminUserInfo")
+    public Result<AdminUserVo> getUserInfo() {
+        LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
+        return Result.ok(adminUsersService.getUserById(currentUser.getUserId()));
     }
 
     //修改管理员用户

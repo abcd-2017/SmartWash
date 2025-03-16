@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getRoleList(params) {
     return request({
-        url: '/roles/all',
+        url: '/admin/roles/all',
         method: 'get',
         params
     }).then(res => {
@@ -13,7 +13,7 @@ export function getRoleList(params) {
 
 export function addRole(data) {
     return request({
-        url: '/roles/add',
+        url: '/admin/roles/add',
         method: 'post',
         data
     }).then(res => {
@@ -24,7 +24,7 @@ export function addRole(data) {
 
 export function updateRole(data) {
     return request({
-        url: '/roles/update',
+        url: '/admin/roles/update',
         method: 'post',
         data
     }).then(res => {
@@ -35,7 +35,7 @@ export function updateRole(data) {
 
 export function deleteRole(ids) {
     return request({
-        url: `/roles/delete/${ids}`,
+        url: `/admin/roles/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data

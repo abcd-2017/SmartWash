@@ -1,4 +1,4 @@
-package com.smartwash.controller;
+package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
@@ -24,7 +24,7 @@ import java.util.Objects;
  * @since 2025-03-09
  */
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("/admin/roles")
 public class RolesController {
     @Autowired
     private IRolesService rolesService;

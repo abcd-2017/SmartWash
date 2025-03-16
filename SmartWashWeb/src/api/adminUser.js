@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getAdminUserList(params) {
     return request({
-        url: '/adminUsers/all',
+        url: '/admin/adminUsers/all',
         method: 'get',
         params
     }).then(res => {
@@ -13,7 +13,7 @@ export function getAdminUserList(params) {
 
 export function addAdminUser(data) {
     return request({
-        url: '/adminUsers/add',
+        url: '/admin/adminUsers/add',
         method: 'post',
         data
     }).then(res => {
@@ -24,7 +24,7 @@ export function addAdminUser(data) {
 
 export function updateAdminUser(data) {
     return request({
-        url: '/adminUsers/update',
+        url: '/admin/adminUsers/update',
         method: 'post',
         data
     }).then(res => {
@@ -35,10 +35,20 @@ export function updateAdminUser(data) {
 
 export function deleteAdminUser(ids) {
     return request({
-        url: `/adminUsers/delete/${ids}`,
+        url: `/admin/adminUsers/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data
         throw new Error(res.message || '删除失败')
+    })
+}
+
+export function getCurrentAdminUser() {
+    return request({
+        url: '/admin/adminUsers/getAdminUserInfo',
+        method: 'get'
+    }).then(res => {
+        if (res.code === 200) return res.data
+        throw new Error(res.message || '获取当前用户信息失败')
     })
 }

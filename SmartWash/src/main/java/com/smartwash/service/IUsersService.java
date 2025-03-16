@@ -6,6 +6,7 @@ import com.smartwash.entity.Users;
 import com.smartwash.from.users.AddUserFrom;
 import com.smartwash.from.users.SearchUserFrom;
 import com.smartwash.from.users.UpdateUserFrom;
+import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.vo.users.UserVo;
 
 /**
@@ -35,4 +36,6 @@ public interface IUsersService extends IService<Users> {
     Users getUserByStudentId(String studentId);
 
     Users getUserByCampusCard(String campusCard);
+
+    Boolean registerUser(UserRegisterFrom userRegisterFrom);
 }

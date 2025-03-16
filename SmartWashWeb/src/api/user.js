@@ -3,7 +3,7 @@ import request from '@/utils/http'
 // 获取用户列表
 export function getUserList(params) {
     return request({
-        url: '/users/all',
+        url: '/admin/users/all',
         method: 'get',
         params
     }).then(res => {
@@ -18,7 +18,7 @@ export function getUserList(params) {
 // 添加用户
 export function addUser(data) {
     return request({
-        url: '/users/add',
+        url: '/admin/users/add',
         method: 'post',
         data
     }).then(res => {
@@ -33,7 +33,7 @@ export function addUser(data) {
 // 更新用户
 export function updateUser(data) {
     return request({
-        url: '/users/update',
+        url: '/admin/users/update',
         method: 'post',
         data
     }).then(res => {
@@ -48,7 +48,7 @@ export function updateUser(data) {
 // 删除用户
 export function deleteUser(id) {
     return request({
-        url: `/users/delete/${id}`,
+        url: `/admin/users/delete/${id}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) {

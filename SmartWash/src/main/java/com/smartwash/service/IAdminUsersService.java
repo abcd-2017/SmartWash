@@ -27,4 +27,6 @@ public interface IAdminUsersService extends IService<AdminUsers> {
     Boolean updateAdminUsers(UpdateAdminUserFrom adminUsersFrom);
 
     AdminUsers getAdminUserByName(String username);
+
+    AdminUserVo getUserById(Long userId);
 }

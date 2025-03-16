@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getPayTypes() {
     return request({
-        url: '/payments/payType',
+        url: '/admin/payments/payType',
         method: 'get'
     }).then(res => {
         if (res.code === 200) return res.data
@@ -12,7 +12,7 @@ export function getPayTypes() {
 
 export function getPayStatus() {
     return request({
-        url: '/payments/payStatus',
+        url: '/admin/payments/payStatus',
         method: 'get'
     }).then(res => {
         if (res.code === 200) return res.data
@@ -22,7 +22,7 @@ export function getPayStatus() {
 
 export function getPaymentList(params) {
     return request({
-        url: '/payments/all',
+        url: '/admin/payments/all',
         method: 'get',
         params
     }).then(res => {
@@ -33,7 +33,7 @@ export function getPaymentList(params) {
 
 export function deletePayment(ids) {
     return request({
-        url: `/payments/delete/${ids}`,
+        url: `/admin/payments/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data

@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getLaundryList(params) {
     return request({
-        url: '/laundryItems/all',
+        url: '/admin/laundryItems/all',
         method: 'get',
         params
     }).then(res => {
@@ -13,7 +13,7 @@ export function getLaundryList(params) {
 
 export function addLaundry(data) {
     return request({
-        url: '/laundryItems/add',
+        url: '/admin/laundryItems/add',
         method: 'post',
         data
     }).then(res => {
@@ -24,7 +24,7 @@ export function addLaundry(data) {
 
 export function updateLaundry(data) {
     return request({
-        url: '/laundryItems/update',
+        url: '/admin/laundryItems/update',
         method: 'post',
         data
     }).then(res => {
@@ -35,7 +35,7 @@ export function updateLaundry(data) {
 
 export function deleteLaundry(ids) {
     return request({
-        url: `/laundryItems/delete/${ids}`,
+        url: `/admin/laundryItems/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data

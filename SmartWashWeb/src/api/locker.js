@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getLockerStatus() {
     return request({
-        url: '/lockers/status',
+        url: '/admin/lockers/status',
         method: 'get'
     }).then(res => {
         if (res.code === 200) return res.data
@@ -12,7 +12,7 @@ export function getLockerStatus() {
 
 export function getLockerList(params) {
     return request({
-        url: '/lockers/all',
+        url: '/admin/lockers/all',
         method: 'get',
         params
     }).then(res => {
@@ -23,7 +23,7 @@ export function getLockerList(params) {
 
 export function addLocker(data) {
     return request({
-        url: '/lockers/add',
+        url: '/admin/lockers/add',
         method: 'post',
         data
     }).then(res => {
@@ -34,7 +34,7 @@ export function addLocker(data) {
 
 export function updateLocker(data) {
     return request({
-        url: '/lockers/update',
+        url: '/admin/lockers/update',
         method: 'post',
         data
     }).then(res => {
@@ -45,7 +45,7 @@ export function updateLocker(data) {
 
 export function deleteLocker(ids) {
     return request({
-        url: `/lockers/delete/${ids}`,
+        url: `/admin/lockers/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data

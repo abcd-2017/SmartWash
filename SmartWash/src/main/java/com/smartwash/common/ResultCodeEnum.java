@@ -9,7 +9,7 @@ import lombok.Getter;
 public enum ResultCodeEnum {
 
     SUCCESS(200, "成功"),
-    FAIL(201, "失败"),
+    FAIL(201, "失败"), UNAUTHORIZED(401, "登录异常"),
     SERVICE_ERROR(2012, "服务异常");
 
     private final Integer code;

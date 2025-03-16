@@ -20,7 +20,7 @@
             style="width: 150px"
           />
         </el-form-item>
-        
+
         <!-- 修改角色ID输入为下拉选择 -->
         <el-form-item label="角色">
           <el-select
@@ -66,7 +66,7 @@
       <el-table-column type="selection" width="55" />
       <el-table-column prop="adminId" label="ID" width="80" />
       <el-table-column prop="username" label="用户名" min-width="150" />
-      <el-table-column prop="roles.roleName" label="角色ID" width="180" />
+      <el-table-column prop="roles.roleName" label="角色" width="180" />
       <el-table-column label="创建时间" width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
@@ -154,7 +154,7 @@
   </div>
 </template>
   
-  <script setup>
+<script setup>
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import dayjs from "dayjs";
@@ -319,8 +319,10 @@ const handleEdit = (row) => {
   dialogType.value = "edit";
   dialogVisible.value = true;
   Object.assign(tempAdmin, {
-    ...row,
+    adminId: row.adminId,
+    username: row.username,
     password: "", // 清空密码字段
+    roleId: row.roles?.roleId || null, // 正确设置角色ID
   });
 };
 
@@ -380,7 +382,7 @@ const formatTime = (time) => {
 // ...（保持与之前角色管理页面类似的方法实现）
 </script>
   
-  <style scoped>
+<style scoped>
 .admin-container {
   padding: 20px;
   background-color: #fff;

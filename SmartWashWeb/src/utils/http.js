@@ -1,5 +1,4 @@
 // src/utils/http.js
-
 import axios from 'axios';
 
 // 创建 axios 实例
@@ -29,12 +28,28 @@ http.interceptors.request.use(
 // 响应拦截器
 http.interceptors.response.use(
     (response) => {
-        return response.data; // 直接返回数据
+        const res = response.data
+
+        if (res.code !== 200) {
+            // ElMessage.error(res.message || 'Error')
+            return Promise.reject(new Error(res.message || 'Error'))
+        } else if (res.code === 401) {
+            ElMessage.error('登录已过期，请重新登录')
+            localStorage.removeItem("token")
+            window.location.reload()
+        }
+        return res
     },
     (error) => {
-        // 处理响应错误
-        console.error('API 请求错误：', error);
-        return Promise.reject(error);
+        // 处理401未授权错误
+        if (error.response?.status === 401) {
+            ElMessage.error('登录已过期，请重新登录')
+            localStorage.removeItem("token")
+            window.location.reload()
+        }
+
+        // ElMessage.error(error.message)
+        return Promise.reject(error)
     }
 );
 

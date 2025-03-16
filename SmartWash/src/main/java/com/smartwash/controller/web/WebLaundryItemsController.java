@@ -1,4 +1,4 @@
-package com.smartwash.controller;
+package com.smartwash.controller.web;
 
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -24,8 +24,8 @@ import java.util.Objects;
  * @since 2025-03-06
  */
 @RestController
-@RequestMapping("/laundryItems")
-public class LaundryItemsController {
+@RequestMapping("/web/laundryItems")
+public class WebLaundryItemsController {
     @Autowired
     private ILaundryItemsService laundryItemsService;
 

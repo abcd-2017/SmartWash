@@ -1,4 +1,4 @@
-package com.smartwash.controller;
+package com.smartwash.controller.web;
 
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -27,8 +27,8 @@ import java.util.Map;
  * @since 2025-03-06
  */
 @RestController
-@RequestMapping("/payments")
-public class PaymentsController {
+@RequestMapping("/web/payments")
+public class WebPaymentsController {
     @Autowired
     private IPaymentsService paymentsService;
 

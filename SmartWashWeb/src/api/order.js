@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 export function getOrderStatus() {
     return request({
-        url: '/orders/status',
+        url: '/admin/orders/status',
         method: 'get'
     }).then(res => {
         if (res.code === 200) return res.data
@@ -12,7 +12,7 @@ export function getOrderStatus() {
 
 export function getOrderList(params) {
     return request({
-        url: '/orders/all',
+        url: '/admin/orders/all',
         method: 'get',
         params
     }).then(res => {
@@ -23,7 +23,7 @@ export function getOrderList(params) {
 
 export function deleteOrder(ids) {
     return request({
-        url: `/orders/delete/${ids}`,
+        url: `/admin/orders/delete/${ids}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) return res.data

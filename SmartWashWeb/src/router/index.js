@@ -13,7 +13,16 @@ import AdminUserList from "@/views/system/AdminUserList.vue"
 import LockerList from "@/views/system/LockerList.vue"
 import PaymentList from "@/views/system/PaymentList.vue"
 import OrderList from "@/views/system/OrderList.vue"
+import LoginPage from "@/views/LoginPage.vue"
+
 const routes = [{
+    path: '/login',
+    name: 'LoginPage',
+    component: LoginPage,
+    meta: {
+        requiresAuth: false
+    }
+}, {
     path: '/',
     component: Layout,
     children: [{
@@ -22,7 +31,8 @@ const routes = [{
             component: Home,
             meta: {
                 title: '首页',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         },
         {
@@ -31,7 +41,8 @@ const routes = [{
             component: SchoolList,
             meta: {
                 title: '学校管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/users',
@@ -39,7 +50,8 @@ const routes = [{
             component: UserList,
             meta: {
                 title: '学生管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/recharge',
@@ -47,7 +59,8 @@ const routes = [{
             component: RechargeList,
             meta: {
                 title: '充值记录',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/laundry',
@@ -55,7 +68,8 @@ const routes = [{
             component: LaundryList,
             meta: {
                 title: '洗护套餐',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/roles',
@@ -63,7 +77,8 @@ const routes = [{
             component: RoleList,
             meta: {
                 title: '角色管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/adminUsers',
@@ -71,7 +86,8 @@ const routes = [{
             component: AdminUserList,
             meta: {
                 title: '管理员角色管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/lockers',
@@ -79,7 +95,8 @@ const routes = [{
             component: LockerList,
             meta: {
                 title: '寄存柜管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/payment',
@@ -87,7 +104,8 @@ const routes = [{
             component: PaymentList,
             meta: {
                 title: '支付记录',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
         }, {
             path: '/orders',
@@ -95,15 +113,26 @@ const routes = [{
             component: OrderList,
             meta: {
                 title: '订单管理',
-                showInMenu: true
+                showInMenu: true,
+                requiresAuth: true
             }
-        }
+        },
     ]
 }]
 
 const router = createRouter({
     history: createWebHistory(),
     routes
+})
+
+router.beforeEach((to, from, next) => {
+    const isAuthenticated = localStorage.getItem('token');
+    // 需要登录但未登录
+    if (to.meta.requiresAuth !== false && !isAuthenticated) {
+        next('/login')
+    } else {
+        next()
+    }
 })
 
 export default router

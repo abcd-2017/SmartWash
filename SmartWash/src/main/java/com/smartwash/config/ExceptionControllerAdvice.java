@@ -2,6 +2,7 @@ package com.smartwash.config;
 
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
+import com.smartwash.exception.UserAuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,6 +25,15 @@ public class ExceptionControllerAdvice {
             stringBuffer.append(field).append(":").append(message).append(" ");
         });
         return Result.build(stringBuffer + "", ResultCodeEnum.FAIL);
+    }
+
+    /**
+     * 用户token校验失败异常捕获
+     */
+    @ExceptionHandler(value = UserAuthenticationException.class)
+    public Result<String> handleUserAuthenticationException(UserAuthenticationException e) {
+        log.error("用户登录状态异常：{}，异常类型：{}", e.getMessage(), e.getClass());
+        return Result.build(null, ResultCodeEnum.UNAUTHORIZED);
     }
 
     @ExceptionHandler(value = Throwable.class)

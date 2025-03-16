@@ -1,6 +1,5 @@
 package com.smartwash.service.impl;
 
-import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -10,12 +9,14 @@ import com.smartwash.entity.Users;
 import com.smartwash.from.users.AddUserFrom;
 import com.smartwash.from.users.SearchUserFrom;
 import com.smartwash.from.users.UpdateUserFrom;
+import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
 import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -60,12 +61,13 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @Override
     public Boolean addUsers(AddUserFrom addUsersFrom) {
         Users users = new Users();
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         //如果密码为空，设置初始密码
         String password = "";
         if (StringUtils.hasText(addUsersFrom.getPassword())) {
-            password = SecureUtil.md5(addUsersFrom.getPassword());
+            password = encoder.encode(addUsersFrom.getPassword());
         } else {
-            password = SecureUtil.md5(DefaultConstant.DEFAULT_PASSWORD);
+            password = encoder.encode(DefaultConstant.DEFAULT_PASSWORD);
         }
         BeanUtils.copyProperties(addUsersFrom, users);
         users.setPassword(password);
@@ -76,8 +78,9 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     public Boolean updateUser(UpdateUserFrom usersFrom) {
         Users users = getById(usersFrom.getUserId());
         BeanUtils.copyProperties(usersFrom, users);
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         if (StringUtils.hasText(usersFrom.getPassword())) {
-            users.setPassword(SecureUtil.md5(usersFrom.getPassword()));
+            users.setPassword(encoder.encode(usersFrom.getPassword()));
         }
         return updateById(users);
     }
@@ -104,5 +107,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @Override
     public Users getUserByCampusCard(String campusCard) {
         return getOne(new QueryWrapper<Users>().lambda().eq(Users::getCampusCard, campusCard));
+    }
+
+    @Override
+    public Boolean registerUser(UserRegisterFrom userRegisterFrom) {
+        Users users = new Users();
+        users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
+        return save(users);
     }
 }

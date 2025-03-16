@@ -3,7 +3,7 @@ import request from '@/utils/http'
 // 获取学校列表
 export function getSchoolList(params) {
     return request({
-        url: '/schools/all',
+        url: '/admin/schools/all',
         method: 'get',
         params
     }).then(res => {
@@ -18,7 +18,7 @@ export function getSchoolList(params) {
 // 添加学校
 export function addSchool(data) {
     return request({
-        url: '/schools/add',
+        url: '/admin/schools/add',
         method: 'post',
         data
     }).then(res => {
@@ -33,7 +33,7 @@ export function addSchool(data) {
 // 更新学校
 export function updateSchool(data) {
     return request({
-        url: '/schools/update',
+        url: '/admin/schools/update',
         method: 'post',
         data
     }).then(res => {
@@ -48,7 +48,7 @@ export function updateSchool(data) {
 // 删除学校
 export function deleteSchool(id) {
     return request({
-        url: `/schools/delete/${id}`,
+        url: `/admin/schools/delete/${id}`,
         method: 'delete'
     }).then(res => {
         if (res.code === 200) {
