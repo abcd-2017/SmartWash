@@ -64,32 +64,4 @@ public class WebPaymentsController {
         }
         return Result.ok(paymentsService.getAllPayments(paymentFrom));
     }
-
-    @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> deletePayments(@PathVariable("ids") String ids) {
-        return Result.ok(paymentsService.deletePayments(ids));
-    }
-
-    //添加付款记录
-    @PostMapping("/add")
-    public Result<String> addPayment(@RequestBody @Valid AddPaymentFrom paymentsFrom) {
-//        if (paymentsService.getPaymentByName(PaymentFrom.getUsername()) != null) {
-//            return Result.fail("给付款记录名已被使用");
-//        }
-        paymentsService.addPayment(paymentsFrom);
-        return Result.ok("添加成功");
-    }
-
-    //修改付款记录
-    @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
-//        Payments user = paymentsService.getById(PaymentsFrom.getAdminId());
-//        if (!Objects.equals(user.getUsername(), PaymentsFrom.getUsername()) && PaymentsService.getPaymentByName(PaymentsFrom.getUsername()) != null) {
-//            return Result.fail("给付款记录名已被使用");
-//        }
-        paymentsService.updatePayment(paymentsFrom);
-        return Result.ok("修改成功");
-    }
-
-
 }

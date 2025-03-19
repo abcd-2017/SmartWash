@@ -8,9 +8,6 @@ import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IUsersService;
 import com.smartwash.utils.JwtUtil;
-import com.smartwash.utils.LoginUser;
-import com.smartwash.utils.SecurityUtil;
-import com.smartwash.vo.admin_users.AdminUserVo;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +61,7 @@ public class LoginController {
     @PostMapping("/user/login")
     public Result<String> login(@RequestBody @Valid UserLoginFrom userLoginFrom) {
         if (usersService.getUserByPhone(userLoginFrom.getPhoneNumber()) == null) {
-            return Result.failMsg("改手机号暂未注册！");
+            return Result.failMsg("该手机号暂未注册！");
         }
         String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, userLoginFrom.getPhoneNumber());
 
@@ -100,13 +97,13 @@ public class LoginController {
         return Result.ok(null);
     }
 
-    @GetMapping("/user/Captcha/{phoneNumber}")
+    @GetMapping("/user/captcha/{phoneNumber}")
     public Result<String> getCaptcha(@PathVariable("phoneNumber") String phoneNumber) {
         if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) {
             return Result.failMsg("手机号格式错误");
         }
         if (usersService.getUserByPhone(phoneNumber) != null) {
-            return Result.failMsg("该手机号已注册");
+            return Result.failMsg("该手机号已注册"); 
         }
         String key = String.format("%s:%s", DefaultConstant.Captcha_Code, phoneNumber);
 
