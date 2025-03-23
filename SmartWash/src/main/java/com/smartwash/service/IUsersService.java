@@ -3,11 +3,10 @@ package com.smartwash.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Users;
-import com.smartwash.from.users.AddUserFrom;
-import com.smartwash.from.users.SearchUserFrom;
-import com.smartwash.from.users.UpdateUserFrom;
-import com.smartwash.from.users.UserRegisterFrom;
+import com.smartwash.from.users.*;
+import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.UserVo;
+import jakarta.validation.Valid;
 
 /**
  * <p>
@@ -38,4 +37,9 @@ public interface IUsersService extends IService<Users> {
     Users getUserByCampusCard(String campusCard);
 
     Boolean registerUser(UserRegisterFrom userRegisterFrom);
+
+    //完善用户学校信息
+    Boolean updateUserInfo(@Valid UpdateUserInfo updateUserInfo, Long userId);
+
+    UserInfoVo getUserInfo(Long userId);
 }

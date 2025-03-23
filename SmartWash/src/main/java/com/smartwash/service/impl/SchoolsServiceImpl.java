@@ -12,6 +12,7 @@ import com.smartwash.from.schools.UpdateSchoolsFrom;
 import com.smartwash.mapper.SchoolsMapper;
 import com.smartwash.service.ILockersService;
 import com.smartwash.service.ISchoolsService;
+import com.smartwash.vo.schools.SchoolNameVo;
 import com.smartwash.vo.schools.SchoolsVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,5 +114,16 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         LambdaQueryWrapper<Schools> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Schools::getSchoolName, schoolName);
         return getOne(queryWrapper);
+    }
+
+    @Override
+    public List<SchoolNameVo> getAllSchoolsName(String schoolName) {
+        LambdaQueryWrapper<Schools> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StringUtils.hasText(schoolName), Schools::getSchoolName, schoolName);
+        return list(queryWrapper).stream().map(s -> {
+            SchoolNameVo schoolNameVo = new SchoolNameVo();
+            BeanUtils.copyProperties(s, schoolNameVo);
+            return schoolNameVo;
+        }).toList();
     }
 }

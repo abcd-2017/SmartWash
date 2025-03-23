@@ -34,8 +34,8 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)) // 使用自定义异常处理器
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "ADMIN" -> "ROLE_ADMIN"
-                    .requestMatchers("/web/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "USER" -> "ROLE_USER"
-                    .requestMatchers("/auth/**").permitAll() // 公开接口
+                    .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "USER" -> "ROLE_USER"
+                    .requestMatchers("/auth/**", "/web/**").permitAll() // 公开接口
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -54,7 +54,6 @@ public class SecurityConfig {
 
         return new ProviderManager(authenticationProvider); // 返回一个 ProviderManager，管理多个认证提供者
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -6,8 +6,11 @@ import com.smartwash.entity.Schools;
 import com.smartwash.from.schools.AddSchoolsFrom;
 import com.smartwash.from.schools.SearchSchoolsFrom;
 import com.smartwash.from.schools.UpdateSchoolsFrom;
+import com.smartwash.vo.schools.SchoolNameVo;
 import com.smartwash.vo.schools.SchoolsVo;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 /**
  * <p>
@@ -28,4 +31,6 @@ public interface ISchoolsService extends IService<Schools> {
     Boolean deleteSchools(String ids);
 
     Schools getSearchByName(String schoolName);
+
+    List<SchoolNameVo> getAllSchoolsName(String schoolName);
 }

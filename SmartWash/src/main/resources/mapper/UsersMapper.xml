@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.UsersMapper">
+    <update id="addUserBalance">
+        update users
+        set balance = balance + #{balance}
+        where user_id = #{userId};
+    </update>
 
     <select id="getUsersByPhoneNumber" resultType="com.smartwash.entity.Users"
             parameterType="java.lang.String">

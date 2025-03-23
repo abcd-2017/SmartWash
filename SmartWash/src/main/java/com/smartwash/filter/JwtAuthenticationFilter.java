@@ -3,6 +3,7 @@ package com.smartwash.filter;
 import com.smartwash.exception.UserAuthenticationException;
 import com.smartwash.utils.JwtUtil;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.UserContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith("/auth/")) {
+        if (!requestURI.startsWith("/admin/") && !requestURI.startsWith("/web/auth/")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -73,6 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                  * 这样，Spring Security 在处理后续请求时，就能基于这个认证信息对请求进行授权控制。
                  * */
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                UserContextHolder.setUser(userDetails);
             } catch (Exception e) {
                 // 记录日志并清除认证上下文
                 log.warn("JWT Token validation failed: " + e.getMessage());

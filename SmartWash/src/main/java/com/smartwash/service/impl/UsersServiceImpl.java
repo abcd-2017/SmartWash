@@ -1,18 +1,17 @@
 package com.smartwash.service.impl;
 
+import cn.hutool.core.util.DesensitizedUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.Users;
-import com.smartwash.from.users.AddUserFrom;
-import com.smartwash.from.users.SearchUserFrom;
-import com.smartwash.from.users.UpdateUserFrom;
-import com.smartwash.from.users.UserRegisterFrom;
+import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,5 +115,23 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
         return save(users);
+    }
+
+    @Override
+    public Boolean updateUserInfo(UpdateUserInfo updateUserInfo, Long userId) {
+        Users user = getById(userId);
+        user.setSchoolId(updateUserInfo.getSchoolId());
+        user.setStudentId(updateUserInfo.getStudentId());
+        return updateById(user);
+    }
+
+    @Override
+    public UserInfoVo getUserInfo(Long userId) {
+        Users users = getById(userId);
+        UserInfoVo userInfoVo = new UserInfoVo();
+        BeanUtils.copyProperties(users, userInfoVo);
+        userInfoVo.setPhoneNumber(DesensitizedUtil.mobilePhone(users.getPhoneNumber()));
+        userInfoVo.setBalance(String.format("%.2f",users.getBalance().floatValue()));
+        return userInfoVo;
     }
 }

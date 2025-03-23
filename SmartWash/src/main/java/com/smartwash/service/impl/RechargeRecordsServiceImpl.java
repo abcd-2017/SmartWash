@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Users;
 import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
+import com.smartwash.from.recharge_records.UserRechargeFrom;
 import com.smartwash.mapper.RechargeRecordsMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.IRechargeRecordsService;
@@ -14,8 +15,10 @@ import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -52,6 +55,24 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         }).toList());
 
         return rechargeRecordsVoPage;
+    }
+
+    @Transactional
+    @Override
+    public boolean userRecharge(UserRechargeFrom vo, Long userId) {
+        Users user = usersMapper.selectById(userId);
+        BigDecimal balance = BigDecimal.valueOf(vo.getAmount());
+        //1.充值表插入数据
+        RechargeRecords records = new RechargeRecords();
+        records.setUserId(userId);
+        records.setRechargeType(vo.getRechargeType());
+        records.setAmount(balance);
+        save(records);
+
+        //2.用户表中添加对应余额
+        usersMapper.addUserBalance(userId, balance);
+
+        return true;
     }
 
     private LambdaQueryWrapper<RechargeRecords> getRechargeRecordsLambdaQueryWrapper(SearchRechargeRecordsFrom rechargeRecordsFrom) {
