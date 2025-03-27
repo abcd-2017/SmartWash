@@ -1,4 +1,4 @@
-package com.smartwash.ui.page.userinfo
+package com.smartwash.ui.page.update_userinfo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,7 +6,7 @@ import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.user.UpdateUserInfo
 import com.smartwash.network.exception.NetworkException
-import com.smartwash.network.vo.SchoolName
+import com.smartwash.network.vo.school.SchoolName
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers

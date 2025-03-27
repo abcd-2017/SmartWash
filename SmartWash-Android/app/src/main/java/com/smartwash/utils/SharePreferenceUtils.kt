@@ -20,7 +20,7 @@ import kotlinx.coroutines.runBlocking
  * 存储工具
  */
 object SharePreferenceUtils {
-    private const val PREF_NAME = "SmartWashAndroid"
+    private val PREF_NAME = "SmartWashAndroid"
 
     //定义dataStore
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(PREF_NAME)
@@ -30,7 +30,7 @@ object SharePreferenceUtils {
     /**
      * 存数据
      */
-    fun <T> saveData(key: String, value: T) {
+    public fun <T> saveData(key: String, value: T) {
         runBlocking {
             when (value) {
                 is Int -> putIntData(key, value)

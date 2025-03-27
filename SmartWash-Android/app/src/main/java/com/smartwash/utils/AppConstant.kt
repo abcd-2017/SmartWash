@@ -9,4 +9,7 @@ object AppConstant {
 
     //请求超时时间
     const val REQUEST_TIMEOUT = 3000
+
+    //发短信间隔时间
+    const val SEND_CAPTCHA = 60
 }

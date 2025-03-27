@@ -1,9 +1,16 @@
 package com.smartwash.network.api
 
+import com.smartwash.network.annotation.RequireAuthorization
 import com.smartwash.network.entity.ResponseData
+import com.smartwash.network.entity.user.LoginUser
+import com.smartwash.network.entity.user.RegisterUser
+import com.smartwash.network.entity.user.UpdateUserInfo
+import com.smartwash.network.vo.user.UserInfoVo
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 
 /**
@@ -13,7 +20,7 @@ interface UserApi {
     /**
      * 根据手机号获取验证码
      */
-    @GET("/auth/user/Captcha/{phoneNumber}")
+    @GET("/auth/user/captcha/{phoneNumber}")
     suspend fun getCaptcha(
         @Path("phoneNumber") phoneNumber: String
     ): ResponseData<String>
@@ -23,8 +30,7 @@ interface UserApi {
      */
     @POST("/auth/user/register")
     suspend fun register(
-        username: String,
-        password: String
+        @Body registerUser: RegisterUser
     ): ResponseData<String>
 
     /**
@@ -32,6 +38,38 @@ interface UserApi {
      */
     @POST("/auth/user/login")
     suspend fun login(
-        username: String, password: String
+        @Body loginUser: LoginUser
     ): ResponseData<String>
+
+    /**
+     * 完善用户信息
+     */
+    @RequireAuthorization
+    @POST("/web/auth/user/updateUserInfo")
+    suspend fun updateUserInfo(
+        @Body updateUser: UpdateUserInfo
+    ): ResponseData<String>
+
+    /**
+     * 获取当前登录用户学校id
+     */
+    @RequireAuthorization
+    @POST("/web/auth/user/getUserSchool")
+    suspend fun getUserSchoolId(): ResponseData<Long>
+
+    /**
+     * 判断当前学号是否已经存在
+     */
+    @RequireAuthorization
+    @GET("/web/auth/user/getUserByStudentId")
+    suspend fun getUserByStudentId(
+        @Query("studentId") studentId: String
+    ): ResponseData<Boolean>
+
+    /**
+     * 获取用户详细信息
+     */
+    @RequireAuthorization
+    @GET("/web/auth/user/getUserInfo")
+    suspend fun getUserInfo(): ResponseData<UserInfoVo>
 }

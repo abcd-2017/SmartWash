@@ -1,4 +1,4 @@
-package com.smartwash.ui.page.userinfo
+package com.smartwash.ui.page.update_userinfo
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.smartwash.network.vo.SchoolName
+import com.smartwash.network.vo.school.SchoolName
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.utils.RequestState
 

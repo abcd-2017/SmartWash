@@ -1,4 +1,287 @@
 package com.smartwash.ui.page.laundry
 
-class LaundryPage {
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.smartwash.utils.RequestState
+
+@Composable
+fun LaundryPage(
+    laundryViewModel: LaundryViewModel = hiltViewModel()
+) {
+    val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
+    val laundryItems by laundryViewModel.laundryItems.collectAsState()
+    var selectItemId by remember { mutableLongStateOf(-1) }
+    var totalPrice by remember { mutableFloatStateOf(0f) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        laundryViewModel.getLaundryItem()
+    }
+
+    when (getLaundryItemState) {
+        is RequestState.Error -> {
+            Toast.makeText(
+                LocalContext.current,
+                (getLaundryItemState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            laundryViewModel.resetGetLaundryItemState()
+        }
+
+        else -> {}
+    }
+
+    if (showDialog) {
+        AlertDialog(onDismissRequest = { showDialog = false }, confirmButton = {
+            Button(onClick = { showDialog = false }) { Text("确认") }
+        }, text = { Text("请选择套餐", style = MaterialTheme.typography.titleMedium) })
+    }
+
+    Scaffold(bottomBar = {
+        Surface(
+            modifier = Modifier.fillMaxWidth(), shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "预估费用",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        text = "¥${totalPrice}",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Button(
+                    onClick = {
+                        if (selectItemId == -1L) {
+                            showDialog = true
+                        } else {
+                            laundryViewModel.reservationLaundry(selectItemId, totalPrice)
+                        }
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.width(160.dp)
+                ) {
+                    Text("确认预约")
+                }
+            }
+        }
+    }, topBar = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "预约寄存", fontSize = 18.sp, fontWeight = FontWeight.Bold
+            )
+        }
+    }) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            item { // 选择投递柜
+                Text(
+                    text = "选择投递柜",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clickable { },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "第一教学楼",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "A区投递柜",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                        TextButton(onClick = { /* TODO: Handle change location */ }) {
+                            Text("更换")
+                        }
+                    }
+                }
+            }
+
+            item {  // 衣物类型
+                Text(
+                    text = " 洗护套餐",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                )
+            }
+
+            items(laundryItems) { item ->
+                LaundryTypeItem(
+                    title = item.itemName,
+                    description = item.description,
+                    isSelected = selectItemId == item.itemId,
+                    price = "¥${item.basePrice}"
+                ) {
+                    selectItemId = item.itemId
+                    totalPrice = item.basePrice
+                }
+            }
+            item {
+                // 注意事项
+                Text(
+                    text = "注意事项",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LaundryTypeItem(
+    title: String, description: String, isSelected: Boolean, price: String, cardClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable { cardClick() },
+        shape = RoundedCornerShape(12.dp),
+        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(8f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+//                Icon(
+//                    imageVector = icon,
+//                    contentDescription = null,
+//                    tint = MaterialTheme.colorScheme.primary,
+//                    modifier = Modifier.size(24.dp)
+//                )
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = description,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+            Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.End) {
+                Text(
+                    text = price,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
 }

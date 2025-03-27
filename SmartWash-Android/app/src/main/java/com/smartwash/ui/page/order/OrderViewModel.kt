@@ -1,10 +1,10 @@
-package com.smartwash.ui.page.index
+package com.smartwash.ui.page.order
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class IndexViewModel @Inject constructor() : ViewModel() {
+class OrderViewModel @Inject constructor() : ViewModel() {
 
 }
