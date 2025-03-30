@@ -6,6 +6,11 @@
         set balance = balance + #{balance}
         where user_id = #{userId};
     </update>
+    <update id="decrUserBalance">
+        update users
+        set balance = balance - #{amount}
+        where user_id = #{userId};
+    </update>
 
     <select id="getUsersByPhoneNumber" resultType="com.smartwash.entity.Users"
             parameterType="java.lang.String">

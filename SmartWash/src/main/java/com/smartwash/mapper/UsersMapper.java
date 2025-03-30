@@ -21,4 +21,6 @@ public interface UsersMapper extends BaseMapper<Users> {
     Users getUserByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 
     void addUserBalance(@Param("userId")Long userId, @Param("balance")BigDecimal balance);
+
+    void decrUserBalance(Long userId, BigDecimal amount);
 }

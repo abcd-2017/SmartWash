@@ -21,4 +21,8 @@ public interface OrdersMapper extends BaseMapper<Orders> {
     Orders getOrderByOrderNo(String orderNo);
 
     Page<OrdersVo> searchOrders(Page<OrdersVo> page, @Param("searchForm") SearchOrderFrom searchForm);
+
+    OrdersVo getOrderByOrderId(Long orderId);
+
+    void updateOrderStatus(Long orderId, String status);
 }

@@ -35,10 +35,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PaymentPage() {
+fun PaymentPage(
+    navController: NavHostController,
+    long: Long?
+) {
     var showRechargeDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var selectedPaymentMethod by remember { mutableStateOf("balance") }

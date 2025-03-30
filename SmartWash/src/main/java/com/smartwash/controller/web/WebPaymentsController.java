@@ -1,18 +1,15 @@
 package com.smartwash.controller.web;
 
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.PayType;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.common.Result;
-import com.smartwash.from.payment.AddPaymentFrom;
-import com.smartwash.from.payment.SearchPaymentFrom;
-import com.smartwash.from.payment.UpdatePaymentFrom;
+import com.smartwash.from.payment.PaymentOrderFrom;
 import com.smartwash.service.IPaymentsService;
-import com.smartwash.vo.payment.PaymentVo;
+import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,13 +24,13 @@ import java.util.Map;
  * @since 2025-03-06
  */
 @RestController
-@RequestMapping("/web/payments")
+@RequestMapping("/web")
 public class WebPaymentsController {
     @Autowired
     private IPaymentsService paymentsService;
 
     //获取支付类型
-    @GetMapping("/payType")
+    @GetMapping("/payments/payType")
     public Result<Map<String, String>> getPayType() {
         PayType[] values = PayType.values();
         Map<String, String> map = new HashMap<>();
@@ -44,7 +41,7 @@ public class WebPaymentsController {
     }
 
     //获取支付状态
-    @GetMapping("/payStatus")
+    @GetMapping("/payments/payStatus")
     public Result<Map<String, String>> getPayStatus() {
         PaymentStatus[] values = PaymentStatus.values();
         Map<String, String> map = new HashMap<>();
@@ -54,14 +51,13 @@ public class WebPaymentsController {
         return Result.ok(map);
     }
 
-    //获取所有付款记录
-    @GetMapping("/all")
-    public Result<Page<PaymentVo>> getAllPayments(SearchPaymentFrom paymentFrom) {
-        String phoneNumber = paymentFrom.getPhoneNumber();
-        if (StringUtils.hasText(phoneNumber)) {
-            if (phoneNumber.length() > 11) return Result.failMsg("手机号长度错误");
-            if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) return Result.failMsg("手机号格式错误");
+    @PostMapping("/auth/payments/payment")
+    public Result<String> authPayment(@RequestBody @Valid PaymentOrderFrom orderFrom) {
+        LoginUser user = UserContextHolder.getUser();
+        if (paymentsService.paymentOrder(user, orderFrom)) {
+            return Result.ok("支付成功");
+        } else {
+            return Result.failMsg("支付失败");
         }
-        return Result.ok(paymentsService.getAllPayments(paymentFrom));
     }
 }

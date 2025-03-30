@@ -2,6 +2,7 @@ package com.smartwash.config;
 
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.UserAuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindingResult;
@@ -34,6 +35,12 @@ public class ExceptionControllerAdvice {
     public Result<String> handleUserAuthenticationException(UserAuthenticationException e) {
         log.error("用户登录状态异常：{}，异常类型：{}", e.getMessage(), e.getClass());
         return Result.build(null, ResultCodeEnum.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(value = CustomExceptions.class)
+    public Result<String> runTimeException(Throwable throwable) {
+        log.error(throwable.getMessage());
+        return Result.failMsg(throwable.getMessage());
     }
 
     @ExceptionHandler(value = Throwable.class)

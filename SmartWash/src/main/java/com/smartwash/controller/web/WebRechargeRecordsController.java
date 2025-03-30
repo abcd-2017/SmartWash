@@ -32,7 +32,7 @@ public class WebRechargeRecordsController {
         if (rechargeRecordsService.userRecharge(vo, loginUser.getUserId())) {
             return Result.ok("充值成功");
         } else {
-            return Result.ok("充值失败");
+            return Result.failMsg("充值失败");
         }
     }
 }

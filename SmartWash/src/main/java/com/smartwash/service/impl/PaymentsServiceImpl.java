@@ -4,25 +4,32 @@ package com.smartwash.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.Orders;
 import com.smartwash.entity.Payments;
 import com.smartwash.entity.Users;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.payment.AddPaymentFrom;
+import com.smartwash.from.payment.PaymentOrderFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.from.payment.UpdatePaymentFrom;
 import com.smartwash.mapper.OrdersMapper;
 import com.smartwash.mapper.PaymentsMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.IPaymentsService;
+import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.payment.PaymentVo;
 import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * <p>
@@ -67,6 +74,39 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         }).toList());
 
         return paymentVoPage;
+    }
+
+    @Transactional
+    @Override
+    public boolean paymentOrder(LoginUser user, PaymentOrderFrom orderFrom) {
+        Orders orders = ordersMapper.selectById(orderFrom.getOrderId());
+        if (orders == null || !Objects.equals(orders.getUserId(), user.getUserId())) {
+            throw new CustomExceptions("订单错误");
+        }
+        if (!Objects.equals(orders.getStatus(), OrderStatus.PENDING_PAYMENT.getStatus())) {
+            throw new CustomExceptions("该订单已经支付");
+        }
+        BigDecimal amount = BigDecimal.valueOf(orderFrom.getAmount());
+        Users users = usersMapper.selectById(user.getUserId());
+        if (amount.compareTo(users.getBalance()) > 0) {
+            throw new CustomExceptions("余额不足");
+        }
+
+        //1.更新支付表
+        Payments payments = new Payments();
+        if (users.getBalance().compareTo(amount) < 0) return false;
+        payments.setOrderId(orderFrom.getOrderId());
+        payments.setUserId(user.getUserId());
+        payments.setAmount(amount);
+        payments.setPaymentMethod(orderFrom.getPaymentType());
+        saveOrUpdate(payments);
+
+        //2.用户余额扣减
+        usersMapper.decrUserBalance(user.getUserId(), payments.getAmount());
+
+        //3.修改订单状态
+        ordersMapper.updateOrderStatus(orderFrom.getOrderId(), OrderStatus.PENDING_SHIPMENT.getStatus());
+        return true;
     }
 
     private LambdaQueryWrapper<Payments> getRechargeRecordsLambdaQueryWrapper(SearchPaymentFrom searchUserFrom) {

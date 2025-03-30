@@ -9,6 +9,8 @@ import com.smartwash.from.laundry_item.UpdateLaundryItemsFrom;
 import com.smartwash.vo.laudry.LaundryPackageVo;
 import jakarta.validation.Valid;
 
+import java.util.List;
+
 /**
  * <p>
  * 服务类
@@ -28,4 +30,6 @@ public interface ILaundryItemsService extends IService<LaundryItems> {
     Boolean deleteLaundryPackage(String ids);
 
     LaundryItems getSearchByName(String itemName);
+
+    List<LaundryPackageVo> getAllItem();
 }

@@ -3,6 +3,8 @@ package com.smartwash.mapper;
 import com.smartwash.entity.Lockers;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
+import java.util.List;
+
 /**
  * <p>
  *  Mapper 接口
@@ -13,4 +15,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface LockersMapper extends BaseMapper<Lockers> {
 
+    List<Lockers> getLockersBySchoolId(Long schoolId);
 }

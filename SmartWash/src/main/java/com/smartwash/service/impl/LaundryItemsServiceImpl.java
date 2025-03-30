@@ -81,4 +81,14 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
         queryWrapper.eq(LaundryItems::getItemName, itemName);
         return getOne(queryWrapper);
     }
+
+    @Override
+    public List<LaundryPackageVo> getAllItem() {
+        List<LaundryItems> laundryItems = list();
+        return laundryItems.stream().map(it -> {
+            LaundryPackageVo LaundryPackageVo = new LaundryPackageVo();
+            BeanUtils.copyProperties(it, LaundryPackageVo);
+            return LaundryPackageVo;
+        }).toList();
+    }
 }
