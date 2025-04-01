@@ -14,20 +14,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.smartwash.App
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
+import com.smartwash.ui.page.laundry.LaundryPage
 import com.smartwash.ui.page.login.LoginPage
 import com.smartwash.ui.page.order.OrderPage
+import com.smartwash.ui.page.payment.PaySuccessPage
+import com.smartwash.ui.page.payment.PaymentPage
 import com.smartwash.ui.page.recharge.RechargePage
 import com.smartwash.ui.page.register.RegisterPage
 import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.setting.SettingPage
 import com.smartwash.ui.page.update_userinfo.UpdateUserInfoPage
-import com.smartwash.ui.payment.PaymentPage
 import com.smartwash.ui.theme.SmartWashAndroidTheme
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.SharePreferenceUtils
@@ -106,14 +111,56 @@ class MainActivity : ComponentActivity() {
                         composable(PageConstant.Recharge.text) {
                             RechargePage(navController)
                         }
-                        composable(PageConstant.Order.text) {
-                            OrderPage(navController)
+                        composable(
+                            route = "${PageConstant.Order.text}/{itemId}", arguments = listOf(
+                                navArgument("itemId") {
+                                    type = NavType.IntType
+                                    defaultValue = 0
+                                }
+                            )
+                        ) { entity ->
+                            OrderPage(navController, entity.arguments?.getInt("itemId") ?: 0)
+                        }
+                        composable(
+                            route = "${PageConstant.OrderDetail.text}/{orderId}",
+                            arguments = listOf(
+                                navArgument("orderId") {
+                                    type = NavType.LongType
+                                    defaultValue = -1
+                                }
+                            )
+                        ) { entity ->
+                            OrderDetailPage(
+                                navController,
+                                entity.arguments?.getLong("itemId") ?: -1
+                            )
                         }
                         composable(PageConstant.Service.text) {
                             ServicePage()
                         }
-                        composable(PageConstant.Payment.text) {
-                            PaymentPage()
+                        composable(
+                            route = "${PageConstant.Payment.text}/{orderId}",
+                            arguments = listOf(
+                                navArgument("orderId") {
+                                    type = NavType.LongType
+                                    defaultValue = -1
+                                }
+                            )
+                        ) { entity ->
+                            PaymentPage(navController, entity.arguments?.getLong("orderId"))
+                        }
+                        composable(PageConstant.Laundry.text) {
+                            LaundryPage(navController)
+                        }
+                        composable(
+                            route = "${PageConstant.PaySuccess.text}/{orderId}",
+                            arguments = listOf(
+                                navArgument("orderId") {
+                                    type = NavType.LongType
+                                    defaultValue = -1
+                                }
+                            )) { entity ->
+                            PaySuccessPage(navController, entity.arguments?.getLong("orderId"))
                         }
                     }
                 }

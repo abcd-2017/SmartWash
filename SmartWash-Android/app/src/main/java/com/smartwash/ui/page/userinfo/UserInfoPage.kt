@@ -52,7 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.utils.RequestState
@@ -60,13 +60,15 @@ import com.smartwash.utils.RequestState
 @SuppressLint("DefaultLocale")
 @Composable
 fun UserInfoPage(
-    navController: NavController,
+    navController: NavHostController,
+    homePageNavController: NavHostController,
     userInfoViewModel: UserInfoViewModel = hiltViewModel()
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
     val userInfo by userInfoViewModel.userInfo.collectAsState()
+    val orderItemCountVo by userInfoViewModel.orderItemCount.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(homePageNavController.currentBackStackEntry) {
         userInfoViewModel.getUserInfo()
     }
     when (userInfoStatus) {
@@ -79,7 +81,9 @@ fun UserInfoPage(
             userInfoViewModel.resetState()
         }
 
-        else -> {}
+        else -> {
+            userInfoViewModel.resetState()
+        }
     }
 
     Column(
@@ -144,11 +148,11 @@ fun UserInfoPage(
         Spacer(modifier = Modifier.height(8.dp))
 
         OrderManagementSection(
-            pendingPaymentCount = 2,
-            processingCount = 1,
-            pendingPickupCount = 1,
-            onViewAllOrders = {
-                navController.navigate(PageConstant.Order.text)
+            pendingPaymentCount = orderItemCountVo?.pendingPaymentCount ?: 0,
+            processingCount = orderItemCountVo?.processingCount ?: 0,
+            pendingPickupCount = orderItemCountVo?.pendingPickupCount ?: 0,
+            onViewAllOrders = { item ->
+                navController.navigate("${PageConstant.Order.text}/$item")
             }
         )
 
@@ -270,7 +274,7 @@ private fun OrderManagementSection(
     pendingPaymentCount: Int,
     processingCount: Int,
     pendingPickupCount: Int,
-    onViewAllOrders: () -> Unit
+    onViewAllOrders: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -285,7 +289,7 @@ private fun OrderManagementSection(
                     icon = Icons.Default.Schedule,
                     title = "待支付",
                     count = pendingPaymentCount,
-                ) {}
+                ) { onViewAllOrders(1) }
             }
 
             item {
@@ -293,21 +297,21 @@ private fun OrderManagementSection(
                     icon = Icons.Default.LocalLaundryService,
                     title = "清洗中",
                     count = processingCount,
-                ) {}
+                ) { onViewAllOrders(3) }
             }
             item {
                 OrderStatusCard(
                     icon = Icons.Default.Inventory,
                     title = "待取件",
                     count = pendingPickupCount,
-                ) {}
+                ) { onViewAllOrders(4) }
             }
             item {
                 OrderStatusCard(
                     icon = Icons.Default.History,
                     title = "历史订单",
                     subtitle = "查看全部",
-                    onClick = onViewAllOrders,
+                    onClick = { onViewAllOrders(0) },
                 )
             }
         }

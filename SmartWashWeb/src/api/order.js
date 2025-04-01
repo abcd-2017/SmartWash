@@ -30,3 +30,15 @@ export function deleteOrder(ids) {
         throw new Error(res.message || '删除失败')
     })
 }
+
+
+export function updateOrderStatus(data) {
+    return request({
+        url: `/admin/orders/updateOrderStatus`,
+        method: 'post',
+        data
+    }).then(res => {
+        if (res.code === 200) return res.data
+        throw new Error(res.message || '删除失败')
+    })
+}

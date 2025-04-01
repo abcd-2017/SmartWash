@@ -3,10 +3,9 @@ package com.smartwash.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Orders;
-import com.smartwash.from.order.OrderListFrom;
-import com.smartwash.from.order.ReservationOrderFrom;
-import com.smartwash.from.order.SearchOrderFrom;
+import com.smartwash.from.order.*;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 
@@ -30,5 +29,10 @@ public interface IOrdersService extends IService<Orders> {
 
     OrdersVo getOrderByOrderId(Long orderId);
 
-    List<ShowOrderVo> getOrderList(OrderListFrom orderListFrom);
+    List<ShowOrderVo> getOrderList(OrderListFrom orderListFrom, LoginUser loginUser);
+
+    //获取各状态订单数量
+    OrderItemCountVo getOrderItemCount(OrderItemCountFrom itemCountFrom, Long userId);
+
+    Boolean updateOrderStatus(UpdateOrderStatus orderStatus);
 }

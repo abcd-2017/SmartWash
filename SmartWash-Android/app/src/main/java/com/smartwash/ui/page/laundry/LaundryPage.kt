@@ -18,16 +18,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,10 +50,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.smartwash.ui.page.PageConstant
 import com.smartwash.utils.RequestState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LaundryPage(
+    navController: NavHostController,
     laundryViewModel: LaundryViewModel = hiltViewModel()
 ) {
     val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
@@ -57,6 +66,10 @@ fun LaundryPage(
     var totalPrice by remember { mutableFloatStateOf(0f) }
     var showDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val reservationState by laundryViewModel.reservationState.collectAsState()
+    val orderId by laundryViewModel.orderId.collectAsState()
+
     LaunchedEffect(Unit) {
         laundryViewModel.getLaundryItem()
     }
@@ -64,11 +77,35 @@ fun LaundryPage(
     when (getLaundryItemState) {
         is RequestState.Error -> {
             Toast.makeText(
-                LocalContext.current,
+                context,
                 (getLaundryItemState as RequestState.Error).message,
                 Toast.LENGTH_SHORT
             ).show()
             laundryViewModel.resetGetLaundryItemState()
+        }
+
+        else -> {}
+    }
+
+    when (reservationState) {
+        is RequestState.Success -> {
+            LaunchedEffect(reservationState) {
+                navController.navigate("${PageConstant.Payment.text}/${orderId}") {
+                    // 避免重复堆栈
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+
+        is RequestState.Error -> {
+            Toast.makeText(
+                context,
+                (reservationState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            laundryViewModel.resetReservationState()
         }
 
         else -> {}
@@ -86,7 +123,8 @@ fun LaundryPage(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(bottom = 12.dp)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -115,22 +153,36 @@ fun LaundryPage(
                     shape = RoundedCornerShape(24.dp),
                     modifier = Modifier.width(160.dp)
                 ) {
-                    Text("确认预约")
+                    when (reservationState) {
+                        is RequestState.Loading -> CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+
+                        else -> {
+                            Text("确认预约")
+                        }
+                    }
                 }
             }
         }
     }, topBar = {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "预约寄存", fontSize = 18.sp, fontWeight = FontWeight.Bold
-            )
-        }
+        TopAppBar(
+            title = {
+                Text(
+                    text = "预约寄存", fontSize = 18.sp, fontWeight = FontWeight.Bold
+                )
+            }, navigationIcon = {
+                IconButton(modifier = Modifier.padding(10.dp), onClick = {
+                    navController.navigateUp()
+                }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                        contentDescription = null
+                    )
+                }
+            }
+        )
     }) { paddingValues ->
         LazyColumn(
             modifier = Modifier

@@ -1,14 +1,12 @@
 package com.smartwash.ui.page
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LocalLaundryService
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class PageConstant(val text: String, val description: String) {
@@ -19,8 +17,11 @@ sealed class PageConstant(val text: String, val description: String) {
     data object Setting : PageConstant("Setting", "设置页面")
     data object Recharge : PageConstant("Recharge", "充值页面")
     data object Order : PageConstant("Order", "订单页面")
+    data object OrderDetail : PageConstant("OrderDetail", "订单详情页面")
     data object Service : PageConstant("Service", "服务页面")
     data object Payment : PageConstant("Payment", "支付页面")
+    data object Laundry : PageConstant("Laundry", "洗衣预约页面")
+    data object PaySuccess : PageConstant("PaySuccess", "支付成功页面")
 }
 
 sealed class HomePageConstant(
@@ -30,16 +31,16 @@ sealed class HomePageConstant(
     val selectIcon: ImageVector
 ) {
     data object Index : HomePageConstant("Index", "首页", Icons.Outlined.Home, Icons.Filled.Home)
-    data object Laundry :
+    data object Service :
         HomePageConstant(
-            "Laundry",
-            "洗衣",
-            Icons.Outlined.LocalLaundryService,
-            Icons.Filled.LocalLaundryService
+            "Service",
+            "服务",
+            Icons.AutoMirrored.Outlined.List,
+            Icons.AutoMirrored.Filled.List
         )
 
-    data object Locker :
-        HomePageConstant("Locker", "寄存柜", Icons.Outlined.Receipt, Icons.Filled.Receipt)
+//    data object Locker :
+//        HomePageConstant("Locker", "寄存柜", Icons.Outlined.Receipt, Icons.Filled.Receipt)
 
     data object UserInfo :
         HomePageConstant("UserInfo", "主页", Icons.Outlined.Person, Icons.Filled.Person)

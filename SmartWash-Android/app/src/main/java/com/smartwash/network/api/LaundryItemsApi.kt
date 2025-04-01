@@ -6,6 +6,6 @@ import retrofit2.http.GET
 
 interface LaundryItemsApi {
 
-    @GET("web/laundryItems/all")
+    @GET("/web/laundryItems/all")
     suspend fun getLaundryItems(): ResponseData<List<LaundryItem>>
 }

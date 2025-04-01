@@ -1,4 +1,3 @@
 package com.smartwash.network.entity
 
-class OrderPayment {
-}
+data class OrderPayment(val orderId: Long, val amount: Float, val paymentType: String)

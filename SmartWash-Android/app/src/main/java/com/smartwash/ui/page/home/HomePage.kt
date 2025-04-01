@@ -44,8 +44,7 @@ import androidx.navigation.compose.rememberNavController
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.index.IndexPage
-import com.smartwash.ui.page.laundry.LaundryPage
-import com.smartwash.ui.page.locker.LockerPage
+import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.userinfo.UserInfoPage
 import com.smartwash.utils.RequestState
 
@@ -107,9 +106,13 @@ fun HomePage(
                     navController
                 )
             }
-            composable(HomePageConstant.Laundry.text) { LaundryPage() }
-            composable(HomePageConstant.Locker.text) { LockerPage() }
-            composable(HomePageConstant.UserInfo.text) { UserInfoPage(navController) }
+            composable(HomePageConstant.Service.text) { ServicePage() }
+            composable(HomePageConstant.UserInfo.text) {
+                UserInfoPage(
+                    navController,
+                    homePageNavController
+                )
+            }
         }
     }
 }
@@ -118,8 +121,7 @@ fun HomePage(
 fun BottomBar(navController: NavHostController) {
     val bottomNavItems = listOf(
         HomePageConstant.Index,
-        HomePageConstant.Laundry,
-        HomePageConstant.Locker,
+        HomePageConstant.Service,
         HomePageConstant.UserInfo
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()

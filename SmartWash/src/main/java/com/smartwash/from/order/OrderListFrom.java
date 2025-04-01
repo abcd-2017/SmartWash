@@ -6,4 +6,5 @@ import lombok.Data;
 @Data
 public class OrderListFrom extends BaseSearchFrom {
     private String status;
+    private Long lastOrderId;
 }

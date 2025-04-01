@@ -130,8 +130,14 @@
       <el-table-column label="创建时间" width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
+          <el-button
+            size="small"
+            type="primary"
+            @click="handleUpdateStatus(row)"
+            >修改状态</el-button
+          >
           <el-button size="small" type="danger" @click="handleDelete(row)"
             >删除</el-button
           >
@@ -148,6 +154,38 @@
       :page-size="listQuery.size"
       @current-change="handlePageChange"
     />
+
+    <!-- 修改状态对话框 -->
+    <el-dialog v-model="statusDialogVisible" title="修改订单状态" width="400px">
+      <el-form :model="statusForm" label-width="100px">
+        <el-form-item label="订单号">
+          <span>{{ statusForm.orderNo }}</span>
+        </el-form-item>
+        <el-form-item label="当前状态">
+          <el-tag :type="getStatusTagType(statusForm.currentStatus)">
+            {{ formatStatus(statusForm.currentStatus) }}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="新状态">
+          <el-select v-model="statusForm.newStatus" placeholder="请选择新状态">
+            <el-option
+              v-for="(desc, code) in statusOptions"
+              :key="code"
+              :label="desc"
+              :value="code"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="statusDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmUpdateStatus">
+            确认
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -155,7 +193,12 @@
 import { ref, reactive, onMounted, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import dayjs from "dayjs";
-import { getOrderStatus, getOrderList, deleteOrder } from "@/api/order";
+import {
+  getOrderStatus,
+  getOrderList,
+  deleteOrder,
+  updateOrderStatus,
+} from "@/api/order";
 import { getSchoolList } from "@/api/school";
 import { getLaundryList } from "@/api/laundry";
 
@@ -188,7 +231,14 @@ const timeRange = computed({
     listQuery.endTime = val?.[1] || null;
   },
 });
-
+// 状态更新相关
+const statusDialogVisible = ref(false);
+const statusForm = reactive({
+  orderId: null,
+  orderNo: "",
+  currentStatus: "",
+  newStatus: "",
+});
 // 初始化数据
 onMounted(async () => {
   await fetchStatus();
@@ -288,6 +338,34 @@ const handleDelete = async (row) => {
   }
 };
 
+// 打开修改状态对话框
+const handleUpdateStatus = (row) => {
+  statusForm.orderId = row.orderId;
+  statusForm.orderNo = row.orderNo;
+  statusForm.currentStatus = row.status;
+  statusForm.newStatus = "";
+  statusDialogVisible.value = true;
+};
+
+// 确认更新状态
+const confirmUpdateStatus = async () => {
+  if (!statusForm.newStatus) {
+    ElMessage.warning("请选择新状态");
+    return;
+  }
+
+  try {
+    await updateOrderStatus({
+      orderId: statusForm.orderId,
+      status: statusForm.newStatus,
+    });
+    ElMessage.success("状态更新成功");
+    statusDialogVisible.value = false;
+    fetchData();
+  } catch (error) {
+    ElMessage.error(error.message || "状态更新失败");
+  }
+};
 // 状态标签颜色
 const getStatusTagType = (status) => {
   switch (status) {

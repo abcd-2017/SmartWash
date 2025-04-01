@@ -26,6 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.home.ServiceCard
 import com.smartwash.ui.page.home.StatusCard
@@ -45,6 +48,8 @@ fun IndexPage(
     navController: NavHostController,
     viewModel: IndexViewModel = hiltViewModel()
 ) {
+    var showPage by remember { mutableStateOf(false) };
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -118,7 +123,7 @@ fun IndexPage(
                 title = "立即预约",
                 subtitle = "15元/件起",
                 onClick = {
-                    pageNavController.navigate(HomePageConstant.Laundry.text) {
+                    navController.navigate(PageConstant.Laundry.text) {
                         // 避免重复堆栈
                         popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
@@ -132,7 +137,7 @@ fun IndexPage(
                 title = "取回衣物",
                 subtitle = "扫描取件",
                 onClick = {
-                    navController.navigate(PageConstant.Payment.text)
+                    showPage = true
                 }
             )
         }

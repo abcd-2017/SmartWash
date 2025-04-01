@@ -17,105 +17,105 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DryCleaning
-import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServicePage() {
-    val services = listOf(
-        ServiceItem(
-            title = "标准洗衣",
-            description = "普通衣物清洗、烘干、折叠",
-            price = "15元/件起",
-            icon = Icons.Default.LocalLaundryService,
-            onClick = {}
-        ),
-        ServiceItem(
-            title = "快速洗衣",
-            description = "2小时内完成清洗",
-            price = "25元/件起",
-            icon = Icons.Default.Speed,
-            onClick = {}
-        ),
-        ServiceItem(
-            title = "干洗服务",
-            description = "专业干洗，适合特殊面料",
-            price = "35元/件起",
-            icon = Icons.Default.DryCleaning,
-            onClick = {}
-        ),
-        ServiceItem(
-            title = "取回服务",
-            description = "扫描取件，快速便捷",
-            price = "免费",
-            icon = Icons.Default.LocalMall,
-            onClick = {}
-        )
+fun ServicePage(
+    serviceViewModel: ServiceViewModel = hiltViewModel()
+) {
+    val getLaundryItemState by serviceViewModel.getLaundryItemState.collectAsState()
+    val laundryItems by serviceViewModel.laundryItems.collectAsState()
+
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        serviceViewModel.getLaundryItem()
+    }
+
+    val service = ServiceItem(
+        title = "取回服务",
+        description = "扫描取件，快速便捷",
+        price = "免费",
+        icon = Icons.Default.LocalMall,
+        onClick = {}
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("洗衣服务") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "洗衣服务", fontSize = 18.sp, fontWeight = FontWeight.Bold
                 )
-            )
+            }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            item {
-                // 服务说明
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp)
+
+        item {
+            // 服务说明
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "服务说明",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "• 所有服务均包含免费取送\n• 标准服务24小时内完成\n• 支持在线支付和积分抵扣",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                        )
-                    }
+                    Text(
+                        text = "服务说明",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "• 所有服务均包含免费取送\n• 标准服务24小时内完成\n• 支持在线支付和积分抵扣",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
                 }
             }
+        }
 
-            items(services) { service ->
-                ServiceItemCard(service = service)
-            }
+        items(laundryItems) { service ->
+            ServiceItemCard(
+                ServiceItem(
+                    service.itemName,
+                    service.description,
+                    service.basePrice.toString(),
+                    null
+                ) {}
+            )
+        }
+
+        item {
+            ServiceItemCard(service = service)
         }
     }
 }
@@ -138,27 +138,29 @@ private fun ServiceItemCard(service: ServiceItem) {
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(8f)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = service.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (service.icon != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = service.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
                 }
-                Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
                         text = service.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = service.description,
@@ -168,7 +170,7 @@ private fun ServiceItemCard(service: ServiceItem) {
                 }
             }
             Text(
-                text = service.price,
+                text = "${if (service.icon == null) "￥" else ""}${service.price}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -181,6 +183,6 @@ data class ServiceItem(
     val title: String,
     val description: String,
     val price: String,
-    val icon: ImageVector,
+    val icon: ImageVector?,
     val onClick: () -> Unit
 )

@@ -4,12 +4,14 @@ package com.smartwash.controller.web;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
+import com.smartwash.from.order.OrderItemCountFrom;
 import com.smartwash.from.order.OrderListFrom;
 import com.smartwash.from.order.ReservationOrderFrom;
 import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
+import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import jakarta.validation.Valid;
@@ -66,6 +68,13 @@ public class WebOrdersController {
 
     @PostMapping("/auth/orders/getOrderList")
     public Result<List<ShowOrderVo>> getOrderList(@RequestBody OrderListFrom orderListFrom) {
-        return Result.ok(ordersService.getOrderList(orderListFrom));
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.getOrderList(orderListFrom, loginUser));
+    }
+
+    @PostMapping("/auth/orders/getOrderItemCount")
+    public Result<OrderItemCountVo> getOrderItemCount(@RequestBody OrderItemCountFrom itemCountFrom) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.getOrderItemCount(itemCountFrom, loginUser.getUserId()));
     }
 }

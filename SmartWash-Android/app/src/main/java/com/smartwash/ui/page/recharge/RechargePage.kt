@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -113,11 +115,22 @@ fun RechargePage(
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(
-                text = if (selectedAmount != null) "确认支付 ¥${
-                    String.format("%.2f", selectedAmount)
-                }" else "确认支付", fontSize = 16.sp, fontWeight = FontWeight.Medium
-            )
+            when (rechargeState) {
+                is RequestState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+
+                else -> {
+                    Text(
+                        text = if (selectedAmount != null) "确认支付 ¥${
+                            String.format("%.2f", selectedAmount)
+                        }" else "确认支付", fontSize = 16.sp, fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+
         }
     }) { paddingValues ->
         LazyColumn(

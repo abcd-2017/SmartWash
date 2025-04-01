@@ -2,6 +2,7 @@ package com.smartwash.network
 
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
+import com.smartwash.network.api.PaymentApi
 import com.smartwash.network.api.RechargeApi
 import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
@@ -63,5 +64,10 @@ class RetrofitClient() {
     @Provides
     fun getOrderApi(retrofit: Retrofit): OrderApi {
         return retrofit.create(OrderApi::class.java)
+    }
+
+    @Provides
+    fun getPaymentApi(retrofit: Retrofit): PaymentApi {
+        return retrofit.create(PaymentApi::class.java)
     }
 }

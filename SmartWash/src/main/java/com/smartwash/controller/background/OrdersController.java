@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
 import com.smartwash.from.order.SearchOrderFrom;
+import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.vo.order.OrdersVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,5 +47,10 @@ public class OrdersController {
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteLockers(@PathVariable("ids") String ids) {
         return Result.ok(ordersService.deleteOrders(ids));
+    }
+
+    @PostMapping("updateOrderStatus")
+    public Result<Boolean> updateOrderStatus(@RequestBody UpdateOrderStatus orderStatus) {
+        return Result.ok(ordersService.updateOrderStatus(orderStatus));
     }
 }
