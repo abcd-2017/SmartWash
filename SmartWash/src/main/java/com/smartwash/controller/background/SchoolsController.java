@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.entity.Schools;
 import com.smartwash.from.schools.AddSchoolsFrom;
 import com.smartwash.from.schools.SearchSchoolsFrom;
 import com.smartwash.from.schools.UpdateSchoolsFrom;
@@ -11,6 +12,8 @@ import com.smartwash.vo.schools.SchoolsVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 /**
  * <p>
@@ -45,7 +48,8 @@ public class SchoolsController {
     //修改学校
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
-        if (schoolsService.getSearchByName(schoolsFrom.getSchoolName()) != null) {
+        Schools school = schoolsService.getSearchByName(schoolsFrom.getSchoolName());
+        if (school != null && !Objects.equals(school.getSchoolId(), schoolsFrom.getSchoolId())) {
             return Result.failMsg("该学校已经存在了");
         }
         schoolsService.updateSchool(schoolsFrom);

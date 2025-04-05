@@ -2,6 +2,7 @@ package com.smartwash.service.impl;
 
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -23,6 +24,8 @@ import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -60,11 +63,13 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return true;
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     @Override
     public Long createOrder(ReservationOrderFrom reservationOrderFrom, LoginUser loginUser) {
         Users user = usersMapper.selectById(loginUser.getUserId());
         List<Lockers> lockers = lockersMapper.getLockersBySchoolId(user.getSchoolId());
         Orders orders = new Orders();
+        //查找空余的寄存柜
         for (Lockers locker : lockers) {
             if (locker.getStatus().equals(LockerStatusEnum.FREE.getValue())) {
                 locker.setStatus(LockerStatusEnum.USE.getValue());
@@ -124,12 +129,76 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return itemCountVo;
     }
 
+    @Transactional
     @Override
     public Boolean updateOrderStatus(UpdateOrderStatus orderStatus) {
-        LambdaUpdateWrapper<Orders> updateWrapper = new LambdaUpdateWrapper<Orders>()
-                .eq(Orders::getOrderId, orderStatus.getOrderId())
-                .set(Orders::getStatus, orderStatus.getStatus());
-        return update(updateWrapper);
+        Orders orders = getById(orderStatus.getOrderId());
+        //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
+        if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
+            List<Lockers> lockers = lockersMapper.getLockersBySchoolId(orders.getSchoolId());
+            for (Lockers locker : lockers) {
+                if (locker.getStatus().equals(LockerStatusEnum.FREE.getValue())) {
+                    locker.setStatus(LockerStatusEnum.USE.getValue());
+                    lockersMapper.updateById(locker);
+                    orders.setLockerId(locker.getLockerId());
+                    break;
+                }
+            }
+            if (orders.getLockerId() == null) {
+                throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
+            }
+            orders.setStatus(orderStatus.getStatus());
+            orders.setPickupCode(String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000)));
+            updateById(orders);
+            return true;
+        } else {
+            LambdaUpdateWrapper<Orders> updateWrapper = new LambdaUpdateWrapper<Orders>()
+                    .eq(Orders::getOrderId, orderStatus.getOrderId())
+                    .set(Orders::getStatus, orderStatus.getStatus());
+            return update(updateWrapper);
+        }
+    }
+
+    @Transactional
+    @Override
+    public Boolean pickupOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser) {
+        return nextStatusOrder(statusFrom, loginUser, OrderStatus.COMPLETED.getStatus());
+    }
+
+    @Transactional
+    @Override
+    public Boolean shippingOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser) {
+        return nextStatusOrder(statusFrom, loginUser, OrderStatus.WASHING.getStatus());
+    }
+
+    @Override
+    public List<Orders> getWashingOrder(LoginUser loginUser, int size) {
+        LambdaQueryWrapper<Orders> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Orders::getUserId, loginUser.getUserId())
+                    .and(q -> q.eq(Orders::getStatus, OrderStatus.WASHING.getStatus()))
+                    .orderByDesc(Orders::getUpdatedAt)
+                    .last("limit " + size);
+        return list(queryWrapper);
+    }
+
+    private Boolean nextStatusOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser, String nextStatus) {
+        //1.验证取件码是否正确
+        Orders orders = getById(statusFrom.getOrderId());
+        if (!Objects.equals(loginUser.getUserId(), orders.getUserId())) {
+            throw new CustomExceptions("订单错误");
+        }
+        if (!Objects.equals(orders.getPickupCode(), statusFrom.getPickupCode())) {
+            throw new CustomExceptions("取件码错误");
+        }
+        //2.修改订单状态
+        orders.setStatus(nextStatus);
+
+        //3.解除被占用的寄存柜
+        Long lockerId = orders.getLockerId();
+        lockersMapper.unLocker(lockerId, LockerStatusEnum.FREE.getValue());
+
+        ordersMapper.nextStatus(orders.getOrderId(), nextStatus);
+        return true;
     }
 
     private Integer getItemCount(Long userId, String status) {

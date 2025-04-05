@@ -11,6 +11,7 @@ import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.vo.schools.SchoolsVo;
 import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
@@ -131,7 +132,10 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         UserInfoVo userInfoVo = new UserInfoVo();
         BeanUtils.copyProperties(users, userInfoVo);
         userInfoVo.setPhoneNumber(DesensitizedUtil.mobilePhone(users.getPhoneNumber()));
-        userInfoVo.setBalance(String.format("%.2f",users.getBalance().floatValue()));
+        userInfoVo.setBalance(String.format("%.2f", users.getBalance().floatValue()));
+        SchoolsVo schoolsVo = new SchoolsVo();
+        BeanUtils.copyProperties(schoolsService.getById(users.getSchoolId()), schoolsVo);
+        userInfoVo.setSchoolVo(schoolsVo);
         return userInfoVo;
     }
 }

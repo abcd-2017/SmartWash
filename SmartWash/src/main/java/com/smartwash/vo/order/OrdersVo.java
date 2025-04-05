@@ -1,5 +1,6 @@
 package com.smartwash.vo.order;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.smartwash.vo.laudry.LaundryPackageVo;
 import com.smartwash.vo.locker.LockersVo;
 import com.smartwash.vo.schools.SchoolsVo;
@@ -25,8 +26,10 @@ public class OrdersVo {
 
     private BigDecimal totalPrice;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
     private String status;

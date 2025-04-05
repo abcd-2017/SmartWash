@@ -4,10 +4,8 @@ package com.smartwash.controller.web;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
-import com.smartwash.from.order.OrderItemCountFrom;
-import com.smartwash.from.order.OrderListFrom;
-import com.smartwash.from.order.ReservationOrderFrom;
-import com.smartwash.from.order.SearchOrderFrom;
+import com.smartwash.entity.Orders;
+import com.smartwash.from.order.*;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
@@ -76,5 +74,23 @@ public class WebOrdersController {
     public Result<OrderItemCountVo> getOrderItemCount(@RequestBody OrderItemCountFrom itemCountFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
         return Result.ok(ordersService.getOrderItemCount(itemCountFrom, loginUser.getUserId()));
+    }
+
+    @PostMapping("/auth/orders/shipping")
+    public Result<Boolean> shippingOrder(@RequestBody @Valid OrderNextStatusFrom statusFrom) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.shippingOrder(statusFrom, loginUser));
+    }
+
+    @PostMapping("/auth/orders/pickup")
+    public Result<Boolean> pickupOrder(@RequestBody @Valid OrderNextStatusFrom statusFrom) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.pickupOrder(statusFrom, loginUser));
+    }
+
+    @GetMapping("/auth/orders/getWashingOrder")
+    public Result<List<Orders>> getWashingOrder(@RequestParam(value = "size", defaultValue = "5") int size) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.getWashingOrder(loginUser, size));
     }
 }

@@ -1,6 +1,7 @@
 package com.smartwash.service.impl;
 
 
+import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -106,6 +107,9 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
 
         //3.修改订单状态
         ordersMapper.updateOrderStatus(orderFrom.getOrderId(), OrderStatus.PENDING_SHIPMENT.getStatus());
+        //设置寄件码
+        int pickCode = RandomUtil.randomInt(1000, 10000);
+        ordersMapper.setPickupCode(orderFrom.getOrderId(), String.format("%d:%d:%s", users.getUserId(), orderFrom.getOrderId(), pickCode));
         return true;
     }
 

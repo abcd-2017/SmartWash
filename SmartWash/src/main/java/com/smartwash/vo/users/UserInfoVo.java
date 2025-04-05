@@ -1,5 +1,6 @@
 package com.smartwash.vo.users;
 
+import com.smartwash.vo.schools.SchoolsVo;
 import lombok.Data;
 
 @Data
@@ -11,4 +12,6 @@ public class UserInfoVo {
     private String campusCard;
 
     private String balance;
+
+    private SchoolsVo schoolVo;
 }

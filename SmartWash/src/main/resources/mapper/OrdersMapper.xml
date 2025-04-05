@@ -6,6 +6,18 @@
         set status = #{status}
         where order_id = #{orderId};
     </update>
+    <update id="setPickupCode">
+        update orders
+        set  pickup_code = #{pickupCode}
+        where order_id = #{orderId};
+    </update>
+    <update id="nextStatus" parameterType="com.smartwash.entity.Orders">
+        update orders
+        set pickup_code = null,
+            locker_id   = null,
+            status      = #{status}
+        where order_id = #{orderId};
+    </update>
 
     <select id="getOrderByOrderNo" resultType="com.smartwash.entity.Orders" parameterType="java.lang.String">
         select *
@@ -94,6 +106,7 @@
                  LEFT JOIN lockers l ON o.locker_id = l.locker_id
                  LEFT JOIN laundry_items lp ON o.laundry_items_id = lp.item_id
         where order_id = #{orderId}
+        order by updated_at desc
     </select>
     <select id="getOrderList" resultType="com.smartwash.vo.order.ShowOrderVo">
         SELECT o.order_id AS orderId,
@@ -120,6 +133,7 @@
         <if test="status != null">
             and o.status = #{status}
         </if>
+        order by updated_at desc
     </select>
 
 </mapper>

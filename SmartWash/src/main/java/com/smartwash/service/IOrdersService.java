@@ -35,4 +35,10 @@ public interface IOrdersService extends IService<Orders> {
     OrderItemCountVo getOrderItemCount(OrderItemCountFrom itemCountFrom, Long userId);
 
     Boolean updateOrderStatus(UpdateOrderStatus orderStatus);
+
+    Boolean pickupOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser);
+
+    Boolean shippingOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser);
+
+    List<Orders> getWashingOrder(LoginUser loginUser, int size);
 }
