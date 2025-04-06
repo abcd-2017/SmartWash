@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.order
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +21,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.rounded.LocalLaundryService
+import androidx.compose.material.icons.rounded.LocalShipping
+import androidx.compose.material.icons.rounded.Loop
+import androidx.compose.material.icons.rounded.Payment
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,6 +58,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.network.vo.order.OrderInfo
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.utils.OrderStatus
+import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.ShowOrderStatus
 import kotlinx.coroutines.launch
 
@@ -60,7 +68,7 @@ import kotlinx.coroutines.launch
 fun OrderPage(
     navController: NavHostController,
     itemId: Int,
-    orderViewModel: OrderViewModel = hiltViewModel()
+    orderViewModel: OrderViewModel = hiltViewModel(),
 ) {
     val pagerState = rememberPagerState(initialPage = itemId) { ShowOrderStatus.entries.size }
     val scope = rememberCoroutineScope()
@@ -114,14 +122,17 @@ fun OrderPage(
                 if (orderList.itemCount > 0) {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.animateContentSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .animateContentSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(orderList.itemCount) { index ->
                             orderList[index]?.let {
                                 OrderCard(it,
                                     paymentClick = { navController.navigate("${PageConstant.Payment.text}/${it.orderId}") },
-                                    shipmentClick = {},
-                                    pickupClick = {}) {
+                                    shipmentClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.DELIVERY.type}") },
+                                    pickupClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.PICKUP.type}") }) {
                                     navController.navigate("${PageConstant.OrderDetail.text}/${it.orderId}")
                                 }
                             }
@@ -190,7 +201,7 @@ private fun OrderCard(
     paymentClick: () -> Unit,
     shipmentClick: () -> Unit,
     pickupClick: () -> Unit,
-    itemClick: () -> Unit
+    itemClick: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -274,17 +285,27 @@ private fun OrderCard(
                     ShowOrderStatus.PENDING_SHIPMENT.status -> {
                         Button(
                             onClick = shipmentClick,
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                         ) {
                             Text("去寄件")
                         }
                     }
 
                     ShowOrderStatus.WASHING.status -> {
-                        Text(
-                            text = "清洗中",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Schedule,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "清洗中",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
 
                     ShowOrderStatus.READY_FOR_PICKUP.status -> {
@@ -293,6 +314,16 @@ private fun OrderCard(
                             shape = RoundedCornerShape(20.dp)
                         ) {
                             Text("去取件")
+                        }
+                    }
+
+                    OrderStatus.COMPLETED.status -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "已完成",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 14.sp
+                            )
                         }
                     }
 
@@ -306,6 +337,68 @@ private fun OrderCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(status: String) {
+    val (backgroundColor, textColor, icon) = when (status) {
+        ShowOrderStatus.PENDING_PAYMENT.status -> Triple(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer,
+            Icons.Rounded.Payment
+        )
+
+        ShowOrderStatus.PENDING_SHIPMENT.status -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            Icons.Rounded.LocalShipping
+        )
+
+        ShowOrderStatus.WASHING.status -> Triple(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            Icons.Rounded.Loop
+        )
+
+        ShowOrderStatus.READY_FOR_PICKUP.status -> Triple(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer,
+            Icons.Rounded.CheckCircle
+        )
+
+        else -> Triple(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            null
+        )
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = textColor
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = "${OrderStatus.getDescriptionByStatus(status)}", // 根据状态返回对应文案
+                color = textColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

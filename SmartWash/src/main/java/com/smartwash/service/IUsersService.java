@@ -42,4 +42,8 @@ public interface IUsersService extends IService<Users> {
     Boolean updateUserInfo(@Valid UpdateUserInfo updateUserInfo, Long userId);
 
     UserInfoVo getUserInfo(Long userId);
+
+    Boolean bingCampus(String campusCard, Long userId);
+
+    Boolean unBingCampus(Long userId);
 }

@@ -78,14 +78,14 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="套餐名称" prop="itemName">
+        <el-form-item label="套餐名称" prop="itemName" style="margin: 20px">
           <el-input
             v-model="tempLaundry.itemName"
             placeholder="请输入套餐名称"
           />
         </el-form-item>
 
-        <el-form-item label="基础价格" prop="basePrice">
+        <el-form-item label="基础价格" prop="basePrice" style="margin: 20px">
           <el-input-number
             v-model="tempLaundry.basePrice"
             :precision="2"
@@ -96,7 +96,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="套餐描述">
+        <el-form-item label="套餐描述" style="margin: 20px">
           <el-input
             v-model="tempLaundry.description"
             type="textarea"

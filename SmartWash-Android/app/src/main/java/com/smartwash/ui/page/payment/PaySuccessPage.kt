@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.payment
 
+import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -30,27 +31,53 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import java.text.SimpleDateFormat
-import java.util.Locale
+import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.page.detail.OrderDetailViewModel
+import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.utils.RequestState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaySuccessPage(
     navController: NavHostController,
-    orderId: Long?
+    orderId: Long,
+    orderDetailViewModel: OrderDetailViewModel = hiltViewModel(),
 ) {
-    val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+    val getOrderDetailState by orderDetailViewModel.getOrderInfoDetail.collectAsState()
+    val orderInfo by orderDetailViewModel.orderInfo.collectAsState()
+
+    if (orderId != -1L) {
+        LaunchedEffect(Unit) {
+            orderDetailViewModel.getOrderDetail(orderId)
+        }
+    }
+
+    when (getOrderDetailState) {
+        is RequestState.Error -> {
+            Toast.makeText(
+                LocalContext.current,
+                (getOrderDetailState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            orderDetailViewModel.resetState()
+        }
+
+        else -> {}
+    }
 
     // 动画状态
     val scale by animateFloatAsState(
@@ -127,7 +154,7 @@ fun PaySuccessPage(
                 ) {
                     Text(
                         text = "订单信息",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
 
@@ -136,7 +163,7 @@ fun PaySuccessPage(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("订单号")
-                        Text("111111111", fontWeight = FontWeight.Medium)
+                        Text(orderInfo?.orderNo ?: "", fontWeight = FontWeight.Medium)
                     }
 
                     Row(
@@ -144,7 +171,10 @@ fun PaySuccessPage(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("支付金额")
-                        Text("¥$111", color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "¥${orderInfo?.totalPrice ?: 0}",
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
                     Row(
@@ -152,7 +182,7 @@ fun PaySuccessPage(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("下单时间")
-//                        Text(dateFormat.format(orderTime))
+                        Text(orderInfo?.createdAt ?: "")
                     }
                 }
             }
@@ -168,12 +198,16 @@ fun PaySuccessPage(
                 ) {
                     Text(
                         text = "寄存柜信息",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text("请前往A区12号寄存柜存放衣物")
+                    Text(
+                        "请前往寄存柜 ${orderInfo?.lockersVo?.lockerNumber ?: -1}柜存放衣物",
+                        fontSize = 14.sp
+                    )
                     Text(
                         "寄存柜将在24小时内处理您的订单",
+                        fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
@@ -183,12 +217,16 @@ fun PaySuccessPage(
 
             // 立即寄件按钮
             Button(
-                onClick = {},
+                onClick = {
+                    navController.navigate("${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}") {
+                        navController.navigateUp()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("立即寄件")
+                Text("立即寄件", fontSize = 16.sp)
             }
         }
     }

@@ -14,6 +14,8 @@ import LockerList from "@/views/system/LockerList.vue"
 import PaymentList from "@/views/system/PaymentList.vue"
 import OrderList from "@/views/system/OrderList.vue"
 import LoginPage from "@/views/LoginPage.vue"
+import CouponList from "@/views/system/CouponList.vue"
+import UserCouponList from "@/views/system/UserCouponList.vue"
 
 const routes = [{
     path: '/login',
@@ -116,7 +118,25 @@ const routes = [{
                 showInMenu: true,
                 requiresAuth: true
             }
-        },
+        }, {
+            path: '/coupon',
+            name: 'CouponList',
+            component: CouponList,
+            meta: {
+                title: '优惠券管理',
+                showInMenu: true,
+                requiresAuth: true
+            }
+        }, {
+            path: '/userCoupon',
+            name: 'UserCouponList',
+            component: UserCouponList,
+            meta: {
+                title: '用户优惠券领取管理',
+                showInMenu: true,
+                requiresAuth: true
+            }
+        }
     ]
 }]
 

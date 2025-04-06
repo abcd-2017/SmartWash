@@ -1,5 +1,6 @@
 package com.smartwash.network
 
+import com.smartwash.network.api.CouponApi
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.PaymentApi
@@ -23,7 +24,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 class RetrofitClient() {
-    private var baseurl: String = "http://192.168.5.24:8080/"
+    private var baseurl: String = "http://192.168.5.16:8080/"
 
     private val okHttpClient = OkHttpClient
         .Builder()
@@ -69,5 +70,10 @@ class RetrofitClient() {
     @Provides
     fun getPaymentApi(retrofit: Retrofit): PaymentApi {
         return retrofit.create(PaymentApi::class.java)
+    }
+
+    @Provides
+    fun getCouponApi(retrofit: Retrofit): CouponApi {
+        return retrofit.create(CouponApi::class.java)
     }
 }

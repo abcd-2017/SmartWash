@@ -3,6 +3,7 @@ package com.smartwash.service.impl;
 import cn.hutool.core.util.DesensitizedUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
@@ -137,5 +138,16 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         BeanUtils.copyProperties(schoolsService.getById(users.getSchoolId()), schoolsVo);
         userInfoVo.setSchoolVo(schoolsVo);
         return userInfoVo;
+    }
+
+    @Override
+    public Boolean bingCampus(String campusCard, Long userId) {
+        LambdaUpdateWrapper<Users> updateWrapper = new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, campusCard);
+        return update(updateWrapper);
+    }
+
+    @Override
+    public Boolean unBingCampus(Long userId) {
+        return update(new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, null));
     }
 }

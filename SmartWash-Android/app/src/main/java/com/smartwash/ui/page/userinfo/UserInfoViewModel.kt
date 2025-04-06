@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class UserInfoViewModel @Inject constructor(
     private val userApi: UserApi,
-    private val orderApi: OrderApi
+    private val orderApi: OrderApi,
 ) : ViewModel() {
     private val _userInfoStatus = MutableStateFlow<RequestState>(RequestState.Idle)
     val userInfoStatus = _userInfoStatus.asStateFlow()
@@ -29,6 +29,10 @@ class UserInfoViewModel @Inject constructor(
     val userInfo = _userInfo.asStateFlow()
     private val _orderItemCount = MutableStateFlow<OrderItemCountVo?>(null)
     val orderItemCount = _orderItemCount.asStateFlow()
+    private val _bindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val bindCampusState = _bindCampusState.asStateFlow()
+    private val _unBindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
+    val unBindCampusState = _unBindCampusState.asStateFlow()
 
     fun getUserInfo() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -57,5 +61,51 @@ class UserInfoViewModel @Inject constructor(
 
     fun resetState() {
         _userInfoStatus.value = RequestState.Idle
+    }
+
+    fun resetBindCampusState() {
+        _bindCampusState.value = RequestState.Idle
+    }
+
+    fun resetUnBindCampusState() {
+        _unBindCampusState.value = RequestState.Idle
+    }
+
+    fun bindCampus(campusCard: String) {
+        _bindCampusState.value = RequestState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val bindCampus = userApi.bindCampus(campusCard)
+                if (bindCampus.data == true) {
+                    getUserInfo()
+                    withContext(Dispatchers.Main) {
+                        _bindCampusState.value = RequestState.Success
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _bindCampusState.value = RequestState.Error("${e.message}")
+                }
+            }
+        }
+    }
+
+    fun unBindCampus() {
+        _unBindCampusState.value = RequestState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val bindCampus = userApi.unBindCampus()
+                if (bindCampus.data == true) {
+                    getUserInfo()
+                    withContext(Dispatchers.Main) {
+                        _unBindCampusState.value = RequestState.Success
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _unBindCampusState.value = RequestState.Error("${e.message}")
+                }
+            }
+        }
     }
 }

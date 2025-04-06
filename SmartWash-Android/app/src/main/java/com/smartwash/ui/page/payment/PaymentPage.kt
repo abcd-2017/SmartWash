@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,7 +52,7 @@ import com.smartwash.utils.RequestState
 fun PaymentPage(
     navController: NavHostController,
     orderId: Long?,
-    paymentViewModel: PaymentViewModel = hiltViewModel()
+    paymentViewModel: PaymentViewModel = hiltViewModel(),
 ) {
     var showRechargeDialog by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
@@ -63,6 +62,7 @@ fun PaymentPage(
     val orderInfo by paymentViewModel.orderInfo.collectAsState()
     val initState by paymentViewModel.initState.collectAsState()
     val paymentState by paymentViewModel.paymentState.collectAsState()
+    var confirmPayShow by remember { mutableStateOf(false) }
 
     if (orderId != null) {
         LaunchedEffect(Unit) {
@@ -72,12 +72,10 @@ fun PaymentPage(
 
     when (paymentState) {
         is RequestState.Success -> {
+            confirmPayShow = false
             LaunchedEffect(paymentState) {
                 navController.navigate("${PageConstant.PaySuccess.text}/${orderId}") {
-                    // 避免重复堆栈
-                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
+                    navController.navigateUp()
                 }
             }
         }
@@ -201,11 +199,7 @@ fun PaymentPage(
                 onClick = {
                     if (orderInfo != null) {
                         if (orderInfo!!.userVo.balance >= orderInfo!!.totalPrice) {
-                            paymentViewModel.paymentOrder(
-                                orderId!!,
-                                PaymentType.PURSE.type,
-                                orderInfo!!.totalPrice
-                            )
+                            confirmPayShow = true
                         } else {
                             showRechargeDialog = true
                         }
@@ -227,6 +221,23 @@ fun PaymentPage(
                 }
             }
         }
+    }
+
+    //确认是否要支付
+    if (confirmPayShow) {
+        AlertDialog(
+            onDismissRequest = { confirmPayShow = false },
+            text = { Text("确定要支付？", fontSize = 16.sp) },
+            confirmButton = {
+                TextButton({
+                    paymentViewModel.paymentOrder(
+                        orderId!!,
+                        PaymentType.PURSE.type,
+                        orderInfo!!.totalPrice
+                    )
+                }) { Text("确定") }
+            },
+            dismissButton = { TextButton({ confirmPayShow = false }) { Text("取消") } })
     }
 
     // 余额不足对话框
@@ -253,6 +264,7 @@ fun PaymentPage(
         )
     }
 
+
     // 支付成功对话框
     if (showSuccessDialog) {
         AlertDialog(
@@ -270,24 +282,4 @@ fun PaymentPage(
             }
         )
     }
-}
-
-@Preview
-@Composable
-private fun PrevPaymentPage() {
-    var showSuccessDialog by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = { showSuccessDialog = false },
-        title = { Text("支付成功") },
-        text = { Text("请前往A区12号寄存柜存放衣物") },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    showSuccessDialog = false
-                }
-            ) {
-                Text("确定")
-            }
-        }
-    )
 }

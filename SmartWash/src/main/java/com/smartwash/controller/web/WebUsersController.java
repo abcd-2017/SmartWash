@@ -63,4 +63,16 @@ public class WebUsersController {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.getUserInfo(user.getUserId()));
     }
+
+    @PostMapping("/auth/user/bingCampus/{campusCard}")
+    public Result<Boolean> bingCampus(@PathVariable("campusCard") String campusCard) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(usersService.bingCampus(campusCard, user.getUserId()));
+    }
+
+    @PostMapping("/auth/user/unBingCampus")
+    public Result<Boolean> unBingCampus() {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(usersService.unBingCampus(user.getUserId()));
+    }
 }

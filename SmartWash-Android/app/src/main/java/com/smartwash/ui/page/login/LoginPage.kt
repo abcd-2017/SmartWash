@@ -53,7 +53,7 @@ import com.smartwash.utils.isValidPhone
 @Composable
 fun LoginPage(
     navController: NavController,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    loginViewModel: LoginViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -70,7 +70,7 @@ fun LoginPage(
     LaunchedEffect(Unit) {
         val token = SharePreferenceUtils.getData(AppConstant.TOKEN, "")
         if (token.isNotBlank()) {
-            navController.navigate(PageConstant.Home.text)
+            navController.navigate(PageConstant.Home.text) { navController.navigateUp() }
         }
     }
 
@@ -80,8 +80,9 @@ fun LoginPage(
                 showPassword = false
                 Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
                 loginViewModel.resetLoginState()
-                navController.popBackStack()
-                navController.navigate(PageConstant.Home.text)
+                navController.navigate(PageConstant.Home.text) {
+                    navController.navigateUp()
+                }
             }
         }
 
@@ -203,8 +204,7 @@ fun LoginPage(
             TextButton(
                 onClick = {
                     //跳转到注册页面
-                    navController.popBackStack();
-                    navController.navigate(PageConstant.Register.text)
+                    navController.navigate(PageConstant.Register.text) { navController.navigateUp() }
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
@@ -222,7 +222,7 @@ fun LoginPage(
 @Composable
 fun SubmitButton(
     onClick: () -> Unit,
-    loginState: RequestState
+    loginState: RequestState,
 ) {
     Button(
         onClick = onClick,

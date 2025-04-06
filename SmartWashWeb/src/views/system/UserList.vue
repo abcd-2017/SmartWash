@@ -109,7 +109,7 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="学校" prop="schoolId">
+        <el-form-item label="学校" prop="schoolId" style="margin: 20px">
           <el-select
             v-model="tempUser.schoolId"
             placeholder="请选择学校"
@@ -124,7 +124,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="手机号" prop="phoneNumber">
+        <el-form-item label="手机号" prop="phoneNumber" style="margin: 20px">
           <el-input
             v-model="tempUser.phoneNumber"
             placeholder="请输入手机号"
@@ -132,11 +132,11 @@
           />
         </el-form-item>
 
-        <el-form-item label="学号" prop="studentId">
+        <el-form-item label="学号" prop="studentId" style="margin: 20px">
           <el-input v-model="tempUser.studentId" placeholder="请输入学号" />
         </el-form-item>
 
-        <el-form-item label="校园卡号">
+        <el-form-item label="校园卡号" style="margin: 20px">
           <el-input
             v-model="tempUser.campusCard"
             placeholder="请输入校园卡号"
@@ -145,6 +145,7 @@
 
         <el-form-item
           label="密码"
+          style="margin: 20px"
           prop="password"
           v-if="dialogType === 'create'"
         >
@@ -156,7 +157,11 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
+        <el-form-item
+          label="修改密码"
+          v-if="dialogType === 'edit'"
+          style="margin: 20px"
+        >
           <el-input
             v-model="tempUser.password"
             type="password"

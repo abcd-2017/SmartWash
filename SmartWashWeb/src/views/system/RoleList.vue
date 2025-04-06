@@ -66,11 +66,11 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="角色名称" prop="roleName">
+        <el-form-item label="角色名称" prop="roleName" style="margin: 20px">
           <el-input v-model="tempRole.roleName" placeholder="请输入角色名称" />
         </el-form-item>
 
-        <el-form-item label="角色描述">
+        <el-form-item label="角色描述" style="margin: 20px">
           <el-input
             v-model="tempRole.description"
             type="textarea"

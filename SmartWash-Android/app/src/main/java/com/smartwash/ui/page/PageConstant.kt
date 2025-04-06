@@ -22,13 +22,16 @@ sealed class PageConstant(val text: String, val description: String) {
     data object Payment : PageConstant("Payment", "支付页面")
     data object Laundry : PageConstant("Laundry", "洗衣预约页面")
     data object PaySuccess : PageConstant("PaySuccess", "支付成功页面")
+    data object PickupDelivery : PageConstant("PickupDelivery", "寄件取件页面")
+    data object Coupon : PageConstant("Coupon", "优惠券页面")
+    data object Pickup : PageConstant("Pickup", "取件页面")
 }
 
 sealed class HomePageConstant(
     val text: String,
     val description: String,
     val icon: ImageVector,
-    val selectIcon: ImageVector
+    val selectIcon: ImageVector,
 ) {
     data object Index : HomePageConstant("Index", "首页", Icons.Outlined.Home, Icons.Filled.Home)
     data object Service :

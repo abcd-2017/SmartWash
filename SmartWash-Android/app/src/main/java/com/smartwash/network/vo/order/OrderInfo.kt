@@ -14,5 +14,7 @@ data class OrderInfo(
     val laundryPackageVo: LaundryItem,
     val totalPrice: Float,
     val status: String,
-    val pickupCode: String
+    val pickupCode: String,
+    val createdAt: String,
+    val updatedAt: String
 )

@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,7 +59,7 @@ import com.smartwash.utils.RequestState
 @Composable
 fun LaundryPage(
     navController: NavHostController,
-    laundryViewModel: LaundryViewModel = hiltViewModel()
+    laundryViewModel: LaundryViewModel = hiltViewModel(),
 ) {
     val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
     val laundryItems by laundryViewModel.laundryItems.collectAsState()
@@ -69,6 +70,7 @@ fun LaundryPage(
     val context = LocalContext.current
     val reservationState by laundryViewModel.reservationState.collectAsState()
     val orderId by laundryViewModel.orderId.collectAsState()
+    val userInfo by laundryViewModel.userInfo.collectAsState()
 
     LaunchedEffect(Unit) {
         laundryViewModel.getLaundryItem()
@@ -232,13 +234,16 @@ fun LaundryPage(
                             }
                             Column {
                                 Text(
-                                    text = "第一教学楼",
+                                    text = userInfo?.schoolVo?.schoolName ?: "",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "A区投递柜",
+                                    text = userInfo?.schoolVo?.location ?: "",
                                     fontSize = 14.sp,
+                                    maxLines = 1,
+                                    modifier = Modifier.fillMaxWidth(0.7f),
+                                    overflow = TextOverflow.Ellipsis,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                             }
@@ -285,7 +290,7 @@ fun LaundryPage(
 
 @Composable
 private fun LaundryTypeItem(
-    title: String, description: String, isSelected: Boolean, price: String, cardClick: () -> Unit
+    title: String, description: String, isSelected: Boolean, price: String, cardClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier

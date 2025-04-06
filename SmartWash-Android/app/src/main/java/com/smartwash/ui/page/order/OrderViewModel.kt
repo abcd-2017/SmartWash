@@ -19,14 +19,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class OrderViewModel @Inject constructor(
-    private val orderApi: OrderApi
+    private val orderApi: OrderApi,
 ) : ViewModel() {
     private val _orderState = MutableStateFlow<String>("")
     val orderState = _orderState.asStateFlow()
 
     fun updateOrderStatus(status: String) {
         _orderState.value = status
-
     }
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -38,5 +37,4 @@ class OrderViewModel @Inject constructor(
                 MyPagingSource(orderApi, it)
             }.flow.cachedIn(viewModelScope)
         }
-
 }

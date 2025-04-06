@@ -94,18 +94,22 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="学校名称" prop="schoolName">
+        <el-form-item label="学校名称" prop="schoolName" style="margin: 20px">
           <el-input
             v-model="tempSchool.schoolName"
             placeholder="请输入学校名称"
           />
         </el-form-item>
 
-        <el-form-item label="位置" prop="location">
+        <el-form-item label="位置" prop="location" style="margin: 20px">
           <el-input v-model="tempSchool.location" placeholder="请输入位置" />
         </el-form-item>
 
-        <el-form-item label="储物柜数量" prop="lockerCount">
+        <el-form-item
+          label="储物柜数量"
+          prop="lockerCount"
+          style="margin: 20px"
+        >
           <el-select
             v-model="tempSchool.lockerCount"
             placeholder="请选择"

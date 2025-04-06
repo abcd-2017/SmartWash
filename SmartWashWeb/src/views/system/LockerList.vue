@@ -131,7 +131,7 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="学校" prop="schoolId">
+        <el-form-item label="学校" prop="schoolId" style="margin: 20px">
           <el-select
             v-model="tempLocker.schoolId"
             placeholder="选择学校"
@@ -148,7 +148,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="柜号" prop="lockerNumber">
+        <el-form-item label="柜号" prop="lockerNumber" style="margin: 20px">
           <el-input-number
             :disabled="dialogType !== 'create'"
             v-model="tempLocker.lockerNumber"
@@ -158,7 +158,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="状态" prop="status">
+        <el-form-item label="状态" prop="status" style="margin: 20px">
           <el-select
             v-model="tempLocker.status"
             placeholder="选择状态"

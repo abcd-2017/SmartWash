@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
+import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.ReservationLaundry
 import com.smartwash.network.vo.laundry.LaundryItem
+import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +20,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LaundryViewModel @Inject constructor(
     private val laundryItemsApi: LaundryItemsApi,
-    private val orderApi: OrderApi
+    private val orderApi: OrderApi,
+    private val userApi: UserApi,
 ) : ViewModel() {
     private val _getLaundryItemState = MutableStateFlow<RequestState>(RequestState.Idle)
     val getLaundryItemState = _getLaundryItemState.asStateFlow()
@@ -28,15 +31,21 @@ class LaundryViewModel @Inject constructor(
     val reservationState = _reservationState.asStateFlow()
     private val _orderId = MutableStateFlow<Long>(-1)
     val orderId = _orderId.asStateFlow()
+    private val _userInfoStatus = MutableStateFlow<RequestState>(RequestState.Idle)
+    val userInfoStatus = _userInfoStatus.asStateFlow()
+    private val _userInfo = MutableStateFlow<UserInfoVo?>(null)
+    val userInfo = _userInfo.asStateFlow()
 
     fun getLaundryItem() {
         _getLaundryItemState.value = RequestState.Loading
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val responseData = laundryItemsApi.getLaundryItems()
+                val userInfoRes = userApi.getUserInfo()
 
                 withContext(Dispatchers.Main) {
                     _laundryItems.value = responseData.data ?: emptyList()
+                    _userInfo.value = userInfoRes.data
                     _getLaundryItemState.value = RequestState.Success
                 }
             } catch (e: Exception) {

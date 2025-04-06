@@ -22,7 +22,7 @@ interface UserApi {
      */
     @GET("/auth/user/captcha/{phoneNumber}")
     suspend fun getCaptcha(
-        @Path("phoneNumber") phoneNumber: String
+        @Path("phoneNumber") phoneNumber: String,
     ): ResponseData<String>
 
     /**
@@ -30,7 +30,7 @@ interface UserApi {
      */
     @POST("/auth/user/register")
     suspend fun register(
-        @Body registerUser: RegisterUser
+        @Body registerUser: RegisterUser,
     ): ResponseData<String>
 
     /**
@@ -38,7 +38,7 @@ interface UserApi {
      */
     @POST("/auth/user/login")
     suspend fun login(
-        @Body loginUser: LoginUser
+        @Body loginUser: LoginUser,
     ): ResponseData<String>
 
     /**
@@ -47,7 +47,7 @@ interface UserApi {
     @RequireAuthorization
     @POST("/web/auth/user/updateUserInfo")
     suspend fun updateUserInfo(
-        @Body updateUser: UpdateUserInfo
+        @Body updateUser: UpdateUserInfo,
     ): ResponseData<String>
 
     /**
@@ -63,7 +63,7 @@ interface UserApi {
     @RequireAuthorization
     @GET("/web/auth/user/getUserByStudentId")
     suspend fun getUserByStudentId(
-        @Query("studentId") studentId: String
+        @Query("studentId") studentId: String,
     ): ResponseData<Boolean>
 
     /**
@@ -72,4 +72,20 @@ interface UserApi {
     @RequireAuthorization
     @GET("/web/auth/user/getUserInfo")
     suspend fun getUserInfo(): ResponseData<UserInfoVo>
+
+    /**
+     * 绑定校园卡
+     */
+    @RequireAuthorization
+    @POST("/web/auth/user/bingCampus/{campusCard}")
+    suspend fun bindCampus(
+        @Path("campusCard") campusCard: String,
+    ): ResponseData<Boolean>
+
+    /**
+     * 解绑校园卡
+     */
+    @RequireAuthorization
+    @POST("/web/auth/user/unBingCampus")
+    suspend fun unBindCampus(): ResponseData<Boolean>
 }

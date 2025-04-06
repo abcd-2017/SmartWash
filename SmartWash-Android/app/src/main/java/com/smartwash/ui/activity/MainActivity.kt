@@ -21,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.smartwash.App
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.page.coupon.CouponPage
 import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.laundry.LaundryPage
@@ -28,6 +29,8 @@ import com.smartwash.ui.page.login.LoginPage
 import com.smartwash.ui.page.order.OrderPage
 import com.smartwash.ui.page.payment.PaySuccessPage
 import com.smartwash.ui.page.payment.PaymentPage
+import com.smartwash.ui.page.pickup.PickupDeliveryPage
+import com.smartwash.ui.page.pickup.PickupPage
 import com.smartwash.ui.page.recharge.RechargePage
 import com.smartwash.ui.page.register.RegisterPage
 import com.smartwash.ui.page.service.ServicePage
@@ -132,7 +135,7 @@ class MainActivity : ComponentActivity() {
                         ) { entity ->
                             OrderDetailPage(
                                 navController,
-                                entity.arguments?.getLong("itemId") ?: -1
+                                entity.arguments?.getLong("orderId") ?: -1
                             )
                         }
                         composable(PageConstant.Service.text) {
@@ -160,7 +163,34 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = -1
                                 }
                             )) { entity ->
-                            PaySuccessPage(navController, entity.arguments?.getLong("orderId"))
+                            PaySuccessPage(
+                                navController,
+                                entity.arguments?.getLong("orderId") ?: -1
+                            )
+                        }
+                        composable(
+                            route = "${PageConstant.PickupDelivery.text}/{orderId}/{pickupType}",
+                            arguments = listOf(
+                                navArgument("orderId") {
+                                    type = NavType.LongType
+                                    defaultValue = -1L
+                                }, navArgument("pickupType") {
+                                    type = NavType.IntType
+                                    defaultValue = 0
+                                }
+                            )
+                        ) { entity ->
+                            PickupDeliveryPage(
+                                entity.arguments?.getInt("pickupType") ?: 0,
+                                navController,
+                                entity.arguments?.getLong("orderId") ?: -1L
+                            )
+                        }
+                        composable(PageConstant.Coupon.text) {
+                            CouponPage(navController)
+                        }
+                        composable(PageConstant.Pickup.text) {
+                            PickupPage(navController)
                         }
                     }
                 }

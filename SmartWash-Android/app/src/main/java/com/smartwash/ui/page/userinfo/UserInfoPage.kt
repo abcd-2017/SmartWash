@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
@@ -29,26 +30,33 @@ import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalLaundryService
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,11 +70,19 @@ import com.smartwash.utils.RequestState
 fun UserInfoPage(
     navController: NavHostController,
     homePageNavController: NavHostController,
-    userInfoViewModel: UserInfoViewModel = hiltViewModel()
+    userInfoViewModel: UserInfoViewModel = hiltViewModel(),
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
     val userInfo by userInfoViewModel.userInfo.collectAsState()
     val orderItemCountVo by userInfoViewModel.orderItemCount.collectAsState()
+    val bindCampusState by userInfoViewModel.bindCampusState.collectAsState()
+    val unBindCampusState by userInfoViewModel.unBindCampusState.collectAsState()
+
+    var showBindDialog by remember { mutableStateOf(false) }
+    var showUnbindDialog by remember { mutableStateOf(false) }
+    var cardNumber by remember { mutableStateOf("") }
+    var cardNumberError by remember { mutableStateOf(false) }
+    var context = LocalContext.current
 
     LaunchedEffect(homePageNavController.currentBackStackEntry) {
         userInfoViewModel.getUserInfo()
@@ -84,6 +100,56 @@ fun UserInfoPage(
         else -> {
             userInfoViewModel.resetState()
         }
+    }
+    when (bindCampusState) {
+        is RequestState.Success -> {
+            showBindDialog = false
+            cardNumber = ""
+            cardNumberError = false
+            LaunchedEffect(bindCampusState) {
+                Toast.makeText(
+                    context,
+                    "绑定成功",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            userInfoViewModel.resetBindCampusState()
+        }
+
+        is RequestState.Error -> {
+            Toast.makeText(
+                context,
+                (bindCampusState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            userInfoViewModel.resetBindCampusState()
+        }
+
+        else -> {}
+    }
+    when (unBindCampusState) {
+        is RequestState.Success -> {
+            showUnbindDialog = false
+            LaunchedEffect(unBindCampusState) {
+                Toast.makeText(
+                    context,
+                    "解绑成功",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            userInfoViewModel.resetUnBindCampusState()
+        }
+
+        is RequestState.Error -> {
+            Toast.makeText(
+                context,
+                (unBindCampusState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            userInfoViewModel.resetUnBindCampusState()
+        }
+
+        else -> {}
     }
 
     Column(
@@ -134,11 +200,27 @@ fun UserInfoPage(
         // 校园卡卡片
         AccountInfoCard(
             title = "校园卡",
-            actionText = if (userInfo?.campusCard != null) "已绑定" else "未绑定",
+            actionText = if (userInfo?.campusCard != null) userInfo?.campusCard ?: "" else "未绑定",
             buttonText = if (userInfo?.campusCard != null) "解绑" else "绑定",
             imageVector = Icons.Default.CreditCard
         ) {
+            if (userInfo?.campusCard != null) {
+                showUnbindDialog = true
+            } else {
+                showBindDialog = true
+            }
+        }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 优惠券卡片
+        AccountInfoCard(
+            title = "优惠券",
+            actionText = "可领取优惠券",
+            buttonText = "领取",
+            imageVector = Icons.Default.LocalOffer
+        ) {
+            navController.navigate(PageConstant.Coupon.text)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -164,6 +246,58 @@ fun UserInfoPage(
         OtherFunctionsSection(
             onCustomerServiceClick = {},
             onFAQClick = {}
+        )
+    }
+
+    // 绑定校园卡弹窗
+    if (showBindDialog) {
+        AlertDialog(
+            onDismissRequest = { showBindDialog = false },
+            title = { Text("绑定校园卡", fontSize = 18.sp) },
+            text = {
+                OutlinedTextField(
+                    value = cardNumber,
+                    onValueChange = {
+                        cardNumberError = false
+                        cardNumber = it
+                    },
+                    label = { Text("请输入校园卡号") },
+                    supportingText = { if (cardNumberError) Text("校园卡号不能为空") },
+                    singleLine = true,
+                    isError = cardNumberError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (cardNumber.isEmpty()) {
+                            cardNumberError = true
+                        } else {
+                            userInfoViewModel.bindCampus(cardNumber)
+                        }
+                    }
+                ) { Text("确认绑定") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBindDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 解绑校园卡弹窗
+    if (showUnbindDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnbindDialog = false },
+            title = { Text("解绑校园卡", fontSize = 18.sp) },
+            text = { Text("确定要解绑当前绑定的校园卡吗？") },
+            confirmButton = {
+                TextButton(onClick = { userInfoViewModel.unBindCampus() }) { Text("确认解绑") }
+            },
+            dismissButton = { TextButton(onClick = { showUnbindDialog = false }) { Text("取消") } }
         )
     }
 }
@@ -215,7 +349,7 @@ private fun AccountInfoCard(
     actionText: String,
     buttonText: String,
     imageVector: ImageVector,
-    onCardClick: () -> Unit
+    onCardClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -274,14 +408,15 @@ private fun OrderManagementSection(
     pendingPaymentCount: Int,
     processingCount: Int,
     pendingPickupCount: Int,
-    onViewAllOrders: (Int) -> Unit
+    onViewAllOrders: (Int) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
     ) {
         LazyRow(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -377,7 +512,7 @@ private fun OrderStatusCard(
 @Composable
 private fun OtherFunctionsSection(
     onCustomerServiceClick: () -> Unit,
-    onFAQClick: () -> Unit
+    onFAQClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp)
@@ -403,7 +538,7 @@ private fun FunctionItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier

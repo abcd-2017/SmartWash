@@ -102,11 +102,12 @@
         label-width="100px"
         :rules="rules"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item label="用户名" prop="username" style="margin: 20px">
           <el-input v-model="tempAdmin.username" placeholder="请输入用户名" />
         </el-form-item>
 
         <el-form-item
+          style="margin: 20px"
           label="密码"
           prop="password"
           v-if="dialogType === 'create'"
@@ -119,7 +120,11 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
+        <el-form-item
+          label="修改密码"
+          v-if="dialogType === 'edit'"
+          style="margin: 20px"
+        >
           <el-input
             v-model="tempAdmin.password"
             type="password"
@@ -128,7 +133,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="角色" prop="roleId">
+        <el-form-item label="角色" prop="roleId" style="margin: 20px">
           <el-select
             v-model="tempAdmin.roleId"
             placeholder="请选择角色"

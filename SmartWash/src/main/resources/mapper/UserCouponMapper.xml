@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.mapper.UserCouponMapper">
+
+    <select id="searchUserCoupon" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
+        select user_coupon_id,
+        u.phone_number,
+        c.title,
+        is_used,
+        used_at,
+        received_at,
+        o.order_no,
+        expired_at
+        from user_coupon uc
+        join users u on uc.user_id = u.user_id
+        join orders o on o.order_id = uc.order_id
+        left join coupon c on c.coupon_id = uc.coupon_id
+        <where>
+            <if test="couponFrom.phoneNumber != null and couponFrom.phoneNumber != ''">
+                and u.phone_number = #{couponFrom.phoneNumber}
+            </if>
+            <if test="couponFrom.couponId != null">
+                and uc.coupon_id != #{couponFrom.couponId}
+            </if>
+        </where>
+    </select>
+    <select id="getCouponIdsByUserId" resultType="java.lang.Long" parameterType="java.lang.Long">
+        select coupon_id
+        from user_coupon
+        where user_id = #{user_id};
+    </select>
+    <select id="searchUserCouponByStatus" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
+        select user_coupon_id,
+        u.phone_number,
+        c.title,
+        is_used,
+        used_at,
+        received_at,
+        o.order_no,
+        expired_at
+        from user_coupon uc
+        join users u on uc.user_id = u.user_id
+        join orders o on o.order_id = uc.order_id
+        left join coupon c on c.coupon_id = uc.coupon_id
+        where u.user_id = #{userId}
+        --status-> 0代表当前可用的优惠券，1代表已经使用过或过期优惠券
+        <if test="status == 0">
+            and (is_used = 0 and expired_at > now())
+        </if>
+        <if test="status == 1">
+            and (is_used = 1 or now() > expired_at)
+        </if>
+    </select>
+</mapper>

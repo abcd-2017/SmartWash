@@ -39,6 +39,6 @@ export function updateOrderStatus(data) {
         data
     }).then(res => {
         if (res.code === 200) return res.data
-        throw new Error(res.message || '删除失败')
+        throw new Error(res.message || '修改失败')
     })
 }
