@@ -7,7 +7,7 @@ import com.smartwash.network.api.OrderApi
 import com.smartwash.network.entity.order.OrderListFrom
 import com.smartwash.network.vo.order.OrderInfo
 
-class MyPagingSource(private val orderApi: OrderApi, private val status: String) :
+class OrderPagingSource(private val orderApi: OrderApi, private val status: String) :
     PagingSource<Int, OrderInfo>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, OrderInfo> {
         return try {

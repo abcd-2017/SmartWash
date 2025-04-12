@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.Coupon;
+import com.smartwash.entity.Orders;
 import com.smartwash.entity.UserCoupon;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.user_coupon.SearchUserCouponFrom;
 import com.smartwash.mapper.CouponMapper;
+import com.smartwash.mapper.OrdersMapper;
 import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.service.IUserCouponService;
 import com.smartwash.vo.user_coupon.UserCouponVo;
@@ -29,6 +31,8 @@ import java.util.List;
 public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCoupon> implements IUserCouponService {
     @Autowired
     private CouponMapper couponMapper;
+    @Autowired
+    private OrdersMapper ordersMapper;
 
     @Override
     public Page<UserCouponVo> getAllUserCoupon(SearchUserCouponFrom couponFrom) {
@@ -72,5 +76,11 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         LocalDateTime expiredTime = LocalDateTime.now().plusDays(coupon.getValidDays());
         userCoupon.setExpiredAt(expiredTime);
         return save(userCoupon);
+    }
+
+    @Override
+    public List<UserCouponVo> getCanUseCoupon(Long userId, Long orderId) {
+        Orders orders = ordersMapper.selectById(orderId);
+        return baseMapper.getCanUseCoupon(userId,orders.getTotalPrice().floatValue());
     }
 }

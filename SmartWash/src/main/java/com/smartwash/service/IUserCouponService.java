@@ -25,4 +25,6 @@ public interface IUserCouponService extends IService<UserCoupon> {
     List<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize);
 
     Boolean receiveCoupon(Long couponId, Long userId);
+
+    List<UserCouponVo> getCanUseCoupon(Long userId, Long orderId);
 }

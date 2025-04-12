@@ -9,14 +9,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.LockerStatusEnum;
 import com.smartwash.common.OrderStatus;
-import com.smartwash.entity.Lockers;
-import com.smartwash.entity.Orders;
-import com.smartwash.entity.Users;
+import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.order.*;
-import com.smartwash.mapper.LockersMapper;
-import com.smartwash.mapper.OrdersMapper;
-import com.smartwash.mapper.UsersMapper;
+import com.smartwash.mapper.*;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrderItemCountVo;
@@ -28,6 +24,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +44,10 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private UsersMapper usersMapper;
     @Autowired
     private LockersMapper lockersMapper;
+    @Autowired
+    private UserCouponMapper userCouponMapper;
+    @Autowired
+    private CouponMapper couponMapper;
 
     @Override
     public Page<OrdersVo> getAllOrders(SearchOrderFrom searchOrderFrom) {
@@ -87,6 +88,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         //设置套餐，后续总价格可以叠加优惠券
         orders.setLaundryItemsId(reservationOrderFrom.getItemsId());
         orders.setTotalPrice(BigDecimal.valueOf(reservationOrderFrom.getTotalPrice()));
+        orders.setPayPrice(orders.getTotalPrice());
 
         //设置订单状态
         orders.setStatus(OrderStatus.PENDING_PAYMENT.getStatus());
@@ -179,6 +181,49 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
                     .orderByDesc(Orders::getUpdatedAt)
                     .last("limit " + size);
         return list(queryWrapper);
+    }
+
+    /**
+     * 取消订单
+     *
+     * @param orderId
+     * @param userId
+     * @return
+     */
+    @Transactional
+    @Override
+    public Boolean cancelOrder(Long orderId, Long userId) {
+        Orders orders = getById(orderId);
+        if (orders == null || !orders.getStatus().equals(OrderStatus.PENDING_PAYMENT.getStatus())) {
+            throw new CustomExceptions("订单状态异常");
+        }
+        //1.解除寄存柜占用
+        lockersMapper.unLocker(orders.getLockerId(), LockerStatusEnum.FREE.getValue());
+
+        //2.修改订单状态
+        ordersMapper.nextStatus(orders.getOrderId(), OrderStatus.CANCELED.getStatus());
+        return true;
+    }
+
+    //计算使用优惠券后的订单价格
+    @Override
+    public OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId) {
+        UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
+        if ((userCoupon == null) || userCoupon.getIsUsed() || userCoupon.getExpiredAt().isBefore(LocalDateTime.now()) || !Objects.equals(userCoupon.getUserId(), userId)) {
+            throw new CustomExceptions("优惠券异常");
+        }
+        OrdersVo order = getOrderByOrderId(orderId);
+        if (order == null) throw new CustomExceptions("订单状态异常");
+        Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+        if (order.getTotalPrice().compareTo(coupon.getThreshold()) < 0) {
+            throw new CustomExceptions("未到达优惠券使用门槛");
+        }
+        if (order.getTotalPrice().compareTo(coupon.getDiscount()) <= 0) {
+            order.setPayPrice(BigDecimal.ZERO);
+        } else {
+            order.setPayPrice(order.getTotalPrice().subtract(coupon.getDiscount()));
+        }
+        return order;
     }
 
     private Boolean nextStatusOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser, String nextStatus) {

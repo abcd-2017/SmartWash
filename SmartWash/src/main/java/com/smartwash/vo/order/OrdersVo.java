@@ -20,11 +20,15 @@ public class OrdersVo {
 
     private LockersVo lockersVo;
 
+    private Long userCouponId;
+
     private String orderNo;
 
     private LaundryPackageVo laundryPackageVo;
 
     private BigDecimal totalPrice;
+
+    private BigDecimal payPrice;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

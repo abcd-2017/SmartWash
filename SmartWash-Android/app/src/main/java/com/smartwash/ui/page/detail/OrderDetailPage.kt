@@ -132,6 +132,7 @@ fun OrderDetailPage(
             ) {
                 InfoRow("套餐类型", orderInfo?.laundryPackageVo?.itemName ?: "")
                 InfoRow("价格", "￥${orderInfo?.totalPrice ?: 0}")
+                InfoRow("实付款", "￥${orderInfo?.payPrice ?: 0}")
             }
 
             Spacer(modifier = Modifier.height(24.dp))

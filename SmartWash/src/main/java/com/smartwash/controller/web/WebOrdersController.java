@@ -64,6 +64,15 @@ public class WebOrdersController {
         return Result.ok(ordersService.getOrderByOrderId(orderId));
     }
 
+    @PostMapping("/auth/orders/calculationOrder/{orderId}/{userCouponId}")
+    public Result<OrdersVo> calculationOrder(@PathVariable("orderId") Long orderId, @PathVariable("userCouponId") Long userCouponId) {
+        LoginUser user = UserContextHolder.getUser();
+        if (orderId == null || ordersService.getById(orderId) == null) {
+            return Result.failMsg("该订单不存在");
+        }
+        return Result.ok(ordersService.calculationOrder(user.getUserId(),orderId, userCouponId));
+    }
+
     @PostMapping("/auth/orders/getOrderList")
     public Result<List<ShowOrderVo>> getOrderList(@RequestBody OrderListFrom orderListFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
@@ -92,5 +101,11 @@ public class WebOrdersController {
     public Result<List<Orders>> getWashingOrder(@RequestParam(value = "size", defaultValue = "5") int size) {
         LoginUser loginUser = UserContextHolder.getUser();
         return Result.ok(ordersService.getWashingOrder(loginUser, size));
+    }
+
+    @PostMapping("/auth/orders/cancelOrder/{orderId}")
+    public Result<Boolean> cancelOrder(@PathVariable("orderId") Long orderId) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.cancelOrder(orderId, loginUser.getUserId()));
     }
 }

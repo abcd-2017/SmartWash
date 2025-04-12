@@ -6,6 +6,7 @@ import com.smartwash.entity.UserCoupon;
 import com.smartwash.from.user_coupon.SearchUserCouponFrom;
 import com.smartwash.vo.user_coupon.UserCouponVo;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -23,4 +24,6 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
     List<Long> getCouponIdsByUserId(Long userId);
 
     List<UserCouponVo> searchUserCouponByStatus(Page<UserCouponVo> page, String status, Long userId);
+
+    List<UserCouponVo> getCanUseCoupon(Long userId, Float totalPrice);
 }

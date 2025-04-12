@@ -172,7 +172,7 @@ fun PaySuccessPage(
                     ) {
                         Text("支付金额")
                         Text(
-                            "¥${orderInfo?.totalPrice ?: 0}",
+                            "¥${orderInfo?.payPrice ?: 0}",
                             color = MaterialTheme.colorScheme.primary
                         )
                     }

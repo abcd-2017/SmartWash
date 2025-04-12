@@ -8,6 +8,7 @@ data class OrderVo(
     val orderNo: String,
     val laundryItemsId: Long,
     val totalPrice: Float,
+    val payPrice: Float,
     val status: String,
     val pickupCode: String,
     val createdAt: String,

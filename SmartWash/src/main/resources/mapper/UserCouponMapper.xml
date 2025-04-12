@@ -3,7 +3,7 @@
 <mapper namespace="com.smartwash.mapper.UserCouponMapper">
 
     <select id="searchUserCoupon" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
-        select user_coupon_id,
+        select uc.user_coupon_id,
         u.phone_number,
         c.title,
         is_used,
@@ -30,9 +30,14 @@
         where user_id = #{user_id};
     </select>
     <select id="searchUserCouponByStatus" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
-        select user_coupon_id,
+        select uc.user_coupon_id,
         u.phone_number,
-        c.title,
+        c.title as "couponVo.title",
+        c.coupon_id as "couponVo.couponId",
+        c.description as "couponVo.description",
+        c.discount as "couponVo.discount",
+        c.threshold as "couponVo.threshold",
+        c.valid_days,
         is_used,
         used_at,
         received_at,
@@ -40,15 +45,39 @@
         expired_at
         from user_coupon uc
         join users u on uc.user_id = u.user_id
-        join orders o on o.order_id = uc.order_id
+        left join orders o on o.order_id = uc.order_id
         left join coupon c on c.coupon_id = uc.coupon_id
         where u.user_id = #{userId}
-        --status-> 0代表当前可用的优惠券，1代表已经使用过或过期优惠券
+        -- status-> 0代表当前可用的优惠券，1代表已经使用过或过期优惠券
         <if test="status == 0">
             and (is_used = 0 and expired_at > now())
         </if>
         <if test="status == 1">
             and (is_used = 1 or now() > expired_at)
         </if>
+    </select>
+
+    <select id="getCanUseCoupon" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
+        select uc.user_coupon_id,
+               u.phone_number,
+               c.title       as "couponVo.title",
+               c.coupon_id   as "couponVo.couponId",
+               c.description as "couponVo.description",
+               c.discount    as "couponVo.discount",
+               c.threshold   as "couponVo.threshold",
+               c.valid_days,
+               is_used,
+               used_at,
+               received_at,
+               o.order_no,
+               expired_at
+        from user_coupon uc
+                 join users u on uc.user_id = u.user_id
+                 left join orders o on o.order_id = uc.order_id
+                 left join coupon c on c.coupon_id = uc.coupon_id
+        where u.user_id = #{userId}
+          and threshold &lt;= #{totalPrice}
+          and is_used = 0
+          and now() &lt; expired_at
     </select>
 </mapper>

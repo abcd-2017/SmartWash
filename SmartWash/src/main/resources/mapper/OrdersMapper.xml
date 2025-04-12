@@ -8,7 +8,8 @@
     </update>
     <update id="setPickupCode">
         update orders
-        set  pickup_code = #{pickupCode}
+        set  pickup_code = #{pickupCode},
+             user_coupon_id = #{couponId}
         where order_id = #{orderId};
     </update>
     <update id="nextStatus" parameterType="com.smartwash.entity.Orders">
@@ -43,8 +44,10 @@
         lp.item_id AS "laundryPackageVo.itemId",
         lp.item_name AS "laundryPackageVo.itemName",
         lp.base_price AS "laundryPackageVo.basePrice",
+        lp.description AS "laundryPackageVo.description"
         o.order_no AS orderNo,
         o.total_price AS totalPrice,
+        o.pay_price as payPrice,
         o.created_at AS createdAt,
         o.updated_at AS updatedAt,
         o.status AS status,
@@ -96,6 +99,7 @@
                lp.base_price   AS "laundryPackageVo.basePrice",
                o.order_no      AS orderNo,
                o.total_price   AS totalPrice,
+               o.pay_price as payPrice,
                o.created_at    AS createdAt,
                o.updated_at    AS updatedAt,
                o.status        AS status,
@@ -121,6 +125,7 @@
         lp.base_price AS "laundryPackageVo.basePrice",
         o.order_no AS orderNo,
         o.total_price AS totalPrice,
+        o.pay_price as payPrice,
         o.created_at AS createdAt,
         o.updated_at AS updatedAt,
         o.status AS status,

@@ -41,4 +41,8 @@ public interface IOrdersService extends IService<Orders> {
     Boolean shippingOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser);
 
     List<Orders> getWashingOrder(LoginUser loginUser, int size);
+
+    Boolean cancelOrder(Long orderId, Long userId);
+
+    OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId);
 }

@@ -1,6 +1,7 @@
 package com.smartwash.vo.user_coupon;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.smartwash.vo.coupon.CouponVo;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ public class UserCouponVo {
 
     private String phoneNumber;
 
-    private String couponTitle;
+    private CouponVo couponVo;
 
     private Boolean isUsed;
 

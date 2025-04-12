@@ -57,4 +57,17 @@ interface OrderApi {
     @RequireAuthorization
     @GET("/web/auth/orders/getWashingOrder")
     suspend fun getWashingOrder(): ResponseData<List<OrderVo>>
+
+    @RequireAuthorization
+    @POST("/web/auth/orders/cancelOrder/{orderId}")
+    suspend fun cancelOrder(
+        @Path("orderId") orderId: Long,
+    ): ResponseData<Boolean>
+
+    @RequireAuthorization
+    @POST("/web/auth/orders/calculationOrder/{orderId}/{userCouponId}")
+    suspend fun calculationOrder(
+        @Path("orderId") orderId: Long,
+        @Path("userCouponId") userCouponId: Long,
+    ): ResponseData<OrderInfo>
 }

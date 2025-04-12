@@ -36,11 +36,15 @@ public class Orders implements Serializable {
 
     private Long lockerId;
 
+    private Long userCouponId;
+
     private String orderNo;
 
     private Long laundryItemsId;
 
     private BigDecimal totalPrice;
+
+    private BigDecimal payPrice;
 
     private LocalDateTime createdAt;
 
@@ -49,6 +53,5 @@ public class Orders implements Serializable {
     private String status;
 
     private String pickupCode;
-
 
 }

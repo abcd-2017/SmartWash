@@ -28,7 +28,7 @@ public interface OrdersMapper extends BaseMapper<Orders> {
 
     Page<ShowOrderVo> getOrderList(Page<ShowOrderVo> page, String status, Long userId);
 
-    void setPickupCode(Long orderId, String pickupCode);
+    void setPickupCode(Long orderId, String pickupCode, Long couponId);
 
     void nextStatus(Long orderId, String status);
 }

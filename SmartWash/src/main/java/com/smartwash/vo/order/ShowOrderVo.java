@@ -16,11 +16,15 @@ public class ShowOrderVo {
 
     private LockersVo lockersVo;
 
+    private Long userCouponId;
+
     private String orderNo;
 
     private LaundryPackageVo laundryPackageVo;
 
     private BigDecimal totalPrice;
+
+    private BigDecimal payPrice;
 
     private LocalDateTime createdAt;
 

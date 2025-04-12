@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.order
 
+import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -28,11 +29,11 @@ import androidx.compose.material.icons.rounded.LocalShipping
 import androidx.compose.material.icons.rounded.Loop
 import androidx.compose.material.icons.rounded.Payment
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,14 +43,21 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -60,6 +68,7 @@ import com.smartwash.network.vo.order.OrderInfo
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import kotlinx.coroutines.launch
 
@@ -75,9 +84,34 @@ fun OrderPage(
 
     val orderStatus by orderViewModel.orderState.collectAsState()
     val orderList = orderViewModel.pagingFlow.collectAsLazyPagingItems()
+    val cancelOrderState by orderViewModel.cancelOrderState.collectAsState()
+    val context = LocalContext.current
+    var confirmPayShow by remember { mutableStateOf(false) }
+    var currOrderId by remember { mutableLongStateOf(-1L) }
 
     LaunchedEffect(pagerState.currentPage) {
         orderViewModel.updateOrderStatus(ShowOrderStatus.entries[pagerState.currentPage].status)
+    }
+
+    when (cancelOrderState) {
+        is RequestState.Success -> {
+            LaunchedEffect(cancelOrderState) {
+                Toast.makeText(context, "取消成功", Toast.LENGTH_SHORT).show()
+                orderList.refresh()
+                orderViewModel.resetCancelOrderState()
+            }
+        }
+
+        is RequestState.Error -> {
+            Toast.makeText(
+                context,
+                (cancelOrderState as RequestState.Error).message,
+                Toast.LENGTH_SHORT
+            ).show()
+            orderViewModel.resetCancelOrderState()
+        }
+
+        else -> {}
     }
 
     Scaffold(topBar = {
@@ -129,10 +163,16 @@ fun OrderPage(
                     ) {
                         items(orderList.itemCount) { index ->
                             orderList[index]?.let {
-                                OrderCard(it,
+                                OrderCard(
+                                    it,
                                     paymentClick = { navController.navigate("${PageConstant.Payment.text}/${it.orderId}") },
                                     shipmentClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.DELIVERY.type}") },
-                                    pickupClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.PICKUP.type}") }) {
+                                    pickupClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.PICKUP.type}") },
+                                    cancelClick = { orderId ->
+                                        currOrderId = orderId
+                                        confirmPayShow = true
+                                    },
+                                ) {
                                     navController.navigate("${PageConstant.OrderDetail.text}/${it.orderId}")
                                 }
                             }
@@ -193,6 +233,22 @@ fun OrderPage(
             }
         }
     }
+    //确认是否要支付
+    if (confirmPayShow) {
+        AlertDialog(
+            onDismissRequest = { confirmPayShow = false },
+            text = { Text("确定要取消订单？", fontSize = 16.sp) },
+            confirmButton = {
+                TextButton({
+                    if (currOrderId != -1L) {
+                        orderViewModel.cancelOrder(currOrderId)
+                    }
+                    currOrderId = -1L
+                    confirmPayShow = false
+                }) { Text("确定") }
+            },
+            dismissButton = { TextButton({ confirmPayShow = false }) { Text("取消") } })
+    }
 }
 
 @Composable
@@ -201,6 +257,7 @@ private fun OrderCard(
     paymentClick: () -> Unit,
     shipmentClick: () -> Unit,
     pickupClick: () -> Unit,
+    cancelClick: (Long) -> Unit,
     itemClick: () -> Unit,
 ) {
     Surface(
@@ -236,14 +293,17 @@ private fun OrderCard(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "2件衣物",
+                            text = order.laundryPackageVo.description ?: "",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.width(180.dp)
                         )
                     }
                 }
                 Text(
-                    text = "¥${order.totalPrice}",
+                    text = "¥${order.payPrice}",
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp
@@ -272,8 +332,21 @@ private fun OrderCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 when (order.status) {
                     ShowOrderStatus.PENDING_PAYMENT.status -> {
+                        TextButton(onClick = { cancelClick(order.orderId) }) {
+                            Text("取消订单")
+                        }
+                        Spacer(Modifier.width(12.dp))
                         Button(
                             onClick = paymentClick,
                             shape = RoundedCornerShape(20.dp)
@@ -328,11 +401,12 @@ private fun OrderCard(
                     }
 
                     else -> {
-                        FilledTonalButton(
-                            onClick = {},
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text("查看详情")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "${OrderStatus.getDescriptionByStatus(order.status)}",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }

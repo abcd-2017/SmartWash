@@ -39,4 +39,10 @@ public class WebUserCouponController {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(userCouponService.receiveCoupon(couponId, user.getUserId()));
     }
+
+    @PostMapping("/auth/userCoupon/getCanUseCoupon/{orderId}")
+    public Result<List<UserCouponVo>> getCanUseCoupon(@PathVariable("orderId") Long orderId) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(userCouponService.getCanUseCoupon(user.getUserId(), orderId));
+    }
 }

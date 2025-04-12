@@ -13,6 +13,7 @@ data class OrderInfo(
     val orderNo: String,
     val laundryPackageVo: LaundryItem,
     val totalPrice: Float,
+    val payPrice: Float,
     val status: String,
     val pickupCode: String,
     val createdAt: String,

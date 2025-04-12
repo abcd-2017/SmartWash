@@ -6,17 +6,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.OrderStatus;
-import com.smartwash.entity.Orders;
-import com.smartwash.entity.Payments;
-import com.smartwash.entity.Users;
+import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.payment.AddPaymentFrom;
 import com.smartwash.from.payment.PaymentOrderFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.from.payment.UpdatePaymentFrom;
-import com.smartwash.mapper.OrdersMapper;
-import com.smartwash.mapper.PaymentsMapper;
-import com.smartwash.mapper.UsersMapper;
+import com.smartwash.mapper.*;
 import com.smartwash.service.IPaymentsService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrdersVo;
@@ -29,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,6 +43,10 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     private UsersMapper usersMapper;
     @Autowired
     private OrdersMapper ordersMapper;
+    @Autowired
+    private CouponMapper couponMapper;
+    @Autowired
+    private UserCouponMapper userCouponMapper;
 
     @Override
     public Page<PaymentVo> getAllPayments(SearchPaymentFrom searchUserFrom) {
@@ -87,29 +88,50 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         if (!Objects.equals(orders.getStatus(), OrderStatus.PENDING_PAYMENT.getStatus())) {
             throw new CustomExceptions("该订单已经支付");
         }
-        BigDecimal amount = BigDecimal.valueOf(orderFrom.getAmount());
         Users users = usersMapper.selectById(user.getUserId());
-        if (amount.compareTo(users.getBalance()) > 0) {
+        UserCoupon userCoupon = null;
+        //如果用户优惠券id不为空，就使用优惠券
+        if (orderFrom.getUserCouponId() != null) {
+            userCoupon = userCouponMapper.selectById(orderFrom.getUserCouponId());
+            if (userCoupon == null || userCoupon.getIsUsed() || userCoupon.getExpiredAt().isBefore(LocalDateTime.now())) {
+                throw new CustomExceptions(("优惠券异常"));
+            }
+
+            Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+            if (orders.getTotalPrice().compareTo(coupon.getDiscount()) <= 0) orders.setPayPrice(BigDecimal.ZERO);
+            else orders.setPayPrice(orders.getTotalPrice().subtract(coupon.getDiscount()));
+            orders.setUserCouponId(userCoupon.getUserCouponId());
+        }
+
+        if (orders.getPayPrice().compareTo(users.getBalance()) > 0) {
             throw new CustomExceptions("余额不足");
         }
 
         //1.更新支付表
         Payments payments = new Payments();
-        if (users.getBalance().compareTo(amount) < 0) return false;
         payments.setOrderId(orderFrom.getOrderId());
         payments.setUserId(user.getUserId());
-        payments.setAmount(amount);
+        payments.setAmount(orders.getPayPrice());
         payments.setPaymentMethod(orderFrom.getPaymentType());
         saveOrUpdate(payments);
 
         //2.用户余额扣减
-        usersMapper.decrUserBalance(user.getUserId(), payments.getAmount());
+        if (orders.getPayPrice().compareTo(BigDecimal.ZERO) > 0)
+            usersMapper.decrUserBalance(user.getUserId(), orders.getPayPrice());
 
-        //3.修改订单状态
-        ordersMapper.updateOrderStatus(orderFrom.getOrderId(), OrderStatus.PENDING_SHIPMENT.getStatus());
-        //设置寄件码
+        //3.如果使用了优惠券，则修改优惠券状态
+        if (userCoupon != null) {
+            userCoupon.setIsUsed(true);
+            userCoupon.setOrderId(orders.getOrderId());
+            userCoupon.setUsedAt(LocalDateTime.now());
+            userCouponMapper.updateById(userCoupon);
+        }
+
+        //4.设置寄件码，修改订单状态
         int pickCode = RandomUtil.randomInt(1000, 10000);
-        ordersMapper.setPickupCode(orderFrom.getOrderId(), String.format("%d:%d:%s", users.getUserId(), orderFrom.getOrderId(), pickCode));
+        orders.setPickupCode(String.format("%d:%d:%s", users.getUserId(), orderFrom.getOrderId(), pickCode));
+        orders.setStatus(OrderStatus.PENDING_SHIPMENT.getStatus());
+        ordersMapper.updateById(orders);
         return true;
     }
 
