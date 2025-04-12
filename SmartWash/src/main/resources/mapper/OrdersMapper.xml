@@ -44,7 +44,7 @@
         lp.item_id AS "laundryPackageVo.itemId",
         lp.item_name AS "laundryPackageVo.itemName",
         lp.base_price AS "laundryPackageVo.basePrice",
-        lp.description AS "laundryPackageVo.description"
+        lp.description AS "laundryPackageVo.description",
         o.order_no AS orderNo,
         o.total_price AS totalPrice,
         o.pay_price as payPrice,

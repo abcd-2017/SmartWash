@@ -23,8 +23,8 @@ class ResponseInterceptor() : Interceptor {
 
             // 解析服务器返回的 JSON
             val responseBody = response.peekBody(Long.MAX_VALUE).string()
+            Log.d(AppConstant.APP_NAME, "intercept: $responseBody")
             val responseData = Gson().fromJson(responseBody, ResponseData::class.java)
-
             if (responseData.code == HttpStatusCode.Unauthorized.code) {
                 SharePreferenceUtils
                 App.globalRequestAfterCallback()  // 触发 UI 逻辑（比如跳转登录页）

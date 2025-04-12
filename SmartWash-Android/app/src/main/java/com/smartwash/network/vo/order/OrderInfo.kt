@@ -1,10 +1,12 @@
 package com.smartwash.network.vo.order
 
+import androidx.annotation.Keep
 import com.smartwash.network.vo.laundry.LaundryItem
 import com.smartwash.network.vo.locker.LockerVo
 import com.smartwash.network.vo.school.SchoolVo
 import com.smartwash.network.vo.user.UserInfoVo
 
+@Keep
 data class OrderInfo(
     val orderId: Long,
     val userVo: UserInfoVo,
@@ -17,5 +19,5 @@ data class OrderInfo(
     val status: String,
     val pickupCode: String,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
 )

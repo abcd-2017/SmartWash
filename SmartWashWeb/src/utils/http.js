@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // 创建 axios 实例
 const http = axios.create({
-    baseURL: 'http://localhost:8080', // 设置基础 URL，替换成你的后台 API 地址
+    baseURL: 'http://8.148.70.81:9000', // 设置基础 URL，替换成你的后台 API 地址
     timeout: 5000, // 请求超时
     headers: {
         'Content-Type': 'application/json',

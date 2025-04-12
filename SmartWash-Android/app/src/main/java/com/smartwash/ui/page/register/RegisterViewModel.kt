@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.register
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.UserApi
@@ -19,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val userApi: UserApi
+    private val userApi: UserApi,
 ) : ViewModel() {
     private val _registerState = MutableStateFlow<RequestState>(RequestState.Idle)
     val registerState = _registerState.asStateFlow()
@@ -37,6 +38,7 @@ class RegisterViewModel @Inject constructor(
                         if (responseData.code == HttpStatusCode.Success.code && responseData.data != null && responseData.data.length == 6) {
                             CaptchaState.Success("${responseData.data}")
                         } else CaptchaState.Error("${responseData.data}")//验证码获取失败
+                    Log.e("smart wash", "getCaptcha: $responseData")
                 }
             } catch (e: NetworkException) {
                 withContext(Dispatchers.Main) {

@@ -1,5 +1,8 @@
 package com.smartwash.network.vo.coupon
 
+import androidx.annotation.Keep
+
+@Keep
 data class CouponVo(
     val couponId: Long,
     val title: String,

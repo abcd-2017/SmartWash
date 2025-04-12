@@ -1,5 +1,8 @@
 package com.smartwash.network.vo.order
 
+import androidx.annotation.Keep
+
+@Keep
 data class OrderVo(
     val orderId: Long,
     val userId: Long,

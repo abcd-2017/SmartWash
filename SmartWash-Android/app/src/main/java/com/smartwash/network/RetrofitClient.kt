@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 class RetrofitClient() {
-    private var baseurl: String = "http://192.168.5.23:8080/"
+    private var baseurl: String = "http://8.148.70.81:9000/"
 
     private val okHttpClient = OkHttpClient
         .Builder()
@@ -40,7 +40,6 @@ class RetrofitClient() {
             .baseUrl(baseurl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-
     }
 
     @Provides

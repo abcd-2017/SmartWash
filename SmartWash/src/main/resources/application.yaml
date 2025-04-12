@@ -11,8 +11,6 @@ spring:
       port: 6379
       database: 3
 
-
-
 mybatis-plus:
   global-config:
     db-config:
