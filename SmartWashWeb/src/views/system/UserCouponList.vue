@@ -45,7 +45,9 @@
     >
       <el-table-column prop="userCouponId" label="记录ID" width="100" />
       <el-table-column prop="phoneNumber" label="手机号" width="140" />
-      <el-table-column prop="couponTitle" label="优惠券名称" min-width="180" />
+      <el-table-column prop="couponTitle" label="优惠券名称" min-width="180">
+        <template #default="{ row }">{{ row.couponVo.title }}</template>
+      </el-table-column>
       <el-table-column label="使用状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.isUsed ? 'success' : 'info'">
