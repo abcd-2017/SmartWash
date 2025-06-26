@@ -16,4 +16,9 @@ async function login(user: LoginUser): Promise<BaseResponse<String>> {
   return httpUtil.post<string>("/auth/user/login", user)
 }
 
-export { getCaptcha, register }
+//获取当前登录用户学校id
+async function getUserSchoolId(): Promise<BaseResponse<number>> {
+  return httpUtil.post<number>("/web/auth/user/getUserSchool")
+}
+
+export { getCaptcha, register, login }
