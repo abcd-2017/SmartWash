@@ -1,5 +1,5 @@
 export class RegisterUser {
-  phoneNumber: number | null = null
+  phoneNumber: string | null = null
   password: string | null = ''
   code: string | null = ''
 }

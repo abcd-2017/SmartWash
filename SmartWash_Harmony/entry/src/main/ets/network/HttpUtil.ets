@@ -2,7 +2,7 @@ import { instance } from './Axios'
 import { BaseResponse } from './BaseResponse'
 
 class HttpUtil {
-  async get<T>(url: string, params?: object): Promise<BaseResponse<T>> {
+  async get<T>(url: string, params?: Object): Promise<BaseResponse<T>> {
     return instance.get<T, BaseResponse<T>>(url, { params })
   }
 

@@ -1,0 +1,1 @@
+export const pathStack: NavPathStack = new NavPathStack();

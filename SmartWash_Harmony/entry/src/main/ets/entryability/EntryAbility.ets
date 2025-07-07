@@ -19,6 +19,7 @@ export default class EntryAbility extends UIAbility {
     // Main window is created, set main page for this ability
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
     initPreferences(this.context)
+    let pathStack: NavPathStack = new NavPathStack()
 
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {

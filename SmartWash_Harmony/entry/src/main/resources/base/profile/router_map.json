@@ -1,0 +1,53 @@
+{
+  "routerMap": [
+    {
+      "name": "Login",
+      "pageSourceFile": "src/main/ets/pages/Login.ets",
+      "buildFunction": "LoginBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Register",
+      "pageSourceFile": "src/main/ets/pages/Register.ets",
+      "buildFunction": "RegisterBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Home",
+      "pageSourceFile": "src/main/ets/pages/Home.ets",
+      "buildFunction": "HomeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "AddSchool",
+      "pageSourceFile": "src/main/ets/pages/AddSchool.ets",
+      "buildFunction": "AddSchoolBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Setting",
+      "pageSourceFile": "src/main/ets/pages/Setting.ets",
+      "buildFunction": "SettingBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Recharge",
+      "pageSourceFile": "src/main/ets/pages/Recharge.ets",
+      "buildFunction": "RechargeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Coupon",
+      "pageSourceFile": "src/main/ets/pages/Coupon.ets",
+      "buildFunction": "CouponBuilder",
+      "data": {
+      }
+    }
+  ]
+}

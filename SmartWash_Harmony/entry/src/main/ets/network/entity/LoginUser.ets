@@ -1,4 +1,4 @@
 export class LoginUser {
-  phoneNumber: number | null = null
+  phoneNumber: string | null = null
   password: string | null = ''
 }

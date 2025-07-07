@@ -1,38 +1,65 @@
-import { getCaptcha } from '../network/api/UserApi';
+import { HttpStatusCode } from '@ohos/axios';
+import { CommonConstants } from '../constant/CommonConstants';
+import { getUserSchoolId } from '../network/api/UserApi';
 import { logger } from '../utils/Logger';
-import { getValue, setValue } from '../utils/StoreageUtil';
+import { pathStack } from '../utils/PathStackUtil';
+import { getValue, initPreferences } from '../utils/StoreageUtil';
+import { AddSchoolBuilder } from './AddSchool';
+import { HomeBuilder } from './Home';
+import { LoginBuilder } from './Login';
 
 @Entry
 @Component
 struct Index {
-  @State message: string = 'Hello World';
-  @State token: string = '2'
-  @State phoneNumber: string = ''
+  @State token: string = ""
+  @State showPageType: number = 0
+  @StorageLink('userLoginFlag') @Watch("onUserTokenChange") userLoginFlag: boolean = false
+
+  async aboutToAppear() {
+    this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
+    if (this.token != "") {
+      let res = await getUserSchoolId()
+      if (res.code == HttpStatusCode.Ok) {
+        if (res.data == null) {
+          this.showPageType = 1
+        } else {
+          this.showPageType = 2
+        }
+      }
+    }
+  }
+
+  async onUserTokenChange() {
+    if (this.userLoginFlag) {
+      this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
+      if (this.token != null) {
+        let res = await getUserSchoolId()
+        if (res.code == HttpStatusCode.Ok) {
+          if (res.data == null) {
+            this.showPageType = 1
+          } else {
+            this.showPageType = 2
+          }
+        }
+      }
+      this.userLoginFlag = false
+    }
+  }
 
   build() {
     Column() {
-      Row() {
-        TextInput({
-          text: this.phoneNumber,
-        }).contentType(ContentType.PHONE_NUMBER)
-          .onChange(val => {
-            this.phoneNumber = val
-          })
-      }
-      .width("100%")
-      .height(100)
-
-      Row() {
-        Button("获取").onClick(async () => {
-          let res = await getCaptcha(this.phoneNumber)
-          this.token = res.data ?? '1'
-          logger.info("info", `${res.data}`)
-        })
-        Text(this.token)
-      }.height(50)
-      .width("100%").justifyContent(FlexAlign.SpaceAround)
-      .alignItems(VerticalAlign.Center)
-    }.height(400)
-    .width("100%")
+      Navigation(pathStack) {
+        if (this.showPageType == 0) {
+          LoginBuilder()
+        } else if (this.showPageType == 1) {
+          AddSchoolBuilder()
+        } else {
+          HomeBuilder()
+        }
+      }.backgroundColor($r('sys.color.background_primary'))
+      .hideTitleBar(true)
+      .mode(NavigationMode.Stack)
+    }.height('100%')
+    .width('100%')
   }
 }

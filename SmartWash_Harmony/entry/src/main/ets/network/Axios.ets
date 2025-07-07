@@ -1,22 +1,20 @@
 import axios, {
-  Axios,
   AxiosError,
   AxiosInstance,
   AxiosResponse,
   HttpStatusCode,
   InternalAxiosRequestConfig
 } from '@ohos/axios'
-import { hilog } from '@kit.PerformanceAnalysisKit'
-import { checkStatus } from '../utils/checkStatus'
+import { checkStatus } from '../utils/CheckStatus'
 import { promptAction } from '@kit.ArkUI'
 import { logger } from '../utils/Logger'
 import { JSON } from '@kit.ArkTS'
-import { BaseResponse } from './BaseResponse'
 import { getValue } from '../utils/StoreageUtil'
 import { CommonConstants } from '../constant/CommonConstants'
+import { pathStack } from '../utils/PathStackUtil'
 
 export const instance: AxiosInstance = axios.create({
-  baseURL: "http://192.168.5.24:8080",
+  baseURL: "http://8.148.70.81:9000",
   timeout: 100000,
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
@@ -27,11 +25,11 @@ export const instance: AxiosInstance = axios.create({
 instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   let tokenCache = await getValue(CommonConstants.USER_TOKEN, "") as string
   if (config.url?.startsWith("/web")) {
-    if (tokenCache) {
+    if (tokenCache != null && tokenCache != "") {
       config.headers['Authorization'] = `Bearer ${tokenCache}`
     } else {
       //跳转到登录页
-
+      pathStack.pushPathByName("Login", null)
     }
   }
   return config
@@ -42,9 +40,12 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => 
 //请求后拦截器
 instance.interceptors.response.use((response: AxiosResponse) => {
   //登录失效
+  logger.debug("debug", JSON.stringify(response.data))
   if (response.data.code == HttpStatusCode.Unauthorized) {
     promptAction.showToast({ message: "登录失效，请重新登录！" })
     logger.warn("warn", JSON.stringify(response.data))
+    //跳转到登录页
+    pathStack.pushPathByName("Login", null)
   } else if (response.status != HttpStatusCode.Ok) {
 
   }
