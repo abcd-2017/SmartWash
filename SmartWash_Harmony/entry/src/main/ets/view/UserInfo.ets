@@ -1,19 +1,24 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { CommonConstants } from "../constant/CommonConstants"
+import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo } from "../network/api/UserApi"
+import { OrderItemCountVo } from "../network/vo/OrderItemCountVo"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
-import { logger } from "../utils/Logger"
 import { pathStack } from "../utils/PathStackUtil"
 import { AccountInfoCard } from "./AccountInfoCard"
 import { ItemTitle } from "./ItemTitle"
-import { OrderStatusCard } from "./OrderStatusCard"
+import { OrderCountCard } from "./OrderCountCard"
 import { SettingRow } from "./SettingRow"
+import { promptAction } from "@kit.ArkUI"
+import { ShowOrderStatusEnum, ShowOrderStatusMap } from "../constant/ShowOrderStatus"
 
 @Component
 export struct UserInfo {
   private scroller: Scroller = new Scroller()
   @State userInfo: UserInfoVo | null = null
   @StorageLink('refreshUserInfo') @Watch("onUserInfoChange") refreshFlag: boolean = false
+  @State orderItemCount: OrderItemCountVo | null = null
+  @StorageLink('refreshOrderCount') @Watch("onOrderCountChange") orderCountFlag: boolean = false
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
@@ -23,16 +28,47 @@ export struct UserInfo {
     this.refreshFlag = false
   }
 
+  //监听订单数量刷新状态变化
+  onOrderCountChange() {
+    if (this.orderCountFlag) {
+      this.getOrderCount()
+    }
+    this.orderCountFlag = false
+  }
+
   aboutToAppear() {
     this.refreshUserInfo()
+    this.getOrderCount()
   }
 
   async refreshUserInfo() {
     let res = await getUserInfo()
     if (res.code == HttpStatusCode.Ok) {
       this.userInfo = res.data
-      logger.info(`${res.data?.phoneNumber} ${this.userInfo?.balance}`)
+    } else {
+      promptAction.showToast({ message: res.message })
     }
+  }
+
+  async getOrderCount() {
+    let res = await getOrderItemCount({
+      pendingPaymentStatus: ShowOrderStatusEnum.PENDING_PAYMENT,
+      processingStatus: ShowOrderStatusEnum.WASHING,
+      pendingPickupStatus: ShowOrderStatusEnum.READY_FOR_PICKUP,
+      shippedStatus: ShowOrderStatusEnum.PENDING_SHIPMENT,
+    })
+    if (res.code == HttpStatusCode.Ok) {
+      this.orderItemCount = res.data
+    } else {
+      promptAction.showToast({ message: res.message })
+    }
+  }
+
+  //跳转到订单列表页
+  jumpToOrderList(index: number) {
+    pathStack.pushPath({
+      name: "OrderList", param: index
+    })
   }
 
   build() {
@@ -90,7 +126,7 @@ export struct UserInfo {
 
         Column() {
           AccountInfoCard({
-            icon: $r('sys.symbol.key_shield'),
+            icon: $r('sys.symbol.yuansign_moneybag'),
             titleContent: "账户余额",
             descContent: `￥${this.userInfo?.balance}`,
             buttonContent: "充值",
@@ -105,8 +141,11 @@ export struct UserInfo {
             titleContent: "校园卡",
             descContent: `${this.userInfo?.campusCard == null ? "未绑定" : this.userInfo.campusCard}`,
             buttonContent: `${this.userInfo?.campusCard == null ? "绑定" : "解绑"}`,
-            // click: () => {
-            // }
+            click: () => {
+              pathStack.pushPathByName("BingCampusCardAlert", this.userInfo, popInfo => {
+                this.refreshUserInfo()
+              }, false)
+            }
           })
 
           RowSplit().height("16")
@@ -127,45 +166,45 @@ export struct UserInfo {
         RowSplit().height("6")
         List() {
           ListItem() {
-            OrderStatusCard({
+            OrderCountCard({
               icon: $r('sys.symbol.clock'),
               content: "待支付",
-              orderCount: `${0}`,
+              orderCount: `${this.orderItemCount?.pendingPaymentCount ?? 0}`,
               orderCardClick: () => {
-
+                this.jumpToOrderList(1)
               }
             })
           }
 
           ListItem() {
-            OrderStatusCard({
-              icon: $r('sys.symbol.wash_light'),
+            OrderCountCard({
+              icon: $r('sys.symbol.laundry'),
               content: "清洗中",
-              orderCount: `${0}`,
+              orderCount: `${this.orderItemCount?.processingCount ?? 0}`,
               orderCardClick: () => {
-
+                this.jumpToOrderList(3)
               }
             })
           }
 
           ListItem() {
-            OrderStatusCard({
+            OrderCountCard({
               icon: $r('sys.symbol.envelope_open'),
               content: "待取件",
-              orderCount: `${0}`,
+              orderCount: `${this.orderItemCount?.pendingPickupCount ?? 0}`,
               orderCardClick: () => {
-
+                this.jumpToOrderList(4)
               }
             })
           }
 
           ListItem() {
-            OrderStatusCard({
+            OrderCountCard({
               icon: $r('sys.symbol.arrow_counterclockwise_clock'),
               content: "历史订单",
-              orderCount: `${0}`,
+              orderCount: "-1",
               orderCardClick: () => {
-
+                this.jumpToOrderList(0)
               }
             })
           }

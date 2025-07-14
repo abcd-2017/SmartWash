@@ -168,9 +168,8 @@ struct AddSchool {
           if (res.code == HttpStatusCode.Ok) {
             if (pathStack.size() > 0) {
               pathStack.clear()
-            } else {
-              AppStorage.setOrCreate("userLoginFlag", true)
             }
+            AppStorage.setOrCreate("userLoginFlag", true)
           } else {
             promptAction.showToast({ message: res.message })
           }

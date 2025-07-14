@@ -48,6 +48,62 @@
       "buildFunction": "CouponBuilder",
       "data": {
       }
+    },
+    {
+      "name": "OrderList",
+      "pageSourceFile": "src/main/ets/pages/OrderList.ets",
+      "buildFunction": "OrderListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Payment",
+      "pageSourceFile": "src/main/ets/pages/Payment.ets",
+      "buildFunction": "PaymentBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "OrderDetail",
+      "pageSourceFile": "src/main/ets/pages/OrderDetail.ets",
+      "buildFunction": "OrderDetailBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "PickupDelivery",
+      "pageSourceFile": "src/main/ets/pages/PickupDelivery.ets",
+      "buildFunction": "PickupDeliveryBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "BingCampusCardAlert",
+      "pageSourceFile": "src/main/ets/pages/BingCampusCardAlert.ets",
+      "buildFunction": "BingCampusCardAlertBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "Laundry",
+      "pageSourceFile": "src/main/ets/pages/Laundry.ets",
+      "buildFunction": "LaundryBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "PickUp",
+      "pageSourceFile": "src/main/ets/pages/PickUp.ets",
+      "buildFunction": "PickUpBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "PaymentSuccess",
+      "pageSourceFile": "src/main/ets/pages/PaymentSuccess.ets",
+      "buildFunction": "PaymentSuccessBuilder",
+      "data": {
+      }
     }
   ]
 }

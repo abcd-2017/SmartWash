@@ -39,6 +39,9 @@ struct Index {
             this.showPageType = 1
           } else {
             this.showPageType = 2
+            AppStorage.setOrCreate("refreshUserInfo", true)
+            AppStorage.setOrCreate("refreshOrderCount", true)
+            logger.info("index page show")
           }
         }
       }

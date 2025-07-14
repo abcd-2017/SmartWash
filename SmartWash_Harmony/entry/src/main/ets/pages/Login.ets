@@ -18,6 +18,7 @@ struct Login {
   @State password: string | null = null
   @State checkPhoneNumber: boolean = false
   @State checkPassword: boolean = false
+  private controller = new TextInputController()
 
   check() {
     let value = this.phoneNumber ?? ""
@@ -61,7 +62,7 @@ struct Login {
             }.alignItems(HorizontalAlign.Start)
 
             Column() {
-              TextInput({ text: $$this.password, placeholder: "密码" })
+              TextInput({ text: $$this.password, placeholder: "密码", controller: this.controller })
                 .backgroundColor($r('sys.color.comp_background_tertiary'))
                 .type(InputType.Password)
                 .maxLength(16).onChange(it => this.password = it)
@@ -95,15 +96,15 @@ struct Login {
             setValue(CommonConstants.USER_TOKEN, `${res.data}`)
             let getIdRes = await getUserSchoolId()
             if (getIdRes.code == HttpStatusCode.Ok) {
+              this.controller.stopEditing()
               if (getIdRes.data == null) {
                 pathStack.replacePathByName("AddSchool", null)
                 return
               } else {
                 if (pathStack.size() > 0) {
                   pathStack.clear()
-                } else {
-                  AppStorage.setOrCreate("userLoginFlag", true)
                 }
+                AppStorage.setOrCreate("userLoginFlag", true)
               }
             }
           } else {

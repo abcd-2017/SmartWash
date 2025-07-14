@@ -41,7 +41,7 @@ async function getUserByStudentId(params: Record<string, Object>): Promise<BaseR
 }
 
 //绑定校园卡
-async function bindCampus(campusCard: number): Promise<BaseResponse<boolean>> {
+async function bindCampus(campusCard: string): Promise<BaseResponse<boolean>> {
   return httpUtil.post<boolean>(`/web/auth/user/bingCampus/${campusCard}`)
 }
 

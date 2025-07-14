@@ -20,7 +20,7 @@ async function getUserCoupon(params: Record<string, Object>): Promise<BaseRespon
 
 //判断当前订单可以使用的优惠券
 async function getCanUseCoupon(orderId: number): Promise<BaseResponse<Array<UserCouponVo>>> {
-  return httpUtil.get<Array<UserCouponVo>>(`/web/auth/userCoupon/getCanUseCoupon/${orderId}`);
+  return httpUtil.post<Array<UserCouponVo>>(`/web/auth/userCoupon/getCanUseCoupon/${orderId}`);
 }
 
 

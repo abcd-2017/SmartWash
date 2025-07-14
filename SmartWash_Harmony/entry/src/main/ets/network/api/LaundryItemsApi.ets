@@ -1,5 +1,5 @@
 import { BaseResponse } from "../BaseResponse";
-import { LaundryItem } from "../entity/LaundryItem";
+import { LaundryItem } from "../vo/LaundryItem";
 import { httpUtil } from "../HttpUtil";
 
 //获取所有套餐

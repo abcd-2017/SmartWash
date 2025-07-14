@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { CommonConstants } from "../constant/CommonConstants";
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
-import { LaundryItem } from "../network/entity/LaundryItem"
+import { LaundryItem } from "../network/vo/LaundryItem"
 
 @Component
 export struct Service {

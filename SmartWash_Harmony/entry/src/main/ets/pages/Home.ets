@@ -1,3 +1,4 @@
+import { IndexPage } from "../view/IndexPage"
 import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
 
@@ -10,7 +11,7 @@ export function HomeBuilder() {
 @Component
 struct Home {
   private controller: TabsController = new TabsController()
-  @State currentIndex: number = 2
+  @State currentIndex: number = 0
 
   @Builder
   tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {
@@ -33,7 +34,11 @@ struct Home {
       Tabs({ barPosition: BarPosition.End, controller: this.controller, index: this.currentIndex }) {
         TabContent() {
           Column() {
-            Text("首页")
+            IndexPage({
+              userInfoClick: () => {
+                this.controller.changeIndex(2)
+              }
+            })
           }.height("100%")
           .width("100%")
           .backgroundColor(Color.Gray)
@@ -49,6 +54,10 @@ struct Home {
         }.tabBar(this.tabBuilder("主页", 2, $r('sys.symbol.person_fill'), $r('sys.symbol.person')))
       }.onChange(i => {
         this.currentIndex = i
+        if (i == 2) {
+          AppStorage.setOrCreate("refreshUserInfo", true)
+          AppStorage.setOrCreate("refreshOrderCount", true)
+        }
       }).barOverlap(true)
     }
     .hideTitleBar(true)
