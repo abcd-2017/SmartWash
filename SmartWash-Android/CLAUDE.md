@@ -5,7 +5,7 @@
 ## 基本规则
 
 - **必须使用中文回答** — 所有对话、代码注释、提交信息均使用中文。
-- **每次修改完必须提交 Git Commit** — 完成一个功能或修复后，立即使用中文提交信息进行 `git commit`，保持提交粒度清晰。
+- **每次修改完必须提交 Git Commit** — 完成一个功能或修复后，立即使用中文提交信息进行 `git commit`。提交信息格式：`<type>(Android): <描述>`，例如 `feat(Android): 新增订单详情页面`、`fix(Android): 修复登录 token 过期问题`。
 - **新增页面必须注册路由** — 在 `PageConstant` 中添加路由常量，在 `MainActivity` 的 `NavHost` 中注册 composable。
 - **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一使用 `ResponseData<T>` 包装。
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
