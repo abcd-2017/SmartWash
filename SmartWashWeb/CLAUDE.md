@@ -5,7 +5,7 @@
 ## 核心规则
 
 - **必须使用中文回答**：所有对话回复、代码注释、commit 消息均使用中文。
-- **每次修改后必须提交 commit**：任何代码修改完成后，立即创建 git commit，commit message 使用中文描述变更内容。
+- **每次修改后必须提交 commit**：任何代码修改完成后，立即创建 git commit。提交信息格式：`<type>(Web): <描述>`（如 `feat(Web): 新增学校管理页面`、`fix(Web): 修复登录 token 过期问题`），使用中文描述变更内容。
 - **遵循现有代码模式**：新增页面和 API 模块必须遵循项目中已有的模式和结构，不要自行发明新风格。
 - **使用 `<script setup>` 语法**：Vue 组件统一使用 Composition API + `<script setup>`。
 - **UI 组件使用 Element Plus**：所有表单、表格、弹窗、按钮等 UI 元素统一使用 Element Plus 组件。
