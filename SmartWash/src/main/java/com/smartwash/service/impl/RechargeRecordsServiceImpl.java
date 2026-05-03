@@ -12,8 +12,8 @@ import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import com.smartwash.vo.users.UserVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,18 +23,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Service
+@RequiredArgsConstructor
 public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMapper, RechargeRecords> implements IRechargeRecordsService {
-    @Autowired
-    private UsersMapper usersMapper;
+    private final UsersMapper usersMapper;
 
     //获取所有充值记录
     @Override

@@ -13,26 +13,17 @@ import com.smartwash.mapper.OrdersMapper;
 import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.service.IUserCouponService;
 import com.smartwash.vo.user_coupon.UserCouponVo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * <p>
- * 用户领取优惠券记录表 服务实现类
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Service
+@RequiredArgsConstructor
 public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCoupon> implements IUserCouponService {
-    @Autowired
-    private CouponMapper couponMapper;
-    @Autowired
-    private OrdersMapper ordersMapper;
+    private final CouponMapper couponMapper;
+    private final OrdersMapper ordersMapper;
 
     @Override
     public Page<UserCouponVo> getAllUserCoupon(SearchUserCouponFrom couponFrom) {

@@ -16,8 +16,8 @@ import com.smartwash.service.IUsersService;
 import com.smartwash.vo.schools.SchoolsVo;
 import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.UserVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,18 +26,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Service
+@RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
-    @Autowired
-    private ISchoolsService schoolsService;
+    private final ISchoolsService schoolsService;
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {

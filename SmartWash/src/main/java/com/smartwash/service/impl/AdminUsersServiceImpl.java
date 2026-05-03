@@ -14,8 +14,8 @@ import com.smartwash.mapper.AdminUsersMapper;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IRolesService;
 import com.smartwash.vo.admin_users.AdminUserVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -24,18 +24,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Service
+@RequiredArgsConstructor
 public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUsers> implements IAdminUsersService {
-    @Autowired
-    private IRolesService rolesService;
+    private final IRolesService rolesService;
 
     @Override
     public Page<AdminUserVo> getAllAdminUsers(SearchAdminUserFrom searchUserFrom) {

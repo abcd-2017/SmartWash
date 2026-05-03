@@ -7,7 +7,7 @@ import com.smartwash.entity.Users;
 import com.smartwash.mapper.AdminUsersMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.utils.LoginUser;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,11 +17,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    @Autowired
-    private UsersMapper usersMapper;
-    @Autowired
-    private AdminUsersMapper adminUsersMapper;
+    private final UsersMapper usersMapper;
+    private final AdminUsersMapper adminUsersMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

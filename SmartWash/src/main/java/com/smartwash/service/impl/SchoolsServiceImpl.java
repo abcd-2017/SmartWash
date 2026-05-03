@@ -14,8 +14,8 @@ import com.smartwash.service.ILockersService;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.schools.SchoolNameVo;
 import com.smartwash.vo.schools.SchoolsVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,18 +23,10 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Service
+@RequiredArgsConstructor
 public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> implements ISchoolsService {
-    @Autowired
-    private ILockersService lockersService;
+    private final ILockersService lockersService;
 
     //获取所有学校
     @Override

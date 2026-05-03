@@ -19,7 +19,7 @@ import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,28 +29,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author
- * @since 2025-03-06
- */
 @Service
+@RequiredArgsConstructor
 public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> implements IOrdersService {
-    @Autowired
-    private OrdersMapper ordersMapper;
-    @Autowired
-    private UsersMapper usersMapper;
-    @Autowired
-    private LockersMapper lockersMapper;
-    @Autowired
-    private UserCouponMapper userCouponMapper;
-    @Autowired
-    private CouponMapper couponMapper;
-    @Autowired
-    private OrderTimeoutManager orderTimeoutManager;
+    private final OrdersMapper ordersMapper;
+    private final UsersMapper usersMapper;
+    private final LockersMapper lockersMapper;
+    private final UserCouponMapper userCouponMapper;
+    private final CouponMapper couponMapper;
+    private final OrderTimeoutManager orderTimeoutManager;
 
     @Override
     public Page<OrdersVo> getAllOrders(SearchOrderFrom searchOrderFrom) {

@@ -12,8 +12,8 @@ import com.smartwash.mapper.CouponMapper;
 import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.service.ICouponService;
 import com.smartwash.vo.coupon.CouponVo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,18 +21,10 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
-/**
- * <p>
- * 优惠券模板 服务实现类
- * </p>
- *
- * @author
- * @since 2025-04-06
- */
 @Service
+@RequiredArgsConstructor
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements ICouponService {
-    @Autowired
-    private UserCouponMapper userCouponMapper;
+    private final UserCouponMapper userCouponMapper;
 
     @Override
     public Page<CouponVo> getAllCoupon(SearchCouponFrom searchCouponFrom) {
