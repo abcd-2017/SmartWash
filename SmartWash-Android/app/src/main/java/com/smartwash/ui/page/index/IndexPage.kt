@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.LocalLaundryService
@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,9 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.network.vo.order.OrderVo
@@ -65,7 +64,6 @@ fun IndexPage(
     val userInfoStatus by indexViewModel.userInfoStatus.collectAsState()
     val userInfo by indexViewModel.userInfo.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
-    var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(pageNavController.currentBackStackEntry) {
         indexViewModel.getInfoData()
@@ -84,15 +82,14 @@ fun IndexPage(
     }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         // 顶部地址栏
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -109,23 +106,21 @@ fun IndexPage(
                     Column {
                         Text(
                             text = userInfo?.schoolVo?.schoolName ?: "",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.titleMedium
                         )
                         Text(
                             text = "切换地址",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // 用户头像
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                         .clickable {
                             pageNavController.navigate(HomePageConstant.UserInfo.text) {
                                 popUpTo(pageNavController.graph.startDestinationId) {
@@ -146,12 +141,11 @@ fun IndexPage(
             }
         }
 
+        // 快速服务区
         item {
-            // 快速服务区
             Text(
                 text = "快速服务",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
@@ -168,7 +162,6 @@ fun IndexPage(
                     subtitle = "15元/件起",
                     onClick = {
                         navController.navigate(PageConstant.Laundry.text) {
-                            // 避免重复堆栈
                             popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
@@ -186,31 +179,35 @@ fun IndexPage(
                 )
             }
         }
+
+        // 进行中订单
         item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 8.dp, top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "进行中订单",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                TextButton(onClick = {
+                    navController.navigate("${PageConstant.Order.text}/${OrderStatus.WASHING.status}")
+                }) {
                     Text(
-                        text = "进行中订单",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        "查看全部",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    TextButton(onClick = {
-                        navController.navigate("${PageConstant.Order.text}/${OrderStatus.WASHING.status}")
-                    }) {
-                        Text("查看全部", fontSize = 14.sp)
-                    }
                 }
             }
         }
+
         if (orderList.isNotEmpty()) {
             items(orderList.size) { index ->
-                IndexOrderItem(orderList[index], index) {
+                IndexOrderItem(orderList[index]) {
                     navController.navigate("${PageConstant.OrderDetail.text}/${orderList[index].orderId}")
                 }
             }
@@ -219,24 +216,24 @@ fun IndexPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "暂无进行中的订单",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
 
-        item {  // 服务状态
+        // 服务状态
+        item {
             Text(
                 text = "服务状态",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
             Row(
                 modifier = Modifier
@@ -257,27 +254,36 @@ fun IndexPage(
                     content = "正常运营"
                 )
             }
-
-            Spacer(modifier = Modifier.width(28.dp))
         }
+
+        item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 
     if (showAlertDialog) {
         AlertDialog(
             onDismissRequest = { showAlertDialog = false },
-            text = { Text("更换学校信息请联系客服！", fontSize = 16.sp) },
-            confirmButton = { TextButton({ showAlertDialog = false }) { Text("确认") } })
+            text = { Text("更换学校信息请联系客服！") },
+            confirmButton = {
+                TextButton(onClick = { showAlertDialog = false }) {
+                    Text("确认")
+                }
+            }
+        )
     }
 }
 
 @Composable
-private fun IndexOrderItem(orderVo: OrderVo, index: Int, onClick: () -> Unit) {
+private fun IndexOrderItem(orderVo: OrderVo, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -293,25 +299,22 @@ private fun IndexOrderItem(orderVo: OrderVo, index: Int, onClick: () -> Unit) {
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
-
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
                         text = "工厂清洗中",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleSmall
                     )
                     Text(
                         text = "订单号: ${orderVo.orderNo}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             Text(
                 text = "¥${orderVo.totalPrice}",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
         }

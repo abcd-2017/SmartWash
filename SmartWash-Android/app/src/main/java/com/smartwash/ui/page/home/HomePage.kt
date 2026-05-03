@@ -2,13 +2,11 @@ package com.smartwash.ui.page.home
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +15,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,9 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -73,9 +70,7 @@ fun HomePage(
         }
     }
     Scaffold(
-        bottomBar = {
-            BottomBar(homePageNavController)
-        }
+        bottomBar = { BottomBar(homePageNavController) }
     ) { paddingValues ->
         NavHost(
             navController = homePageNavController,
@@ -101,17 +96,11 @@ fun HomePage(
             }
         ) {
             composable(HomePageConstant.Index.text) {
-                IndexPage(
-                    homePageNavController,
-                    navController
-                )
+                IndexPage(homePageNavController, navController)
             }
             composable(HomePageConstant.Service.text) { ServicePage() }
             composable(HomePageConstant.UserInfo.text) {
-                UserInfoPage(
-                    navController,
-                    homePageNavController
-                )
+                UserInfoPage(navController, homePageNavController)
             }
         }
     }
@@ -127,45 +116,47 @@ fun BottomBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar(modifier = Modifier.height(90.dp)) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
+    ) {
         bottomNavItems.forEach { item ->
             val isSelect = currentRoute == item.text
             NavigationBarItem(
                 icon = {
-                    Box(
-                        modifier = Modifier.animateContentSize(
+                    Icon(
+                        if (isSelect) item.selectIcon else item.icon,
+                        contentDescription = null,
+                        tint = animateColorAsState(
+                            targetValue = if (isSelect)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
                             animationSpec = tween(300)
-                        )
-                    ) {
-                        Icon(
-                            if (isSelect) item.selectIcon else item.icon,
-                            contentDescription = null, tint = animateColorAsState(
-                                targetValue = if (isSelect)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                animationSpec = tween(300)
-                            ).value
-                        )
-                    }
+                        ).value
+                    )
                 },
                 label = {
                     Text(
                         text = item.description,
-                        fontWeight = if (isSelect) FontWeight.Bold else FontWeight.Normal
+                        style = MaterialTheme.typography.labelSmall
                     )
                 },
                 selected = isSelect,
                 onClick = {
                     if (!isSelect) {
                         navController.navigate(item.text) {
-                            // 避免重复堆栈
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
                     }
-                }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                )
             )
         }
     }
@@ -180,28 +171,28 @@ fun ServiceCard(
     onClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier.clickable(onClick = onClick)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Text(text = title, style = MaterialTheme.typography.titleSmall)
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -216,7 +207,11 @@ fun StatusCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -233,14 +228,10 @@ fun StatusCard(
             Column {
                 Text(
                     text = title,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = content,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(text = content, style = MaterialTheme.typography.titleSmall)
             }
         }
     }
