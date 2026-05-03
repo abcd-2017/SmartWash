@@ -14,11 +14,13 @@ import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.service.IUserCouponService;
 import com.smartwash.vo.user_coupon.UserCouponVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCoupon> implements IUserCouponService {
@@ -33,6 +35,7 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
 
     @Override
     public Boolean deleteCoupon(String ids) {
+        log.info("删除用户优惠券, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));
@@ -66,7 +69,9 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         //设置优惠券过期时间
         LocalDateTime expiredTime = LocalDateTime.now().plusDays(coupon.getValidDays());
         userCoupon.setExpiredAt(expiredTime);
-        return save(userCoupon);
+        boolean result = save(userCoupon);
+        log.info("用户领取优惠券, userId: {}, couponId: {}", userId, couponId);
+        return result;
     }
 
     @Override

@@ -13,6 +13,7 @@ import com.smartwash.service.ILaundryItemsService;
 import com.smartwash.vo.laudry.LaundryPackageVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.List;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @Service
 public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, LaundryItems> implements ILaundryItemsService {
     //获取所有洗衣套餐
@@ -53,12 +55,15 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
     public Boolean addLaundryPackage(AddLaundryItemsFrom addLaundryItemsFrom) {
         LaundryItems LaundryItems = new LaundryItems();
         BeanUtils.copyProperties(addLaundryItemsFrom, LaundryItems);
-        return save(LaundryItems);
+        boolean result = save(LaundryItems);
+        log.info("添加洗衣套餐, itemId: {}, itemName: {}", LaundryItems.getItemId(), LaundryItems.getItemName());
+        return result;
     }
 
     //修改洗衣套餐
     @Override
     public Boolean updateLaundryPackage(UpdateLaundryItemsFrom LaundryItemsFrom) {
+        log.info("修改洗衣套餐, itemId: {}", LaundryItemsFrom.getItemId());
         LaundryItems school = getById(LaundryItemsFrom.getItemId());
         BeanUtils.copyProperties(LaundryItemsFrom, school);
         return updateById(school);
@@ -67,6 +72,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
     //删除洗衣套餐
     @Override
     public Boolean deleteLaundryPackage(String ids) {
+        log.info("删除洗衣套餐, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));

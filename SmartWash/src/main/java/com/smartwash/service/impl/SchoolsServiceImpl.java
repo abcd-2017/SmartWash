@@ -15,6 +15,7 @@ import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.schools.SchoolNameVo;
 import com.smartwash.vo.schools.SchoolsVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> implements ISchoolsService {
@@ -76,12 +78,14 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
             lockersService.save(locker);
             insertedCount++;
         }
+        log.info("添加学校成功, schoolId: {}, schoolName: {}, lockerCount: {}", schools.getSchoolId(), schools.getSchoolName(), insertedCount);
         return true;
     }
 
     //修改学校
     @Override
     public Boolean updateSchool(UpdateSchoolsFrom schoolsFrom) {
+        log.info("修改学校, schoolId: {}", schoolsFrom.getSchoolId());
         Schools school = getById(schoolsFrom.getSchoolId());
         BeanUtils.copyProperties(schoolsFrom, school);
         return updateById(school);
@@ -91,6 +95,7 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
     @Override
     @Transactional
     public Boolean deleteSchools(String ids) {
+        log.info("删除学校, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             Long schoolId = Long.parseLong(id);

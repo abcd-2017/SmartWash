@@ -22,6 +22,7 @@ import com.smartwash.vo.users.UserVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @Service
 public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> implements IPaymentsService {
     @Autowired
@@ -150,6 +152,7 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         ordersMapper.updateById(orders);
         // 支付成功，取消超时任务
         orderTimeoutManager.cancelTimeout(orderFrom.getOrderId());
+        log.info("订单支付成功, orderId: {}, userId: {}, amount: {}", orderFrom.getOrderId(), user.getUserId(), orders.getPayPrice());
         return true;
     }
 
@@ -181,11 +184,14 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     public Boolean addPayment(AddPaymentFrom addPaymentFrom) {
         Payments payment = new Payments();
         BeanUtils.copyProperties(addPaymentFrom, payment);
-        return save(payment);
+        boolean result = save(payment);
+        log.info("新增支付记录, paymentId: {}", payment.getPaymentId());
+        return result;
     }
 
     @Override
     public Boolean updatePayment(UpdatePaymentFrom updatePaymentFrom) {
+        log.info("更新支付记录, paymentId: {}", updatePaymentFrom.getPaymentId());
         Payments payment = getById(updatePaymentFrom.getPaymentId());
         BeanUtils.copyProperties(updatePaymentFrom, payment);
         return updateById(payment);
@@ -193,6 +199,7 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
 
     @Override
     public Boolean deletePayments(String ids) {
+        log.info("删除支付记录, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));

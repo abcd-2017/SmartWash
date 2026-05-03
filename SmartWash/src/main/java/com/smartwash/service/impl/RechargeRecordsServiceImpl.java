@@ -13,6 +13,7 @@ import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import com.smartwash.vo.users.UserVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMapper, RechargeRecords> implements IRechargeRecordsService {
@@ -74,6 +76,7 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         //2.用户表中添加对应余额
         usersMapper.addUserBalance(userId, balance);
 
+        log.info("用户充值成功, userId: {}, amount: {}", userId, balance);
         return true;
     }
 

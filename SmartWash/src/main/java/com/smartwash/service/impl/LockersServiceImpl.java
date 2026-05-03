@@ -13,6 +13,7 @@ import com.smartwash.service.ILockersService;
 import com.smartwash.vo.locker.LockersVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ import java.util.List;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @Service
 public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> implements ILockersService {
     //获取所有存储柜
@@ -60,12 +62,15 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
     public Boolean addLockers(AddLockerFrom lockerFrom) {
         Lockers Lockers = new Lockers();
         BeanUtils.copyProperties(lockerFrom, Lockers);
-        return save(Lockers);
+        boolean result = save(Lockers);
+        log.info("添加寄存柜, schoolId: {}, lockerNumber: {}", lockerFrom.getSchoolId(), lockerFrom.getLockerNumber());
+        return result;
     }
 
     //根据学校id删除存储柜
     @Override
     public Boolean deleteLockersBySchoolId(Long schoolId) {
+        log.info("根据学校删除寄存柜, schoolId: {}", schoolId);
         LambdaQueryWrapper<Lockers> queryWrapper = new LambdaQueryWrapper<Lockers>().eq(Lockers::getSchoolId, schoolId);
         return remove(queryWrapper);
     }
@@ -81,6 +86,7 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
     //修改存储柜
     @Override
     public Boolean updateLockers(UpdateLockerFrom lockersFrom) {
+        log.info("修改寄存柜, lockerId: {}", lockersFrom.getLockerId());
         Lockers school = getById(lockersFrom.getLockerId());
         BeanUtils.copyProperties(lockersFrom, school);
         return updateById(school);
@@ -89,6 +95,7 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
     //删除存储柜
     @Override
     public Boolean deleteLockers(String ids) {
+        log.info("删除寄存柜, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));

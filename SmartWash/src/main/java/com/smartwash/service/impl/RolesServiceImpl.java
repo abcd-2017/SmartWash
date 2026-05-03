@@ -15,6 +15,7 @@ import com.smartwash.vo.roles.RolesVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ import java.util.List;
  * @author
  * @since 2025-03-09
  */
+@Slf4j
 @Service
 public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements IRolesService {
 
@@ -51,7 +53,9 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
     public Boolean addRoles(AddRolesFrom addRolesFrom) {
         Roles Roles = new Roles();
         BeanUtils.copyProperties(addRolesFrom, Roles);
-        return save(Roles);
+        boolean result = save(Roles);
+        log.info("新增角色, roleId: {}, roleName: {}", Roles.getRoleId(), Roles.getRoleName());
+        return result;
     }
 
     @Override
@@ -61,6 +65,7 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
 
     @Override
     public Boolean updateRoles(UpdateRolesFrom rolesFrom) {
+        log.info("更新角色, roleId: {}", rolesFrom.getRoleId());
         Roles roles = getById(rolesFrom.getRoleId());
         BeanUtils.copyProperties(rolesFrom, roles);
         return updateById(roles);
@@ -68,6 +73,7 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
 
     @Override
     public Boolean deleteRoles(String ids) {
+        log.info("删除角色, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));

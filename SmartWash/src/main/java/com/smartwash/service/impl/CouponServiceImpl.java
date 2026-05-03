@@ -13,6 +13,7 @@ import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.service.ICouponService;
 import com.smartwash.vo.coupon.CouponVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements ICouponService {
@@ -52,6 +54,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         Coupon coupon = new Coupon();
         BeanUtils.copyProperties(addCouponFrom, coupon);
         save(coupon);
+        log.info("新增优惠券, couponId: {}, title: {}", coupon.getCouponId(), coupon.getTitle());
     }
 
     @Override
@@ -62,6 +65,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     @Override
     public void updateCoupon(UpdateCouponFrom couponFrom) {
+        log.info("更新优惠券, couponId: {}", couponFrom.getCouponId());
         Coupon coupon = getById(couponFrom.getCouponId());
         BeanUtils.copyProperties(couponFrom, coupon);
         updateById(coupon);
@@ -69,6 +73,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     @Override
     public Boolean deleteCoupon(String ids) {
+        log.info("删除优惠券, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));
