@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Key
@@ -40,13 +40,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.ui.common.PasswordInput
@@ -73,7 +70,6 @@ fun RegisterPage(
     var isPasswordError by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
 
-    var isLoading by remember { mutableStateOf(false) }
     var countDown by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -83,7 +79,6 @@ fun RegisterPage(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    //验证码状态
     when (captchaState) {
         is RequestState.Success -> {
             verificationCode = captchaValue
@@ -102,7 +97,6 @@ fun RegisterPage(
         else -> {}
     }
 
-    //注册状态
     when (registerState) {
         is RequestState.Success -> {
             LaunchedEffect(Unit) {
@@ -129,68 +123,62 @@ fun RegisterPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
             Box(
                 modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.LocalLaundryService,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(44.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
                 text = "创建账号",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.displaySmall
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "开启智能洗衣之旅",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 8.dp)
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(34.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(20.dp)
                 ) {
-                    // 手机号输入框
                     PhoneNumberInput(phone, isPhoneError) {
                         if (it.length <= 11) phone = it
                         isPhoneError = if (it.isEmpty()) false
@@ -199,7 +187,6 @@ fun RegisterPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 验证码输入框
                     CaptchaInput(
                         verificationCode,
                         isVerificationCodeError,
@@ -232,94 +219,73 @@ fun RegisterPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 密码输入框
                     PasswordInput(
                         password,
                         isPasswordError,
                         showPassword,
-                        showVisibility = {
-                            showPassword = !showPassword
-                        }) {
+                        showVisibility = { showPassword = !showPassword }
+                    ) {
                         if (it.length <= 16) password = it
                         isPasswordError = if (it.isEmpty()) false
                         else !isValidPhone(phone)
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            RegisterButton(registerState) {
-                isPhoneError = !isValidPhone(phone)
-                isVerificationCodeError = verificationCode.length != 6
-                isPasswordError = password.length < 6 || password.length > 16
-
-                if (!isPhoneError && !isVerificationCodeError &&
-                    !isPasswordError
-                ) {
-                    isLoading = true
-                    keyboardController?.hide()
-                    registerViewModel.userRegister(phone, password, verificationCode)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Button(
+                onClick = {
+                    isPhoneError = !isValidPhone(phone)
+                    isVerificationCodeError = verificationCode.length != 6
+                    isPasswordError = password.length < 6 || password.length > 16
+
+                    if (!isPhoneError && !isVerificationCodeError && !isPasswordError) {
+                        keyboardController?.hide()
+                        registerViewModel.userRegister(phone, password, verificationCode)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                when (registerState) {
+                    is RequestState.Loading -> CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+
+                    else -> {
+                        Text("注册", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             TextButton(
                 onClick = {
-                    //跳转到登录页
                     navController.popBackStack()
                     navController.navigate(PageConstant.Login.text)
-                },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                }
             ) {
                 Text(
                     "已有账号？立即登录",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp
-                )
-            }
-        }
-     }
-}
-
-//注册按钮
-@Composable
-fun RegisterButton(
-    registerState: RequestState,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        when (registerState) {
-            is RequestState.Loading -> CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-
-            else -> {
-                Text(
-                    "注册",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
     }
 }
 
-//验证码输入框
 @Composable
-fun CaptchaInput(
+private fun CaptchaInput(
     verificationCode: String,
     isVerificationCodeError: Boolean,
     countDown: Int,
@@ -329,7 +295,7 @@ fun CaptchaInput(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
@@ -350,35 +316,30 @@ fun CaptchaInput(
                 )
             },
             singleLine = true,
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.small
         )
 
         Button(
             onClick = onClick,
-            enabled = when (captchaState) {
-                is RequestState.Idle -> true
-                else -> false
-            },
+            enabled = captchaState is RequestState.Idle,
             modifier = Modifier
                 .width(120.dp)
-                .padding(top = 6.dp)
                 .height(56.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.small,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         ) {
             Text(
-                when (captchaState) {
-                    is RequestState.Idle -> {
-                        "获取验证码"
-                    }
-
-                    else -> {
-                        "${countDown}s"
-                    }
-
+                text = when (captchaState) {
+                    is RequestState.Idle -> "获取验证码"
+                    else -> "${countDown}s"
                 },
-                fontSize = 14.sp
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }
 }
-
