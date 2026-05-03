@@ -13,6 +13,7 @@ import com.smartwash.vo.users.UserInfoVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -25,6 +26,7 @@ import java.util.Objects;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebUsersController {

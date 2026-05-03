@@ -7,8 +7,11 @@ import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.coupon.CouponVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.List;
  * @author
  * @since 2025-04-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebCouponController {

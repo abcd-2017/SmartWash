@@ -7,6 +7,7 @@ import com.smartwash.from.user_coupon.SearchUserCouponFrom;
 import com.smartwash.service.IUserCouponService;
 import com.smartwash.vo.user_coupon.UserCouponVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * @author
  * @since 2025-04-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/userCoupon")
 public class UserCouponController {

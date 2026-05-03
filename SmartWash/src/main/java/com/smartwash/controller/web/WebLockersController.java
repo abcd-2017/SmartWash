@@ -8,8 +8,11 @@ import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.service.ILockersService;
 import com.smartwash.vo.locker.LockersVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
@@ -23,6 +26,7 @@ import java.util.Map;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web/lockers")
 public class WebLockersController {

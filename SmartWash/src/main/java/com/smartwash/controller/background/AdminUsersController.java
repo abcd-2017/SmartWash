@@ -12,6 +12,7 @@ import com.smartwash.utils.SecurityUtil;
 import com.smartwash.vo.admin_users.AdminUserVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -24,6 +25,7 @@ import java.util.Objects;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/adminUsers")
 public class AdminUsersController {

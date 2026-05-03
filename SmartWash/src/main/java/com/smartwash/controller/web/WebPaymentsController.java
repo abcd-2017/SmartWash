@@ -10,6 +10,7 @@ import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import java.util.Map;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebPaymentsController {

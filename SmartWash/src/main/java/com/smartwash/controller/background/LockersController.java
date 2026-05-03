@@ -11,6 +11,7 @@ import com.smartwash.service.ILockersService;
 import com.smartwash.vo.locker.LockersVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import java.util.Map;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/lockers")
 public class LockersController {

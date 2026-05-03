@@ -7,9 +7,13 @@ import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestBody;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebRechargeRecordsController {

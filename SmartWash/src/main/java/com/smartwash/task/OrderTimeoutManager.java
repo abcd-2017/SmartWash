@@ -71,6 +71,7 @@ public class OrderTimeoutManager {
                 // 释放寄存柜
                 if (order.getLockerId() != null) {
                     lockersMapper.unLocker(order.getLockerId(), LockerStatusEnum.FREE.getValue());
+                    log.info("订单超时释放寄存柜, orderId: {}, lockerId: {}", orderId, order.getLockerId());
                 }
                 // 更新订单状态为已取消
                 ordersMapper.nextStatus(orderId, OrderStatus.CANCELED.getStatus());

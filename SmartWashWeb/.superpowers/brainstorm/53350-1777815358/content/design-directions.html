@@ -1,0 +1,94 @@
+<h2>整体设计方向 — 三种风格</h2>
+<p class="subtitle">选一个你喜欢的视觉方向，我们会基于它来细化</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 A：极简白</div>
+        <div class="mockup-body">
+          <div style="display:flex;height:280px;border-radius:8px;overflow:hidden;">
+            <div class="mock-sidebar" style="background:#fff;color:#333;border-right:1px solid #e8e8e8;width:160px;padding:16px;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:20px;color:#111;">SmartWash</div>
+              <div style="font-size:12px;padding:6px 8px;margin:2px 0;border-radius:6px;background:#f5f5f5;color:#333;">🏠 首页</div>
+              <div style="font-size:12px;padding:6px 8px;margin:2px 0;border-radius:6px;color:#888;">📋 订单管理</div>
+              <div style="font-size:12px;padding:6px 8px;margin:2px 0;border-radius:6px;color:#888;">👥 学生管理</div>
+              <div style="font-size:12px;padding:6px 8px;margin:2px 0;border-radius:6px;color:#888;">🏫 学校管理</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div class="mock-nav" style="background:#fff;border-bottom:1px solid #f0f0f0;color:#333;padding:12px 20px;font-size:13px;">首页 / 概览</div>
+              <div class="mock-content" style="background:#fafafa;padding:24px;">
+                <div class="placeholder" style="background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:20px;margin-bottom:12px;font-size:13px;color:#333;">📊 数据卡片区域</div>
+                <div class="placeholder" style="background:#fff;border:1px solid #f0f0f0;border-radius:12px;padding:20px;font-size:13px;color:#333;">📋 数据表格区域</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>极简白</h3>
+      <p>白底侧边栏 + 浅色内容区，大量留白，极细线条分割，干净克制。适合注重内容和数据的后台。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 B：深邃高级</div>
+        <div class="mockup-body">
+          <div style="display:flex;height:280px;border-radius:8px;overflow:hidden;">
+            <div class="mock-sidebar" style="background:#1a1a2e;color:#ccc;width:160px;padding:16px;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:20px;color:#e0e0ff;">SmartWash</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;">🏠 首页</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:8px;color:#888;">📋 订单管理</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:8px;color:#888;">👥 学生管理</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:8px;color:#888;">🏫 学校管理</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div class="mock-nav" style="background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.04);color:#333;padding:12px 20px;font-size:13px;">首页 / 概览</div>
+              <div class="mock-content" style="background:#f5f5fa;padding:24px;">
+                <div class="placeholder" style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:20px;margin-bottom:12px;font-size:13px;color:#333;">📊 数据卡片区域</div>
+                <div class="placeholder" style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:20px;font-size:13px;color:#333;">📋 数据表格区域</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>深邃高级</h3>
+      <p>深紫黑侧边栏 + 浅紫灰内容区，圆角卡片、柔和阴影，Indigo 点缀色。现代科技感，适合品牌化后台。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">方案 C：轻灰商务</div>
+        <div class="mockup-body">
+          <div style="display:flex;height:280px;border-radius:8px;overflow:hidden;">
+            <div class="mock-sidebar" style="background:#f7f8fa;color:#555;border-right:1px solid #e8ecf1;width:160px;padding:16px;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:20px;color:#1a1a1a;">SmartWash</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:6px;background:#e8ecf1;color:#1a1a1a;font-weight:500;">🏠 首页</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:6px;color:#777;">📋 订单管理</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:6px;color:#777;">👥 学生管理</div>
+              <div style="font-size:12px;padding:6px 10px;margin:2px 0;border-radius:6px;color:#777;">🏫 学校管理</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div class="mock-nav" style="background:#fff;border-bottom:1px solid #e8ecf1;color:#333;padding:12px 20px;font-size:13px;">首页 / 概览</div>
+              <div class="mock-content" style="background:#f2f4f7;padding:24px;">
+                <div class="placeholder" style="background:#fff;border:1px solid #e8ecf1;border-radius:8px;padding:20px;margin-bottom:12px;font-size:13px;color:#333;">📊 数据卡片区域</div>
+                <div class="placeholder" style="background:#fff;border:1px solid #e8ecf1;border-radius:8px;padding:20px;font-size:13px;color:#333;">📋 数据表格区域</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>轻灰商务</h3>
+      <p>浅灰侧边栏 + 冷灰内容区，方正线条、克制的阴影，商务感强。适合企业级管理系统，稳重不花哨。</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,516 @@
+2026-05-03 21:27:39.994 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:27:39.995 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:27:39.995 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:27:40.066 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:27:40.066 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:27:40.069 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:27:40.103 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:27:40.103 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:27:40.103 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:27:40.108 [restartedMain] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:27:40.108 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 113 ms
+2026-05-03 21:27:40.178 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:27:40.253 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:27:40.307 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:27:40.316 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:27:40.318 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.362 seconds (process running for 4126.451)
+2026-05-03 21:27:40.318 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:27:40.319 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-3 - Starting...
+2026-05-03 21:27:40.332 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-3 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2c027042
+2026-05-03 21:27:40.332 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-3 - Start completed.
+2026-05-03 21:27:40.337 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:32:28.683 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 4 class path changes (0 additions, 2 deletions, 2 modifications)
+2026-05-03 21:32:28.690 [Thread-11] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:32:30.705 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:32:30.705 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:32:30.716 [Thread-11] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-3 - Shutdown initiated...
+2026-05-03 21:32:30.724 [Thread-11] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-3 - Shutdown completed.
+2026-05-03 21:32:30.794 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:32:30.794 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:32:30.794 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:32:30.868 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:32:30.868 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:32:30.871 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:32:30.904 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:32:30.905 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:32:30.905 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:32:30.909 [restartedMain] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:32:30.909 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 114 ms
+2026-05-03 21:32:30.993 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:32:31.006 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': No qualifying bean of type 'com.smartwash.service.IUsersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+2026-05-03 21:32:31.007 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:32:31.010 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:32:31.016 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Field usersService in com.smartwash.controller.LoginController required a bean of type 'com.smartwash.service.IUsersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.IUsersService' in your configuration.
+
+2026-05-03 21:32:36.917 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:32:36.917 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:32:36.917 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:32:36.992 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:32:36.992 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:32:36.995 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:32:37.028 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:32:37.028 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:32:37.028 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:32:37.031 [restartedMain] INFO  o.a.c.c.C.[Tomcat-1].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:32:37.032 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 114 ms
+2026-05-03 21:32:37.091 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:32:37.104 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': No qualifying bean of type 'com.smartwash.service.IUsersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+2026-05-03 21:32:37.105 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:32:37.106 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:32:37.107 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Field usersService in com.smartwash.controller.LoginController required a bean of type 'com.smartwash.service.IUsersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.IUsersService' in your configuration.
+
+2026-05-03 21:32:42.588 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:32:42.588 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:32:42.588 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:32:42.675 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:32:42.675 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:32:42.678 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:32:42.709 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:32:42.710 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:32:42.710 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:32:42.713 [restartedMain] INFO  o.a.c.c.C.[Tomcat-2].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:32:42.713 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 125 ms
+2026-05-03 21:32:42.775 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:32:42.788 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': No qualifying bean of type 'com.smartwash.service.IUsersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+2026-05-03 21:32:42.788 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:32:42.790 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:32:42.790 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Field usersService in com.smartwash.controller.LoginController required a bean of type 'com.smartwash.service.IUsersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.IUsersService' in your configuration.
+
+2026-05-03 21:32:44.243 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:32:44.243 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:32:44.243 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:32:44.299 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:32:44.300 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:32:44.303 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:32:44.330 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:32:44.330 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:32:44.330 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:32:44.333 [restartedMain] INFO  o.a.c.c.C.[Tomcat-3].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:32:44.333 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 89 ms
+2026-05-03 21:32:44.390 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:32:44.402 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': No qualifying bean of type 'com.smartwash.service.IUsersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+2026-05-03 21:32:44.403 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:32:44.404 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:32:44.405 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Field usersService in com.smartwash.controller.LoginController required a bean of type 'com.smartwash.service.IUsersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.IUsersService' in your configuration.
+
+2026-05-03 21:33:04.493 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:33:04.493 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:33:04.493 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:33:04.562 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:33:04.562 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:33:04.565 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 2 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:33:04.598 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:33:04.598 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:33:04.598 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:33:04.601 [restartedMain] INFO  o.a.c.c.C.[Tomcat-4].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:33:04.601 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 107 ms
+2026-05-03 21:33:04.681 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:33:04.733 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'usersController': Unsatisfied dependency expressed through field 'usersService': No qualifying bean of type 'com.smartwash.service.IUsersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}
+2026-05-03 21:33:04.733 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:33:04.737 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:33:04.737 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Field usersService in com.smartwash.controller.background.UsersController required a bean of type 'com.smartwash.service.IUsersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.IUsersService' in your configuration.
+
+2026-05-03 21:33:58.889 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:33:58.890 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:33:58.890 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:33:59.014 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:33:59.014 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:33:59.019 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:33:59.053 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:33:59.054 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:33:59.054 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:33:59.057 [restartedMain] INFO  o.a.c.c.C.[Tomcat-5].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:33:59.057 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 166 ms
+2026-05-03 21:33:59.171 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:33:59.284 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:33:59.350 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:33:59.361 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:33:59.363 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.506 seconds (process running for 4505.496)
+2026-05-03 21:33:59.364 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:33:59.366 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-4 - Starting...
+2026-05-03 21:33:59.419 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-4 - Added connection com.mysql.cj.jdbc.ConnectionImpl@35dec382
+2026-05-03 21:33:59.419 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-4 - Start completed.
+2026-05-03 21:33:59.430 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:36:47.154 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 1 class path change (0 additions, 1 deletion, 0 modifications)
+2026-05-03 21:36:47.161 [Thread-15] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:36:49.165 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:36:49.166 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:36:49.169 [Thread-15] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-4 - Shutdown initiated...
+2026-05-03 21:36:49.172 [Thread-15] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-4 - Shutdown completed.
+2026-05-03 21:36:49.236 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:36:49.236 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:36:49.236 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:36:49.312 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:36:49.312 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:36:49.318 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:36:49.357 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:36:49.358 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:36:49.358 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:36:49.361 [restartedMain] INFO  o.a.c.c.C.[Tomcat-5].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:36:49.361 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 124 ms
+2026-05-03 21:36:49.420 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:36:49.435 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': Error creating bean with name 'usersServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/UsersServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'schoolsServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/SchoolsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.smartwash.service.ILockersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2026-05-03 21:36:49.436 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:36:49.437 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:36:49.438 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.smartwash.service.impl.SchoolsServiceImpl required a bean of type 'com.smartwash.service.ILockersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.ILockersService' in your configuration.
+
+2026-05-03 21:37:08.073 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:37:08.073 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:37:08.073 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:37:08.146 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:37:08.146 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:37:08.150 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:37:08.185 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:37:08.186 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:37:08.186 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:37:08.189 [restartedMain] INFO  o.a.c.c.C.[Tomcat-6].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:37:08.189 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 115 ms
+2026-05-03 21:37:08.250 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:37:08.269 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': Error creating bean with name 'usersServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/UsersServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'schoolsServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/SchoolsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.smartwash.service.ILockersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2026-05-03 21:37:08.269 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:37:08.271 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:37:08.271 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.smartwash.service.impl.SchoolsServiceImpl required a bean of type 'com.smartwash.service.ILockersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.ILockersService' in your configuration.
+
+2026-05-03 21:38:35.928 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:38:35.928 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:38:35.928 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:38:36.007 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:38:36.007 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:38:36.010 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:38:36.052 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:38:36.053 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:38:36.053 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:38:36.057 [restartedMain] INFO  o.a.c.c.C.[Tomcat-7].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:38:36.057 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 128 ms
+2026-05-03 21:38:36.162 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:38:36.178 [restartedMain] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'loginController': Unsatisfied dependency expressed through field 'usersService': Error creating bean with name 'usersServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/UsersServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: Error creating bean with name 'schoolsServiceImpl' defined in file [/Users/admin/code/Android/SmartWash/SmartWash/target/classes/com/smartwash/service/impl/SchoolsServiceImpl.class]: Unsatisfied dependency expressed through constructor parameter 0: No qualifying bean of type 'com.smartwash.service.ILockersService' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+2026-05-03 21:38:36.178 [restartedMain] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+2026-05-03 21:38:36.180 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-05-03 21:38:36.181 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 0 of constructor in com.smartwash.service.impl.SchoolsServiceImpl required a bean of type 'com.smartwash.service.ILockersService' that could not be found.
+
+The injection point has the following annotations:
+	- @org.springframework.beans.factory.annotation.Autowired(required=true)
+
+
+Action:
+
+Consider defining a bean of type 'com.smartwash.service.ILockersService' in your configuration.
+
+2026-05-03 21:41:01.353 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:41:01.354 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:41:01.354 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:41:01.469 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:41:01.469 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:41:01.473 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:41:01.509 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:41:01.510 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:41:01.510 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:41:01.513 [restartedMain] INFO  o.a.c.c.C.[Tomcat-8].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:41:01.513 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 158 ms
+2026-05-03 21:41:01.571 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:41:01.646 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:41:01.706 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:41:01.716 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:41:01.717 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.395 seconds (process running for 4927.801)
+2026-05-03 21:41:01.717 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:41:01.719 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-5 - Starting...
+2026-05-03 21:41:01.737 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-5 - Added connection com.mysql.cj.jdbc.ConnectionImpl@281337b2
+2026-05-03 21:41:01.737 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-5 - Start completed.
+2026-05-03 21:41:01.739 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:45:13.816 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 18 class path changes (0 additions, 0 deletions, 18 modifications)
+2026-05-03 21:45:13.826 [Thread-34] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:45:15.836 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:45:15.836 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:45:15.846 [Thread-34] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-5 - Shutdown initiated...
+2026-05-03 21:45:15.858 [Thread-34] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-5 - Shutdown completed.
+2026-05-03 21:45:15.927 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:45:15.927 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:45:15.927 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:45:16.102 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:45:16.102 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:45:16.108 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:45:16.151 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:45:16.151 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:45:16.151 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:45:16.155 [restartedMain] INFO  o.a.c.c.C.[Tomcat-8].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:45:16.155 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 227 ms
+2026-05-03 21:45:16.240 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:45:16.323 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:45:16.386 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:45:16.395 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:45:16.397 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.482 seconds (process running for 5182.479)
+2026-05-03 21:45:16.397 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:45:16.398 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-6 - Starting...
+2026-05-03 21:45:16.444 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-6 - Added connection com.mysql.cj.jdbc.ConnectionImpl@592b7330
+2026-05-03 21:45:16.444 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-6 - Start completed.
+2026-05-03 21:45:16.451 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:45:33.049 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 1 class path change (0 additions, 0 deletions, 1 modification)
+2026-05-03 21:45:33.058 [Thread-47] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:45:35.067 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:45:35.067 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:45:35.073 [Thread-47] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-6 - Shutdown initiated...
+2026-05-03 21:45:35.081 [Thread-47] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-6 - Shutdown completed.
+2026-05-03 21:45:35.148 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:45:35.148 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:45:35.148 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:45:35.216 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:45:35.217 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:45:35.220 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:45:35.252 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:45:35.252 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:45:35.252 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:45:35.256 [restartedMain] INFO  o.a.c.c.C.[Tomcat-8].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:45:35.256 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 107 ms
+2026-05-03 21:45:35.330 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:45:35.406 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:45:35.458 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:45:35.467 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:45:35.468 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.33 seconds (process running for 5201.55)
+2026-05-03 21:45:35.468 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:45:35.469 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-7 - Starting...
+2026-05-03 21:45:35.478 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-7 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2a658fe1
+2026-05-03 21:45:35.478 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-7 - Start completed.
+2026-05-03 21:45:35.479 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:45:35.479 [restartedMain] INFO  com.smartwash.SmartWashApplication - SmartWash 应用启动成功
+2026-05-03 21:46:53.407 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 147 class path changes (0 additions, 0 deletions, 147 modifications)
+2026-05-03 21:46:53.414 [Thread-51] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:46:55.423 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:46:55.423 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:46:55.433 [Thread-51] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-7 - Shutdown initiated...
+2026-05-03 21:46:55.436 [Thread-51] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-7 - Shutdown completed.
+2026-05-03 21:46:55.499 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:46:55.499 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:46:55.499 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:46:55.567 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:46:55.568 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:46:55.571 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 3 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:46:55.603 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:46:55.603 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:46:55.603 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:46:55.607 [restartedMain] INFO  o.a.c.c.C.[Tomcat-8].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:46:55.607 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 107 ms
+2026-05-03 21:46:55.670 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:46:55.740 [restartedMain] INFO  com.smartwash.config.RedisConfig - Redis 连接工厂初始化成功
+2026-05-03 21:46:55.747 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:46:55.800 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:46:55.811 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:46:55.812 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.322 seconds (process running for 5281.894)
+2026-05-03 21:46:55.813 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:46:55.814 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-8 - Starting...
+2026-05-03 21:46:55.822 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-8 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4310290c
+2026-05-03 21:46:55.822 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-8 - Start completed.
+2026-05-03 21:46:55.823 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:46:55.823 [restartedMain] INFO  com.smartwash.SmartWashApplication - SmartWash 应用启动成功
+2026-05-03 21:46:57.217 [File Watcher] INFO  o.s.b.d.a.LocalDevToolsAutoConfiguration$RestartingClassPathChangeChangedEventListener - Restarting due to 3 class path changes (0 additions, 0 deletions, 3 modifications)
+2026-05-03 21:46:57.217 [Thread-55] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-05-03 21:46:59.224 [tomcat-shutdown] INFO  o.s.b.w.e.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-05-03 21:46:59.224 [http-nio-8080-Acceptor] ERROR org.apache.tomcat.util.net.Acceptor - Socket accept failed
+java.nio.channels.AsynchronousCloseException: null
+	at java.base/java.nio.channels.spi.AbstractInterruptibleChannel.end(AbstractInterruptibleChannel.java:203)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.end(ServerSocketChannelImpl.java:383)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:407)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:518)
+	at org.apache.tomcat.util.net.NioEndpoint.serverSocketAccept(NioEndpoint.java:71)
+	at org.apache.tomcat.util.net.Acceptor.run(Acceptor.java:128)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-05-03 21:46:59.228 [Thread-55] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-8 - Shutdown initiated...
+2026-05-03 21:46:59.232 [Thread-55] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-8 - Shutdown completed.
+2026-05-03 21:46:59.273 [restartedMain] INFO  com.smartwash.SmartWashApplication - Starting SmartWashApplication using Java 21.0.11 with PID 47522 (/Users/admin/code/Android/SmartWash/SmartWash/target/classes started by admin in /Users/admin/code/Android/SmartWash/SmartWash)
+2026-05-03 21:46:59.273 [restartedMain] DEBUG com.smartwash.SmartWashApplication - Running with Spring Boot v3.4.0, Spring v6.2.0
+2026-05-03 21:46:59.273 [restartedMain] INFO  com.smartwash.SmartWashApplication - No active profile set, falling back to 1 default profile: "default"
+2026-05-03 21:46:59.363 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-05-03 21:46:59.363 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-05-03 21:46:59.369 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 5 ms. Found 0 Redis repository interfaces.
+2026-05-03 21:46:59.401 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-05-03 21:46:59.401 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-05-03 21:46:59.402 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.33]
+2026-05-03 21:46:59.404 [restartedMain] INFO  o.a.c.c.C.[Tomcat-8].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-05-03 21:46:59.404 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 130 ms
+2026-05-03 21:46:59.498 [restartedMain] DEBUG c.s.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-05-03 21:46:59.595 [restartedMain] INFO  com.smartwash.config.RedisConfig - Redis 连接工厂初始化成功
+2026-05-03 21:46:59.603 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-05-03 21:46:59.834 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2026-05-03 21:46:59.876 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-05-03 21:46:59.889 [restartedMain] INFO  com.smartwash.SmartWashApplication - Started SmartWashApplication in 0.626 seconds (process running for 5285.97)
+2026-05-03 21:46:59.891 [restartedMain] INFO  o.s.b.d.a.ConditionEvaluationDeltaLoggingListener - Condition evaluation unchanged
+2026-05-03 21:46:59.894 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-9 - Starting...
+2026-05-03 21:46:59.932 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-9 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2d7a0864
+2026-05-03 21:46:59.932 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-9 - Start completed.
+2026-05-03 21:46:59.935 [restartedMain] INFO  c.smartwash.task.OrderTimeoutManager - 启动重载待支付订单超时任务完成, 重新调度: 0 笔, 立即取消: 0 笔
+2026-05-03 21:46:59.935 [restartedMain] INFO  com.smartwash.SmartWashApplication - SmartWash 应用启动成功

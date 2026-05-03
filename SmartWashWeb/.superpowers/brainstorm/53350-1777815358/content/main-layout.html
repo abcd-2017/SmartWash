@@ -1,0 +1,104 @@
+<h2>后台主布局 — Indigo + Slate 风格</h2>
+<p class="subtitle">侧边栏菜单样式、顶栏、内容区的完整预览</p>
+
+<div class="mockup" style="margin-bottom:24px;">
+  <div class="mockup-header">完整布局预览</div>
+  <div class="mockup-body">
+    <div style="display:flex;height:360px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
+      <!-- Sidebar -->
+      <div style="background:#0f172a;width:200px;padding:20px 0;display:flex;flex-direction:column;flex-shrink:0;">
+        <div style="padding:0 20px;margin-bottom:24px;">
+          <div style="font-weight:700;font-size:16px;color:#e2e8f0;letter-spacing:-0.3px;">SmartWash</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px;">管理系统</div>
+        </div>
+        <div style="padding:0 12px;">
+          <div style="font-size:12px;color:#64748b;padding:4px 8px;margin-bottom:4px;">导航菜单</div>
+          <div style="padding:8px 12px;border-radius:8px;background:rgba(99,102,241,0.15);color:#a5b4fc;font-size:13px;margin-bottom:2px;">🏠 首页</div>
+          <div style="padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;margin-bottom:2px;">📦 订单管理</div>
+          <div style="padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;margin-bottom:2px;">👥 学生管理</div>
+          <div style="padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;margin-bottom:2px;">🏫 学校管理</div>
+          <div style="padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;margin-bottom:2px;">🧺 洗护套餐</div>
+          <div style="padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;margin-bottom:2px;">🔐 角色管理</div>
+        </div>
+      </div>
+      <!-- Main -->
+      <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+        <!-- Navbar -->
+        <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;color:#64748b;">首页 / <span style="color:#1e293b;">概览</span></div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;">A</div>
+            <span style="font-size:12px;color:#334155;">管理员</span>
+          </div>
+        </div>
+        <!-- Content -->
+        <div style="background:#f1f5f9;flex:1;padding:20px;overflow-y:auto;">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:11px;color:#94a3b8;">今日订单</div>
+              <div style="font-size:24px;font-weight:700;color:#0f172a;margin:4px 0;">128</div>
+              <div style="font-size:10px;color:#6366f1;">↑ 12%</div>
+            </div>
+            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:11px;color:#94a3b8;">活跃用户</div>
+              <div style="font-size:24px;font-weight:700;color:#0f172a;margin:4px 0;">1,024</div>
+              <div style="font-size:10px;color:#22c55e;">↑ 8%</div>
+            </div>
+            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:11px;color:#94a3b8;">寄存柜使用</div>
+              <div style="font-size:24px;font-weight:700;color:#0f172a;margin:4px 0;">76</div>
+              <div style="font-size:10px;color:#64748b;">共 200</div>
+            </div>
+            <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:11px;color:#94a3b8;">今日收入</div>
+              <div style="font-size:24px;font-weight:700;color:#0f172a;margin:4px 0;">¥3,280</div>
+              <div style="font-size:10px;color:#22c55e;">↑ 5%</div>
+            </div>
+          </div>
+          <!-- Table -->
+          <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:12px;">最近订单</div>
+            <div style="font-size:11px;color:#94a3b8;">
+              <div style="display:flex;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+                <span style="width:40px;color:#64748b;">ID</span>
+                <span style="flex:1;color:#64748b;">用户</span>
+                <span style="width:60px;color:#64748b;">金额</span>
+                <span style="width:80px;color:#64748b;">状态</span>
+                <span style="width:80px;color:#64748b;">时间</span>
+              </div>
+              <div style="display:flex;padding:8px 0;border-bottom:1px solid #f8fafc;color:#334155;align-items:center;">
+                <span style="width:40px;">1024</span>
+                <span style="flex:1;">张同学</span>
+                <span style="width:60px;">¥35</span>
+                <span style="width:80px;color:#22c55e;">已完成</span>
+                <span style="width:80px;">12:30</span>
+              </div>
+              <div style="display:flex;padding:8px 0;border-bottom:1px solid #f8fafc;color:#334155;align-items:center;">
+                <span style="width:40px;">1023</span>
+                <span style="flex:1;">李同学</span>
+                <span style="width:60px;">¥28</span>
+                <span style="width:80px;color:#6366f1;">进行中</span>
+                <span style="width:80px;">11:45</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card" data-choice="layout-ok" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>这个布局可以</h3>
+      <p>侧边栏深蓝黑+图标菜单，顶栏简洁，内容区统计卡片+圆角表格。就这样做。</p>
+    </div>
+  </div>
+  <div class="card" data-choice="layout-tweak" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <h3>需要调整</h3>
+      <p>大体可以，但有些细节想改。请描述需要调整的地方。</p>
+    </div>
+  </div>
+</div>

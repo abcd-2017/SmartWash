@@ -8,9 +8,13 @@ import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.schools.SchoolNameVo;
 import com.smartwash.vo.schools.SchoolsVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestParam;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -23,6 +27,7 @@ import java.util.List;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebSchoolsController {

@@ -11,6 +11,7 @@ import com.smartwash.vo.roles.RolesVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -23,6 +24,7 @@ import java.util.Objects;
  * @author
  * @since 2025-03-09
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/roles")
 public class RolesController {

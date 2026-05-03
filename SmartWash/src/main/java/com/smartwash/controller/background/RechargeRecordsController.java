@@ -8,8 +8,11 @@ import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RequestMapping;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/rechargeRecords")
 public class RechargeRecordsController {

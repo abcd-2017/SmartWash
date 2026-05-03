@@ -11,6 +11,7 @@ import com.smartwash.service.ICouponService;
 import com.smartwash.vo.coupon.CouponVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -23,6 +24,7 @@ import java.util.Objects;
  * @author
  * @since 2025-04-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/coupon")
 public class CouponController {
