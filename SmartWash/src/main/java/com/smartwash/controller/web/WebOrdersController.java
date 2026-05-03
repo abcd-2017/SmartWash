@@ -58,19 +58,17 @@ public class WebOrdersController {
 
     @PostMapping("/auth/orders/getOrderInfo/{orderId}")
     public Result<OrdersVo> getOrderInfo(@PathVariable("orderId") Long orderId) {
-        if (orderId == null || ordersService.getById(orderId) == null) {
+        OrdersVo order = ordersService.getOrderByOrderId(orderId);
+        if (order == null) {
             return Result.failMsg("该订单不存在");
         }
-        return Result.ok(ordersService.getOrderByOrderId(orderId));
+        return Result.ok(order);
     }
 
     @PostMapping("/auth/orders/calculationOrder/{orderId}/{userCouponId}")
     public Result<OrdersVo> calculationOrder(@PathVariable("orderId") Long orderId, @PathVariable("userCouponId") Long userCouponId) {
         LoginUser user = UserContextHolder.getUser();
-        if (orderId == null || ordersService.getById(orderId) == null) {
-            return Result.failMsg("该订单不存在");
-        }
-        return Result.ok(ordersService.calculationOrder(user.getUserId(),orderId, userCouponId));
+        return Result.ok(ordersService.calculationOrder(user.getUserId(), orderId, userCouponId));
     }
 
     @PostMapping("/auth/orders/getOrderList")

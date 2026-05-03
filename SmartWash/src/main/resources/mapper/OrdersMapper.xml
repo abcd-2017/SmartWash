@@ -25,8 +25,15 @@
                user_coupon_id, total_price, pay_price, status, pickup_code, created_at, updated_at
         from orders
         where order_no = #{orderNo};
-
     </select>
+
+    <sql id="orderDetailJoins">
+        FROM orders o
+        JOIN users u ON o.user_id = u.user_id
+        JOIN schools s ON o.school_id = s.school_id
+        LEFT JOIN lockers l ON o.locker_id = l.locker_id
+        LEFT JOIN laundry_items lp ON o.laundry_items_id = lp.item_id
+    </sql>
 
     <select id="searchOrders" resultType="com.smartwash.vo.order.OrdersVo">
         SELECT
@@ -53,11 +60,7 @@
         o.updated_at AS updatedAt,
         o.status AS status,
         o.pickup_code AS pickupCode
-        FROM orders o
-        JOIN users u ON o.user_id = u.user_id
-        JOIN schools s ON o.school_id = s.school_id
-        LEFT JOIN lockers l ON o.locker_id = l.locker_id
-        LEFT JOIN laundry_items lp ON o.laundry_items_id = lp.item_id
+        <include refid="orderDetailJoins"/>
         <where>
             <if test="searchForm.phoneNumber != null and searchForm.phoneNumber != ''">
                 AND u.phone_number = #{searchForm.phoneNumber}
@@ -105,11 +108,7 @@
                o.updated_at    AS updatedAt,
                o.status        AS status,
                o.pickup_code   AS pickupCode
-        FROM orders o
-                 JOIN users u ON o.user_id = u.user_id
-                 JOIN schools s ON o.school_id = s.school_id
-                 LEFT JOIN lockers l ON o.locker_id = l.locker_id
-                 LEFT JOIN laundry_items lp ON o.laundry_items_id = lp.item_id
+        <include refid="orderDetailJoins"/>
         where order_id = #{orderId}
         order by updated_at desc
     </select>

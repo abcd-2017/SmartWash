@@ -73,13 +73,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Users user = usersMapper.selectById(loginUser.getUserId());
         Orders orders = new Orders();
         //查找并锁定空余寄存柜（SELECT FOR UPDATE 防竞态）
-        Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(user.getSchoolId());
-        if (freeLocker == null) {
-            throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
-        }
-        freeLocker.setStatus(LockerStatusEnum.USE.getValue());
-        lockersMapper.updateById(freeLocker);
-        orders.setLockerId(freeLocker.getLockerId());
+        orders.setLockerId(findAndAssignFreeLocker(user.getSchoolId()));
 
         orders.setUserId(user.getUserId());
         orders.setSchoolId(user.getSchoolId());
@@ -137,13 +131,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Orders orders = getById(orderStatus.getOrderId());
         //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
         if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
-            Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(orders.getSchoolId());
-            if (freeLocker == null) {
-                throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
-            }
-            freeLocker.setStatus(LockerStatusEnum.USE.getValue());
-            lockersMapper.updateById(freeLocker);
-            orders.setLockerId(freeLocker.getLockerId());
+            orders.setLockerId(findAndAssignFreeLocker(orders.getSchoolId()));
             orders.setStatus(orderStatus.getStatus());
             orders.setPickupCode(String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000)));
             updateById(orders);
@@ -241,6 +229,17 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
         ordersMapper.nextStatus(orders.getOrderId(), nextStatus);
         return true;
+    }
+
+    //查找并分配空闲寄存柜（SELECT FOR UPDATE 防竞态）
+    private Long findAndAssignFreeLocker(Long schoolId) {
+        Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(schoolId);
+        if (freeLocker == null) {
+            throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
+        }
+        freeLocker.setStatus(LockerStatusEnum.USE.getValue());
+        lockersMapper.updateById(freeLocker);
+        return freeLocker.getLockerId();
     }
 
     private Integer getItemCount(Long userId, String status) {

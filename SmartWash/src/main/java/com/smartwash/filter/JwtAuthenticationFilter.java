@@ -76,21 +76,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 UserContextHolder.setUser(userDetails);
             } catch (Exception e) {
-                // 记录日志并清除认证上下文
-                log.warn("JWT Token validation failed: " + e.getMessage());
+                log.warn("JWT Token 验证失败: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
                 throw new UserAuthenticationException("登录失效，请重新登录");
             }
         } else {
-            // 无 token 或 token 无效，清除认证上下文
-            logger.warn("JWT Token is missing or invalid");
+            log.warn("JWT Token 缺失或无效");
             SecurityContextHolder.clearContext();
             throw new UserAuthenticationException("登录失效，请重新登录");
         }
 
-        /*最后，调用 filterChain.doFilter(request, response) 让请求继续传递给下一个过滤器或最终的目标（如 Controller）。
-        这一步是确保请求能够正常进入应用的下一阶段*/
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            UserContextHolder.clear();
+        }
     }
 
 
