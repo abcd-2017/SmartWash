@@ -14,15 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Key
-import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
@@ -123,82 +122,106 @@ fun RegisterPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 28.dp),
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(50.dp))
-
-            Box(
+            // 纯白头部区域（无渐变）
+            Column(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(top = 52.dp, bottom = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.LocalLaundryService,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFF0FDF6)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("✨", style = MaterialTheme.typography.headlineSmall)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "创建账号",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "开启智能洗衣之旅",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // 三步进度条
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF2EB886))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFFE0E5E2))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFFE0E5E2))
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = "创建账号",
-                style = MaterialTheme.typography.displaySmall
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "开启智能洗衣之旅",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(36.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            // 白色表单卡片
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.06f)
+                    )
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-                ) {
-                    PhoneNumberInput(phone, isPhoneError) {
-                        if (it.length <= 11) phone = it
-                        isPhoneError = if (it.isEmpty()) false
-                        else !isValidPhone(phone)
-                    }
+                PhoneNumberInput(phone, isPhoneError) {
+                    if (it.length <= 11) phone = it
+                    isPhoneError = if (it.isEmpty()) false
+                    else !isValidPhone(phone)
+                }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                    CaptchaInput(
-                        verificationCode,
-                        isVerificationCodeError,
-                        countDown,
-                        captchaState,
-                        onValueChange = {
-                            if (it.length <= 6) {
-                                verificationCode = it
-                                isVerificationCodeError = false
-                            }
+                // 验证码行
+                VerificationCodeRow(
+                    verificationCode = verificationCode,
+                    isVerificationCodeError = isVerificationCodeError,
+                    countDown = countDown,
+                    captchaState = captchaState,
+                    onValueChange = {
+                        if (it.length <= 6) {
+                            verificationCode = it
+                            isVerificationCodeError = false
                         }
-                    ) {
+                    },
+                    onSendCaptcha = {
                         registerViewModel.getCaptcha(phone)
                         if (isValidPhone(phone)) {
                             countDown = AppConstant.SEND_CAPTCHA
@@ -216,24 +239,23 @@ fun RegisterPage(
                             isPhoneError = true
                         }
                     }
+                )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                    PasswordInput(
-                        password,
-                        isPasswordError,
-                        showPassword,
-                        showVisibility = { showPassword = !showPassword }
-                    ) {
-                        if (it.length <= 16) password = it
-                        isPasswordError = if (it.isEmpty()) false
-                        else !isValidPhone(phone)
-                    }
+                PasswordInput(
+                    password,
+                    isPasswordError,
+                    showPassword,
+                    showVisibility = { showPassword = !showPassword }
+                ) {
+                    if (it.length <= 16) password = it
+                    isPasswordError = if (it.isEmpty()) false
+                    else it.length < 6 || it.length > 16
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
-
+            // 注册按钮
             Button(
                 onClick = {
                     isPhoneError = !isValidPhone(phone)
@@ -247,21 +269,29 @@ fun RegisterPage(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium,
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp)
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(14.dp),
+                        ambientColor = Color(0xFF2EB886).copy(alpha = 0.3f),
+                        spotColor = Color(0xFF2EB886).copy(alpha = 0.3f)
+                    )
+                    .clip(RoundedCornerShape(14.dp)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF2EB886),
+                    contentColor = Color.White
                 )
             ) {
                 when (registerState) {
                     is RequestState.Loading -> CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         strokeWidth = 2.dp
                     )
 
                     else -> {
-                        Text("注册", style = MaterialTheme.typography.labelLarge)
+                        Text("注 册", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -275,9 +305,14 @@ fun RegisterPage(
                 }
             ) {
                 Text(
-                    "已有账号？立即登录",
+                    "已有账号？",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "立即登录",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF2EB886)
                 )
             }
         }
@@ -285,61 +320,68 @@ fun RegisterPage(
 }
 
 @Composable
-private fun CaptchaInput(
+private fun VerificationCodeRow(
     verificationCode: String,
     isVerificationCodeError: Boolean,
     countDown: Int,
     captchaState: RequestState,
     onValueChange: (String) -> Unit,
-    onClick: () -> Unit
+    onSendCaptcha: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = verificationCode,
-            onValueChange = onValueChange,
-            label = { Text("验证码") },
-            modifier = Modifier.weight(1f),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = isVerificationCodeError,
-            supportingText = if (isVerificationCodeError) {
-                { Text("请输入正确的验证码") }
-            } else null,
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Key,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            },
-            singleLine = true,
-            shape = MaterialTheme.shapes.small
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "验证码",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 6.dp)
         )
-
-        Button(
-            onClick = onClick,
-            enabled = captchaState is RequestState.Idle,
-            modifier = Modifier
-                .width(120.dp)
-                .height(56.dp),
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = when (captchaState) {
-                    is RequestState.Idle -> "获取验证码"
-                    else -> "${countDown}s"
+            OutlinedTextField(
+                value = verificationCode,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = isVerificationCodeError,
+                supportingText = if (isVerificationCodeError) {
+                    { Text("请输入正确的验证码") }
+                } else null,
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.Key,
+                        contentDescription = null,
+                        tint = if (isVerificationCodeError) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.primary
+                    )
                 },
-                style = MaterialTheme.typography.labelMedium
+                singleLine = true,
+                shape = MaterialTheme.shapes.small,
+                placeholder = { Text("输入验证码") }
             )
+
+            Button(
+                onClick = onSendCaptcha,
+                enabled = captchaState !is RequestState.Loading,
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.small,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF0FDF6),
+                    contentColor = Color(0xFF2EB886),
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Text(
+                    text = if (captchaState is RequestState.Loading) "${countDown}s"
+                    else "获取验证码",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
         }
     }
 }

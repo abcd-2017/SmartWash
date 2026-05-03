@@ -1,7 +1,6 @@
 package com.smartwash.ui.page.login
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,16 +8,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
@@ -97,88 +98,97 @@ fun LoginPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 28.dp),
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(60.dp))
-
-            // 应用图标
+            // 品牌渐变头部
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF2EB886),
+                                Color(0xFF1A9E6E),
+                                Color(0xFF158A5C)
+                            )
+                        )
+                    )
+                    .padding(top = 44.dp, bottom = 40.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.LocalLaundryService,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            Text(
-                text = "智能洗衣",
-                style = MaterialTheme.typography.displaySmall
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "让生活更轻松",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            AnimatedVisibility(visible = true) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column(
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp)
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Color.White.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        PhoneNumberInput(phone, isPhoneError) {
-                            if (it.length <= 11) phone = it
-                            isPhoneError = if (it.isEmpty()) false
-                            else !isValidPhone(phone)
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        PasswordInput(
-                            password,
-                            isPasswordError,
-                            showPassword,
-                            showVisibility = { showPassword = !showPassword }
-                        ) {
-                            if (it.length <= 16) password = it
-                            isPasswordError = if (it.isEmpty()) false
-                            else it.length < 6 || it.length > 16
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.LocalLaundryService,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = Color.White
+                        )
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "智能洗衣",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "智慧校园 · 轻松洗衣",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            // 白色卡片（上移重叠渐变区）
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .offset(y = (-24).dp)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.06f)
+                    )
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 24.dp, vertical = 32.dp)
+            ) {
+                PhoneNumberInput(phone, isPhoneError) {
+                    if (it.length <= 11) phone = it
+                    isPhoneError = if (it.isEmpty()) false
+                    else !isValidPhone(phone)
+                }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                PasswordInput(
+                    password,
+                    isPasswordError,
+                    showPassword,
+                    showVisibility = { showPassword = !showPassword }
+                ) {
+                    if (it.length <= 16) password = it
+                    isPasswordError = if (it.isEmpty()) false
+                    else it.length < 6 || it.length > 16
+                }
+            }
+
+            // 登录按钮
             Button(
                 onClick = {
                     isPhoneError = !isValidPhone(phone)
@@ -191,31 +201,39 @@ fun LoginPage(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium,
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp)
+                    .shadow(
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(14.dp),
+                        ambientColor = Color(0xFF2EB886).copy(alpha = 0.3f),
+                        spotColor = Color(0xFF2EB886).copy(alpha = 0.3f)
+                    )
+                    .clip(RoundedCornerShape(14.dp)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF2EB886),
+                    contentColor = Color.White
                 )
             ) {
                 when (loginState) {
                     is RequestState.Loading -> {
                         CircularProgressIndicator(
                             modifier = Modifier.size(22.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = Color.White,
                             strokeWidth = 2.dp
                         )
                     }
 
                     else -> {
                         Text(
-                            "登录",
+                            "登 录",
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             TextButton(
                 onClick = {
@@ -223,9 +241,14 @@ fun LoginPage(
                 }
             ) {
                 Text(
-                    "没有账号？立即注册",
+                    "没有账号？",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "立即注册",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF2EB886)
                 )
             }
         }
