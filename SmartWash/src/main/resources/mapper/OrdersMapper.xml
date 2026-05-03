@@ -21,7 +21,8 @@
     </update>
 
     <select id="getOrderByOrderNo" resultType="com.smartwash.entity.Orders" parameterType="java.lang.String">
-        select *
+        select order_id, order_no, user_id, school_id, locker_id, laundry_items_id,
+               user_coupon_id, total_price, pay_price, status, pickup_code, created_at, updated_at
         from orders
         where order_no = #{orderNo};
 

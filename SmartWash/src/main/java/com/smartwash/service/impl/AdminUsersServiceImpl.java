@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.AdminUsers;
+import com.smartwash.entity.Roles;
 import com.smartwash.from.admin_users.AddAdminUserFrom;
 import com.smartwash.from.admin_users.SearchAdminUserFrom;
 import com.smartwash.from.admin_users.UpdateAdminUserFrom;
@@ -19,7 +20,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -45,9 +48,15 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
         List<AdminUsers> AdminUsers = this.list(page, queryWrapper);
         Page<AdminUserVo> AdminUsersVoPage = new Page<>();
         BeanUtils.copyProperties(page, AdminUsersVoPage);
+
+        // 批量查询角色数据，避免N+1问题
+        Set<Long> roleIds = AdminUsers.stream().map(com.smartwash.entity.AdminUsers::getRoleId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Roles> roleMap = roleIds.isEmpty() ? Collections.emptyMap()
+                : rolesService.listByIds(roleIds).stream().collect(Collectors.toMap(r -> r.getRoleId().longValue(), Function.identity()));
+
         AdminUsersVoPage.setRecords(AdminUsers.stream().map(it -> {
             AdminUserVo AdminUserVo = new AdminUserVo();
-            AdminUserVo.setRoles(rolesService.getById(it.getRoleId()));
+            AdminUserVo.setRoles(roleMap.get(it.getRoleId()));
             BeanUtils.copyProperties(it, AdminUserVo);
             return AdminUserVo;
         }).toList());

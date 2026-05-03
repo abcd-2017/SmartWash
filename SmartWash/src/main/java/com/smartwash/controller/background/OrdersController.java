@@ -40,12 +40,12 @@ public class OrdersController {
     }
 
     @GetMapping("/all")
-    public Result<Page<OrdersVo>> getAllLockers(SearchOrderFrom searchOrderFrom) {
+    public Result<Page<OrdersVo>> getAllOrders(SearchOrderFrom searchOrderFrom) {
         return Result.ok(ordersService.getAllOrders(searchOrderFrom));
     }
 
     @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> deleteLockers(@PathVariable("ids") String ids) {
+    public Result<Boolean> deleteOrders(@PathVariable String ids) {
         return Result.ok(ordersService.deleteOrders(ids));
     }
 

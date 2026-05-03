@@ -46,7 +46,7 @@ public class WebOrdersController {
     }
 
     @GetMapping("/all")
-    public Result<Page<OrdersVo>> getAllLockers(SearchOrderFrom searchOrderFrom) {
+    public Result<Page<OrdersVo>> getAllOrders(SearchOrderFrom searchOrderFrom) {
         return Result.ok(ordersService.getAllOrders(searchOrderFrom));
     }
 

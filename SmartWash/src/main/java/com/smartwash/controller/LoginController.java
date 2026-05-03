@@ -49,7 +49,7 @@ public class LoginController {
         try {
             authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, userLoginFrom.getPassword()));
         } catch (AuthenticationException e) {
-            e.printStackTrace();
+            log.error("管理员登录认证失败", e);
             return Result.failMsg(e.getMessage());
         }
         SecurityContextHolder.getContext().setAuthentication(authenticate);
@@ -70,7 +70,7 @@ public class LoginController {
         try {
             authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, userLoginFrom.getPassword()));
         } catch (AuthenticationException e) {
-            e.printStackTrace();
+            log.error("用户登录认证失败", e);
             return Result.failMsg(e.getMessage());
         }
         SecurityContextHolder.getContext().setAuthentication(authenticate);

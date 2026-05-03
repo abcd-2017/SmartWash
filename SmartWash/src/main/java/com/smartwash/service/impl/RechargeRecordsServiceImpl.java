@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -43,13 +45,21 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         List<RechargeRecords> rechargeRecords = this.list(page, queryWrapper);
         Page<RechargeRecordsVo> rechargeRecordsVoPage = new Page<>();
         BeanUtils.copyProperties(page, rechargeRecordsVoPage);
+
+        // 批量查询用户数据，避免N+1问题
+        Set<Long> userIds = rechargeRecords.stream().map(RechargeRecords::getUserId).collect(Collectors.toSet());
+        Map<Long, Users> userMap = usersMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(Users::getUserId, Function.identity()));
+
         rechargeRecordsVoPage.setRecords(rechargeRecords.stream().map(it -> {
             RechargeRecordsVo recordsVo = new RechargeRecordsVo();
             BeanUtils.copyProperties(it, recordsVo);
-            Users users = usersMapper.selectById(it.getUserId());
+            Users users = userMap.get(it.getUserId());
             UserVo userVo = new UserVo();
-            userVo.setUserId(users.getUserId());
-            userVo.setPhoneNumber(users.getPhoneNumber());
+            if (users != null) {
+                userVo.setUserId(users.getUserId());
+                userVo.setPhoneNumber(users.getPhoneNumber());
+            }
             recordsVo.setUsers(userVo);
             return recordsVo;
         }).toList());

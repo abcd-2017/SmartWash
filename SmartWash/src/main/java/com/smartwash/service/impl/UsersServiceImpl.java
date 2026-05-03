@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
+import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
 import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
@@ -21,7 +22,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -49,9 +52,15 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         List<Users> users = this.list(page, queryWrapper);
         Page<UserVo> usersVoPage = new Page<>();
         BeanUtils.copyProperties(page, usersVoPage);
+
+        // 批量查询学校数据，避免N+1问题
+        Set<Long> schoolIds = users.stream().map(Users::getSchoolId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Schools> schoolMap = schoolIds.isEmpty() ? Collections.emptyMap()
+                : schoolsService.listByIds(schoolIds).stream().collect(Collectors.toMap(Schools::getSchoolId, Function.identity()));
+
         usersVoPage.setRecords(users.stream().map(it -> {
             UserVo userVo = new UserVo();
-            userVo.setSchools(schoolsService.getById(it.getSchoolId()));
+            userVo.setSchools(schoolMap.get(it.getSchoolId()));
             BeanUtils.copyProperties(it, userVo);
             return userVo;
         }).toList());
