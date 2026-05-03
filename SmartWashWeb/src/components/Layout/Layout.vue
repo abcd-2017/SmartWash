@@ -40,6 +40,6 @@ import Navbar from "./Navbar.vue";
   flex: 1;
   padding: 20px;
   overflow-y: auto; /* 垂直滚动 */
-  background-color: #f0f2f5;
+  background-color: #f1f5f9;
 }
 </style>
