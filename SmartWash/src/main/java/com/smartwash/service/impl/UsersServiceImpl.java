@@ -17,6 +17,7 @@ import com.smartwash.vo.schools.SchoolsVo;
 import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.UserVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
@@ -73,11 +75,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         }
         BeanUtils.copyProperties(addUsersFrom, users);
         users.setPassword(password);
-        return save(users);
+        boolean result = save(users);
+        log.info("管理员新增用户, userId: {}", users.getUserId());
+        return result;
     }
 
     @Override
     public Boolean updateUser(UpdateUserFrom usersFrom) {
+        log.info("更新用户信息, userId: {}", usersFrom.getUserId());
         Users users = getById(usersFrom.getUserId());
         BeanUtils.copyProperties(usersFrom, users);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -89,6 +94,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Boolean deleteUsers(String ids) {
+        log.info("删除用户, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));
@@ -117,11 +123,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
-        return save(users);
+        boolean result = save(users);
+        log.info("用户注册成功, userId: {}, phone: {}", users.getUserId(), DesensitizedUtil.mobilePhone(userRegisterFrom.getPhoneNumber()));
+        return result;
     }
 
     @Override
     public Boolean updateUserInfo(UpdateUserInfo updateUserInfo, Long userId) {
+        log.info("用户更新个人信息, userId: {}", userId);
         Users user = getById(userId);
         user.setSchoolId(updateUserInfo.getSchoolId());
         user.setStudentId(updateUserInfo.getStudentId());
@@ -143,12 +152,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Boolean bingCampus(String campusCard, Long userId) {
+        log.info("用户绑定校园卡, userId: {}", userId);
         LambdaUpdateWrapper<Users> updateWrapper = new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, campusCard);
         return update(updateWrapper);
     }
 
     @Override
     public Boolean unBingCampus(Long userId) {
+        log.info("用户解绑校园卡, userId: {}", userId);
         return update(new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, null));
     }
 }

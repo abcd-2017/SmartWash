@@ -14,6 +14,7 @@ import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ import java.util.Map;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/web")
 public class WebOrdersController {
@@ -47,13 +49,16 @@ public class WebOrdersController {
     @PostMapping("/auth/orders/reservation")
     public Result<Long> reservationLaundry(@RequestBody @Valid ReservationOrderFrom reservationOrderFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
-        return Result.ok(ordersService.createOrder(reservationOrderFrom, loginUser));
+        Long orderId = ordersService.createOrder(reservationOrderFrom, loginUser);
+        log.info("用户下单, userId: {}, orderId: {}", loginUser.getUserId(), orderId);
+        return Result.ok(orderId);
     }
 
     @PostMapping("/auth/orders/getOrderInfo/{orderId}")
     public Result<OrdersVo> getOrderInfo(@PathVariable("orderId") Long orderId) {
         OrdersVo order = ordersService.getOrderByOrderId(orderId);
         if (order == null) {
+            log.warn("订单不存在, orderId: {}", orderId);
             return Result.failMsg("该订单不存在");
         }
         return Result.ok(order);
@@ -62,6 +67,7 @@ public class WebOrdersController {
     @PostMapping("/auth/orders/calculationOrder/{orderId}/{userCouponId}")
     public Result<OrdersVo> calculationOrder(@PathVariable("orderId") Long orderId, @PathVariable("userCouponId") Long userCouponId) {
         LoginUser user = UserContextHolder.getUser();
+        log.info("用户计价, userId: {}, orderId: {}, couponId: {}", user.getUserId(), orderId, userCouponId);
         return Result.ok(ordersService.calculationOrder(user.getUserId(), orderId, userCouponId));
     }
 
@@ -80,12 +86,14 @@ public class WebOrdersController {
     @PostMapping("/auth/orders/shipping")
     public Result<Boolean> shippingOrder(@RequestBody @Valid OrderNextStatusFrom statusFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
+        log.info("用户确认寄送, userId: {}, orderId: {}", loginUser.getUserId(), statusFrom.getOrderId());
         return Result.ok(ordersService.shippingOrder(statusFrom, loginUser));
     }
 
     @PostMapping("/auth/orders/pickup")
     public Result<Boolean> pickupOrder(@RequestBody @Valid OrderNextStatusFrom statusFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
+        log.info("用户确认取件, userId: {}, orderId: {}", loginUser.getUserId(), statusFrom.getOrderId());
         return Result.ok(ordersService.pickupOrder(statusFrom, loginUser));
     }
 
@@ -98,6 +106,7 @@ public class WebOrdersController {
     @PostMapping("/auth/orders/cancelOrder/{orderId}")
     public Result<Boolean> cancelOrder(@PathVariable("orderId") Long orderId) {
         LoginUser loginUser = UserContextHolder.getUser();
+        log.info("用户取消订单, userId: {}, orderId: {}", loginUser.getUserId(), orderId);
         return Result.ok(ordersService.cancelOrder(orderId, loginUser.getUserId()));
     }
 }

@@ -15,6 +15,7 @@ import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IRolesService;
 import com.smartwash.vo.admin_users.AdminUserVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUsers> implements IAdminUsersService {
@@ -69,11 +71,14 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
         }
         BeanUtils.copyProperties(addAdminUsersFrom, adminUsers);
         adminUsers.setPasswordHash(password);
-        return save(adminUsers);
+        boolean result = save(adminUsers);
+        log.info("新增管理员, adminId: {}, username: {}", adminUsers.getAdminId(), adminUsers.getUsername());
+        return result;
     }
 
     @Override
     public Boolean updateAdminUsers(UpdateAdminUserFrom adminUserFrom) {
+        log.info("更新管理员, adminId: {}", adminUserFrom.getAdminId());
         AdminUsers adminUsers = getById(adminUserFrom.getAdminId());
         BeanUtils.copyProperties(adminUserFrom, adminUsers);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
@@ -98,6 +103,7 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
 
     @Override
     public Boolean deleteAdminUsers(String ids) {
+        log.info("删除管理员, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));

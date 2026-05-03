@@ -9,6 +9,7 @@ import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.vo.order.OrdersVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ import java.util.Map;
  * @author
  * @since 2025-03-06
  */
+@Slf4j
 @RestController
 @RequestMapping("/admin/orders")
 public class OrdersController {
@@ -40,6 +42,7 @@ public class OrdersController {
 
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteOrders(@PathVariable String ids) {
+        log.info("管理员删除订单, ids: {}", ids);
         return Result.ok(ordersService.deleteOrders(ids));
     }
 

@@ -44,8 +44,10 @@ public class LoginController {
 
     @PostMapping("/adminUsers/login")
     public Result<String> login(@RequestBody @Valid AdminUserLoginFrom userLoginFrom) {
-        if (adminUsersService.getAdminUserByName(userLoginFrom.getUsername()) == null)
+        if (adminUsersService.getAdminUserByName(userLoginFrom.getUsername()) == null) {
+            log.warn("管理员登录失败：用户名不存在, username: {}", userLoginFrom.getUsername());
             return Result.failMsg("该用户名不存在");
+        }
         String username = String.format("%s-%s", DefaultConstant.ADMIN_USER_LOGIN_TYPE, userLoginFrom.getUsername());
 
         //验证用户密码
@@ -59,12 +61,14 @@ public class LoginController {
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
         String token = jwtUtil.generatorToken(username);
+        log.info("管理员登录成功, username: {}", userLoginFrom.getUsername());
         return Result.ok(token);
     }
 
     @PostMapping("/user/login")
     public Result<String> login(@RequestBody @Valid UserLoginFrom userLoginFrom) {
         if (usersService.getUserByPhone(userLoginFrom.getPhoneNumber()) == null) {
+            log.warn("用户登录失败：手机号未注册, phone: {}", userLoginFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
             return Result.failMsg("用户名或密码错误");
         }
         String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, userLoginFrom.getPhoneNumber());
@@ -80,6 +84,7 @@ public class LoginController {
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
         String token = jwtUtil.generatorToken(username);
+        log.info("用户登录成功, phone: {}", userLoginFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
         return Result.ok(token);
     }
 
@@ -93,9 +98,11 @@ public class LoginController {
 
                 //注册成功后，生成token给用户
                 String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, userRegisterFrom.getPhoneNumber());
+                log.info("用户注册成功, phone: {}", userRegisterFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
                 return Result.ok(jwtUtil.generatorToken(username));
             }
         } else {
+            log.warn("验证码验证失败, phone: {}", userRegisterFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
             return Result.failMsg("验证码过期，请重新获取");
         }
         return Result.ok(null);
@@ -104,6 +111,7 @@ public class LoginController {
     @GetMapping("/user/captcha/{phoneNumber}")
     public Result<String> getCaptcha(@PathVariable("phoneNumber") String phoneNumber) {
         if (!phoneNumber.matches(PHONE_REGEX)) {
+            log.warn("验证码请求手机号格式错误, phone: {}", phoneNumber);
             return Result.failMsg("手机号格式错误");
         }
         // 不区分是否已注册，防止手机号枚举
@@ -115,6 +123,7 @@ public class LoginController {
             otp.append(random.nextInt(10)); // 生成 0-9 之间的随机数
         }
         redisTemplate.opsForValue().set(key, otp.toString(), DefaultConstant.Captcha_Timeout, TimeUnit.MILLISECONDS);
+        log.info("验证码已生成, phone: {}", phoneNumber.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
         return Result.ok(otp.toString());
     }
 }
