@@ -14,18 +14,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ExceptionControllerAdvice {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public Result<String> handleVaildException(MethodArgumentNotValidException e) {
+    public Result<String> handleValidException(MethodArgumentNotValidException e) {
         log.error("数据校验出现问题：{}，异常类型：{}", e.getMessage(), e.getClass());
         BindingResult bindingResult = e.getBindingResult();
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(item -> {
             //获取错误信息
             String message = item.getDefaultMessage();
             //获取错误的属性名字
             String field = item.getField();
-            stringBuffer.append(field).append(":").append(message).append(" ");
+            sb.append(field).append(":").append(message).append(" ");
         });
-        return Result.build(stringBuffer + "", ResultCodeEnum.FAIL);
+        return Result.build(sb.toString(), ResultCodeEnum.FAIL);
     }
 
     /**
@@ -39,7 +39,7 @@ public class ExceptionControllerAdvice {
 
     @ExceptionHandler(value = CustomExceptions.class)
     public Result<String> runTimeException(Throwable throwable) {
-        log.error(throwable.getMessage());
+        log.error("业务异常", throwable);
         return Result.failMsg(throwable.getMessage());
     }
 

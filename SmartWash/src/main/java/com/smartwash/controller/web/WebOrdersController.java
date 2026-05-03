@@ -2,6 +2,7 @@ package com.smartwash.controller.web;
 
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartwash.common.EnumUtils;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
 import com.smartwash.entity.Orders;
@@ -16,7 +17,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,15 +34,9 @@ public class WebOrdersController {
     @Autowired
     private IOrdersService ordersService;
 
-    //获取支付状态
     @GetMapping("/orders/status")
     public Result<Map<String, String>> getOrderStatus() {
-        OrderStatus[] values = OrderStatus.values();
-        Map<String, String> map = new HashMap<>();
-        for (OrderStatus status : values) {
-            map.put(status.getStatus(), status.getDescription());
-        }
-        return Result.ok(map);
+        return Result.ok(EnumUtils.toMap(OrderStatus.values(), OrderStatus::getStatus, OrderStatus::getDescription));
     }
 
     @GetMapping("/all")

@@ -11,7 +11,6 @@ import com.smartwash.from.roles.SearchRolesFrom;
 import com.smartwash.from.roles.UpdateRolesFrom;
 import com.smartwash.mapper.RolesMapper;
 import com.smartwash.service.IRolesService;
-import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.roles.RolesVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +28,6 @@ import java.util.List;
  */
 @Service
 public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements IRolesService {
-    @Autowired
-    private ISchoolsService schoolsService;
 
     @Override
     public Page<RolesVo> getAllRoles(SearchRolesFrom rolesFrom) {

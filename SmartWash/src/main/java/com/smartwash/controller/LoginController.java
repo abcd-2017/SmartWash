@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RequestMapping("/auth")
 public class LoginController {
+
+    private static final String PHONE_REGEX = "^(\\+86)?1[3-9]\\d{9}$";
+    private static final int CAPTCHA_LENGTH = 6;
+
     @Autowired
     private IAdminUsersService adminUsersService;
     @Autowired
@@ -99,7 +103,7 @@ public class LoginController {
 
     @GetMapping("/user/captcha/{phoneNumber}")
     public Result<String> getCaptcha(@PathVariable("phoneNumber") String phoneNumber) {
-        if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) {
+        if (!phoneNumber.matches(PHONE_REGEX)) {
             return Result.failMsg("手机号格式错误");
         }
         // 不区分是否已注册，防止手机号枚举
@@ -107,7 +111,7 @@ public class LoginController {
 
         StringBuilder otp = new StringBuilder();
         Random random = new Random();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < CAPTCHA_LENGTH; i++) {
             otp.append(random.nextInt(10)); // 生成 0-9 之间的随机数
         }
         redisTemplate.opsForValue().set(key, otp.toString(), DefaultConstant.Captcha_Timeout, TimeUnit.MILLISECONDS);

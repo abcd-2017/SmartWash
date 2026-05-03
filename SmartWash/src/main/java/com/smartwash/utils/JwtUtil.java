@@ -107,16 +107,6 @@ public class JwtUtil {
         return new Date(System.currentTimeMillis() + JWT_TTL);
     }
     /**
-     * 验证token是否有效
-     * @param token 需要被验证的token
-     * @param userDetails true/false
-     * @return
-     */
-//    public boolean validateToken(String token,UserDetails userDetails){
-//        return getUserNameFromToken(token).equals(userDetails.getUsername()) && !isTokenExpired(token);
-//    }
-
-    /**
      * 判断token是否有过期
      *
      * @param token 需要被验证的token
