@@ -14,6 +14,7 @@ import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.from.payment.UpdatePaymentFrom;
 import com.smartwash.mapper.*;
 import com.smartwash.service.IPaymentsService;
+import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.payment.PaymentVo;
@@ -26,8 +27,9 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -47,6 +49,8 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     private CouponMapper couponMapper;
     @Autowired
     private UserCouponMapper userCouponMapper;
+    @Autowired
+    private OrderTimeoutManager orderTimeoutManager;
 
     @Override
     public Page<PaymentVo> getAllPayments(SearchPaymentFrom searchUserFrom) {
@@ -56,18 +60,30 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         List<Payments> payments = this.list(page, queryWrapper);
         Page<PaymentVo> paymentVoPage = new Page<>();
         BeanUtils.copyProperties(page, paymentVoPage);
+
+        // 批量查询关联数据，避免N+1问题
+        Set<Long> userIds = payments.stream().map(Payments::getUserId).collect(Collectors.toSet());
+        Set<Long> orderIds = payments.stream().map(Payments::getOrderId).collect(Collectors.toSet());
+        Map<Long, Users> userMap = usersMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(Users::getUserId, Function.identity()));
+        Map<Long, Orders> orderMap = ordersMapper.selectBatchIds(orderIds).stream()
+                .collect(Collectors.toMap(Orders::getOrderId, Function.identity()));
+
         paymentVoPage.setRecords(payments.stream().map(it -> {
             PaymentVo paymentVo = new PaymentVo();
-            Users users = usersMapper.selectById(it.getUserId());
-            Orders orders = ordersMapper.selectById(it.getOrderId());
+            Users users = userMap.get(it.getUserId());
+            Orders orders = orderMap.get(it.getOrderId());
 
             UserVo userVo = new UserVo();
-            userVo.setUserId(users.getUserId());
-            userVo.setPhoneNumber(users.getPhoneNumber());
+            if (users != null) {
+                userVo.setUserId(users.getUserId());
+                userVo.setPhoneNumber(users.getPhoneNumber());
+            }
             OrdersVo ordersVo = new OrdersVo();
-            ordersVo.setOrderId(orders.getOrderId());
-            ordersVo.setOrderNo(orders.getOrderNo());
-
+            if (orders != null) {
+                ordersVo.setOrderId(orders.getOrderId());
+                ordersVo.setOrderNo(orders.getOrderNo());
+            }
 
             paymentVo.setOrder(ordersVo);
             paymentVo.setUser(userVo);
@@ -132,6 +148,8 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         orders.setPickupCode(String.format("%d:%d:%s", users.getUserId(), orderFrom.getOrderId(), pickCode));
         orders.setStatus(OrderStatus.PENDING_SHIPMENT.getStatus());
         ordersMapper.updateById(orders);
+        // 支付成功，取消超时任务
+        orderTimeoutManager.cancelTimeout(orderFrom.getOrderId());
         return true;
     }
 

@@ -95,6 +95,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Snowflake snowflake = IdUtil.getSnowflake();
         orders.setOrderNo(snowflake.nextIdStr());
         save(orders);
+        // 调度30分钟支付超时任务
+        orderTimeoutManager.scheduleTimeout(orders.getOrderId());
         return orders.getOrderId();
     }
 
@@ -195,6 +197,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
         //2.修改订单状态
         ordersMapper.nextStatus(orders.getOrderId(), OrderStatus.CANCELED.getStatus());
+        // 取消超时任务
+        orderTimeoutManager.cancelTimeout(orderId);
         return true;
     }
 
