@@ -2,6 +2,7 @@ package com.smartwash.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -14,6 +15,7 @@ import java.util.UUID;
 /**
  * JWT工具类
  */
+@Slf4j
 @Component
 public class JwtUtil {
 
@@ -57,6 +59,7 @@ public class JwtUtil {
      * @return token
      */
     public String generatorToken(String username) {
+        log.debug("生成 JWT, subject: {}", username);
         Map<String, Object> claims = initClaims(username);
         return Jwts.builder()
                    .claims(claims)
@@ -91,6 +94,7 @@ public class JwtUtil {
         try {
             username = getPayloadFromToken(token).get("sub", String.class);
         } catch (Exception e) {
+            log.warn("JWT 解析失败", e);
             username = null;
         }
         return username;

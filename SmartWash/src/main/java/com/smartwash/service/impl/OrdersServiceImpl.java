@@ -20,6 +20,7 @@ import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> implements IOrdersService {
@@ -47,6 +49,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
     @Override
     public Boolean deleteOrders(String ids) {
+        log.info("删除订单, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             removeById(Integer.parseInt(id));
@@ -76,6 +79,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Snowflake snowflake = IdUtil.getSnowflake();
         orders.setOrderNo(snowflake.nextIdStr());
         save(orders);
+        log.info("订单创建成功, orderId: {}, userId: {}, lockerId: {}", orders.getOrderId(), user.getUserId(), orders.getLockerId());
         // 调度30分钟支付超时任务
         orderTimeoutManager.scheduleTimeout(orders.getOrderId());
         return orders.getOrderId();
@@ -115,6 +119,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Transactional
     @Override
     public Boolean updateOrderStatus(UpdateOrderStatus orderStatus) {
+        log.info("管理员变更订单状态, orderId: {}, newStatus: {}", orderStatus.getOrderId(), orderStatus.getStatus());
         Orders orders = getById(orderStatus.getOrderId());
         //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
         if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
@@ -167,6 +172,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         if (orders == null || !orders.getStatus().equals(OrderStatus.PENDING_PAYMENT.getStatus())) {
             throw new CustomExceptions("订单状态异常");
         }
+        log.info("订单已取消, orderId: {}, userId: {}", orderId, userId);
         //1.解除寄存柜占用
         lockersMapper.unLocker(orders.getLockerId(), LockerStatusEnum.FREE.getValue());
 
@@ -180,6 +186,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     //计算使用优惠券后的订单价格
     @Override
     public OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId) {
+        log.info("订单计价, orderId: {}, userId: {}, couponId: {}", orderId, userId, userCouponId);
         UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
         if ((userCoupon == null) || userCoupon.getIsUsed() || userCoupon.getExpiredAt().isBefore(LocalDateTime.now()) || !Objects.equals(userCoupon.getUserId(), userId)) {
             throw new CustomExceptions("优惠券异常");
@@ -202,11 +209,14 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         //1.验证取件码是否正确
         Orders orders = getById(statusFrom.getOrderId());
         if (!Objects.equals(loginUser.getUserId(), orders.getUserId())) {
+            log.warn("订单用户不匹配, orderId: {}, userId: {}", statusFrom.getOrderId(), loginUser.getUserId());
             throw new CustomExceptions("订单错误");
         }
         if (!Objects.equals(orders.getPickupCode(), statusFrom.getPickupCode())) {
+            log.warn("取件码验证失败, orderId: {}", statusFrom.getOrderId());
             throw new CustomExceptions("取件码错误");
         }
+        log.info("订单状态变更, orderId: {}, nextStatus: {}", statusFrom.getOrderId(), nextStatus);
         //2.修改订单状态
         orders.setStatus(nextStatus);
 
@@ -222,10 +232,12 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private Long findAndAssignFreeLocker(Long schoolId) {
         Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(schoolId);
         if (freeLocker == null) {
+            log.warn("寄存柜已满, schoolId: {}", schoolId);
             throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
         }
         freeLocker.setStatus(LockerStatusEnum.USE.getValue());
         lockersMapper.updateById(freeLocker);
+        log.info("分配寄存柜, lockerId: {}, schoolId: {}", freeLocker.getLockerId(), schoolId);
         return freeLocker.getLockerId();
     }
 
