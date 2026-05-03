@@ -106,6 +106,8 @@ const activeMenu = computed(() => {
   height: 44px;
   line-height: 44px;
   color: #cbd5e1 !important;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 :deep(.el-menu-item:hover) {
