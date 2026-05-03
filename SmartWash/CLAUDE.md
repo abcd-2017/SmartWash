@@ -87,7 +87,7 @@ controller → service (接口) → service/impl → mapper (接口) → mapper 
 
 ## 约束
 
-- **每次修改后都必须提交 git commit**，commit message 使用中文，格式：`<type>(Backend): <描述>`（如 `fix(Backend): 修复订单状态更新失败`、`feat(Backend): 新增优惠券批量发放接口`）。
+- **提交代码时使用 `commit-commands:commit` skill**：每次提交前通过该 skill 检查变更范围、生成规范的 commit message，确保一个 commit 对应一个完整的功能点而非单个文件。commit message 使用中文，格式：`<type>(Backend): <描述>`（如 `fix(Backend): 修复订单状态更新失败`、`feat(Backend): 新增优惠券批量发放接口`）。
 - **所有 API 返回统一使用 `Result<T>`**，禁止直接返回实体或字符串。成功用 `Result.ok(data)`，失败用 `Result.failMsg(msg)`。
 - **新增接口遵循现有 URL 路由规范**：管理端 `/admin/**`（ROLE_ADMIN），用户端需要认证 `/web/auth/**`（ROLE_USER），公开接口 `/web/**` 或 `/auth/**`。
 - **请求参数放在 `from/` 包**，命名遵循 `{操作}{实体}From`（如 `Add*From`、`Update*From`、`Search*From`）。分页查询继承 `BaseSearchFrom`。

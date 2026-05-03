@@ -5,7 +5,7 @@
 ## 基本规则
 
 - **必须使用中文回答** — 所有对话、代码注释、提交信息均使用中文。
-- **每次修改完必须提交 Git Commit** — 完成一个功能或修复后，立即使用中文提交信息进行 `git commit`。提交信息格式：`<type>(Harmony): <描述>`，例如 `feat(Harmony): 新增订单详情页面`、`fix(Harmony): 修复登录 token 过期问题`。
+- **提交代码时使用 `commit-commands:commit` skill**：每次提交前通过该 skill 检查变更范围、生成规范的 commit message，确保一个 commit 对应一个完整的功能点而非单个文件。提交信息格式：`<type>(Harmony): <描述>`（如 `feat(Harmony): 新增订单详情页面`、`fix(Harmony): 修复登录 token 过期问题`），使用中文描述变更内容。
 - **优先使用 `@ComponentV2`** — 新组件使用 V2 版本，配合 `@Param`、`@Local`、`@Event` 等新装饰器。
 - **新增页面必须注册路由** — 在 `entry/src/main/resources/base/profile/router_map.json` 中注册路由映射，页面对外暴露 `@Builder` 函数。
 - **API 接口遵循既有模式** — 需要认证的接口 URL 前缀使用 `/web/auth/`，返回值统一使用 `BaseResponse<T>` 包装，通过 `HttpUtil` 调用。
