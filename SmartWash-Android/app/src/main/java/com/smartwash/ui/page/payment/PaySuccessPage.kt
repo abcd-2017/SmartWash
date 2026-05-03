@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,9 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.ui.page.PageConstant
@@ -79,7 +78,6 @@ fun PaySuccessPage(
         else -> {}
     }
 
-    // 动画状态
     val scale by animateFloatAsState(
         targetValue = 1f,
         animationSpec = spring(
@@ -98,14 +96,15 @@ fun PaySuccessPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("支付成功", fontSize = 18.sp) },
+                title = { Text("支付成功", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        navController.navigateUp()
-                    }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "返回")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { paddingValues ->
@@ -117,12 +116,11 @@ fun PaySuccessPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // 自定义成功图标
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .scale(scale)
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
@@ -143,36 +141,40 @@ fun PaySuccessPage(
                     )
                 }
             }
-            // 订单信息卡片
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "订单信息",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("订单信息", style = MaterialTheme.typography.titleSmall)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("订单号")
-                        Text(orderInfo?.orderNo ?: "", fontWeight = FontWeight.Medium)
+                        Text("订单号", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            orderInfo?.orderNo ?: "",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("支付金额")
+                        Text("支付金额", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "¥${orderInfo?.payPrice ?: 0}",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -181,52 +183,56 @@ fun PaySuccessPage(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("下单时间")
-                        Text(orderInfo?.createdAt ?: "")
+                        Text("下单时间", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            orderInfo?.createdAt ?: "",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
 
-            // 寄存柜信息
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "寄存柜信息",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("寄存柜信息", style = MaterialTheme.typography.titleSmall)
                     Text(
                         "请前往寄存柜 ${orderInfo?.lockersVo?.lockerNumber ?: -1}柜存放衣物",
-                        fontSize = 14.sp
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
                         "寄存柜将在24小时内处理您的订单",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // 立即寄件按钮
             Button(
                 onClick = {
-                    navController.navigate("${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}") {
+                    navController.navigate(
+                        "${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}"
+                    ) {
                         navController.navigateUp()
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text("立即寄件", fontSize = 16.sp)
+                Text("立即寄件", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

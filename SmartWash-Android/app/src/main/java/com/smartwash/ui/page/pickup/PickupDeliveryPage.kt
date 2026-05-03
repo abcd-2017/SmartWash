@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -30,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,9 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.ui.common.InfoRow
@@ -97,7 +95,6 @@ fun PickupDeliveryPage(
     when (setOrderNextState) {
         is RequestState.Success -> {
             showDialog = false
-//            Toast.makeText(context, "修改成功", Toast.LENGTH_SHORT).show()
             LaunchedEffect(Unit) {
                 navController.navigateUp()
             }
@@ -122,14 +119,17 @@ fun PickupDeliveryPage(
                 title = {
                     Text(
                         if (type == PickupDeliveryType.PICKUP.type) "取件" else "寄件",
-                        fontSize = 18.sp
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { paddingValues ->
@@ -139,11 +139,10 @@ fun PickupDeliveryPage(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // 注意事项
             if (type == PickupDeliveryType.DELIVERY.type) {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.errorContainer
                 ) {
                     Column(
@@ -162,7 +161,7 @@ fun PickupDeliveryPage(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "注意事项",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
@@ -171,7 +170,7 @@ fun PickupDeliveryPage(
                                     "• 如遇问题请联系客服\n" +
                                     "• 请勿将贵重物品放入寄存柜",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
@@ -179,10 +178,9 @@ fun PickupDeliveryPage(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 二维码和取件码
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
@@ -194,7 +192,7 @@ fun PickupDeliveryPage(
                         contentDescription = "二维码",
                         modifier = Modifier
                             .size(220.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(MaterialTheme.shapes.extraLarge)
                     )
 
                     Spacer(modifier = Modifier.height(28.dp))
@@ -205,25 +203,27 @@ fun PickupDeliveryPage(
                     )
                     Text(
                         text = pickupCode,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
                         onClick = { showDialog = true },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
                     ) {
-                        Text(if (type == PickupDeliveryType.PICKUP.type) "确认已取件" else "确认已寄件")
+                        Text(
+                            if (type == PickupDeliveryType.PICKUP.type) "确认已取件" else "确认已寄件",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 学校信息
             InfoSection(
                 title = "寄存柜信息",
                 icon = Icons.Rounded.School
@@ -238,19 +238,19 @@ fun PickupDeliveryPage(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            // 操作指引
+
             InfoSection(
                 title = "操作指引",
                 icon = Icons.Rounded.Info
             ) {
                 if (type == PickupDeliveryType.PICKUP.type) {
                     InstructionRow("1", "找到寄存柜 $lockerNumber")
-                    InstructionRow("2", "点击屏幕上的\" 取件 \"按钮")
+                    InstructionRow("2", "点击屏幕上的\"取件\"按钮")
                     InstructionRow("3", "输入取件码：$pickupCode")
                     InstructionRow("4", "等待柜门打开，取出衣物")
                 } else {
                     InstructionRow("1", "找到寄存柜 $lockerNumber")
-                    InstructionRow("2", "点击屏幕上的\" 寄件 \"按钮")
+                    InstructionRow("2", "点击屏幕上的\"寄件\"按钮")
                     InstructionRow("3", "输入寄件码：$pickupCode")
                     InstructionRow("4", "等待柜门打开，放入衣物")
                 }
@@ -261,24 +261,26 @@ fun PickupDeliveryPage(
     }
 
     if (showDialog) {
-        AlertDialog(onDismissRequest = { showDialog = false },
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
             text = {
                 Text(
-                    text = if (type == PickupDeliveryType.DELIVERY.type) "确认已将衣服放入寄存柜" else "确认已取出衣服",
-                    fontSize = 16.sp
+                    text = if (type == PickupDeliveryType.DELIVERY.type)
+                        "确认已将衣服放入寄存柜"
+                    else
+                        "确认已取出衣服"
                 )
             },
             confirmButton = {
-                TextButton({
+                TextButton(onClick = {
                     pickupDeliveryViewModel.setOrderNextState(
                         type,
                         orderId,
                         orderInfo?.pickupCode ?: ""
                     )
-                }) {
-                    Text("确定")
-                }
-            })
+                }) { Text("确定") }
+            }
+        )
     }
 }
 
@@ -294,14 +296,14 @@ private fun InstructionRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Text(
                 text = number,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
