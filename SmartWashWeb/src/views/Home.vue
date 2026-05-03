@@ -5,10 +5,6 @@
     </el-card>
   </div>
 </template>
-  
-  <script>
-export default {
-  name: "Home",
-};
+
+<script setup>
 </script>
-  
