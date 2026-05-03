@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
@@ -23,6 +22,7 @@ import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -34,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,9 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.network.vo.coupon.UserCouponVo
@@ -137,14 +136,15 @@ fun PaymentPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("支付", fontSize = 18.sp) },
+                title = { Text("支付", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        navController.navigateUp()
-                    }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "返回")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { paddingValues ->
@@ -158,49 +158,56 @@ fun PaymentPage(
             // 订单信息
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "订单信息",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("订单信息", style = MaterialTheme.typography.titleSmall)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("订单号：${orderInfo?.orderNo ?: 202402050101}", fontSize = 14.sp)
+                        Text(
+                            "订单号：${orderInfo?.orderNo ?: 202402050101}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                         Text(
                             "¥${orderInfo?.totalPrice ?: 1111}",
-                            color = MaterialTheme.colorScheme.primary, fontSize = 14.sp
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
                         "服务类型：${orderInfo?.laundryPackageVo?.itemName ?: "标准洗衣"}",
-                        fontSize = 14.sp
+                        style = MaterialTheme.typography.bodyMedium
                     )
-                    Text("预计完成时间：24小时内", fontSize = 14.sp)
+                    Text(
+                        "预计完成时间：24小时内",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
 
             // 支付方式
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "支付方式",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("支付方式", style = MaterialTheme.typography.titleSmall)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -214,24 +221,26 @@ fun PaymentPage(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text("余额支付")
+                            Text("余额支付", style = MaterialTheme.typography.bodyLarge)
                             Text(
                                 "当前余额：¥${orderInfo?.userVo?.balance ?: 0}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
             }
 
-            //领取优惠券
+            // 优惠券
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                onClick = {
-                    showBottomSheet = true
-                }
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                onClick = { showBottomSheet = true }
             ) {
                 Row(
                     modifier = Modifier
@@ -240,30 +249,37 @@ fun PaymentPage(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row {
-                        Icon(Icons.Default.LocalOffer, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = "优惠券",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.LocalOffer,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
+                        Spacer(Modifier.width(8.dp))
+                        Text("优惠券", style = MaterialTheme.typography.titleSmall)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (selectedCoupon == -1 || userCouponList.isEmpty()) {
-                            Text("不使用", fontSize = 14.sp)
+                            Text("不使用", style = MaterialTheme.typography.bodyMedium)
                         } else {
                             Text(
                                 "-￥${userCouponList[selectedCoupon].couponVo.discount ?: 0}",
-                                fontSize = 14.sp
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.weight(1f))
 
             // 支付按钮
             Button(
@@ -278,23 +294,28 @@ fun PaymentPage(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.medium
             ) {
                 when (paymentState) {
                     is RequestState.Loading -> CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
                     )
 
                     else -> {
-                        Text("确认支付 ¥${orderInfo?.payPrice}")
+                        Text(
+                            "确认支付 ¥${orderInfo?.payPrice}",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
                 }
             }
         }
     }
 
-    //悬浮优惠券选择控件
+    // 优惠券选择弹窗
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -310,23 +331,22 @@ fun PaymentPage(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 4.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "选择优惠券",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-
-                        TextButton({
+                        Text("选择优惠券", style = MaterialTheme.typography.titleMedium)
+                        TextButton(onClick = {
                             showBottomSheet = false
                             navController.navigate(PageConstant.Coupon.text)
                         }) {
-                            Text("去领取", fontSize = 16.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                            Text("去领取", style = MaterialTheme.typography.labelLarge)
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
@@ -335,19 +355,22 @@ fun PaymentPage(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 16.dp),
+                                .padding(vertical = 32.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "暂无优惠券",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 } else {
                     items(userCouponList.size) { i ->
-                        UserCouponItem(userCouponList[i], i, selectedCoupon) {
+                        UserCouponItem(
+                            userCouponList[i],
+                            selectedCoupon == i
+                        ) {
                             selectedCoupon = i
                             showBottomSheet = false
                             if (orderId != null) {
@@ -359,65 +382,52 @@ fun PaymentPage(
                         }
                     }
                 }
-
             }
         }
     }
-    //确认是否要支付
+
     if (confirmPayShow) {
         AlertDialog(
             onDismissRequest = { confirmPayShow = false },
-            text = { Text("确定要支付？", fontSize = 16.sp) },
+            text = { Text("确定要支付？") },
             confirmButton = {
-                TextButton({
+                TextButton(onClick = {
                     paymentViewModel.paymentOrder(
                         orderId!!,
                         PaymentType.PURSE.type,
-                        if (selectedCoupon == -1 || userCouponList.isEmpty()) null else userCouponList[selectedCoupon].userCouponId
+                        if (selectedCoupon == -1 || userCouponList.isEmpty()) null
+                        else userCouponList[selectedCoupon].userCouponId
                     )
                 }) { Text("确定") }
             },
-            dismissButton = { TextButton({ confirmPayShow = false }) { Text("取消") } })
+            dismissButton = { TextButton(onClick = { confirmPayShow = false }) { Text("取消") } }
+        )
     }
 
-    // 余额不足对话框
     if (showRechargeDialog) {
         AlertDialog(
             onDismissRequest = { showRechargeDialog = false },
             title = { Text("余额不足") },
             text = { Text("当前余额不足，请先充值") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showRechargeDialog = false
-                        navController.navigate(PageConstant.Recharge.text)
-                    }
-                ) {
-                    Text("去充值")
-                }
+                TextButton(onClick = {
+                    showRechargeDialog = false
+                    navController.navigate(PageConstant.Recharge.text)
+                }) { Text("去充值") }
             },
             dismissButton = {
-                TextButton(onClick = { showRechargeDialog = false }) {
-                    Text("取消")
-                }
+                TextButton(onClick = { showRechargeDialog = false }) { Text("取消") }
             }
         )
     }
 
-    // 支付成功对话框
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { showSuccessDialog = false },
             title = { Text("支付成功") },
             text = { Text("请前往A区12号寄存柜存放衣物") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSuccessDialog = false
-                    }
-                ) {
-                    Text("确定")
-                }
+                TextButton(onClick = { showSuccessDialog = false }) { Text("确定") }
             }
         )
     }
@@ -426,8 +436,7 @@ fun PaymentPage(
 @Composable
 private fun UserCouponItem(
     userCouponVo: UserCouponVo,
-    index: Int,
-    selectedCoupon: Int,
+    isSelected: Boolean,
     itemClick: () -> Unit,
 ) {
     Card(
@@ -435,7 +444,14 @@ private fun UserCouponItem(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable { itemClick() },
-        shape = RoundedCornerShape(8.dp)
+        shape = MaterialTheme.shapes.small,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -444,26 +460,26 @@ private fun UserCouponItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = "${userCouponVo.couponVo.discount}元优惠券",
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = if (userCouponVo.couponVo.threshold == 0f) "满${userCouponVo.couponVo.discount + 0.01}减${userCouponVo.couponVo.discount}" else "满${userCouponVo.couponVo.threshold}元可用",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    text = if (userCouponVo.couponVo.threshold == 0f)
+                        "满${userCouponVo.couponVo.discount + 0.01}减${userCouponVo.couponVo.discount}"
+                    else
+                        "满${userCouponVo.couponVo.threshold}元可用",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = "有效期至：${userCouponVo.expiredAt}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            RadioButton(
-                selected = selectedCoupon == index,
-                onClick = { itemClick() }
-            )
+            RadioButton(selected = isSelected, onClick = { itemClick() })
         }
     }
 }

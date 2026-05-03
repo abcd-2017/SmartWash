@@ -16,13 +16,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,10 +48,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.ui.page.PageConstant
@@ -93,7 +93,6 @@ fun LaundryPage(
         is RequestState.Success -> {
             LaunchedEffect(reservationState) {
                 navController.navigate("${PageConstant.Payment.text}/${orderId}") {
-                    // 避免重复堆栈
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
@@ -114,88 +113,96 @@ fun LaundryPage(
     }
 
     if (showDialog) {
-        AlertDialog(onDismissRequest = { showDialog = false }, confirmButton = {
-            Button(onClick = { showDialog = false }) { Text("确认") }
-        }, text = { Text("请选择套餐", style = MaterialTheme.typography.titleMedium) })
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                Button(onClick = { showDialog = false }) { Text("确认") }
+            },
+            text = { Text("请选择套餐", style = MaterialTheme.typography.titleMedium) }
+        )
     }
 
-    Scaffold(bottomBar = {
-        Surface(
-            modifier = Modifier.fillMaxWidth(), shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .padding(bottom = 12.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
-                Column {
-                    Text(
-                        text = "预估费用",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = "¥${totalPrice}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Button(
-                    onClick = {
-                        if (selectItemId == -1L) {
-                            showDialog = true
-                        } else {
-                            laundryViewModel.reservationLaundry(selectItemId, totalPrice)
-                        }
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier.width(160.dp)
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .padding(bottom = 12.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    when (reservationState) {
-                        is RequestState.Loading -> CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                    Column {
+                        Text(
+                            text = "预估费用",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = "¥${totalPrice}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            if (selectItemId == -1L) {
+                                showDialog = true
+                            } else {
+                                laundryViewModel.reservationLaundry(selectItemId, totalPrice)
+                            }
+                        },
+                        shape = MaterialTheme.shapes.large,
+                        modifier = Modifier.width(160.dp)
+                    ) {
+                        when (reservationState) {
+                            is RequestState.Loading -> CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
 
-                        else -> {
-                            Text("确认预约")
+                            else -> {
+                                Text("确认预约", style = MaterialTheme.typography.labelLarge)
+                            }
                         }
                     }
                 }
             }
-        }
-    }, topBar = {
-        TopAppBar(
-            title = {
-                Text(
-                    text = "预约寄存", fontSize = 18.sp, fontWeight = FontWeight.Bold
+        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("预约寄存", style = MaterialTheme.typography.titleLarge)
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                            contentDescription = null
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
                 )
-            }, navigationIcon = {
-                IconButton(modifier = Modifier.padding(10.dp), onClick = {
-                    navController.navigateUp()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = null
-                    )
-                }
-            }
-        )
-    }) { paddingValues ->
+            )
+        }
+    ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            item { // 选择投递柜
+            item {
                 Text(
                     text = "选择投递柜",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
@@ -204,9 +211,12 @@ fun LaundryPage(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .clickable { },
-                    shape = RoundedCornerShape(12.dp)
+                        .padding(horizontal = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -223,7 +233,7 @@ fun LaundryPage(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -235,16 +245,15 @@ fun LaundryPage(
                             Column {
                                 Text(
                                     text = userInfo?.schoolVo?.schoolName ?: "",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
+                                    style = MaterialTheme.typography.titleSmall
                                 )
                                 Text(
                                     text = userInfo?.schoolVo?.location ?: "",
-                                    fontSize = 14.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     maxLines = 1,
                                     modifier = Modifier.fillMaxWidth(0.7f),
                                     overflow = TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -255,12 +264,11 @@ fun LaundryPage(
                 }
             }
 
-            item {  // 衣物类型
+            item {
                 Text(
-                    text = " 洗护套餐",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                    text = "洗护套餐",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }
 
@@ -275,30 +283,35 @@ fun LaundryPage(
                     totalPrice = item.basePrice
                 }
             }
-            item {
-                // 注意事项
-                Text(
-                    text = "注意事项",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
-                )
-            }
         }
     }
 }
 
 @Composable
 private fun LaundryTypeItem(
-    title: String, description: String, isSelected: Boolean, price: String, cardClick: () -> Unit,
+    title: String,
+    description: String,
+    isSelected: Boolean,
+    price: String,
+    cardClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .clickable { cardClick() },
-        shape = RoundedCornerShape(12.dp),
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) BorderStroke(
+            1.5.dp,
+            MaterialTheme.colorScheme.primary
+        ) else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -307,35 +320,21 @@ private fun LaundryTypeItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.weight(8f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-//                Icon(
-//                    imageVector = icon,
-//                    contentDescription = null,
-//                    tint = MaterialTheme.colorScheme.primary,
-//                    modifier = Modifier.size(24.dp)
-//                )
-                Column {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = description,
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
+            Column(modifier = Modifier.weight(8f)) {
+                Text(text = title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.End) {
+            Row(
+                modifier = Modifier.weight(2f),
+                horizontalArrangement = Arrangement.End
+            ) {
                 Text(
                     text = price,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
