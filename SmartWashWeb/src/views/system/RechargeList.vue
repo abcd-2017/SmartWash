@@ -1,5 +1,5 @@
 <template>
-  <div class="recharge-container">
+  <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery">
@@ -244,22 +244,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.recharge-container {
-  padding: 20px;
-  background-color: #fff;
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.filter-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
-
-.el-form-item {
-  margin-bottom: 0;
-  margin-right: 15px;
-}
+@import '@/assets/pages.css';
 </style>

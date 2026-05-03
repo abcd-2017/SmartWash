@@ -1,5 +1,5 @@
 <template>
-  <div class="user-container">
+  <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery">
@@ -356,16 +356,5 @@ const formatTime = (time) => {
 </script>
   
   <style scoped>
-.filter-container {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-.el-form-item {
-  margin-bottom: 15px;
-  margin-right: 20px;
-}
+@import '@/assets/pages.css';
 </style>

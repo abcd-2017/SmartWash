@@ -1,0 +1,22 @@
+/* 子页面公共样式 — 遵循 Indigo/Slate 设计系统 */
+/* 设计规范: docs/superpowers/specs/2026-05-03-ui-redesign-design.md */
+
+/* 页面容器 */
+.page-container {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* 筛选区 — 白底卡片 + 12px 圆角 + 微阴影 */
+.filter-container {
+  margin-bottom: 16px;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.filter-container .el-form-item {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
