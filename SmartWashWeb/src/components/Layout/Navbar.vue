@@ -61,7 +61,7 @@ const handleLogout = () => {
     type: "warning",
   })
     .then(() => {
-      // 这里添加实际的登出逻辑
+      localStorage.removeItem("token");
       router.push("/login");
     })
     .catch(() => {});

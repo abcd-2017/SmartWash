@@ -147,8 +147,10 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     const isAuthenticated = localStorage.getItem('token');
-    // 需要登录但未登录
-    if (to.meta.requiresAuth !== false && !isAuthenticated) {
+    // 已登录用户访问登录页，重定向到首页
+    if (to.path === '/login' && isAuthenticated) {
+        next('/')
+    } else if (to.meta.requiresAuth !== false && !isAuthenticated) {
         next('/login')
     } else {
         next()

@@ -30,13 +30,12 @@ http.interceptors.response.use(
     (response) => {
         const res = response.data
 
-        if (res.code !== 200) {
-            // ElMessage.error(res.message || 'Error')
-            return Promise.reject(new Error(res.message || 'Error'))
-        } else if (res.code === 401) {
+        if (res.code === 401) {
             ElMessage.error('登录已过期，请重新登录')
             localStorage.removeItem("token")
             window.location.reload()
+        } else if (res.code !== 200) {
+            return Promise.reject(new Error(res.message || 'Error'))
         }
         return res
     },
