@@ -33,7 +33,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
         Page<LaundryItems> page = new Page<>(LaundryItemsFrom.getPage(), LaundryItemsFrom.getSize());
         LambdaQueryWrapper<LaundryItems> queryWrapper = new LambdaQueryWrapper<>();
 
-        queryWrapper.and(LaundryItemsFrom.getItemId() != null, b -> b.eq(LaundryItems::getItemId, LaundryItemsFrom.getItemName()));
+        queryWrapper.and(LaundryItemsFrom.getItemId() != null, b -> b.eq(LaundryItems::getItemId, LaundryItemsFrom.getItemId()));
         queryWrapper.and(StringUtils.hasText(LaundryItemsFrom.getItemName()), b -> b.like(LaundryItems::getItemName, LaundryItemsFrom.getItemName()));
 
         List<LaundryItems> LaundryItems = this.list(page, queryWrapper);

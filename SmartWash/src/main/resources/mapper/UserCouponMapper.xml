@@ -17,14 +17,14 @@
         expired_at
         from user_coupon uc
         join users u on uc.user_id = u.user_id
-        join orders o on o.order_id = uc.order_id
+        left join orders o on o.order_id = uc.order_id
         left join coupon c on c.coupon_id = uc.coupon_id
         <where>
             <if test="couponFrom.phoneNumber != null and couponFrom.phoneNumber != ''">
                 and u.phone_number = #{couponFrom.phoneNumber}
             </if>
             <if test="couponFrom.couponId != null">
-                and uc.coupon_id != #{couponFrom.couponId}
+                and uc.coupon_id = #{couponFrom.couponId}
             </if>
         </where>
     </select>

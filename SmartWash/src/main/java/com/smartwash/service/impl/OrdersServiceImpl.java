@@ -14,6 +14,7 @@ import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.order.*;
 import com.smartwash.mapper.*;
 import com.smartwash.service.IOrdersService;
+import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
@@ -48,6 +49,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private UserCouponMapper userCouponMapper;
     @Autowired
     private CouponMapper couponMapper;
+    @Autowired
+    private OrderTimeoutManager orderTimeoutManager;
 
     @Override
     public Page<OrdersVo> getAllOrders(SearchOrderFrom searchOrderFrom) {
@@ -68,20 +71,15 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public Long createOrder(ReservationOrderFrom reservationOrderFrom, LoginUser loginUser) {
         Users user = usersMapper.selectById(loginUser.getUserId());
-        List<Lockers> lockers = lockersMapper.getLockersBySchoolId(user.getSchoolId());
         Orders orders = new Orders();
-        //查找空余的寄存柜
-        for (Lockers locker : lockers) {
-            if (locker.getStatus().equals(LockerStatusEnum.FREE.getValue())) {
-                locker.setStatus(LockerStatusEnum.USE.getValue());
-                lockersMapper.updateById(locker);
-                orders.setLockerId(locker.getLockerId());
-                break;
-            }
-        }
-        if (orders.getLockerId() == null) {
+        //查找并锁定空余寄存柜（SELECT FOR UPDATE 防竞态）
+        Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(user.getSchoolId());
+        if (freeLocker == null) {
             throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
         }
+        freeLocker.setStatus(LockerStatusEnum.USE.getValue());
+        lockersMapper.updateById(freeLocker);
+        orders.setLockerId(freeLocker.getLockerId());
 
         orders.setUserId(user.getUserId());
         orders.setSchoolId(user.getSchoolId());
@@ -137,18 +135,13 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Orders orders = getById(orderStatus.getOrderId());
         //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
         if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
-            List<Lockers> lockers = lockersMapper.getLockersBySchoolId(orders.getSchoolId());
-            for (Lockers locker : lockers) {
-                if (locker.getStatus().equals(LockerStatusEnum.FREE.getValue())) {
-                    locker.setStatus(LockerStatusEnum.USE.getValue());
-                    lockersMapper.updateById(locker);
-                    orders.setLockerId(locker.getLockerId());
-                    break;
-                }
-            }
-            if (orders.getLockerId() == null) {
+            Lockers freeLocker = lockersMapper.getFreeLockerBySchoolIdForUpdate(orders.getSchoolId());
+            if (freeLocker == null) {
                 throw new CustomExceptions("当前寄存柜已满，请稍后再试！");
             }
+            freeLocker.setStatus(LockerStatusEnum.USE.getValue());
+            lockersMapper.updateById(freeLocker);
+            orders.setLockerId(freeLocker.getLockerId());
             orders.setStatus(orderStatus.getStatus());
             orders.setPickupCode(String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000)));
             updateById(orders);

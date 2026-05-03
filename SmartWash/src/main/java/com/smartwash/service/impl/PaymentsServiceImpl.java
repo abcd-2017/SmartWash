@@ -168,7 +168,7 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
 
     @Override
     public Boolean updatePayment(UpdatePaymentFrom updatePaymentFrom) {
-        Payments payment = getById(updatePaymentFrom.getOrderId());
+        Payments payment = getById(updatePaymentFrom.getPaymentId());
         BeanUtils.copyProperties(updatePaymentFrom, payment);
         return updateById(payment);
     }

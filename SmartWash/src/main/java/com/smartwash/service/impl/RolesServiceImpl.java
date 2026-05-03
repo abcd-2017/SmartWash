@@ -36,7 +36,7 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
     public Page<RolesVo> getAllRoles(SearchRolesFrom rolesFrom) {
         Page<Roles> page = new Page<>(rolesFrom.getPage(), rolesFrom.getSize());
         LambdaQueryWrapper<Roles> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.and(rolesFrom.getRoleId() != null, b -> b.eq(Roles::getRoleId, rolesFrom.getRoleName()));
+        queryWrapper.and(rolesFrom.getRoleId() != null, b -> b.eq(Roles::getRoleId, rolesFrom.getRoleId()));
 
         List<Roles> Roles = this.list(page, queryWrapper);
         Page<RolesVo> RolesVoPage = new Page<>();

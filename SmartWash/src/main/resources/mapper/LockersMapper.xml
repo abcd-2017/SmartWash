@@ -8,8 +8,17 @@
     </update>
 
     <select id="getLockersBySchoolId" resultType="com.smartwash.entity.Lockers" parameterType="java.lang.Long">
-        select *
+        select locker_id, school_id, status, created_at, updated_at
         from lockers
         where school_id = #{schoolId};
+    </select>
+
+    <select id="getFreeLockerBySchoolIdForUpdate" resultType="com.smartwash.entity.Lockers" parameterType="java.lang.Long">
+        select locker_id, school_id, status, created_at, updated_at
+        from lockers
+        where school_id = #{schoolId}
+          and status = 'FREE'
+        limit 1
+        for update;
     </select>
 </mapper>
