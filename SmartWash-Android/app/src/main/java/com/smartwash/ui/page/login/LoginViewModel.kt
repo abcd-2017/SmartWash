@@ -9,11 +9,9 @@ import com.smartwash.utils.AppConstant
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,26 +21,15 @@ class LoginViewModel @Inject constructor(
     private val _loginState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loginState = _loginState.asStateFlow()
 
-    fun getCaptcha() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val captcha = userApi.getCaptcha("13444444444")
-            println(captcha)
-        }
-    }
-
     fun loginUser(phoneNumber: String, password: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _loginState.value = RequestState.Loading
             try {
                 val responseData = userApi.login(LoginUser(phoneNumber, password))
-                withContext(Dispatchers.Main) {
-                    _loginState.value = RequestState.Success
-                    SharePreferenceUtils.saveData(AppConstant.TOKEN, responseData.data)
-                }
+                _loginState.value = RequestState.Success
+                responseData.data?.let { SharePreferenceUtils.saveData(AppConstant.TOKEN, it) }
             } catch (e: NetworkException) {
-                withContext(Dispatchers.Main) {
-                    _loginState.value = RequestState.Error("${e.message}")
-                }
+                _loginState.value = RequestState.Error(e.message ?: "登录失败")
             }
         }
     }

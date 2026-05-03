@@ -13,36 +13,36 @@ import okhttp3.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-class ResponseInterceptor() : Interceptor {
+class ResponseInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        var errorMsg = ""
         try {
-            //2.根据请求结果判断用户token是否过期
             val response = chain.proceed(chain.request())
-            Log.d(AppConstant.APP_NAME, "intercept: $response")
+            if (!response.isSuccessful) {
+                throw NetworkException("请求失败")
+            }
 
-            // 解析服务器返回的 JSON
-            val responseBody = response.peekBody(Long.MAX_VALUE).string()
-            Log.d(AppConstant.APP_NAME, "intercept: $responseBody")
-            val responseData = Gson().fromJson(responseBody, ResponseData::class.java)
-            if (responseData.code == HttpStatusCode.Unauthorized.code) {
-                SharePreferenceUtils
-                App.globalRequestAfterCallback()  // 触发 UI 逻辑（比如跳转登录页）
-                errorMsg = "登录失效，请重新登录"
-                throw NetworkException("登录失效，请重新登录")
-            } else if (responseData.code == HttpStatusCode.Fail.code) {
-                errorMsg = responseData.message
-                throw NetworkException(responseData.message)
+            val bodyString = response.peekBody(Long.MAX_VALUE).string()
+            val responseData = Gson().fromJson(bodyString, ResponseData::class.java)
+
+            when (responseData.code) {
+                HttpStatusCode.Unauthorized.code -> {
+                    SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
+                    App.globalRequestAfterCallback()
+                    throw NetworkException("登录失效，请重新登录")
+                }
+                HttpStatusCode.Fail.code -> {
+                    throw NetworkException(responseData.message)
+                }
             }
             return response
+        } catch (e: NetworkException) {
+            throw e
         } catch (e: SocketTimeoutException) {
             throw NetworkException("请求超时，请检查网络")
         } catch (e: IOException) {
-            if (errorMsg.isEmpty()) {
-                errorMsg = "网络连接失败，请检查网络"
-            }
-            throw NetworkException(errorMsg)
+            throw NetworkException("网络连接失败，请检查网络")
         } catch (e: Exception) {
+            Log.e(AppConstant.APP_NAME, "未知错误", e)
             throw NetworkException("未知错误")
         }
     }

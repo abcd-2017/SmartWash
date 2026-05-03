@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
             }
             //判断请求后响应码是否为401，是的话就重新登录
             App.globalRequestAfterCallback = {
-                SharePreferenceUtils.saveData(AppConstant.TOKEN, "")
+                SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
                 coroutineScope.launch(Dispatchers.Main) {
                     delay(200)
                     Toast.makeText(

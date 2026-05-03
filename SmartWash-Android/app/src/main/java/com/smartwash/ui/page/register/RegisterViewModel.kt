@@ -1,6 +1,5 @@
 package com.smartwash.ui.page.register
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.UserApi
@@ -11,11 +10,9 @@ import com.smartwash.utils.HttpStatusCode
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,45 +21,40 @@ class RegisterViewModel @Inject constructor(
 ) : ViewModel() {
     private val _registerState = MutableStateFlow<RequestState>(RequestState.Idle)
     val registerState = _registerState.asStateFlow()
-    private val _captchaState = MutableStateFlow<CaptchaState>(CaptchaState.Idle)
+    private val _captchaState = MutableStateFlow<RequestState>(RequestState.Idle)
     val captchaState = _captchaState.asStateFlow()
+    private val _captchaValue = MutableStateFlow<String>("")
+    val captchaValue = _captchaValue.asStateFlow()
 
     fun getCaptcha(phoneNumber: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
-                _captchaState.value = CaptchaState.Loading
+                _captchaState.value = RequestState.Loading
                 val responseData = userApi.getCaptcha(phoneNumber)
 
-                withContext(Dispatchers.Main) {
-                    _captchaState.value =
-                        if (responseData.code == HttpStatusCode.Success.code && responseData.data != null && responseData.data.length == 6) {
-                            CaptchaState.Success("${responseData.data}")
-                        } else CaptchaState.Error("${responseData.data}")//验证码获取失败
-                    Log.e("smart wash", "getCaptcha: $responseData")
+                if (responseData.code == HttpStatusCode.Success.code && responseData.data != null && responseData.data.length == 6) {
+                    _captchaValue.value = responseData.data
+                    _captchaState.value = RequestState.Success
+                } else {
+                    _captchaState.value = RequestState.Error("验证码获取失败")
                 }
             } catch (e: NetworkException) {
-                withContext(Dispatchers.Main) {
-                    _captchaState.value = CaptchaState.Error("${e.message}")
-                }
+                _captchaState.value = RequestState.Error(e.message ?: "获取验证码失败")
             }
         }
     }
 
     fun userRegister(phoneNumber: String, password: String, captcha: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 _registerState.value = RequestState.Loading
                 val registerUser = RegisterUser(phoneNumber, password, captcha)
                 val responseData = userApi.register(registerUser)
 
-                withContext(Dispatchers.Main) {
-                    _registerState.value = RequestState.Success
-                    SharePreferenceUtils.saveData(AppConstant.TOKEN, responseData.data)
-                }
+                _registerState.value = RequestState.Success
+                responseData.data?.let { SharePreferenceUtils.saveData(AppConstant.TOKEN, it) }
             } catch (e: NetworkException) {
-                withContext(Dispatchers.Main) {
-                    _captchaState.value = CaptchaState.Error("${e.message}")
-                }
+                _registerState.value = RequestState.Error(e.message ?: "注册失败")
             }
         }
     }
@@ -72,17 +64,10 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun setCaptchaIdle() {
-        _captchaState.value = CaptchaState.Idle
+        _captchaState.value = RequestState.Idle
     }
 
     fun setCaptchaLoading() {
-        _captchaState.value = CaptchaState.Loading
+        _captchaState.value = RequestState.Loading
     }
-}
-
-sealed class CaptchaState {
-    data object Idle : CaptchaState()
-    data object Loading : CaptchaState()
-    data class Success(val message: String) : CaptchaState()
-    data class Error(val message: String) : CaptchaState()
 }

@@ -2,24 +2,16 @@ package com.smartwash.ui.page.coupon
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.cachedIn
 import com.smartwash.network.api.CouponApi
+import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.coupon.CouponVo
 import com.smartwash.paging.UserCouponPagingSource
+import com.smartwash.paging.pagingFlow
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,43 +31,30 @@ class CouponViewModel @Inject constructor(
         _couponState.value = status
     }
 
-    //获取已经领取的优惠券列表
-    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    val userCouponPagingFlow = couponState
-        .debounce(300)
-        .distinctUntilChanged()
-        .flatMapLatest {
-            Pager(PagingConfig(pageSize = 10)) {
-                UserCouponPagingSource(couponApi, it)
-            }.flow.cachedIn(viewModelScope)
-        }
+    val userCouponPagingFlow = pagingFlow(couponState) { status ->
+        UserCouponPagingSource(couponApi, status)
+    }
 
     fun getCouponList() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val responseData = couponApi.getAllCoupon()
-                withContext(Dispatchers.Main) {
-                    _couponList.value = responseData.data ?: emptyList()
-                }
-            } catch (e: Exception) {
-                _getCouponListState.value = RequestState.Error("${e.message}")
+                _couponList.value = responseData.data ?: emptyList()
+            } catch (e: NetworkException) {
+                _getCouponListState.value = RequestState.Error(e.message ?: "获取优惠券列表失败")
             }
         }
     }
 
     fun receiveCoupon(couponId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val responseData = couponApi.receiveCoupon(couponId)
                 if (responseData.data == true) {
-                    withContext(Dispatchers.Main) {
-                        _receiveCouponState.value = RequestState.Success
-                    }
+                    _receiveCouponState.value = RequestState.Success
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _receiveCouponState.value = RequestState.Error("${e.message}")
-                }
+            } catch (e: NetworkException) {
+                _receiveCouponState.value = RequestState.Error(e.message ?: "领取优惠券失败")
             }
         }
     }

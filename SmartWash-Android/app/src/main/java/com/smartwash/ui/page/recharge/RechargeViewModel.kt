@@ -22,14 +22,12 @@ class RechargeViewModel @Inject constructor(
 
     fun userRecharge(amount: Float, rechargeType: String) {
         _rechargeState.value = RequestState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
-                val responseData = rechargeApi.userRecharge(UserRecharge(amount, rechargeType))
+                rechargeApi.userRecharge(UserRecharge(amount, rechargeType))
                 _rechargeState.value = RequestState.Success
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _rechargeState.value = RequestState.Error("${e.message}")
-                }
+                _rechargeState.value = RequestState.Error("${e.message}")
             }
         }
     }

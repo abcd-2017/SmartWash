@@ -39,12 +39,11 @@
     @androidx.annotation.Keep *;
 }
 
-# Room注解不混淆
--keep class androidx.room.** { *; }
--dontwarn androidx.room.**
--keepclassmembers class * {
-    @androidx.room.* <methods>;
-}
+# OkHttp
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+
+# Hilt / Dagger
 -keep class dagger.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.EntryPoint

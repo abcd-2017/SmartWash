@@ -1,5 +1,6 @@
 package com.smartwash.network
 
+import android.content.Context
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
@@ -9,71 +10,66 @@ import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.interceptor.RequestInterceptor
 import com.smartwash.network.interceptor.ResponseInterceptor
+import com.smartwash.utils.AppConstant
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-/**
- * 网络请求工具
- */
 @Module
 @InstallIn(SingletonComponent::class)
-class RetrofitClient() {
-    private var baseurl: String = "http://8.148.70.81:9000/"
-
-    private val okHttpClient = OkHttpClient
-        .Builder()
-        .addInterceptor(RequestInterceptor())
-        .addInterceptor(ResponseInterceptor())
-        .build();
+class RetrofitClient {
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+        val cacheDir = File(context.cacheDir, "http_cache")
+        val cache = Cache(cacheDir, 10 * 1024 * 1024)
+        return OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .cache(cache)
+            .addInterceptor(RequestInterceptor())
+            .addInterceptor(ResponseInterceptor())
+            .build()
+    }
 
     @Provides
     @Singleton
-    fun getRetrofitClient(): Retrofit {
+    fun getRetrofitClient(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .client(okHttpClient)
-            .baseUrl(baseurl)
+            .baseUrl(AppConstant.DEFAULT_SERVER)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
     @Provides
-    fun getUserApi(retrofit: Retrofit): UserApi {
-        return retrofit.create(UserApi::class.java)
-    }
+    fun getUserApi(retrofit: Retrofit): UserApi = retrofit.create(UserApi::class.java)
 
     @Provides
-    fun getSchoolApi(retrofit: Retrofit): SchoolApi {
-        return retrofit.create(SchoolApi::class.java)
-    }
+    fun getSchoolApi(retrofit: Retrofit): SchoolApi = retrofit.create(SchoolApi::class.java)
 
     @Provides
-    fun getRechargeApi(retrofit: Retrofit): RechargeApi {
-        return retrofit.create(RechargeApi::class.java)
-    }
+    fun getRechargeApi(retrofit: Retrofit): RechargeApi = retrofit.create(RechargeApi::class.java)
 
     @Provides
-    fun getLaundryItemsApi(retrofit: Retrofit): LaundryItemsApi {
-        return retrofit.create(LaundryItemsApi::class.java)
-    }
+    fun getLaundryItemsApi(retrofit: Retrofit): LaundryItemsApi = retrofit.create(LaundryItemsApi::class.java)
 
     @Provides
-    fun getOrderApi(retrofit: Retrofit): OrderApi {
-        return retrofit.create(OrderApi::class.java)
-    }
+    fun getOrderApi(retrofit: Retrofit): OrderApi = retrofit.create(OrderApi::class.java)
 
     @Provides
-    fun getPaymentApi(retrofit: Retrofit): PaymentApi {
-        return retrofit.create(PaymentApi::class.java)
-    }
+    fun getPaymentApi(retrofit: Retrofit): PaymentApi = retrofit.create(PaymentApi::class.java)
 
     @Provides
-    fun getCouponApi(retrofit: Retrofit): CouponApi {
-        return retrofit.create(CouponApi::class.java)
-    }
+    fun getCouponApi(retrofit: Retrofit): CouponApi = retrofit.create(CouponApi::class.java)
 }

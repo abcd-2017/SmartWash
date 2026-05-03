@@ -9,13 +9,11 @@ import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.school.SchoolName
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class)
@@ -30,17 +28,12 @@ class UpdateUserInfoViewModel @Inject constructor(
     val searchName = _searchName.asStateFlow()
     private val _updateState = MutableStateFlow<RequestState>(RequestState.Idle)
     val updateState = _updateState.asStateFlow()
-    private val _studentIdError = MutableStateFlow<Boolean>(false)
-    private val studentIdError = _studentIdError.asStateFlow()
 
     init {
-        //监听搜索查询关键字的变化
         viewModelScope.launch {
             searchName
-                .debounce(300)// 防抖，避免频繁请求
-                .collect {
-                    searchSchool()
-                }
+                .debounce(300)
+                .collect { searchSchool() }
         }
     }
 
@@ -54,28 +47,22 @@ class UpdateUserInfoViewModel @Inject constructor(
 
     fun updateUserInfo(schoolId: Long, studentId: String) {
         _updateState.value = RequestState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             if (checkStudentId(studentId)) {
                 try {
-                    val responseData = userApi.updateUserInfo(UpdateUserInfo(schoolId, studentId))
-                    withContext(Dispatchers.Main) {
-                        _updateState.value = RequestState.Success
-                    }
+                    userApi.updateUserInfo(UpdateUserInfo(schoolId, studentId))
+                    _updateState.value = RequestState.Success
                 } catch (e: NetworkException) {
-                    withContext(Dispatchers.Main) {
-                        _updateState.value = RequestState.Error("${e.message}")
-                    }
+                    _updateState.value = RequestState.Error(e.message ?: "更新用户信息失败")
                 }
             } else {
-                withContext(Dispatchers.Main) {
-                    _updateState.value = RequestState.Error("该学号已注册")
-                }
+                _updateState.value = RequestState.Error("该学号已注册")
             }
         }
     }
 
     fun searchSchool() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val responseData = schoolApi.getAllSchool(searchName.value)
                 _schools.value = responseData.data.orEmpty()

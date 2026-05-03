@@ -165,7 +165,7 @@ fun SettingPage(
             }, confirmButton = {
                 TextButton(onClick = {
                     showDialog = false
-                    SharePreferenceUtils.saveData(AppConstant.TOKEN, "")
+                    SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
                     navController.navigate(PageConstant.Login.text)
                 }) {
                     Text(text = "确认")

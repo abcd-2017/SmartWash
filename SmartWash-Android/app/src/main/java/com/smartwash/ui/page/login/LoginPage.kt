@@ -68,7 +68,7 @@ fun LoginPage(
 
     //如果有token，直接进入首页
     LaunchedEffect(Unit) {
-        val token = SharePreferenceUtils.getData(AppConstant.TOKEN, "")
+        val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
         if (token.isNotBlank()) {
             navController.navigate(PageConstant.Home.text) { navController.navigateUp() }
         }
@@ -180,7 +180,7 @@ fun LoginPage(
                             }) {
                             if (it.length <= 16) password = it
                             isPasswordError = if (it.isEmpty()) false
-                            else !isValidPhone(phone)
+                            else it.length < 6 || it.length > 16
                         }
                     }
                 }
@@ -191,7 +191,7 @@ fun LoginPage(
             SubmitButton(onClick = {
                 isPhoneError = !isValidPhone(phone)
                 isPasswordError =
-                    password.isEmpty() && password.length >= 6 && password.length <= 16
+                    password.isEmpty() || password.length < 6 || password.length > 16
 
                 if (!isPhoneError && !isPasswordError) {
                     keyboardController?.hide()

@@ -1,6 +1,5 @@
 package com.smartwash.paging
 
-import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.smartwash.network.api.OrderApi
@@ -12,13 +11,10 @@ class OrderPagingSource(private val orderApi: OrderApi, private val status: Stri
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, OrderInfo> {
         return try {
             val currentPage = params.key ?: 1
-            Log.d("请求页面标记：", "请求第${currentPage}页")
-
             val orderList =
                 orderApi.getOrderList(OrderListFrom(status, currentPage)).data ?: emptyList()
             val prevKey = if (currentPage == 1) null else currentPage - 1
             val nextKey = if (orderList.isEmpty()) null else currentPage + 1
-
 
             LoadResult.Page(
                 data = orderList,
@@ -26,7 +22,6 @@ class OrderPagingSource(private val orderApi: OrderApi, private val status: Stri
                 nextKey = nextKey
             )
         } catch (e: Exception) {
-            Log.d("测试错误数据", "-------${e.message}")
             LoadResult.Error(throwable = e)
         }
     }

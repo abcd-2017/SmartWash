@@ -6,15 +6,14 @@ import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.ReservationLaundry
+import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.laundry.LaundryItem
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,20 +37,15 @@ class LaundryViewModel @Inject constructor(
 
     fun getLaundryItem() {
         _getLaundryItemState.value = RequestState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val responseData = laundryItemsApi.getLaundryItems()
                 val userInfoRes = userApi.getUserInfo()
-
-                withContext(Dispatchers.Main) {
-                    _laundryItems.value = responseData.data ?: emptyList()
-                    _userInfo.value = userInfoRes.data
-                    _getLaundryItemState.value = RequestState.Success
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _getLaundryItemState.value = RequestState.Error("${e.message}")
-                }
+                _laundryItems.value = responseData.data ?: emptyList()
+                _userInfo.value = userInfoRes.data
+                _getLaundryItemState.value = RequestState.Success
+            } catch (e: NetworkException) {
+                _getLaundryItemState.value = RequestState.Error(e.message ?: "获取洗衣项目失败")
             }
         }
     }
@@ -61,25 +55,19 @@ class LaundryViewModel @Inject constructor(
     }
 
     fun reservationLaundry(selectItemId: Long, totalPrice: Float) {
-        _reservationState.value = RequestState.Idle
-        viewModelScope.launch(Dispatchers.IO) {
+        _reservationState.value = RequestState.Loading
+        viewModelScope.launch {
             try {
                 val responseData =
                     orderApi.reservationLaundry(ReservationLaundry(selectItemId, totalPrice))
                 if (responseData.data != null) {
-                    withContext(Dispatchers.Main) {
-                        _reservationState.value = RequestState.Success
-                        _orderId.value = responseData.data
-                    }
+                    _reservationState.value = RequestState.Success
+                    _orderId.value = responseData.data
                 } else {
-                    withContext(Dispatchers.Main) {
-                        _reservationState.value = RequestState.Error("预约失败")
-                    }
+                    _reservationState.value = RequestState.Error("预约失败")
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _reservationState.value = RequestState.Error("${e.message}")
-                }
+            } catch (e: NetworkException) {
+                _reservationState.value = RequestState.Error(e.message ?: "预约失败")
             }
         }
     }

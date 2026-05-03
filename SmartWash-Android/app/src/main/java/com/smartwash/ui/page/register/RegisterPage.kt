@@ -78,20 +78,21 @@ fun RegisterPage(
     val coroutineScope = rememberCoroutineScope()
 
     val captchaState by registerViewModel.captchaState.collectAsState()
+    val captchaValue by registerViewModel.captchaValue.collectAsState()
     val registerState by registerViewModel.registerState.collectAsState()
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     //验证码状态
     when (captchaState) {
-        is CaptchaState.Success -> {
-            verificationCode = (captchaState as CaptchaState.Success).message
+        is RequestState.Success -> {
+            verificationCode = captchaValue
         }
 
-        is CaptchaState.Error -> {
+        is RequestState.Error -> {
             Toast.makeText(
                 LocalContext.current,
-                (captchaState as CaptchaState.Error).message,
+                (captchaState as RequestState.Error).message,
                 Toast.LENGTH_SHORT
             ).show()
             registerViewModel.setCaptchaIdle()
@@ -322,7 +323,7 @@ fun CaptchaInput(
     verificationCode: String,
     isVerificationCodeError: Boolean,
     countDown: Int,
-    captchaState: CaptchaState,
+    captchaState: RequestState,
     onValueChange: (String) -> Unit,
     onClick: () -> Unit
 ) {
@@ -355,7 +356,7 @@ fun CaptchaInput(
         Button(
             onClick = onClick,
             enabled = when (captchaState) {
-                is CaptchaState.Idle -> true
+                is RequestState.Idle -> true
                 else -> false
             },
             modifier = Modifier
@@ -366,7 +367,7 @@ fun CaptchaInput(
         ) {
             Text(
                 when (captchaState) {
-                    is CaptchaState.Idle -> {
+                    is RequestState.Idle -> {
                         "获取验证码"
                     }
 

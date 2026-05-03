@@ -1,4 +1,4 @@
-package com.smartwash.ui.page.home;
+package com.smartwash.ui.page.home
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.animateColorAsState
@@ -54,14 +54,14 @@ fun HomePage(
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val hasUserSchool by homeViewModel.hasUserSchool.collectAsState()
-    val getSchoolStatue by homeViewModel.getSchoolState.collectAsState()
+    val getSchoolState by homeViewModel.getSchoolState.collectAsState()
     val homePageNavController = rememberNavController()
 
     LaunchedEffect(Unit) {
         homeViewModel.getUserSchool()
     }
-    LaunchedEffect(getSchoolStatue) {
-        when (getSchoolStatue) {
+    LaunchedEffect(getSchoolState) {
+        when (getSchoolState) {
             is RequestState.Success -> {
                 if (hasUserSchool == -1L) {
                     navController.popBackStack()

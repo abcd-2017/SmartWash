@@ -22,7 +22,7 @@ class RequestInterceptor() : Interceptor {
         val annotated = method?.annotations?.any { it is RequireAuthorization }
         var modifiedRequest = request.newBuilder()
         if (annotated != null && annotated) {
-            val token = SharePreferenceUtils.getData(AppConstant.TOKEN, "")
+            val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
 
             if (token.isBlank()) {
                 App.globalRequestBeforeCallback

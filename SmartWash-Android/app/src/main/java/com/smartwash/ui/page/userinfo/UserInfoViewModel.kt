@@ -11,11 +11,9 @@ import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,7 +33,7 @@ class UserInfoViewModel @Inject constructor(
     val unBindCampusState = _unBindCampusState.asStateFlow()
 
     fun getUserInfo() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val responseData = userApi.getUserInfo()
                 val orderItemCountRes = orderApi.getOrderItemCount(
@@ -46,15 +44,11 @@ class UserInfoViewModel @Inject constructor(
                         pendingPaymentStatus = ShowOrderStatus.PENDING_PAYMENT.status
                     )
                 )
-                withContext(Dispatchers.Main) {
-                    _userInfo.value = responseData.data
-                    _orderItemCount.value = orderItemCountRes.data
-                    _userInfoStatus.value = RequestState.Success
-                }
+                _userInfo.value = responseData.data
+                _orderItemCount.value = orderItemCountRes.data
+                _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
-                withContext(Dispatchers.Main) {
-                    _userInfoStatus.value = RequestState.Error("${e.message}")
-                }
+                _userInfoStatus.value = RequestState.Error(e.message ?: "获取用户信息失败")
             }
         }
     }
@@ -73,38 +67,30 @@ class UserInfoViewModel @Inject constructor(
 
     fun bindCampus(campusCard: String) {
         _bindCampusState.value = RequestState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val bindCampus = userApi.bindCampus(campusCard)
                 if (bindCampus.data == true) {
                     getUserInfo()
-                    withContext(Dispatchers.Main) {
-                        _bindCampusState.value = RequestState.Success
-                    }
+                    _bindCampusState.value = RequestState.Success
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _bindCampusState.value = RequestState.Error("${e.message}")
-                }
+            } catch (e: NetworkException) {
+                _bindCampusState.value = RequestState.Error(e.message ?: "绑定校园卡失败")
             }
         }
     }
 
     fun unBindCampus() {
         _unBindCampusState.value = RequestState.Loading
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val bindCampus = userApi.unBindCampus()
                 if (bindCampus.data == true) {
                     getUserInfo()
-                    withContext(Dispatchers.Main) {
-                        _unBindCampusState.value = RequestState.Success
-                    }
+                    _unBindCampusState.value = RequestState.Success
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _unBindCampusState.value = RequestState.Error("${e.message}")
-                }
+            } catch (e: NetworkException) {
+                _unBindCampusState.value = RequestState.Error(e.message ?: "解绑校园卡失败")
             }
         }
     }
