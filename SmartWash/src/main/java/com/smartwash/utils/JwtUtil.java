@@ -18,7 +18,7 @@ import java.util.UUID;
 public class JwtUtil {
 
     //有效期为
-    public static final Long JWT_TTL = 7 * 24 * 24 * 60 * 60 * 1000L;// 60 * 60 *1000  一天
+    public static final Long JWT_TTL = 7 * 24 * 60 * 60 * 1000L; // 7天
     //设置秘钥明文
     public static final String JWT_KEY = "smart_wast";
     private static final SecretKey KEY = Jwts.SIG.HS256.key().random(new SecureRandom(JWT_KEY.getBytes())).build();

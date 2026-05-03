@@ -61,7 +61,7 @@ public class LoginController {
     @PostMapping("/user/login")
     public Result<String> login(@RequestBody @Valid UserLoginFrom userLoginFrom) {
         if (usersService.getUserByPhone(userLoginFrom.getPhoneNumber()) == null) {
-            return Result.failMsg("该手机号暂未注册！");
+            return Result.failMsg("用户名或密码错误");
         }
         String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, userLoginFrom.getPhoneNumber());
 
@@ -102,9 +102,7 @@ public class LoginController {
         if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) {
             return Result.failMsg("手机号格式错误");
         }
-        if (usersService.getUserByPhone(phoneNumber) != null) {
-            return Result.failMsg("该手机号已注册"); 
-        }
+        // 不区分是否已注册，防止手机号枚举
         String key = String.format("%s:%s", DefaultConstant.Captcha_Code, phoneNumber);
 
         StringBuilder otp = new StringBuilder();
