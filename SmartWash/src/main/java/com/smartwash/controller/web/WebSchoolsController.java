@@ -3,6 +3,9 @@ package com.smartwash.controller.web;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.schools.SearchSchoolsFrom;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.schools.SchoolNameVo;
@@ -27,6 +30,7 @@ import java.util.List;
  * @author
  * @since 2025-03-06
  */
+@Tag(name = "用户端-学校", description = "用户端学校查询接口")
 @Slf4j
 @RestController
 @RequestMapping("/web")
@@ -34,15 +38,15 @@ public class WebSchoolsController {
     @Autowired
     private ISchoolsService schoolsService;
 
-    //获取所有学校
+    @Operation(summary = "分页查询学校列表", description = "根据条件分页查询学校列表")
     @GetMapping("/auth/schools/all")
     public Result<Page<SchoolsVo>> getAll(SearchSchoolsFrom schoolsFrom) {
         return Result.ok(schoolsService.getAllSchools(schoolsFrom));
     }
 
-    //获取所有学校的名字
+    @Operation(summary = "搜索学校名称", description = "根据关键词模糊搜索学校名称，用于下拉选择")
     @GetMapping("/schools/allName")
-    public Result<List<SchoolNameVo>> getAllName(@RequestParam(value = "schoolName", required = false) String schoolName) {
+    public Result<List<SchoolNameVo>> getAllName(@RequestParam(value = "schoolName", required = false) @Parameter(description = "学校名称关键词，为空时返回全部", example = "北京") String schoolName) {
         return Result.ok(schoolsService.getAllSchoolsName(schoolName));
     }
 }

@@ -36,6 +36,7 @@ public class SecurityConfig {
                     .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "ADMIN" -> "ROLE_ADMIN"
                     .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "USER" -> "ROLE_USER"
                     .requestMatchers("/auth/**", "/web/**").permitAll() // 公开接口
+                    .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**", "/v3/api-docs/**").permitAll() // Swagger API 文档
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

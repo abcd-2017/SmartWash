@@ -2,6 +2,9 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.entity.AdminUsers;
 import com.smartwash.from.admin_users.AddAdminUserFrom;
 import com.smartwash.from.admin_users.SearchAdminUserFrom;
@@ -25,6 +28,7 @@ import java.util.Objects;
  * @author
  * @since 2025-03-06
  */
+@Tag(name = "管理员管理", description = "管理员用户的增删改查")
 @Slf4j
 @RestController
 @RequestMapping("/admin/adminUsers")
@@ -34,13 +38,13 @@ public class AdminUsersController {
     @Autowired
     private SecurityUtil securityUtil;
 
-    //获取所有管理员用户
+    @Operation(summary = "分页查询管理员列表", description = "根据条件分页查询管理员用户列表")
     @GetMapping("/all")
     public Result<Page<AdminUserVo>> getAllAdminUsers(SearchAdminUserFrom adminUserFrom) {
         return Result.ok(adminUsersService.getAllAdminUsers(adminUserFrom));
     }
 
-    //添加管理员用户
+    @Operation(summary = "新增管理员", description = "新增管理员用户，用户名不可重复")
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddAdminUserFrom adminUserFrom) {
         if (adminUsersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
@@ -50,13 +54,14 @@ public class AdminUsersController {
         return Result.ok("添加成功");
     }
 
+    @Operation(summary = "获取当前管理员信息", description = "获取当前登录管理员的详细信息")
     @GetMapping("/getAdminUserInfo")
     public Result<AdminUserVo> getUserInfo() {
         LoginUser currentUser = (LoginUser) securityUtil.getCurrentUser();
         return Result.ok(adminUsersService.getUserById(currentUser.getUserId()));
     }
 
-    //修改管理员用户
+    @Operation(summary = "更新管理员", description = "修改管理员用户信息")
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
@@ -67,8 +72,9 @@ public class AdminUsersController {
         return Result.ok("修改成功");
     }
 
+    @Operation(summary = "批量删除管理员", description = "根据ID批量删除管理员用户，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> deleteAdminUsers(@PathVariable("ids") String ids) {
+    public Result<Boolean> deleteAdminUsers(@PathVariable("ids") @Parameter(description = "管理员ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         return Result.ok(adminUsersService.deleteAdminUsers(ids));
     }
 }

@@ -2,6 +2,9 @@ package com.smartwash.controller.web;
 
 
 import com.smartwash.common.DefaultConstant;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.Result;
 import com.smartwash.entity.Users;
 import com.smartwash.from.users.UpdateUserInfo;
@@ -26,6 +29,7 @@ import java.util.Objects;
  * @author
  * @since 2025-03-06
  */
+@Tag(name = "用户端-用户信息", description = "用户端个人信息管理接口")
 @Slf4j
 @RestController
 @RequestMapping("/web")
@@ -37,6 +41,7 @@ public class WebUsersController {
     @Autowired
     private AuthenticationManager authenticationManager;
 
+    @Operation(summary = "更新用户信息", description = "更新当前用户的学校和学号信息")
     @PostMapping("/auth/user/updateUserInfo")
     public Result<String> updateUserInfo(@RequestBody @Valid UpdateUserInfo updateUserInfo) {
         LoginUser user = UserContextHolder.getUser();
@@ -47,6 +52,7 @@ public class WebUsersController {
         return Result.ok("修改成功");
     }
 
+    @Operation(summary = "获取用户学校ID", description = "获取当前用户所属学校的ID")
     @PostMapping("/auth/user/getUserSchool")
     public Result<Long> getUserSchoolId() {
         LoginUser user = UserContextHolder.getUser();
@@ -54,24 +60,28 @@ public class WebUsersController {
         return Result.ok(users.getSchoolId());
     }
 
+    @Operation(summary = "检查学号是否已注册", description = "检查指定学号是否已被其他用户注册")
     @GetMapping("/auth/user/getUserByStudentId")
-    public Result<Boolean> getUserByStudentId(@RequestParam("studentId") String studentId) {
+    public Result<Boolean> getUserByStudentId(@RequestParam("studentId") @Parameter(description = "学号", required = true, example = "2021001") String studentId) {
         Users users = usersService.getUserByStudentId(studentId);
         return Result.ok(users == null);
     }
 
+    @Operation(summary = "获取用户信息", description = "获取当前用户的详细信息，包括学校、学号、余额等")
     @GetMapping("/auth/user/getUserInfo")
     public Result<UserInfoVo> getUserInfo() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.getUserInfo(user.getUserId()));
     }
 
+    @Operation(summary = "绑定校园卡", description = "为当前用户绑定校园卡")
     @PostMapping("/auth/user/bingCampus/{campusCard}")
-    public Result<Boolean> bingCampus(@PathVariable("campusCard") String campusCard) {
+    public Result<Boolean> bingCampus(@PathVariable("campusCard") @Parameter(description = "校园卡号", required = true, example = "C2021001") String campusCard) {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.bingCampus(campusCard, user.getUserId()));
     }
 
+    @Operation(summary = "解绑校园卡", description = "解除当前用户的校园卡绑定")
     @PostMapping("/auth/user/unBingCampus")
     public Result<Boolean> unBingCampus() {
         LoginUser user = UserContextHolder.getUser();

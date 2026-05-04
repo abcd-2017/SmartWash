@@ -2,6 +2,8 @@ package com.smartwash.controller.web;
 
 
 import com.smartwash.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.recharge_records.UserRechargeFrom;
 import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.utils.LoginUser;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author
  * @since 2025-03-06
  */
+@Tag(name = "用户端-充值", description = "用户端充值相关接口")
 @Slf4j
 @RestController
 @RequestMapping("/web")
@@ -31,6 +34,7 @@ public class WebRechargeRecordsController {
     @Autowired
     private IRechargeRecordsService rechargeRecordsService;
 
+    @Operation(summary = "用户充值", description = "用户向账户余额充值")
     @PostMapping("/auth/recharge/userRecharge")
     public Result<String> rechargeUserRecharge(@RequestBody UserRechargeFrom vo) {
         LoginUser loginUser = UserContextHolder.getUser();
