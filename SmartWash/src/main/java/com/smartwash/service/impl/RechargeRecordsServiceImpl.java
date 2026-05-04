@@ -42,7 +42,8 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
 
         // 批量查询用户数据，避免N+1问题
         Set<Long> userIds = rechargeRecords.stream().map(RechargeRecords::getUserId).collect(Collectors.toSet());
-        Map<Long, Users> userMap = usersMapper.selectBatchIds(userIds).stream()
+        Map<Long, Users> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : usersMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(Users::getUserId, Function.identity()));
 
         rechargeRecordsVoPage.setRecords(rechargeRecords.stream().map(it -> {

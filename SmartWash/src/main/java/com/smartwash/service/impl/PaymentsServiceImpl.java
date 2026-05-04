@@ -66,9 +66,11 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         // 批量查询关联数据，避免N+1问题
         Set<Long> userIds = payments.stream().map(Payments::getUserId).collect(Collectors.toSet());
         Set<Long> orderIds = payments.stream().map(Payments::getOrderId).collect(Collectors.toSet());
-        Map<Long, Users> userMap = usersMapper.selectBatchIds(userIds).stream()
+        Map<Long, Users> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : usersMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(Users::getUserId, Function.identity()));
-        Map<Long, Orders> orderMap = ordersMapper.selectBatchIds(orderIds).stream()
+        Map<Long, Orders> orderMap = orderIds.isEmpty() ? Collections.emptyMap()
+                : ordersMapper.selectBatchIds(orderIds).stream()
                 .collect(Collectors.toMap(Orders::getOrderId, Function.identity()));
 
         paymentVoPage.setRecords(payments.stream().map(it -> {
