@@ -85,6 +85,14 @@ const props = defineProps({
   address: {
     type: String,
     default: ''
+  },
+  schoolName: {
+    type: String,
+    default: ''
+  },
+  city: {
+    type: String,
+    default: ''
   }
 })
 
@@ -96,6 +104,7 @@ const searchResults = ref([])
 const selectedLocation = ref(null)
 const addressDisplay = ref('')
 const mapContainer = ref(null)
+const searchCity = ref('')
 
 let mapInstance = null
 let markerInstance = null
@@ -114,9 +123,26 @@ watch(() => props.address, (val) => {
 }, { immediate: true })
 
 async function openPicker() {
+  // 构造搜索关键词：城市 + 学校名
+  const parts = []
+  if (props.city) parts.push(props.city)
+  if (props.schoolName) parts.push(props.schoolName)
+  searchKeyword.value = parts.join(' ')
+  searchCity.value = props.city || ''
+
   dialogVisible.value = true
   await nextTick()
   await initMap()
+
+  // 如果没有已选位置，但有城市信息，先定位到城市
+  if (!selectedLocation.value && props.city) {
+    geocodeCity(props.city)
+  }
+
+  // 如果有搜索关键词，自动搜索
+  if (searchKeyword.value.trim()) {
+    handleSearch()
+  }
 }
 
 async function initMap() {
@@ -132,27 +158,36 @@ async function initMap() {
     zoom: 12,
     center: selectedLocation.value
       ? [selectedLocation.value.longitude, selectedLocation.value.latitude]
-      : [116.397428, 39.90923] // 默认北京
+      : [116.397428, 39.90923]
   })
 
   geocoderInstance = new AMapRef.Geocoder()
 
-  // 点击地图选点
   mapInstance.on('click', async (e) => {
     const lnglat = e.lnglat
     await updateLocationByLnglat(lnglat.lng, lnglat.lat)
   })
 
-  // 如果有初始位置，标记
   if (selectedLocation.value) {
     placeMarker(selectedLocation.value.longitude, selectedLocation.value.latitude)
   }
 }
 
+// 地理编码城市名 → 经纬度，用于定位地图中心
+function geocodeCity(cityName) {
+  if (!geocoderInstance || !cityName) return
+  geocoderInstance.getLocation(cityName, (status, result) => {
+    if (status === 'complete' && result.geocodes && result.geocodes.length) {
+      const loc = result.geocodes[0].location
+      mapInstance.setCenter([loc.lng, loc.lat])
+      mapInstance.setZoom(11)
+    }
+  })
+}
+
 async function updateLocationByLnglat(lng, lat) {
   placeMarker(lng, lat)
 
-  // 逆地理编码获取地址信息
   geocoderInstance.getAddress([lng, lat], (status, result) => {
     if (status === 'complete' && result.regeocode) {
       const addr = result.regeocode
@@ -195,7 +230,8 @@ async function handleSearch() {
 
   const placeSearch = new AMapRef.PlaceSearch({
     pageSize: 10,
-    pageIndex: 1
+    pageIndex: 1,
+    city: searchCity.value || undefined
   })
 
   placeSearch.search(searchKeyword.value, (status, result) => {
@@ -207,6 +243,12 @@ async function handleSearch() {
         lng: poi.location.lng,
         lat: poi.location.lat
       }))
+      // 如果有结果，自动定位到第一个
+      if (searchResults.value.length > 0) {
+        const first = searchResults.value[0]
+        placeMarker(first.lng, first.lat)
+        mapInstance.setZoom(14)
+      }
     } else {
       searchResults.value = []
     }
@@ -248,6 +290,7 @@ function handleDialogClosed() {
   }
   searchResults.value = []
   searchKeyword.value = ''
+  searchCity.value = ''
 }
 </script>
 

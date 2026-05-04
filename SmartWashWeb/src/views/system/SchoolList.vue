@@ -168,6 +168,8 @@
           <AmapPicker
             :model-value="tempSchool.longitude ? { longitude: tempSchool.longitude, latitude: tempSchool.latitude } : null"
             :address="tempSchool.location"
+            :school-name="tempSchool.schoolName"
+            :city="tempSchool.city"
             @change="handleMapPick"
           />
         </el-form-item>
