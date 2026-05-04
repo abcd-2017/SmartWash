@@ -264,6 +264,8 @@ function handleMapPick(locationData) {
   if (locationData.city) tempSchool.city = locationData.city
   if (locationData.district) tempSchool.district = locationData.district
   if (locationData.address) tempSchool.location = locationData.address
+  // 同步省市县联动选择器
+  regionValue.value = [locationData.province, locationData.city, locationData.district].filter(Boolean)
 }
 
 // 省市县联动变化回调
