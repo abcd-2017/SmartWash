@@ -38,6 +38,7 @@ dist-ssr/
 coverage/
 *.local
 *.tsbuildinfo
+.env
 
 # === HarmonyOS (SmartWash_Harmony) ===
 oh_modules/
@@ -58,3 +59,6 @@ oh_modules/
 
 # === 文档（不提交） ===
 **/docs/
+# 签名文件
+*.keystore
+*.jks

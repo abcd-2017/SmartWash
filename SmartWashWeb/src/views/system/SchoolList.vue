@@ -21,6 +21,33 @@
           />
         </el-form-item>
 
+        <el-form-item label="学校编码">
+          <el-input
+            v-model="listQuery.schoolCode"
+            placeholder="输入学校编码"
+            clearable
+            style="width: 160px"
+          />
+        </el-form-item>
+
+        <el-form-item label="省份">
+          <el-input
+            v-model="listQuery.province"
+            placeholder="输入省份"
+            clearable
+            style="width: 120px"
+          />
+        </el-form-item>
+
+        <el-form-item label="城市">
+          <el-input
+            v-model="listQuery.city"
+            placeholder="输入城市"
+            clearable
+            style="width: 120px"
+          />
+        </el-form-item>
+
         <el-form-item label="储物柜数量">
           <el-select
             v-model="listQuery.lockerCount"
@@ -55,7 +82,21 @@
     >
       <el-table-column prop="schoolId" label="ID" min-width="80" />
       <el-table-column prop="schoolName" label="学校名称" min-width="180" />
+      <el-table-column prop="schoolCode" label="学校编码" min-width="120" />
+      <el-table-column prop="province" label="省份" min-width="100" />
+      <el-table-column prop="city" label="城市" min-width="100" />
+      <el-table-column prop="district" label="区县" min-width="100" />
+      <el-table-column prop="contactName" label="联系人" min-width="100" />
+      <el-table-column prop="contactPhone" label="联系电话" min-width="130" />
       <el-table-column prop="location" label="位置" min-width="150" />
+      <el-table-column label="经纬度" min-width="160">
+        <template #default="{ row }">
+          <span v-if="row.longitude && row.latitude">
+            {{ row.longitude }}, {{ row.latitude }}
+          </span>
+          <span v-else style="color: #94a3b8">未定位</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="lockerCount" label="储物柜数量" min-width="120">
         <template #default="{ row }">{{ row.lockerCount }}个</template>
       </el-table-column>
@@ -87,7 +128,7 @@
     <el-dialog
       :title="dialogType === 'create' ? '新增学校' : '编辑学校'"
       v-model="dialogVisible"
-      width="600px"
+      width="750px"
     >
       <el-form
         ref="formRef"
@@ -95,34 +136,63 @@
         label-width="100px"
         :rules="rules"
       >
+        <!-- 基本信息 -->
+        <el-divider content-position="left">基本信息</el-divider>
+
         <el-form-item label="学校名称" prop="schoolName" style="margin: 20px">
-          <el-input
-            v-model="tempSchool.schoolName"
-            placeholder="请输入学校名称"
+          <el-input v-model="tempSchool.schoolName" placeholder="请输入学校名称" />
+        </el-form-item>
+
+        <el-form-item label="学校编码" prop="schoolCode" style="margin: 20px">
+          <el-input v-model="tempSchool.schoolCode" placeholder="请输入学校编码" />
+        </el-form-item>
+
+        <el-form-item label="储物柜数量" prop="lockerCount" style="margin: 20px">
+          <el-select v-model="tempSchool.lockerCount" placeholder="请选择" style="width: 100%">
+            <el-option v-for="count in lockerCountOptions" :key="count" :label="`${count}个`" :value="count" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 地理位置 -->
+        <el-divider content-position="left">地理位置</el-divider>
+
+        <el-form-item label="省/市/区" style="margin: 20px">
+          <RegionCascader v-model="regionValue" @change="handleRegionChange" />
+        </el-form-item>
+
+        <el-form-item label="详细地址" prop="location" style="margin: 20px">
+          <el-input v-model="tempSchool.location" placeholder="请输入详细地址" />
+        </el-form-item>
+
+        <el-form-item label="地图定位" style="margin: 20px">
+          <AmapPicker
+            :model-value="tempSchool.longitude ? { longitude: tempSchool.longitude, latitude: tempSchool.latitude } : null"
+            :address="tempSchool.location"
+            @change="handleMapPick"
           />
         </el-form-item>
 
-        <el-form-item label="位置" prop="location" style="margin: 20px">
-          <el-input v-model="tempSchool.location" placeholder="请输入位置" />
+        <el-form-item label="经度" style="margin: 20px">
+          <el-input-number v-model="tempSchool.longitude" :precision="6" :step="0.000001" controls-position="right" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item
-          label="储物柜数量"
-          prop="lockerCount"
-          style="margin: 20px"
-        >
-          <el-select
-            v-model="tempSchool.lockerCount"
-            placeholder="请选择"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="count in lockerCountOptions"
-              :key="count"
-              :label="`${count}个`"
-              :value="count"
-            />
-          </el-select>
+        <el-form-item label="纬度" style="margin: 20px">
+          <el-input-number v-model="tempSchool.latitude" :precision="6" :step="0.000001" controls-position="right" style="width: 100%" />
+        </el-form-item>
+
+        <!-- 联系信息 -->
+        <el-divider content-position="left">联系信息</el-divider>
+
+        <el-form-item label="联系人" style="margin: 20px">
+          <el-input v-model="tempSchool.contactName" placeholder="请输入联系人姓名" />
+        </el-form-item>
+
+        <el-form-item label="联系电话" style="margin: 20px">
+          <el-input v-model="tempSchool.contactPhone" placeholder="请输入联系电话" />
+        </el-form-item>
+
+        <el-form-item label="Logo URL" style="margin: 20px">
+          <el-input v-model="tempSchool.logoUrl" placeholder="请输入 Logo 图片地址" />
         </el-form-item>
       </el-form>
 
@@ -144,6 +214,8 @@ import {
   updateSchool,
   deleteSchool,
 } from "@/api/school";
+import RegionCascader from '@/components/RegionCascader.vue'
+import AmapPicker from '@/components/AmapPicker.vue'
 
 const formRef = ref(null);
 const schoolList = ref([]);
@@ -158,28 +230,59 @@ const listQuery = reactive({
   size: 10,
   schoolId: null,
   schoolName: "",
+  schoolCode: "",
+  province: "",
+  city: "",
   lockerCount: null,
 });
 
 // 表单数据
 const tempSchool = reactive({
   schoolId: null,
-  schoolName: "",
-  location: "",
-  lockerCount: 50,
-});
+  schoolName: '',
+  schoolCode: '',
+  location: '',
+  province: '',
+  city: '',
+  district: '',
+  longitude: null,
+  latitude: null,
+  logoUrl: '',
+  contactName: '',
+  contactPhone: '',
+  lockerCount: 50
+})
+
+const regionValue = ref([])
+
+// 地图选点回调 — 自动填充省市区和地址
+function handleMapPick(locationData) {
+  if (!locationData) return
+  tempSchool.longitude = locationData.longitude
+  tempSchool.latitude = locationData.latitude
+  if (locationData.province) tempSchool.province = locationData.province
+  if (locationData.city) tempSchool.city = locationData.city
+  if (locationData.district) tempSchool.district = locationData.district
+  if (locationData.address) tempSchool.location = locationData.address
+}
+
+// 省市县联动变化回调
+function handleRegionChange(val) {
+  tempSchool.province = val[0] || ''
+  tempSchool.city = val[1] || ''
+  tempSchool.district = val[2] || ''
+}
 
 // 储物柜数量选项
 const lockerCountOptions = [50, 100, 200];
 
 // 验证规则
 const rules = reactive({
-  schoolName: [{ required: true, message: "请输入学校名称", trigger: "blur" }],
-  location: [{ required: true, message: "请输入位置", trigger: "blur" }],
-  lockerCount: [
-    { required: true, message: "请选择储物柜数量", trigger: "change" },
-  ],
-});
+  schoolName: [{ required: true, message: '请输入学校名称', trigger: 'blur' }],
+  schoolCode: [{ required: true, message: '请输入学校编码', trigger: 'blur' }],
+  location: [{ required: true, message: '请输入位置', trigger: 'blur' }],
+  lockerCount: [{ required: true, message: '请选择储物柜数量', trigger: 'change' }]
+})
 
 // 初始化数据
 onMounted(() => {
@@ -193,6 +296,9 @@ const fetchData = async () => {
     const params = {
       ...listQuery,
       schoolId: listQuery.schoolId || undefined,
+      schoolCode: listQuery.schoolCode || undefined,
+      province: listQuery.province || undefined,
+      city: listQuery.city || undefined,
     };
     const res = await getSchoolList(params);
     schoolList.value = res.records;
@@ -214,6 +320,9 @@ const handleSearch = () => {
 const resetSearch = () => {
   listQuery.schoolId = null;
   listQuery.schoolName = "";
+  listQuery.schoolCode = "";
+  listQuery.province = "";
+  listQuery.city = "";
   listQuery.lockerCount = null;
   handleSearch();
 };
@@ -226,22 +335,33 @@ const handlePageChange = (val) => {
 
 // 打开新增弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
-  dialogVisible.value = true;
+  dialogType.value = 'create'
+  dialogVisible.value = true
   Object.assign(tempSchool, {
     schoolId: null,
-    schoolName: "",
-    location: "",
-    lockerCount: 50,
-  });
-};
+    schoolName: '',
+    schoolCode: '',
+    location: '',
+    province: '',
+    city: '',
+    district: '',
+    longitude: null,
+    latitude: null,
+    logoUrl: '',
+    contactName: '',
+    contactPhone: '',
+    lockerCount: 50
+  })
+  regionValue.value = []
+}
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
-  dialogVisible.value = true;
-  Object.assign(tempSchool, { ...row });
-};
+  dialogType.value = 'edit'
+  dialogVisible.value = true
+  Object.assign(tempSchool, { ...row })
+  regionValue.value = [row.province, row.city, row.district].filter(Boolean)
+}
 
 // 提交表单
 const submitForm = async () => {
