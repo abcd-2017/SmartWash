@@ -46,20 +46,20 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       v-loading="listLoading"
       :data="schoolList"
-      border
       fit
       highlight-current-row
     >
-      <el-table-column prop="schoolId" label="ID" width="80" />
+      <el-table-column prop="schoolId" label="ID" min-width="80" />
       <el-table-column prop="schoolName" label="学校名称" min-width="180" />
-      <el-table-column prop="location" label="位置" width="150" />
-      <el-table-column prop="lockerCount" label="储物柜数量" width="120">
+      <el-table-column prop="location" label="位置" min-width="150" />
+      <el-table-column prop="lockerCount" label="储物柜数量" min-width="120">
         <template #default="{ row }">{{ row.lockerCount }}个</template>
       </el-table-column>
-      <el-table-column prop="createdAt" label="创建时间" width="180">
+      <el-table-column prop="createdAt" label="创建时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
@@ -71,16 +71,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog

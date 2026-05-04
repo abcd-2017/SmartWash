@@ -68,28 +68,28 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       v-loading="listLoading"
       :data="rechargeList"
-      border
       fit
       highlight-current-row
     >
-      <el-table-column prop="recordId" label="记录ID" width="100" />
-      <el-table-column label="手机号" width="120">
+      <el-table-column prop="recordId" label="记录ID" min-width="100" />
+      <el-table-column label="手机号" min-width="120">
         <template #default="{ row }">{{ row.users.phoneNumber }}</template>
       </el-table-column>
-      <el-table-column label="充值金额" width="150">
+      <el-table-column label="充值金额" min-width="150">
         <template #default="{ row }">￥{{ row.amount.toFixed(2) }}</template>
       </el-table-column>
-      <el-table-column label="充值类型" width="120">
+      <el-table-column label="充值类型" min-width="120">
         <template #default="{ row }">
           <el-tag :type="rechargeTypeTag(row.rechargeType)">
             {{ formatRechargeType(row.rechargeType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="充值时间" width="180">
+      <el-table-column label="充值时间" min-width="180">
         <template #default="{ row }">{{
           formatTime(row.rechargeTime)
         }}</template>
@@ -102,16 +102,17 @@
         </template>
       </el-table-column> -->
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
   </div>
 </template>
 

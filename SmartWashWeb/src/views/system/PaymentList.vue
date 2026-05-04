@@ -89,39 +89,39 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       ref="tableRef"
       v-loading="listLoading"
       :data="paymentList"
-      border
       fit
       highlight-current-row
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="paymentId" label="支付ID" width="90" />
-      <el-table-column prop="orderNo" label="订单号" width="200" />
-      <el-table-column label="用户" width="150">
+      <el-table-column prop="paymentId" label="支付ID" min-width="90" />
+      <el-table-column prop="orderNo" label="订单号" min-width="200" />
+      <el-table-column label="用户" min-width="150">
         <template #default="{ row }">
           {{ row.user?.phoneNumber || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="金额" width="120">
+      <el-table-column label="金额" min-width="120">
         <template #default="{ row }">￥{{ row.amount.toFixed(2) }}</template>
       </el-table-column>
-      <el-table-column label="支付方式" width="120">
+      <el-table-column label="支付方式" min-width="120">
         <template #default="{ row }">
           {{ payTypeOptions[row.paymentMethod] || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="120">
+      <el-table-column label="状态" min-width="120">
         <template #default="{ row }">
           <el-tag :type="getStatusTagType(row.status)">
             {{ payStatusOptions[row.status] || "-" }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="支付时间" width="180">
+      <el-table-column label="支付时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="120" fixed="right">
@@ -132,16 +132,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
   </div>
 </template>
   

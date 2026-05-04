@@ -30,20 +30,20 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       v-loading="listLoading"
       :data="laundryList"
-      border
       fit
       highlight-current-row
     >
-      <el-table-column prop="itemId" label="ID" width="80" />
+      <el-table-column prop="itemId" label="ID" min-width="80" />
       <el-table-column prop="itemName" label="套餐名称" min-width="180" />
-      <el-table-column prop="basePrice" label="基础价格" width="120">
+      <el-table-column prop="basePrice" label="基础价格" min-width="120">
         <template #default="{ row }">￥{{ row.basePrice.toFixed(2) }}</template>
       </el-table-column>
       <el-table-column prop="description" label="套餐描述" min-width="240" />
-      <el-table-column prop="createdAt" label="创建时间" width="180">
+      <el-table-column prop="createdAt" label="创建时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
@@ -55,16 +55,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog

@@ -21,17 +21,17 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       v-loading="listLoading"
       :data="roleList"
-      border
       fit
       highlight-current-row
     >
-      <el-table-column prop="roleId" label="ID" width="80" />
+      <el-table-column prop="roleId" label="ID" min-width="80" />
       <el-table-column prop="roleName" label="角色名称" min-width="150" />
       <el-table-column prop="description" label="角色描述" min-width="200" />
-      <el-table-column label="创建时间" width="180">
+      <el-table-column label="创建时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
@@ -43,16 +43,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog

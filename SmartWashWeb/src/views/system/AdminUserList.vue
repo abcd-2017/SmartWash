@@ -54,20 +54,20 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       ref="tableRef"
       v-loading="listLoading"
       :data="adminList"
-      border
       fit
       highlight-current-row
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="adminId" label="ID" width="80" />
+      <el-table-column prop="adminId" label="ID" min-width="80" />
       <el-table-column prop="username" label="用户名" min-width="150" />
-      <el-table-column prop="roles.roleName" label="角色" width="180" />
-      <el-table-column label="创建时间" width="180">
+      <el-table-column prop="roles.roleName" label="角色" min-width="180" />
+      <el-table-column label="创建时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
@@ -79,16 +79,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog

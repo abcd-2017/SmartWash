@@ -3,20 +3,117 @@
 
 /* 页面容器 */
 .page-container {
-  height: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* 筛选区 — 白底卡片 + 12px 圆角 + 微阴影 */
 .filter-container {
-  margin-bottom: 16px;
-  padding: 20px;
+  padding: 20px 24px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
+/* 筛选表单 — 允许换行，筛选项与按钮分行 */
+.filter-container .el-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 0;
+  align-items: flex-end;
+}
+
 .filter-container .el-form-item {
   margin-bottom: 0;
-  margin-right: 16px;
+  margin-right: 12px;
+}
+
+.filter-container .el-form-item__label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-container .el-input__wrapper,
+.filter-container .el-select .el-input__wrapper {
+  background-color: #f8fafc;
+}
+
+/* 按钮组 — 始终靠右 */
+.filter-container .el-form-item:last-child {
+  margin-left: auto;
+}
+
+.filter-container .el-button + .el-button {
+  margin-left: 8px;
+}
+
+/* 表格卡片容器 — 白底卡片包裹 el-table + 分页 */
+.table-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.table-card .el-table {
+  border: none;
+}
+
+.table-card .el-table th.el-table__cell {
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.table-card .el-table td.el-table__cell {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.table-card .el-table--border::after,
+.table-card .el-table--group::after,
+.table-card .el-table::before {
+  display: none;
+}
+
+/* 分页区 — 内嵌在表格卡片底部 */
+.table-card .pagination-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+  flex-shrink: 0;
+}
+
+/* 独立分页容器（兼容旧结构） */
+.pagination-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+/* 页面标题区 */
+.page-header {
+  margin-bottom: 0;
+}
+
+.page-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.page-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
 }

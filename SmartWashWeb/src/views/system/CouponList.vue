@@ -48,30 +48,30 @@
     </div>
 
     <!-- 数据表格 -->
+    <div class="table-card">
     <el-table
       ref="tableRef"
       v-loading="listLoading"
       :data="couponList"
-      border
       fit
       highlight-current-row
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="couponId" label="ID" width="80" />
+      <el-table-column prop="couponId" label="ID" min-width="80" />
       <el-table-column prop="title" label="标题" min-width="150" />
-      <el-table-column label="折扣金额" width="120">
+      <el-table-column label="折扣金额" min-width="120">
         <template #default="{ row }">￥{{ row.discount.toFixed(2) }}</template>
       </el-table-column>
-      <el-table-column label="使用门槛" width="120">
+      <el-table-column label="使用门槛" min-width="120">
         <template #default="{ row }">￥{{ row.threshold.toFixed(2) }}</template>
       </el-table-column>
-      <el-table-column label="有效期" width="220">
+      <el-table-column label="有效期" min-width="220">
         <template #default="{ row }">
           {{ formatTime(row.startTime) }} ~ {{ formatTime(row.endTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="100">
+      <el-table-column label="状态" min-width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
             {{ row.status === "ACTIVE" ? "可用" : "已失效" }}
@@ -87,16 +87,17 @@
         </template>
       </el-table-column>
     </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      background
-      :current-page="listQuery.page"
-      layout="prev, pager, next"
-      :total="total"
-      :page-size="listQuery.size"
-      @current-change="handlePageChange"
-    />
+    <div class="pagination-bar">
+      <el-pagination
+        background
+        :current-page="listQuery.page"
+        layout="prev, pager, next"
+        :total="total"
+        :page-size="listQuery.size"
+        @current-change="handlePageChange"
+      />
+    </div>
+    </div>
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
