@@ -1,13 +1,16 @@
 package com.smartwash.ui.page.userinfo
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.OrderItemCountFrom
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderItemCountVo
 import com.smartwash.network.vo.user.UserInfoVo
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +51,8 @@ class UserInfoViewModel @Inject constructor(
                 _orderItemCount.value = orderItemCountRes.data
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
-                _userInfoStatus.value = RequestState.Error(e.message ?: "获取用户信息失败")
+                Log.e(AppConstant.APP_NAME, "UserInfoViewModel.getUserInfo: ${e.message}", e)
+                _userInfoStatus.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -75,7 +79,8 @@ class UserInfoViewModel @Inject constructor(
                     _bindCampusState.value = RequestState.Success
                 }
             } catch (e: NetworkException) {
-                _bindCampusState.value = RequestState.Error(e.message ?: "绑定校园卡失败")
+                Log.e(AppConstant.APP_NAME, "UserInfoViewModel.bindCampus: ${e.message}", e)
+                _bindCampusState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -90,7 +95,8 @@ class UserInfoViewModel @Inject constructor(
                     _unBindCampusState.value = RequestState.Success
                 }
             } catch (e: NetworkException) {
-                _unBindCampusState.value = RequestState.Error(e.message ?: "解绑校园卡失败")
+                Log.e(AppConstant.APP_NAME, "UserInfoViewModel.unBindCampus: ${e.message}", e)
+                _unBindCampusState.value = RequestState.Error(e.resId)
             }
         }
     }

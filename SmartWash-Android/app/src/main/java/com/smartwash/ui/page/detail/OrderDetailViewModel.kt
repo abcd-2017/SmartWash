@@ -1,10 +1,13 @@
 package com.smartwash.ui.page.detail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +32,8 @@ class OrderDetailViewModel @Inject constructor(
                 _orderInfo.value = responseData.data
                 _getOrderInfoDetail.value = RequestState.Success
             } catch (e: NetworkException) {
-                _getOrderInfoDetail.value = RequestState.Error(e.message ?: "获取订单详情失败")
+                Log.e(AppConstant.APP_NAME, "OrderDetailViewModel.getOrderDetail: ${e.message}", e)
+                _getOrderInfoDetail.value = RequestState.Error(e.resId)
             }
         }
     }

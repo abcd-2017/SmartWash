@@ -1,8 +1,6 @@
 package com.smartwash.ui.common
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
@@ -11,14 +9,19 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
+import com.smartwash.R
+
+private val ErrorLight = com.smartwash.ui.theme.ErrorLight
 
 @Composable
 fun PasswordInput(
@@ -26,45 +29,55 @@ fun PasswordInput(
     isPasswordError: Boolean,
     showPassword: Boolean,
     showVisibility: () -> Unit,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "密码",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = onValueChange,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-            isError = isPasswordError,
-            supportingText = if (isPasswordError) {
-                { Text("密码必须为6-16位") }
-            } else null,
-            leadingIcon = {
+    TextField(
+        value = password,
+        onValueChange = onValueChange,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        modifier = modifier.fillMaxWidth(),
+        isError = isPasswordError,
+        supportingText = if (isPasswordError) {
+            { Text(stringResource(R.string.invalid_password), color = ErrorLight) }
+        } else null,
+        leadingIcon = {
+            Icon(
+                Icons.Rounded.Lock,
+                contentDescription = null,
+                tint = if (isPasswordError) ErrorLight
+                else contentColor.copy(alpha = 0.6f)
+            )
+        },
+        trailingIcon = {
+            IconButton(onClick = showVisibility) {
                 Icon(
-                    Icons.Rounded.Lock,
+                    imageVector = if (showPassword) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
                     contentDescription = null,
-                    tint = if (isPasswordError) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.primary
+                    tint = contentColor.copy(alpha = 0.6f)
                 )
-            },
-            trailingIcon = {
-                IconButton(onClick = showVisibility) {
-                    Icon(
-                        imageVector = if (showPassword) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            shape = MaterialTheme.shapes.small,
-            singleLine = true,
-            placeholder = { Text("输入密码") },
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation()
+            }
+        },
+        singleLine = true,
+        placeholder = {
+            Text(stringResource(R.string.password), color = contentColor.copy(alpha = 0.4f))
+        },
+        visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent,
+            errorContainerColor = Color.Transparent,
+            focusedTextColor = contentColor,
+            unfocusedTextColor = contentColor,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            cursorColor = contentColor,
+            errorCursorColor = ErrorLight,
+            errorLeadingIconColor = ErrorLight,
+            errorSupportingTextColor = ErrorLight,
         )
-    }
+    )
 }

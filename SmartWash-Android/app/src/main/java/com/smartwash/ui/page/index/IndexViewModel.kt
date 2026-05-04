@@ -1,13 +1,16 @@
 package com.smartwash.ui.page.index
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderVo
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.utils.OrderStatus
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +39,8 @@ class IndexViewModel @Inject constructor(
                 _orderList.value = washingOrderRes.data ?: emptyList()
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
-                _userInfoStatus.value = RequestState.Error(e.message ?: "获取数据失败")
+                Log.e(AppConstant.APP_NAME, "IndexViewModel.getInfoData: ${e.message}", e)
+                _userInfoStatus.value = RequestState.Error(e.resId)
             }
         }
     }

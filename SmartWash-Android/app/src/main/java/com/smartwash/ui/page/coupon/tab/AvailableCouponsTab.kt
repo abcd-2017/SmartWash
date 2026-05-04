@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.coupon.tab
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,20 +14,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.smartwash.R
 import com.smartwash.network.vo.coupon.CouponVo
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
 import com.smartwash.utils.CouponStatus
 
-//可领优惠券页面
 @Composable
 fun AvailableCouponsTab(
     couponList: List<CouponVo>,
@@ -35,20 +37,21 @@ fun AvailableCouponsTab(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = AppDimens.pagePadding),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
         if (couponList.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "暂无优惠券",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        text = stringResource(R.string.no_coupons_available),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.colorScheme.textSecondary
                     )
                 }
             }
@@ -61,7 +64,6 @@ fun AvailableCouponsTab(
                         itemClick(coupon.couponId)
                     }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -73,16 +75,11 @@ fun CouponCard(
     isAvailable: Boolean,
     onClaimClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isAvailable)
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppDimens.cardRadius),
+        color = if (isAvailable) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -90,32 +87,22 @@ fun CouponCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 优惠券金额
+            // 左侧金额
             Column(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.Start
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${coupon.discount}元",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isAvailable)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isAvailable) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (coupon.threshold == 0f) "满${coupon.discount + 0.01}减${coupon.discount}" else "满${coupon.threshold}元可用",
-                    fontSize = 14.sp,
-                    color = if (isAvailable)
-                        MaterialTheme.colorScheme.onSurface
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    text = if (coupon.threshold == 0f) stringResource(R.string.coupon_discount_format, "${coupon.discount + 0.01}", "${coupon.discount}") else stringResource(R.string.coupon_min_amount_format, "${coupon.threshold}"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
                 )
             }
 
@@ -125,37 +112,30 @@ fun CouponCard(
             ) {
                 Text(
                     text = coupon.title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isAvailable)
-                        MaterialTheme.colorScheme.onSurface
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${coupon.startTime.split(" ")[0]}-${coupon.endTime.split(" ")[0]}",
-                    fontSize = 12.sp,
-                    color = if (isAvailable)
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textTertiary
                 )
                 if (isAvailable) {
                     Spacer(modifier = Modifier.height(8.dp))
                     if (coupon.status == CouponStatus.RECEIVE.status) {
                         Button(
                             onClick = {},
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) { Text("已领取") }
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.textSecondary)
+                        ) { Text(stringResource(R.string.claimed)) }
                     } else {
                         Button(
                             onClick = onClaimClick,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            )
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary)
                         ) {
-                            Text("立即领取")
+                            Text(stringResource(R.string.claim_now))
                         }
                     }
                 }

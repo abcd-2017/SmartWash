@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
+import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.page.coupon.UserCouponCard
 
@@ -32,7 +34,7 @@ fun HistoricalCouponsTab(userCouponList: LazyPagingItems<UserCouponVo>, couponSt
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "暂无使用优惠券",
+                        text = stringResource(R.string.no_historical_coupons),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )

@@ -1,9 +1,11 @@
 package com.smartwash.paging
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.entity.order.OrderListFrom
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderInfo
 
 class OrderPagingSource(private val orderApi: OrderApi, private val status: String) :
@@ -22,6 +24,7 @@ class OrderPagingSource(private val orderApi: OrderApi, private val status: Stri
                 nextKey = nextKey
             )
         } catch (e: Exception) {
+            Log.e(AppConstant.APP_NAME, "OrderPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }

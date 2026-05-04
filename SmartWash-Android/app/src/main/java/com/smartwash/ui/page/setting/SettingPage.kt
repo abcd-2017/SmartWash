@@ -1,19 +1,16 @@
 package com.smartwash.ui.page.setting
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Email
@@ -22,221 +19,177 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.smartwash.R
+import com.smartwash.ui.common.AppCard
+import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.PageHeader
+import com.smartwash.ui.common.SettingRow
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.Background
+import com.smartwash.ui.theme.Divider
+import com.smartwash.ui.theme.Error
+import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.SharePreferenceUtils
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingPage(
     navController: NavController
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = {
-                // 设置标题
-                Text(
-                    text = "设置",
-                    fontSize = 20.sp
-                )
-            }, navigationIcon = {
-                IconButton(modifier = Modifier.padding(10.dp), onClick = {
-                    navController.navigateUp()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = null
-                    )
-                }
-            })
-        }
-    ) { paddingValues ->
-        LazyColumn(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.colorScheme.background)
+    ) {
+        Column(
             modifier = Modifier
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surface)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
+            PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
+
             // 通知设置
-            item {
-                SettingsSection(title = "通知设置") {
-                    SettingsItem(
-                        icon = Icons.Default.Notifications,
-                        title = "消息通知",
-                        subtitle = "订单状态、活动提醒等",
-                        onClick = {}
-                    )
-                    SettingsItem(
-                        icon = Icons.Default.Email,
-                        title = "邮件通知",
-                        subtitle = "账单、优惠信息等",
-                        onClick = {}
-                    )
-                }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.notification),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.Notifications,
+                    title = stringResource(R.string.push_notification),
+                    subtitle = stringResource(R.string.push_notification_desc),
+                    trailing = { IconChevron() }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.Default.Email,
+                    title = stringResource(R.string.email_notification),
+                    subtitle = stringResource(R.string.email_notification_desc),
+                    trailing = { IconChevron() }
+                )
             }
 
             // 隐私设置
-            item {
-                SettingsSection(title = "隐私设置") {
-                    SettingsItem(
-                        icon = Icons.Default.Security,
-                        title = "隐私设置",
-                        subtitle = "个人信息、数据收集等",
-                        onClick = {}
-                    )
-                    SettingsItem(
-                        icon = Icons.Default.Lock,
-                        title = "账号安全",
-                        subtitle = "密码、登录设备等",
-                        onClick = {}
-                    )
-                }
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Text(
+                text = stringResource(R.string.privacy_security),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.Security,
+                    title = stringResource(R.string.privacy_settings),
+                    subtitle = stringResource(R.string.privacy_settings_desc),
+                    trailing = { IconChevron() }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.Default.Lock,
+                    title = stringResource(R.string.account_security),
+                    subtitle = stringResource(R.string.account_security_desc),
+                    trailing = { IconChevron() }
+                )
             }
 
-            // 其他设置
-            item {
-                SettingsSection(title = "其他") {
-                    SettingsItem(
-                        icon = Icons.Default.Info,
-                        title = "关于我们",
-                        subtitle = "版本信息、用户协议等",
-                        onClick = {}
-                    )
-                    SettingsItem(
-                        icon = Icons.AutoMirrored.Default.Help,
-                        title = "帮助与反馈",
-                        subtitle = "常见问题、意见反馈",
-                        onClick = { }
-                    )
-                }
+            // 其他
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Text(
+                text = stringResource(R.string.other),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.Info,
+                    title = stringResource(R.string.about_us),
+                    subtitle = stringResource(R.string.about_us_desc),
+                    trailing = { IconChevron() }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.AutoMirrored.Default.Help,
+                    title = stringResource(R.string.help_feedback),
+                    subtitle = stringResource(R.string.help_feedback_desc),
+                    trailing = { IconChevron() }
+                )
             }
 
-            item {
-                Spacer(modifier = Modifier.height(36.dp))
-                // 退出登录按钮
-                Button(
-                    onClick = {
-                        showDialog = true
-                    },
+            // 退出登录
+            Spacer(modifier = Modifier.height(36.dp))
+            Surface(
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                shape = RoundedCornerShape(AppDimens.buttonRadius),
+                color = AppColors.colorScheme.surface,
+                shadowElevation = 0.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.error)
+            ) {
+                TextButton(
+                    onClick = { showDialog = true },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                        .fillMaxSize()
+                        .height(52.dp)
                 ) {
-                    Text("退出登录")
+                    Text(
+                        stringResource(R.string.logout),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = AppColors.colorScheme.error
+                    )
                 }
-                Spacer(modifier = Modifier.height(24.dp))
             }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(text = "提示") },
-            text = {
-                Text(
-                    text = "是否要退出登录？"
-                )
-            }, confirmButton = {
+            title = { Text(text = stringResource(R.string.tip), style = MaterialTheme.typography.headlineSmall) },
+            text = { Text(text = stringResource(R.string.confirm_logout), color = TextSecondary) },
+            confirmButton = {
                 TextButton(onClick = {
                     showDialog = false
                     SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
                     navController.navigate(PageConstant.Login.text)
-                }) {
-                    Text(text = "确认")
-                }
-            }, dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text(text = "取消")
-                }
-            })
+                }) { Text(text = stringResource(R.string.confirm), color = Error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text(text = stringResource(R.string.cancel), color = TextSecondary) }
+            }
+        )
     }
 }
 
 @Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
-        content()
-    }
-}
-
-@Composable
-private fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape
-                )
-                .padding(8.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-    }
+private fun IconChevron() {
+    androidx.compose.material3.Icon(
+        imageVector = Icons.Default.ChevronRight,
+        contentDescription = null,
+        modifier = Modifier.height(16.dp),
+        tint = AppColors.colorScheme.textSecondary
+    )
 }

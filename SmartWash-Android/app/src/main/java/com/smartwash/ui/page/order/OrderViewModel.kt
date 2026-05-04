@@ -1,10 +1,13 @@
 package com.smartwash.ui.page.order
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.OrderApi
+import com.smartwash.utils.AppConstant
 import com.smartwash.paging.OrderPagingSource
 import com.smartwash.paging.pagingFlow
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +45,8 @@ class OrderViewModel @Inject constructor(
                     _cancelOrderState.value = RequestState.Success
                 }
             } catch (e: Exception) {
-                _cancelOrderState.value = RequestState.Error("${e.message}")
+                Log.e(AppConstant.APP_NAME, "OrderViewModel.cancelOrder: ${e.message}", e)
+                _cancelOrderState.value = RequestState.Error(R.string.error_cancel_order_failed)
             }
         }
     }

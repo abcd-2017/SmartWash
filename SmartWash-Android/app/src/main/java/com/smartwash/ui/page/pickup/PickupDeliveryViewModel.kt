@@ -1,13 +1,16 @@
 package com.smartwash.ui.page.pickup
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.entity.ResponseData
 import com.smartwash.network.entity.order.OrderNextStatus
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderInfo
 import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +37,8 @@ class PickupDeliveryViewModel @Inject constructor(
                 _orderInfo.value = responseData.data
                 _getOrderInfoDetail.value = RequestState.Success
             } catch (e: NetworkException) {
-                _getOrderInfoDetail.value = RequestState.Error(e.message ?: "获取订单详情失败")
+                Log.e(AppConstant.APP_NAME, "PickupDeliveryViewModel.getOrderDetail: ${e.message}", e)
+                _getOrderInfoDetail.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -53,10 +57,11 @@ class PickupDeliveryViewModel @Inject constructor(
                 if (res.data == true) {
                     _setOrderNextState.value = RequestState.Success
                 } else {
-                    _setOrderNextState.value = RequestState.Error("操作失败")
+                    _setOrderNextState.value = RequestState.Error(R.string.error_operation_failed)
                 }
             } catch (e: NetworkException) {
-                _setOrderNextState.value = RequestState.Error(e.message ?: "操作失败")
+                Log.e(AppConstant.APP_NAME, "PickupDeliveryViewModel.setOrderNextState: ${e.message}", e)
+                _setOrderNextState.value = RequestState.Error(e.resId)
             }
         }
     }

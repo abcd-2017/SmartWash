@@ -1,10 +1,6 @@
 package com.smartwash.ui.page.payment
 
 import android.widget.Toast
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,21 +12,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,18 +31,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.smartwash.R
+import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppCard
+import com.smartwash.ui.common.InfoRow
+import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.detail.OrderDetailViewModel
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.IconBox
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaySuccessPage(
     navController: NavHostController,
@@ -58,6 +59,7 @@ fun PaySuccessPage(
 ) {
     val getOrderDetailState by orderDetailViewModel.getOrderInfoDetail.collectAsState()
     val orderInfo by orderDetailViewModel.orderInfo.collectAsState()
+    val context = LocalContext.current
 
     if (orderId != -1L) {
         LaunchedEffect(Unit) {
@@ -68,171 +70,138 @@ fun PaySuccessPage(
     when (getOrderDetailState) {
         is RequestState.Error -> {
             Toast.makeText(
-                LocalContext.current,
-                (getOrderDetailState as RequestState.Error).message,
+                context,
+                context.getString((getOrderDetailState as RequestState.Error).messageResId),
                 Toast.LENGTH_SHORT
             ).show()
             orderDetailViewModel.resetState()
         }
-
         else -> {}
     }
 
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "scale"
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.colorScheme.background)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageHeader(title = stringResource(R.string.pay_success), onBack = { navController.navigateUp() })
 
-    val alpha by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(durationMillis = 500),
-        label = "alpha"
-    )
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("支付成功", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "返回")
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = AppDimens.pagePadding),
+            ) {
+                // 成功庆祝区域
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.primaryLight,
+                    shadowElevation = 0.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 36.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(AppColors.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(R.string.pay_success),
+                                modifier = Modifier.size(40.dp),
+                                tint = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.pay_success),
+                            style = MaterialTheme.typography.displayLarge,
+                            color = AppColors.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.thanks_for_using),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AppColors.colorScheme.textSecondary
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                }
+
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+                // 订单信息卡
+                Text(
+                    text = stringResource(R.string.order_info),
+                    style = MaterialTheme.typography.headlineMedium
                 )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .scale(scale)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "支付成功",
-                        modifier = Modifier.size(40.dp),
-                        tint = Color.White
-                    )
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("订单信息", style = MaterialTheme.typography.titleSmall)
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("订单号", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            orderInfo?.orderNo ?: "",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("支付金额", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "¥${orderInfo?.payPrice ?: 0}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("下单时间", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            orderInfo?.createdAt ?: "",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                Spacer(modifier = Modifier.height(12.dp))
+                AppCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        InfoRow(stringResource(R.string.order_number), orderInfo?.orderNo ?: "")
+                        InfoRow(stringResource(R.string.payment_amount), stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"), valueColor = AppColors.colorScheme.primary)
+                        InfoRow(stringResource(R.string.order_time_display), orderInfo?.createdAt ?: "")
                     }
                 }
-            }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("寄存柜信息", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "请前往寄存柜 ${orderInfo?.lockersVo?.lockerNumber ?: -1}柜存放衣物",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        "寄存柜将在24小时内处理您的订单",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            Button(
-                onClick = {
-                    navController.navigate(
-                        "${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}"
+                // 寄存柜提示卡
+                Text(
+                    text = stringResource(R.string.locker_info_section),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                AppCard {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        navController.navigateUp()
+                        IconBox(
+                            icon = Icons.Default.LocalShipping,
+                            size = 40.dp,
+                            iconSize = 20.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(stringResource(R.string.locker_info_title), style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.go_to_locker_format, "${orderInfo?.lockersVo?.lockerNumber ?: -1}"),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                stringResource(R.string.locker_process_tip),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.colorScheme.textSecondary
+                            )
+                        }
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("立即寄件", style = MaterialTheme.typography.labelLarge)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            // 底部按钮
+            Column(modifier = Modifier.padding(AppDimens.pagePadding)) {
+                AppButton(
+                    text = stringResource(R.string.go_ship_now),
+                    onClick = {
+                        navController.navigate(
+                            "${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}"
+                        ) {
+                            navController.navigateUp()
+                        }
+                    }
+                )
             }
         }
     }

@@ -1,12 +1,15 @@
 package com.smartwash.utils
 
+import androidx.annotation.StringRes
+import com.smartwash.R
+
 /**
  * http响应状态码
  */
-enum class HttpStatusCode(val code: Int, val message: String) {
-    Success(200, "请求成功"),
-    Fail(201, "请求失败"),
-    Unauthorized(401, "登录异常"),
-    NotFound(404, "未找到资源"),
-    Error(500, "服务器内部错误")
+enum class HttpStatusCode(val code: Int, @StringRes val messageRes: Int) {
+    Success(200, R.string.http_success),
+    Fail(201, R.string.http_fail),
+    Unauthorized(401, R.string.http_unauthorized),
+    NotFound(404, R.string.http_not_found),
+    Error(500, R.string.http_server_error)
 }

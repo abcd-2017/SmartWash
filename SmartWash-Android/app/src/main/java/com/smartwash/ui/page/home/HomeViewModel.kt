@@ -1,9 +1,12 @@
 package com.smartwash.ui.page.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +32,8 @@ class HomeViewModel @Inject constructor(
                 _userSchoolId.value = res.data ?: -1
                 _getSchoolState.value = RequestState.Success
             } catch (e: NetworkException) {
-                _getSchoolState.value = RequestState.Error(e.message ?: "获取学校信息失败")
+                Log.e(AppConstant.APP_NAME, "HomeViewModel.getUserSchool: ${e.message}", e)
+                _getSchoolState.value = RequestState.Error(e.resId)
             }
         }
     }

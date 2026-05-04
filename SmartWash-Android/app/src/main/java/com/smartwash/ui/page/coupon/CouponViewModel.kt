@@ -1,12 +1,15 @@
 package com.smartwash.ui.page.coupon
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.coupon.CouponVo
 import com.smartwash.paging.UserCouponPagingSource
 import com.smartwash.paging.pagingFlow
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +44,8 @@ class CouponViewModel @Inject constructor(
                 val responseData = couponApi.getAllCoupon()
                 _couponList.value = responseData.data ?: emptyList()
             } catch (e: NetworkException) {
-                _getCouponListState.value = RequestState.Error(e.message ?: "获取优惠券列表失败")
+                Log.e(AppConstant.APP_NAME, "CouponViewModel.getCouponList: ${e.message}", e)
+                _getCouponListState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -54,7 +58,8 @@ class CouponViewModel @Inject constructor(
                     _receiveCouponState.value = RequestState.Success
                 }
             } catch (e: NetworkException) {
-                _receiveCouponState.value = RequestState.Error(e.message ?: "领取优惠券失败")
+                Log.e(AppConstant.APP_NAME, "CouponViewModel.receiveCoupon: ${e.message}", e)
+                _receiveCouponState.value = RequestState.Error(e.resId)
             }
         }
     }

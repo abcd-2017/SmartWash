@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.smartwash.App
+import com.smartwash.R
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.coupon.CouponPage
 import com.smartwash.ui.page.detail.OrderDetailPage
@@ -58,7 +60,7 @@ class MainActivity : ComponentActivity() {
                 coroutineScope.launch(Dispatchers.Main) {
                     Toast.makeText(
                         context,
-                        "请登录",
+                        context.getString(R.string.please_login),
                         Toast.LENGTH_SHORT
                     ).show()
                     navController.popBackStack()
@@ -72,7 +74,7 @@ class MainActivity : ComponentActivity() {
                     delay(200)
                     Toast.makeText(
                         context,
-                        "请重新登录",
+                        context.getString(R.string.please_re_login),
                         Toast.LENGTH_SHORT
                     ).show()
                     navController.popBackStack()
@@ -86,13 +88,31 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = PageConstant.Login.text,
                         enterTransition = {
-                            slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left) + fadeIn(
-                                animationSpec = tween(300)
+                            slideIntoContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Left,
+                                animationSpec = tween(
+                                    durationMillis = 350,
+                                    easing = FastOutSlowInEasing
+                                )
+                            ) + fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 350,
+                                    easing = FastOutSlowInEasing
+                                )
                             )
                         },
                         exitTransition = {
-                            slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right) + fadeOut(
-                                animationSpec = tween(300)
+                            slideOutOfContainer(
+                                AnimatedContentTransitionScope.SlideDirection.Right,
+                                animationSpec = tween(
+                                    durationMillis = 350,
+                                    easing = FastOutSlowInEasing
+                                )
+                            ) + fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = 350,
+                                    easing = FastOutSlowInEasing
+                                )
                             )
                         }
                     ) {

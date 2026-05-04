@@ -5,8 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,22 +19,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Badge
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.School
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,18 +45,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.R
 import com.smartwash.network.vo.school.SchoolName
+import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
 import com.smartwash.utils.RequestState
 
 @Composable
@@ -73,7 +76,6 @@ fun UpdateUserInfoPage(
     val context = LocalContext.current
 
     val schoolList by userInfoViewModel.schools.collectAsState()
-
     val interactionSource = remember { MutableInteractionSource() }
     val keyboardController = LocalSoftwareKeyboardController.current
     var isSearchFocused by remember { mutableStateOf(false) }
@@ -82,109 +84,94 @@ fun UpdateUserInfoPage(
     when (updateState) {
         is RequestState.Success -> {
             LaunchedEffect(Unit) {
-                Toast.makeText(context, "修改成功", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.modify_success), Toast.LENGTH_SHORT).show()
                 userInfoViewModel.setStateIdle()
                 navController.popBackStack()
                 navController.navigate(PageConstant.Home.text)
             }
         }
-
         is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (updateState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((updateState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             userInfoViewModel.setStateIdle()
         }
-
         else -> {}
     }
 
-    //判断输入框是否获取焦点
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collect {
-            if (it is FocusInteraction.Focus) {
-                isSearchFocused = true
-            } else if (it is FocusInteraction.Unfocus) {
-                isSearchFocused = false
-            }
+            if (it is FocusInteraction.Focus) isSearchFocused = true
+            else if (it is FocusInteraction.Unfocus) isSearchFocused = false
         }
     }
-    LaunchedEffect(Unit) {
-        userInfoViewModel.searchSchool()
-    }
+    LaunchedEffect(Unit) { userInfoViewModel.searchSchool() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) { focusManager.clearFocus() }
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            ),
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { focusManager.clearFocus() }
+            .background(AppColors.colorScheme.background)
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = AppDimens.pagePadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
-                Box(
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.School,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "完善信息",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                Text(
-                    text = "请填写您的学校信息",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-
-                Spacer(modifier = Modifier.height(34.dp))
-            }
-
-            item {
-                Card(
+                // 品牌区域 — 带装饰背景
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.primaryLight,
+                    shadowElevation = 0.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(vertical = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(AppColors.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.School,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = AppColors.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.complete_info),
+                            style = MaterialTheme.typography.displayLarge,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = stringResource(R.string.fill_school_info),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
+            item {
+                AppCard {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         SearchSchoolInput(
                             query = query,
@@ -209,30 +196,24 @@ fun UpdateUserInfoPage(
                             userInfoViewModel.updateSearchName(query)
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 学号输入框
                         OutlinedTextField(
                             value = studentId,
-                            onValueChange = {
-                                studentId = it
-                                isStudentIdError = false
-                            },
-                            label = { Text("学号") },
+                            onValueChange = { studentId = it; isStudentIdError = false },
+                            label = { Text(stringResource(R.string.student_id)) },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = isStudentIdError,
                             supportingText = if (isStudentIdError) {
-                                { Text("请输入正确的学号") }
+                                { Text(stringResource(R.string.invalid_student_id)) }
                             } else null,
                             leadingIcon = {
-                                Icon(
-                                    Icons.Rounded.Badge,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                                Icon(Icons.Rounded.Badge, contentDescription = null, tint = AppColors.colorScheme.primary)
                             },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AppColors.colorScheme.primary,
+                                unfocusedBorderColor = AppColors.colorScheme.outline
+                            )
                         )
                     }
                 }
@@ -240,24 +221,24 @@ fun UpdateUserInfoPage(
 
             item {
                 Spacer(modifier = Modifier.height(24.dp))
-
-                UpdateUserInfoButton(updateState) {
-                    isSchoolError = selectedSchoolId == -1L
-                    isStudentIdError = studentId.isEmpty()
-
-                    if (!isSchoolError && !isStudentIdError) {
-                        keyboardController?.hide()
-                        userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
-                    }
-                }
-
+                AppButton(
+                    text = stringResource(R.string.confirm),
+                    onClick = {
+                        isSchoolError = selectedSchoolId == -1L
+                        isStudentIdError = studentId.isEmpty()
+                        if (!isSchoolError && !isStudentIdError) {
+                            keyboardController?.hide()
+                            userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
+                        }
+                    },
+                    loading = updateState is RequestState.Loading
+                )
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
 }
 
-//学校名搜索框
 @Composable
 fun SearchSchoolInput(
     query: String,
@@ -269,41 +250,36 @@ fun SearchSchoolInput(
     clearOnClick: () -> Unit,
     onValueChange: (String) -> Unit
 ) {
-    // 学校搜索框
-    OutlinedTextField(
-        value = query,
-        onValueChange = onValueChange,
-        label = { Text("搜索学校") },
-        modifier = Modifier
-            .fillMaxWidth(),
-        isError = isSchoolError,
-        supportingText = if (isSchoolError) {
-            { Text("请选择学校") }
-        } else null,
-        leadingIcon = {
-            Icon(
-                Icons.Rounded.School,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+    Column {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onValueChange,
+            label = { Text(stringResource(R.string.search_school)) },
+            modifier = Modifier.fillMaxWidth(),
+            isError = isSchoolError,
+            supportingText = if (isSchoolError) {
+                { Text(stringResource(R.string.please_select_school)) }
+            } else null,
+            leadingIcon = {
+                Icon(Icons.Rounded.School, contentDescription = null, tint = AppColors.colorScheme.primary)
+            },
+            trailingIcon = {
+                IconButton(onClick = clearOnClick) {
+                    Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.clear), tint = AppColors.colorScheme.textSecondary)
+                }
+            },
+            shape = RoundedCornerShape(14.dp),
+            interactionSource = interactionSource,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = AppColors.colorScheme.primary,
+                unfocusedBorderColor = AppColors.colorScheme.outline
             )
-        },
-        trailingIcon = {
-            IconButton(onClick = clearOnClick) {
-                Icon(
-                    Icons.Rounded.Clear,
-                    contentDescription = "清除",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        shape = RoundedCornerShape(12.dp),
-        interactionSource = interactionSource
-    )
+        )
 
-    // 学校列表
-    if (isSearchFocused && schoolList.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(8.dp))
-        SchoolItem(schoolList, itemClick)
+        if (isSearchFocused && schoolList.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            SchoolItem(schoolList, itemClick)
+        }
     }
 }
 
@@ -312,56 +288,20 @@ fun SchoolItem(
     schoolList: List<SchoolName>,
     onClick: (SchoolName) -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 200.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        LazyColumn {
             items(schoolList) { school ->
                 ListItem(
                     headlineContent = { Text(text = school.schoolName) },
-                    modifier = Modifier.clickable {
-                        onClick(school)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun UpdateUserInfoButton(
-    updateState: RequestState,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        when (updateState) {
-            is RequestState.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-
-            else -> {
-                Text(
-                    "确认",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    modifier = Modifier.clickable { onClick(school) }
                 )
             }
         }

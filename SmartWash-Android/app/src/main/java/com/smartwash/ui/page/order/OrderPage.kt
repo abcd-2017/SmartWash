@@ -2,7 +2,7 @@ package com.smartwash.ui.page.order
 
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,27 +21,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Inbox
-import androidx.compose.material.icons.rounded.LocalLaundryService
-import androidx.compose.material.icons.rounded.LocalShipping
-import androidx.compose.material.icons.rounded.Loop
-import androidx.compose.material.icons.rounded.Payment
-import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,7 +43,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,15 +55,26 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.smartwash.R
 import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.ui.common.AppCard
+import com.smartwash.ui.common.AppTabBar
+import com.smartwash.ui.common.EmptyState
+import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.Background
+import com.smartwash.ui.theme.Divider
+import com.smartwash.ui.theme.Primary
+import com.smartwash.ui.theme.PrimaryLight
+import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderPage(
     navController: NavHostController,
@@ -82,7 +84,6 @@ fun OrderPage(
     val pagerState = rememberPagerState(initialPage = itemId) { ShowOrderStatus.entries.size }
     val scope = rememberCoroutineScope()
 
-    val orderStatus by orderViewModel.orderState.collectAsState()
     val orderList = orderViewModel.pagingFlow.collectAsLazyPagingItems()
     val cancelOrderState by orderViewModel.cancelOrderState.collectAsState()
     val context = LocalContext.current
@@ -96,70 +97,47 @@ fun OrderPage(
     when (cancelOrderState) {
         is RequestState.Success -> {
             LaunchedEffect(cancelOrderState) {
-                Toast.makeText(context, "取消成功", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.cancel_success), Toast.LENGTH_SHORT).show()
                 orderList.refresh()
                 orderViewModel.resetCancelOrderState()
             }
         }
-
         is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (cancelOrderState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((cancelOrderState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             orderViewModel.resetCancelOrderState()
         }
-
         else -> {}
     }
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(title = { Text("我的订单", fontSize = 18.sp) },
-            navigationIcon = {
-                IconButton(modifier = Modifier.padding(10.dp), onClick = {
-                    navController.navigateUp()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = null
-                    )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.colorScheme.background)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageHeader(title = stringResource(R.string.my_orders), onBack = { navController.navigateUp() })
+
+            AppTabBar(
+                tabs = ShowOrderStatus.entries.map { stringResource(it.descriptionRes) },
+                selectedIndex = pagerState.currentPage,
+                onTabSelected = { index ->
+                    scope.launch { pagerState.animateScrollToPage(index) }
                 }
-            })
-    }) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-        ) {
-            ScrollableTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                modifier = Modifier.fillMaxWidth(),
-                edgePadding = 16.dp,
-            ) {
-                ShowOrderStatus.entries.forEachIndexed { index, title ->
-                    Tab(selected = pagerState.currentPage == index, onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    }, text = { Text(title.description) })
-                }
-            }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             HorizontalPager(
                 state = pagerState,
-                pageSpacing = 12.dp,
-                modifier = Modifier
-                    .padding(horizontal = 8.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
                 if (orderList.itemCount > 0) {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                         modifier = Modifier
                             .fillMaxSize()
-                            .animateContentSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .animateContentSize()
+                            .padding(horizontal = AppDimens.pagePadding)
                     ) {
                         items(orderList.itemCount) { index ->
                             orderList[index]?.let {
@@ -186,18 +164,21 @@ fun OrderPage(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(16.dp)
-                                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                                .wrapContentWidth(Alignment.CenterHorizontally),
+                                            color = AppColors.colorScheme.primary,
+                                            strokeWidth = 2.dp
                                         )
                                     }
                                 }
-
                                 loadState.append is LoadState.Loading -> {
                                     item {
                                         CircularProgressIndicator(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(16.dp)
-                                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                                .wrapContentWidth(Alignment.CenterHorizontally),
+                                            color = AppColors.colorScheme.primary,
+                                            strokeWidth = 2.dp
                                         )
                                     }
                                 }
@@ -205,49 +186,28 @@ fun OrderPage(
                         }
                     }
                 } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Inbox,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "暂无订单",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
+                    EmptyState(
+                        icon = Icons.Default.LocalLaundryService,
+                        message = stringResource(R.string.no_orders)
+                    )
                 }
             }
         }
     }
-    //确认是否要支付
+
     if (confirmPayShow) {
         AlertDialog(
             onDismissRequest = { confirmPayShow = false },
-            text = { Text("确定要取消订单？", fontSize = 16.sp) },
+            text = { Text(stringResource(R.string.confirm_cancel_order)) },
             confirmButton = {
                 TextButton({
-                    if (currOrderId != -1L) {
-                        orderViewModel.cancelOrder(currOrderId)
-                    }
+                    if (currOrderId != -1L) orderViewModel.cancelOrder(currOrderId)
                     currOrderId = -1L
                     confirmPayShow = false
-                }) { Text("确定") }
+                }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
             },
-            dismissButton = { TextButton({ confirmPayShow = false }) { Text("取消") } })
+            dismissButton = { TextButton({ confirmPayShow = false }) { Text(stringResource(R.string.cancel), color = AppColors.colorScheme.textSecondary) } }
+        )
     }
 }
 
@@ -260,58 +220,53 @@ private fun OrderCard(
     cancelClick: (Long) -> Unit,
     itemClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer, onClick = itemClick
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+    AppCard(onClick = itemClick) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(AppColors.colorScheme.primaryLight),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.LocalLaundryService,
+                            imageVector = Icons.Default.LocalLaundryService,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(8.dp)
+                            tint = AppColors.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
                             text = order.laundryPackageVo.itemName,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Text(
                             text = order.laundryPackageVo.description ?: "",
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.width(180.dp)
                         )
                     }
                 }
                 Text(
-                    text = "¥${order.payPrice}",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
+                    text = stringResource(R.string.currency_format, order.payPrice.toString()),
+                    color = AppColors.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+            Box(modifier = Modifier.fillMaxWidth().height(0.5.dp).background(AppColors.colorScheme.divider))
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -321,158 +276,80 @@ private fun OrderCard(
             ) {
                 Column {
                     Text(
-                        text = "订单号：${order.orderNo}",
+                        text = stringResource(R.string.order_no_label, order.orderNo),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = AppColors.colorScheme.textSecondary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "下单时间：2024-02-05 14:30",
+                        text = stringResource(R.string.order_time_label, order.createdAt ?: ""),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = AppColors.colorScheme.textSecondary
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(12.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 when (order.status) {
                     ShowOrderStatus.PENDING_PAYMENT.status -> {
                         TextButton(onClick = { cancelClick(order.orderId) }) {
-                            Text("取消订单")
+                            Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary)
                         }
                         Spacer(Modifier.width(12.dp))
                         Button(
                             onClick = paymentClick,
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text("去支付")
-                        }
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_pay)) }
                     }
-
                     ShowOrderStatus.PENDING_SHIPMENT.status -> {
-                        Button(
+                        OutlinedButton(
                             onClick = shipmentClick,
-                            shape = RoundedCornerShape(20.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                        ) {
-                            Text("去寄件")
-                        }
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_ship), color = AppColors.colorScheme.primary) }
                     }
-
                     ShowOrderStatus.WASHING.status -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Schedule,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "清洗中",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp
-                            )
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(AppColors.colorScheme.primary))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.washing), color = AppColors.colorScheme.textSecondary, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-
                     ShowOrderStatus.READY_FOR_PICKUP.status -> {
                         Button(
                             onClick = pickupClick,
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text("去取件")
-                        }
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_pickup)) }
                     }
-
                     OrderStatus.COMPLETED.status -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "已完成",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp
-                            )
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(AppColors.colorScheme.primary))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.completed), color = AppColors.colorScheme.textSecondary, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-
                     else -> {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(AppColors.colorScheme.primary))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                "${OrderStatus.getDescriptionByStatus(order.status)}",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp
+                                stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
+                                color = AppColors.colorScheme.textSecondary,
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun StatusChip(status: String) {
-    val (backgroundColor, textColor, icon) = when (status) {
-        ShowOrderStatus.PENDING_PAYMENT.status -> Triple(
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer,
-            Icons.Rounded.Payment
-        )
-
-        ShowOrderStatus.PENDING_SHIPMENT.status -> Triple(
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer,
-            Icons.Rounded.LocalShipping
-        )
-
-        ShowOrderStatus.WASHING.status -> Triple(
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer,
-            Icons.Rounded.Loop
-        )
-
-        ShowOrderStatus.READY_FOR_PICKUP.status -> Triple(
-            MaterialTheme.colorScheme.secondaryContainer,
-            MaterialTheme.colorScheme.onSecondaryContainer,
-            Icons.Rounded.CheckCircle
-        )
-
-        else -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            null
-        )
-    }
-
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            icon?.let {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = textColor
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-            }
-            Text(
-                text = "${OrderStatus.getDescriptionByStatus(status)}", // 根据状态返回对应文案
-                color = textColor,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }

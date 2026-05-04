@@ -5,6 +5,7 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.vo.coupon.UserCouponVo
+import com.smartwash.utils.AppConstant
 
 class UserCouponPagingSource(private val couponApi: CouponApi, private val status: String) :
     PagingSource<Int, UserCouponVo>() {
@@ -24,7 +25,7 @@ class UserCouponPagingSource(private val couponApi: CouponApi, private val statu
                 nextKey = nextKey,
             )
         } catch (e: Exception) {
-            Log.d("测试错误数据", "-------${e.message}")
+            Log.e(AppConstant.APP_NAME, "UserCouponPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }

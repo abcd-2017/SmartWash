@@ -1,12 +1,15 @@
 package com.smartwash.ui.page.update_userinfo
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.user.UpdateUserInfo
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.school.SchoolName
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -53,10 +56,11 @@ class UpdateUserInfoViewModel @Inject constructor(
                     userApi.updateUserInfo(UpdateUserInfo(schoolId, studentId))
                     _updateState.value = RequestState.Success
                 } catch (e: NetworkException) {
-                    _updateState.value = RequestState.Error(e.message ?: "更新用户信息失败")
+                    Log.e(AppConstant.APP_NAME, "UpdateUserInfoViewModel.updateUserInfo: ${e.message}", e)
+                    _updateState.value = RequestState.Error(e.resId)
                 }
             } else {
-                _updateState.value = RequestState.Error("该学号已注册")
+                _updateState.value = RequestState.Error(R.string.error_student_id_registered)
             }
         }
     }
@@ -66,7 +70,8 @@ class UpdateUserInfoViewModel @Inject constructor(
             try {
                 val responseData = schoolApi.getAllSchool(searchName.value)
                 _schools.value = responseData.data.orEmpty()
-            } catch (_: NetworkException) {
+            } catch (e: NetworkException) {
+                Log.e(AppConstant.APP_NAME, "UpdateUserInfoViewModel.searchSchool: ${e.message}", e)
             }
         }
     }
@@ -75,7 +80,8 @@ class UpdateUserInfoViewModel @Inject constructor(
         return try {
             val responseData = userApi.getUserByStudentId(studentId)
             responseData.data == true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(AppConstant.APP_NAME, "UpdateUserInfoViewModel.checkStudentId: ${e.message}", e)
             false
         }
     }

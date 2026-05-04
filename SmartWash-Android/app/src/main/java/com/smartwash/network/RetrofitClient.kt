@@ -1,6 +1,7 @@
 package com.smartwash.network
 
 import android.content.Context
+import com.smartwash.BuildConfig
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
@@ -18,6 +19,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
@@ -32,14 +34,21 @@ class RetrofitClient {
     fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = Cache(cacheDir, 10 * 1024 * 1024)
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .cache(cache)
             .addInterceptor(RequestInterceptor())
             .addInterceptor(ResponseInterceptor())
-            .build()
+
+        if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor()
+            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+            builder.addInterceptor(loggingInterceptor)
+        }
+
+        return builder.build()
     }
 
     @Provides

@@ -1,36 +1,40 @@
 package com.smartwash.network.interceptor
 
+import android.util.Log
 import com.smartwash.App
+import com.smartwash.R
 import com.smartwash.network.annotation.RequireAuthorization
+import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.SharePreferenceUtils
 import okhttp3.Interceptor
 import okhttp3.Response
 
-/**
- * 请求拦截器
- */
-class RequestInterceptor() : Interceptor {
+class RequestInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
-        //1.如果请求方法上带了这个注解，那么就请求头加上token这个参数
         val tag = request.tag(retrofit2.Invocation::class.java)
-        //调用方法的信息
         val method = tag?.method()
-        //是否带有这个标签
         val annotated = method?.annotations?.any { it is RequireAuthorization }
-        var modifiedRequest = request.newBuilder()
-        if (annotated != null && annotated) {
+
+        if (annotated == true) {
             val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
 
             if (token.isBlank()) {
-                App.globalRequestBeforeCallback
+                Log.w(AppConstant.APP_NAME, "Request: ${request.method} ${request.url} — token 为空，拦截请求")
+                App.globalRequestBeforeCallback()
+                throw NetworkException("未登录，请先登录", R.string.error_login_expired)
             }
 
-            modifiedRequest = request.newBuilder()
+            Log.d(AppConstant.APP_NAME, "Request: ${request.method} ${request.url} — 携带 token")
+            val modifiedRequest = request.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
+                .build()
+            return chain.proceed(modifiedRequest)
         }
-        return chain.proceed(modifiedRequest.build())
+
+        Log.d(AppConstant.APP_NAME, "Request: ${request.method} ${request.url}")
+        return chain.proceed(request)
     }
 }

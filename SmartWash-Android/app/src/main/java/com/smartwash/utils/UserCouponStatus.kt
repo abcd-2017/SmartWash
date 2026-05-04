@@ -1,6 +1,9 @@
 package com.smartwash.utils
 
-enum class UserCouponStatus(val status: String, val description: String) {
-    OVERDUE("1", "已过期"),
-    ACTIVE("0", "生效中")
+import androidx.annotation.StringRes
+import com.smartwash.R
+
+enum class UserCouponStatus(val status: String, @StringRes val descriptionRes: Int) {
+    OVERDUE("1", R.string.user_coupon_status_overdue),
+    ACTIVE("0", R.string.user_coupon_status_active)
 }

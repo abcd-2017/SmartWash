@@ -1,7 +1,10 @@
 package com.smartwash.utils
 
-enum class CouponStatus(val status: String, val description: String) {
-    EXPIRED("1", "已失效"),
-    ACTIVE("0", "生效中"),
-    RECEIVE("2", "已领取")
+import androidx.annotation.StringRes
+import com.smartwash.R
+
+enum class CouponStatus(val status: String, @StringRes val descriptionRes: Int) {
+    EXPIRED("1", R.string.coupon_status_expired),
+    ACTIVE("0", R.string.coupon_status_active),
+    RECEIVE("2", R.string.coupon_status_receive)
 }

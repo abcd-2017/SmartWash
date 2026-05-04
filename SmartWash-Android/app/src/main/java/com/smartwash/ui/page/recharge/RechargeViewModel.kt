@@ -1,9 +1,12 @@
 package com.smartwash.ui.page.recharge
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.RechargeApi
 import com.smartwash.network.entity.recharge.UserRecharge
+import com.smartwash.utils.AppConstant
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +30,8 @@ class RechargeViewModel @Inject constructor(
                 rechargeApi.userRecharge(UserRecharge(amount, rechargeType))
                 _rechargeState.value = RequestState.Success
             } catch (e: Exception) {
-                _rechargeState.value = RequestState.Error("${e.message}")
+                Log.e(AppConstant.APP_NAME, "RechargeViewModel.userRecharge: ${e.message}", e)
+                _rechargeState.value = RequestState.Error(R.string.error_recharge_failed)
             }
         }
     }

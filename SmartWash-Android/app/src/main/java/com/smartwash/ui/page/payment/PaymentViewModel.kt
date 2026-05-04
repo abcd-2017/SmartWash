@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.payment
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.CouponApi
@@ -7,8 +8,10 @@ import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.PaymentApi
 import com.smartwash.network.entity.OrderPayment
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,7 +46,8 @@ class PaymentViewModel @Inject constructor(
                 _orderInfo.value = orderInfoRes.data
                 _initState.value = RequestState.Success
             } catch (e: NetworkException) {
-                _initState.value = RequestState.Error(e.message ?: "获取订单信息失败")
+                Log.e(AppConstant.APP_NAME, "PaymentViewModel.initData: ${e.message}", e)
+                _initState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -56,7 +60,8 @@ class PaymentViewModel @Inject constructor(
                 _userCouponList.value = canUseCoupon.data ?: emptyList()
                 _getUserCouponState.value = RequestState.Success
             } catch (e: NetworkException) {
-                _getUserCouponState.value = RequestState.Error(e.message ?: "获取优惠券失败")
+                Log.e(AppConstant.APP_NAME, "PaymentViewModel.getaUserCoupon: ${e.message}", e)
+                _getUserCouponState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -69,7 +74,8 @@ class PaymentViewModel @Inject constructor(
                 _orderInfo.value = responseData.data
                 _calculationOrderState.value = RequestState.Success
             } catch (e: NetworkException) {
-                _calculationOrderState.value = RequestState.Error(e.message ?: "计算价格失败")
+                Log.e(AppConstant.APP_NAME, "PaymentViewModel.calculationOrder: ${e.message}", e)
+                _calculationOrderState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -81,7 +87,8 @@ class PaymentViewModel @Inject constructor(
                 paymentApi.payment(OrderPayment(orderId, paymentState, userCouponId))
                 _paymentState.value = RequestState.Success
             } catch (e: NetworkException) {
-                _paymentState.value = RequestState.Error(e.message ?: "支付失败")
+                Log.e(AppConstant.APP_NAME, "PaymentViewModel.paymentOrder: ${e.message}", e)
+                _paymentState.value = RequestState.Error(e.resId)
             }
         }
     }

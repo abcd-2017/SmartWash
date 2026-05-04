@@ -1,7 +1,10 @@
 package com.smartwash.utils
 
-enum class PaymentType(val type: String, val description: String) {
-    PURSE("1", "钱包支付"),
-    ALI_PAY("2", "支付宝"),
-    WECHAT_PAY("3", "微信")
+import androidx.annotation.StringRes
+import com.smartwash.R
+
+enum class PaymentType(val type: String, @StringRes val descriptionRes: Int) {
+    PURSE("1", R.string.payment_type_purse),
+    ALI_PAY("2", R.string.payment_type_ali_pay),
+    WECHAT_PAY("3", R.string.payment_type_wechat)
 }

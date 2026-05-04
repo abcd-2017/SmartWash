@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,13 +34,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,16 +51,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.smartwash.R
 import com.smartwash.network.vo.user.UserInfoVo
+import com.smartwash.ui.common.AppCard
+import com.smartwash.ui.common.SettingRow
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.Background
+import com.smartwash.ui.theme.Divider
+import com.smartwash.ui.theme.IconBox
+import com.smartwash.ui.theme.Primary
+import com.smartwash.ui.theme.PrimaryLight
+import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.RequestState
 
 @SuppressLint("DefaultLocale")
@@ -90,16 +99,13 @@ fun UserInfoPage(
     when (userInfoStatus) {
         is RequestState.Error -> {
             Toast.makeText(
-                LocalContext.current,
-                (userInfoStatus as RequestState.Error).message,
+                context,
+                context.getString((userInfoStatus as RequestState.Error).messageResId),
                 Toast.LENGTH_SHORT
             ).show()
             userInfoViewModel.resetState()
         }
-
-        else -> {
-            userInfoViewModel.resetState()
-        }
+        else -> { userInfoViewModel.resetState() }
     }
     when (bindCampusState) {
         is RequestState.Success -> {
@@ -107,162 +113,244 @@ fun UserInfoPage(
             cardNumber = ""
             cardNumberError = false
             LaunchedEffect(bindCampusState) {
-                Toast.makeText(
-                    context,
-                    "绑定成功",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, context.getString(R.string.bind_success), Toast.LENGTH_SHORT).show()
             }
             userInfoViewModel.resetBindCampusState()
         }
-
         is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (bindCampusState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((bindCampusState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             userInfoViewModel.resetBindCampusState()
         }
-
         else -> {}
     }
     when (unBindCampusState) {
         is RequestState.Success -> {
             showUnbindDialog = false
             LaunchedEffect(unBindCampusState) {
-                Toast.makeText(
-                    context,
-                    "解绑成功",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, context.getString(R.string.unbind_success), Toast.LENGTH_SHORT).show()
             }
             userInfoViewModel.resetUnBindCampusState()
         }
-
         is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (unBindCampusState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((unBindCampusState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             userInfoViewModel.resetUnBindCampusState()
         }
-
         else -> {}
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .verticalScroll(rememberScrollState())
+            .background(AppColors.colorScheme.background)
     ) {
-        // 顶部栏
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
+            // 顶部标题 + 设置入口
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.my_profile),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                IconButton(onClick = { navController.navigate(PageConstant.Setting.text) }) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.settings),
+                        tint = AppColors.colorScheme.textSecondary
+                    )
+                }
+            }
+
+            // 用户信息卡
+            AppCard(
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            ) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(AppColors.colorScheme.primaryLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = stringResource(R.string.avatar),
+                            modifier = Modifier.size(28.dp),
+                            tint = AppColors.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = userInfo?.phoneNumber ?: stringResource(R.string.username),
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.student_id_format, userInfo?.studentId ?: ""),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                }
+            }
+
+            // 账户信息区
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
-                text = "个人中心",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                text = stringResource(R.string.account),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            IconButton(onClick = {
-                navController.navigate(PageConstant.Setting.text)
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "设置",
-                    tint = MaterialTheme.colorScheme.onSurface
+            Spacer(modifier = Modifier.height(12.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.AccountBalance,
+                    title = stringResource(R.string.account_balance),
+                    subtitle = stringResource(R.string.currency_format, String.format("%s", userInfo?.balance ?: 0)),
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.recharge), style = MaterialTheme.typography.bodySmall, color = AppColors.colorScheme.primary)
+                            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                        }
+                    },
+                    onClick = { navController.navigate(PageConstant.Recharge.text) }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.Default.CreditCard,
+                    title = stringResource(R.string.campus_card),
+                    subtitle = if (userInfo?.campusCard != null) userInfo?.campusCard ?: "" else stringResource(R.string.not_bound),
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (userInfo?.campusCard != null) stringResource(R.string.unbind) else stringResource(R.string.bind),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Primary
+                            )
+                            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                        }
+                    },
+                    onClick = {
+                        if (userInfo?.campusCard != null) showUnbindDialog = true
+                        else showBindDialog = true
+                    }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.Default.LocalOffer,
+                    title = stringResource(R.string.coupon),
+                    subtitle = stringResource(R.string.claimable_coupons),
+                    trailing = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.claim), style = MaterialTheme.typography.bodySmall, color = AppColors.colorScheme.primary)
+                            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                        }
+                    },
+                    onClick = { navController.navigate(PageConstant.Coupon.text) }
                 )
             }
-        }
-        // 用户信息区域
-        UserInfoSection(userInfo)
 
-        // 账户信息区域
-        SectionTitle("账户信息")
-        Spacer(modifier = Modifier.height(8.dp))
-        // 账户余额卡片
-        AccountInfoCard(
-            title = "账户余额",
-            actionText = "¥${String.format("%s", userInfo?.balance ?: 0)}",
-            buttonText = "充值",
-            imageVector = Icons.Default.AccountBalance
-        ) {
-            navController.navigate(PageConstant.Recharge.text)
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        // 校园卡卡片
-        AccountInfoCard(
-            title = "校园卡",
-            actionText = if (userInfo?.campusCard != null) userInfo?.campusCard ?: "" else "未绑定",
-            buttonText = if (userInfo?.campusCard != null) "解绑" else "绑定",
-            imageVector = Icons.Default.CreditCard
-        ) {
-            if (userInfo?.campusCard != null) {
-                showUnbindDialog = true
-            } else {
-                showBindDialog = true
+            // 订单管理区
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Text(
+                text = stringResource(R.string.orders),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.pagePadding),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OrderQuickCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Schedule,
+                    title = stringResource(R.string.order_status_pending_payment),
+                    count = orderItemCountVo?.pendingPaymentCount ?: 0,
+                    onClick = { navController.navigate("${PageConstant.Order.text}/1") }
+                )
+                OrderQuickCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.LocalLaundryService,
+                    title = stringResource(R.string.order_status_washing),
+                    count = orderItemCountVo?.processingCount ?: 0,
+                    onClick = { navController.navigate("${PageConstant.Order.text}/3") }
+                )
+                OrderQuickCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.Inventory,
+                    title = stringResource(R.string.order_status_ready_for_pickup),
+                    count = orderItemCountVo?.pendingPickupCount ?: 0,
+                    onClick = { navController.navigate("${PageConstant.Order.text}/4") }
+                )
+                OrderQuickCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.History,
+                    title = stringResource(R.string.all),
+                    count = null,
+                    onClick = { navController.navigate("${PageConstant.Order.text}/0") }
+                )
             }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 优惠券卡片
-        AccountInfoCard(
-            title = "优惠券",
-            actionText = "可领取优惠券",
-            buttonText = "领取",
-            imageVector = Icons.Default.LocalOffer
-        ) {
-            navController.navigate(PageConstant.Coupon.text)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 订单管理区域
-        SectionTitle("订单管理")
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OrderManagementSection(
-            pendingPaymentCount = orderItemCountVo?.pendingPaymentCount ?: 0,
-            processingCount = orderItemCountVo?.processingCount ?: 0,
-            pendingPickupCount = orderItemCountVo?.pendingPickupCount ?: 0,
-            onViewAllOrders = { item ->
-                navController.navigate("${PageConstant.Order.text}/$item")
+            // 其他功能
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Text(
+                text = stringResource(R.string.other),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.Headset,
+                    title = stringResource(R.string.contact_service),
+                    subtitle = stringResource(R.string.online_consulting),
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                    }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                SettingRow(
+                    icon = Icons.AutoMirrored.Filled.Help,
+                    title = stringResource(R.string.faq),
+                    subtitle = stringResource(R.string.user_guide),
+                    trailing = {
+                        Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                    }
+                )
             }
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        // 其他功能区域
-        SectionTitle("其他功能")
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OtherFunctionsSection(
-            onCustomerServiceClick = {},
-            onFAQClick = {}
-        )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 
     // 绑定校园卡弹窗
     if (showBindDialog) {
         AlertDialog(
             onDismissRequest = { showBindDialog = false },
-            title = { Text("绑定校园卡", fontSize = 18.sp) },
+            title = { Text(stringResource(R.string.bind_campus_card), style = MaterialTheme.typography.headlineSmall) },
             text = {
                 OutlinedTextField(
                     value = cardNumber,
-                    onValueChange = {
-                        cardNumberError = false
-                        cardNumber = it
-                    },
-                    label = { Text("请输入校园卡号") },
-                    supportingText = { if (cardNumberError) Text("校园卡号不能为空") },
+                    onValueChange = { cardNumberError = false; cardNumber = it },
+                    label = { Text(stringResource(R.string.input_campus_card)) },
+                    supportingText = { if (cardNumberError) Text(stringResource(R.string.campus_card_empty)) },
                     singleLine = true,
                     isError = cardNumberError,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -270,20 +358,13 @@ fun UserInfoPage(
                 )
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (cardNumber.isEmpty()) {
-                            cardNumberError = true
-                        } else {
-                            userInfoViewModel.bindCampus(cardNumber)
-                        }
-                    }
-                ) { Text("确认绑定") }
+                TextButton(onClick = {
+                    if (cardNumber.isEmpty()) cardNumberError = true
+                    else userInfoViewModel.bindCampus(cardNumber)
+                }) { Text(stringResource(R.string.confirm_bind)) }
             },
             dismissButton = {
-                TextButton(onClick = { showBindDialog = false }) {
-                    Text("取消")
-                }
+                TextButton(onClick = { showBindDialog = false }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -292,301 +373,68 @@ fun UserInfoPage(
     if (showUnbindDialog) {
         AlertDialog(
             onDismissRequest = { showUnbindDialog = false },
-            title = { Text("解绑校园卡", fontSize = 18.sp) },
-            text = { Text("确定要解绑当前绑定的校园卡吗？") },
+            title = { Text(stringResource(R.string.unbind_campus_card), style = MaterialTheme.typography.headlineSmall) },
+            text = { Text(stringResource(R.string.confirm_unbind_question)) },
             confirmButton = {
-                TextButton(onClick = { userInfoViewModel.unBindCampus() }) { Text("确认解绑") }
+                TextButton(onClick = { userInfoViewModel.unBindCampus() }) { Text(stringResource(R.string.confirm_unbind)) }
             },
-            dismissButton = { TextButton(onClick = { showUnbindDialog = false }) { Text("取消") } }
+            dismissButton = {
+                TextButton(onClick = { showUnbindDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
         )
     }
 }
 
 @Composable
-private fun UserInfoSection(
-    userInfo: UserInfoVo?,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 用户头像
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "头像",
-                modifier = Modifier.size(32.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        // 用户信息
-        Column {
-            Text(
-                text = userInfo?.phoneNumber ?: "用户名",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "学号：${userInfo?.studentId ?: ""}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@SuppressLint("DefaultLocale")
-@Composable
-private fun AccountInfoCard(
-    title: String,
-    actionText: String,
-    buttonText: String,
-    imageVector: ImageVector,
-    onCardClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-    ) {
-        // 账户余额卡片
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onCardClick),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(2.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = imageVector,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column() {
-                        Text(
-                            text = title,
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = actionText,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-                TextButton(onClick = onCardClick) {
-                    Text(
-                        text = buttonText,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderManagementSection(
-    pendingPaymentCount: Int,
-    processingCount: Int,
-    pendingPickupCount: Int,
-    onViewAllOrders: (Int) -> Unit,
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                OrderStatusCard(
-                    icon = Icons.Default.Schedule,
-                    title = "待支付",
-                    count = pendingPaymentCount,
-                ) { onViewAllOrders(1) }
-            }
-
-            item {
-                OrderStatusCard(
-                    icon = Icons.Default.LocalLaundryService,
-                    title = "清洗中",
-                    count = processingCount,
-                ) { onViewAllOrders(3) }
-            }
-            item {
-                OrderStatusCard(
-                    icon = Icons.Default.Inventory,
-                    title = "待取件",
-                    count = pendingPickupCount,
-                ) { onViewAllOrders(4) }
-            }
-            item {
-                OrderStatusCard(
-                    icon = Icons.Default.History,
-                    title = "历史订单",
-                    subtitle = "查看全部",
-                    onClick = { onViewAllOrders(0) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderStatusCard(
+private fun OrderQuickCard(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     title: String,
-    count: Int? = null,
-    subtitle: String? = null,
+    count: Int?,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .width(80.dp)
+    Surface(
+        modifier = modifier
             .height(100.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+            Box(
                 modifier = Modifier
-                    .size(32.dp)
-                    .background(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    )
-                    .padding(6.dp)
-            )
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColors.colorScheme.primaryLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = AppColors.colorScheme.primary
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            if (count != null) {
+            if (count != null && count > 0) {
                 Text(
-                    text = "${count}个订单",
-                    style = MaterialTheme.typography.labelMedium
-                )
-            }
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    text = stringResource(R.string.order_count_format, count),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.primary
                 )
             }
         }
     }
-}
-
-@Composable
-private fun OtherFunctionsSection(
-    onCustomerServiceClick: () -> Unit,
-    onFAQClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
-    ) {
-        FunctionItem(
-            icon = Icons.Default.Headset,
-            title = "联系客服",
-            subtitle = "在线咨询",
-            onClick = onCustomerServiceClick
-        )
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-        FunctionItem(
-            icon = Icons.AutoMirrored.Filled.Help,
-            title = "常见问题",
-            subtitle = "使用指南",
-            onClick = onFAQClick
-        )
-    }
-}
-
-@Composable
-private fun FunctionItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape
-                )
-                .padding(8.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = subtitle,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-    )
 }

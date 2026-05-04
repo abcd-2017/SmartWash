@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.register
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.api.UserApi
@@ -7,6 +8,7 @@ import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.HttpStatusCode
+import com.smartwash.R
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,10 +38,11 @@ class RegisterViewModel @Inject constructor(
                     _captchaValue.value = responseData.data
                     _captchaState.value = RequestState.Success
                 } else {
-                    _captchaState.value = RequestState.Error("验证码获取失败")
+                    _captchaState.value = RequestState.Error(R.string.error_get_captcha_failed)
                 }
             } catch (e: NetworkException) {
-                _captchaState.value = RequestState.Error(e.message ?: "获取验证码失败")
+                Log.e(AppConstant.APP_NAME, "RegisterViewModel.getCaptcha: ${e.message}", e)
+                _captchaState.value = RequestState.Error(e.resId)
             }
         }
     }
@@ -54,7 +57,8 @@ class RegisterViewModel @Inject constructor(
                 _registerState.value = RequestState.Success
                 responseData.data?.let { SharePreferenceUtils.saveData(AppConstant.TOKEN, it) }
             } catch (e: NetworkException) {
-                _registerState.value = RequestState.Error(e.message ?: "注册失败")
+                Log.e(AppConstant.APP_NAME, "RegisterViewModel.userRegister: ${e.message}", e)
+                _registerState.value = RequestState.Error(e.resId)
             }
         }
     }

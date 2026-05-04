@@ -1,3 +1,344 @@
 <resources>
     <string name="app_name">SmartWash</string>
+
+    <!-- ==================== 通用 ==================== -->
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+    <string name="back">返回</string>
+    <string name="currency_format">¥%s</string>
+    <string name="no_data">暂无数据</string>
+
+    <!-- ==================== 认证 ==================== -->
+    <string name="brand_name">智能洗衣</string>
+    <string name="brand_subtitle">智慧校园 · 轻松洗衣</string>
+    <string name="login">登录</string>
+    <string name="login_button">登 录</string>
+    <string name="login_success">登录成功</string>
+    <string name="register">注 册</string>
+    <string name="register_success">注册成功</string>
+    <string name="create_account">创建账号</string>
+    <string name="start_laundry_journey">开启智能洗衣之旅</string>
+    <string name="has_account">已有账号？</string>
+    <string name="login_now">立即登录</string>
+    <string name="phone_number">手机号</string>
+    <string name="password">密码</string>
+    <string name="verification_code">验证码</string>
+    <string name="invalid_phone">请输入正确的手机号</string>
+    <string name="invalid_password">密码必须为6-16位</string>
+    <string name="invalid_verification_code">请输入正确的验证码</string>
+    <string name="please_login">请登录</string>
+    <string name="please_re_login">请重新登录</string>
+    <string name="no_account">没有账号？</string>
+    <string name="register_now">立即注册</string>
+    <string name="get_verification_code">获取验证码</string>
+    <string name="countdown_format">%ds</string>
+
+    <!-- ==================== 首页 ==================== -->
+    <string name="smart_laundry">智慧洗衣</string>
+    <string name="quick_service">快速服务</string>
+    <string name="book_now">立即预约</string>
+    <string name="price_from">15元/件起</string>
+    <string name="retrieve_clothes">取回衣物</string>
+    <string name="scan_to_pickup">扫码取件</string>
+    <string name="in_progress">进行中</string>
+    <string name="view_all">查看全部</string>
+    <string name="no_ongoing_orders">暂无进行中的订单</string>
+    <string name="service_status">服务状态</string>
+    <string name="business_hours">营业时间</string>
+    <string name="delivery_status">配送状态</string>
+    <string name="normal_operation">正常运营</string>
+    <string name="factory_washing">工厂清洗中</string>
+    <string name="order_no_format">订单号: %s</string>
+    <string name="change_school_contact_service">更换学校信息请联系客服！</string>
+
+    <!-- ==================== 订单 ==================== -->
+    <string name="my_orders">我的订单</string>
+    <string name="no_orders">暂无订单</string>
+    <string name="confirm_cancel_order">确定要取消订单？</string>
+    <string name="cancel_order">取消订单</string>
+    <string name="go_pay">去支付</string>
+    <string name="go_ship">去寄件</string>
+    <string name="washing">清洗中</string>
+    <string name="go_pickup">去取件</string>
+    <string name="completed">已完成</string>
+    <string name="order_no_label">订单号：%s</string>
+    <string name="order_time_label">下单时间：%s</string>
+    <string name="cancel_success">取消成功</string>
+
+    <!-- ==================== 订单详情 ==================== -->
+    <string name="order_detail">订单详情</string>
+    <string name="school_info">学校信息</string>
+    <string name="school_name">学校名称</string>
+    <string name="address">地址</string>
+    <string name="locker_info">寄存柜信息</string>
+    <string name="locker_number">柜号</string>
+    <string name="pickup_code">取件码</string>
+    <string name="package_info">套餐信息</string>
+    <string name="package_type">套餐类型</string>
+    <string name="price">价格</string>
+    <string name="actual_payment">实付款</string>
+    <string name="order_info">订单信息</string>
+    <string name="order_number">订单编号</string>
+    <string name="order_time">下单时间</string>
+    <string name="current_status">当前状态</string>
+    <string name="completion_time">完成时间</string>
+    <string name="pending_payment">待支付</string>
+    <string name="please_pay_soon">请尽快支付</string>
+    <string name="estimated_completion">预计完成时间：%s</string>
+    <string name="pending_shipment">待寄件</string>
+    <string name="please_ship_soon">请尽快去寄件</string>
+    <string name="pending_pickup">待取件</string>
+    <string name="clothes_in_locker">衣物已到寄存柜</string>
+    <string name="completion_time_format">完成时间：%s</string>
+    <string name="cancelled">已取消</string>
+    <string name="cancel_time_format">取消时间：%s</string>
+    <string name="dash">-</string>
+    <string name="order_time_display">下单时间</string>
+    <string name="school_name_label">学校名称</string>
+
+    <!-- ==================== 洗衣服务 ==================== -->
+    <string name="laundry_service">洗衣服务</string>
+    <string name="service_description">服务说明</string>
+    <string name="service_description_content">• 所有服务均包含免费取送\n• 标准服务24小时内完成\n• 支持在线支付和积分抵扣</string>
+    <string name="retrieval_service">取回服务</string>
+    <string name="scan_pickup_desc">扫描取件，快速便捷</string>
+    <string name="free">免费</string>
+    <string name="service_items">服务项目</string>
+    <string name="more_services">更多服务</string>
+
+    <!-- ==================== 预约寄存 ==================== -->
+    <string name="book_locker">预约寄存</string>
+    <string name="delivery_locker">投递柜</string>
+    <string name="change">更换</string>
+    <string name="laundry_package">洗护套餐</string>
+    <string name="estimated_cost">预估费用</string>
+    <string name="confirm_booking">确认预约</string>
+    <string name="please_select_package">请选择套餐</string>
+
+    <!-- ==================== 支付 ==================== -->
+    <string name="payment">支付</string>
+    <string name="order_information">订单信息</string>
+    <string name="service_type">服务类型</string>
+    <string name="estimated_completion_time">预计完成</string>
+    <string name="within_24_hours">24小时内</string>
+    <string name="amount_due">应付金额</string>
+    <string name="payment_method">支付方式</string>
+    <string name="balance_payment">余额支付</string>
+    <string name="current_balance_format">当前余额：¥%s</string>
+    <string name="coupon">优惠券</string>
+    <string name="do_not_use">不使用</string>
+    <string name="confirm_pay_format">确认支付 ¥%s</string>
+    <string name="select_coupon">选择优惠券</string>
+    <string name="go_claim">去领取</string>
+    <string name="no_coupons">暂无优惠券</string>
+    <string name="confirm_pay_question">确定要支付？</string>
+    <string name="insufficient_balance">余额不足</string>
+    <string name="insufficient_balance_tip">当前余额不足，请先充值</string>
+    <string name="go_recharge">去充值</string>
+    <string name="pay_success">支付成功</string>
+    <string name="thanks_for_using">感谢使用智慧洗衣</string>
+    <string name="payment_amount">支付金额</string>
+    <string name="locker_info_title">寄存柜信息</string>
+    <string name="go_to_locker_format">请前往寄存柜 %s柜存放衣物</string>
+    <string name="locker_process_tip">寄存柜将在24小时内处理您的订单</string>
+    <string name="go_ship_now">立即寄件</string>
+
+    <!-- ==================== 充值 ==================== -->
+    <string name="recharge">充值</string>
+    <string name="recharge_amount">充值金额</string>
+    <string name="select_or_input_amount">请选择或输入充值金额</string>
+    <string name="select_payment_method">请选择充值方式</string>
+    <string name="confirm_recharge_question">是否确认充值？</string>
+    <string name="custom">自定义</string>
+    <string name="custom_amount">自定义金额</string>
+    <string name="recharge_success">充值成功</string>
+    <string name="tip">提示</string>
+
+    <!-- ==================== 优惠券 ==================== -->
+    <string name="coupons">优惠券</string>
+    <string name="coupon_amount_format">%s元优惠券</string>
+    <string name="coupon_discount_format">满%s减%s</string>
+    <string name="coupon_min_amount_format">满%s元可用</string>
+    <string name="valid_until">有效期至：%s</string>
+    <string name="used">已使用</string>
+    <string name="expired">已过期</string>
+    <string name="available">可使用</string>
+    <string name="claim_success">领取成功</string>
+    <string name="available_coupons">可领取</string>
+    <string name="claimed_coupons">已领取</string>
+    <string name="historical_coupons">已使用</string>
+    <string name="claimed">已领取</string>
+    <string name="claim_now">立即领取</string>
+    <string name="no_coupons_available">暂无优惠券</string>
+    <string name="no_claimed_coupons">暂无优惠券</string>
+    <string name="no_historical_coupons">暂无使用优惠券</string>
+    <string name="discount_amount_format">%s元</string>
+
+    <!-- ==================== 取件 ==================== -->
+    <string name="pickup">取件</string>
+    <string name="no_pickup_orders">暂无可取订单</string>
+    <string name="locker_label_format">寄存柜: %s</string>
+    <string name="pickup_delivery">取件/寄件</string>
+    <string name="notes">注意事项</string>
+    <string name="notes_content">• 请确保在30分钟内完成操作\n• 如遇问题请联系客服\n• 请勿将贵重物品放入寄存柜</string>
+    <string name="qr_code">二维码</string>
+    <string name="delivery_code">寄件码</string>
+    <string name="confirm_picked_up">确认已取件</string>
+    <string name="confirm_delivered">确认已寄件</string>
+    <string name="locker_info_section">寄存柜信息</string>
+    <string name="locker_number_label">寄存柜柜号</string>
+    <string name="operation_guide">操作指引</string>
+    <string name="find_locker_format">找到寄存柜 %s</string>
+    <string name="click_pickup_button">点击屏幕上的\"取件\"按钮</string>
+    <string name="click_delivery_button">点击屏幕上的\"寄件\"按钮</string>
+    <string name="input_pickup_code_format">输入取件码：%s</string>
+    <string name="input_delivery_code_format">输入寄件码：%s</string>
+    <string name="wait_and_take_clothes">等待柜门打开，取出衣物</string>
+    <string name="wait_and_put_clothes">等待柜门打开，放入衣物</string>
+    <string name="confirm_put_clothes">确认已将衣服放入寄存柜</string>
+    <string name="confirm_taken_clothes">确认已取出衣服</string>
+
+    <!-- ==================== 用户信息 ==================== -->
+    <string name="my_profile">我的</string>
+    <string name="settings">设置</string>
+    <string name="avatar">头像</string>
+    <string name="username">用户名</string>
+    <string name="student_id_format">学号：%s</string>
+    <string name="account">账户</string>
+    <string name="account_balance">账户余额</string>
+    <string name="campus_card">校园卡</string>
+    <string name="not_bound">未绑定</string>
+    <string name="unbind">解绑</string>
+    <string name="bind">绑定</string>
+    <string name="claimable_coupons">可领取优惠券</string>
+    <string name="claim">领取</string>
+    <string name="orders">订单</string>
+    <string name="all">全部</string>
+    <string name="other">其他</string>
+    <string name="contact_service">联系客服</string>
+    <string name="online_consulting">在线咨询</string>
+    <string name="faq">常见问题</string>
+    <string name="user_guide">使用指南</string>
+    <string name="bind_campus_card">绑定校园卡</string>
+    <string name="input_campus_card">请输入校园卡号</string>
+    <string name="campus_card_empty">校园卡号不能为空</string>
+    <string name="confirm_bind">确认绑定</string>
+    <string name="unbind_campus_card">解绑校园卡</string>
+    <string name="confirm_unbind_question">确定要解绑当前绑定的校园卡吗？</string>
+    <string name="confirm_unbind">确认解绑</string>
+    <string name="bind_success">绑定成功</string>
+    <string name="unbind_success">解绑成功</string>
+    <string name="order_count_format">%d单</string>
+    <string name="change_school_info">更换学校信息请联系客服</string>
+
+    <!-- ==================== 完善信息 ==================== -->
+    <string name="complete_info">完善信息</string>
+    <string name="fill_school_info">请填写您的学校信息</string>
+    <string name="student_id">学号</string>
+    <string name="invalid_student_id">请输入正确的学号</string>
+    <string name="search_school">搜索学校</string>
+    <string name="please_select_school">请选择学校</string>
+    <string name="clear">清除</string>
+    <string name="modify_success">修改成功</string>
+
+    <!-- ==================== 设置 ==================== -->
+    <string name="notification">通知</string>
+    <string name="push_notification">消息通知</string>
+    <string name="push_notification_desc">订单状态、活动提醒等</string>
+    <string name="email_notification">邮件通知</string>
+    <string name="email_notification_desc">账单、优惠信息等</string>
+    <string name="privacy_security">隐私与安全</string>
+    <string name="privacy_settings">隐私设置</string>
+    <string name="privacy_settings_desc">个人信息、数据收集等</string>
+    <string name="account_security">账号安全</string>
+    <string name="account_security_desc">密码、登录设备等</string>
+    <string name="about_us">关于我们</string>
+    <string name="about_us_desc">版本信息、用户协议等</string>
+    <string name="help_feedback">帮助与反馈</string>
+    <string name="help_feedback_desc">常见问题、意见反馈</string>
+    <string name="logout">退出登录</string>
+    <string name="confirm_logout">是否要退出登录？</string>
+
+    <!-- ==================== 通用 UI 组件 ==================== -->
+
+    <!-- ==================== 枚举显示文本 ==================== -->
+    <!-- 订单状态 -->
+    <string name="order_status_cancelled">已取消</string>
+    <string name="order_status_refunded">已退款</string>
+    <string name="order_status_pending_payment">待支付</string>
+    <string name="order_status_pending_shipment">待寄件</string>
+    <string name="order_status_received">已收取</string>
+    <string name="order_status_washing">清洗中</string>
+    <string name="order_status_dried">已烘干</string>
+    <string name="order_status_in_delivery">配送中</string>
+    <string name="order_status_ready_for_pickup">待取件</string>
+    <string name="order_status_completed">已完成</string>
+    <string name="order_status_all">全部订单</string>
+
+    <!-- 优惠券状态 -->
+    <string name="coupon_status_expired">已失效</string>
+    <string name="coupon_status_active">生效中</string>
+    <string name="coupon_status_receive">已领取</string>
+
+    <!-- 用户优惠券状态 -->
+    <string name="user_coupon_status_overdue">已过期</string>
+    <string name="user_coupon_status_active">生效中</string>
+
+    <!-- 支付方式 -->
+    <string name="payment_type_purse">钱包支付</string>
+    <string name="payment_type_ali_pay">支付宝</string>
+    <string name="payment_type_wechat">微信</string>
+    <string name="weixin_pay">微信支付</string>
+    <string name="alipay">支付宝</string>
+
+    <!-- 取件/寄件类型 -->
+    <string name="pickup_type">取件</string>
+    <string name="delivery_type">寄件</string>
+
+    <!-- HTTP 状态码 -->
+    <string name="http_success">请求成功</string>
+    <string name="http_fail">请求失败</string>
+    <string name="http_unauthorized">登录异常</string>
+    <string name="http_not_found">未找到资源</string>
+    <string name="http_server_error">服务器内部错误</string>
+
+    <!-- ==================== 网络错误 ==================== -->
+    <string name="error_network_fail">请求失败</string>
+    <string name="error_login_expired">登录失效，请重新登录</string>
+    <string name="error_timeout">请求超时，请检查网络</string>
+    <string name="error_connection">网络连接失败，请检查网络</string>
+    <string name="error_unknown">未知错误</string>
+
+    <!-- ==================== ViewModel 错误 ==================== -->
+    <string name="error_login_failed">登录失败</string>
+    <string name="error_register_failed">注册失败</string>
+    <string name="error_get_captcha_failed">验证码获取失败</string>
+    <string name="error_get_school_failed">获取学校信息失败</string>
+    <string name="error_cancel_order_failed">取消订单失败</string>
+    <string name="error_get_laundry_items_failed">获取洗衣项目失败</string>
+    <string name="error_booking_failed">预约失败</string>
+    <string name="error_get_order_info_failed">获取订单信息失败</string>
+    <string name="error_get_coupons_failed">获取优惠券失败</string>
+    <string name="error_calculate_price_failed">计算价格失败</string>
+    <string name="error_payment_failed">支付失败</string>
+    <string name="error_recharge_failed">充值失败</string>
+    <string name="error_get_user_info_failed">获取用户信息失败</string>
+    <string name="error_bind_campus_card_failed">绑定校园卡失败</string>
+    <string name="error_unbind_campus_card_failed">解绑校园卡失败</string>
+    <string name="error_get_order_list_failed">获取订单列表失败</string>
+    <string name="error_get_user_coupons_failed">获取用户优惠券失败</string>
+    <string name="error_get_order_detail_failed">获取订单详情失败</string>
+    <string name="error_operation_failed">操作失败</string>
+    <string name="error_get_data_failed">获取数据失败</string>
+    <string name="error_update_user_info_failed">更新用户信息失败</string>
+    <string name="error_student_id_registered">该学号已注册</string>
+    <string name="error_get_coupon_list_failed">获取优惠券列表失败</string>
+    <string name="error_claim_coupon_failed">领取优惠券失败</string>
+
+    <!-- ==================== 表单验证 ==================== -->
+    <string name="error_invalid_captcha">验证码错误</string>
+    <string name="error_invalid_phone">手机号格式不正确</string>
+    <string name="error_invalid_password">密码长度应为6-16位</string>
+    <string name="error_invalid_student_id">学号格式不正确</string>
+    <string name="error_campus_card_empty">校园卡号不能为空</string>
 </resources>

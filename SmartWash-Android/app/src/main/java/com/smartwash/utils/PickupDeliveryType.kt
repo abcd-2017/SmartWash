@@ -1,6 +1,9 @@
 package com.smartwash.utils
 
-enum class PickupDeliveryType(val type: Int, val description: String) {
-    PICKUP(0, "取件"), // 取件
-    DELIVERY(1, "寄件") // 寄件
+import androidx.annotation.StringRes
+import com.smartwash.R
+
+enum class PickupDeliveryType(val type: Int, @StringRes val descriptionRes: Int) {
+    PICKUP(0, R.string.pickup_type),
+    DELIVERY(1, R.string.delivery_type)
 }

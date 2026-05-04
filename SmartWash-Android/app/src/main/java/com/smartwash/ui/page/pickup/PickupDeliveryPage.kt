@@ -3,33 +3,30 @@ package com.smartwash.ui.page.pickup
 import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,19 +37,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.smartwash.R
+import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.InfoSection
+import com.smartwash.ui.common.PageHeader
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.Background
+import com.smartwash.ui.theme.Divider
+import com.smartwash.ui.theme.IconBox
+import com.smartwash.ui.theme.Primary
+import com.smartwash.ui.theme.PrimaryLight
+import com.smartwash.ui.theme.TextSecondary
+import com.smartwash.ui.theme.Warning
+import com.smartwash.ui.theme.WarningContainer
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.generateQrCodeBitmap
 
 @SuppressLint("RememberReturnType")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PickupDeliveryPage(
     type: Int,
@@ -64,199 +76,154 @@ fun PickupDeliveryPage(
     val setOrderNextState by pickupDeliveryViewModel.setOrderNextState.collectAsState()
     val orderInfo by pickupDeliveryViewModel.orderInfo.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     if (orderId != -1L) {
-        LaunchedEffect(Unit) {
-            pickupDeliveryViewModel.getOrderDetail(orderId)
-        }
+        LaunchedEffect(Unit) { pickupDeliveryViewModel.getOrderDetail(orderId) }
     }
 
     when (getOrderDetailState) {
         is RequestState.Error -> {
-            Toast.makeText(
-                LocalContext.current,
-                (getOrderDetailState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((getOrderDetailState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetState()
         }
-
-        else -> {
-            pickupDeliveryViewModel.resetState()
-        }
+        else -> { pickupDeliveryViewModel.resetState() }
     }
     val pickupCode = orderInfo?.pickupCode?.let { it.split(":")[2] } ?: "error"
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
 
     val qrBitmap = remember(pickupCode) { generateQrCodeBitmap(pickupCode) }
     val imageBitmap = qrBitmap.asImageBitmap()
-    val context = LocalContext.current
 
     when (setOrderNextState) {
         is RequestState.Success -> {
             showDialog = false
-            LaunchedEffect(Unit) {
-                navController.navigateUp()
-            }
+            LaunchedEffect(Unit) { navController.navigateUp() }
             pickupDeliveryViewModel.resetNextStatusState()
         }
-
         is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (setOrderNextState as RequestState.Error).message,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(context, context.getString((setOrderNextState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetNextStatusState()
         }
-
         else -> {}
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        if (type == PickupDeliveryType.PICKUP.type) "取件" else "寄件",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.colorScheme.background)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageHeader(
+                title = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup) else stringResource(R.string.delivery_type),
+                onBack = { navController.navigateUp() }
             )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            if (type == PickupDeliveryType.DELIVERY.type) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.errorContainer
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = AppDimens.pagePadding)
+            ) {
+                // 寄件注意事项
+                if (type == PickupDeliveryType.DELIVERY.type) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = AppColors.colorScheme.warningContainer,
+                        shadowElevation = 0.dp
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.Top
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Warning,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(24.dp)
+                                tint = AppColors.colorScheme.warning,
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "注意事项",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, color = AppColors.colorScheme.onWarningContainer)
+                                Text(
+                                    stringResource(R.string.notes_content),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.onWarningContainer
+                                )
+                            }
                         }
-                        Text(
-                            text = "• 请确保在30分钟内完成操作\n" +
-                                    "• 如遇问题请联系客服\n" +
-                                    "• 请勿将贵重物品放入寄存柜",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
                     }
+                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Image(
-                        bitmap = imageBitmap,
-                        contentDescription = "二维码",
-                        modifier = Modifier
-                            .size(220.dp)
-                            .clip(MaterialTheme.shapes.extraLarge)
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    Text(
-                        text = if (type == PickupDeliveryType.PICKUP.type) "取件码" else "寄件码",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = pickupCode,
-                        style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { showDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
+                // 二维码卡
+                AppCard {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Image(
+                            bitmap = imageBitmap,
+                            contentDescription = stringResource(R.string.qr_code),
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            if (type == PickupDeliveryType.PICKUP.type) "确认已取件" else "确认已寄件",
-                            style = MaterialTheme.typography.labelLarge
+                            text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = pickupCode,
+                            style = MaterialTheme.typography.displaySmall,
+                            color = AppColors.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        AppButton(
+                            text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.confirm_picked_up) else stringResource(R.string.confirm_delivered),
+                            onClick = { showDialog = true }
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-            InfoSection(
-                title = "寄存柜信息",
-                icon = Icons.Rounded.School
-            ) {
-                InfoRow("学校名称", orderInfo?.schoolsVo?.schoolName ?: "")
-                InfoRow("地址", orderInfo?.schoolsVo?.location ?: "")
-                InfoRow("寄存柜柜号", "$lockerNumber")
-                InfoRow(
-                    if (type == PickupDeliveryType.PICKUP.type) "取件码" else "寄件码",
-                    pickupCode
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            InfoSection(
-                title = "操作指引",
-                icon = Icons.Rounded.Info
-            ) {
-                if (type == PickupDeliveryType.PICKUP.type) {
-                    InstructionRow("1", "找到寄存柜 $lockerNumber")
-                    InstructionRow("2", "点击屏幕上的\"取件\"按钮")
-                    InstructionRow("3", "输入取件码：$pickupCode")
-                    InstructionRow("4", "等待柜门打开，取出衣物")
-                } else {
-                    InstructionRow("1", "找到寄存柜 $lockerNumber")
-                    InstructionRow("2", "点击屏幕上的\"寄件\"按钮")
-                    InstructionRow("3", "输入寄件码：$pickupCode")
-                    InstructionRow("4", "等待柜门打开，放入衣物")
+                // 寄存柜信息
+                InfoSection(title = stringResource(R.string.locker_info_section), icon = Icons.Rounded.School) {
+                    InfoRow(stringResource(R.string.school_name_label), orderInfo?.schoolsVo?.schoolName ?: "")
+                    InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                    InfoRow(stringResource(R.string.locker_number_label), "$lockerNumber")
+                    InfoRow(if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code), pickupCode)
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+                // 操作指引
+                InfoSection(title = stringResource(R.string.operation_guide), icon = Icons.Rounded.Info) {
+                    val steps = if (type == PickupDeliveryType.PICKUP.type) {
+                        listOf(
+                            stringResource(R.string.find_locker_format, "$lockerNumber"),
+                            stringResource(R.string.click_pickup_button),
+                            stringResource(R.string.input_pickup_code_format, pickupCode),
+                            stringResource(R.string.wait_and_take_clothes)
+                        )
+                    } else {
+                        listOf(
+                            stringResource(R.string.find_locker_format, "$lockerNumber"),
+                            stringResource(R.string.click_delivery_button),
+                            stringResource(R.string.input_delivery_code_format, pickupCode),
+                            stringResource(R.string.wait_and_put_clothes)
+                        )
+                    }
+                    steps.forEachIndexed { index, text ->
+                        StepRow("${index + 1}", text)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 
@@ -265,45 +232,37 @@ fun PickupDeliveryPage(
             onDismissRequest = { showDialog = false },
             text = {
                 Text(
-                    text = if (type == PickupDeliveryType.DELIVERY.type)
-                        "确认已将衣服放入寄存柜"
-                    else
-                        "确认已取出衣服"
+                    text = if (type == PickupDeliveryType.DELIVERY.type) stringResource(R.string.confirm_put_clothes) else stringResource(R.string.confirm_taken_clothes)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    pickupDeliveryViewModel.setOrderNextState(
-                        type,
-                        orderId,
-                        orderInfo?.pickupCode ?: ""
-                    )
-                }) { Text("确定") }
+                    pickupDeliveryViewModel.setOrderNextState(type, orderId, orderInfo?.pickupCode ?: "")
+                }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
             }
         )
     }
 }
 
 @Composable
-private fun InstructionRow(
-    number: String,
-    text: String,
-) {
+private fun StepRow(number: String, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.primaryContainer
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(AppColors.colorScheme.primaryLight),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = AppColors.colorScheme.primary
             )
         }
         Spacer(modifier = Modifier.width(12.dp))

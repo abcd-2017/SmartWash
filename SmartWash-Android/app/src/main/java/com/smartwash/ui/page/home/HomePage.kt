@@ -1,28 +1,29 @@
 package com.smartwash.ui.page.home
 
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +31,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import com.smartwash.ui.theme.GlassBorder
+import com.smartwash.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,6 +49,13 @@ import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.index.IndexPage
 import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.userinfo.UserInfoPage
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.Background
+import com.smartwash.ui.theme.Divider
+import com.smartwash.ui.theme.Primary
+import com.smartwash.ui.theme.PrimaryLight
+import com.smartwash.ui.theme.TextSecondary
+import com.smartwash.ui.theme.TextTertiary
 import com.smartwash.utils.RequestState
 
 @Composable
@@ -65,11 +78,11 @@ fun HomePage(
                     navController.navigate(PageConstant.UpdateUserInfoPage.text)
                 }
             }
-
             else -> {}
         }
     }
     Scaffold(
+        containerColor = AppColors.colorScheme.background,
         bottomBar = { BottomBar(homePageNavController) }
     ) { paddingValues ->
         NavHost(
@@ -116,47 +129,71 @@ fun BottomBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp
-    ) {
-        bottomNavItems.forEach { item ->
-            val isSelect = currentRoute == item.text
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        if (isSelect) item.selectIcon else item.icon,
-                        contentDescription = null,
-                        tint = animateColorAsState(
-                            targetValue = if (isSelect)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            animationSpec = tween(300)
-                        ).value
-                    )
-                },
-                label = {
-                    Text(
-                        text = item.description,
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
-                selected = isSelect,
-                onClick = {
-                    if (!isSelect) {
-                        navController.navigate(item.text) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+    Column {
+        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppColors.colorScheme.surface)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .height(56.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            bottomNavItems.forEach { item ->
+                val isSelected = currentRoute == item.text
+                BottomNavItem(
+                    icon = if (isSelected) item.selectIcon else item.icon,
+                    label = item.description,
+                    isSelected = isSelected,
+                    onClick = {
+                        if (!isSelected) {
+                            navController.navigate(item.text) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomNavItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            modifier = Modifier.size(24.dp),
+            tint = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textTertiary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .width(16.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(AppColors.colorScheme.primary)
             )
         }
     }
@@ -170,29 +207,78 @@ fun ServiceCard(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Card(
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier.clickable(onClick = onClick)
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = Primary,
+        shadowElevation = 0.dp
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-            Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(GlassBorder),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Text(text = title, style = MaterialTheme.typography.titleLarge, color = Color.White)
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = GlassTextDisabled
+            )
+        }
+    }
+}
+
+@Composable
+fun ServiceCardOutlined(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.primary.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColors.colorScheme.primaryLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = AppColors.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Text(text = title, style = MaterialTheme.typography.titleLarge, color = AppColors.colorScheme.primary)
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary
             )
         }
     }
@@ -205,13 +291,11 @@ fun StatusCard(
     title: String,
     content: String
 ) {
-    Card(
+    Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -219,19 +303,18 @@ fun StatusCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
+            com.smartwash.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary,
                 )
-                Text(text = content, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }

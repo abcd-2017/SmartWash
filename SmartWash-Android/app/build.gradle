@@ -40,6 +40,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
 }
 
@@ -64,6 +65,7 @@ dependencies {
     //网络请求框架
     implementation libs.retrofit
     implementation libs.converter.gson
+    implementation libs.okhttp.logging
 
     //辅助工具库,权限申请
     implementation libs.accompanist.permissions

@@ -10,6 +10,7 @@
 - **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一使用 `ResponseData<T>` 包装。
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
 - **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，业务逻辑在 ViewModel 中，Page 只负责 UI 渲染。
+- **禁止字符串硬编码** — 所有用户可见的文本（UI 文案、Toast 消息、错误提示、枚举显示名等）必须定义在 `res/values/strings.xml` 中，代码中通过 `stringResource(R.string.xxx)` 引用。带参数的字符串使用 `%s`、`%d` 占位符。ViewModel 中需要的字符串通过 `application.getString(R.string.xxx)` 获取（注入 `@ApplicationContext` 或 `Application`）。常量字符串（SharedPreferences key、日志 TAG 等非用户可见的）定义在对应的常量类中，不得散落在业务代码里。
 
 ## 构建与运行
 
