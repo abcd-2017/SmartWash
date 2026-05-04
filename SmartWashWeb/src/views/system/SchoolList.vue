@@ -129,6 +129,7 @@
       :title="dialogType === 'create' ? '新增学校' : '编辑学校'"
       v-model="dialogVisible"
       width="750px"
+      @closed="handleDialogClosed"
     >
       <el-form
         ref="formRef"
@@ -365,6 +366,12 @@ const handleEdit = (row) => {
   dialogVisible.value = true
   Object.assign(tempSchool, { ...row })
   regionValue.value = [row.province, row.city, row.district].filter(Boolean)
+}
+
+// 弹窗关闭 — 清除验证状态
+const handleDialogClosed = () => {
+  formRef.value?.resetFields()
+  formRef.value?.clearValidate()
 }
 
 // 提交表单

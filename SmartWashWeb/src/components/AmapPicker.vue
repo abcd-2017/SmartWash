@@ -111,15 +111,15 @@ let markerInstance = null
 let geocoderInstance = null
 let AMapRef = null
 
-// 同步外部值
+// 同步外部值 — 只在有坐标时（地图选点确认后）才显示地址
 watch(() => props.modelValue, (val) => {
   if (val && val.longitude && val.latitude) {
     selectedLocation.value = { ...val }
+    addressDisplay.value = props.address || ''
+  } else {
+    selectedLocation.value = null
+    addressDisplay.value = ''
   }
-}, { immediate: true })
-
-watch(() => props.address, (val) => {
-  addressDisplay.value = val || ''
 }, { immediate: true })
 
 async function openPicker() {
