@@ -828,7 +828,16 @@ DROP TABLE IF EXISTS `schools`;
 CREATE TABLE `schools`  (
   `school_id` bigint NOT NULL AUTO_INCREMENT,
   `school_name` varchar(255) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL,
+  `school_code` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '学校编码',
   `location` varchar(255) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL,
+  `province` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '省',
+  `city` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '市',
+  `district` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '区/县',
+  `longitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '经度',
+  `latitude` decimal(10, 7) NULL DEFAULT NULL COMMENT '纬度',
+  `logo_url` varchar(500) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '学校Logo URL',
+  `contact_name` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '联系人姓名',
+  `contact_phone` varchar(20) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '联系人电话',
   `locker_count` int NULL DEFAULT 200,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`school_id`) USING BTREE,
@@ -838,15 +847,15 @@ CREATE TABLE `schools`  (
 -- ----------------------------
 -- Records of schools
 -- ----------------------------
-INSERT INTO `schools` VALUES (1, '衡阳江山学校', '湖南省衡阳市衡阳县西渡镇S336(蒸阳大道)', 200, '2025-03-08 08:33:47');
-INSERT INTO `schools` VALUES (4, '衡阳市新民中学', '湖南省衡阳市蒸湘区呆鹰岭镇新民村134号', 200, '2025-03-08 08:33:51');
-INSERT INTO `schools` VALUES (5, '衡阳县第五中学', '湖南省衡阳市衡阳县镇洪市街', 200, '2025-03-08 08:33:54');
-INSERT INTO `schools` VALUES (6, '衡阳县第二中学', '湖南省衡阳市衡阳县渣江镇赤石村茶冲组33号', 200, '2025-03-08 08:33:56');
-INSERT INTO `schools` VALUES (11, '衡阳县第三中学', '湖南省衡阳市衡阳县米子路82号', 50, '2025-03-10 15:28:00');
-INSERT INTO `schools` VALUES (12, '衡阳市船山实验中学', '湖南省衡阳市蒸湘区延安路32号', 100, '2025-04-04 14:25:13');
-INSERT INTO `schools` VALUES (13, '衡阳市扶轮中学', '衡阳市珠晖区东风南路308号', 200, '2025-04-04 14:25:25');
-INSERT INTO `schools` VALUES (14, '湖南省衡阳县第一中学', '衡阳市衡阳县城西大道39号', 100, '2025-04-04 14:25:36');
-INSERT INTO `schools` VALUES (15, '衡阳市第一中学', '衡阳市蒸湘区西二环路51号街区', 200, '2025-04-04 14:25:55');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (1, '衡阳江山学校', '湖南省衡阳市衡阳县西渡镇S336(蒸阳大道)', 200, '2025-03-08 08:33:47');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (4, '衡阳市新民中学', '湖南省衡阳市蒸湘区呆鹰岭镇新民村134号', 200, '2025-03-08 08:33:51');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (5, '衡阳县第五中学', '湖南省衡阳市衡阳县镇洪市街', 200, '2025-03-08 08:33:54');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (6, '衡阳县第二中学', '湖南省衡阳市衡阳县渣江镇赤石村茶冲组33号', 200, '2025-03-08 08:33:56');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (11, '衡阳县第三中学', '湖南省衡阳市衡阳县米子路82号', 50, '2025-03-10 15:28:00');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (12, '衡阳市船山实验中学', '湖南省衡阳市蒸湘区延安路32号', 100, '2025-04-04 14:25:13');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (13, '衡阳市扶轮中学', '衡阳市珠晖区东风南路308号', 200, '2025-04-04 14:25:25');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (14, '湖南省衡阳县第一中学', '衡阳市衡阳县城西大道39号', 100, '2025-04-04 14:25:36');
+INSERT INTO `schools` (`school_id`, `school_name`, `location`, `locker_count`, `created_at`) VALUES (15, '衡阳市第一中学', '衡阳市蒸湘区西二环路51号街区', 200, '2025-04-04 14:25:55');
 
 -- ----------------------------
 -- Table structure for user_coupon

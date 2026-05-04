@@ -38,6 +38,9 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
         queryWrapper.and(schoolsFrom.getSchoolId() != null, b -> b.eq(Schools::getSchoolId, schoolsFrom.getSchoolId()));
         queryWrapper.and(StringUtils.hasText(schoolsFrom.getSchoolName()), b -> b.like(Schools::getSchoolName, schoolsFrom.getSchoolName()));
+        queryWrapper.and(StringUtils.hasText(schoolsFrom.getSchoolCode()), b -> b.like(Schools::getSchoolCode, schoolsFrom.getSchoolCode()));
+        queryWrapper.and(StringUtils.hasText(schoolsFrom.getProvince()), b -> b.eq(Schools::getProvince, schoolsFrom.getProvince()));
+        queryWrapper.and(StringUtils.hasText(schoolsFrom.getCity()), b -> b.eq(Schools::getCity, schoolsFrom.getCity()));
         //查询大于等于多少寄存柜的学校
         queryWrapper.and(schoolsFrom.getLockerCount() != null, b -> b.ge(Schools::getLockerCount, schoolsFrom.getLockerCount()));
 

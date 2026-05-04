@@ -10,7 +10,25 @@ public class SchoolsVo {
 
     private String schoolName;
 
+    private String schoolCode;
+
     private String location;
+
+    private String province;
+
+    private String city;
+
+    private String district;
+
+    private java.math.BigDecimal longitude;
+
+    private java.math.BigDecimal latitude;
+
+    private String logoUrl;
+
+    private String contactName;
+
+    private String contactPhone;
 
     private Integer lockerCount;
 

@@ -9,5 +9,11 @@ public class SearchSchoolsFrom extends BaseSearchFrom {
 
     private String schoolName;
 
+    private String schoolCode;
+
+    private String province;
+
+    private String city;
+
     private Integer lockerCount;
 }
