@@ -1,3 +1,8 @@
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,3 +22,8 @@ mybatis-plus:
       update-strategy: not_empty
   configuration:
     map-underscore-to-camel-case: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

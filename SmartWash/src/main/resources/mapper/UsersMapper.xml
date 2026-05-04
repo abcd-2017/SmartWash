@@ -14,11 +14,11 @@
 
     <select id="getUsersByPhoneNumber" resultType="com.smartwash.entity.Users"
             parameterType="java.lang.String">
-        select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at, updated_at
+        select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at
         from users
         where phone_number LIKE CONCAT('%', #{phoneNumber}, '%')
     </select>
     <select id="getUserByPhoneNumber" resultType="com.smartwash.entity.Users" parameterType="java.lang.String">
-        select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at, updated_at from users where phone_number = #{phoneNumber}
+        select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at from users where phone_number = #{phoneNumber}
     </select>
 </mapper>

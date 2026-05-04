@@ -5,6 +5,7 @@ import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.UserAuthenticationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,14 +39,26 @@ public class ExceptionControllerAdvice {
     }
 
     @ExceptionHandler(value = CustomExceptions.class)
-    public Result<String> runTimeException(Throwable throwable) {
-        log.error("业务异常", throwable);
-        return Result.failMsg(throwable.getMessage());
+    public Result<String> runTimeException(CustomExceptions e) {
+        log.error("业务异常", e);
+        return Result.failMsg(e.getMessage());
     }
 
+    /**
+     * 数据库异常捕获，防止SQL错误信息泄露到前端
+     */
+    @ExceptionHandler(value = DataAccessException.class)
+    public Result<String> handleDataAccessException(DataAccessException e) {
+        log.error("数据库异常", e);
+        return Result.build("系统异常，请稍后再试", ResultCodeEnum.FAIL);
+    }
+
+    /**
+     * 兜底异常处理，不暴露内部错误细节
+     */
     @ExceptionHandler(value = Throwable.class)
     public Result<String> handleException(Throwable throwable) {
-        log.error("错误", throwable);
-        return Result.build("系统异常", ResultCodeEnum.FAIL);
+        log.error("系统异常", throwable);
+        return Result.build("系统异常，请稍后再试", ResultCodeEnum.FAIL);
     }
 }

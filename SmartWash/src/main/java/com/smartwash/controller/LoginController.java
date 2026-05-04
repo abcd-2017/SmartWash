@@ -2,6 +2,9 @@ package com.smartwash.controller;
 
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.admin_users.AdminUserLoginFrom;
 import com.smartwash.from.users.UserLoginFrom;
 import com.smartwash.from.users.UserRegisterFrom;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+@Tag(name = "认证管理", description = "用户登录、注册、验证码接口")
 @RestController
 @Slf4j
 @RequestMapping("/auth")
@@ -42,6 +46,7 @@ public class LoginController {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌")
     @PostMapping("/adminUsers/login")
     public Result<String> login(@RequestBody @Valid AdminUserLoginFrom userLoginFrom) {
         if (adminUsersService.getAdminUserByName(userLoginFrom.getUsername()) == null) {
@@ -56,7 +61,10 @@ public class LoginController {
             authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, userLoginFrom.getPassword()));
         } catch (AuthenticationException e) {
             log.error("管理员登录认证失败", e);
-            return Result.failMsg(e.getMessage());
+            return Result.failMsg("用户名或密码错误");
+        } catch (Exception e) {
+            log.error("管理员登录异常", e);
+            return Result.failMsg("系统异常，请稍后再试");
         }
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
@@ -65,6 +73,7 @@ public class LoginController {
         return Result.ok(token);
     }
 
+    @Operation(summary = "用户登录", description = "用户通过手机号和密码登录，返回JWT令牌")
     @PostMapping("/user/login")
     public Result<String> login(@RequestBody @Valid UserLoginFrom userLoginFrom) {
         if (usersService.getUserByPhone(userLoginFrom.getPhoneNumber()) == null) {
@@ -79,7 +88,10 @@ public class LoginController {
             authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, userLoginFrom.getPassword()));
         } catch (AuthenticationException e) {
             log.error("用户登录认证失败", e);
-            return Result.failMsg(e.getMessage());
+            return Result.failMsg("用户名或密码错误");
+        } catch (Exception e) {
+            log.error("用户登录异常", e);
+            return Result.failMsg("系统异常，请稍后再试");
         }
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
@@ -88,6 +100,7 @@ public class LoginController {
         return Result.ok(token);
     }
 
+    @Operation(summary = "用户注册", description = "用户通过手机号、密码和验证码注册新账号，注册成功返回JWT令牌")
     @PostMapping("/user/register")
     public Result<String> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom) {
         String key = String.format("%s:%s", DefaultConstant.Captcha_Code, userRegisterFrom.getPhoneNumber());
@@ -108,8 +121,9 @@ public class LoginController {
         return Result.ok(null);
     }
 
+    @Operation(summary = "获取短信验证码", description = "向指定手机号发送6位数字短信验证码")
     @GetMapping("/user/captcha/{phoneNumber}")
-    public Result<String> getCaptcha(@PathVariable("phoneNumber") String phoneNumber) {
+    public Result<String> getCaptcha(@PathVariable("phoneNumber") @Parameter(description = "手机号码", required = true, example = "13800138000") String phoneNumber) {
         if (!phoneNumber.matches(PHONE_REGEX)) {
             log.warn("验证码请求手机号格式错误, phone: {}", phoneNumber);
             return Result.failMsg("手机号格式错误");
