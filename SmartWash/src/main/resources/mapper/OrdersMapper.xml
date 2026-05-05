@@ -62,6 +62,9 @@
         o.pickup_code AS pickupCode
         <include refid="orderDetailJoins"/>
         <where>
+            <if test="searchForm.userId != null">
+                AND o.user_id = #{searchForm.userId}
+            </if>
             <if test="searchForm.phoneNumber != null and searchForm.phoneNumber != ''">
                 AND u.phone_number = #{searchForm.phoneNumber}
             </if>

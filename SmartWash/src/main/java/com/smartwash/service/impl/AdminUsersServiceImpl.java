@@ -67,7 +67,7 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
         if (StringUtils.hasText(addAdminUsersFrom.getPasswordHash())) {
             password = encoder.encode(addAdminUsersFrom.getPasswordHash());
         } else {
-            password = encoder.encode(DefaultConstant.ADMIN_DEFAULT_PASSWORD);
+            password = encoder.encode(DefaultConstant.generateDefaultPassword());
         }
         BeanUtils.copyProperties(addAdminUsersFrom, adminUsers);
         adminUsers.setPasswordHash(password);

@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
@@ -71,7 +72,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         if (StringUtils.hasText(addUsersFrom.getPassword())) {
             password = encoder.encode(addUsersFrom.getPassword());
         } else {
-            password = encoder.encode(DefaultConstant.DEFAULT_PASSWORD);
+            password = encoder.encode(DefaultConstant.generateDefaultPassword());
         }
         BeanUtils.copyProperties(addUsersFrom, users);
         users.setPassword(password);
@@ -119,6 +120,12 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Boolean registerUser(UserRegisterFrom userRegisterFrom) {
+        // 检查手机号是否已注册
+        Users existingUser = getUserByPhone(userRegisterFrom.getPhoneNumber());
+        if (existingUser != null) {
+            throw new CustomExceptions("该手机号已注册");
+        }
+
         Users users = new Users();
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();

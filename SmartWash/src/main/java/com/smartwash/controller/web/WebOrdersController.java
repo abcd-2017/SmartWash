@@ -46,9 +46,11 @@ public class WebOrdersController {
         return Result.ok(EnumUtils.toMap(OrderStatus.values(), OrderStatus::getStatus, OrderStatus::getDescription));
     }
 
-    @Operation(summary = "分页查询订单列表", description = "根据条件分页查询订单列表")
-    @GetMapping("/all")
+    @Operation(summary = "分页查询订单列表", description = "根据条件分页查询当前用户的订单列表")
+    @GetMapping("/auth/orders/all")
     public Result<Page<OrdersVo>> getAllOrders(SearchOrderFrom searchOrderFrom) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        searchOrderFrom.setUserId(loginUser.getUserId());
         return Result.ok(ordersService.getAllOrders(searchOrderFrom));
     }
 
