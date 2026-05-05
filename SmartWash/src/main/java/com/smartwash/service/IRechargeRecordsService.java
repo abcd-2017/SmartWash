@@ -3,6 +3,7 @@ package com.smartwash.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.RechargeRecords;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.from.recharge_records.UserRechargeFrom;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
@@ -21,4 +22,7 @@ public interface IRechargeRecordsService extends IService<RechargeRecords> {
 
     //用户充值
     boolean userRecharge(UserRechargeFrom vo, Long userId);
+
+    //获取当前用户充值记录
+    Page<RechargeRecordsVo> getUserRechargeRecords(Long userId, BaseSearchFrom searchFrom);
 }

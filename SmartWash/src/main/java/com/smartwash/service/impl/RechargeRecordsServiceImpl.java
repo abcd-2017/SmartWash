@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Users;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.from.recharge_records.UserRechargeFrom;
 import com.smartwash.mapper.RechargeRecordsMapper;
@@ -56,6 +57,27 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
                 userVo.setPhoneNumber(users.getPhoneNumber());
             }
             recordsVo.setUsers(userVo);
+            return recordsVo;
+        }).toList());
+
+        return rechargeRecordsVoPage;
+    }
+
+    //获取当前用户充值记录
+    @Override
+    public Page<RechargeRecordsVo> getUserRechargeRecords(Long userId, BaseSearchFrom searchFrom) {
+        Page<RechargeRecords> page = new Page<>(searchFrom.getPage(), searchFrom.getSize());
+        LambdaQueryWrapper<RechargeRecords> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(RechargeRecords::getUserId, userId);
+        queryWrapper.orderByDesc(RechargeRecords::getRechargeTime);
+
+        List<RechargeRecords> rechargeRecords = this.list(page, queryWrapper);
+        Page<RechargeRecordsVo> rechargeRecordsVoPage = new Page<>();
+        BeanUtils.copyProperties(page, rechargeRecordsVoPage);
+
+        rechargeRecordsVoPage.setRecords(rechargeRecords.stream().map(it -> {
+            RechargeRecordsVo recordsVo = new RechargeRecordsVo();
+            BeanUtils.copyProperties(it, recordsVo);
             return recordsVo;
         }).toList());
 
