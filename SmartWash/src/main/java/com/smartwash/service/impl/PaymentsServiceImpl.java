@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.OrderStatus;
+import com.smartwash.common.PaymentStatus;
 import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.BaseSearchFrom;
@@ -169,6 +170,8 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         payments.setUserId(user.getUserId());
         payments.setAmount(orders.getPayPrice());
         payments.setPaymentMethod(orderFrom.getPaymentType());
+        payments.setStatus(PaymentStatus.SUCCESS.getStatus());
+        payments.setPaidAt(LocalDateTime.now());
         saveOrUpdate(payments);
 
         //2.用户余额扣减
