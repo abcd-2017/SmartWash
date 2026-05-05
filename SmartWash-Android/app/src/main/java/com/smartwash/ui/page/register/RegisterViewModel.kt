@@ -3,12 +3,12 @@ package com.smartwash.ui.page.register
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.HttpStatusCode
 import com.smartwash.R
+import com.smartwash.repository.UserRepository
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val userApi: UserApi,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
     private val _registerState = MutableStateFlow<RequestState>(RequestState.Idle)
     val registerState = _registerState.asStateFlow()
@@ -30,8 +30,7 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _captchaState.value = RequestState.Loading
-                val responseData = userApi.getCaptcha(phoneNumber)
-
+                val responseData = userRepository.getCaptcha(phoneNumber)
                 if (responseData.code == HttpStatusCode.Success.code) {
                     _captchaState.value = RequestState.Success
                 } else {
@@ -48,11 +47,9 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _registerState.value = RequestState.Loading
-                val registerUser = RegisterUser(phoneNumber, password, captcha)
-                val responseData = userApi.register(registerUser)
-
+                val token = userRepository.register(RegisterUser(phoneNumber, password, captcha))
                 _registerState.value = RequestState.Success
-                responseData.data?.let { SharePreferenceUtils.saveData(AppConstant.TOKEN, it) }
+                SharePreferenceUtils.saveData(AppConstant.TOKEN, token)
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "RegisterViewModel.userRegister: ${e.message}", e)
                 _registerState.value = RequestState.Error(e.resId, e.message)

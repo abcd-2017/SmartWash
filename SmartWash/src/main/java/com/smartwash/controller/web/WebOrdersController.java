@@ -64,7 +64,7 @@ public class WebOrdersController {
     }
 
     @Operation(summary = "获取订单详情", description = "根据订单ID获取订单详细信息")
-    @PostMapping("/auth/orders/getOrderInfo/{orderId}")
+    @GetMapping("/auth/orders/{orderId}")
     public Result<OrdersVo> getOrderInfo(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId) {
         OrdersVo order = ordersService.getOrderByOrderId(orderId);
         if (order == null) {
@@ -75,23 +75,23 @@ public class WebOrdersController {
     }
 
     @Operation(summary = "计算订单价格", description = "根据订单ID和优惠券ID计算订单最终价格")
-    @PostMapping("/auth/orders/calculationOrder/{orderId}/{userCouponId}")
-    public Result<OrdersVo> calculationOrder(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId, @PathVariable("userCouponId") @Parameter(description = "用户优惠券ID，不使用优惠券传0", required = true, example = "1") Long userCouponId) {
+    @GetMapping("/auth/orders/{orderId}/calculation")
+    public Result<OrdersVo> calculationOrder(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId, @RequestParam("userCouponId") @Parameter(description = "用户优惠券ID，不使用优惠券传0", required = true, example = "1") Long userCouponId) {
         LoginUser user = UserContextHolder.getUser();
         log.info("用户计价, userId: {}, orderId: {}, couponId: {}", user.getUserId(), orderId, userCouponId);
         return Result.ok(ordersService.calculationOrder(user.getUserId(), orderId, userCouponId));
     }
 
     @Operation(summary = "获取订单列表", description = "根据条件获取用户订单列表（支持游标分页）")
-    @PostMapping("/auth/orders/getOrderList")
-    public Result<List<ShowOrderVo>> getOrderList(@RequestBody OrderListFrom orderListFrom) {
+    @GetMapping("/auth/orders")
+    public Result<List<ShowOrderVo>> getOrderList(OrderListFrom orderListFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
         return Result.ok(ordersService.getOrderList(orderListFrom, loginUser));
     }
 
     @Operation(summary = "获取订单项目数量", description = "获取用户各状态订单的数量统计")
-    @PostMapping("/auth/orders/getOrderItemCount")
-    public Result<OrderItemCountVo> getOrderItemCount(@RequestBody OrderItemCountFrom itemCountFrom) {
+    @GetMapping("/auth/orders/itemCount")
+    public Result<OrderItemCountVo> getOrderItemCount(OrderItemCountFrom itemCountFrom) {
         LoginUser loginUser = UserContextHolder.getUser();
         return Result.ok(ordersService.getOrderItemCount(itemCountFrom, loginUser.getUserId()));
     }
@@ -120,7 +120,7 @@ public class WebOrdersController {
     }
 
     @Operation(summary = "取消订单", description = "用户取消指定订单")
-    @PostMapping("/auth/orders/cancelOrder/{orderId}")
+    @DeleteMapping("/auth/orders/{orderId}")
     public Result<Boolean> cancelOrder(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId) {
         LoginUser loginUser = UserContextHolder.getUser();
         log.info("用户取消订单, userId: {}, orderId: {}", loginUser.getUserId(), orderId);

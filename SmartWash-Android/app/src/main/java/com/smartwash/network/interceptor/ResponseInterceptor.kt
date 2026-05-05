@@ -4,7 +4,7 @@ import android.util.Log
 import com.google.gson.Gson
 import com.smartwash.App
 import com.smartwash.R
-import com.smartwash.network.entity.ResponseData
+import com.smartwash.network.entity.ApiResult
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.HttpStatusCode
@@ -19,17 +19,26 @@ class ResponseInterceptor : Interceptor {
         val request = chain.request()
         try {
             val response = chain.proceed(request)
+
+            // HTTP 401 必须在通用 !response.isSuccessful 之前处理，否则会被拦截为"请求失败"
+            if (response.code == 401) {
+                Log.w(AppConstant.APP_NAME, "Response: ${request.method} ${request.url} — HTTP 401 登录失效")
+                SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
+                App.globalRequestAfterCallback()
+                throw NetworkException("登录失效，请重新登录", R.string.error_login_expired)
+            }
+
             if (!response.isSuccessful) {
                 Log.w(AppConstant.APP_NAME, "Response: ${request.method} ${request.url} — HTTP ${response.code}")
                 throw NetworkException("请求失败", R.string.error_network_fail)
             }
 
             val bodyString = response.peekBody(Long.MAX_VALUE).string()
-            val responseData = Gson().fromJson(bodyString, ResponseData::class.java)
+            val responseData = Gson().fromJson(bodyString, ApiResult::class.java)
 
             when (responseData.code) {
                 HttpStatusCode.Unauthorized.code -> {
-                    Log.w(AppConstant.APP_NAME, "Response: ${request.method} ${request.url} — 登录失效(401)")
+                    Log.w(AppConstant.APP_NAME, "Response: ${request.method} ${request.url} — 业务码 401 登录失效")
                     SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
                     App.globalRequestAfterCallback()
                     throw NetworkException("登录失效，请重新登录", R.string.error_login_expired)

@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.database.dao.LaundryItemDao
-import com.smartwash.database.entity.LaundryItemEntity
-import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.ReservationLaundry
@@ -14,6 +12,7 @@ import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.laundry.LaundryItem
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.R
+import com.smartwash.repository.LaundryRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,10 +22,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LaundryViewModel @Inject constructor(
-    private val laundryItemsApi: LaundryItemsApi,
+    private val laundryRepository: LaundryRepository,
+    private val laundryItemDao: LaundryItemDao,
     private val orderApi: OrderApi,
     private val userApi: UserApi,
-    private val laundryItemDao: LaundryItemDao,
 ) : ViewModel() {
     private val _getLaundryItemState = MutableStateFlow<RequestState>(RequestState.Idle)
     val getLaundryItemState = _getLaundryItemState.asStateFlow()
@@ -42,30 +41,23 @@ class LaundryViewModel @Inject constructor(
     val userInfo = _userInfo.asStateFlow()
 
     fun getLaundryItem() {
-        _getLaundryItemState.value = RequestState.Loading
         viewModelScope.launch {
-            // 1. 读取本地缓存
-            val cached = laundryItemDao.getAll().map { it.toVo() }
+            // 有缓存时先显示缓存，无缓存时显示 Loading
+            val cached = laundryItemDao.getAll()
             if (cached.isNotEmpty()) {
-                _laundryItems.value = cached
-                _getLaundryItemState.value = RequestState.Success
+                _laundryItems.value = cached.map { it.toVo() }
+            } else {
+                _getLaundryItemState.value = RequestState.Loading
             }
 
-            // 2. 后台请求网络
             try {
-                val responseData = laundryItemsApi.getLaundryItems()
-                val userInfoRes = userApi.getUserInfo()
-                _laundryItems.value = responseData.data ?: emptyList()
-                _userInfo.value = userInfoRes.data
+                val result = laundryRepository.getLaundryItems()
+                _laundryItems.value = result
                 _getLaundryItemState.value = RequestState.Success
-                // 3. 更新缓存
-                laundryItemDao.deleteAll()
-                laundryItemDao.insertAll(
-                    (responseData.data ?: emptyList()).map { LaundryItemEntity.fromVo(it) }
-                )
+                val userInfoRes = userApi.getUserInfo()
+                _userInfo.value = userInfoRes.data
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "LaundryViewModel.getLaundryItem: ${e.message}", e)
-                // 4. 仅在无缓存时显示错误
                 if (cached.isEmpty()) {
                     _getLaundryItemState.value = RequestState.Error(e.resId, e.message)
                 }

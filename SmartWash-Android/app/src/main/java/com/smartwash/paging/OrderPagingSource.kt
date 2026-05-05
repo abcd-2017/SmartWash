@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.smartwash.network.api.OrderApi
-import com.smartwash.network.entity.order.OrderListFrom
 import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderInfo
 
@@ -14,7 +13,7 @@ class OrderPagingSource(private val orderApi: OrderApi, private val status: Stri
         return try {
             val currentPage = params.key ?: 1
             val orderList =
-                orderApi.getOrderList(OrderListFrom(status, currentPage)).data ?: emptyList()
+                orderApi.getOrderList(status, currentPage).data ?: emptyList()
             val prevKey = if (currentPage == 1) null else currentPage - 1
             val nextKey = if (orderList.isEmpty()) null else currentPage + 1
 

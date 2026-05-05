@@ -61,7 +61,7 @@ class RetrofitClient {
     fun getRetrofitClient(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .client(okHttpClient)
-            .baseUrl(AppConstant.DEFAULT_SERVER)
+            .baseUrl(BuildConfig.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

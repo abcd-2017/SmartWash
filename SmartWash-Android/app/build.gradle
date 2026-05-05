@@ -26,7 +26,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "BASE_URL", '"http://192.168.1.61:8080/"'
+        }
         release {
+            buildConfigField "String", "BASE_URL", '"https://api.smartwash.example.com/"'
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

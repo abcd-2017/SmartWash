@@ -57,7 +57,7 @@ public class WebUsersController {
     }
 
     @Operation(summary = "获取用户学校ID", description = "获取当前用户所属学校的ID")
-    @PostMapping("/auth/user/getUserSchool")
+    @GetMapping("/auth/user/school")
     public Result<Long> getUserSchoolId() {
         LoginUser user = UserContextHolder.getUser();
         Users users = usersService.getById(user.getUserId());

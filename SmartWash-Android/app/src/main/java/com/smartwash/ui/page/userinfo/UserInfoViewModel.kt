@@ -6,13 +6,13 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.R
-import com.smartwash.network.api.OrderApi
-import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.OrderItemCountFrom
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.order.OrderItemCountVo
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.utils.AppConstant
+import com.smartwash.repository.OrderRepository
+import com.smartwash.repository.UserRepository
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,8 +26,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserInfoViewModel @Inject constructor(
-    private val userApi: UserApi,
-    private val orderApi: OrderApi,
+    private val userRepository: UserRepository,
+    private val orderRepository: OrderRepository,
     private val application: Application,
 ) : ViewModel() {
     private val _userInfoStatus = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -46,8 +46,8 @@ class UserInfoViewModel @Inject constructor(
     fun getUserInfo() {
         viewModelScope.launch {
             try {
-                val responseData = userApi.getUserInfo()
-                val orderItemCountRes = orderApi.getOrderItemCount(
+                _userInfo.value = userRepository.getUserInfo()
+                _orderItemCount.value = orderRepository.getOrderItemCount(
                     OrderItemCountFrom(
                         processingStatus = ShowOrderStatus.WASHING.status,
                         shippedStatus = ShowOrderStatus.PENDING_SHIPMENT.status,
@@ -55,8 +55,6 @@ class UserInfoViewModel @Inject constructor(
                         pendingPaymentStatus = ShowOrderStatus.PENDING_PAYMENT.status
                     )
                 )
-                _userInfo.value = responseData.data
-                _orderItemCount.value = orderItemCountRes.data
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "UserInfoViewModel.getUserInfo: ${e.message}", e)
@@ -81,8 +79,7 @@ class UserInfoViewModel @Inject constructor(
         _bindCampusState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val bindCampus = userApi.bindCampus(campusCard)
-                if (bindCampus.data == true) {
+                if (userRepository.bindCampus(campusCard)) {
                     getUserInfo()
                     _bindCampusState.value = RequestState.Success
                 }
@@ -97,8 +94,7 @@ class UserInfoViewModel @Inject constructor(
         _unBindCampusState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val bindCampus = userApi.unBindCampus()
-                if (bindCampus.data == true) {
+                if (userRepository.unBindCampus()) {
                     getUserInfo()
                     _unBindCampusState.value = RequestState.Success
                 }
@@ -119,7 +115,7 @@ class UserInfoViewModel @Inject constructor(
                 val mimeType = application.contentResolver.getType(uri) ?: "image/jpeg"
                 val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
                 val part = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
-                userApi.uploadAvatar(part)
+                userRepository.uploadAvatar(part)
                 getUserInfo()
                 _avatarUploadState.value = RequestState.Success
             } catch (e: NetworkException) {
