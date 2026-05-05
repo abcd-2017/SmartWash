@@ -13,5 +13,7 @@ public class UserInfoVo {
 
     private String balance;
 
+    private String avatar;
+
     private SchoolsVo schoolVo;
 }

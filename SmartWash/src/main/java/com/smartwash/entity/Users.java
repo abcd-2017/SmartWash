@@ -41,6 +41,8 @@ public class Users implements Serializable {
 
     private BigDecimal balance;
 
+    private String avatar;
+
     private LocalDateTime createdAt;
 
 

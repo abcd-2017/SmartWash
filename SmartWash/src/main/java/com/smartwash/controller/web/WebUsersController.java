@@ -9,6 +9,7 @@ import com.smartwash.common.Result;
 import com.smartwash.entity.Users;
 import com.smartwash.from.users.UpdateUserInfo;
 import com.smartwash.service.IUsersService;
+import com.smartwash.service.FileStorageService;
 import com.smartwash.utils.JwtUtil;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
 
@@ -40,6 +42,8 @@ public class WebUsersController {
     private JwtUtil jwtUtil;
     @Autowired
     private AuthenticationManager authenticationManager;
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Operation(summary = "更新用户信息", description = "更新当前用户的学校和学号信息")
     @PostMapping("/auth/user/updateUserInfo")
@@ -86,5 +90,38 @@ public class WebUsersController {
     public Result<Boolean> unBingCampus() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.unBingCampus(user.getUserId()));
+    }
+
+    @Operation(summary = "上传头像", description = "上传或更新当前用户的头像图片")
+    @PostMapping("/auth/user/avatar")
+    public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        // 验证文件类型
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return Result.failMsg("只能上传图片文件");
+        }
+
+        // 验证文件大小（5MB）
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.failMsg("图片大小不能超过5MB");
+        }
+
+        // 获取当前用户
+        LoginUser loginUser = UserContextHolder.getUser();
+        Users user = usersService.getById(loginUser.getUserId());
+
+        // 删除旧头像（如果不是默认头像）
+        if (user.getAvatar() != null && !user.getAvatar().contains("default/avatar.png")) {
+            fileStorageService.deleteFile(user.getAvatar());
+        }
+
+        // 上传新头像
+        String avatarUrl = fileStorageService.uploadFile(file, "avatar");
+
+        // 更新用户头像
+        user.setAvatar(avatarUrl);
+        usersService.updateById(user);
+
+        return Result.ok(avatarUrl);
     }
 }

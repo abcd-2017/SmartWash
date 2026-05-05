@@ -17,6 +17,11 @@ spring:
       database: 3
       password: ${REDIS_PASSWORD:}
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
 mybatis-plus:
   global-config:
     db-config:
@@ -31,3 +36,10 @@ jwt:
 cors:
   # 生产环境配置实际域名，多个用逗号分隔，支持通配符模式（如 https://*.smartwash.com）
   allowed-origins: ${CORS_ORIGINS:http://localhost:*,http://192.168.*}
+
+# MinIO 对象存储配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://127.0.0.1:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET:smartwash}

@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
+import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
     private final ISchoolsService schoolsService;
+    private final MinioConfig minioConfig;
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {
@@ -130,6 +132,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
+        users.setAvatar(minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/default/avatar.png");
         boolean result = save(users);
         log.info("用户注册成功, userId: {}, phone: {}", users.getUserId(), DesensitizedUtil.mobilePhone(userRegisterFrom.getPhoneNumber()));
         return result;
