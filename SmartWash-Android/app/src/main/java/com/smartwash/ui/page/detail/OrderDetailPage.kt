@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.detail
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Toys
 import androidx.compose.material.icons.rounded.Wash
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.InfoSection
 import com.smartwash.ui.common.PageHeader
@@ -77,7 +76,7 @@ fun OrderDetailPage(
             val context = LocalContext.current
             Toast.makeText(
                 context,
-                context.getString((getOrderDetailState as RequestState.Error).messageResId),
+                (getOrderDetailState as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             orderDetailViewModel.resetState()
@@ -164,36 +163,36 @@ fun StatusCard(orderStatus: String) {
         val statusColor: Color,
         val icon: ImageVector,
         @androidx.annotation.StringRes val estimatedTimeRes: Int,
-        val bgColor: Color,
     )
 
     val info: OrderStatusInfo = when (orderStatus) {
         OrderStatus.PENDING_PAYMENT.status -> OrderStatusInfo(
-            R.string.pending_payment, AppColors.colorScheme.warning, Icons.Rounded.HourglassEmpty, R.string.please_pay_soon, AppColors.colorScheme.warningContainer
+            R.string.pending_payment, AppColors.colorScheme.warning, Icons.Rounded.HourglassEmpty, R.string.please_pay_soon
         )
         OrderStatus.WASHING.status -> OrderStatusInfo(
-            R.string.order_status_washing, AppColors.colorScheme.primary, Icons.Rounded.Wash, R.string.please_pay_soon, AppColors.colorScheme.primaryLight
+            R.string.order_status_washing, AppColors.colorScheme.primary, Icons.Rounded.Wash, R.string.please_pay_soon
         )
         OrderStatus.PENDING_SHIPMENT.status -> OrderStatusInfo(
-            R.string.pending_shipment, AppColors.colorScheme.primary, Icons.Rounded.LocalLaundryService, R.string.please_ship_soon, AppColors.colorScheme.primaryLight
+            R.string.pending_shipment, AppColors.colorScheme.primary, Icons.Rounded.LocalLaundryService, R.string.please_ship_soon
         )
         OrderStatus.READY_FOR_PICKUP.status -> OrderStatusInfo(
-            R.string.pending_pickup, AppColors.colorScheme.primary, Icons.Rounded.Toys, R.string.clothes_in_locker, AppColors.colorScheme.primaryLight
+            R.string.pending_pickup, AppColors.colorScheme.primary, Icons.Rounded.Toys, R.string.clothes_in_locker
         )
         OrderStatus.COMPLETED.status -> OrderStatusInfo(
-            R.string.completed, AppColors.colorScheme.success, Icons.Rounded.CheckCircle, R.string.completion_time, AppColors.colorScheme.primaryLight
+            R.string.completed, AppColors.colorScheme.success, Icons.Rounded.CheckCircle, R.string.completion_time
         )
         OrderStatus.CANCELED.status -> OrderStatusInfo(
-            R.string.cancelled, AppColors.colorScheme.error, Icons.Rounded.Cancel, R.string.cancelled, AppColors.colorScheme.divider
+            R.string.cancelled, AppColors.colorScheme.error, Icons.Rounded.Cancel, R.string.cancelled
         )
-        else -> OrderStatusInfo(R.string.dash, MaterialTheme.colorScheme.onBackground, Icons.Rounded.HourglassEmpty, R.string.dash, AppColors.colorScheme.divider)
+        else -> OrderStatusInfo(R.string.dash, MaterialTheme.colorScheme.onBackground, Icons.Rounded.HourglassEmpty, R.string.dash)
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
-        color = info.bgColor,
-        shadowElevation = 0.dp
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -201,23 +200,14 @@ fun StatusCard(orderStatus: String) {
                 .padding(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧大图标
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(info.statusColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = info.icon,
-                    contentDescription = null,
-                    tint = info.statusColor,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
+            IconBox(
+                icon = info.icon,
+                size = 52.dp,
+                iconSize = 26.dp,
+                containerColor = info.statusColor.copy(alpha = 0.12f),
+                iconTint = info.statusColor
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            // 右侧文字
             Column {
                 Text(
                     text = stringResource(info.statusTextRes),
@@ -229,7 +219,7 @@ fun StatusCard(orderStatus: String) {
                 Text(
                     text = stringResource(info.estimatedTimeRes),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = info.statusColor.copy(alpha = 0.7f)
+                    color = AppColors.colorScheme.textSecondary
                 )
             }
         }

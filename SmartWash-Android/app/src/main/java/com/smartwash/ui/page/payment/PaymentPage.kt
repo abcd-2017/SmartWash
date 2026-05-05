@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.payment
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -53,16 +55,10 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.common.AppButton
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.PaymentType
 import com.smartwash.utils.RequestState
 
@@ -102,7 +98,7 @@ fun PaymentPage(
             }
         }
         is RequestState.Error -> {
-            Toast.makeText(current, current.getString((paymentState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(current, (paymentState as RequestState.Error).getMessage(current), Toast.LENGTH_SHORT).show()
             paymentViewModel.resetPaymentState()
         }
         else -> {}
@@ -110,7 +106,7 @@ fun PaymentPage(
 
     when (calculationOrderState) {
         is RequestState.Error -> {
-            Toast.makeText(current, current.getString((calculationOrderState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(current, (calculationOrderState as RequestState.Error).getMessage(current), Toast.LENGTH_SHORT).show()
         }
         else -> {}
     }
@@ -130,8 +126,14 @@ fun PaymentPage(
                 verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
             ) {
                 // 订单摘要
-                AppCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
+                    Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
                         Text(stringResource(R.string.order_information), style = MaterialTheme.typography.titleLarge)
                         Spacer(modifier = Modifier.height(12.dp))
                         InfoLine(stringResource(R.string.order_number), "${orderInfo?.orderNo ?: ""}")
@@ -159,18 +161,24 @@ fun PaymentPage(
                 Column {
                     Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.headlineMedium)
                     Spacer(modifier = Modifier.height(12.dp))
-                    AppCard {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = 0.dp,
+                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { selectedPaymentMethod = "balance" }
-                                .padding(16.dp),
+                                .padding(AppDimens.cardPadding),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
                                     .background(AppColors.colorScheme.primaryLight),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -193,24 +201,32 @@ fun PaymentPage(
                             RadioButton(
                                 selected = selectedPaymentMethod == "balance",
                                 onClick = { selectedPaymentMethod = "balance" },
-                                colors = RadioButtonDefaults.colors(selectedColor = Primary)
+                                colors = RadioButtonDefaults.colors(selectedColor = AppColors.colorScheme.primary)
                             )
                         }
                     }
                 }
 
                 // 优惠券
-                AppCard(onClick = { showBottomSheet = true }) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showBottomSheet = true },
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppDimens.cardPadding),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
                                 .background(AppColors.colorScheme.primaryLight),
                             contentAlignment = Alignment.Center
                         ) {
@@ -369,14 +385,20 @@ private fun UserCouponItem(
     isSelected: Boolean,
     itemClick: () -> Unit,
 ) {
-    AppCard(
-        modifier = Modifier.padding(vertical = 4.dp),
-        onClick = itemClick
+    Surface(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth()
+            .clickable(onClick = itemClick),
+        shape = RoundedCornerShape(AppDimens.cardRadius),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppDimens.cardPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -401,7 +423,7 @@ private fun UserCouponItem(
             RadioButton(
                 selected = isSelected,
                 onClick = { itemClick() },
-                colors = RadioButtonDefaults.colors(selectedColor = Primary)
+                colors = RadioButtonDefaults.colors(selectedColor = AppColors.colorScheme.primary)
             )
         }
     }

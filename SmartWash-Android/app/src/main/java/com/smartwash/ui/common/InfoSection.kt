@@ -1,5 +1,6 @@
 package com.smartwash.ui.common
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.IconBox
 
@@ -27,8 +29,9 @@ fun InfoSection(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding)

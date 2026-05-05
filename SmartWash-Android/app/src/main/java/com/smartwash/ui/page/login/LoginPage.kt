@@ -101,7 +101,7 @@ fun LoginPage(
         is RequestState.Error -> {
             Toast.makeText(
                 context,
-                stringResource((loginState as RequestState.Error).messageResId),
+                (loginState as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             loginViewModel.resetLoginState()

@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.index
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,11 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,14 +19,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
-import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,27 +43,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.network.vo.order.OrderVo
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
-import com.smartwash.ui.page.home.ServiceCard
-import com.smartwash.ui.page.home.ServiceCardOutlined
-import com.smartwash.ui.page.home.StatusCard
-import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
+import com.smartwash.ui.theme.AppDimens
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.RequestState
+import java.util.Calendar
 
 @Composable
 fun IndexPage(
@@ -83,7 +82,7 @@ fun IndexPage(
             val context = LocalContext.current
             Toast.makeText(
                 context,
-                context.getString((userInfoStatus as RequestState.Error).messageResId),
+                (userInfoStatus as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             indexViewModel.resetState()
@@ -99,108 +98,57 @@ fun IndexPage(
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 自定义顶部区域
+            // 问候头部
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            start = AppDimens.pagePadding,
-                            end = AppDimens.pagePadding,
-                            top = 16.dp,
-                            bottom = 8.dp
-                        ),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.smart_laundry),
-                            style = MaterialTheme.typography.displayLarge,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = userInfo?.schoolVo?.schoolName ?: "",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textSecondary
-                            )
+                GreetingHeader(
+                    schoolName = userInfo?.schoolVo?.schoolName ?: "",
+                    onAvatarClick = {
+                        pageNavController.navigate(HomePageConstant.UserInfo.text) {
+                            popUpTo(pageNavController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
-
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(AppColors.colorScheme.primaryLight)
-                            .clickable {
-                                pageNavController.navigate(HomePageConstant.UserInfo.text) {
-                                    popUpTo(pageNavController.graph.startDestinationId) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = AppColors.colorScheme.primary
-                        )
-                    }
-                }
+                )
             }
 
-            // 快速服务区
+            // 账户概览卡
             item {
                 Spacer(modifier = Modifier.height(20.dp))
+                AccountOverviewCard(
+                    balance = userInfo?.balance ?: 0f,
+                    onRechargeClick = {
+                        navController.navigate(PageConstant.Recharge.text)
+                    }
+                )
+            }
+
+            // 服务网格
+            item {
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                 Text(
-                    text = stringResource(R.string.quick_service),
+                    text = stringResource(R.string.laundry_service),
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    ServiceCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.LocalLaundryService,
-                        title = stringResource(R.string.book_now),
-                        subtitle = stringResource(R.string.price_from),
-                        onClick = {
-                            navController.navigate(PageConstant.Laundry.text) {
-                                popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                ServiceGrid(
+                    onBookingClick = {
+                        navController.navigate(PageConstant.Laundry.text) {
+                            popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                    )
-                    ServiceCardOutlined(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.LocalMall,
-                        title = stringResource(R.string.retrieve_clothes),
-                        subtitle = stringResource(R.string.scan_to_pickup),
-                        onClick = {
-                            navController.navigate(PageConstant.Pickup.text)
-                        }
-                    )
-                }
+                    },
+                    onPickupClick = {
+                        navController.navigate(PageConstant.Pickup.text)
+                    },
+                    onCouponClick = {
+                        navController.navigate(PageConstant.Coupon.text)
+                    }
+                )
             }
 
             // 进行中订单
@@ -214,7 +162,7 @@ fun IndexPage(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.in_progress),
+                        text = stringResource(R.string.in_progress_orders),
                         style = MaterialTheme.typography.headlineMedium
                     )
                     TextButton(onClick = {
@@ -232,7 +180,10 @@ fun IndexPage(
 
             if (orderList.isNotEmpty()) {
                 items(orderList.size) { index ->
-                    IndexOrderItem(orderList[index], modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                    OrderCardWithProgress(
+                        orderVo = orderList[index],
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                    ) {
                         navController.navigate("${PageConstant.OrderDetail.text}/${orderList[index].orderId}")
                     }
                     if (index < orderList.size - 1) {
@@ -256,38 +207,12 @@ fun IndexPage(
                 }
             }
 
-            // 服务状态
+            // 服务须知
             item {
                 Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-                Text(
-                    text = stringResource(R.string.service_status),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Max)
-                        .padding(horizontal = AppDimens.pagePadding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    StatusCard(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        icon = Icons.Default.AccessTime,
-                        title = stringResource(R.string.business_hours),
-                        content = "7:00-22:00"
-                    )
-                    StatusCard(
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        icon = Icons.Default.LocalShipping,
-                        title = stringResource(R.string.delivery_status),
-                        content = stringResource(R.string.normal_operation)
-                    )
-                }
+                ServiceTips()
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             }
-
-            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 
@@ -305,59 +230,328 @@ fun IndexPage(
 }
 
 @Composable
-private fun IndexOrderItem(
+private fun GreetingHeader(
+    schoolName: String,
+    onAvatarClick: () -> Unit,
+) {
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when {
+        hour < 12 -> stringResource(R.string.home_greeting_morning)
+        hour < 18 -> stringResource(R.string.home_greeting_afternoon)
+        else -> stringResource(R.string.home_greeting_evening)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = AppDimens.pagePadding,
+                end = AppDimens.pagePadding,
+                top = 16.dp,
+                bottom = 8.dp
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = greeting + stringResource(R.string.home_greeting_suffix),
+                style = MaterialTheme.typography.displayLarge,
+                color = AppColors.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = AppColors.colorScheme.textSecondary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = schoolName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(AppColors.colorScheme.primaryLight)
+                .clickable(onClick = onAvatarClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = AppColors.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountOverviewCard(
+    balance: Float,
+    onRechargeClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        shape = RoundedCornerShape(AppDimens.cardRadius),
+        color = Color.Transparent,
+        shadowElevation = 0.dp
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)),
+                    shape = RoundedCornerShape(AppDimens.cardRadius)
+                )
+                .padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.account_balance_label),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp
+                        ),
+                        color = Color.White
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = stringResource(R.string.home_available_coupons),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.clickable(onClick = onRechargeClick),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.go_recharge),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServiceGrid(
+    onBookingClick: () -> Unit,
+    onPickupClick: () -> Unit,
+    onCouponClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+    ) {
+        ServiceEntry(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.LocalLaundryService,
+            label = stringResource(R.string.service_booking),
+            onClick = onBookingClick
+        )
+        ServiceEntry(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.LocalMall,
+            label = stringResource(R.string.service_pickup),
+            onClick = onPickupClick
+        )
+        ServiceEntry(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.LocalOffer,
+            label = stringResource(R.string.service_coupon),
+            onClick = onCouponClick
+        )
+    }
+}
+
+@Composable
+private fun ServiceEntry(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(AppDimens.smallCardRadius),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = AppDimens.cardPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AppColors.colorScheme.primaryLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = AppColors.colorScheme.primary
+                )
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = AppColors.colorScheme.textPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrderCardWithProgress(
     orderVo: OrderVo,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
+    val orderStatus = OrderStatus.fromStatus(orderVo.status)
+    val progress = orderProgress(orderVo.status)
+    val statusText = orderStatus?.descriptionRes?.let { stringResource(it) } ?: ""
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(AppDimens.cardPadding)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(AppColors.colorScheme.primaryLight),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocalLaundryService,
-                        contentDescription = null,
-                        tint = AppColors.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                            .background(AppColors.colorScheme.primaryLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalLaundryService,
+                            contentDescription = null,
+                            tint = AppColors.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.order_no_format, orderVo.orderNo),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.factory_washing),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = stringResource(R.string.order_no_format, orderVo.orderNo),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppColors.colorScheme.primary
+                )
             }
-            Text(
-                text = stringResource(R.string.currency_format, orderVo.totalPrice.toString()),
-                style = MaterialTheme.typography.titleLarge,
-                color = AppColors.colorScheme.primary
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp)),
+                color = AppColors.colorScheme.primary,
+                trackColor = AppColors.colorScheme.primaryLight,
             )
         }
+    }
+}
+
+@Composable
+private fun ServiceTips() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = AppColors.colorScheme.textTertiary
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = stringResource(R.string.service_tips),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.colorScheme.textTertiary
+        )
+    }
+}
+
+private fun orderProgress(status: String): Float {
+    return when (status) {
+        "0" -> 0.10f   // PENDING_PAYMENT
+        "1" -> 0.25f   // PENDING_SHIPMENT
+        "2" -> 0.35f   // RECEIVED
+        "3" -> 0.55f   // WASHING
+        "4" -> 0.70f   // DRIED
+        "5" -> 0.85f   // IN_DELIVERY
+        "6" -> 0.95f   // READY_FOR_PICKUP
+        "7" -> 1.00f   // COMPLETED
+        else -> 0f
     }
 }

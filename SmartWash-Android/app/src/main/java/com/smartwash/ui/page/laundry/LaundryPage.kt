@@ -50,7 +50,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
@@ -77,7 +76,7 @@ fun LaundryPage(
 
     when (getLaundryItemState) {
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((getLaundryItemState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (getLaundryItemState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             laundryViewModel.resetGetLaundryItemState()
         }
         else -> {}
@@ -94,7 +93,7 @@ fun LaundryPage(
             }
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((reservationState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (reservationState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             laundryViewModel.resetReservationState()
         }
         else -> {}
@@ -127,11 +126,17 @@ fun LaundryPage(
                 item {
                     Text(text = stringResource(R.string.delivery_locker), style = MaterialTheme.typography.headlineMedium)
                     Spacer(modifier = Modifier.height(12.dp))
-                    AppCard {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = 0.dp,
+                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(AppDimens.cardPadding),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -204,7 +209,7 @@ fun LaundryPage(
                     HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
                     Row(
                         modifier = Modifier
-                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.cardPadding)
                             .padding(bottom = 12.dp)
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -253,12 +258,12 @@ private fun LaundryTypeItem(
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else null
+        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppDimens.cardPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

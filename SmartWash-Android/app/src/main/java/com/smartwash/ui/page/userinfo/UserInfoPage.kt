@@ -74,8 +74,6 @@ import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.IconBox
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryDark
 import com.smartwash.utils.RequestState
 
 @SuppressLint("DefaultLocale")
@@ -183,7 +181,7 @@ fun UserInfoPage(
                 Text(
                     text = stringResource(R.string.my_profile),
                     style = MaterialTheme.typography.displayLarge,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = AppColors.colorScheme.onBackground
                 )
                 IconButton(onClick = { navController.navigate(PageConstant.Setting.text) }) {
                     Icon(
@@ -410,7 +408,7 @@ private fun BalanceCard(
         Box(
             modifier = Modifier
                 .background(
-                    Brush.linearGradient(listOf(Primary, PrimaryDark)),
+                    Brush.linearGradient(listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)),
                     shape = RoundedCornerShape(AppDimens.cardRadius)
                 )
                 .padding(20.dp)
@@ -482,7 +480,8 @@ private fun OrderQuickGrid(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             OrderQuickEntry(
@@ -549,14 +548,14 @@ private fun OrderQuickEntry(
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
+            .padding(vertical = AppDimens.cardPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
                 .background(AppColors.colorScheme.primaryLight),
             contentAlignment = Alignment.Center
         ) {
@@ -606,7 +605,7 @@ private fun FunctionItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.coupon.tab
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,33 +17,35 @@ import androidx.paging.compose.LazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.page.coupon.UserCouponCard
+import com.smartwash.ui.theme.AppColors
+import com.smartwash.ui.theme.AppDimens
 
-//历史优惠券页面
 @Composable
 fun HistoricalCouponsTab(userCouponList: LazyPagingItems<UserCouponVo>, couponState: String) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = AppDimens.pagePadding),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
         if (userCouponList.itemCount == 0) {
             item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.no_historical_coupons),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.colorScheme.textSecondary
                     )
                 }
             }
         } else {
             items(userCouponList.itemCount) { i ->
-                userCouponList[i]?.let { UserCouponCard(it, couponState) };
+                userCouponList[i]?.let { UserCouponCard(it, couponState) }
             }
         }
     }

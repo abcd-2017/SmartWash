@@ -55,8 +55,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.network.vo.school.SchoolName
+import androidx.compose.foundation.BorderStroke
 import com.smartwash.ui.common.AppButton
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
@@ -91,7 +91,7 @@ fun UpdateUserInfoPage(
             }
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((updateState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (updateState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             userInfoViewModel.setStateIdle()
         }
         else -> {}
@@ -152,7 +152,7 @@ fun UpdateUserInfoPage(
                         Text(
                             text = stringResource(R.string.complete_info),
                             style = MaterialTheme.typography.displayLarge,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = AppColors.colorScheme.onBackground
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
@@ -166,11 +166,17 @@ fun UpdateUserInfoPage(
             }
 
             item {
-                AppCard {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(AppDimens.cardPadding),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         SearchSchoolInput(
@@ -293,9 +299,9 @@ fun SchoolItem(
             .fillMaxWidth()
             .heightIn(max = 200.dp),
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = AppColors.colorScheme.surface,
         shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         LazyColumn {
             items(schoolList) { school ->

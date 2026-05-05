@@ -46,20 +46,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
-import com.smartwash.ui.common.AppCard
+import androidx.compose.foundation.BorderStroke
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.InfoSection
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
 import com.smartwash.ui.theme.IconBox
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
-import com.smartwash.ui.theme.Warning
-import com.smartwash.ui.theme.WarningContainer
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.generateQrCodeBitmap
@@ -84,7 +77,7 @@ fun PickupDeliveryPage(
 
     when (getOrderDetailState) {
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((getOrderDetailState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (getOrderDetailState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetState()
         }
         else -> { pickupDeliveryViewModel.resetState() }
@@ -102,7 +95,7 @@ fun PickupDeliveryPage(
             pickupDeliveryViewModel.resetNextStatusState()
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((setOrderNextState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (setOrderNextState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetNextStatusState()
         }
         else -> {}
@@ -134,7 +127,7 @@ fun PickupDeliveryPage(
                         shadowElevation = 0.dp
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier.padding(AppDimens.cardPadding),
                             verticalAlignment = Alignment.Top
                         ) {
                             Icon(
@@ -158,9 +151,15 @@ fun PickupDeliveryPage(
                 }
 
                 // 二维码卡
-                AppCard {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(AppDimens.sectionSpacing),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
@@ -222,7 +221,7 @@ fun PickupDeliveryPage(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             }
         }
     }
