@@ -63,6 +63,13 @@
       highlight-current-row
     >
       <el-table-column prop="userId" label="ID" min-width="80" />
+      <el-table-column label="头像" width="80">
+        <template #default="{ row }">
+          <el-avatar :size="36" :src="row.avatar" class="user-table-avatar">
+            <span>{{ (row.phoneNumber || '?').slice(-2) }}</span>
+          </el-avatar>
+        </template>
+      </el-table-column>
       <el-table-column prop="phoneNumber" label="手机号" min-width="150" />
       <el-table-column label="学校" min-width="180">
         <template #default="{ row }">
@@ -358,4 +365,11 @@ const formatTime = (time) => {
   
   <style scoped>
 @import '@/assets/pages.css';
+
+.user-table-avatar {
+  background: #6366f1;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
 </style>
