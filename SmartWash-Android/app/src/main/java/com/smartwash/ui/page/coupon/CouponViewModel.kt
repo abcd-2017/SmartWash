@@ -3,6 +3,8 @@ package com.smartwash.ui.page.coupon
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.database.dao.CouponVoDao
+import com.smartwash.database.entity.CouponVoEntity
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CouponViewModel @Inject constructor(
     private val couponApi: CouponApi,
+    private val couponVoDao: CouponVoDao,
 ) : ViewModel() {
     private val _getCouponListState = MutableStateFlow<RequestState>(RequestState.Idle)
     val getCouponListState = _getCouponListState.asStateFlow()
@@ -40,12 +43,29 @@ class CouponViewModel @Inject constructor(
 
     fun getCouponList() {
         viewModelScope.launch {
+            // 1. 读取本地缓存
+            val cached = couponVoDao.getAll().map { it.toVo() }
+            if (cached.isNotEmpty()) {
+                _couponList.value = cached
+            } else {
+                _getCouponListState.value = RequestState.Loading
+            }
+
+            // 2. 后台请求网络
             try {
                 val responseData = couponApi.getAllCoupon()
-                _couponList.value = responseData.data ?: emptyList()
+                val networkData = responseData.data ?: emptyList()
+                _couponList.value = networkData
+                _getCouponListState.value = RequestState.Success
+                // 3. 更新缓存
+                couponVoDao.deleteAll()
+                couponVoDao.insertAll(networkData.map { CouponVoEntity.fromVo(it) })
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "CouponViewModel.getCouponList: ${e.message}", e)
-                _getCouponListState.value = RequestState.Error(e.resId)
+                // 4. 仅在无缓存时显示错误
+                if (cached.isEmpty()) {
+                    _getCouponListState.value = RequestState.Error(e.resId, e.message)
+                }
             }
         }
     }
@@ -59,7 +79,7 @@ class CouponViewModel @Inject constructor(
                 }
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "CouponViewModel.receiveCoupon: ${e.message}", e)
-                _receiveCouponState.value = RequestState.Error(e.resId)
+                _receiveCouponState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }

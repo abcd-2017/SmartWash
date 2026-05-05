@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -84,6 +85,11 @@ dependencies {
     //分页
     implementation libs.androidx.paging.compose
     implementation libs.androidx.paging.runtime.ktx
+
+    //Room
+    implementation libs.androidx.room.runtime
+    implementation libs.androidx.room.ktx
+    ksp libs.androidx.room.compiler
 
     implementation libs.core
 }

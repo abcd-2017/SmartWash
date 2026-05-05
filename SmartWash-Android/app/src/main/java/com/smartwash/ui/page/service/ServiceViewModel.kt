@@ -3,6 +3,8 @@ package com.smartwash.ui.page.service
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.database.dao.LaundryItemDao
+import com.smartwash.database.entity.LaundryItemEntity
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
@@ -18,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ServiceViewModel @Inject constructor(
     private val laundryItemsApi: LaundryItemsApi,
+    private val laundryItemDao: LaundryItemDao,
 ) : ViewModel() {
     private val _getLaundryItemState = MutableStateFlow<RequestState>(RequestState.Idle)
     val getLaundryItemState = _getLaundryItemState.asStateFlow()
@@ -25,15 +28,30 @@ class ServiceViewModel @Inject constructor(
     val laundryItems = _laundryItems.asStateFlow()
 
     fun getLaundryItem() {
-        _getLaundryItemState.value = RequestState.Loading
         viewModelScope.launch {
+            // 1. 读取本地缓存
+            val cached = laundryItemDao.getAll().map { it.toVo() }
+            if (cached.isNotEmpty()) {
+                _laundryItems.value = cached
+            } else {
+                _getLaundryItemState.value = RequestState.Loading
+            }
+
+            // 2. 后台请求网络
             try {
                 val responseData = laundryItemsApi.getLaundryItems()
-                _laundryItems.value = responseData.data ?: emptyList()
+                val networkData = responseData.data ?: emptyList()
+                _laundryItems.value = networkData
                 _getLaundryItemState.value = RequestState.Success
+                // 3. 更新缓存
+                laundryItemDao.deleteAll()
+                laundryItemDao.insertAll(networkData.map { LaundryItemEntity.fromVo(it) })
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "ServiceViewModel.getLaundryItem: ${e.message}", e)
-                _getLaundryItemState.value = RequestState.Error(e.resId)
+                // 4. 仅在无缓存时显示错误
+                if (cached.isEmpty()) {
+                    _getLaundryItemState.value = RequestState.Error(e.resId, e.message)
+                }
             }
         }
     }
