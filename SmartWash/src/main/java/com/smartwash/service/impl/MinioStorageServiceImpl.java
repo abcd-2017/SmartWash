@@ -36,6 +36,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
     public void init() {
         try {
             ensureBucketExists();
+            setBucketPublicReadPolicy();
             initDefaultAvatar();
         } catch (Exception e) {
             log.error("MinIO 初始化失败", e);
@@ -124,6 +125,36 @@ public class MinioStorageServiceImpl implements FileStorageService {
                     MakeBucketArgs.builder().bucket(bucketName).build()
             );
             log.info("MinIO 存储桶创建成功: {}", bucketName);
+        }
+    }
+
+    /**
+     * 设置存储桶为公开读取策略，允许匿名访问文件
+     */
+    private void setBucketPublicReadPolicy() {
+        try {
+            String policy = """
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"AWS": ["*"]},
+                            "Action": ["s3:GetObject"],
+                            "Resource": ["arn:aws:s3:::%s/*"]
+                        }
+                    ]
+                }
+                """.formatted(minioConfig.getBucketName());
+            minioClient.setBucketPolicy(
+                    SetBucketPolicyArgs.builder()
+                            .bucket(minioConfig.getBucketName())
+                            .config(policy)
+                            .build()
+            );
+            log.info("MinIO 存储桶公开读取策略设置成功");
+        } catch (Exception e) {
+            log.warn("设置 MinIO 存储桶策略失败（可能已存在）", e);
         }
     }
 
