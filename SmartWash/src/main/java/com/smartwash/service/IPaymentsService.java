@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Payments;
 import com.smartwash.from.payment.AddPaymentFrom;
 import com.smartwash.from.payment.PaymentOrderFrom;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.from.payment.UpdatePaymentFrom;
 import com.smartwash.utils.LoginUser;
@@ -27,6 +28,8 @@ public interface IPaymentsService extends IService<Payments> {
     Boolean deletePayments(String ids);
 
     Page<PaymentVo> getAllPayments(SearchPaymentFrom paymentFrom);
+
+    Page<PaymentVo> getUserPayments(Long userId, BaseSearchFrom searchFrom);
 
     boolean paymentOrder(LoginUser user, PaymentOrderFrom orderFrom);
 }

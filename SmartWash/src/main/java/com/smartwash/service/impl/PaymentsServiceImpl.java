@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.payment.AddPaymentFrom;
 import com.smartwash.from.payment.PaymentOrderFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
@@ -91,6 +92,41 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
 
             paymentVo.setOrder(ordersVo);
             paymentVo.setUser(userVo);
+            BeanUtils.copyProperties(it, paymentVo);
+            return paymentVo;
+        }).toList());
+
+        return paymentVoPage;
+    }
+
+    @Override
+    public Page<PaymentVo> getUserPayments(Long userId, BaseSearchFrom searchFrom) {
+        Page<Payments> page = new Page<>(searchFrom.getPage(), searchFrom.getSize());
+        LambdaQueryWrapper<Payments> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Payments::getUserId, userId);
+        queryWrapper.orderByDesc(Payments::getPaidAt);
+
+        List<Payments> payments = this.list(page, queryWrapper);
+        Page<PaymentVo> paymentVoPage = new Page<>();
+        BeanUtils.copyProperties(page, paymentVoPage);
+
+        Set<Long> orderIds = payments.stream().map(Payments::getOrderId).collect(Collectors.toSet());
+        Map<Long, Orders> orderMap = orderIds.isEmpty() ? Collections.emptyMap()
+                : ordersMapper.selectBatchIds(orderIds).stream()
+                .collect(Collectors.toMap(Orders::getOrderId, Function.identity()));
+
+        paymentVoPage.setRecords(payments.stream().map(it -> {
+            PaymentVo paymentVo = new PaymentVo();
+            Orders orders = orderMap.get(it.getOrderId());
+            if (orders != null) {
+                OrdersVo ordersVo = new OrdersVo();
+                ordersVo.setOrderId(orders.getOrderId());
+                ordersVo.setOrderNo(orders.getOrderNo());
+                ordersVo.setStatus(orders.getStatus());
+                ordersVo.setTotalPrice(orders.getTotalPrice());
+                ordersVo.setPayPrice(orders.getPayPrice());
+                paymentVo.setOrder(ordersVo);
+            }
             BeanUtils.copyProperties(it, paymentVo);
             return paymentVo;
         }).toList());
