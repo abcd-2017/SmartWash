@@ -14,7 +14,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">学校总数</span>
-          <span class="stat-card__value">--</span>
+          <span class="stat-card__value">{{ stats.schoolCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--blue">
@@ -23,7 +23,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">用户总数</span>
-          <span class="stat-card__value">--</span>
+          <span class="stat-card__value">{{ stats.userCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--emerald">
@@ -32,7 +32,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">今日订单</span>
-          <span class="stat-card__value">--</span>
+          <span class="stat-card__value">{{ stats.todayOrderCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--amber">
@@ -41,7 +41,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">今日收入</span>
-          <span class="stat-card__value">--</span>
+          <span class="stat-card__value">¥{{ Number(stats.todayIncome).toFixed(2) }}</span>
         </div>
       </div>
     </div>
@@ -72,7 +72,25 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue'
+import { getDashboardStats } from '@/api/dashboard'
+
+const stats = ref({
+  schoolCount: 0,
+  userCount: 0,
+  todayOrderCount: 0,
+  todayIncome: 0
+})
+
+onMounted(async () => {
+  try {
+    const data = await getDashboardStats()
+    stats.value = data
+  } catch (e) {
+    console.error('获取工作台数据失败:', e)
+  }
+})
 </script>
 
 <style scoped>
