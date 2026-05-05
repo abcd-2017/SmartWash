@@ -27,4 +27,6 @@ public interface IUserCouponService extends IService<UserCoupon> {
     Boolean receiveCoupon(Long couponId, Long userId);
 
     List<UserCouponVo> getCanUseCoupon(Long userId, Long orderId);
+
+    List<UserCouponVo> getAllUserCoupons(Long userId);
 }

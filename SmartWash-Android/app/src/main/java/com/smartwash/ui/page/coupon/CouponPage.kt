@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.common.AppTabBar
@@ -42,7 +41,6 @@ import com.smartwash.ui.page.coupon.tab.HistoricalCouponsTab
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.utils.RequestState
-import com.smartwash.utils.UserCouponStatus
 
 @Composable
 fun CouponPage(
@@ -51,22 +49,20 @@ fun CouponPage(
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf(stringResource(R.string.available_coupons), stringResource(R.string.claimed_coupons), stringResource(R.string.historical_coupons))
-    val getCouponListState by couponViewModel.getCouponListState.collectAsState()
-    val couponList by couponViewModel.couponList.collectAsState()
+    val loadState by couponViewModel.loadState.collectAsState()
+    val availableCoupons by couponViewModel.availableCoupons.collectAsState()
+    val claimedCoupons by couponViewModel.claimedCoupons.collectAsState()
+    val historicalCoupons by couponViewModel.historicalCoupons.collectAsState()
     val context = LocalContext.current
     val receiveCouponState by couponViewModel.receiveCouponState.collectAsState()
-    val userCouponList = couponViewModel.userCouponPagingFlow.collectAsLazyPagingItems()
-    val couponState by couponViewModel.couponState.collectAsState()
 
     LaunchedEffect(Unit) {
-        couponViewModel.getCouponList()
-        couponViewModel.updateCouponState("0")
+        couponViewModel.loadAllCoupons()
     }
 
     when (receiveCouponState) {
         is RequestState.Success -> {
             LaunchedEffect(receiveCouponState) {
-                couponViewModel.getCouponList()
                 Toast.makeText(context, context.getString(R.string.claim_success), Toast.LENGTH_SHORT).show()
                 couponViewModel.resetReceiveState()
             }
@@ -78,9 +74,9 @@ fun CouponPage(
         else -> {}
     }
 
-    when (getCouponListState) {
+    when (loadState) {
         is RequestState.Error -> {
-            Toast.makeText(context, (getCouponListState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (loadState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
         }
         else -> {}
     }
@@ -96,21 +92,17 @@ fun CouponPage(
             AppTabBar(
                 tabs = tabs,
                 selectedIndex = selectedTabIndex,
-                onTabSelected = { index ->
-                    selectedTabIndex = index
-                    if (index > 0) couponViewModel.updateCouponState("${index - 1}")
-                }
+                onTabSelected = { selectedTabIndex = it }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             when (selectedTabIndex) {
-                0 -> AvailableCouponsTab(couponList) {
-                    userCouponList.refresh()
+                0 -> AvailableCouponsTab(availableCoupons) {
                     couponViewModel.receiveCoupon(it)
                 }
-                1 -> ClaimedCouponsTab(userCouponList, couponState)
-                2 -> HistoricalCouponsTab(userCouponList, couponState)
+                1 -> ClaimedCouponsTab(claimedCoupons)
+                2 -> HistoricalCouponsTab(historicalCoupons)
             }
         }
     }
@@ -119,15 +111,13 @@ fun CouponPage(
 @Composable
 fun UserCouponCard(
     coupon: UserCouponVo,
-    couponState: String,
+    isHistorical: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val isExpiredOrUsed = coupon.isUsed || couponState == UserCouponStatus.OVERDUE.status
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isExpiredOrUsed) 0.6f else 1f),
+            .alpha(if (isHistorical) 0.6f else 1f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -139,7 +129,6 @@ fun UserCouponCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额区
             Column(
                 modifier = Modifier.width(80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -151,7 +140,6 @@ fun UserCouponCard(
                 )
             }
 
-            // 竖线分隔
             Box(
                 modifier = Modifier
                     .width(0.5.dp)
@@ -159,7 +147,6 @@ fun UserCouponCard(
                     .background(AppColors.colorScheme.divider)
             )
 
-            // 右侧信息区
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -184,17 +171,20 @@ fun UserCouponCard(
                 )
             }
 
-            // 右侧状态
-            val statusText = when {
-                coupon.isUsed -> stringResource(R.string.used)
-                couponState == UserCouponStatus.OVERDUE.status -> stringResource(R.string.expired)
-                else -> stringResource(R.string.available)
+            if (isHistorical) {
+                val statusText = if (coupon.isUsed) stringResource(R.string.used) else stringResource(R.string.expired)
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AppColors.colorScheme.textSecondary
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.available),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AppColors.colorScheme.primary
+                )
             }
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isExpiredOrUsed) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primary
-            )
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.page.coupon.UserCouponCard
@@ -21,14 +21,14 @@ import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 
 @Composable
-fun ClaimedCouponsTab(userCouponList: LazyPagingItems<UserCouponVo>, couponState: String) {
+fun ClaimedCouponsTab(claimedCoupons: List<UserCouponVo>) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
-        if (userCouponList.itemCount == 0) {
+        if (claimedCoupons.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier
@@ -44,8 +44,8 @@ fun ClaimedCouponsTab(userCouponList: LazyPagingItems<UserCouponVo>, couponState
                 }
             }
         } else {
-            items(userCouponList.itemCount) { i ->
-                userCouponList[i]?.let { UserCouponCard(it, couponState) }
+            items(claimedCoupons) { coupon ->
+                UserCouponCard(coupon = coupon, isHistorical = false)
             }
         }
     }

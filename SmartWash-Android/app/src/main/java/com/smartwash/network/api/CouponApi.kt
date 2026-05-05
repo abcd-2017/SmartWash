@@ -2,6 +2,7 @@ package com.smartwash.network.api
 
 import com.smartwash.network.annotation.RequireAuthorization
 import com.smartwash.network.entity.ApiResult
+import com.smartwash.network.vo.coupon.AllCouponsVo
 import com.smartwash.network.vo.coupon.CouponVo
 import com.smartwash.network.vo.coupon.UserCouponVo
 import retrofit2.http.GET
@@ -35,4 +36,8 @@ interface CouponApi {
     suspend fun getCanUseCoupon(
         @Path("orderId") orderId: Long,
     ): ApiResult<List<UserCouponVo>>
+
+    @RequireAuthorization
+    @GET("/web/auth/userCoupon/allCoupons")
+    suspend fun getAllCoupons(): ApiResult<AllCouponsVo>
 }

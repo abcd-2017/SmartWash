@@ -79,4 +79,9 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
         Orders orders = ordersMapper.selectById(orderId);
         return baseMapper.getCanUseCoupon(userId,orders.getTotalPrice().floatValue());
     }
+
+    @Override
+    public List<UserCouponVo> getAllUserCoupons(Long userId) {
+        return baseMapper.getAllUserCoupons(userId);
+    }
 }

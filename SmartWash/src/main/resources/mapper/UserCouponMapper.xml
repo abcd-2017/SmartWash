@@ -84,4 +84,25 @@
           and is_used = 0
           and now() &lt; expired_at
     </select>
+
+    <select id="getAllUserCoupons" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
+        select uc.user_coupon_id,
+        u.phone_number,
+        c.title as "couponVo.title",
+        c.coupon_id as "couponVo.couponId",
+        c.description as "couponVo.description",
+        c.discount as "couponVo.discount",
+        c.threshold as "couponVo.threshold",
+        is_used,
+        used_at,
+        received_at,
+        o.order_no,
+        expired_at
+        from user_coupon uc
+        join users u on uc.user_id = u.user_id
+        left join orders o on o.order_id = uc.order_id
+        left join coupon c on c.coupon_id = uc.coupon_id
+        where u.user_id = #{userId}
+        order by received_at desc
+    </select>
 </mapper>

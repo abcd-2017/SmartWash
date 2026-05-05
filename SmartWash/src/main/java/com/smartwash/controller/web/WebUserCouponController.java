@@ -5,15 +5,20 @@ import com.smartwash.common.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.smartwash.service.ICouponService;
 import com.smartwash.service.IUserCouponService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
+import com.smartwash.vo.coupon.AllCouponsVo;
+import com.smartwash.vo.coupon.CouponVo;
 import com.smartwash.vo.user_coupon.UserCouponVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -30,6 +35,8 @@ import java.util.List;
 public class WebUserCouponController {
     @Autowired
     private IUserCouponService userCouponService;
+    @Autowired
+    private ICouponService couponService;
 
     @Operation(summary = "获取用户优惠券列表", description = "获取当前用户已领取的优惠券列表，按状态筛选")
     @GetMapping("/auth/userCoupon/getUserCoupon")
@@ -52,5 +59,26 @@ public class WebUserCouponController {
     public Result<List<UserCouponVo>> getCanUseCoupon(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId) {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(userCouponService.getCanUseCoupon(user.getUserId(), orderId));
+    }
+
+    @Operation(summary = "获取所有优惠券数据", description = "一次返回可领取、已领取、历史三类优惠券，用于优惠券页面首次加载")
+    @GetMapping("/auth/userCoupon/allCoupons")
+    public Result<AllCouponsVo> getAllCoupons() {
+        LoginUser user = UserContextHolder.getUser();
+        Long userId = user.getUserId();
+
+        List<CouponVo> available = couponService.getAllValidCoupon(userId);
+        List<UserCouponVo> allUserCoupons = userCouponService.getAllUserCoupons(userId);
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        Map<Boolean, List<UserCouponVo>> partitioned = allUserCoupons.stream()
+                .collect(Collectors.partitioningBy(uc -> !uc.getIsUsed() && uc.getExpiredAt().isAfter(now)));
+
+        AllCouponsVo result = new AllCouponsVo();
+        result.setAvailable(available);
+        result.setClaimed(partitioned.get(true));
+        result.setHistorical(partitioned.get(false));
+
+        return Result.ok(result);
     }
 }

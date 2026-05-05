@@ -26,4 +26,6 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
     List<UserCouponVo> searchUserCouponByStatus(Page<UserCouponVo> page, String status, Long userId);
 
     List<UserCouponVo> getCanUseCoupon(Long userId, Float totalPrice);
+
+    List<UserCouponVo> getAllUserCoupons(Long userId);
 }
