@@ -5,11 +5,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +36,7 @@ import com.smartwash.ui.page.payment.PaymentPage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
 import com.smartwash.ui.page.recharge.RechargePage
+import com.smartwash.ui.page.recharge.RechargeRecordPage
 import com.smartwash.ui.page.register.RegisterPage
 import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.setting.SettingPage
@@ -88,32 +91,16 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = PageConstant.Login.text,
                         enterTransition = {
-                            slideIntoContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(
-                                    durationMillis = 350,
-                                    easing = FastOutSlowInEasing
-                                )
-                            ) + fadeIn(
-                                animationSpec = tween(
-                                    durationMillis = 350,
-                                    easing = FastOutSlowInEasing
-                                )
-                            )
+                            fadeIn(animationSpec = tween(300, easing = LinearEasing))
                         },
                         exitTransition = {
-                            slideOutOfContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(
-                                    durationMillis = 350,
-                                    easing = FastOutSlowInEasing
-                                )
-                            ) + fadeOut(
-                                animationSpec = tween(
-                                    durationMillis = 350,
-                                    easing = FastOutSlowInEasing
-                                )
-                            )
+                            fadeOut(animationSpec = tween(300, easing = LinearEasing))
+                        },
+                        popEnterTransition = {
+                            fadeIn(animationSpec = tween(300, easing = LinearEasing))
+                        },
+                        popExitTransition = {
+                            fadeOut(animationSpec = tween(300, easing = LinearEasing))
                         }
                     ) {
                         composable(PageConstant.Login.text) {
@@ -133,6 +120,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(PageConstant.Recharge.text) {
                             RechargePage(navController)
+                        }
+                        composable(PageConstant.RechargeRecord.text) {
+                            RechargeRecordPage(navController)
                         }
                         composable(
                             route = "${PageConstant.Order.text}/{itemId}", arguments = listOf(
@@ -168,7 +158,31 @@ class MainActivity : ComponentActivity() {
                                     type = NavType.LongType
                                     defaultValue = -1
                                 }
-                            )
+                            ),
+                            enterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            exitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            popEnterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            popExitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            }
                         ) { entity ->
                             PaymentPage(navController, entity.arguments?.getLong("orderId"))
                         }
@@ -182,7 +196,32 @@ class MainActivity : ComponentActivity() {
                                     type = NavType.LongType
                                     defaultValue = -1
                                 }
-                            )) { entity ->
+                            ),
+                            enterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            exitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            popEnterTransition = {
+                                slideInVertically(
+                                    initialOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            },
+                            popExitTransition = {
+                                slideOutVertically(
+                                    targetOffsetY = { (it * 0.3f).toInt() },
+                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
+                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                            }
+                        ) { entity ->
                             PaySuccessPage(
                                 navController,
                                 entity.arguments?.getLong("orderId") ?: -1

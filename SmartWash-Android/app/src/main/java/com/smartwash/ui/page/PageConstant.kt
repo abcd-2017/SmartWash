@@ -16,6 +16,7 @@ sealed class PageConstant(val text: String, val description: String) {
     data object UpdateUserInfoPage : PageConstant("UpdateUserInfoPage", "用户学校信息修改")
     data object Setting : PageConstant("Setting", "设置页面")
     data object Recharge : PageConstant("Recharge", "充值页面")
+    data object RechargeRecord : PageConstant("RechargeRecord", "充值记录页面")
     data object Order : PageConstant("Order", "订单页面")
     data object OrderDetail : PageConstant("OrderDetail", "订单详情页面")
     data object Service : PageConstant("Service", "服务页面")

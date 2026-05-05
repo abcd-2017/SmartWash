@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,9 +21,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -52,6 +55,7 @@ import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
 import com.smartwash.ui.common.PageHeader
+import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.utils.RequestState
@@ -80,7 +84,7 @@ fun RechargePage(
             rechargeViewModel.setRechargeStateIdle()
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((rechargeState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (rechargeState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             rechargeViewModel.setRechargeStateIdle()
         }
         else -> {}
@@ -92,7 +96,19 @@ fun RechargePage(
             .background(AppColors.colorScheme.background)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PageHeader(title = stringResource(R.string.recharge), onBack = { navController.navigateUp() })
+            PageHeader(
+                title = stringResource(R.string.recharge),
+                onBack = { navController.navigateUp() },
+                actions = {
+                    IconButton(onClick = { navController.navigate(PageConstant.RechargeRecord.text) }) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = stringResource(R.string.recharge_record),
+                            tint = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                }
+            )
 
             LazyColumn(
                 modifier = Modifier
@@ -155,7 +171,7 @@ fun RechargePage(
                     if (showError) {
                         Text(
                             text = stringResource(R.string.select_or_input_amount),
-                            color = MaterialTheme.colorScheme.error,
+                            color = AppColors.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -169,22 +185,37 @@ fun RechargePage(
                         style = MaterialTheme.typography.headlineMedium
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PaymentMethodCard(
-                            method = PaymentMethod.WECHAT,
-                            isSelected = selectedPaymentMethod == PaymentMethod.WECHAT,
-                            onClick = { selectedPaymentMethod = PaymentMethod.WECHAT; showPayError = false }
-                        )
-                        PaymentMethodCard(
-                            method = PaymentMethod.ALIPAY,
-                            isSelected = selectedPaymentMethod == PaymentMethod.ALIPAY,
-                            onClick = { selectedPaymentMethod = PaymentMethod.ALIPAY; showPayError = false }
-                        )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = 0.dp,
+                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                    ) {
+                        Column {
+                            PaymentMethodCard(
+                                method = PaymentMethod.WECHAT,
+                                isSelected = selectedPaymentMethod == PaymentMethod.WECHAT,
+                                onClick = { selectedPaymentMethod = PaymentMethod.WECHAT; showPayError = false }
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(0.5.dp)
+                                    .padding(horizontal = 16.dp)
+                                    .background(AppColors.colorScheme.divider)
+                            )
+                            PaymentMethodCard(
+                                method = PaymentMethod.ALIPAY,
+                                isSelected = selectedPaymentMethod == PaymentMethod.ALIPAY,
+                                onClick = { selectedPaymentMethod = PaymentMethod.ALIPAY; showPayError = false }
+                            )
+                        }
                     }
                     if (showPayError) {
                         Text(
                             text = stringResource(R.string.select_payment_method),
-                            color = MaterialTheme.colorScheme.error,
+                            color = AppColors.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -235,13 +266,13 @@ private fun AmountCard(
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else null
+        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.currency_format, "${amount.toInt()}"),
                 style = MaterialTheme.typography.headlineSmall,
-                color = if (isSelected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary
             )
         }
     }
@@ -258,7 +289,7 @@ private fun CustomAmountCard(
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else null
+        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -298,22 +329,24 @@ private fun CustomAmountCard(
 private fun PaymentMethodCard(
     method: PaymentMethod, isSelected: Boolean, onClick: () -> Unit
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else null
+            .clickable(onClick = onClick)
+            .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .size(36.dp)
+                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                .background(
+                    when (method) {
+                        PaymentMethod.WECHAT -> WeChatGreen.copy(alpha = 0.1f)
+                        PaymentMethod.ALIPAY -> AlipayBlue.copy(alpha = 0.1f)
+                    }
+                ),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = when (method) {
@@ -321,26 +354,29 @@ private fun PaymentMethodCard(
                     PaymentMethod.ALIPAY -> Icons.Default.Payment
                 },
                 contentDescription = null,
+                modifier = Modifier.size(18.dp),
                 tint = when (method) {
                     PaymentMethod.WECHAT -> WeChatGreen
                     PaymentMethod.ALIPAY -> AlipayBlue
                 }
             )
-            Text(
-                text = when (method) {
-                    PaymentMethod.WECHAT -> stringResource(R.string.weixin_pay)
-                    PaymentMethod.ALIPAY -> stringResource(R.string.alipay)
-                },
-                style = MaterialTheme.typography.titleMedium
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = when (method) {
+                PaymentMethod.WECHAT -> stringResource(R.string.weixin_pay)
+                PaymentMethod.ALIPAY -> stringResource(R.string.alipay)
+            },
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
+        )
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = AppColors.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(modifier = Modifier.weight(1f))
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = AppColors.colorScheme.primary
-                )
-            }
         }
     }
 }
