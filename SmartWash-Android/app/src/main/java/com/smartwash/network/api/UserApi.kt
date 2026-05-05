@@ -6,9 +6,12 @@ import com.smartwash.network.entity.user.LoginUser
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.entity.user.UpdateUserInfo
 import com.smartwash.network.vo.user.UserInfoVo
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -88,4 +91,12 @@ interface UserApi {
     @RequireAuthorization
     @POST("/web/auth/user/unBingCampus")
     suspend fun unBindCampus(): ResponseData<Boolean>
+
+    /**
+     * 上传头像
+     */
+    @RequireAuthorization
+    @Multipart
+    @POST("/web/auth/user/avatar")
+    suspend fun uploadAvatar(@Part file: MultipartBody.Part): ResponseData<String>
 }

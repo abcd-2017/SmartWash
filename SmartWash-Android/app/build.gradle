@@ -92,4 +92,7 @@ dependencies {
     ksp libs.androidx.room.compiler
 
     implementation libs.core
+
+    //图片加载
+    implementation libs.coil.compose
 }

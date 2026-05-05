@@ -9,5 +9,6 @@ data class UserInfoVo(
     val studentId: String,
     val campusCard: String,
     val balance: Float,
+    val avatar: String? = null,
     val schoolVo: SchoolVo,
 )

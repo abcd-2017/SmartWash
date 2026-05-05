@@ -154,6 +154,7 @@
     <string name="coupon_amount_format">%s元优惠券</string>
     <string name="coupon_discount_format">满%s减%s</string>
     <string name="coupon_min_amount_format">满%s元可用</string>
+    <string name="no_threshold">无门槛</string>
     <string name="valid_until">有效期至：%s</string>
     <string name="used">已使用</string>
     <string name="expired">已过期</string>
@@ -197,6 +198,9 @@
     <string name="my_profile">我的</string>
     <string name="settings">设置</string>
     <string name="avatar">头像</string>
+    <string name="change_avatar">更换头像</string>
+    <string name="avatar_upload_success">头像更新成功</string>
+    <string name="avatar_upload_failed">头像上传失败</string>
     <string name="username">用户名</string>
     <string name="student_id_format">学号：%s</string>
     <string name="account">账户</string>
