@@ -20,6 +20,8 @@ public class UserVo {
 
     private BigDecimal balance;
 
+    private String avatar;
+
     private LocalDateTime createdAt;
 }
 

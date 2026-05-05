@@ -36,6 +36,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,25 +89,27 @@ fun RegisterPage(
     var isVerificationCodeError by remember { mutableStateOf(false) }
     var isPasswordError by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
+    val verificationCodeFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
 
     var countDown by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
     val captchaState by registerViewModel.captchaState.collectAsState()
-    val captchaValue by registerViewModel.captchaValue.collectAsState()
     val registerState by registerViewModel.registerState.collectAsState()
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     when (captchaState) {
         is RequestState.Success -> {
-            verificationCode = captchaValue
+            Toast.makeText(context, stringResource(R.string.captcha_sent), Toast.LENGTH_SHORT).show()
+            registerViewModel.setCaptchaIdle()
         }
 
         is RequestState.Error -> {
             Toast.makeText(
                 context,
-                stringResource((captchaState as RequestState.Error).messageResId),
+                (captchaState as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             registerViewModel.setCaptchaIdle()
@@ -129,7 +133,7 @@ fun RegisterPage(
         is RequestState.Error -> {
             Toast.makeText(
                 context,
-                stringResource((registerState as RequestState.Error).messageResId),
+                (registerState as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             registerViewModel.setRegisterIdle()
@@ -232,6 +236,10 @@ fun RegisterPage(
                         it.length == 11 -> !isValidPhone(it)
                         else -> false
                     }
+                    // 输入完成自动跳转到验证码框
+                    if (it.length == 11 && isValidPhone(it)) {
+                        verificationCodeFocusRequester.requestFocus()
+                    }
                 }
 
                 GlassDivider()
@@ -242,10 +250,15 @@ fun RegisterPage(
                     isVerificationCodeError = isVerificationCodeError,
                     countDown = countDown,
                     captchaState = captchaState,
+                    focusRequester = verificationCodeFocusRequester,
                     onValueChange = {
                         if (it.length <= 6) {
                             verificationCode = it
                             isVerificationCodeError = false
+                        }
+                        // 输入完成自动跳转到密码框
+                        if (it.length == 6) {
+                            passwordFocusRequester.requestFocus()
                         }
                     },
                     onSendCaptcha = {
@@ -275,7 +288,8 @@ fun RegisterPage(
                     isPasswordError = isPasswordError,
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     if (it.length <= 16) password = it
                     isPasswordError = if (it.isEmpty()) false
@@ -365,6 +379,7 @@ private fun VerificationCodeRow(
     isVerificationCodeError: Boolean,
     countDown: Int,
     captchaState: RequestState,
+    focusRequester: FocusRequester = FocusRequester(),
     onValueChange: (String) -> Unit,
     onSendCaptcha: () -> Unit
 ) {
@@ -378,7 +393,7 @@ private fun VerificationCodeRow(
         TextField(
             value = verificationCode,
             onValueChange = onValueChange,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).focusRequester(focusRequester),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = isVerificationCodeError,
             supportingText = if (isVerificationCodeError) {

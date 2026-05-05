@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.mapper.DashboardMapper">
+
+    <select id="countSchools" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM schools
+    </select>
+
+    <select id="countUsers" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM users
+    </select>
+
+    <select id="countTodayOrders" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM orders WHERE created_at >= #{todayStart}
+    </select>
+
+    <select id="sumTodayIncome" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(amount), 0) FROM payments
+        WHERE status = '1' AND paid_at >= #{todayStart}
+    </select>
+
+</mapper>

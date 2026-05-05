@@ -48,7 +48,7 @@ public class WebUserCouponController {
     }
 
     @Operation(summary = "获取可用优惠券列表", description = "获取当前用户可用于指定订单的优惠券列表")
-    @PostMapping("/auth/userCoupon/getCanUseCoupon/{orderId}")
+    @GetMapping("/auth/userCoupon/available/{orderId}")
     public Result<List<UserCouponVo>> getCanUseCoupon(@PathVariable("orderId") @Parameter(description = "订单ID", required = true, example = "1") Long orderId) {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(userCouponService.getCanUseCoupon(user.getUserId(), orderId));

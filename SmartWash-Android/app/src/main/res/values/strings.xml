@@ -35,20 +35,21 @@
 
     <!-- ==================== 首页 ==================== -->
     <string name="smart_laundry">智慧洗衣</string>
-    <string name="quick_service">快速服务</string>
-    <string name="book_now">立即预约</string>
-    <string name="price_from">15元/件起</string>
-    <string name="retrieve_clothes">取回衣物</string>
-    <string name="scan_to_pickup">扫码取件</string>
-    <string name="in_progress">进行中</string>
+    <string name="home_greeting_morning">早上好</string>
+    <string name="home_greeting_afternoon">下午好</string>
+    <string name="home_greeting_evening">晚上好</string>
+    <string name="home_greeting_suffix">，同学</string>
+    <string name="account_balance_label">账户余额</string>
+    <string name="home_available_coupons">可用优惠券</string>
+    <string name="service_booking">预约洗衣</string>
+    <string name="service_pickup">取件</string>
+    <string name="service_coupon">优惠券</string>
+    <string name="in_progress_orders">进行中订单</string>
     <string name="view_all">查看全部</string>
     <string name="no_ongoing_orders">暂无进行中的订单</string>
-    <string name="service_status">服务状态</string>
-    <string name="business_hours">营业时间</string>
-    <string name="delivery_status">配送状态</string>
-    <string name="normal_operation">正常运营</string>
-    <string name="factory_washing">工厂清洗中</string>
+    <string name="factory_washing">清洗中</string>
     <string name="order_no_format">订单号: %s</string>
+    <string name="service_tips">所有服务含免费取送 · 标准24h完成 · 支持在线支付</string>
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
 
     <!-- ==================== 订单 ==================== -->
@@ -98,13 +99,7 @@
 
     <!-- ==================== 洗衣服务 ==================== -->
     <string name="laundry_service">洗衣服务</string>
-    <string name="service_description">服务说明</string>
-    <string name="service_description_content">• 所有服务均包含免费取送\n• 标准服务24小时内完成\n• 支持在线支付和积分抵扣</string>
-    <string name="retrieval_service">取回服务</string>
-    <string name="scan_pickup_desc">扫描取件，快速便捷</string>
-    <string name="free">免费</string>
-    <string name="service_items">服务项目</string>
-    <string name="more_services">更多服务</string>
+    <string name="service_page_subtitle">选择您需要的洗护服务</string>
 
     <!-- ==================== 预约寄存 ==================== -->
     <string name="book_locker">预约寄存</string>
@@ -152,6 +147,10 @@
     <string name="custom">自定义</string>
     <string name="custom_amount">自定义金额</string>
     <string name="recharge_success">充值成功</string>
+    <string name="recharge_record">充值记录</string>
+    <string name="no_recharge_records">暂无充值记录</string>
+    <string name="recharge_record_amount_format">+%s</string>
+    <string name="error_get_recharge_records_failed">获取充值记录失败</string>
     <string name="tip">提示</string>
 
     <!-- ==================== 优惠券 ==================== -->
@@ -159,6 +158,7 @@
     <string name="coupon_amount_format">%s元优惠券</string>
     <string name="coupon_discount_format">满%s减%s</string>
     <string name="coupon_min_amount_format">满%s元可用</string>
+    <string name="no_threshold">无门槛</string>
     <string name="valid_until">有效期至：%s</string>
     <string name="used">已使用</string>
     <string name="expired">已过期</string>
@@ -202,6 +202,9 @@
     <string name="my_profile">我的</string>
     <string name="settings">设置</string>
     <string name="avatar">头像</string>
+    <string name="change_avatar">更换头像</string>
+    <string name="avatar_upload_success">头像更新成功</string>
+    <string name="avatar_upload_failed">头像上传失败</string>
     <string name="username">用户名</string>
     <string name="student_id_format">学号：%s</string>
     <string name="account">账户</string>
@@ -313,6 +316,7 @@
     <string name="error_login_failed">登录失败</string>
     <string name="error_register_failed">注册失败</string>
     <string name="error_get_captcha_failed">验证码获取失败</string>
+    <string name="captcha_sent">验证码已发送，请查看短信</string>
     <string name="error_get_school_failed">获取学校信息失败</string>
     <string name="error_cancel_order_failed">取消订单失败</string>
     <string name="error_get_laundry_items_failed">获取洗衣项目失败</string>

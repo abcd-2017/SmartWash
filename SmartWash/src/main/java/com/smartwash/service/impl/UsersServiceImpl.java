@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
+import com.smartwash.config.MinioConfig;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
     private final ISchoolsService schoolsService;
+    private final MinioConfig minioConfig;
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {
@@ -71,7 +74,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         if (StringUtils.hasText(addUsersFrom.getPassword())) {
             password = encoder.encode(addUsersFrom.getPassword());
         } else {
-            password = encoder.encode(DefaultConstant.DEFAULT_PASSWORD);
+            password = encoder.encode(DefaultConstant.generateDefaultPassword());
         }
         BeanUtils.copyProperties(addUsersFrom, users);
         users.setPassword(password);
@@ -119,10 +122,17 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Boolean registerUser(UserRegisterFrom userRegisterFrom) {
+        // 检查手机号是否已注册
+        Users existingUser = getUserByPhone(userRegisterFrom.getPhoneNumber());
+        if (existingUser != null) {
+            throw new CustomExceptions("该手机号已注册");
+        }
+
         Users users = new Users();
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
+        users.setAvatar(minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/default/avatar.png");
         boolean result = save(users);
         log.info("用户注册成功, userId: {}, phone: {}", users.getUserId(), DesensitizedUtil.mobilePhone(userRegisterFrom.getPhoneNumber()));
         return result;

@@ -1,15 +1,18 @@
 package com.smartwash.controller.web;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.PayType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.common.Result;
+import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.payment.PaymentOrderFrom;
 import com.smartwash.service.IPaymentsService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
+import com.smartwash.vo.payment.PaymentVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
@@ -65,5 +68,13 @@ public class WebPaymentsController {
         } else {
             return Result.failMsg("支付失败");
         }
+    }
+
+    @Operation(summary = "获取当前用户支付记录", description = "分页查询当前登录用户的支付记录")
+    @GetMapping("/auth/payments/list")
+    public Result<Page<PaymentVo>> getUserPayments(BaseSearchFrom searchFrom) {
+        LoginUser user = UserContextHolder.getUser();
+        Page<PaymentVo> page = paymentsService.getUserPayments(user.getUserId(), searchFrom);
+        return Result.ok(page);
     }
 }

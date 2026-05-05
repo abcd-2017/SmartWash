@@ -35,7 +35,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "ADMIN" -> "ROLE_ADMIN"
                     .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "USER" -> "ROLE_USER"
-                    .requestMatchers("/auth/**", "/web/**").permitAll() // 公开接口
+                    .requestMatchers("/auth/**").permitAll() // 认证接口（登录、注册、验证码）
+                    .requestMatchers( // 公开的只读数据接口
+                            "/web/orders/status",
+                            "/web/laundryItems/all",
+                            "/web/lockers/status",
+                            "/web/lockers/all",
+                            "/web/schools/allName",
+                            "/web/payments/payType",
+                            "/web/payments/payStatus"
+                    ).permitAll()
                     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**", "/v3/api-docs/**").permitAll() // Swagger API 文档
                     .anyRequest().authenticated()
             )

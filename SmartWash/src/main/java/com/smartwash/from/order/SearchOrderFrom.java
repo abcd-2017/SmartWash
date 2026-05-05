@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 
 @Data
 public class SearchOrderFrom extends BaseSearchFrom {
+    private Long userId;
+
     private String phoneNumber;
 
     private String schoolName;

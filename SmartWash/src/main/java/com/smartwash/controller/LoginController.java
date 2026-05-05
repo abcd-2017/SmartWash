@@ -23,7 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Tag(name = "认证管理", description = "用户登录、注册、验证码接口")
@@ -35,16 +35,19 @@ public class LoginController {
     private static final String PHONE_REGEX = "^(\\+86)?1[3-9]\\d{9}$";
     private static final int CAPTCHA_LENGTH = 6;
 
-    @Autowired
-    private IAdminUsersService adminUsersService;
-    @Autowired
-    private IUsersService usersService;
-    @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private StringRedisTemplate redisTemplate;
+    private final IAdminUsersService adminUsersService;
+    private final IUsersService usersService;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final StringRedisTemplate redisTemplate;
+
+    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate) {
+        this.adminUsersService = adminUsersService;
+        this.usersService = usersService;
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
+        this.redisTemplate = redisTemplate;
+    }
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌")
     @PostMapping("/adminUsers/login")
@@ -121,23 +124,31 @@ public class LoginController {
         return Result.ok(null);
     }
 
-    @Operation(summary = "获取短信验证码", description = "向指定手机号发送6位数字短信验证码")
+    @Operation(summary = "获取短信验证码", description = "向指定手机号发送6位数字短信验证码，同一手机号60秒内只能请求一次")
     @GetMapping("/user/captcha/{phoneNumber}")
-    public Result<String> getCaptcha(@PathVariable("phoneNumber") @Parameter(description = "手机号码", required = true, example = "13800138000") String phoneNumber) {
+    public Result<String> getCaptcha(@PathVariable @Parameter(description = "手机号码", required = true, example = "13800138000") String phoneNumber) {
         if (!phoneNumber.matches(PHONE_REGEX)) {
             log.warn("验证码请求手机号格式错误, phone: {}", phoneNumber);
             return Result.failMsg("手机号格式错误");
         }
-        // 不区分是否已注册，防止手机号枚举
+
+        // 频率限制：同一手机号 60 秒内只能请求一次
+        String rateKey = "captcha:rate:" + phoneNumber;
+        Boolean firstTry = redisTemplate.opsForValue().setIfAbsent(rateKey, "1", 60, TimeUnit.SECONDS);
+        if (Boolean.FALSE.equals(firstTry)) {
+            log.warn("验证码请求过于频繁, phone: {}", phoneNumber.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
+            return Result.failMsg("验证码发送过于频繁，请稍后再试");
+        }
+
         String key = String.format("%s:%s", DefaultConstant.Captcha_Code, phoneNumber);
 
+        SecureRandom secureRandom = new SecureRandom();
         StringBuilder otp = new StringBuilder();
-        Random random = new Random();
         for (int i = 0; i < CAPTCHA_LENGTH; i++) {
-            otp.append(random.nextInt(10)); // 生成 0-9 之间的随机数
+            otp.append(secureRandom.nextInt(10));
         }
         redisTemplate.opsForValue().set(key, otp.toString(), DefaultConstant.Captcha_Timeout, TimeUnit.MILLISECONDS);
         log.info("验证码已生成, phone: {}", phoneNumber.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
-        return Result.ok(otp.toString());
+        return Result.ok("验证码已发送");
     }
 }

@@ -1,5 +1,7 @@
 package com.smartwash.ui.page.coupon.tab
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,9 +63,7 @@ fun AvailableCouponsTab(
                 CouponCard(
                     coupon = coupon,
                     isAvailable = true,
-                    onClaimClick = {
-                        itemClick(coupon.couponId)
-                    }
+                    onClaimClick = { itemClick(coupon.couponId) }
                 )
             }
         }
@@ -78,8 +79,9 @@ fun CouponCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
-        color = if (isAvailable) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        shadowElevation = 0.dp
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -89,37 +91,46 @@ fun CouponCard(
         ) {
             // 左侧金额
             Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.Start
+                modifier = Modifier.width(80.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isAvailable) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (coupon.threshold == 0f) stringResource(R.string.coupon_discount_format, "${coupon.discount + 0.01}", "${coupon.discount}") else stringResource(R.string.coupon_min_amount_format, "${coupon.threshold}"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    color = AppColors.colorScheme.primary
                 )
             }
 
+            // 竖线分隔
+            Box(
+                modifier = Modifier
+                    .width(0.5.dp)
+                    .height(48.dp)
+                    .background(AppColors.colorScheme.divider)
+            )
+
             // 右侧信息
             Column(
-                horizontalAlignment = Alignment.End
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
             ) {
                 Text(
                     text = coupon.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = AppColors.colorScheme.textPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${coupon.startTime.split(" ")[0]}-${coupon.endTime.split(" ")[0]}",
+                    text = "${coupon.startTime.split(" ")[0]} - ${coupon.endTime.split(" ")[0]}",
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textTertiary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (coupon.threshold == 0f) stringResource(R.string.no_threshold) else stringResource(R.string.coupon_min_amount_format, "${coupon.threshold}"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
                 )
                 if (isAvailable) {
                     Spacer(modifier = Modifier.height(8.dp))

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -25,7 +26,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "BASE_URL", '"http://192.168.1.61:8080/"'
+        }
         release {
+            buildConfigField "String", "BASE_URL", '"https://api.smartwash.example.com/"'
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -85,5 +90,13 @@ dependencies {
     implementation libs.androidx.paging.compose
     implementation libs.androidx.paging.runtime.ktx
 
+    //Room
+    implementation libs.androidx.room.runtime
+    implementation libs.androidx.room.ktx
+    ksp libs.androidx.room.compiler
+
     implementation libs.core
+
+    //图片加载
+    implementation libs.coil.compose
 }

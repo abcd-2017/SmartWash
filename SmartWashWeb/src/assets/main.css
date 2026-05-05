@@ -118,31 +118,38 @@
 .el-tag {
   border: none !important;
   border-radius: 6px;
+  font-weight: 500;
 }
 
 .el-tag--success {
-  --el-tag-bg-color: #d1fae5;
-  --el-tag-text-color: #065f46;
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
 }
 
 .el-tag--danger {
-  --el-tag-bg-color: #fee2e2;
-  --el-tag-text-color: #991b1b;
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
 }
 
 .el-tag--warning {
-  --el-tag-bg-color: #fef3c7;
-  --el-tag-text-color: #92400e;
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
 }
 
 .el-tag--info {
-  --el-tag-bg-color: #e2e8f0;
-  --el-tag-text-color: #334155;
+  background-color: #e2e8f0 !important;
+  color: #334155 !important;
 }
 
 .el-tag--primary {
-  --el-tag-bg-color: #eef2ff;
-  --el-tag-text-color: #4338ca;
+  background-color: #eef2ff !important;
+  color: #4338ca !important;
+}
+
+/* 默认 type（无 type / 空字符串）*/
+.el-tag:not(.el-tag--success):not(.el-tag--danger):not(.el-tag--warning):not(.el-tag--info):not(.el-tag--primary) {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
 }
 
 /* --- el-button 主色 (Indigo) --- */

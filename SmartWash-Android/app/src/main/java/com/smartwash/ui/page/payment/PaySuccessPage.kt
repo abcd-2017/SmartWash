@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +41,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
@@ -71,7 +71,7 @@ fun PaySuccessPage(
         is RequestState.Error -> {
             Toast.makeText(
                 context,
-                context.getString((getOrderDetailState as RequestState.Error).messageResId),
+                (getOrderDetailState as RequestState.Error).getMessage(context),
                 Toast.LENGTH_SHORT
             ).show()
             orderDetailViewModel.resetState()
@@ -144,8 +144,14 @@ fun PaySuccessPage(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                AppCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
+                    Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
                         InfoRow(stringResource(R.string.order_number), orderInfo?.orderNo ?: "")
                         InfoRow(stringResource(R.string.payment_amount), stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"), valueColor = AppColors.colorScheme.primary)
                         InfoRow(stringResource(R.string.order_time_display), orderInfo?.createdAt ?: "")
@@ -160,9 +166,15 @@ fun PaySuccessPage(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                AppCard {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = 0.dp,
+                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(AppDimens.cardPadding),
                         verticalAlignment = Alignment.Top
                     ) {
                         IconBox(
@@ -187,7 +199,7 @@ fun PaySuccessPage(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             }
 
             // 底部按钮

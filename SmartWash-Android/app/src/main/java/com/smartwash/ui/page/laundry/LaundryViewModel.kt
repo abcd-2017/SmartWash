@@ -3,7 +3,7 @@ package com.smartwash.ui.page.laundry
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.LaundryItemsApi
+import com.smartwash.database.dao.LaundryItemDao
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.order.ReservationLaundry
@@ -12,6 +12,7 @@ import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.laundry.LaundryItem
 import com.smartwash.network.vo.user.UserInfoVo
 import com.smartwash.R
+import com.smartwash.repository.LaundryRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LaundryViewModel @Inject constructor(
-    private val laundryItemsApi: LaundryItemsApi,
+    private val laundryRepository: LaundryRepository,
+    private val laundryItemDao: LaundryItemDao,
     private val orderApi: OrderApi,
     private val userApi: UserApi,
 ) : ViewModel() {
@@ -39,17 +41,26 @@ class LaundryViewModel @Inject constructor(
     val userInfo = _userInfo.asStateFlow()
 
     fun getLaundryItem() {
-        _getLaundryItemState.value = RequestState.Loading
         viewModelScope.launch {
+            // 有缓存时先显示缓存，无缓存时显示 Loading
+            val cached = laundryItemDao.getAll()
+            if (cached.isNotEmpty()) {
+                _laundryItems.value = cached.map { it.toVo() }
+            } else {
+                _getLaundryItemState.value = RequestState.Loading
+            }
+
             try {
-                val responseData = laundryItemsApi.getLaundryItems()
-                val userInfoRes = userApi.getUserInfo()
-                _laundryItems.value = responseData.data ?: emptyList()
-                _userInfo.value = userInfoRes.data
+                val result = laundryRepository.getLaundryItems()
+                _laundryItems.value = result
                 _getLaundryItemState.value = RequestState.Success
+                val userInfoRes = userApi.getUserInfo()
+                _userInfo.value = userInfoRes.data
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "LaundryViewModel.getLaundryItem: ${e.message}", e)
-                _getLaundryItemState.value = RequestState.Error(e.resId)
+                if (cached.isEmpty()) {
+                    _getLaundryItemState.value = RequestState.Error(e.resId, e.message)
+                }
             }
         }
     }
@@ -72,7 +83,7 @@ class LaundryViewModel @Inject constructor(
                 }
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "LaundryViewModel.reservationLaundry: ${e.message}", e)
-                _reservationState.value = RequestState.Error(e.resId)
+                _reservationState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }

@@ -3,13 +3,13 @@ package com.smartwash.ui.page.update_userinfo
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.user.UpdateUserInfo
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.school.SchoolName
 import com.smartwash.R
+import com.smartwash.repository.SchoolRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -22,8 +22,8 @@ import javax.inject.Inject
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class UpdateUserInfoViewModel @Inject constructor(
-    private val schoolApi: SchoolApi,
-    private val userApi: UserApi
+    private val schoolRepository: SchoolRepository,
+    private val userApi: UserApi,
 ) : ViewModel() {
     private val _schools = MutableStateFlow<List<SchoolName>>(emptyList())
     val schools = _schools.asStateFlow()
@@ -57,7 +57,7 @@ class UpdateUserInfoViewModel @Inject constructor(
                     _updateState.value = RequestState.Success
                 } catch (e: NetworkException) {
                     Log.e(AppConstant.APP_NAME, "UpdateUserInfoViewModel.updateUserInfo: ${e.message}", e)
-                    _updateState.value = RequestState.Error(e.resId)
+                    _updateState.value = RequestState.Error(e.resId, e.message)
                 }
             } else {
                 _updateState.value = RequestState.Error(R.string.error_student_id_registered)
@@ -68,8 +68,7 @@ class UpdateUserInfoViewModel @Inject constructor(
     fun searchSchool() {
         viewModelScope.launch {
             try {
-                val responseData = schoolApi.getAllSchool(searchName.value)
-                _schools.value = responseData.data.orEmpty()
+                _schools.value = schoolRepository.getAllSchools(searchName.value)
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "UpdateUserInfoViewModel.searchSchool: ${e.message}", e)
             }

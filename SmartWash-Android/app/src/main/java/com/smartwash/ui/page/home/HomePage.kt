@@ -1,8 +1,9 @@
 package com.smartwash.ui.page.home
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +24,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,10 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
-import com.smartwash.ui.theme.GlassBorder
-import com.smartwash.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,12 +46,6 @@ import com.smartwash.ui.page.index.IndexPage
 import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.userinfo.UserInfoPage
 import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
-import com.smartwash.ui.theme.TextTertiary
 import com.smartwash.utils.RequestState
 
 @Composable
@@ -90,22 +80,10 @@ fun HomePage(
             startDestination = HomePageConstant.Index.text,
             modifier = Modifier.padding(paddingValues),
             enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                )
+                fadeIn(animationSpec = tween(200, easing = LinearEasing))
             },
             exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    )
-                )
+                fadeOut(animationSpec = tween(200, easing = LinearEasing))
             }
         ) {
             composable(HomePageConstant.Index.text) {
@@ -199,123 +177,3 @@ private fun BottomNavItem(
     }
 }
 
-@Composable
-fun ServiceCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = Primary,
-        shadowElevation = 0.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(GlassBorder),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Text(text = title, style = MaterialTheme.typography.titleLarge, color = Color.White)
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = GlassTextDisabled
-            )
-        }
-    }
-}
-
-@Composable
-fun ServiceCardOutlined(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.primary.copy(alpha = 0.3f))
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(AppColors.colorScheme.primaryLight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = AppColors.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-            Text(text = title, style = MaterialTheme.typography.titleLarge, color = AppColors.colorScheme.primary)
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
-            )
-        }
-    }
-}
-
-@Composable
-fun StatusCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    title: String,
-    content: String
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            com.smartwash.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary,
-                )
-                Text(
-                    text = content,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-        }
-    }
-}

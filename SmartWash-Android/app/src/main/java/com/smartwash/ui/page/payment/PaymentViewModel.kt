@@ -3,15 +3,15 @@ package com.smartwash.ui.page.payment
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.CouponApi
-import com.smartwash.network.api.OrderApi
-import com.smartwash.network.api.PaymentApi
 import com.smartwash.network.entity.OrderPayment
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.network.vo.order.OrderInfo
 import com.smartwash.R
+import com.smartwash.repository.CouponRepository
+import com.smartwash.repository.OrderRepository
+import com.smartwash.repository.PaymentRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,9 +21,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PaymentViewModel @Inject constructor(
-    private val orderApi: OrderApi,
-    private val paymentApi: PaymentApi,
-    private val couponApi: CouponApi,
+    private val orderRepository: OrderRepository,
+    private val paymentRepository: PaymentRepository,
+    private val couponRepository: CouponRepository,
 ) : ViewModel() {
     private val _initState = MutableStateFlow<RequestState>(RequestState.Idle)
     val initState = _initState.asStateFlow()
@@ -42,12 +42,11 @@ class PaymentViewModel @Inject constructor(
         _initState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val orderInfoRes = orderApi.getOrderInfo(orderId)
-                _orderInfo.value = orderInfoRes.data
+                _orderInfo.value = orderRepository.getOrderInfo(orderId)
                 _initState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "PaymentViewModel.initData: ${e.message}", e)
-                _initState.value = RequestState.Error(e.resId)
+                _initState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
@@ -56,12 +55,12 @@ class PaymentViewModel @Inject constructor(
         _getUserCouponState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val canUseCoupon = couponApi.getCanUseCoupon(orderId)
-                _userCouponList.value = canUseCoupon.data ?: emptyList()
+                val canUseCoupon = couponRepository.getCanUseCoupon(orderId)
+                _userCouponList.value = canUseCoupon
                 _getUserCouponState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "PaymentViewModel.getaUserCoupon: ${e.message}", e)
-                _getUserCouponState.value = RequestState.Error(e.resId)
+                _getUserCouponState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
@@ -70,12 +69,11 @@ class PaymentViewModel @Inject constructor(
         _calculationOrderState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val responseData = orderApi.calculationOrder(orderId, userCouponId)
-                _orderInfo.value = responseData.data
+                _orderInfo.value = orderRepository.calculationOrder(orderId, userCouponId)
                 _calculationOrderState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "PaymentViewModel.calculationOrder: ${e.message}", e)
-                _calculationOrderState.value = RequestState.Error(e.resId)
+                _calculationOrderState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
@@ -84,11 +82,11 @@ class PaymentViewModel @Inject constructor(
         _paymentState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                paymentApi.payment(OrderPayment(orderId, paymentState, userCouponId))
+                paymentRepository.payment(OrderPayment(orderId, paymentState, userCouponId))
                 _paymentState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "PaymentViewModel.paymentOrder: ${e.message}", e)
-                _paymentState.value = RequestState.Error(e.resId)
+                _paymentState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }

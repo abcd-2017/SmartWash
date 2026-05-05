@@ -2,7 +2,9 @@ package com.smartwash.ui.page.order
 
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +59,6 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.order.OrderInfo
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.AppTabBar
 import com.smartwash.ui.common.EmptyState
 import com.smartwash.ui.common.PageHeader
@@ -103,7 +104,7 @@ fun OrderPage(
             }
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((cancelOrderState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (cancelOrderState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             orderViewModel.resetCancelOrderState()
         }
         else -> {}
@@ -220,14 +221,25 @@ private fun OrderCard(
     cancelClick: (Long) -> Unit,
     itemClick: () -> Unit,
 ) {
-    AppCard(onClick = itemClick) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = itemClick),
+        shape = RoundedCornerShape(AppDimens.cardRadius),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(44.dp)
@@ -254,10 +266,10 @@ private fun OrderCard(
                             overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.width(180.dp)
                         )
                     }
                 }
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = stringResource(R.string.currency_format, order.payPrice.toString()),
                     color = AppColors.colorScheme.primary,

@@ -15,6 +15,8 @@ import com.smartwash.vo.coupon.CouponVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -50,6 +52,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    @CacheEvict(value = "coupon", allEntries = true)
     public void addCoupon(AddCouponFrom addCouponFrom) {
         Coupon coupon = new Coupon();
         BeanUtils.copyProperties(addCouponFrom, coupon);
@@ -64,6 +67,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    @CacheEvict(value = "coupon", allEntries = true)
     public void updateCoupon(UpdateCouponFrom couponFrom) {
         log.info("更新优惠券, couponId: {}", couponFrom.getCouponId());
         Coupon coupon = getById(couponFrom.getCouponId());
@@ -72,6 +76,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     }
 
     @Override
+    @CacheEvict(value = "coupon", allEntries = true)
     public Boolean deleteCoupon(String ids) {
         log.info("删除优惠券, ids: {}", ids);
         String[] idList = ids.split(",");
@@ -83,6 +88,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     //获取所有可以领取的优惠券
     @Override
+    @Cacheable(value = "coupon", key = "'valid:' + #userId")
     public List<CouponVo> getAllValidCoupon(Long userId) {
         //查询所有可领取的优惠券
         LambdaQueryWrapper<Coupon> queryWrapper = new LambdaQueryWrapper<>();

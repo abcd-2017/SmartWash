@@ -55,7 +55,7 @@ public class LaundryItemsController {
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
         LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
-        if (!Objects.equals(laundryItems.getItemName(), laundryItems.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
+        if (!Objects.equals(laundryItems.getItemName(), laundryPackageFrom.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
             return Result.failMsg("该套餐已经存在了");
         }
         laundryItemsService.updateLaundryPackage(laundryPackageFrom);

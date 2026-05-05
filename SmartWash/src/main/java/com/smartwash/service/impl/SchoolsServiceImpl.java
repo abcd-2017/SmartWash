@@ -17,6 +17,10 @@ import com.smartwash.vo.schools.SchoolsVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,6 +33,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> implements ISchoolsService {
     private final ILockersService lockersService;
+
+    @Lazy
+    @Autowired
+    private SchoolsServiceImpl self;
 
     //获取所有学校
     @Override
@@ -59,6 +67,7 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
     //添加学校
     @Override
     @Transactional
+    @CacheEvict(value = "schools", allEntries = true)
     public Boolean addSchools(AddSchoolsFrom addSchoolsFrom) {
         Schools schools = new Schools();
         BeanUtils.copyProperties(addSchoolsFrom, schools);
@@ -87,6 +96,7 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     //修改学校
     @Override
+    @CacheEvict(value = "schools", allEntries = true)
     public Boolean updateSchool(UpdateSchoolsFrom schoolsFrom) {
         log.info("修改学校, schoolId: {}", schoolsFrom.getSchoolId());
         Schools school = getById(schoolsFrom.getSchoolId());
@@ -97,6 +107,7 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
     //删除学校
     @Override
     @Transactional
+    @CacheEvict(value = "schools", allEntries = true)
     public Boolean deleteSchools(String ids) {
         log.info("删除学校, ids: {}", ids);
         String[] idList = ids.split(",");
@@ -118,9 +129,22 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     @Override
     public List<SchoolNameVo> getAllSchoolsName(String schoolName) {
+        if (!StringUtils.hasText(schoolName)) {
+            return self.getAllSchoolsNameFromCache();
+        }
+        // 有搜索关键词时直接查库，不缓存
         LambdaQueryWrapper<Schools> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.like(StringUtils.hasText(schoolName), Schools::getSchoolName, schoolName);
+        queryWrapper.like(Schools::getSchoolName, schoolName);
         return list(queryWrapper).stream().map(s -> {
+            SchoolNameVo schoolNameVo = new SchoolNameVo();
+            BeanUtils.copyProperties(s, schoolNameVo);
+            return schoolNameVo;
+        }).toList();
+    }
+
+    @Cacheable(value = "schools", key = "'allName'")
+    public List<SchoolNameVo> getAllSchoolsNameFromCache() {
+        return list().stream().map(s -> {
             SchoolNameVo schoolNameVo = new SchoolNameVo();
             BeanUtils.copyProperties(s, schoolNameVo);
             return schoolNameVo;

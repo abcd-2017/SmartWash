@@ -3,10 +3,10 @@ package com.smartwash.ui.page.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.UserApi
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.R
+import com.smartwash.repository.UserRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val userApi: UserApi
+    private val userRepository: UserRepository,
 ) : ViewModel() {
     private val _userSchoolId = MutableStateFlow<Long>(-1)
     val hasUserSchool = _userSchoolId.asStateFlow()
@@ -28,12 +28,11 @@ class HomeViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val res = userApi.getUserSchoolId()
-                _userSchoolId.value = res.data ?: -1
+                _userSchoolId.value = userRepository.getUserSchoolId()
                 _getSchoolState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "HomeViewModel.getUserSchool: ${e.message}", e)
-                _getSchoolState.value = RequestState.Error(e.resId)
+                _getSchoolState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }

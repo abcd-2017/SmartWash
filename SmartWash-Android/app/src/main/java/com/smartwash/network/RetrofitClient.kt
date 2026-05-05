@@ -1,7 +1,12 @@
 package com.smartwash.network
 
 import android.content.Context
+import androidx.room.Room
 import com.smartwash.BuildConfig
+import com.smartwash.database.AppDatabase
+import com.smartwash.database.dao.CouponVoDao
+import com.smartwash.database.dao.LaundryItemDao
+import com.smartwash.database.dao.SchoolNameDao
 import com.smartwash.network.api.CouponApi
 import com.smartwash.network.api.LaundryItemsApi
 import com.smartwash.network.api.OrderApi
@@ -56,7 +61,7 @@ class RetrofitClient {
     fun getRetrofitClient(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .client(okHttpClient)
-            .baseUrl(AppConstant.DEFAULT_SERVER)
+            .baseUrl(BuildConfig.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
@@ -81,4 +86,29 @@ class RetrofitClient {
 
     @Provides
     fun getCouponApi(retrofit: Retrofit): CouponApi = retrofit.create(CouponApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "smartwash_db",
+        ).build()
+    }
+
+    @Provides
+    fun provideLaundryItemDao(database: AppDatabase): LaundryItemDao {
+        return database.laundryItemDao()
+    }
+
+    @Provides
+    fun provideSchoolNameDao(database: AppDatabase): SchoolNameDao {
+        return database.schoolNameDao()
+    }
+
+    @Provides
+    fun provideCouponVoDao(database: AppDatabase): CouponVoDao {
+        return database.couponVoDao()
+    }
 }

@@ -886,10 +886,14 @@ CREATE TABLE `users`  (
   `campus_card` varchar(50) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL,
   `password` varchar(255) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL,
   `balance` decimal(10, 2) NULL DEFAULT 0.00,
+  `avatar` varchar(500) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '头像URL',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`) USING BTREE,
   UNIQUE INDEX `phone_number`(`phone_number` ASC) USING BTREE,
   UNIQUE INDEX `student_id`(`student_id` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  
+-- 用户头像字段迁移
+ALTER TABLE `users` ADD COLUMN `avatar` varchar(500) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '头像URL' AFTER `balance`;
+
 SET FOREIGN_KEY_CHECKS = 1;

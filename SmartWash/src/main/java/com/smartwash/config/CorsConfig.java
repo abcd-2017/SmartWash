@@ -1,5 +1,6 @@
 package com.smartwash.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -7,13 +8,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
+    @Value("${cors.allowed-origins:http://localhost:*,http://192.168.*}")
+    private String[] allowedOrigins;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // 添加映射路径
         registry.addMapping("/**")
-                .allowedOrigins("*") // 允许哪些域的请求，星号代表允许所有
-                .allowedMethods("POST", "GET", "PUT", "OPTIONS", "DELETE") // 允许的方法
-                .allowedHeaders("*") // 允许的头部设置
-                .maxAge(168000); // 预检间隔时间
+                .allowedOriginPatterns(allowedOrigins)
+                .allowedMethods("POST", "GET", "PUT", "OPTIONS", "DELETE")
+                .allowedHeaders("*")
+                .maxAge(168000);
     }
 }

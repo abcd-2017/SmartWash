@@ -3,10 +3,12 @@ package com.smartwash.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.security.SecureRandom;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,11 +21,14 @@ import java.util.UUID;
 @Component
 public class JwtUtil {
 
-    //有效期为
     public static final Long JWT_TTL = 7 * 24 * 60 * 60 * 1000L; // 7天
-    //设置秘钥明文
-    public static final String JWT_KEY = "smart_wast";
-    private static final SecretKey KEY = Jwts.SIG.HS256.key().random(new SecureRandom(JWT_KEY.getBytes())).build();
+    private static final String ISSUER = "SmartWash";
+
+    private final SecretKey key;
+
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.key = new SecretKeySpec(Base64.getDecoder().decode(secret), "HmacSHA256");
+    }
 
     public static String getUUID() {
         return UUID.randomUUID().toString().replaceAll("-", "");
@@ -38,7 +43,7 @@ public class JwtUtil {
     private Map<String, Object> initClaims(String username) {
         Map<String, Object> claims = new HashMap<>();
         //"iss" (Issuer): 代表 JWT 的签发者。在这个字段中填入一个字符串，表示该 JWT 是由谁签发的。例如，可以填入你的应用程序的名称或标识符。
-        claims.put("iss", JWT_KEY);
+        claims.put("iss", ISSUER);
         //"sub" (Subject): 代表 JWT 的主题，即该 JWT 所面向的用户。可以是用户的唯一标识符或者其他相关信息。
         claims.put("sub", username);
         //"exp" (Expiration Time): 代表 JWT 的过期时间。通常以 UNIX 时间戳表示，表示在这个时间之后该 JWT 将会过期。建议设定一个未来的时间点以保证 JWT 的有效性，比如一个小时、一天、一个月后的时间。
@@ -63,7 +68,7 @@ public class JwtUtil {
         Map<String, Object> claims = initClaims(username);
         return Jwts.builder()
                    .claims(claims)
-                   .signWith(KEY)
+                   .signWith(key)
                    .compact();
     }
 
@@ -77,7 +82,7 @@ public class JwtUtil {
     public Claims getPayloadFromToken(String token) {
         //密钥实例
         return Jwts.parser()
-                   .verifyWith(KEY)
+                   .verifyWith(key)
                    .build()
                    .parseSignedClaims(token)
                    .getPayload();

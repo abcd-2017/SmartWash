@@ -1,7 +1,7 @@
 package com.smartwash.config;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONReader;
+import com.alibaba.fastjson2.JSONFactory;
 import com.alibaba.fastjson2.JSONWriter;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -25,6 +25,11 @@ import java.util.Map;
 @Configuration
 @EnableCaching
 public class RedisConfig {
+
+    static {
+        // 限制 FastJSON2 反序列化自动类型识别仅允许项目内部类，防止反序列化漏洞
+        JSONFactory.getDefaultObjectReaderProvider().addAutoTypeAccept("com.smartwash.");
+    }
 
     @Bean
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
@@ -56,7 +61,8 @@ public class RedisConfig {
             @Override
             public Object deserialize(byte[] bytes) {
                 if (bytes == null || bytes.length == 0) return null;
-                return JSON.parseObject(new String(bytes, StandardCharsets.UTF_8), Object.class, JSONReader.Feature.SupportAutoType);
+<<<<<<< HEAD
+                return JSON.parseObject(new String(bytes, StandardCharsets.UTF_8), Object.class);
             }
         };
 

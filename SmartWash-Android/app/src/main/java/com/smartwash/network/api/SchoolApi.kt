@@ -1,6 +1,6 @@
 package com.smartwash.network.api
 
-import com.smartwash.network.entity.ResponseData
+import com.smartwash.network.entity.ApiResult
 import com.smartwash.network.vo.school.SchoolName
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -12,5 +12,5 @@ interface SchoolApi {
     @GET("/web/schools/allName")
     suspend fun getAllSchool(
         @Query("schoolName") schoolName: String
-    ): ResponseData<List<SchoolName>>
+    ): ApiResult<List<SchoolName>>
 }

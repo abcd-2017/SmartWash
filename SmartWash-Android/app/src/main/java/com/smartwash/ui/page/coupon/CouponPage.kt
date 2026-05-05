@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.coupon
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,7 +34,6 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
-import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.AppTabBar
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.coupon.tab.AvailableCouponsTab
@@ -44,11 +41,6 @@ import com.smartwash.ui.page.coupon.tab.ClaimedCouponsTab
 import com.smartwash.ui.page.coupon.tab.HistoricalCouponsTab
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.UserCouponStatus
 
@@ -80,7 +72,7 @@ fun CouponPage(
             }
         }
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((receiveCouponState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (receiveCouponState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             couponViewModel.resetReceiveState()
         }
         else -> {}
@@ -88,7 +80,7 @@ fun CouponPage(
 
     when (getCouponListState) {
         is RequestState.Error -> {
-            Toast.makeText(context, context.getString((getCouponListState as RequestState.Error).messageResId), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, (getCouponListState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
         }
         else -> {}
     }
@@ -132,8 +124,14 @@ fun UserCouponCard(
 ) {
     val isExpiredOrUsed = coupon.isUsed || couponState == UserCouponStatus.OVERDUE.status
 
-    AppCard(
-        modifier = modifier.alpha(if (isExpiredOrUsed) 0.6f else 1f)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .alpha(if (isExpiredOrUsed) 0.6f else 1f),
+        shape = RoundedCornerShape(AppDimens.cardRadius),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = 0.dp,
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -147,13 +145,8 @@ fun UserCouponCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "¥",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.primary
-                )
-                Text(
-                    text = "${coupon.couponVo.discount}",
-                    style = MaterialTheme.typography.displaySmall,
+                    text = stringResource(R.string.currency_format, String.format("%.0f", coupon.couponVo.discount)),
+                    style = MaterialTheme.typography.headlineSmall,
                     color = AppColors.colorScheme.primary
                 )
             }
@@ -173,12 +166,19 @@ fun UserCouponCard(
                     .padding(start = 16.dp)
             ) {
                 Text(
-                    text = if (coupon.couponVo.threshold == 0f) stringResource(R.string.coupon_discount_format, "${coupon.couponVo.discount + 0.01}", "${coupon.couponVo.discount}") else stringResource(R.string.coupon_min_amount_format, "${coupon.couponVo.threshold}"),
-                    style = MaterialTheme.typography.titleMedium
+                    text = coupon.couponVo.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppColors.colorScheme.textPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.valid_until, "${coupon.expiredAt}"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (coupon.couponVo.threshold == 0f) stringResource(R.string.no_threshold) else stringResource(R.string.coupon_min_amount_format, "${coupon.couponVo.threshold}"),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
@@ -193,7 +193,7 @@ fun UserCouponCard(
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (isExpiredOrUsed) TextSecondary else Primary
+                color = if (isExpiredOrUsed) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primary
             )
         }
     }
