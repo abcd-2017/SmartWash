@@ -12,6 +12,8 @@ import com.smartwash.mapper.LaundryItemsMapper;
 import com.smartwash.service.ILaundryItemsService;
 import com.smartwash.vo.laudry.LaundryPackageVo;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -52,6 +54,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
 
     //添加洗衣套餐
     @Override
+    @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean addLaundryPackage(AddLaundryItemsFrom addLaundryItemsFrom) {
         LaundryItems LaundryItems = new LaundryItems();
         BeanUtils.copyProperties(addLaundryItemsFrom, LaundryItems);
@@ -62,6 +65,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
 
     //修改洗衣套餐
     @Override
+    @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean updateLaundryPackage(UpdateLaundryItemsFrom LaundryItemsFrom) {
         log.info("修改洗衣套餐, itemId: {}", LaundryItemsFrom.getItemId());
         LaundryItems school = getById(LaundryItemsFrom.getItemId());
@@ -71,6 +75,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
 
     //删除洗衣套餐
     @Override
+    @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean deleteLaundryPackage(String ids) {
         log.info("删除洗衣套餐, ids: {}", ids);
         String[] idList = ids.split(",");
@@ -89,6 +94,7 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
     }
 
     @Override
+    @Cacheable(value = "laundryItems", key = "'all'")
     public List<LaundryPackageVo> getAllItem() {
         List<LaundryItems> laundryItems = list();
         return laundryItems.stream().map(it -> {
