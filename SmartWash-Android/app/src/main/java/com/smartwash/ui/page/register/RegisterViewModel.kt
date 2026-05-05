@@ -25,8 +25,6 @@ class RegisterViewModel @Inject constructor(
     val registerState = _registerState.asStateFlow()
     private val _captchaState = MutableStateFlow<RequestState>(RequestState.Idle)
     val captchaState = _captchaState.asStateFlow()
-    private val _captchaValue = MutableStateFlow<String>("")
-    val captchaValue = _captchaValue.asStateFlow()
 
     fun getCaptcha(phoneNumber: String) {
         viewModelScope.launch {
@@ -34,15 +32,14 @@ class RegisterViewModel @Inject constructor(
                 _captchaState.value = RequestState.Loading
                 val responseData = userApi.getCaptcha(phoneNumber)
 
-                if (responseData.code == HttpStatusCode.Success.code && responseData.data != null && responseData.data.length == 6) {
-                    _captchaValue.value = responseData.data
+                if (responseData.code == HttpStatusCode.Success.code) {
                     _captchaState.value = RequestState.Success
                 } else {
                     _captchaState.value = RequestState.Error(R.string.error_get_captcha_failed)
                 }
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "RegisterViewModel.getCaptcha: ${e.message}", e)
-                _captchaState.value = RequestState.Error(e.resId)
+                _captchaState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
@@ -58,7 +55,7 @@ class RegisterViewModel @Inject constructor(
                 responseData.data?.let { SharePreferenceUtils.saveData(AppConstant.TOKEN, it) }
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "RegisterViewModel.userRegister: ${e.message}", e)
-                _registerState.value = RequestState.Error(e.resId)
+                _registerState.value = RequestState.Error(e.resId, e.message)
             }
         }
     }
