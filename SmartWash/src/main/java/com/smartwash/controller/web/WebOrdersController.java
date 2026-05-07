@@ -13,6 +13,7 @@ import com.smartwash.from.order.*;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
+import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
@@ -44,6 +45,14 @@ public class WebOrdersController {
     @GetMapping("/orders/status")
     public Result<Map<String, String>> getOrderStatus() {
         return Result.ok(EnumUtils.toMap(OrderStatus.values(), OrderStatus::getStatus, OrderStatus::getDescription));
+    }
+
+    @Operation(summary = "获取订单摘要", description = "一次性获取所有状态的订单数据")
+    @GetMapping("/auth/orders/summary")
+    public Result<Map<String, OrderGroupVo>> getOrderSummary(
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页数量", example = "10") int size) {
+        LoginUser loginUser = UserContextHolder.getUser();
+        return Result.ok(ordersService.getOrderSummary(loginUser, size));
     }
 
     @Operation(summary = "分页查询订单列表", description = "根据条件分页查询当前用户的订单列表")

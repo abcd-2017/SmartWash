@@ -5,11 +5,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Orders;
 import com.smartwash.from.order.*;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -45,4 +47,6 @@ public interface IOrdersService extends IService<Orders> {
     Boolean cancelOrder(Long orderId, Long userId);
 
     OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId);
+
+    Map<String, OrderGroupVo> getOrderSummary(LoginUser loginUser, int size);
 }

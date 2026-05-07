@@ -5,6 +5,7 @@ import com.smartwash.network.entity.order.OrderItemCountFrom
 import com.smartwash.network.entity.order.OrderNextStatus
 import com.smartwash.network.entity.order.ReservationLaundry
 import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.network.vo.order.OrderGroupVo
 import com.smartwash.network.vo.order.OrderItemCountVo
 import com.smartwash.network.vo.order.OrderVo
 import javax.inject.Inject
@@ -20,6 +21,14 @@ class OrderRepository @Inject constructor(
 
     suspend fun getOrderInfo(orderId: Long): OrderInfo {
         return orderApi.getOrderInfo(orderId).data!!
+    }
+
+    suspend fun getOrderGroup(size: Int = 10): Map<String, OrderGroupVo> {
+        return orderApi.getOrderGroup(size).data ?: emptyMap()
+    }
+
+    suspend fun getOrderList(status: String, page: Int, size: Int = 10): List<OrderInfo> {
+        return orderApi.getOrderList(status, page, size).data ?: emptyList()
     }
 
     suspend fun getOrderItemCount(from: OrderItemCountFrom): OrderItemCountVo {

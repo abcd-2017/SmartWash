@@ -2,6 +2,7 @@ package com.smartwash.network.api
 
 import com.smartwash.network.annotation.RequireAuthorization
 import com.smartwash.network.entity.ApiResult
+import com.smartwash.network.vo.order.OrderGroupVo
 import com.smartwash.network.vo.order.OrderItemCountVo
 import com.smartwash.network.entity.order.OrderNextStatus
 import com.smartwash.network.entity.order.ReservationLaundry
@@ -37,6 +38,12 @@ interface OrderApi {
         @Query("page") page: Int?,
         @Query("size") size: Int? = 10,
     ): ApiResult<List<OrderInfo>>
+
+    @RequireAuthorization
+    @GET("/web/auth/orders/summary")
+    suspend fun getOrderGroup(
+        @Query("size") size: Int? = 10,
+    ): ApiResult<Map<String, OrderGroupVo>>
 
     @RequireAuthorization
     @GET("/web/auth/orders/itemCount")

@@ -16,6 +16,7 @@ import com.smartwash.mapper.*;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -181,6 +184,52 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         // 取消超时任务
         orderTimeoutManager.cancelTimeout(orderId);
         return true;
+    }
+
+    @Override
+    public Map<String, OrderGroupVo> getOrderSummary(LoginUser loginUser, int size) {
+        Map<String, OrderGroupVo> result = new HashMap<>();
+
+        // 全部订单
+        List<ShowOrderVo> allOrders = getOrderListByStatus(null, loginUser.getUserId(), 1, size);
+        long allTotal = countByUserIdAndStatus(loginUser.getUserId(), null);
+        result.put("001", new OrderGroupVo(allOrders, allOrders.size() >= size, (int) allTotal));
+
+        // 待支付
+        List<ShowOrderVo> pendingPayment = getOrderListByStatus(OrderStatus.PENDING_PAYMENT.getStatus(), loginUser.getUserId(), 1, size);
+        long pendingPaymentTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.PENDING_PAYMENT.getStatus());
+        result.put("0", new OrderGroupVo(pendingPayment, pendingPayment.size() >= size, (int) pendingPaymentTotal));
+
+        // 待发货
+        List<ShowOrderVo> pendingShipment = getOrderListByStatus(OrderStatus.PENDING_SHIPMENT.getStatus(), loginUser.getUserId(), 1, size);
+        long pendingShipmentTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.PENDING_SHIPMENT.getStatus());
+        result.put("1", new OrderGroupVo(pendingShipment, pendingShipment.size() >= size, (int) pendingShipmentTotal));
+
+        // 洗涤中
+        List<ShowOrderVo> washing = getOrderListByStatus(OrderStatus.WASHING.getStatus(), loginUser.getUserId(), 1, size);
+        long washingTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.WASHING.getStatus());
+        result.put("3", new OrderGroupVo(washing, washing.size() >= size, (int) washingTotal));
+
+        // 待取件
+        List<ShowOrderVo> readyForPickup = getOrderListByStatus(OrderStatus.READY_FOR_PICKUP.getStatus(), loginUser.getUserId(), 1, size);
+        long readyForPickupTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.READY_FOR_PICKUP.getStatus());
+        result.put("6", new OrderGroupVo(readyForPickup, readyForPickup.size() >= size, (int) readyForPickupTotal));
+
+        return result;
+    }
+
+    private List<ShowOrderVo> getOrderListByStatus(String status, Long userId, int page, int size) {
+        Page<ShowOrderVo> pageParam = new Page<>(page, size);
+        return ordersMapper.getOrderList(pageParam, status, userId).getRecords();
+    }
+
+    private long countByUserIdAndStatus(Long userId, String status) {
+        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Orders::getUserId, userId);
+        if (status != null) {
+            wrapper.eq(Orders::getStatus, status);
+        }
+        return count(wrapper);
     }
 
     //计算使用优惠券后的订单价格

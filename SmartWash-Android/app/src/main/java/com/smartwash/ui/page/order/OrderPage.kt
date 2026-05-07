@@ -1,7 +1,6 @@
 package com.smartwash.ui.page.order
 
 import android.widget.Toast
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,13 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -49,27 +48,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
 import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.ui.common.AppConfirmDialog
 import com.smartwash.ui.common.AppTabBar
 import com.smartwash.ui.common.EmptyState
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
@@ -85,21 +76,19 @@ fun OrderPage(
     val pagerState = rememberPagerState(initialPage = itemId) { ShowOrderStatus.entries.size }
     val scope = rememberCoroutineScope()
 
-    val orderList = orderViewModel.pagingFlow.collectAsLazyPagingItems()
+    val ordersMap by orderViewModel.ordersMap.collectAsState()
+    val loadState by orderViewModel.loadState.collectAsState()
+    val loadingMoreMap by orderViewModel.loadingMoreMap.collectAsState()
     val cancelOrderState by orderViewModel.cancelOrderState.collectAsState()
+
     val context = LocalContext.current
     var confirmPayShow by remember { mutableStateOf(false) }
     var currOrderId by remember { mutableLongStateOf(-1L) }
-
-    LaunchedEffect(pagerState.currentPage) {
-        orderViewModel.updateOrderStatus(ShowOrderStatus.entries[pagerState.currentPage].status)
-    }
 
     when (cancelOrderState) {
         is RequestState.Success -> {
             LaunchedEffect(cancelOrderState) {
                 Toast.makeText(context, context.getString(R.string.cancel_success), Toast.LENGTH_SHORT).show()
-                orderList.refresh()
                 orderViewModel.resetCancelOrderState()
             }
         }
@@ -128,50 +117,52 @@ fun OrderPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                if (orderList.itemCount > 0) {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .animateContentSize()
-                            .padding(horizontal = AppDimens.pagePadding)
-                    ) {
-                        items(orderList.itemCount) { index ->
-                            orderList[index]?.let {
-                                OrderCard(
-                                    it,
-                                    paymentClick = { navController.navigate("${PageConstant.Payment.text}/${it.orderId}") },
-                                    shipmentClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.DELIVERY.type}") },
-                                    pickupClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${it.orderId}/${PickupDeliveryType.PICKUP.type}") },
-                                    cancelClick = { orderId ->
-                                        currOrderId = orderId
-                                        confirmPayShow = true
-                                    },
-                                ) {
-                                    navController.navigate("${PageConstant.OrderDetail.text}/${it.orderId}")
-                                }
-                            }
-                        }
+            when (loadState) {
+                is RequestState.Loading -> {
+                    LoadingState(modifier = Modifier.fillMaxSize())
+                }
+                else -> {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { pageIndex ->
+                        val status = ShowOrderStatus.entries[pageIndex].status
+                        val orderList = ordersMap[status] ?: emptyList()
+                        val isLoadingMore = loadingMoreMap[status] ?: false
+                        val hasMore = orderViewModel.hasMoreForStatus(status)
 
-                        orderList.apply {
-                            when {
-                                loadState.refresh is LoadState.Loading -> {
-                                    item {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                                .wrapContentWidth(Alignment.CenterHorizontally),
-                                            color = AppColors.colorScheme.primary,
-                                            strokeWidth = 2.dp
-                                        )
+                        if (orderList.isNotEmpty()) {
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = AppDimens.pagePadding)
+                            ) {
+                                items(
+                                    items = orderList,
+                                    key = { it.orderId }
+                                ) { order ->
+                                    OrderCard(
+                                        order,
+                                        paymentClick = { navController.navigate("${PageConstant.Payment.text}/${order.orderId}") },
+                                        shipmentClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${order.orderId}/${PickupDeliveryType.DELIVERY.type}") },
+                                        pickupClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${order.orderId}/${PickupDeliveryType.PICKUP.type}") },
+                                        cancelClick = { orderId ->
+                                            currOrderId = orderId
+                                            confirmPayShow = true
+                                        },
+                                    ) {
+                                        navController.navigate("${PageConstant.OrderDetail.text}/${order.orderId}")
+                                    }
+
+                                    if (order == orderList.last() && hasMore && !isLoadingMore) {
+                                        LaunchedEffect(status) {
+                                            orderViewModel.loadMore(status)
+                                        }
                                     }
                                 }
-                                loadState.append is LoadState.Loading -> {
+
+                                if (isLoadingMore) {
                                     item {
                                         CircularProgressIndicator(
                                             modifier = Modifier
@@ -184,30 +175,27 @@ fun OrderPage(
                                     }
                                 }
                             }
+                        } else {
+                            EmptyState(
+                                icon = Icons.Default.LocalLaundryService,
+                                message = stringResource(R.string.no_orders)
+                            )
                         }
                     }
-                } else {
-                    EmptyState(
-                        icon = Icons.Default.LocalLaundryService,
-                        message = stringResource(R.string.no_orders)
-                    )
                 }
             }
         }
     }
 
     if (confirmPayShow) {
-        AlertDialog(
-            onDismissRequest = { confirmPayShow = false },
-            text = { Text(stringResource(R.string.confirm_cancel_order)) },
-            confirmButton = {
-                TextButton({
-                    if (currOrderId != -1L) orderViewModel.cancelOrder(currOrderId)
-                    currOrderId = -1L
-                    confirmPayShow = false
-                }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
+        AppConfirmDialog(
+            message = stringResource(R.string.confirm_cancel_order),
+            onConfirm = {
+                if (currOrderId != -1L) orderViewModel.cancelOrder(currOrderId)
+                currOrderId = -1L
+                confirmPayShow = false
             },
-            dismissButton = { TextButton({ confirmPayShow = false }) { Text(stringResource(R.string.cancel), color = AppColors.colorScheme.textSecondary) } }
+            onDismiss = { confirmPayShow = false }
         )
     }
 }
@@ -263,7 +251,7 @@ private fun OrderCard(
                         Text(
                             text = order.laundryPackageVo.description ?: "",
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary,
                         )
