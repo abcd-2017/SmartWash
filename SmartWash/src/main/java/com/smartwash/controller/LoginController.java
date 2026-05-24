@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.admin_users.AdminUserLoginFrom;
+import com.smartwash.from.users.ResetPasswordFrom;
 import com.smartwash.from.users.UserLoginFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
@@ -150,5 +151,24 @@ public class LoginController {
         redisTemplate.opsForValue().set(key, otp.toString(), DefaultConstant.Captcha_Timeout, TimeUnit.MILLISECONDS);
         log.info("验证码已生成, phone: {}", phoneNumber.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
         return Result.ok("验证码已发送");
+    }
+
+    @Operation(summary = "重置密码", description = "通过短信验证码重置用户密码")
+    @PostMapping("/user/resetPassword")
+    public Result<String> resetPassword(@RequestBody @Valid ResetPasswordFrom resetPasswordFrom) {
+        String key = String.format("%s:%s", DefaultConstant.Captcha_Code, resetPasswordFrom.getPhoneNumber());
+        String code = redisTemplate.opsForValue().get(key);
+
+        if (!StringUtils.hasText(code) || !resetPasswordFrom.getCode().equals(code)) {
+            log.warn("重置密码验证码验证失败, phone: {}", resetPasswordFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
+            return Result.failMsg("验证码过期，请重新获取");
+        }
+
+        if (usersService.resetPassword(resetPasswordFrom.getPhoneNumber(), resetPasswordFrom.getNewPassword())) {
+            redisTemplate.opsForValue().getAndDelete(key);
+            log.info("密码重置成功, phone: {}", resetPasswordFrom.getPhoneNumber().replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
+            return Result.ok("密码重置成功");
+        }
+        return Result.failMsg("用户不存在");
     }
 }

@@ -172,4 +172,18 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         log.info("用户解绑校园卡, userId: {}", userId);
         return update(new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, null));
     }
+
+    @Override
+    public Boolean resetPassword(String phoneNumber, String newPassword) {
+        Users user = getUserByPhone(phoneNumber);
+        if (user == null) {
+            return false;
+        }
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String encodedPassword = encoder.encode(newPassword);
+        log.info("用户密码重置, userId: {}", user.getUserId());
+        return update(new LambdaUpdateWrapper<Users>()
+                .eq(Users::getUserId, user.getUserId())
+                .set(Users::getPassword, encodedPassword));
+    }
 }

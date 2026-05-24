@@ -46,4 +46,6 @@ public interface IUsersService extends IService<Users> {
     Boolean bingCampus(String campusCard, Long userId);
 
     Boolean unBingCampus(Long userId);
+
+    Boolean resetPassword(String phoneNumber, String newPassword);
 }
