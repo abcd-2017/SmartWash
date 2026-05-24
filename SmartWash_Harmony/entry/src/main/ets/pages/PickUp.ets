@@ -1,14 +1,13 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
-import { UserInfo } from "../view/UserInfo"
 import { promptAction } from "@kit.ArkUI"
 import { OrderInfo } from "../network/vo/OrderInfo"
-import { CommonConstants } from "../constant/CommonConstants"
 import { getOrderList } from "../network/api/OrderApi"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { pathStack } from "../utils/PathStackUtil"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function PickUpBuilder() {
@@ -25,8 +24,7 @@ struct PickUp {
   @State canLoad: boolean = false
 
   aboutToAppear(): void {
-    this.refreshUserInfo()
-    this.getPickupOrder()
+    Promise.all([this.refreshUserInfo(), this.getPickupOrder()])
   }
 
   async getPickupOrder() {
@@ -72,16 +70,19 @@ struct PickUp {
   PickupOrderCard(order: OrderInfo) {
     Column() {
       Column() {
+        // 订单号 + 寄存柜号
         Row() {
           Column() {
             Row() {
               Text(`订单号：${order.orderNo}`)
-                .fontSize(14)
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
             }
 
             Row() {
               Text(`寄存柜：${order.lockersVo?.lockerNumber}`)
-                .fontSize(14)
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
             }.margin({ top: 4 })
           }.alignItems(HorizontalAlign.Start)
 
@@ -91,31 +92,41 @@ struct PickUp {
               Text(`￥${order.totalPrice}`)
                 .fontSize(18)
                 .fontWeight(FontWeight.Bold)
-                .fontColor($r('sys.color.brand'))
+                .fontColor(DesignColor.PRIMARY)
             }
           }
         }.width("100%")
 
+        // 分隔线
+        Row()
+          .width("100%")
+          .height(0.5)
+          .backgroundColor(DesignColor.DIVIDER)
+          .margin({ top: 12, bottom: 12 })
+
+        // 取件码
         Row() {
-          Text("取件码：").fontSize(14)
+          Text("取件码")
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(DesignColor.TEXT_SECONDARY)
           ColumnSplit().layoutWeight(1)
-          Text(`${order.pickupCode?.split(":")[2]}`)
-            .fontSize(20)
-            .fontColor($r('sys.color.brand'))
+          Text(`${order.pickupCode?.split(":").pop() ?? ""}`)
+            .fontSize(24)
+            .fontColor(DesignColor.PRIMARY)
             .fontWeight(FontWeight.Bold)
-        }.margin({ top: 4 })
+        }.width("100%")
       }
-      .padding(16)
-      .backgroundColor($r('sys.color.comp_background_primary'))
-      .borderRadius(CommonConstants.BORDER_RADIUS)
-      .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+      .padding(DesignDimens.CARD_PADDING)
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .border({ width: 0.5, color: DesignColor.OUTLINE })
       .onClick(() => {
         pathStack.pushPathByName("PickupDelivery", order)
       })
     }
     .padding({
-      left: 16,
-      right: 16,
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
       top: 4,
       bottom: 4
     })
@@ -123,79 +134,95 @@ struct PickUp {
 
   build() {
     NavDestination() {
-      Scroll() {
-        Column() {
-          Row() {
-            SymbolGlyph($r('sys.symbol.company'))
-              .fontColor([$r('sys.color.font_primary')])
-              .fontSize(18)
-              .margin({ right: 4 })
-            Text(`${this.userInfo?.schoolVo?.schoolName}`)
-              .fontSize(16)
-              .fontWeight(FontWeight.Bold)
-          }.justifyContent(FlexAlign.Start)
-          .width("100%")
-          .padding({ left: 16, right: 16, top: 4 })
+      Column() {
+        // 自定义 PageHeader
+        Row() {
+          SymbolGlyph($r('sys.symbol.chevron_left'))
+            .fontSize(24)
+            .fontColor([DesignColor.TEXT_PRIMARY])
+            .onClick(() => {
+              pathStack.back()
+            })
 
-          if ((this.orderList?.length ?? 0) > 0) {
-            Refresh({ refreshing: $$this.isRefreshing }) {
-              List({ space: 8 }) {
-                ForEach(this.orderList, (order: OrderInfo) => {
-                  ListItem() {
-                    this.PickupOrderCard(order)
-                  }
-                })
-                ListItem() {
-                  LoadingFooter({ isLoading: this.isLoadingMore })
-                }
-              }.onScrollIndex((start: number, end: number) => {
-                // 当达到列表末尾时，触发新数据加载
-                if (this.canLoad && end >= (this.orderList.length) - 1) {
-                  this.canLoad = false
-                  this.isLoadingMore = true
-                  setTimeout(() => {
-                    this.page++
-                    this.getPickupOrder()
-                    this.isLoadingMore = false
-                  }, 1200)
-                }
-              }).onScrollFrameBegin((offset: number, state: ScrollState) => {
-                // 只有当向上滑动时触发新数据加载
-                if (offset > 5 && !this.isLoadingMore) {
-                  this.canLoad = true
-                }
-                return { offsetRemain: offset }
-              })
-            }.onRefreshing(() => {
-              setTimeout(() => {
-                this.page = 1
-                this.getPickupOrder()
-                this.isRefreshing = false
-              }, 2000)
-            }).height("100%")
-            .padding({ top: 12, bottom: 8 })
-          } else {
-            Column() {
-              Row() {
-                SymbolGlyph($r('sys.symbol.square_slash'))
-                  .fontColor([$r('sys.color.icon_primary')])
-                  .fontSize(42)
-              }.margin({ bottom: 16 })
-
-              Row() {
-                Text("暂无订单")
-              }
-            }.height("100%")
-            .width("100%")
-            .justifyContent(FlexAlign.Center)
-          }
+          Text("取件")
+            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .margin({ left: 8 })
         }
         .width("100%")
-        .height("100%")
-        .align(Alignment.Top)
-        .backgroundColor($r('sys.color.background_primary'))
-      }.scrollBar(BarState.Off)
-    }.title("取件").onShown(() => {
+        .padding({ left: DesignDimens.PAGE_PADDING, top: 12, bottom: 8 })
+
+        // 学校信息行
+        Row() {
+          SymbolGlyph($r('sys.symbol.company'))
+            .fontColor([DesignColor.PRIMARY])
+            .fontSize(18)
+            .margin({ right: 8 })
+          Text(`${this.userInfo?.schoolVo?.schoolName}`)
+            .fontSize(DesignFontSize.CARD_TITLE)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+        }.justifyContent(FlexAlign.Start)
+        .width("100%")
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 4, bottom: 4 })
+
+        if ((this.orderList?.length ?? 0) > 0) {
+          Refresh({ refreshing: $$this.isRefreshing }) {
+            List({ space: DesignDimens.CARD_SPACING }) {
+              ForEach(this.orderList, (order: OrderInfo) => {
+                ListItem() {
+                  this.PickupOrderCard(order)
+                }
+              })
+              ListItem() {
+                LoadingFooter({ isLoading: this.isLoadingMore })
+              }
+            }.onScrollIndex((start: number, end: number) => {
+              if (this.canLoad && end >= (this.orderList.length) - 1) {
+                this.canLoad = false
+                this.isLoadingMore = true
+                setTimeout(() => {
+                  this.page++
+                  this.getPickupOrder()
+                  this.isLoadingMore = false
+                }, 1200)
+              }
+            }).onScrollFrameBegin((offset: number, state: ScrollState) => {
+              if (offset > 5 && !this.isLoadingMore) {
+                this.canLoad = true
+              }
+              return { offsetRemain: offset }
+            })
+          }.onRefreshing(() => {
+            setTimeout(() => {
+              this.page = 1
+              this.getPickupOrder()
+              this.isRefreshing = false
+            }, 2000)
+          }).height("100%")
+          .padding({ top: 12, bottom: 8 })
+        } else {
+          Column() {
+            SymbolGlyph($r('sys.symbol.square_slash'))
+              .fontColor([DesignColor.TEXT_TERTIARY])
+              .fontSize(48)
+              .margin({ bottom: 16 })
+
+            Text("暂无可取件订单")
+              .fontSize(DesignFontSize.BODY)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+          }.height("100%")
+          .width("100%")
+          .justifyContent(FlexAlign.Center)
+        }
+      }
+      .width("100%")
+      .height("100%")
+      .backgroundColor(DesignColor.BACKGROUND)
+    }
+    .hideTitleBar(true)
+    .onShown(() => {
       this.getPickupOrder()
     })
   }

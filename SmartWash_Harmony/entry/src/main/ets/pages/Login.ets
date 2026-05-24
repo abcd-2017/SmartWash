@@ -2,9 +2,10 @@ import { HttpStatusCode } from "@ohos/axios"
 import { getUserSchoolId, login } from "../network/api/UserApi"
 import { pathStack } from "../utils/PathStackUtil"
 import { promptAction } from "@kit.ArkUI"
-import { setValue } from "../utils/StoreageUtil"
+import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { logger } from "../utils/Logger"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function LoginBuilder() {
@@ -18,109 +19,183 @@ struct Login {
   @State password: string | null = null
   @State checkPhoneNumber: boolean = false
   @State checkPassword: boolean = false
+  @State showPassword: boolean = false
   private controller = new TextInputController()
 
   check() {
     let value = this.phoneNumber ?? ""
     this.checkPhoneNumber = !/^1[3-9]\d{9}$/.test(value)
     let len = this.password?.length ?? 0;
-    this.checkPassword = len < 6 && len > 16
+    this.checkPassword = len < 6 || len > 16
   }
 
   build() {
     NavDestination() {
-      Column({ space: 18 }) {
-        Row() {
-          Image($r('app.media.logo'))
-            .width(160)
-        }.height(100)
-        .justifyContent(FlexAlign.Center)
+      // 全屏渐变背景
+      Column() {
+        // 占位：将内容推到垂直居中位置
+        Blank()
 
+        // 品牌标识 — 居中圆形图标（毛玻璃底 + 白边）
+        Stack() {
+          SymbolGlyph($r('sys.symbol.wave_3_right'))
+            .fontSize(36)
+            .fontColor([Color.White])
+        }
+        .width(72)
+        .height(72)
+        .borderRadius(36)
+        .backgroundColor(DesignColor.GLASS_BG)
+        .border({
+          width: 1,
+          color: DesignColor.GLASS_BORDER,
+          style: BorderStyle.Solid
+        })
+
+        // 品牌文字
         Text("智能洗衣")
-          .fontSize(24)
-          .fontWeight(700)
+          .fontSize(DesignFontSize.PAGE_TITLE)
+          .fontWeight(DesignFontWeight.BOLD)
+          .fontColor(Color.White)
+          .margin({ top: 20 })
 
         Text("让生活更轻松")
-          .fontSize(14)
-          .fontWeight(300)
-          .margin({ bottom: 18 })
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.NORMAL)
+          .fontColor(DesignColor.GLASS_TEXT_DISABLED)
+          .margin({ top: 6 })
 
-        Row() {
-          Column({ space: 20 }) {
-            Column() {
-              TextInput({ text: $$this.phoneNumber, placeholder: "手机号" })
-                .backgroundColor($r('sys.color.comp_background_tertiary'))
-                .type(InputType.PhoneNumber)
-                .maxLength(11)
-                .onChange(it => this.phoneNumber = it)
-              if (this.checkPhoneNumber) {
-                Text("手机号必须为11位")
-                  .fontColor($r('sys.color.warning'))
-                  .fontSize(14)
-                  .margin(12)
-              }
-            }.alignItems(HorizontalAlign.Start)
+        // 毛玻璃输入卡片
+        Column() {
+          // 手机号输入框
+          TextInput({ placeholder: "手机号" })
+            .type(InputType.PhoneNumber)
+            .maxLength(11)
+            .fontSize(DesignFontSize.CARD_TITLE)
+            .fontColor(Color.White)
+            .placeholderColor(DesignColor.GLASS_TEXT_HINT)
+            .backgroundColor(Color.Transparent)
+            .width("100%")
+            .onChange((it: string) => this.phoneNumber = it)
+          if (this.checkPhoneNumber) {
+            Text("手机号必须为11位")
+              .fontColor(DesignColor.WARNING)
+              .fontSize(DesignFontSize.CAPTION)
+              .margin({ top: 8 })
+          }
 
-            Column() {
-              TextInput({ text: $$this.password, placeholder: "密码", controller: this.controller })
-                .backgroundColor($r('sys.color.comp_background_tertiary'))
-                .type(InputType.Password)
-                .maxLength(16).onChange(it => this.password = it)
-              if (this.checkPhoneNumber) {
-                Text("密码必须为6-16位")
-                  .fontColor($r('sys.color.warning'))
-                  .fontSize(14)
-                  .margin(12)
-              }
-            }.alignItems(HorizontalAlign.Start)
+          // 分隔线
+          Divider()
+            .color(DesignColor.GLASS_BG)
+            .strokeWidth(0.5)
+            .margin({ top: 12, bottom: 12 })
+
+          // 密码输入框
+          Row() {
+            TextInput({ placeholder: "密码", controller: this.controller })
+              .type(this.showPassword ? InputType.Normal : InputType.Password)
+              .maxLength(16)
+              .fontSize(DesignFontSize.CARD_TITLE)
+              .fontColor(Color.White)
+              .placeholderColor(DesignColor.GLASS_TEXT_HINT)
+              .backgroundColor(Color.Transparent)
+              .layoutWeight(1)
+              .onChange((it: string) => this.password = it)
+
+            // 密码可见性切换按钮
+            Text(this.showPassword ? "Hide" : "Show")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.GLASS_TEXT_HINT)
+              .padding({ left: 8 })
+              .onClick(() => {
+                this.showPassword = !this.showPassword
+              })
+          }
+          .width("100%")
+
+          if (this.checkPassword) {
+            Text("密码必须为6-16位")
+              .fontColor(DesignColor.WARNING)
+              .fontSize(DesignFontSize.CAPTION)
+              .margin({ top: 8 })
           }
         }
-        .width("85%")
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .padding(16)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+        .width("100%")
+        .borderRadius(24)
+        .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+        .border({
+          width: 1,
+          color: DesignColor.GLASS_BORDER_SUBTLE,
+          style: BorderStyle.Solid
+        })
+        .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+        .margin({ top: 40, left: 24, right: 24 })
 
-        RowSplit()
-
-        Button("登录").onClick(async (event: ClickEvent) => {
-          this.check()
-          if (this.checkPhoneNumber || this.checkPassword) {
-            return
-          }
-          let res = await login({
-            phoneNumber: this.phoneNumber,
-            password: this.password
-          })
-          if (res.code == HttpStatusCode.Ok) {
-            setValue(CommonConstants.USER_TOKEN, `${res.data}`)
-            let getIdRes = await getUserSchoolId()
-            if (getIdRes.code == HttpStatusCode.Ok) {
-              this.controller.stopEditing()
-              if (getIdRes.data == null) {
-                pathStack.replacePathByName("AddSchool", null)
-                return
-              } else {
-                if (pathStack.size() > 0) {
-                  pathStack.clear()
-                }
-                AppStorage.setOrCreate("userLoginFlag", true)
-              }
+        // 登录按钮
+        Text("登录")
+          .fontSize(DesignFontSize.SECTION_TITLE)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(Color.White)
+          .textAlign(TextAlign.Center)
+          .width("100%")
+          .height(50)
+          .borderRadius(16)
+          .backgroundColor(DesignColor.GLASS_INPUT)
+          .margin({ top: 20, left: 40, right: 40 })
+          .onClick(async (event: ClickEvent) => {
+            this.check()
+            if (this.checkPhoneNumber || this.checkPassword) {
+              return
             }
-          } else {
-            promptAction.showToast({ message: res.message })
-          }
-        }).width("85%")
-
-        Text("没有账号？立即注册")
-          .fontSize(14)
-          .onClick(() => {
-            pathStack.replacePathByName("Register", null)
+            let res = await login({
+              phoneNumber: this.phoneNumber,
+              password: this.password
+            })
+            if (res.code == HttpStatusCode.Ok) {
+              setValue(CommonConstants.USER_TOKEN, `${res.data}`)
+              let getIdRes = await getUserSchoolId()
+              if (getIdRes.code == HttpStatusCode.Ok) {
+                this.controller.stopEditing()
+                if (getIdRes.data == null) {
+                  pathStack.replacePathByName("AddSchool", null)
+                  return
+                } else {
+                  if (pathStack.size() > 0) {
+                    pathStack.clear()
+                  }
+                  AppStorage.setOrCreate("userLoginFlag", true)
+                }
+              }
+            } else {
+              promptAction.showToast({ message: res.message })
+            }
           })
-      }.width("100%")
+
+        // 占位：将注册入口推到底部
+        Blank()
+
+        // 注册入口
+        Row() {
+          Text("没有账号？")
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(DesignColor.GLASS_TEXT_HINT)
+          Text("立即注册")
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(Color.White)
+        }
+        .margin({ bottom: 24 })
+        .onClick(() => {
+          pathStack.replacePathByName("Register", null)
+        })
+      }
+      .width("100%")
       .height("100%")
-      .backgroundColor($r('sys.color.background_primary'))
-    }.hideTitleBar(true)
+      .linearGradient({
+        direction: GradientDirection.Bottom,
+        colors: [[DesignColor.AUTH_GRADIENT_TOP, 0], [DesignColor.AUTH_GRADIENT_BOTTOM, 1]]
+      })
+    }
+    .hideTitleBar(true)
     .height("100%")
   }
 }

@@ -4,7 +4,7 @@ import { getUserByStudentId, updateUserInfo } from "../network/api/UserApi"
 import { SchoolName } from "../network/vo/SchoolName"
 import { promptAction } from "@kit.ArkUI"
 import { pathStack } from "../utils/PathStackUtil"
-import { CommonConstants } from "../constant/CommonConstants"
+import { DesignColor, DesignDimens } from "../constant/DesignSystem"
 
 @Builder
 export function AddSchoolBuilder() {
@@ -54,11 +54,12 @@ struct AddSchool {
 
         Text("完善信息")
           .fontSize(24)
-          .fontWeight(700)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(DesignColor.TEXT_PRIMARY)
 
         Text("请填写您的学校信息")
           .fontSize(14)
-          .fontWeight(300)
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ bottom: 18 })
 
         Row() {
@@ -66,7 +67,7 @@ struct AddSchool {
             Column() {
               Stack({ alignContent: Alignment.End }) {
                 TextInput({ text: this.schoolName, placeholder: "搜索学校" })
-                  .backgroundColor($r('sys.color.comp_background_tertiary'))
+                  .backgroundColor(DesignColor.SURFACE_VARIANT)
                   .maxLength(11)
                   .padding({ right: "20" })
                   .onChange(it => {
@@ -91,8 +92,8 @@ struct AddSchool {
               }
 
               if (this.checkSchoolId) {
-                Text("手机号必须位11位")
-                  .fontColor($r('sys.color.warning'))
+                Text("学校不能为空")
+                  .fontColor(DesignColor.ERROR)
                   .fontSize(14)
                   .margin(12)
               }
@@ -108,7 +109,7 @@ struct AddSchool {
                       Row() {
                         Text(school.schoolName)
                           .fontSize(14)
-                          .fontWeight(300)
+                          .fontColor(DesignColor.TEXT_PRIMARY)
                       }.height(42)
                       .width("100%")
                       .padding({ left: "14" })
@@ -116,27 +117,28 @@ struct AddSchool {
                         this.schoolId = school.schoolId
                         this.schoolName = school.schoolName
                         this.showSchoolList = false
-                        //下一个输入框获取焦点
+                        // 下一个输入框获取焦点
                         focusControl.requestFocus("studentIdInput")
                       })
                     }
                   })
                 }
-              }.backgroundColor($r('sys.color.comp_background_secondary'))
+              }.backgroundColor(DesignColor.SURFACE_VARIANT)
               .height(200)
-              .borderRadius(CommonConstants.BORDER_RADIUS)
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .border({ width: 0.5, color: DesignColor.OUTLINE })
             }
 
             Column() {
               TextInput({ text: this.studentId, placeholder: "学号" })
-                .backgroundColor($r('sys.color.comp_background_tertiary'))
+                .backgroundColor(DesignColor.SURFACE_VARIANT)
                 .type(InputType.Number)
                 .maxLength(16)
                 .onChange(it => this.studentId = it)
                 .key("studentIdInput")
               if (this.checkStudentId) {
                 Text("学号不能为空")
-                  .fontColor($r('sys.color.warning'))
+                  .fontColor(DesignColor.ERROR)
                   .fontSize(14)
                   .margin(12)
               }
@@ -144,40 +146,45 @@ struct AddSchool {
           }
         }
         .width("85%")
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .padding(16)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+        .borderRadius(DesignDimens.CARD_RADIUS)
+        .padding(DesignDimens.CARD_PADDING)
+        .backgroundColor(DesignColor.SURFACE)
+        .border({ width: 0.5, color: DesignColor.OUTLINE })
 
         RowSplit()
 
-        Button("确认").onClick(async (event: ClickEvent) => {
-          this.check()
-          if (this.checkSchoolId || this.checkStudentId) {
-            return
-          }
-          let checkStudentRes = await getUserByStudentId(this.checkStudentData)
-          if (checkStudentRes.code == HttpStatusCode.Ok && !checkStudentRes.data) {
-            promptAction.showToast({ message: "该学号已注册" })
-            return
-          }
-          let res = await updateUserInfo({
-            schoolId: this.schoolId,
-            studentId: this.studentId
-          })
-          if (res.code == HttpStatusCode.Ok) {
-            if (pathStack.size() > 0) {
-              pathStack.clear()
+        Button("确认")
+          .onClick(async (event: ClickEvent) => {
+            this.check()
+            if (this.checkSchoolId || this.checkStudentId) {
+              return
             }
-            AppStorage.setOrCreate("userLoginFlag", true)
-          } else {
-            promptAction.showToast({ message: res.message })
-          }
-        }).width("85%")
+            let checkStudentRes = await getUserByStudentId(this.checkStudentData)
+            if (checkStudentRes.code == HttpStatusCode.Ok && !checkStudentRes.data) {
+              promptAction.showToast({ message: "该学号已注册" })
+              return
+            }
+            let res = await updateUserInfo({
+              schoolId: this.schoolId,
+              studentId: this.studentId
+            })
+            if (res.code == HttpStatusCode.Ok) {
+              if (pathStack.size() > 0) {
+                pathStack.clear()
+              }
+              AppStorage.setOrCreate("userLoginFlag", true)
+            } else {
+              promptAction.showToast({ message: res.message })
+            }
+          })
+          .width("85%")
+          .backgroundColor(DesignColor.PRIMARY)
+          .fontColor(DesignColor.ON_PRIMARY)
+          .borderRadius(DesignDimens.BUTTON_RADIUS)
 
       }.width("100%")
       .height("100%")
-      .backgroundColor($r('sys.color.background_primary'))
+      .backgroundColor(DesignColor.BACKGROUND)
     }.hideTitleBar(true)
   }
 }

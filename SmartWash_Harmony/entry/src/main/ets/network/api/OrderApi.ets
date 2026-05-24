@@ -1,6 +1,6 @@
 import { BaseResponse } from '../BaseResponse';
-import { OrderItemCountFrom } from '../entity/OrderItemCountFrom';
-import { OrderListFrom } from '../entity/OrderListFrom';
+import { OrderItemCountForm } from '../entity/OrderItemCountForm';
+import { OrderListForm } from '../entity/OrderListForm';
 import { OrderNextStatus } from '../entity/OrderNextStatus';
 import { ReservationLaundry } from '../entity/ReservationLaundry';
 import { httpUtil } from '../HttpUtil';
@@ -15,17 +15,17 @@ async function reservationLaundry(data: ReservationLaundry): Promise<BaseRespons
 
 //获取订单详情
 async function getOrderInfo(orderId: number): Promise<BaseResponse<OrderInfo>> {
-  return httpUtil.post<OrderInfo>(`/web/auth/orders/getOrderInfo/${orderId}`);
+  return httpUtil.get<OrderInfo>(`/web/auth/orders/${orderId}`);
 }
 
 //获取订单列表
-async function getOrderList(data: OrderListFrom): Promise<BaseResponse<Array<OrderInfo>>> {
-  return httpUtil.post<Array<OrderInfo>>(`/web/auth/orders/getOrderList`, data);
+async function getOrderList(data: OrderListForm): Promise<BaseResponse<Array<OrderInfo>>> {
+  return httpUtil.get<Array<OrderInfo>>(`/web/auth/orders`, data);
 }
 
 //获取订单数量
-async function getOrderItemCount(data: OrderItemCountFrom): Promise<BaseResponse<OrderItemCountVo>> {
-  return httpUtil.post<OrderItemCountVo>(`/web/auth/orders/getOrderItemCount`, data);
+async function getOrderItemCount(data: OrderItemCountForm): Promise<BaseResponse<OrderItemCountVo>> {
+  return httpUtil.get<OrderItemCountVo>(`/web/auth/orders/itemCount`, data);
 }
 
 async function shippingOrder(data: OrderNextStatus): Promise<BaseResponse<boolean>> {
@@ -42,12 +42,12 @@ async function getWashingOrder(): Promise<BaseResponse<Array<OrderVo>>> {
 
 //取消订单
 async function cancelOrder(orderId: number): Promise<BaseResponse<boolean>> {
-  return httpUtil.post<boolean>(`/web/auth/orders/cancelOrder/${orderId}`);
+  return httpUtil.delete<boolean>(`/web/auth/orders/${orderId}`);
 }
 
 //计算订单优惠券
 async function calculationOrder(orderId: number, userCouponId: number): Promise<BaseResponse<OrderInfo>> {
-  return httpUtil.post<OrderInfo>(`/web/auth/orders/calculationOrder/${orderId}/${userCouponId}`);
+  return httpUtil.get<OrderInfo>(`/web/auth/orders/${orderId}/calculation`, { userCouponId });
 }
 
 //生成二维码

@@ -22,7 +22,7 @@ async function login(user: LoginUser): Promise<BaseResponse<String>> {
 
 //获取当前登录用户学校id
 async function getUserSchoolId(): Promise<BaseResponse<number>> {
-  return httpUtil.post<number>("/web/auth/user/getUserSchool")
+  return httpUtil.get<number>("/web/auth/user/school")
 }
 
 //完善用户信息
@@ -50,6 +50,13 @@ async function unBindCampus(): Promise<BaseResponse<boolean>> {
   return httpUtil.post<boolean>("/web/auth/user/unBingCampus")
 }
 
+//上传头像
+async function uploadAvatar(uri: string): Promise<BaseResponse<string>> {
+  let formData = new FormData()
+  formData.append("file", { uri: uri, name: "avatar.jpg", type: "image/jpeg" })
+  return httpUtil.upload<string>("/web/auth/user/avatar", formData)
+}
+
 export { getCaptcha,
   register,
   login,
@@ -58,4 +65,5 @@ export { getCaptcha,
   getUserInfo,
   getUserByStudentId,
   bindCampus,
-  unBindCampus }
+  unBindCampus,
+  uploadAvatar }

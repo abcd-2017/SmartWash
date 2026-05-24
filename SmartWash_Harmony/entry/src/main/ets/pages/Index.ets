@@ -3,7 +3,7 @@ import { CommonConstants } from '../constant/CommonConstants';
 import { getUserSchoolId } from '../network/api/UserApi';
 import { logger } from '../utils/Logger';
 import { pathStack } from '../utils/PathStackUtil';
-import { getValue, initPreferences } from '../utils/StoreageUtil';
+import { getValue, initPreferences } from '../utils/StorageUtil';
 import { AddSchoolBuilder } from './AddSchool';
 import { HomeBuilder } from './Home';
 import { LoginBuilder } from './Login';

@@ -55,7 +55,7 @@ struct BingCampusCardAlert {
 
           Row() {
             Text("取消").onClick(() => {
-              pathStack.pop(11, false)
+              pathStack.pop()
             }).fontColor($r('sys.color.brand'))
               .margin({ right: 20 })
               .fontSize(16)
@@ -75,7 +75,7 @@ struct BingCampusCardAlert {
               }
               if (res.code == HttpStatusCode.Ok) {
                 this.inputController.stopEditing()
-                pathStack.pop(11, false)
+                pathStack.pop()
                 promptAction.showToast({ message: this.isBingFlag ? "绑定成功" : "解绑成功" })
               } else {
                 promptAction.showToast({ message: res.message })
@@ -95,7 +95,7 @@ struct BingCampusCardAlert {
       }.height("100%").width('100%')
     }
     .onClick(() => {
-      pathStack.pop(11, false)
+      pathStack.pop()
     })
     .backgroundColor('rgba(0,0,0,0.5)')
     .hideTitleBar(true)

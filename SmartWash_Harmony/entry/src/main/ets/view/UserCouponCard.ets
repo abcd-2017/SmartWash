@@ -1,4 +1,4 @@
-import { CommonConstants } from "../constant/CommonConstants"
+import { DesignColor, DesignDimens } from "../constant/DesignSystem"
 import { UserCouponStatus } from "../constant/UserCouponStatus"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
 
@@ -23,60 +23,77 @@ export struct UserCouponCard {
     }
   }
 
+  private getStatusColor(): number {
+    if (this.userCoupon?.isUsed || this.type == UserCouponStatus.OVERDUE) {
+      return DesignColor.TEXT_TERTIARY
+    }
+    return DesignColor.PRIMARY
+  }
+
+  private isAvailable(): boolean {
+    return !this.userCoupon?.isUsed && this.type != UserCouponStatus.OVERDUE
+  }
+
   build() {
     Column() {
       Row() {
-        //左侧内容
+        // 左侧金额（绿色大字）
         Column() {
-          Row() {
-            Text(`${this.userCoupon?.couponVo?.discount}元优惠券`)
-              .fontSize(16)
-              .fontWeight(FontWeight.Bold)
-              .margin({ bottom: 8 })
-          }
+          Text(`￥${this.userCoupon?.couponVo?.discount}`)
+            .fontSize(24)
+            .fontColor(this.getStatusColor())
+            .fontWeight(FontWeight.Bold)
+          Text(`${this.thresholdPrice}`)
+            .fontSize(11)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ top: 4 })
+        }
+        .width(90)
+        .alignItems(HorizontalAlign.Center)
 
-          Row() {
-            Text(`${this.thresholdPrice}`)
-              .fontSize(12)
-              .margin({ bottom: 8 })
-          }
+        // 竖线分隔
+        Divider()
+          .strokeWidth(0.5)
+          .height(50)
+          .color(DesignColor.OUTLINE)
+          .margin({ left: 8, right: 8 })
 
+        // 右侧内容
+        Column() {
+          Text(`${this.userCoupon?.couponVo?.title ?? `${this.userCoupon?.couponVo?.discount}元优惠券`}`)
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.isAvailable() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY)
+
+          Text(`有效期至 ${this.userCoupon?.expiredAt}`)
+            .fontSize(12)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ top: 6 })
+
+          // 状态标签
           Row() {
-            Text(`有效期至 ${this.userCoupon?.expiredAt}`)
+            Text(`${this.couponStatus}`)
               .fontSize(12)
+              .fontColor(this.getStatusColor())
+              .padding({ left: 10, right: 10, top: 4, bottom: 4 })
+              .borderRadius(8)
+              .backgroundColor(this.isAvailable() ? DesignColor.PRIMARY_CONTAINER : DesignColor.SURFACE_VARIANT)
+              .margin({ top: 8 })
           }
-        }.layoutWeight(2)
+        }
+        .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
-
-        //右侧内容
-        Column() {
-          Row() {
-            Text(`￥${this.userCoupon?.couponVo?.discount}`)
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .margin({ bottom: 12 })
-          }
-
-          Row() {
-            Row() {
-              Text(`${this.couponStatus}`)
-                .fontSize(13)
-            }
-          }
-        }.layoutWeight(1)
-        .alignItems(HorizontalAlign.End)
       }
       .margin({
-        left: 16,
-        right: 16,
-        bottom: 12,
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: DesignDimens.CARD_SPACING,
         top: 8
       })
-      .padding(16)
-      .backgroundColor($r(this.type == UserCouponStatus.ACTIVE ? 'sys.color.comp_background_primary' :
-        'sys.color.background_tertiary'))
-      .borderRadius(CommonConstants.BORDER_RADIUS)
-      .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+      .padding(DesignDimens.CARD_PADDING)
+      .backgroundColor(this.isAvailable() ? DesignColor.SURFACE : DesignColor.SURFACE_VARIANT)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .border({ width: 0.5, color: DesignColor.OUTLINE })
     }
     .width("100%")
   }

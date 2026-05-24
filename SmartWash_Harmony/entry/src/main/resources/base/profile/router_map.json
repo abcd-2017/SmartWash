@@ -104,6 +104,13 @@
       "buildFunction": "PaymentSuccessBuilder",
       "data": {
       }
+    },
+    {
+      "name": "RechargeRecord",
+      "pageSourceFile": "src/main/ets/pages/RechargeRecord.ets",
+      "buildFunction": "RechargeRecordBuilder",
+      "data": {
+      }
     }
   ]
 }

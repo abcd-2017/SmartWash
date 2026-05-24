@@ -3,8 +3,8 @@ import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { pathStack } from "../utils/PathStackUtil"
 import { promptAction } from "@kit.ArkUI"
-import { CommonConstants } from "../constant/CommonConstants"
 import { OrderItemRow } from "../view/OrderItemRow"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentSuccessBuilder() {
@@ -36,7 +36,7 @@ struct PaymentSuccess {
             Row() {
               SymbolGlyph($r('sys.symbol.checkmark_circle_fill'))
                 .fontSize(48)
-                .fontColor([$r('sys.color.icon_primary')])
+                .fontColor([DesignColor.SUCCESS])
             }.width("100%")
             .alignItems(VerticalAlign.Center)
             .justifyContent(FlexAlign.Center)
@@ -58,9 +58,9 @@ struct PaymentSuccess {
                 OrderItemRow({ title: "支付金额", content: `￥${this.orderInfo?.payPrice}` })
                 OrderItemRow({ title: "下单时间", content: `${this.orderInfo?.createdAt}` })
               }
-            }.borderRadius(CommonConstants.BORDER_RADIUS)
-            .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-            .backgroundColor($r('sys.color.comp_background_primary'))
+            }.borderRadius(DesignDimens.CARD_RADIUS)
+            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            .backgroundColor(Color.White)
             .padding(18)
 
             RowSplit().height(28)
@@ -72,14 +72,16 @@ struct PaymentSuccess {
                   .fontSize(16)
                 Text(`请前往寄存柜${this.orderInfo?.lockersVo?.lockerNumber ?? -1}柜存放衣物`)
                   .fontSize(13)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
                   .margin({ top: 6, bottom: 6 })
                 Text("寄存柜将在24小时内处理您的订单")
                   .fontSize(13)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
               }.alignItems(HorizontalAlign.Start)
               .width("100%")
-            }.borderRadius(CommonConstants.BORDER_RADIUS)
-            .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-            .backgroundColor($r('sys.color.comp_background_primary'))
+            }.borderRadius(DesignDimens.CARD_RADIUS)
+            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            .backgroundColor(Color.White)
             .padding(18)
           }.height("100%")
 
@@ -88,13 +90,16 @@ struct PaymentSuccess {
             pathStack.pushPathByName("PickupDelivery", this.orderInfo)
           }).width("100%")
             .fontSize(16)
+            .backgroundColor(DesignColor.PRIMARY)
+            .borderRadius(DesignDimens.BUTTON_RADIUS)
+            .height(52)
         }
       }
       .width("100%")
       .height("100%")
       .align(Alignment.Top)
-      .backgroundColor($r('sys.color.background_primary'))
-      .padding({ left: 16, right: 16 })
+      .backgroundColor(DesignColor.BACKGROUND)
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }.title("支付成功")
   }
 }

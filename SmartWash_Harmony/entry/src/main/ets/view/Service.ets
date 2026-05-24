@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { CommonConstants } from "../constant/CommonConstants";
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
 
@@ -15,101 +15,118 @@ export struct Service {
     }
   }
 
+  /**
+   * 根据套餐名称匹配图标
+   * 参考安卓端 serviceIcon 函数逻辑
+   */
   @Builder
-  ServiceItemBuilder(priceContent?: string, titleContent?: string, descContent?: string, iconContent?: Resource) {
+  ServiceIconBuilder(itemName: string | null) {
+    if (itemName != null && itemName.includes("干")) {
+      // 干洗
+      SymbolGlyph($r('sys.symbol.wind'))
+        .fontSize(24)
+        .fontColor([Color(DesignColor.PRIMARY)])
+    } else if (itemName != null && (itemName.includes("精") || itemName.includes("护理") || itemName.includes("奢"))) {
+      // 精洗/护理/奢护
+      SymbolGlyph($r('sys.symbol.hanger'))
+        .fontSize(24)
+        .fontColor([Color(DesignColor.PRIMARY)])
+    } else if (itemName != null && itemName.includes("熨")) {
+      // 熨烫
+      SymbolGlyph($r('sys.symbol.steam'))
+        .fontSize(24)
+        .fontColor([Color(DesignColor.PRIMARY)])
+    } else {
+      // 默认洗衣
+      SymbolGlyph($r('sys.symbol.laundry'))
+        .fontSize(24)
+        .fontColor([Color(DesignColor.PRIMARY)])
+    }
+  }
+
+  @Builder
+  ServiceItemBuilder(item: LaundryItem) {
     Row() {
-      if (iconContent != null) {
-        Column() {
-          SymbolGlyph(iconContent)
-            .fontSize(24)
-            .fontColor([$r('sys.color.icon_primary')])
-        }.layoutWeight(1)
-        .alignItems(HorizontalAlign.Center)
-        .margin({ right: 8 })
+      // 左侧图标容器
+      Column() {
+        this.ServiceIconBuilder(item.itemName)
       }
-      Column() {
-        Row() {
-          Text(titleContent)
-            .fontSize(14)
-            .fontWeight(FontWeight.Bold)
-        }
+      .width(44)
+      .height(44)
+      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      .backgroundColor(Color(DesignColor.PRIMARY_CONTAINER))
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
-        Row() {
-          Text(descContent)
-            .fontSize(12)
-            .lineHeight(20)
-        }
-      }.layoutWeight(5)
+      // 中间文字区域
+      Column() {
+        Text(item.itemName)
+          .fontSize(DesignFontSize.CARD_TITLE)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(Color(DesignColor.TEXT_PRIMARY))
+
+        Text(item.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(Color(DesignColor.TEXT_SECONDARY))
+          .margin({ top: 2 })
+
+        Text(`¥${item.basePrice}`)
+          .fontSize(DesignFontSize.CARD_TITLE)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(Color(DesignColor.PRIMARY))
+          .margin({ top: 6 })
+      }
+      .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
-
-      Column() {
-        Text(priceContent)
-          .fontSize(14)
-          .fontColor($r('sys.color.brand'))
-      }.layoutWeight(1)
+      .margin({ left: 14 })
     }
     .width("100%")
-    .borderRadius(CommonConstants.BORDER_RADIUS)
-    .backgroundColor($r('sys.color.comp_background_primary'))
-    .padding(16)
-    .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .backgroundColor(Color(DesignColor.SURFACE))
+    .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
+    .padding(DesignDimens.CARD_PADDING)
   }
 
   build() {
     Scroll(this.scroller) {
       Column() {
+        // 页面标题
         Column() {
           Text("洗衣服务")
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .margin({ top: 8 })
-        }.alignItems(HorizontalAlign.Start)
-        .width("100%")
+            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontWeight(DesignFontWeight.BOLD)
+            .fontColor(Color(DesignColor.TEXT_PRIMARY))
 
-        RowSplit().height("16")
-
-        Column() {
-          Row() {
-            Text("服务说明")
-              .fontSize(16)
-              .fontWeight(FontWeight.Bold)
-          }
-
-          Row() {
-            Text("• 所有服务均包含免费取送\n" +
-              "• 标准服务24小时内完成\n" +
-              "• 支持在线支付和积分抵扣")
-              .fontSize(14)
-              .lineHeight(24)
-          }
+          Text("专业洗护，安心交付")
+            .fontSize(14)
+            .fontColor(Color(DesignColor.TEXT_SECONDARY))
+            .margin({ top: 4 })
         }
-        .width("100%")
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .backgroundColor($r('sys.color.comp_background_primary'))
         .alignItems(HorizontalAlign.Start)
-        .padding(16)
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+        .width("100%")
+        .margin({ top: 16 })
 
-        RowSplit().height("16")
-
-        //洗衣套餐列表
-        Column() {
-          ForEach(this.laundryItem, (item: LaundryItem) => {
-            this.ServiceItemBuilder(`￥${item.basePrice}`, `${item.itemName}`, `${item.description}`)
-            RowSplit().height("16")
-          })
+        // 服务项目列表
+        Column({ space: DesignDimens.CARD_SPACING }) {
+          if (this.laundryItem != null) {
+            ForEach(this.laundryItem, (item: LaundryItem) => {
+              this.ServiceItemBuilder(item)
+            })
+          }
         }
+        .margin({ top: 20 })
+        .width("100%")
 
-        this.ServiceItemBuilder("免费", "取件服务", "扫码取件，快捷服务", $r('sys.symbol.briefcase'))
-
-        RowSplit().height("72")
+        // 底部间距
+        Column()
+          .height(72)
       }
     }
     .scrollable(ScrollDirection.Vertical)
     .scrollBar(BarState.Off)
     .width("100%")
     .height("100%")
-    .backgroundColor($r('sys.color.background_primary'))
-    .padding({ left: 16, right: 16 })
+    .backgroundColor(Color(DesignColor.BACKGROUND))
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 }

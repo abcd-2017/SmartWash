@@ -9,7 +9,7 @@ import { checkStatus } from '../utils/CheckStatus'
 import { promptAction } from '@kit.ArkUI'
 import { logger } from '../utils/Logger'
 import { JSON } from '@kit.ArkTS'
-import { getValue } from '../utils/StoreageUtil'
+import { getValue } from '../utils/StorageUtil'
 import { CommonConstants } from '../constant/CommonConstants'
 import { pathStack } from '../utils/PathStackUtil'
 
@@ -30,6 +30,7 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => 
     } else {
       //跳转到登录页
       pathStack.pushPathByName("Login", null)
+      return Promise.reject(new Error("未登录"))
     }
   }
   return config
@@ -60,7 +61,12 @@ instance.interceptors.response.use((response: AxiosResponse) => {
   }
   let status = error.response?.status
   if (status) {
-    checkStatus(status)
+    if (status === HttpStatusCode.Unauthorized) {
+      promptAction.showToast({ message: "登录失效，请重新登录！" })
+      pathStack.pushPathByName("Login", null)
+    } else {
+      checkStatus(status)
+    }
   }
   logger.error("error", JSON.stringify(error))
   return Promise.reject(error)

@@ -5,12 +5,11 @@ import { pathStack } from "../utils/PathStackUtil"
 import { promptAction } from "@kit.ArkUI"
 import { getCanUseCoupon } from "../network/api/CouponApi"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
-import { CommonConstants } from "../constant/CommonConstants"
-import { ItemTitle } from "../view/ItemTitle"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { payment } from "../network/api/PaymentApi"
 import { PaymentType } from "../constant/PaymentType"
+import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentBuilder() {
@@ -49,7 +48,6 @@ struct Payment {
   }
 
   async getUserCoupons() {
-    //获取已经领取的优惠券列表
     let couponRes = await getCanUseCoupon(this.orderId ?? -1)
     if (couponRes.code == HttpStatusCode.Ok) {
       this.userCoupon = couponRes.data
@@ -73,78 +71,111 @@ struct Payment {
   }
 
   @Builder
+  PageHeader() {
+    Row() {
+      SymbolGlyph($r('sys.symbol.chevron_left'))
+        .fontSize(24)
+        .fontColor([DesignColor.TEXT_PRIMARY])
+        .onClick(() => {
+          pathStack.pop()
+        })
+
+      Text("支付")
+        .fontSize(DesignFontSize.SECTION_TITLE)
+        .fontWeight(FontWeight.Bold)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .margin({ left: 8 })
+    }
+    .width("100%")
+    .height(56)
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor(DesignColor.BACKGROUND)
+  }
+
+  @Builder
   BottomSheet() {
     Column() {
+      // 标题栏
       Row() {
-        Column() {
-          Text("选择优惠券")
-            .fontSize(16)
-            .fontWeight(FontWeight.Bold)
+        Text("选择优惠券")
+          .fontSize(DesignFontSize.SECTION_TITLE)
+          .fontWeight(FontWeight.Bold)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+
+        Blank()
+
+        Row() {
+          Text("去领取")
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(DesignColor.PRIMARY)
+
+          SymbolGlyph($r('sys.symbol.chevron_right'))
+            .fontSize(14)
+            .fontColor([DesignColor.PRIMARY])
+            .margin({ left: 4 })
         }
-
-        ColumnSplit().layoutWeight(1)
-
-        Column() {
-          Row() {
-            Text("去领取")
-              .fontSize(14)
-              .fontColor($r('sys.color.brand'))
-
-            SymbolGlyph($r('sys.symbol.chevron_right')).fontSize(14)
-              .fontColor([$r('sys.color.font_primary')])
-              .margin({ left: 6 })
-          }
-        }.onClick(() => {
+        .onClick(() => {
           this.showSheet = false
           pathStack.pushPathByName("Coupon", null)
         })
-      }.margin({ top: 6 })
-
-      RowSplit().height("24")
+      }
+      .width("100%")
+      .margin({ top: 8, bottom: 16 })
 
       if (this.userCoupon == null || this.userCoupon.length == 0) {
-        Text("暂无优惠券")
-          .height("100%")
-          .align(Alignment.Center)
+        Column() {
+          Text("暂无优惠券")
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+        }
+        .height(120)
+        .width("100%")
+        .justifyContent(FlexAlign.Center)
       } else {
-        List({ space: 12 }) {
+        List({ space: DesignDimens.CARD_SPACING }) {
           ForEach(this.userCoupon, (coupon: UserCouponVo) => {
             ListItem() {
               Row() {
                 Column() {
                   Row() {
                     Text(`${coupon.couponVo?.discount?.toFixed(1)}元优惠券`)
+                      .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(FontWeight.Bold)
+                      .fontColor(DesignColor.TEXT_PRIMARY)
                   }
 
                   Row() {
                     Text(`${coupon.couponVo?.threshold == 0 ?
-                      `满${parseInt(coupon.couponVo.discount?.toFixed(1) ?? "0") +
-                        0.01}减${coupon.couponVo.discount?.toFixed(1)}` :
+                      `满${parseInt(coupon.couponVo.discount?.toFixed(1) ?? "0") + 0.01}减${coupon.couponVo.discount?.toFixed(1)}` :
                       `满${coupon.couponVo?.threshold?.toFixed(1)}元可用`}`)
-                      .fontSize(13)
-                  }.margin({ top: 6, bottom: 8 })
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontColor(DesignColor.TEXT_SECONDARY)
+                  }
+                  .margin({ top: 6, bottom: 6 })
 
                   Row() {
                     Text(`有效期至${coupon.expiredAt}`)
-                      .fontSize(13)
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontColor(DesignColor.TEXT_TERTIARY)
                   }
-                }.alignItems(HorizontalAlign.Start)
-
-                Column() {
-                  Radio({ value: `${coupon.userCouponId}`, group: "userCoupon" })
-                    .checked(this.selectCouponId == coupon.userCouponId)
-                    .onChange((flag) => {
-                      if (flag) {
-                        this.calculationOrder(coupon)
-                      }
-                    })
                 }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+
+                Radio({ value: `${coupon.userCouponId}`, group: "userCoupon" })
+                  .checked(this.selectCouponId == coupon.userCouponId)
+                  .onChange((flag) => {
+                    if (flag) {
+                      this.calculationOrder(coupon)
+                    }
+                  })
               }
               .width("100%")
-              .borderRadius(CommonConstants.BORDER_RADIUS)
-              .backgroundColor($r('sys.color.comp_emphasize_tertiary'))
-              .padding(18)
+              .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
+              .backgroundColor(DesignColor.SURFACE)
+              .border({ width: 0.5, color: DesignColor.OUTLINE })
+              .padding(DesignDimens.CARD_PADDING)
               .justifyContent(FlexAlign.SpaceBetween)
               .onClick(() => {
                 this.calculationOrder(coupon)
@@ -153,149 +184,248 @@ struct Payment {
           })
         }
       }
-    }.width("100%")
-    .padding(16)
+    }
+    .width("100%")
+    .padding(DesignDimens.PAGE_PADDING)
   }
 
   build() {
     NavDestination() {
       Column() {
-        Column() {
-          Row() {
-            ItemTitle({ title: "订单信息" })
-          }.margin({ bottom: 4 })
+        // 自定义页面标题
+        this.PageHeader()
 
-          Row() {
-            Text(`订单号：${this.orderInfo?.orderNo}`)
-              .fontSize(14)
-            Text(`￥${this.orderInfo?.totalPrice}`)
-              .fontSize(14)
+        // 分隔线
+        Divider()
+          .strokeWidth(0.5)
+          .color(DesignColor.DIVIDER)
+
+        // 内容区域
+        Column() {
+          // ========== 订单信息卡片 ==========
+          Column() {
+            Text("订单信息")
+              .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(FontWeight.Bold)
-              .fontColor($r('sys.color.brand'))
-          }.width("100%").justifyContent(FlexAlign.SpaceBetween).margin({ top: 4, bottom: 4 })
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .margin({ bottom: 12 })
 
-          Row() {
-            Text(`服务类型：${this.orderInfo?.laundryPackageVo?.itemName}`)
-              .fontSize(14)
-          }.margin({ top: 4, bottom: 4 })
+            // 订单号
+            Row() {
+              Text("订单号")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
 
-          Row() {
-            Text(`预计完成时间：24小时内`)
-              .fontSize(14)
-          }.margin({ top: 4 })
-        }
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .padding(18)
-        .alignItems(HorizontalAlign.Start)
+              Blank()
 
-        RowSplit().height("16")
-        Column() {
-          Row() {
-            ItemTitle({ title: "支付方式" })
-          }.margin({ bottom: 12 })
+              Text(this.orderInfo?.orderNo ?? "")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+            }
+            .width("100%")
+            .margin({ bottom: 8 })
 
-          Row() {
-            Column() {
+            // 服务类型
+            Row() {
+              Text("服务类型")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
+
+              Blank()
+
+              Text(this.orderInfo?.laundryPackageVo?.itemName ?? "")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+            }
+            .width("100%")
+            .margin({ bottom: 8 })
+
+            // 预计完成时间
+            Row() {
+              Text("预计完成时间")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
+
+              Blank()
+
+              Text("24小时内")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+            }
+            .width("100%")
+
+            // 分隔线
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.DIVIDER)
+              .margin({ top: 12, bottom: 12 })
+
+            // 应付金额
+            Row() {
+              Text("应付金额")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+
+              Blank()
+
+              Text(`￥${this.orderInfo?.payPrice}`)
+                .fontSize(DesignFontSize.SECTION_TITLE)
+                .fontWeight(FontWeight.Bold)
+                .fontColor(DesignColor.PRIMARY)
+            }
+            .width("100%")
+          }
+          .width("100%")
+          .padding(DesignDimens.CARD_PADDING)
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          .alignItems(HorizontalAlign.Start)
+
+          // ========== 支付方式卡片 ==========
+          Column() {
+            Text("支付方式")
+              .fontSize(DesignFontSize.CARD_TITLE)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .margin({ bottom: 12 })
+
+            Row() {
+              // 绿色图标容器
+              Column() {
+                SymbolGlyph($r('sys.symbol.creditcard'))
+                  .fontSize(20)
+                  .fontColor([DesignColor.ON_PRIMARY])
+              }
+              .width(40)
+              .height(40)
+              .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+              .backgroundColor(DesignColor.PRIMARY)
+              .justifyContent(FlexAlign.Center)
+
+              Column() {
+                Text("余额支付")
+                  .fontSize(DesignFontSize.BODY)
+                  .fontWeight(FontWeight.Medium)
+                  .fontColor(DesignColor.TEXT_PRIMARY)
+
+                Text(`当前余额￥${(this.userInfo?.balance ?? 0)}`)
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .margin({ top: 2 })
+              }
+              .alignItems(HorizontalAlign.Start)
+              .margin({ left: 12 })
+              .layoutWeight(1)
+
               Radio({ value: "payType", group: "payType" })
-                .margin({ left: 6, right: 12 })
                 .checked(true)
             }
+            .width("100%")
+          }
+          .width("100%")
+          .padding(DesignDimens.CARD_PADDING)
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          .alignItems(HorizontalAlign.Start)
 
-            RowSplit().height("12")
-            Column() {
-              Row() {
-                Text("余额支付")
-                  .fontSize(15)
-              }.margin({ bottom: 4 })
-
-              Row() {
-                Text(`当前余额￥${(this.userInfo?.balance ?? 0)}`)
-                  .fontSize(13)
-              }
-            }.alignItems(HorizontalAlign.Start)
-          }.width("100%")
-        }
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .padding(18)
-        .alignItems(HorizontalAlign.Start)
-
-        RowSplit().height("16")
-        Column() {
+          // ========== 优惠券卡片 ==========
           Row() {
             SymbolGlyph($r('sys.symbol.label'))
               .fontSize(20)
-              .fontColor([$r('sys.color.font_primary')])
-              .margin({ right: 6 })
+              .fontColor([DesignColor.PRIMARY])
+              .margin({ right: 10 })
 
             Text("优惠券")
-              .fontSize(16)
+              .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(FontWeight.Bold)
+              .fontColor(DesignColor.TEXT_PRIMARY)
 
-            ColumnSplit().layoutWeight(1)
+            Blank()
 
-            Text(`${this.selectCoupon == null ? "不使用" : "-￥" + this.selectCoupon.couponVo?.discount?.toFixed(1)}`)
+            Text(this.selectCoupon == null ? "不使用" : `-￥${this.selectCoupon.couponVo?.discount?.toFixed(1)}`)
+              .fontSize(DesignFontSize.BODY)
+              .fontColor(this.selectCoupon == null ? DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY)
+
+            SymbolGlyph($r('sys.symbol.chevron_right'))
               .fontSize(14)
-            SymbolGlyph($r('sys.symbol.chevron_right')).fontSize(14)
-              .fontColor([$r('sys.color.font_primary')])
-              .margin({ left: 6 })
+              .fontColor([DesignColor.TEXT_TERTIARY])
+              .margin({ left: 4 })
           }
-        }
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .shadow(ShadowStyle.OUTER_DEFAULT_SM)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .padding(18)
-        .bindSheet($$this.showSheet, this.BottomSheet(), {
-          height: "50%",
-          showClose: false,
-          dragBar: false
-        })
-        .onClick(() => {
-          this.showSheet = true
-        })
+          .width("100%")
+          .padding(DesignDimens.CARD_PADDING)
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          .bindSheet($$this.showSheet, this.BottomSheet(), {
+            height: "50%",
+            showClose: false,
+            dragBar: false
+          })
+          .onClick(() => {
+            this.showSheet = true
+          })
 
-        RowSplit().height("24")
-        Button(`确认支付￥${this.orderInfo?.payPrice}`).onClick(async (event: ClickEvent) => {
-          if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
-            let res = await payment({
-              orderId: this.orderId,
-              paymentType: `${PaymentType.PURSE}`,
-              userCouponId: this.selectCoupon?.userCouponId ?? null
-            })
-            if (res.code == HttpStatusCode.Ok) {
-              promptAction.showToast({ message: res.data })
-              pathStack.pop()
-              pathStack.pushPathByName("PaymentSuccess", this.orderId)
-            } else {
-              promptAction.showToast({ message: res.message })
-            }
-          } else {
-            promptAction.showDialog({
-              title: "余额不足",
-              message: "当前余额不足，请先充值",
-              buttons: [{ text: "取消", color: $r('sys.color.font_primary') },
-                { text: "确认", color: $r('sys.color.font_primary') }],
-            }, async (err, data) => {
-              if (data.index == 1) {
-                pathStack.pushPathByName("Recharge", null)
+          // 占位
+          Blank()
+
+          // ========== 确认支付按钮 ==========
+          Button(`确认支付￥${this.orderInfo?.payPrice}`)
+            .fontSize(DesignFontSize.CARD_TITLE)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(DesignColor.ON_PRIMARY)
+            .backgroundColor(DesignColor.PRIMARY)
+            .borderRadius(DesignDimens.BUTTON_RADIUS)
+            .width("100%")
+            .height(48)
+            .onClick(async (event: ClickEvent) => {
+              if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
+                let res = await payment({
+                  orderId: this.orderId,
+                  paymentType: `${PaymentType.PURSE}`,
+                  userCouponId: this.selectCoupon?.userCouponId ?? null
+                })
+                if (res.code == HttpStatusCode.Ok) {
+                  promptAction.showToast({ message: res.data })
+                  pathStack.pop()
+                  pathStack.pushPathByName("PaymentSuccess", this.orderId)
+                } else {
+                  promptAction.showToast({ message: res.message })
+                }
+              } else {
+                promptAction.showDialog({
+                  title: "余额不足",
+                  message: "当前余额不足，请先充值",
+                  buttons: [
+                    { text: "取消", color: DesignColor.TEXT_PRIMARY },
+                    { text: "确认", color: DesignColor.PRIMARY }
+                  ],
+                }, async (err, data) => {
+                  if (data.index == 1) {
+                    pathStack.pushPathByName("Recharge", null)
+                  }
+                })
               }
             })
-          }
-        }).fontSize(16)
-          .width("100%")
+        }
+        .width("100%")
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Center)
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: 12,
+          bottom: 12
+        })
       }
       .width("100%")
       .height("100%")
-      .align(Alignment.Top)
-      .backgroundColor($r('sys.color.background_primary'))
-      .padding({ left: 16, right: 16, top: 4 })
-    }.title("支付")
+      .backgroundColor(DesignColor.BACKGROUND)
+    }
+    .hideTitleBar(true)
     .onShown(() => {
-      this.getUserCoupons()
-      this.getCurrUserInfo()
+      Promise.all([this.getUserCoupons(), this.getCurrUserInfo()])
     })
   }
 }

@@ -1,4 +1,4 @@
-import { CommonConstants } from "../constant/CommonConstants"
+import { DesignColor, DesignDimens } from "../constant/DesignSystem"
 import { CouponStatus } from "../constant/CouponStatus"
 import { CouponVo } from "../network/vo/CouponVo"
 
@@ -8,41 +8,45 @@ export struct CouponCard {
   @Event buttonClick: () => void
   thresholdPrice: string =
     this.coupon?.threshold == 0 ?
-      `满${parseInt(this.coupon.discount?.toFixed(1) ?? "0") + 0.01}减${this.coupon.discount?.toFixed(1)}` :
+      `满${parseFloat(this.coupon?.discount?.toFixed(1) ?? "0") + 0.01}减${this.coupon?.discount?.toFixed(1)}` :
       `满${this.coupon?.threshold?.toFixed(1)}元可用`
   isReceive: boolean = (this.coupon?.status ?? "0") == CouponStatus.RECEIVE.toString()
 
   build() {
     Column() {
       Row() {
-        //左侧内容
+        // 左侧金额（绿色大字）
         Column() {
-          Row() {
-            Text(`${this.coupon?.discount?.toFixed(1)}元`)
-              .fontSize(20)
-              .fontColor($r('sys.color.brand'))
-              .fontWeight(FontWeight.Bold)
-              .margin({ bottom: 8 })
-          }
+          Text(`￥${this.coupon?.discount?.toFixed(1)}`)
+            .fontSize(24)
+            .fontColor(DesignColor.PRIMARY)
+            .fontWeight(FontWeight.Bold)
+          Text(`${this.thresholdPrice}`)
+            .fontSize(11)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ top: 4 })
+        }
+        .width(90)
+        .alignItems(HorizontalAlign.Center)
 
-          Row() {
-            Text(`${this.thresholdPrice}`)
-              .fontSize(14)
-          }
-        }.layoutWeight(1)
-        .alignItems(HorizontalAlign.Start)
+        // 竖线分隔
+        Divider()
+          .strokeWidth(0.5)
+          .height(50)
+          .color(DesignColor.OUTLINE)
+          .margin({ left: 8, right: 8 })
 
-        //右侧内容
+        // 右侧内容
         Column() {
-          Row() {
-            Text(`${this.coupon?.title}`)
-          }
+          Text(`${this.coupon?.title}`)
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(DesignColor.TEXT_PRIMARY)
 
-          Row() {
-            Text(`${this.coupon?.startTime?.split(" ")[0]}-${this.coupon?.endTime?.split(" ")[0]}`)
-              .fontSize(12)
-              .margin({ top: 10, bottom: 12 })
-          }
+          Text(`${this.coupon?.startTime?.split(" ")[0] ?? ""} - ${this.coupon?.endTime?.split(" ")[0] ?? ""}`)
+            .fontSize(12)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ top: 6 })
 
           Row() {
             Button(`${this.isReceive ? "已领取" : "立即领取"}`)
@@ -51,24 +55,28 @@ export struct CouponCard {
                   this.buttonClick()
                 }
               })
-              .margin({ bottom: 6 })
-              .backgroundColor($r(`${this.isReceive ? 'sys.color.background_fourth' : 'sys.color.brand'}`))
+              .fontSize(13)
+              .height(32)
+              .backgroundColor(this.isReceive ? DesignColor.SURFACE_VARIANT : DesignColor.PRIMARY)
+              .fontColor(this.isReceive ? DesignColor.TEXT_SECONDARY : DesignColor.ON_PRIMARY)
+              .borderRadius(DesignDimens.BUTTON_RADIUS)
               .stateEffect(!this.isReceive)
-              .fontSize(14)
+              .margin({ top: 8 })
           }
-        }.layoutWeight(1)
-        .alignItems(HorizontalAlign.End)
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
       }
       .margin({
-        left: 16,
-        right: 16,
-        bottom: 12,
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: DesignDimens.CARD_SPACING,
         top: 8
       })
-      .padding(16)
-      .backgroundColor($r('sys.color.comp_background_primary'))
-      .borderRadius(CommonConstants.BORDER_RADIUS)
-      .shadow(ShadowStyle.OUTER_DEFAULT_SM)
+      .padding(DesignDimens.CARD_PADDING)
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .border({ width: 0.5, color: DesignColor.OUTLINE })
     }
     .width("100%")
   }
