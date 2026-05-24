@@ -7,6 +7,7 @@
     <string name="back">返回</string>
     <string name="currency_format">¥%s</string>
     <string name="no_data">暂无数据</string>
+    <string name="loading">加载中…</string>
 
     <!-- ==================== 认证 ==================== -->
     <string name="brand_name">智能洗衣</string>
@@ -261,6 +262,13 @@
     <string name="help_feedback_desc">常见问题、意见反馈</string>
     <string name="logout">退出登录</string>
     <string name="confirm_logout">是否要退出登录？</string>
+
+    <!-- ==================== 功能开发中 ==================== -->
+    <string name="feature_in_development">功能开发中，敬请期待</string>
+    <string name="service_phone">客服电话：400-888-8888</string>
+    <string name="service_hours">服务时间：9:00-21:00</string>
+    <string name="app_version">版本号：%s</string>
+    <string name="faq_content">暂无常见问题</string>
 
     <!-- ==================== 通用 UI 组件 ==================== -->
 

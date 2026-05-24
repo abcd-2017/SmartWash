@@ -9,6 +9,7 @@ import com.google.zxing.qrcode.QRCodeWriter
  * 根据传入content生成二维码
  */
 fun generateQrCodeBitmap(content: String, size: Int = 512): Bitmap {
+    require(content.isNotBlank()) { "QR code content must not be empty" }
     val writer = QRCodeWriter()
     val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size)
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)

@@ -31,6 +31,7 @@ class IndexViewModel @Inject constructor(
 
     fun getInfoData() {
         viewModelScope.launch {
+            _userInfoStatus.value = RequestState.Loading
             try {
                 _userInfo.value = userRepository.getUserInfo()
                 _orderList.value = orderRepository.getWashingOrder()

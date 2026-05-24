@@ -26,6 +26,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.smartwash.R
 import com.smartwash.ui.theme.AppColors
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.Primary
 import com.smartwash.ui.theme.PrimaryDark
@@ -209,6 +216,25 @@ fun EmptyState(
     }
 }
 
+// ========== 加载状态 ==========
+
+@Composable
+fun LoadingState(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            color = AppColors.colorScheme.primary,
+            strokeWidth = 2.dp
+        )
+    }
+}
+
 // ========== 标签栏 ==========
 
 @Composable
@@ -253,6 +279,214 @@ fun AppTabBar(
                     )
                 } else {
                     Spacer(modifier = Modifier.height(3.dp))
+                }
+            }
+        }
+    }
+}
+
+// ========== 统一弹窗组件 ==========
+
+/**
+ * 确认/取消操作弹窗
+ * 用于：取消订单、确认支付、解绑校园卡、退出登录等
+ */
+@Composable
+fun AppConfirmDialog(
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    title: String? = null,
+    confirmText: String = stringResource(R.string.confirm),
+    cancelText: String = stringResource(R.string.cancel),
+    isDanger: Boolean = false,
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.cardRadius),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
+                ) {
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.colorScheme.textSecondary
+                    )
+                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(
+                            text = cancelText,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(0.5.dp)
+                            .height(48.dp)
+                            .background(AppColors.colorScheme.divider)
+                    )
+                    TextButton(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(
+                            text = confirmText,
+                            color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 单按钮提示弹窗
+ * 用于：套餐未选择提示、更换校区提示等
+ */
+@Composable
+fun AppInfoDialog(
+    message: String,
+    onDismiss: () -> Unit,
+    title: String? = null,
+    buttonText: String = stringResource(R.string.confirm),
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.cardRadius),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
+                ) {
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.colorScheme.textSecondary
+                    )
+                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text(
+                        text = buttonText,
+                        color = AppColors.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 带输入框的弹窗
+ * 用于：绑定校园卡
+ */
+@Composable
+fun AppInputDialog(
+    title: String,
+    inputLabel: String,
+    inputValue: String,
+    onValueChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.cardRadius),
+            color = MaterialTheme.colorScheme.surface,
+        ) {
+            Column {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = inputValue,
+                        onValueChange = onValueChange,
+                        label = { Text(inputLabel) },
+                        supportingText = {
+                            if (isError && errorMessage != null) {
+                                Text(errorMessage)
+                            }
+                        },
+                        singleLine = true,
+                        isError = isError,
+                        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.inputRadius),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.colorScheme.primary,
+                            unfocusedBorderColor = AppColors.colorScheme.outline,
+                            errorBorderColor = AppColors.colorScheme.error
+                        )
+                    )
+                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(0.5.dp)
+                            .height(48.dp)
+                            .background(AppColors.colorScheme.divider)
+                    )
+                    TextButton(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f).height(48.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.confirm),
+                            color = AppColors.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

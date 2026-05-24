@@ -61,7 +61,6 @@ public class RedisConfig {
             @Override
             public Object deserialize(byte[] bytes) {
                 if (bytes == null || bytes.length == 0) return null;
-<<<<<<< HEAD
                 return JSON.parseObject(new String(bytes, StandardCharsets.UTF_8), Object.class);
             }
         };

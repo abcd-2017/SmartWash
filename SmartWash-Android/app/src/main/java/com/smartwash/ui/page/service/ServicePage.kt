@@ -16,9 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.LocalLaundryService
+import androidx.compose.material.icons.rounded.Checkroom
+import androidx.compose.material.icons.rounded.DryCleaning
 import androidx.compose.material.icons.rounded.LocalLaundryService
-import androidx.compose.material.icons.rounded.Toys
-import androidx.compose.material.icons.rounded.Wash
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,8 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smartwash.R
 import com.smartwash.network.vo.laundry.LaundryItem
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.utils.RequestState
 import com.smartwash.ui.theme.IconBox
 
 @Composable
@@ -43,6 +46,7 @@ fun ServicePage(
     serviceViewModel: ServiceViewModel = hiltViewModel()
 ) {
     val laundryItems by serviceViewModel.laundryItems.collectAsState()
+    val getLaundryItemState by serviceViewModel.getLaundryItemState.collectAsState()
 
     LaunchedEffect(Unit) {
         serviceViewModel.getLaundryItem()
@@ -53,6 +57,9 @@ fun ServicePage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (getLaundryItemState is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -90,6 +97,7 @@ fun ServicePage(
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
+        }
     }
 }
 
@@ -111,7 +119,7 @@ private fun ServiceItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconBox(icon = serviceIcon(item.itemName))
+            IconBox(icon = serviceIcon(item))
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -136,12 +144,21 @@ private fun ServiceItemCard(
     }
 }
 
-private fun serviceIcon(itemName: String): ImageVector {
+private val serviceIcons = listOf(
+    Icons.Filled.LocalLaundryService, // 洗衣机
+    Icons.Rounded.DryCleaning,        // 干洗袋
+    Icons.Rounded.Checkroom,          // 衣架
+    Icons.Filled.CleaningServices,    // 清洁
+)
+
+private fun serviceIcon(item: LaundryItem): ImageVector {
+    val name = item.itemName
     return when {
-        itemName.contains("洗") || itemName.contains("标准") -> Icons.Rounded.LocalLaundryService
-        itemName.contains("精") || itemName.contains("护理") -> Icons.Rounded.Toys
-        itemName.contains("干") -> Icons.Rounded.Wash
-        itemName.contains("熨") -> Icons.Default.CleaningServices
-        else -> Icons.Rounded.LocalLaundryService
+        name.contains("干") -> Icons.Rounded.DryCleaning
+        name.contains("精") || name.contains("护理") || name.contains("奢") -> Icons.Rounded.Checkroom
+        name.contains("熨") -> Icons.Filled.CleaningServices
+        name.contains("洗") || name.contains("标准") -> Icons.Filled.LocalLaundryService
+        // 兜底：按 itemId 轮转，保证不同套餐图标不同
+        else -> serviceIcons[(item.itemId % serviceIcons.size).toInt()]
     }
 }

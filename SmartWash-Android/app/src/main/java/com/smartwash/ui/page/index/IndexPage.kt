@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.LocalMall
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +54,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.network.vo.order.OrderVo
+import com.smartwash.ui.common.AppInfoDialog
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
@@ -95,6 +96,9 @@ fun IndexPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (userInfoStatus is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -214,17 +218,13 @@ fun IndexPage(
                 Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             }
         }
+        }
     }
 
     if (showAlertDialog) {
-        AlertDialog(
-            onDismissRequest = { showAlertDialog = false },
-            text = { Text(stringResource(R.string.change_school_contact_service)) },
-            confirmButton = {
-                TextButton(onClick = { showAlertDialog = false }) {
-                    Text(stringResource(R.string.confirm))
-                }
-            }
+        AppInfoDialog(
+            message = stringResource(R.string.change_school_contact_service),
+            onDismiss = { showAlertDialog = false }
         )
     }
 }

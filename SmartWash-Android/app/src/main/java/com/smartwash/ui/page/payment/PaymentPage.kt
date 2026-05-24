@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,6 +54,8 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppConfirmDialog
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
@@ -116,6 +117,9 @@ fun PaymentPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (orderInfo == null) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.payment), onBack = { navController.navigateUp() })
 
@@ -149,7 +153,10 @@ fun PaymentPage(
                         ) {
                             Text(stringResource(R.string.amount_due), style = MaterialTheme.typography.titleLarge)
                             Text(
-                                stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: ""}"),
+                                stringResource(
+                                    R.string.currency_format,
+                                    "${orderInfo?.payPrice ?: ""}"
+                                ),
                                 style = MaterialTheme.typography.displaySmall,
                                 color = AppColors.colorScheme.primary
                             )
@@ -271,6 +278,7 @@ fun PaymentPage(
                 )
             }
         }
+        }
     }
 
     // 优惠券选择弹窗
@@ -331,37 +339,30 @@ fun PaymentPage(
     }
 
     if (confirmPayShow) {
-        AlertDialog(
-            onDismissRequest = { confirmPayShow = false },
-            text = { Text(stringResource(R.string.confirm_pay_question)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    paymentViewModel.paymentOrder(
-                        orderId!!,
-                        PaymentType.PURSE.type,
-                        if (selectedCoupon == -1 || userCouponList.isEmpty()) null
-                        else userCouponList[selectedCoupon].userCouponId
-                    )
-                }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
+        AppConfirmDialog(
+            message = stringResource(R.string.confirm_pay_question),
+            onConfirm = {
+                paymentViewModel.paymentOrder(
+                    orderId!!,
+                    PaymentType.PURSE.type,
+                    if (selectedCoupon == -1 || userCouponList.isEmpty()) null
+                    else userCouponList[selectedCoupon].userCouponId
+                )
             },
-            dismissButton = { TextButton(onClick = { confirmPayShow = false }) { Text(stringResource(R.string.cancel), color = AppColors.colorScheme.textSecondary) } }
+            onDismiss = { confirmPayShow = false }
         )
     }
 
     if (showRechargeDialog) {
-        AlertDialog(
-            onDismissRequest = { showRechargeDialog = false },
-            title = { Text(stringResource(R.string.insufficient_balance), style = MaterialTheme.typography.headlineSmall) },
-            text = { Text(stringResource(R.string.insufficient_balance_tip), color = AppColors.colorScheme.textSecondary) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showRechargeDialog = false
-                    navController.navigate(PageConstant.Recharge.text)
-                }) { Text(stringResource(R.string.go_recharge), color = AppColors.colorScheme.primary) }
+        AppConfirmDialog(
+            title = stringResource(R.string.insufficient_balance),
+            message = stringResource(R.string.insufficient_balance_tip),
+            confirmText = stringResource(R.string.go_recharge),
+            onConfirm = {
+                showRechargeDialog = false
+                navController.navigate(PageConstant.Recharge.text)
             },
-            dismissButton = {
-                TextButton(onClick = { showRechargeDialog = false }) { Text(stringResource(R.string.cancel), color = AppColors.colorScheme.textSecondary) }
-            }
+            onDismiss = { showRechargeDialog = false }
         )
     }
 }

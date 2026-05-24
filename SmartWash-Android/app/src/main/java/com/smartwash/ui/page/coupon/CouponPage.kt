@@ -34,6 +34,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.ui.common.AppTabBar
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.coupon.tab.AvailableCouponsTab
 import com.smartwash.ui.page.coupon.tab.ClaimedCouponsTab
@@ -97,12 +98,16 @@ fun CouponPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            when (selectedTabIndex) {
-                0 -> AvailableCouponsTab(availableCoupons) {
-                    couponViewModel.receiveCoupon(it)
+            if (loadState is RequestState.Loading) {
+                LoadingState(modifier = Modifier.fillMaxSize())
+            } else {
+                when (selectedTabIndex) {
+                    0 -> AvailableCouponsTab(availableCoupons) {
+                        couponViewModel.receiveCoupon(it)
+                    }
+                    1 -> ClaimedCouponsTab(claimedCoupons)
+                    2 -> HistoricalCouponsTab(historicalCoupons)
                 }
-                1 -> ClaimedCouponsTab(claimedCoupons)
-                2 -> HistoricalCouponsTab(historicalCoupons)
             }
         }
     }

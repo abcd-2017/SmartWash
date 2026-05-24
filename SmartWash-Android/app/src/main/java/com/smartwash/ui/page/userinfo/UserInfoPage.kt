@@ -37,15 +37,12 @@ import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,6 +67,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.smartwash.R
+import com.smartwash.ui.common.AppConfirmDialog
+import com.smartwash.ui.common.AppInfoDialog
+import com.smartwash.ui.common.AppInputDialog
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
@@ -99,6 +100,7 @@ fun UserInfoPage(
 
     var showBindDialog by remember { mutableStateOf(false) }
     var showUnbindDialog by remember { mutableStateOf(false) }
+    var showServiceDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
     var cardNumberError by remember { mutableStateOf(false) }
 
@@ -114,7 +116,8 @@ fun UserInfoPage(
             ).show()
             userInfoViewModel.resetState()
         }
-        else -> { userInfoViewModel.resetState() }
+        is RequestState.Success -> { userInfoViewModel.resetState() }
+        else -> {}
     }
     when (bindCampusState) {
         is RequestState.Success -> {
@@ -165,6 +168,9 @@ fun UserInfoPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (userInfoStatus is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -331,61 +337,56 @@ fun UserInfoPage(
                     icon = Icons.Default.Headset,
                     title = stringResource(R.string.contact_service),
                     subtitle = stringResource(R.string.online_consulting),
-                    onClick = {}
+                    onClick = { showServiceDialog = true }
                 )
                 FunctionItem(
                     icon = Icons.AutoMirrored.Filled.Help,
                     title = stringResource(R.string.faq),
                     subtitle = stringResource(R.string.user_guide),
-                    onClick = {}
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+        }
     }
 
     // 绑定校园卡弹窗
     if (showBindDialog) {
-        AlertDialog(
-            onDismissRequest = { showBindDialog = false },
-            title = { Text(stringResource(R.string.bind_campus_card), style = MaterialTheme.typography.headlineSmall) },
-            text = {
-                OutlinedTextField(
-                    value = cardNumber,
-                    onValueChange = { cardNumberError = false; cardNumber = it },
-                    label = { Text(stringResource(R.string.input_campus_card)) },
-                    supportingText = { if (cardNumberError) Text(stringResource(R.string.campus_card_empty)) },
-                    singleLine = true,
-                    isError = cardNumberError,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
+        AppInputDialog(
+            title = stringResource(R.string.bind_campus_card),
+            inputLabel = stringResource(R.string.input_campus_card),
+            inputValue = cardNumber,
+            onValueChange = { cardNumberError = false; cardNumber = it },
+            isError = cardNumberError,
+            errorMessage = stringResource(R.string.campus_card_empty),
+            keyboardType = KeyboardType.Number,
+            onConfirm = {
+                if (cardNumber.isEmpty()) cardNumberError = true
+                else userInfoViewModel.bindCampus(cardNumber)
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (cardNumber.isEmpty()) cardNumberError = true
-                    else userInfoViewModel.bindCampus(cardNumber)
-                }) { Text(stringResource(R.string.confirm_bind)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showBindDialog = false }) { Text(stringResource(R.string.cancel)) }
-            }
+            onDismiss = { showBindDialog = false }
         )
     }
 
     // 解绑校园卡弹窗
     if (showUnbindDialog) {
-        AlertDialog(
-            onDismissRequest = { showUnbindDialog = false },
-            title = { Text(stringResource(R.string.unbind_campus_card), style = MaterialTheme.typography.headlineSmall) },
-            text = { Text(stringResource(R.string.confirm_unbind_question)) },
-            confirmButton = {
-                TextButton(onClick = { userInfoViewModel.unBindCampus() }) { Text(stringResource(R.string.confirm_unbind)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUnbindDialog = false }) { Text(stringResource(R.string.cancel)) }
-            }
+        AppConfirmDialog(
+            title = stringResource(R.string.unbind_campus_card),
+            message = stringResource(R.string.confirm_unbind_question),
+            confirmText = stringResource(R.string.confirm_unbind),
+            onConfirm = { userInfoViewModel.unBindCampus() },
+            onDismiss = { showUnbindDialog = false }
+        )
+    }
+
+    // 联系客服弹窗
+    if (showServiceDialog) {
+        AppInfoDialog(
+            title = stringResource(R.string.contact_service),
+            message = stringResource(R.string.service_phone) + "\n" + stringResource(R.string.service_hours),
+            onDismiss = { showServiceDialog = false }
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.setting
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,21 +31,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppConfirmDialog
+import com.smartwash.ui.common.AppInfoDialog
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.common.SettingRow
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Error
-import com.smartwash.ui.theme.TextSecondary
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.SharePreferenceUtils
 
@@ -54,6 +53,8 @@ fun SettingPage(
     navController: NavController
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -80,14 +81,16 @@ fun SettingPage(
                     icon = Icons.Default.Notifications,
                     title = stringResource(R.string.push_notification),
                     subtitle = stringResource(R.string.push_notification_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
                 SettingRow(
                     icon = Icons.Default.Email,
                     title = stringResource(R.string.email_notification),
                     subtitle = stringResource(R.string.email_notification_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
@@ -104,14 +107,16 @@ fun SettingPage(
                     icon = Icons.Default.Security,
                     title = stringResource(R.string.privacy_settings),
                     subtitle = stringResource(R.string.privacy_settings_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
                 SettingRow(
                     icon = Icons.Default.Lock,
                     title = stringResource(R.string.account_security),
                     subtitle = stringResource(R.string.account_security_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
@@ -128,14 +133,16 @@ fun SettingPage(
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.about_us),
                     subtitle = stringResource(R.string.about_us_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { showAboutDialog = true }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
                     title = stringResource(R.string.help_feedback),
                     subtitle = stringResource(R.string.help_feedback_desc),
-                    trailing = { IconChevron() }
+                    trailing = { IconChevron() },
+                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
@@ -166,20 +173,27 @@ fun SettingPage(
     }
 
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(text = stringResource(R.string.tip), style = MaterialTheme.typography.headlineSmall) },
-            text = { Text(text = stringResource(R.string.confirm_logout), color = TextSecondary) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
-                    navController.navigate(PageConstant.Login.text)
-                }) { Text(text = stringResource(R.string.confirm), color = Error) }
+        AppConfirmDialog(
+            title = stringResource(R.string.tip),
+            message = stringResource(R.string.confirm_logout),
+            isDanger = true,
+            onConfirm = {
+                showDialog = false
+                SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
+                navController.navigate(PageConstant.Login.text)
             },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text(text = stringResource(R.string.cancel), color = TextSecondary) }
-            }
+            onDismiss = { showDialog = false }
+        )
+    }
+
+    if (showAboutDialog) {
+        val versionName = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
+        } catch (_: Exception) { "1.0.0" }
+        AppInfoDialog(
+            title = stringResource(R.string.about_us),
+            message = stringResource(R.string.app_version, versionName),
+            onDismiss = { showAboutDialog = false }
         )
     }
 }

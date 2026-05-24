@@ -42,6 +42,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
 import com.smartwash.ui.common.InfoRow
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.detail.OrderDetailViewModel
@@ -84,6 +85,9 @@ fun PaySuccessPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (getOrderDetailState is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.pay_success), onBack = { navController.navigateUp() })
 
@@ -215,6 +219,7 @@ fun PaySuccessPage(
                     }
                 )
             }
+        }
         }
     }
 }

@@ -45,6 +45,7 @@ class UserInfoViewModel @Inject constructor(
 
     fun getUserInfo() {
         viewModelScope.launch {
+            _userInfoStatus.value = RequestState.Loading
             try {
                 _userInfo.value = userRepository.getUserInfo()
                 _orderItemCount.value = orderRepository.getOrderItemCount(

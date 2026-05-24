@@ -21,12 +21,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,9 +44,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppConfirmDialog
 import androidx.compose.foundation.BorderStroke
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.InfoSection
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
@@ -80,13 +80,15 @@ fun PickupDeliveryPage(
             Toast.makeText(context, (getOrderDetailState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetState()
         }
-        else -> { pickupDeliveryViewModel.resetState() }
+        else -> {}
     }
-    val pickupCode = orderInfo?.pickupCode?.let { it.split(":")[2] } ?: "error"
+    val pickupCode = orderInfo?.pickupCode?.let { it.split(":")[2] } ?: ""
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
 
-    val qrBitmap = remember(pickupCode) { generateQrCodeBitmap(pickupCode) }
-    val imageBitmap = qrBitmap.asImageBitmap()
+    val qrBitmap = remember(pickupCode) {
+        if (pickupCode.isNotBlank()) generateQrCodeBitmap(pickupCode) else null
+    }
+    val imageBitmap = qrBitmap?.asImageBitmap()
 
     when (setOrderNextState) {
         is RequestState.Success -> {
@@ -106,6 +108,9 @@ fun PickupDeliveryPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (getOrderDetailState is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
                 title = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup) else stringResource(R.string.delivery_type),
@@ -162,13 +167,29 @@ fun PickupDeliveryPage(
                         modifier = Modifier.padding(AppDimens.sectionSpacing),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Image(
-                            bitmap = imageBitmap,
-                            contentDescription = stringResource(R.string.qr_code),
-                            modifier = Modifier
-                                .size(200.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                        )
+                        if (imageBitmap != null) {
+                            Image(
+                                bitmap = imageBitmap,
+                                contentDescription = stringResource(R.string.qr_code),
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(AppColors.colorScheme.surface),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.loading),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
                             text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
@@ -224,21 +245,17 @@ fun PickupDeliveryPage(
                 Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             }
         }
+        }
     }
 
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            text = {
-                Text(
-                    text = if (type == PickupDeliveryType.DELIVERY.type) stringResource(R.string.confirm_put_clothes) else stringResource(R.string.confirm_taken_clothes)
-                )
+        AppConfirmDialog(
+            message = if (type == PickupDeliveryType.DELIVERY.type) stringResource(R.string.confirm_put_clothes) else stringResource(R.string.confirm_taken_clothes),
+            onConfirm = {
+                showDialog = false
+                pickupDeliveryViewModel.setOrderNextState(type, orderId, orderInfo?.pickupCode ?: "")
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickupDeliveryViewModel.setOrderNextState(type, orderId, orderInfo?.pickupCode ?: "")
-                }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
-            }
+            onDismiss = { showDialog = false }
         )
     }
 }

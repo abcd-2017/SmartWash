@@ -23,7 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payment
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -32,7 +31,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppConfirmDialog
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
@@ -234,23 +233,18 @@ fun RechargePage(
     }
 
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(text = stringResource(R.string.tip), style = MaterialTheme.typography.headlineSmall) },
-            text = { Text(text = stringResource(R.string.confirm_recharge_question), color = AppColors.colorScheme.textSecondary) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDialog = false
-                    if (selectedPaymentMethod == null) showPayError = true
-                    if (selectedAmount == null || selectedAmount!! <= 0) showError = true
-                    if (selectedAmount != null && selectedAmount!! > 0 && selectedPaymentMethod != null) {
-                        rechargeViewModel.userRecharge(selectedAmount!!, selectedPaymentMethod!!.payType)
-                    }
-                }) { Text(text = stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
+        AppConfirmDialog(
+            title = stringResource(R.string.tip),
+            message = stringResource(R.string.confirm_recharge_question),
+            onConfirm = {
+                showDialog = false
+                if (selectedPaymentMethod == null) showPayError = true
+                if (selectedAmount == null || selectedAmount!! <= 0) showError = true
+                if (selectedAmount != null && selectedAmount!! > 0 && selectedPaymentMethod != null) {
+                    rechargeViewModel.userRecharge(selectedAmount!!, selectedPaymentMethod!!.payType)
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text(text = stringResource(R.string.cancel), color = AppColors.colorScheme.textSecondary) }
-            }
+            onDismiss = { showDialog = false }
         )
     }
 }

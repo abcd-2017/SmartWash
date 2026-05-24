@@ -49,6 +49,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.InfoRow
 import com.smartwash.ui.common.InfoSection
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
@@ -89,6 +90,9 @@ fun OrderDetailPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (getOrderDetailState is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -152,6 +156,7 @@ fun OrderDetailPage(
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
         }
     }
 }

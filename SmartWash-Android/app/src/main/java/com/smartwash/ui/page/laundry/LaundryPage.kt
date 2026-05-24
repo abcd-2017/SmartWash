@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +49,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.ui.common.AppButton
+import com.smartwash.ui.common.AppInfoDialog
+import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
@@ -66,6 +67,7 @@ fun LaundryPage(
     var selectItemId by remember { mutableLongStateOf(-1) }
     var totalPrice by remember { mutableFloatStateOf(0f) }
     var showDialog by remember { mutableStateOf(false) }
+    var showChangeSchoolDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val reservationState by laundryViewModel.reservationState.collectAsState()
@@ -100,12 +102,16 @@ fun LaundryPage(
     }
 
     if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.confirm), color = AppColors.colorScheme.primary) }
-            },
-            text = { Text(stringResource(R.string.please_select_package)) }
+        AppInfoDialog(
+            message = stringResource(R.string.please_select_package),
+            onDismiss = { showDialog = false }
+        )
+    }
+
+    if (showChangeSchoolDialog) {
+        AppInfoDialog(
+            message = stringResource(R.string.change_school_contact_service),
+            onDismiss = { showChangeSchoolDialog = false }
         )
     }
 
@@ -114,6 +120,9 @@ fun LaundryPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
+        if (getLaundryItemState is RequestState.Loading) {
+            LoadingState(modifier = Modifier.fillMaxSize())
+        } else {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.book_locker), onBack = { navController.navigateUp() })
 
@@ -171,7 +180,7 @@ fun LaundryPage(
                                     )
                                 }
                             }
-                            TextButton(onClick = { }) {
+                            TextButton(onClick = { showChangeSchoolDialog = true }) {
                                 Text(stringResource(R.string.change), color = AppColors.colorScheme.primary)
                             }
                         }
@@ -239,6 +248,7 @@ fun LaundryPage(
                     }
                 }
             }
+        }
         }
     }
 }
