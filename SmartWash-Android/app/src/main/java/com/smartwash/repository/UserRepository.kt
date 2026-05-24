@@ -1,10 +1,12 @@
 package com.smartwash.repository
 
+import com.smartwash.R
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.entity.ApiResult
 import com.smartwash.network.entity.user.LoginUser
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.entity.user.UpdateUserInfo
+import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.user.UserInfoVo
 import okhttp3.MultipartBody
 import javax.inject.Inject
@@ -27,7 +29,8 @@ class UserRepository @Inject constructor(
     }
 
     suspend fun getUserInfo(): UserInfoVo {
-        return userApi.getUserInfo().data!!
+        return userApi.getUserInfo().data
+            ?: throw NetworkException("用户信息为空", R.string.error_network_fail)
     }
 
     suspend fun getUserSchoolId(): Long {

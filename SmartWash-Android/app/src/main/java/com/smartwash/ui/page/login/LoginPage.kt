@@ -82,7 +82,9 @@ fun LoginPage(
     LaunchedEffect(Unit) {
         val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
         if (token.isNotBlank()) {
-            navController.navigate(PageConstant.Home.text) { navController.navigateUp() }
+            navController.navigate(PageConstant.Home.text) {
+                popUpTo(PageConstant.Login.text) { inclusive = true }
+            }
         }
     }
 
@@ -93,7 +95,7 @@ fun LoginPage(
                 Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                 loginViewModel.resetLoginState()
                 navController.navigate(PageConstant.Home.text) {
-                    navController.navigateUp()
+                    popUpTo(PageConstant.Login.text) { inclusive = true }
                 }
             }
         }
@@ -259,7 +261,7 @@ fun LoginPage(
             // 注册入口
             TextButton(
                 onClick = {
-                    navController.navigate(PageConstant.Register.text) { navController.navigateUp() }
+                    navController.navigate(PageConstant.Register.text)
                 }
             ) {
                 Text(

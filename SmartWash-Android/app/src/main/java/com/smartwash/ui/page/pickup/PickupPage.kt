@@ -112,7 +112,7 @@ private fun PickupOrderCard(
     order: OrderInfo,
     onClick: () -> Unit,
 ) {
-    val pickupCode = order.pickupCode.let { it.split(":")[2] } ?: "error"
+    val pickupCode = order.pickupCode?.split(":")?.getOrNull(2) ?: ""
     AppCard(onClick = onClick) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(

@@ -125,8 +125,9 @@ fun RegisterPage(
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
-                navController.popBackStack()
-                navController.navigate(PageConstant.Home.text)
+                navController.navigate(PageConstant.Home.text) {
+                    popUpTo(PageConstant.Login.text) { inclusive = true }
+                }
             }
         }
 
@@ -342,7 +343,6 @@ fun RegisterPage(
             TextButton(
                 onClick = {
                     navController.popBackStack()
-                    navController.navigate(PageConstant.Login.text)
                 }
             ) {
                 Text(

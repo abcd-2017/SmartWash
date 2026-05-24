@@ -95,8 +95,8 @@ object SharePreferenceUtils {
         return dataStore.data.map { it[floatPreferencesKey(key)] ?: default }.first()
     }
 
-    private suspend fun getStringData(key: String, default: String? = null): String {
-        return dataStore.data.map { it[stringPreferencesKey(key)] ?: default }.first()!!
+    private suspend fun getStringData(key: String, default: String = ""): String {
+        return dataStore.data.map { it[stringPreferencesKey(key)] ?: default }.first()
     }
 
     private suspend fun getBooleanData(key: String, default: Boolean = false): Boolean {

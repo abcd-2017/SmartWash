@@ -82,7 +82,7 @@ fun PickupDeliveryPage(
         }
         else -> {}
     }
-    val pickupCode = orderInfo?.pickupCode?.let { it.split(":")[2] } ?: ""
+    val pickupCode = orderInfo?.pickupCode?.let { it.split(":").getOrNull(2) } ?: ""
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
 
     val qrBitmap = remember(pickupCode) {

@@ -94,7 +94,7 @@ fun PaymentPage(
             confirmPayShow = false
             LaunchedEffect(paymentState) {
                 navController.navigate("${PageConstant.PaySuccess.text}/${orderId}") {
-                    navController.navigateUp()
+                    popUpTo(PageConstant.Home.text)
                 }
             }
         }

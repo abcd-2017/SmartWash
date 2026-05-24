@@ -180,7 +180,9 @@ fun SettingPage(
             onConfirm = {
                 showDialog = false
                 SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
-                navController.navigate(PageConstant.Login.text)
+                navController.navigate(PageConstant.Login.text) {
+                    popUpTo(PageConstant.Home.text) { inclusive = true }
+                }
             },
             onDismiss = { showDialog = false }
         )

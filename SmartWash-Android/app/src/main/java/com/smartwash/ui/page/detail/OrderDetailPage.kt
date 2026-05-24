@@ -137,7 +137,7 @@ fun OrderDetailPage(
                         icon = Icons.Rounded.Storage
                     ) {
                         InfoRow(stringResource(R.string.locker_number), "${orderInfo?.lockersVo?.lockerNumber ?: 0}")
-                        InfoRow(stringResource(R.string.pickup_code), orderInfo?.pickupCode?.let { it.split(":")[2] } ?: "")
+                        InfoRow(stringResource(R.string.pickup_code), orderInfo?.pickupCode?.split(":")?.getOrNull(2) ?: "")
                     }
                 }
 

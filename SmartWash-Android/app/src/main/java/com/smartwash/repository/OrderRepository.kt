@@ -1,9 +1,11 @@
 package com.smartwash.repository
 
+import com.smartwash.R
 import com.smartwash.network.api.OrderApi
 import com.smartwash.network.entity.order.OrderItemCountFrom
 import com.smartwash.network.entity.order.OrderNextStatus
 import com.smartwash.network.entity.order.ReservationLaundry
+import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.order.OrderInfo
 import com.smartwash.network.vo.order.OrderGroupVo
 import com.smartwash.network.vo.order.OrderItemCountVo
@@ -20,7 +22,8 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun getOrderInfo(orderId: Long): OrderInfo {
-        return orderApi.getOrderInfo(orderId).data!!
+        return orderApi.getOrderInfo(orderId).data
+            ?: throw NetworkException("订单信息为空", R.string.error_network_fail)
     }
 
     suspend fun getOrderGroup(size: Int = 10): Map<String, OrderGroupVo> {
@@ -37,7 +40,7 @@ class OrderRepository @Inject constructor(
             from.processingStatus,
             from.pendingPickupStatus,
             from.shippedStatus,
-        ).data!!
+        ).data ?: throw NetworkException("订单数量统计为空", R.string.error_network_fail)
     }
 
     suspend fun getWashingOrder(): List<OrderVo> {
@@ -57,6 +60,7 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun calculationOrder(orderId: Long, userCouponId: Long): OrderInfo {
-        return orderApi.calculationOrder(orderId, userCouponId).data!!
+        return orderApi.calculationOrder(orderId, userCouponId).data
+            ?: throw NetworkException("订单计算结果为空", R.string.error_network_fail)
     }
 }

@@ -28,8 +28,8 @@ class LoginViewModel @Inject constructor(
             _loginState.value = RequestState.Loading
             try {
                 val token = userRepository.login(LoginUser(phoneNumber, password))
-                _loginState.value = RequestState.Success
                 SharePreferenceUtils.saveData(AppConstant.TOKEN, token)
+                _loginState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "LoginViewModel.loginUser: ${e.message}", e)
                 _loginState.value = RequestState.Error(R.string.error_login_failed, e.message)

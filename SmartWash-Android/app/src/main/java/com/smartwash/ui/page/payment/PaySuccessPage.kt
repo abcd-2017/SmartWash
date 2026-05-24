@@ -214,7 +214,7 @@ fun PaySuccessPage(
                         navController.navigate(
                             "${PageConstant.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${PickupDeliveryType.DELIVERY.type}"
                         ) {
-                            navController.navigateUp()
+                            popUpTo(PageConstant.PaySuccess.text) { inclusive = true }
                         }
                     }
                 )
