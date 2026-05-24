@@ -8,14 +8,21 @@ import com.smartwash.entity.Lockers;
 import com.smartwash.from.locker.AddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
+import com.smartwash.entity.Schools;
 import com.smartwash.mapper.LockersMapper;
 import com.smartwash.service.ILockersService;
+import com.smartwash.service.ISchoolsService;
+import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -27,7 +34,10 @@ import java.util.List;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> implements ILockersService {
+
+    private final ISchoolsService schoolsService;
     //获取所有存储柜
     @Override
     public Page<LockersVo> getAllLockers(SearchLockersFrom lockersFrom) {
@@ -101,5 +111,28 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
             removeById(Integer.parseInt(id));
         }
         return true;
+    }
+
+    @Override
+    public List<LockerStatusSummaryVo> getLockerStatusSummary() {
+        List<Lockers> allLockers = list();
+        Map<Long, List<Lockers>> bySchool = allLockers.stream()
+                .collect(Collectors.groupingBy(Lockers::getSchoolId));
+
+        List<LockerStatusSummaryVo> result = new ArrayList<>();
+        for (Map.Entry<Long, List<Lockers>> entry : bySchool.entrySet()) {
+            LockerStatusSummaryVo vo = new LockerStatusSummaryVo();
+            vo.setSchoolId(entry.getKey());
+            Schools school = schoolsService.getById(entry.getKey());
+            vo.setSchoolName(school != null ? school.getSchoolName() : "未知");
+
+            List<Lockers> lockers = entry.getValue();
+            vo.setTotalCount(lockers.size());
+            vo.setFreeCount((int) lockers.stream().filter(l -> "0".equals(l.getStatus())).count());
+            vo.setUsedCount((int) lockers.stream().filter(l -> "1".equals(l.getStatus())).count());
+            vo.setFaultCount((int) lockers.stream().filter(l -> "2".equals(l.getStatus())).count());
+            result.add(vo);
+        }
+        return result;
     }
 }

@@ -10,10 +10,14 @@ import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
 import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.from.order.UpdateOrderStatus;
+import com.smartwash.service.ExportService;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.vo.order.OrdersVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -33,6 +37,8 @@ import java.util.Map;
 public class OrdersController {
     @Autowired
     private IOrdersService ordersService;
+    @Autowired
+    private ExportService exportService;
 
     @Operation(summary = "获取订单状态枚举", description = "获取所有订单状态的枚举值及描述")
     @GetMapping("/status")
@@ -57,5 +63,15 @@ public class OrdersController {
     @PostMapping("updateOrderStatus")
     public Result<Boolean> updateOrderStatus(@RequestBody UpdateOrderStatus orderStatus) {
         return Result.ok(ordersService.updateOrderStatus(orderStatus));
+    }
+
+    @Operation(summary = "导出订单 CSV", description = "根据条件导出订单为 CSV 文件")
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportOrders(SearchOrderFrom searchFrom) {
+        byte[] csv = exportService.exportOrdersCsv(searchFrom);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv;charset=utf-8"));
+        headers.setContentDispositionFormData("attachment", "orders.csv");
+        return ResponseEntity.ok().headers(headers).body(csv);
     }
 }

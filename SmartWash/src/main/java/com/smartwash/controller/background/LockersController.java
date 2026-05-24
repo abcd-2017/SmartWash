@@ -11,6 +11,7 @@ import com.smartwash.from.locker.AddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
 import com.smartwash.service.ILockersService;
+import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,6 +53,12 @@ public class LockersController {
     @GetMapping("/all")
     public Result<Page<LockersVo>> getAllLockers(SearchLockersFrom lockersFrom) {
         return Result.ok(lockersService.getAllLockers(lockersFrom));
+    }
+
+    @Operation(summary = "获取寄存柜状态统计", description = "获取各学校寄存柜使用情况统计")
+    @GetMapping("/statusSummary")
+    public Result<List<LockerStatusSummaryVo>> getStatusSummary() {
+        return Result.ok(lockersService.getLockerStatusSummary());
     }
 
     @Operation(summary = "新增柜子", description = "新增寄存柜，同一学校下柜子编号不可重复")

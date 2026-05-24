@@ -6,7 +6,10 @@ import com.smartwash.entity.Lockers;
 import com.smartwash.from.locker.AddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
+import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
+
+import java.util.List;
 
 /**
  * <p>
@@ -29,4 +32,6 @@ public interface ILockersService extends IService<Lockers> {
     Boolean deleteLockersBySchoolId(Long schoolId);
 
     Lockers getLockerById(Long schoolId, Integer lockerNumber);
+
+    List<LockerStatusSummaryVo> getLockerStatusSummary();
 }
