@@ -86,6 +86,10 @@
             <if test="searchForm.status != null and searchForm.status != ''">
                 AND o.status = #{searchForm.status}
             </if>
+            <if test="searchForm.keyword != null and searchForm.keyword != ''">
+                AND (o.order_no LIKE CONCAT('%', #{searchForm.keyword}, '%')
+                     OR u.phone_number LIKE CONCAT('%', #{searchForm.keyword}, '%'))
+            </if>
         </where>
     </select>
     <select id="getOrderByOrderId" resultType="com.smartwash.vo.order.OrdersVo" parameterType="java.lang.Long">

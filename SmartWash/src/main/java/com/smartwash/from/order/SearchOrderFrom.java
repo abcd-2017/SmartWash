@@ -23,4 +23,6 @@ public class SearchOrderFrom extends BaseSearchFrom {
 
     private String status;
 
+    /** 关键词搜索（订单号） */
+    private String keyword;
 }
