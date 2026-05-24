@@ -40,7 +40,7 @@
       <el-table-column prop="itemId" label="ID" min-width="80" />
       <el-table-column prop="itemName" label="套餐名称" min-width="180" />
       <el-table-column prop="basePrice" label="基础价格" min-width="120">
-        <template #default="{ row }">￥{{ row.basePrice.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.basePrice?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column prop="description" label="套餐描述" min-width="240" />
       <el-table-column prop="createdAt" label="创建时间" min-width="180">

@@ -239,11 +239,11 @@ const tempLocker = reactive({
 // 验证规则
 const rules = reactive({
   schoolId: [
-    { required: true, message: "请选择学校", trigger: "blur" },
+    { required: true, message: "请选择学校", trigger: "change" },
     { type: "number", min: 1, message: "学校ID必须大于0" },
   ],
   lockerNumber: [
-    { required: true, message: "请输入柜号", trigger: "blur" },
+    { required: true, message: "请输入柜号", trigger: "change" },
     { type: "number", min: 1, message: "柜号必须大于0" },
   ],
   status: [{ required: true, message: "请选择状态", trigger: "change" }],

@@ -138,6 +138,9 @@ const routes = [{
             }
         }
     ]
+}, {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
 }]
 
 const router = createRouter({
@@ -146,11 +149,16 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-    const isAuthenticated = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
     // 已登录用户访问登录页，重定向到首页
-    if (to.path === '/login' && isAuthenticated) {
+    if (to.path === '/login' && token) {
         next('/')
-    } else if (to.meta.requiresAuth !== false && !isAuthenticated) {
+    } else if (to.meta.requiresAuth !== false && !token) {
+        next('/login')
+    } else if (to.meta.requiresAuth !== false && role !== 'admin') {
+        localStorage.removeItem('token')
+        localStorage.removeItem('role')
         next('/login')
     } else {
         next()

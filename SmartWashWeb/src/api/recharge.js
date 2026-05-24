@@ -5,11 +5,5 @@ export function getRechargeList(params) {
         url: '/admin/rechargeRecords/all',
         method: 'get',
         params
-    }).then(res => {
-        if (res.code === 200) {
-            return res.data
-        } else {
-            throw new Error(res.message || '获取充值记录失败')
-        }
     })
 }

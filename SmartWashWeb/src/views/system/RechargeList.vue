@@ -14,7 +14,7 @@
 
         <el-form-item label="手机号">
           <el-input
-            v-model.number="listQuery.phoneNumber"
+            v-model="listQuery.phoneNumber"
             placeholder="输入用户手机号"
             clearable
             style="width: 120px"
@@ -77,10 +77,10 @@
     >
       <el-table-column prop="recordId" label="记录ID" min-width="100" />
       <el-table-column label="手机号" min-width="120">
-        <template #default="{ row }">{{ row.users.phoneNumber }}</template>
+        <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
       </el-table-column>
       <el-table-column label="充值金额" min-width="150">
-        <template #default="{ row }">￥{{ row.amount.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column label="充值类型" min-width="120">
         <template #default="{ row }">
@@ -125,7 +125,6 @@ import { getRechargeList } from "@/api/recharge";
 const listLoading = ref(false);
 const rechargeList = ref([]);
 const total = ref(0);
-const timeRange1 = ref([]);
 
 // 充值类型选项
 const rechargeTypeOptions = [
@@ -161,7 +160,6 @@ const fetchData = async () => {
     const params = {
       ...listQuery,
       recordId: listQuery.recordId || undefined,
-      userId: listQuery.userId || undefined,
       amount: listQuery.amount || undefined,
       rechargeType: listQuery.rechargeType || undefined,
     };
@@ -202,7 +200,7 @@ const handleSearch = () => {
 // 重置搜索
 const resetSearch = () => {
   listQuery.recordId = null;
-  listQuery.userId = null;
+  listQuery.phoneNumber = null;
   listQuery.amount = null;
   listQuery.rechargeType = null;
   listQuery.startTime = null;

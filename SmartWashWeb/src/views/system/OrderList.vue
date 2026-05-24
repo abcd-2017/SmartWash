@@ -116,7 +116,7 @@
       </el-table-column>
       <el-table-column label="总价" min-width="120">
         <template #default="{ row }"
-          >￥{{ row.totalPrice?.toFixed(2) }}</template
+          >￥{{ row.totalPrice?.toFixed(2) || '0.00' }}</template
         >
       </el-table-column>
       <el-table-column label="状态" min-width="120">

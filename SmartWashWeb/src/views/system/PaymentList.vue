@@ -107,7 +107,7 @@
         </template>
       </el-table-column>
       <el-table-column label="金额" min-width="120">
-        <template #default="{ row }">￥{{ row.amount.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column label="支付方式" min-width="120">
         <template #default="{ row }">

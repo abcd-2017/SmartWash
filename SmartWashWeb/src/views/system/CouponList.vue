@@ -61,10 +61,10 @@
       <el-table-column prop="couponId" label="ID" min-width="80" />
       <el-table-column prop="title" label="标题" min-width="150" />
       <el-table-column label="折扣金额" min-width="120">
-        <template #default="{ row }">￥{{ row.discount.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.discount?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column label="使用门槛" min-width="120">
-        <template #default="{ row }">￥{{ row.threshold.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.threshold?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column label="有效期" min-width="220">
         <template #default="{ row }">
@@ -261,8 +261,8 @@ const rules = reactive({
     { required: true, message: "请输入标题", trigger: "blur" },
     { max: 50, message: "标题不超过50字", trigger: "blur" },
   ],
-  discount: [{ required: true, message: "请输入折扣金额", trigger: "blur" }],
-  threshold: [{ required: true, message: "请输入使用门槛", trigger: "blur" }],
+  discount: [{ required: true, message: "请输入折扣金额", trigger: "change" }],
+  threshold: [{ required: true, message: "请输入使用门槛", trigger: "change" }],
   startTime: [{ required: true, message: "请选择开始时间", trigger: "change" }],
   endTime: [{ required: true, message: "请选择结束时间", trigger: "change" }],
   validDays: [{ required: true, message: "请输入有效天数", trigger: "blur" }],

@@ -79,7 +79,7 @@
       <el-table-column prop="studentId" label="学号" min-width="120" />
       <el-table-column prop="campusCard" label="校园卡号" min-width="150" />
       <el-table-column prop="balance" label="余额" min-width="120">
-        <template #default="{ row }">￥{{ row.balance?.toFixed(2) }}</template>
+        <template #default="{ row }">￥{{ row.balance?.toFixed(2) || '0.00' }}</template>
       </el-table-column>
       <el-table-column prop="createdAt" label="注册时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
@@ -226,7 +226,7 @@ const tempUser = reactive({
 
 // 验证规则
 const rules = reactive({
-  schoolId: [{ required: true, message: "请选择学校", trigger: "blur" }],
+  schoolId: [{ required: true, message: "请选择学校", trigger: "change" }],
   phoneNumber: [
     { required: true, message: "请输入手机号", trigger: "blur" },
     {

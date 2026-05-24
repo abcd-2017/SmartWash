@@ -64,6 +64,7 @@ const handleLogout = () => {
   })
     .then(() => {
       localStorage.removeItem("token");
+      localStorage.removeItem("role");
       router.push("/login");
     })
     .catch(() => {});

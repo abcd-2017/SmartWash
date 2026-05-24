@@ -220,7 +220,7 @@ const rules = reactive({
     },
   ],
   roleId: [
-    { required: true, message: "请选择角色", trigger: "blur" },
+    { required: true, message: "请选择角色", trigger: "change" },
     { type: "number", min: 1, message: "角色ID必须大于0" },
   ],
 });

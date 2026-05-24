@@ -62,7 +62,7 @@
           <el-icon :size="24"><School /></el-icon>
           <span>学校管理</span>
         </router-link>
-        <router-link to="/coupons" class="quick-action-item">
+        <router-link to="/coupon" class="quick-action-item">
           <el-icon :size="24"><Ticket /></el-icon>
           <span>优惠券管理</span>
         </router-link>

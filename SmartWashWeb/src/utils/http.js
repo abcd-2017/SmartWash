@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus';
 
 // 创建 axios 实例
 const http = axios.create({
-    baseURL: 'http://127.0.0.1:8080', // 设置基础 URL，替换成你的后台 API 地址
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     timeout: 5000, // 请求超时
     headers: {
         'Content-Type': 'application/json',
@@ -35,10 +35,11 @@ http.interceptors.response.use(
             ElMessage.error('登录已过期，请重新登录')
             localStorage.removeItem("token")
             window.location.reload()
+            return Promise.reject(new Error('登录已过期'))
         } else if (res.code !== 200) {
             return Promise.reject(new Error(res.message || 'Error'))
         }
-        return res
+        return res.data
     },
     (error) => {
         // 处理401未授权错误

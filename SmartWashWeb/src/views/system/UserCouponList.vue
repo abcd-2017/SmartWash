@@ -46,7 +46,7 @@
       <el-table-column prop="userCouponId" label="记录ID" min-width="100" />
       <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
       <el-table-column prop="couponTitle" label="优惠券名称" min-width="180">
-        <template #default="{ row }">{{ row.couponVo.title }}</template>
+        <template #default="{ row }">{{ row.couponVo?.title || '-' }}</template>
       </el-table-column>
       <el-table-column label="使用状态" min-width="100">
         <template #default="{ row }">

@@ -78,8 +78,9 @@ const handleLogin = async () => {
     await formRef.value.validate();
     loading.value = true;
 
-    const { data: token } = await login(loginForm);
+    const token = await login(loginForm);
     localStorage.setItem("token", token);
+    localStorage.setItem("role", "admin");
 
     ElMessage.success("登录成功");
     router.push("/");
