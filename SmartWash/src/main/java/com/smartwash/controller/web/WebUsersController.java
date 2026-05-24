@@ -14,6 +14,7 @@ import com.smartwash.utils.JwtUtil;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.users.UserInfoVo;
+import com.smartwash.vo.users.TransactionVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -90,6 +92,13 @@ public class WebUsersController {
     public Result<Boolean> unBingCampus() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.unBingCampus(user.getUserId()));
+    }
+
+    @Operation(summary = "获取交易记录", description = "获取当前用户的充值和消费记录")
+    @GetMapping("/auth/user/transactions")
+    public Result<List<TransactionVo>> getTransactions() {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(usersService.getTransactionHistory(user.getUserId()));
     }
 
     @Operation(summary = "上传头像", description = "上传或更新当前用户的头像图片")

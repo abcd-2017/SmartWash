@@ -7,16 +7,21 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
+import com.smartwash.entity.Payments;
+import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
+import com.smartwash.mapper.PaymentsMapper;
+import com.smartwash.mapper.RechargeRecordsMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
 import com.smartwash.vo.schools.SchoolsVo;
 import com.smartwash.vo.users.UserInfoVo;
+import com.smartwash.vo.users.TransactionVo;
 import com.smartwash.vo.users.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +40,8 @@ import java.util.stream.Collectors;
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
     private final ISchoolsService schoolsService;
     private final MinioConfig minioConfig;
+    private final RechargeRecordsMapper rechargeRecordsMapper;
+    private final PaymentsMapper paymentsMapper;
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {
@@ -185,5 +192,52 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         return update(new LambdaUpdateWrapper<Users>()
                 .eq(Users::getUserId, user.getUserId())
                 .set(Users::getPassword, encodedPassword));
+    }
+
+    @Override
+    public List<TransactionVo> getTransactionHistory(Long userId) {
+        List<TransactionVo> transactions = new ArrayList<>();
+
+        // 查询充值记录
+        LambdaQueryWrapper<RechargeRecords> rechargeWrapper = new LambdaQueryWrapper<>();
+        rechargeWrapper.eq(RechargeRecords::getUserId, userId)
+                .orderByDesc(RechargeRecords::getRechargeTime);
+        List<RechargeRecords> rechargeRecords = rechargeRecordsMapper.selectList(rechargeWrapper);
+
+        for (RechargeRecords record : rechargeRecords) {
+            TransactionVo vo = new TransactionVo();
+            vo.setType("recharge");
+            vo.setAmount(record.getAmount());
+            vo.setDescription("账户充值");
+            vo.setTransactionTime(record.getRechargeTime());
+            vo.setStatus("success");
+            transactions.add(vo);
+        }
+
+        // 查询消费记录
+        LambdaQueryWrapper<Payments> paymentWrapper = new LambdaQueryWrapper<>();
+        paymentWrapper.eq(Payments::getUserId, userId)
+                .eq(Payments::getStatus, "1") // 已支付
+                .orderByDesc(Payments::getPaidAt);
+        List<Payments> payments = paymentsMapper.selectList(paymentWrapper);
+
+        for (Payments payment : payments) {
+            TransactionVo vo = new TransactionVo();
+            vo.setType("payment");
+            vo.setAmount(payment.getAmount().negate()); // 消费为负数
+            vo.setDescription("洗衣服务消费");
+            vo.setTransactionTime(payment.getPaidAt());
+            vo.setStatus("success");
+            transactions.add(vo);
+        }
+
+        // 按时间倒序排序
+        transactions.sort((a, b) -> {
+            if (a.getTransactionTime() == null) return 1;
+            if (b.getTransactionTime() == null) return -1;
+            return b.getTransactionTime().compareTo(a.getTransactionTime());
+        });
+
+        return transactions;
     }
 }

@@ -5,8 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Users;
 import com.smartwash.from.users.*;
 import com.smartwash.vo.users.UserInfoVo;
+import com.smartwash.vo.users.TransactionVo;
 import com.smartwash.vo.users.UserVo;
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 /**
  * <p>
@@ -48,4 +51,6 @@ public interface IUsersService extends IService<Users> {
     Boolean unBingCampus(Long userId);
 
     Boolean resetPassword(String phoneNumber, String newPassword);
+
+    List<TransactionVo> getTransactionHistory(Long userId);
 }
