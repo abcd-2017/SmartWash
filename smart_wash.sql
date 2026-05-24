@@ -785,7 +785,7 @@ CREATE TABLE `payments`  (
   `amount` decimal(10, 2) NOT NULL,
   `payment_method` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL COMMENT '\'钱包余额\' - 1, \'支付宝\' - 2, \'微信\' - 3',
   `status` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT '0' COMMENT '\'待支付\'-0, \'已支付\'-1, \'失败\'-2',
-  `paid_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `paid_at` timestamp NULL DEFAULT NULL COMMENT '支付完成时间，仅在支付成功时设置',
   PRIMARY KEY (`payment_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  
@@ -810,7 +810,7 @@ CREATE TABLE `roles`  (
   `role_id` int NOT NULL AUTO_INCREMENT,
   `role_name` varchar(255) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL,
   `description` varchar(255) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '角色描述',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`role_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
 
