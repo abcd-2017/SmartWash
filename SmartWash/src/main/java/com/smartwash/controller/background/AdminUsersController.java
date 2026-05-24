@@ -63,8 +63,11 @@ public class AdminUsersController {
 
     @Operation(summary = "更新管理员", description = "修改管理员用户信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
+    public Result<String> updateAdminUser(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
+        if (user == null) {
+            return Result.failMsg("管理员不存在");
+        }
         if (!Objects.equals(user.getUsername(), adminUsersFrom.getUsername()) && adminUsersService.getAdminUserByName(adminUsersFrom.getUsername()) != null) {
             return Result.failMsg("给管理员用户名已被使用");
         }

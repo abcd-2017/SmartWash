@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.Roles;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.roles.AddRolesFrom;
 import com.smartwash.from.roles.SearchRolesFrom;
 import com.smartwash.from.roles.UpdateRolesFrom;
@@ -17,7 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -67,6 +70,9 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
     public Boolean updateRoles(UpdateRolesFrom rolesFrom) {
         log.info("更新角色, roleId: {}", rolesFrom.getRoleId());
         Roles roles = getById(rolesFrom.getRoleId());
+        if (roles == null) {
+            throw new CustomExceptions("角色不存在");
+        }
         BeanUtils.copyProperties(rolesFrom, roles);
         return updateById(roles);
     }
@@ -74,10 +80,9 @@ public class RolesServiceImpl extends ServiceImpl<RolesMapper, Roles> implements
     @Override
     public Boolean deleteRoles(String ids) {
         log.info("删除角色, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 }

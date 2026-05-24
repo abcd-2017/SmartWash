@@ -91,6 +91,7 @@
                      OR u.phone_number LIKE CONCAT('%', #{searchForm.keyword}, '%'))
             </if>
         </where>
+        ORDER BY o.created_at DESC
     </select>
     <select id="getOrderByOrderId" resultType="com.smartwash.vo.order.OrdersVo" parameterType="java.lang.Long">
         SELECT o.order_id      AS orderId,

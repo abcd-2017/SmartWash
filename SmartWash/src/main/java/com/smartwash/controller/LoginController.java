@@ -61,10 +61,6 @@ public class LoginController {
             return Result.failMsg("登录尝试过于频繁，请稍后再试");
         }
 
-        if (adminUsersService.getAdminUserByName(userLoginFrom.getUsername()) == null) {
-            log.warn("管理员登录失败：用户名不存在, username: {}", userLoginFrom.getUsername());
-            return Result.failMsg("该用户名不存在");
-        }
         String username = String.format("%s-%s", DefaultConstant.ADMIN_USER_LOGIN_TYPE, userLoginFrom.getUsername());
 
         Authentication authenticate = null;

@@ -61,7 +61,7 @@ public class OrdersController {
     }
 
     @Operation(summary = "更新订单状态", description = "手动更新指定订单的状态")
-    @PostMapping("updateOrderStatus")
+    @PostMapping("/updateOrderStatus")
     public Result<Boolean> updateOrderStatus(@RequestBody @Valid UpdateOrderStatus orderStatus) {
         return Result.ok(ordersService.updateOrderStatus(orderStatus));
     }

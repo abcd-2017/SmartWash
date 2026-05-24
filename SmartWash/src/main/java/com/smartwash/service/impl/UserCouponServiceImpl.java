@@ -45,9 +45,9 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
     }
 
     @Override
-    public List<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer pageSize, Integer size) {
-        Page<UserCouponVo> page = new Page<>(pageSize, size);
-        return baseMapper.searchUserCouponByStatus(page, status, userId);
+    public List<UserCouponVo> getUserCouponByStatus(String status, Long userId, Integer page, Integer pageSize) {
+        Page<UserCouponVo> pageObj = new Page<>(page, pageSize);
+        return baseMapper.searchUserCouponByStatus(pageObj, status, userId);
     }
 
     //领取优惠券

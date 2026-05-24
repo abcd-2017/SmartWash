@@ -30,6 +30,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -94,6 +95,9 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     public Boolean updateUser(UpdateUserFrom usersFrom) {
         log.info("更新用户信息, userId: {}", usersFrom.getUserId());
         Users users = getById(usersFrom.getUserId());
+        if (users == null) {
+            throw new CustomExceptions("用户不存在");
+        }
         BeanUtils.copyProperties(usersFrom, users);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         if (StringUtils.hasText(usersFrom.getPassword())) {
@@ -105,11 +109,10 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @Override
     public Boolean deleteUsers(String ids) {
         log.info("删除用户, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
     @Override
@@ -149,6 +152,9 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     public Boolean updateUserInfo(UpdateUserInfo updateUserInfo, Long userId) {
         log.info("用户更新个人信息, userId: {}", userId);
         Users user = getById(userId);
+        if (user == null) {
+            throw new CustomExceptions("用户不存在");
+        }
         user.setSchoolId(updateUserInfo.getSchoolId());
         user.setStudentId(updateUserInfo.getStudentId());
         return updateById(user);
@@ -157,12 +163,18 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @Override
     public UserInfoVo getUserInfo(Long userId) {
         Users users = getById(userId);
+        if (users == null) {
+            throw new CustomExceptions("用户不存在");
+        }
         UserInfoVo userInfoVo = new UserInfoVo();
         BeanUtils.copyProperties(users, userInfoVo);
         userInfoVo.setPhoneNumber(DesensitizedUtil.mobilePhone(users.getPhoneNumber()));
-        userInfoVo.setBalance(String.format("%.2f", users.getBalance().floatValue()));
+        userInfoVo.setBalance(users.getBalance() != null ? users.getBalance() : BigDecimal.ZERO);
         SchoolsVo schoolsVo = new SchoolsVo();
-        BeanUtils.copyProperties(schoolsService.getById(users.getSchoolId()), schoolsVo);
+        Schools school = schoolsService.getById(users.getSchoolId());
+        if (school != null) {
+            BeanUtils.copyProperties(school, schoolsVo);
+        }
         userInfoVo.setSchoolVo(schoolsVo);
         return userInfoVo;
     }

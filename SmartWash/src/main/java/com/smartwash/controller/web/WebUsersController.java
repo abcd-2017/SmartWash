@@ -10,14 +10,12 @@ import com.smartwash.entity.Users;
 import com.smartwash.from.users.UpdateUserInfo;
 import com.smartwash.service.IUsersService;
 import com.smartwash.service.FileStorageService;
-import com.smartwash.utils.JwtUtil;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.TransactionVo;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,17 +39,13 @@ public class WebUsersController {
     @Autowired
     private IUsersService usersService;
     @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
     private FileStorageService fileStorageService;
 
     @Operation(summary = "更新用户信息", description = "更新当前用户的学校和学号信息")
     @PostMapping("/auth/user/updateUserInfo")
     public Result<String> updateUserInfo(@RequestBody @Valid UpdateUserInfo updateUserInfo) {
         LoginUser user = UserContextHolder.getUser();
-        if (!Objects.equals(user.getUserType(), DefaultConstant.USER_LOGIN_TYPE) && user.getUserId() == null) {
+        if (!Objects.equals(user.getUserType(), DefaultConstant.USER_LOGIN_TYPE) || user.getUserId() == null) {
             return Result.failMsg("系统异常");
         }
         usersService.updateUserInfo(updateUserInfo, user.getUserId());
@@ -63,6 +57,9 @@ public class WebUsersController {
     public Result<Long> getUserSchoolId() {
         LoginUser user = UserContextHolder.getUser();
         Users users = usersService.getById(user.getUserId());
+        if (users == null) {
+            return Result.failMsg("用户不存在");
+        }
         return Result.ok(users.getSchoolId());
     }
 
@@ -118,6 +115,9 @@ public class WebUsersController {
         // 获取当前用户
         LoginUser loginUser = UserContextHolder.getUser();
         Users user = usersService.getById(loginUser.getUserId());
+        if (user == null) {
+            return Result.failMsg("用户不存在");
+        }
 
         // 删除旧头像（如果不是默认头像）
         if (user.getAvatar() != null && !user.getAvatar().contains("default/avatar.png")) {

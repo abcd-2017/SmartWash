@@ -162,7 +162,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
      * 初始化默认头像：检查 default/avatar.png 是否存在，不存在则上传
      */
     private void initDefaultAvatar() {
-        String objectName = "default/avatar.png";
+String objectName = "default/avatar.png";
         try {
             // 检查默认头像是否已存在
             minioClient.statObject(

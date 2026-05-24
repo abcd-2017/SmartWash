@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.entity.AdminUsers;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.entity.Roles;
 import com.smartwash.from.admin_users.AddAdminUserFrom;
 import com.smartwash.from.admin_users.SearchAdminUserFrom;
@@ -80,6 +81,9 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     public Boolean updateAdminUsers(UpdateAdminUserFrom adminUserFrom) {
         log.info("更新管理员, adminId: {}", adminUserFrom.getAdminId());
         AdminUsers adminUsers = getById(adminUserFrom.getAdminId());
+        if (adminUsers == null) {
+            throw new CustomExceptions("管理员不存在");
+        }
         BeanUtils.copyProperties(adminUserFrom, adminUsers);
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         if (StringUtils.hasText(adminUserFrom.getPassword())) {
@@ -96,6 +100,9 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     @Override
     public AdminUserVo getUserById(Long userId) {
         AdminUsers users = getById(userId);
+        if (users == null) {
+            return null;
+        }
         AdminUserVo adminUserVo = new AdminUserVo();
         BeanUtils.copyProperties(users, adminUserVo);
         return adminUserVo;

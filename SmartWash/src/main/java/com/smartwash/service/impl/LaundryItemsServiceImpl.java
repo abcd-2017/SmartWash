@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.LaundryItems;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.laundry_item.AddLaundryItemsFrom;
 import com.smartwash.from.laundry_item.SearchLaundryItemsFrom;
 import com.smartwash.from.laundry_item.UpdateLaundryItemsFrom;
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -68,9 +71,12 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
     @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean updateLaundryPackage(UpdateLaundryItemsFrom LaundryItemsFrom) {
         log.info("修改洗衣套餐, itemId: {}", LaundryItemsFrom.getItemId());
-        LaundryItems school = getById(LaundryItemsFrom.getItemId());
-        BeanUtils.copyProperties(LaundryItemsFrom, school);
-        return updateById(school);
+        LaundryItems item = getById(LaundryItemsFrom.getItemId());
+        if (item == null) {
+            throw new CustomExceptions("洗衣项目不存在");
+        }
+        BeanUtils.copyProperties(LaundryItemsFrom, item);
+        return updateById(item);
     }
 
     //删除洗衣套餐
@@ -78,11 +84,10 @@ public class LaundryItemsServiceImpl extends ServiceImpl<LaundryItemsMapper, Lau
     @CacheEvict(value = "laundryItems", allEntries = true)
     public Boolean deleteLaundryPackage(String ids) {
         log.info("删除洗衣套餐, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
     @Override

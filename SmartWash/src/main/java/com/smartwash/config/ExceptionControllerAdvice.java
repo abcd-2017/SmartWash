@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class ExceptionControllerAdvice {
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public Result<String> handleValidException(MethodArgumentNotValidException e) {
-        log.error("数据校验出现问题：{}，异常类型：{}", e.getMessage(), e.getClass());
+        log.warn("数据校验出现问题：{}，异常类型：{}", e.getMessage(), e.getClass());
         BindingResult bindingResult = e.getBindingResult();
         StringBuilder sb = new StringBuilder();
         bindingResult.getFieldErrors().forEach(item -> {
@@ -34,13 +34,13 @@ public class ExceptionControllerAdvice {
      */
     @ExceptionHandler(value = UserAuthenticationException.class)
     public Result<String> handleUserAuthenticationException(UserAuthenticationException e) {
-        log.error("用户登录状态异常：{}，异常类型：{}", e.getMessage(), e.getClass());
+        log.warn("用户登录状态异常：{}，异常类型：{}", e.getMessage(), e.getClass());
         return Result.build(null, ResultCodeEnum.UNAUTHORIZED);
     }
 
     @ExceptionHandler(value = CustomExceptions.class)
     public Result<String> runTimeException(CustomExceptions e) {
-        log.error("业务异常", e);
+        log.warn("业务异常: {}", e.getMessage());
         return Result.failMsg(e.getMessage());
     }
 
@@ -56,8 +56,8 @@ public class ExceptionControllerAdvice {
     /**
      * 兜底异常处理，不暴露内部错误细节
      */
-    @ExceptionHandler(value = Throwable.class)
-    public Result<String> handleException(Throwable throwable) {
+    @ExceptionHandler(value = Exception.class)
+    public Result<String> handleException(Exception throwable) {
         log.error("系统异常", throwable);
         return Result.build("系统异常，请稍后再试", ResultCodeEnum.FAIL);
     }

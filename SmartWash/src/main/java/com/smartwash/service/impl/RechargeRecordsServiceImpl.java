@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Users;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.BaseSearchFrom;
 import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.from.recharge_records.UserRechargeFrom;
@@ -84,11 +85,14 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         return rechargeRecordsVoPage;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean userRecharge(UserRechargeFrom vo, Long userId) {
         Users user = usersMapper.selectById(userId);
-        BigDecimal balance = BigDecimal.valueOf(vo.getAmount());
+        if (user == null) {
+            throw new CustomExceptions("用户不存在");
+        }
+        BigDecimal balance = vo.getAmount();
         //1.充值表插入数据
         RechargeRecords records = new RechargeRecords();
         records.setUserId(userId);

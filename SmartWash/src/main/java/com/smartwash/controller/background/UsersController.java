@@ -44,7 +44,7 @@ public class UsersController {
 
     @Operation(summary = "新增用户", description = "新增用户，手机号、学号、校园卡不可重复")
     @PostMapping("/add")
-    public Result<String> addSchool(@RequestBody @Valid AddUserFrom addUsersFrom) {
+    public Result<String> addUser(@RequestBody @Valid AddUserFrom addUsersFrom) {
         if (StringUtils.hasText(addUsersFrom.getPhoneNumber()) && usersService.getUserByPhone(addUsersFrom.getPhoneNumber()) != null) {
             return Result.failMsg("该手机号已被使用");
         }
@@ -60,8 +60,11 @@ public class UsersController {
 
     @Operation(summary = "更新用户", description = "修改用户信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateUserFrom usersFrom) {
+    public Result<String> updateUser(@RequestBody @Valid UpdateUserFrom usersFrom) {
         Users user = usersService.getById(usersFrom.getUserId());
+        if (user == null) {
+            return Result.failMsg("用户不存在");
+        }
         if ((!Objects.equals(user.getStudentId(), usersFrom.getStudentId())) && (usersService.getUserByStudentId(usersFrom.getStudentId()) != null)) {
             return Result.failMsg("该学号已注册账号");
         }

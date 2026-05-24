@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `role_id` int NOT NULL AUTO_INCREMENT,
   `role_name` varchar(255) NOT NULL,
   `description` varchar(255) NULL DEFAULT NULL COMMENT '角色描述',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `amount` decimal(10,2) NOT NULL,
   `payment_method` varchar(10) NOT NULL COMMENT '支付方式',
   `status` varchar(10) NULL DEFAULT '0' COMMENT '支付状态',
-  `paid_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `paid_at` timestamp NULL DEFAULT NULL COMMENT '实际支付时间',
   PRIMARY KEY (`payment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

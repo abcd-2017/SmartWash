@@ -43,7 +43,7 @@ public class LaundryItemsController {
 
     @Operation(summary = "新增洗衣项目", description = "新增洗衣套餐，项目名称不可重复")
     @PostMapping("/add")
-    public Result<String> addSchool(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
+    public Result<String> addLaundryItem(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
         if (laundryItemsService.getSearchByName(addLaundryPackageFrom.getItemName()) != null) {
             return Result.failMsg("该套餐已经存在了");
         }
@@ -53,8 +53,11 @@ public class LaundryItemsController {
 
     @Operation(summary = "更新洗衣项目", description = "修改洗衣套餐信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
+    public Result<String> updateLaundryItem(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
         LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
+        if (laundryItems == null) {
+            return Result.failMsg("洗衣项目不存在");
+        }
         if (!Objects.equals(laundryItems.getItemName(), laundryPackageFrom.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
             return Result.failMsg("该套餐已经存在了");
         }

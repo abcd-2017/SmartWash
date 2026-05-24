@@ -10,8 +10,8 @@ public class DefaultConstant {
     public static final String ADMIN_USER_LOGIN_TYPE = "admin";
     public static final String USER_LOGIN_TYPE = "user";
 
-    public static final String Captcha_Code = "captcha";
-    public static final Long Captcha_Timeout = 1000 * 60 * 10L;
+    public static final String CAPTCHA_CODE = "captcha";
+    public static final Long CAPTCHA_TIMEOUT = 1000 * 60 * 10L;
 
     private static final String PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
     private static final int PASSWORD_LENGTH = 12;

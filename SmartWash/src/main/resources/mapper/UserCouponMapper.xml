@@ -27,6 +27,7 @@
                 and uc.coupon_id = #{couponFrom.couponId}
             </if>
         </where>
+        ORDER BY uc.received_at DESC
     </select>
     <select id="getCouponIdsByUserId" resultType="java.lang.Long" parameterType="java.lang.Long">
         select coupon_id
@@ -53,12 +54,13 @@
         left join coupon c on c.coupon_id = uc.coupon_id
         where u.user_id = #{userId}
         -- status-> 0代表当前可用的优惠券，1代表已经使用过或过期优惠券
-        <if test="status == 0">
+        <if test="status == '0'">
             and (is_used = 0 and expired_at > now())
         </if>
-        <if test="status == 1">
+        <if test="status == '1'">
             and (is_used = 1 or now() > expired_at)
         </if>
+        ORDER BY uc.received_at DESC
     </select>
 
     <select id="getCanUseCoupon" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
@@ -80,7 +82,7 @@
                  left join orders o on o.order_id = uc.order_id
                  left join coupon c on c.coupon_id = uc.coupon_id
         where u.user_id = #{userId}
-          and threshold &lt;= #{totalPrice}
+          and c.threshold &lt;= #{totalPrice}
           and is_used = 0
           and now() &lt; expired_at
     </select>

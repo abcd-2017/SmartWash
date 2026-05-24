@@ -43,7 +43,7 @@ public class CouponController {
 
     @Operation(summary = "新增优惠券", description = "新增优惠券模板，标题不可重复")
     @PostMapping("/add")
-    public Result<String> addSchool(@RequestBody @Valid AddCouponFrom addCouponFrom) {
+    public Result<String> addCoupon(@RequestBody @Valid AddCouponFrom addCouponFrom) {
         if (couponService.getSearchByName(addCouponFrom.getTitle()) != null) {
             return Result.failMsg("该种类优惠券已经存在了");
         }
@@ -53,8 +53,11 @@ public class CouponController {
 
     @Operation(summary = "更新优惠券", description = "修改优惠券模板信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateCouponFrom couponFrom) {
+    public Result<String> updateCoupon(@RequestBody @Valid UpdateCouponFrom couponFrom) {
         Coupon coupon = couponService.getById(couponFrom.getCouponId());
+        if (coupon == null) {
+            return Result.failMsg("优惠券不存在");
+        }
         if (!Objects.equals(coupon.getTitle(), couponFrom.getTitle()) && couponService.getSearchByName(couponFrom.getTitle()) != null) {
             return Result.failMsg("该种类优惠券已经存在了");
         }

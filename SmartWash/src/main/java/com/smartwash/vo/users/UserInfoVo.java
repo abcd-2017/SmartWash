@@ -3,6 +3,8 @@ package com.smartwash.vo.users;
 import com.smartwash.vo.schools.SchoolsVo;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class UserInfoVo {
     private String phoneNumber;
@@ -11,7 +13,7 @@ public class UserInfoVo {
 
     private String campusCard;
 
-    private String balance;
+    private BigDecimal balance;
 
     private String avatar;
 

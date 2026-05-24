@@ -22,6 +22,8 @@ CREATE INDEX idx_payments_status_paid_at ON payments(status, paid_at);
 CREATE UNIQUE INDEX idx_orders_order_no ON orders(order_no);
 CREATE UNIQUE INDEX uk_school_locker ON lockers(school_id, locker_number);
 
--- 4. 修复 payments.paid_at 的 ON UPDATE CURRENT_TIMESTAMP 问题
+-- 4. 修复 ON UPDATE CURRENT_TIMESTAMP 问题
 -- paid_at 应该只在实际支付时设置，不应随其他字段更新而自动刷新
 ALTER TABLE payments MODIFY COLUMN paid_at timestamp NULL DEFAULT NULL COMMENT '实际支付时间';
+-- created_at 不应随更新而变化
+ALTER TABLE roles MODIFY COLUMN created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间';

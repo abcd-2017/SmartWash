@@ -16,14 +16,16 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, IOException {
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         log.warn(authException.getMessage());
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
         // 自定义返回 JSON 结构
         Result<String> result = Result.build(null, ResultCodeEnum.UNAUTHORIZED);
-        response.getWriter().write(new ObjectMapper().writeValueAsString(result));
+        response.getWriter().write(OBJECT_MAPPER.writeValueAsString(result));
     }
 }

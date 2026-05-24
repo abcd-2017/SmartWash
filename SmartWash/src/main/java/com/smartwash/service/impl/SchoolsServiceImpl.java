@@ -80,22 +80,17 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
         //添加学校
         save(schools);
 
-        //插入选中存储柜数量的存储柜
+        //批量插入寄存柜
         List<Lockers> lockerList = new ArrayList<>();
-        // 假设每个学校的柜子编号从1开始（如果学校已有数据，编号逻辑可做调整）
         for (int i = 1; i <= addSchoolsFrom.getLockerCount(); i++) {
             Lockers locker = new Lockers();
             locker.setSchoolId(schools.getSchoolId());
             locker.setLockerNumber(i);
-            locker.setStatus(LockerStatusEnum.FREE.getValue()); // '0'表示空闲状态
+            locker.setStatus(LockerStatusEnum.FREE.getValue());
             lockerList.add(locker);
         }
-        int insertedCount = 0;
-        for (Lockers locker : lockerList) {
-            lockersService.save(locker);
-            insertedCount++;
-        }
-        log.info("添加学校成功, schoolId: {}, schoolName: {}, lockerCount: {}", schools.getSchoolId(), schools.getSchoolName(), insertedCount);
+        lockersService.saveBatch(lockerList);
+        log.info("添加学校成功, schoolId: {}, schoolName: {}, lockerCount: {}", schools.getSchoolId(), schools.getSchoolName(), lockerList.size());
         return true;
     }
 
@@ -105,6 +100,9 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
     public Boolean updateSchool(UpdateSchoolsFrom schoolsFrom) {
         log.info("修改学校, schoolId: {}", schoolsFrom.getSchoolId());
         Schools school = getById(schoolsFrom.getSchoolId());
+        if (school == null) {
+            throw new CustomExceptions("学校不存在");
+        }
         BeanUtils.copyProperties(schoolsFrom, school);
         return updateById(school);
     }

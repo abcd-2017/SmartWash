@@ -3,8 +3,6 @@ package com.smartwash.from.users;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 @Data
 public class UpdateUserFrom {
     @NotNull(message = "请选择学生")
@@ -19,6 +17,4 @@ public class UpdateUserFrom {
     private String campusCard;
 
     private String password;
-
-    private BigDecimal balance;
 }

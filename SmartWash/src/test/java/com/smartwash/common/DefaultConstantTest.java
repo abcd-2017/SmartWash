@@ -38,6 +38,6 @@ class DefaultConstantTest {
     void constants() {
         assertEquals("admin", DefaultConstant.ADMIN_USER_LOGIN_TYPE);
         assertEquals("user", DefaultConstant.USER_LOGIN_TYPE);
-        assertEquals("captcha", DefaultConstant.Captcha_Code);
+        assertEquals("captcha", DefaultConstant.CAPTCHA_CODE);
     }
 }

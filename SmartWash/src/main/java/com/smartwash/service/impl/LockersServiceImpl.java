@@ -9,6 +9,7 @@ import com.smartwash.from.locker.AddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
 import com.smartwash.entity.Schools;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.mapper.LockersMapper;
 import com.smartwash.service.ILockersService;
 import com.smartwash.service.ISchoolsService;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -97,20 +99,22 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
     @Override
     public Boolean updateLockers(UpdateLockerFrom lockersFrom) {
         log.info("修改寄存柜, lockerId: {}", lockersFrom.getLockerId());
-        Lockers school = getById(lockersFrom.getLockerId());
-        BeanUtils.copyProperties(lockersFrom, school);
-        return updateById(school);
+        Lockers locker = getById(lockersFrom.getLockerId());
+        if (locker == null) {
+            throw new CustomExceptions("寄存柜不存在");
+        }
+        BeanUtils.copyProperties(lockersFrom, locker);
+        return updateById(locker);
     }
 
     //删除存储柜
     @Override
     public Boolean deleteLockers(String ids) {
         log.info("删除寄存柜, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
     @Override

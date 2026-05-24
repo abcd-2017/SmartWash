@@ -3,15 +3,15 @@
 <mapper namespace="com.smartwash.mapper.DashboardMapper">
 
     <select id="countSchools" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM schools
+        SELECT COUNT(*) FROM schools WHERE is_delete = 0
     </select>
 
     <select id="countUsers" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM users
+        SELECT COUNT(*) FROM users WHERE is_delete = 0
     </select>
 
     <select id="countTodayOrders" resultType="java.lang.Long">
-        SELECT COUNT(*) FROM orders WHERE created_at >= #{todayStart}
+        SELECT COUNT(*) FROM orders WHERE is_delete = 0 AND created_at >= #{todayStart}
     </select>
 
     <select id="sumTodayIncome" resultType="java.math.BigDecimal">

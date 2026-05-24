@@ -7,6 +7,7 @@ import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * <p>
@@ -17,6 +18,9 @@ import org.apache.ibatis.annotations.Param;
  * @since 2025-03-06
  */
 public interface OrdersMapper extends BaseMapper<Orders> {
+
+    @Select("SELECT * FROM orders WHERE order_id = #{orderId} FOR UPDATE")
+    Orders selectByIdForUpdate(@Param("orderId") Long orderId);
 
     Orders getOrderByOrderNo(String orderNo);
 

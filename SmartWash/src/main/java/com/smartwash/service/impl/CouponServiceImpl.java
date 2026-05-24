@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.CouponStatus;
 import com.smartwash.entity.Coupon;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.coupon.AddCouponFrom;
 import com.smartwash.from.coupon.SearchCouponFrom;
 import com.smartwash.from.coupon.UpdateCouponFrom;
@@ -21,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -71,6 +74,9 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     public void updateCoupon(UpdateCouponFrom couponFrom) {
         log.info("更新优惠券, couponId: {}", couponFrom.getCouponId());
         Coupon coupon = getById(couponFrom.getCouponId());
+        if (coupon == null) {
+            throw new CustomExceptions("优惠券不存在");
+        }
         BeanUtils.copyProperties(couponFrom, coupon);
         updateById(coupon);
     }
@@ -79,11 +85,10 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     @CacheEvict(value = "coupon", allEntries = true)
     public Boolean deleteCoupon(String ids) {
         log.info("删除优惠券, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
     //获取所有可以领取的优惠券

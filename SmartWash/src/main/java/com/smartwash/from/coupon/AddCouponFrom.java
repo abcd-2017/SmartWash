@@ -1,6 +1,7 @@
 package com.smartwash.from.coupon;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -16,9 +17,11 @@ public class AddCouponFrom {
     private String description;
 
     @NotNull(message = "优惠券金额不能为空")
+    @DecimalMin(value = "0.01", message = "优惠金额必须大于0")
     private BigDecimal discount;
 
     @NotNull(message = "优惠券使用门槛不能为空")
+    @DecimalMin(value = "0.00", message = "门槛不能为负数")
     private BigDecimal threshold;
 
     @NotNull(message = "优惠券开始使用时间不能为空")

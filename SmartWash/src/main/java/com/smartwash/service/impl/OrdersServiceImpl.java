@@ -162,8 +162,8 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(orderStatus.getStatus()));
         }
 
-        //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
-        if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
+        // 订单到达待取件状态时，分配寄存柜和生成取件码
+        if (OrderStatus.READY_FOR_PICKUP.getStatus().equals(orderStatus.getStatus())) {
             orders.setLockerId(findAndAssignFreeLocker(orders.getSchoolId()));
             orders.setStatus(orderStatus.getStatus());
             orders.setPickupCode(String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000)));
@@ -191,7 +191,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean shippingOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser) {
-        return nextStatusOrder(statusFrom, loginUser, OrderStatus.WASHING.getStatus());
+        return nextStatusOrder(statusFrom, loginUser, OrderStatus.RECEIVED.getStatus());
     }
 
     @Override
@@ -287,12 +287,19 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId) {
         log.info("订单计价, orderId: {}, userId: {}, couponId: {}", orderId, userId, userCouponId);
+        OrdersVo order = getOrderByOrderId(orderId);
+        if (order == null) throw new CustomExceptions("订单状态异常");
+
+        // 不使用优惠券
+        if (userCouponId == null || userCouponId == 0) {
+            order.setPayPrice(order.getTotalPrice());
+            return order;
+        }
+
         UserCoupon userCoupon = userCouponMapper.selectById(userCouponId);
         if ((userCoupon == null) || userCoupon.getIsUsed() || userCoupon.getExpiredAt().isBefore(LocalDateTime.now()) || !Objects.equals(userCoupon.getUserId(), userId)) {
             throw new CustomExceptions("优惠券异常");
         }
-        OrdersVo order = getOrderByOrderId(orderId);
-        if (order == null) throw new CustomExceptions("订单状态异常");
         Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
         if (coupon == null) {
             throw new CustomExceptions("优惠券不存在");
@@ -317,6 +324,11 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         if (!Objects.equals(loginUser.getUserId(), orders.getUserId())) {
             log.warn("订单用户不匹配, orderId: {}, userId: {}", statusFrom.getOrderId(), loginUser.getUserId());
             throw new CustomExceptions("订单错误");
+        }
+        // 校验当前状态是否允许流转到目标状态
+        java.util.Set<String> allowed = VALID_TRANSITIONS.get(orders.getStatus());
+        if (allowed == null || !allowed.contains(nextStatus)) {
+            throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(nextStatus));
         }
         if (!Objects.equals(orders.getPickupCode(), statusFrom.getPickupCode())) {
             log.warn("取件码验证失败, orderId: {}", statusFrom.getOrderId());

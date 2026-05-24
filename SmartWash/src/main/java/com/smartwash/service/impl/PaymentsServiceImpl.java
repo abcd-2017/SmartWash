@@ -138,7 +138,7 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean paymentOrder(LoginUser user, PaymentOrderFrom orderFrom) {
-        Orders orders = ordersMapper.selectById(orderFrom.getOrderId());
+        Orders orders = ordersMapper.selectByIdForUpdate(orderFrom.getOrderId());
         if (orders == null || !Objects.equals(orders.getUserId(), user.getUserId())) {
             throw new CustomExceptions("订单错误");
         }
@@ -247,6 +247,9 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     public Boolean updatePayment(UpdatePaymentFrom updatePaymentFrom) {
         log.info("更新支付记录, paymentId: {}", updatePaymentFrom.getPaymentId());
         Payments payment = getById(updatePaymentFrom.getPaymentId());
+        if (payment == null) {
+            throw new CustomExceptions("支付记录不存在");
+        }
         BeanUtils.copyProperties(updatePaymentFrom, payment);
         return updateById(payment);
     }

@@ -3,7 +3,7 @@
 <mapper namespace="com.smartwash.mapper.LockersMapper">
     <update id="unLocker">
         update lockers
-        set status = #{status}
+        set status = #{status}, last_used_at = NOW()
         where locker_id = #{lockerId};
     </update>
 
@@ -18,6 +18,7 @@
         from lockers
         where school_id = #{schoolId}
           and status = '0'
+        order by locker_number
         limit 1
         for update;
     </select>
