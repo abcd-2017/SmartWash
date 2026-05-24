@@ -4,8 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.LockerStatusEnum;
+import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.Lockers;
+import com.smartwash.entity.Orders;
 import com.smartwash.entity.Schools;
+import com.smartwash.exception.CustomExceptions;
+import com.smartwash.mapper.OrdersMapper;
 import com.smartwash.from.schools.AddSchoolsFrom;
 import com.smartwash.from.schools.SearchSchoolsFrom;
 import com.smartwash.from.schools.UpdateSchoolsFrom;
@@ -33,6 +37,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> implements ISchoolsService {
     private final ILockersService lockersService;
+    private final OrdersMapper ordersMapper;
 
     @Lazy
     @Autowired
@@ -66,7 +71,7 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     //添加学校
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "schools", allEntries = true)
     public Boolean addSchools(AddSchoolsFrom addSchoolsFrom) {
         Schools schools = new Schools();
@@ -106,13 +111,24 @@ public class SchoolsServiceImpl extends ServiceImpl<SchoolsMapper, Schools> impl
 
     //删除学校
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "schools", allEntries = true)
     public Boolean deleteSchools(String ids) {
         log.info("删除学校, ids: {}", ids);
         String[] idList = ids.split(",");
         for (String id : idList) {
             Long schoolId = Long.parseLong(id);
+            // 检查该校是否有未完成的订单
+            long activeOrderCount = ordersMapper.selectCount(
+                    new LambdaQueryWrapper<Orders>()
+                            .eq(Orders::getSchoolId, schoolId)
+                            .notIn(Orders::getStatus,
+                                    OrderStatus.COMPLETED.getStatus(),
+                                    OrderStatus.CANCELED.getStatus(),
+                                    OrderStatus.REFUNDED.getStatus()));
+            if (activeOrderCount > 0) {
+                throw new CustomExceptions("该校存在未完成的订单，无法删除");
+            }
             removeById(schoolId);
             lockersService.deleteLockersBySchoolId(schoolId);
         }

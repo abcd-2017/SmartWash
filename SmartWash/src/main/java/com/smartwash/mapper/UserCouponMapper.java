@@ -3,6 +3,7 @@ package com.smartwash.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.entity.UserCoupon;
+import org.apache.ibatis.annotations.Param;
 import com.smartwash.from.user_coupon.SearchUserCouponFrom;
 import com.smartwash.vo.user_coupon.UserCouponVo;
 
@@ -25,7 +26,7 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
 
     List<UserCouponVo> searchUserCouponByStatus(Page<UserCouponVo> page, String status, Long userId);
 
-    List<UserCouponVo> getCanUseCoupon(Long userId, Float totalPrice);
+    List<UserCouponVo> getCanUseCoupon(@Param("userId") Long userId, @Param("totalPrice") BigDecimal totalPrice);
 
     List<UserCouponVo> getAllUserCoupons(Long userId);
 }

@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 @Data
 public class AddUserFrom {
     @NotNull(message = "学校不能为空")
@@ -19,9 +17,8 @@ public class AddUserFrom {
     @NotBlank(message = "学号不能为空")
     private String studentId;
 
+    @NotBlank(message = "密码不能为空")
     private String password;
 
     private String campusCard;
-
-    private BigDecimal balance;
 }

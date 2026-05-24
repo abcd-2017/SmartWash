@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.recharge_records.UserRechargeFrom;
 import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.utils.LoginUser;
+import jakarta.validation.Valid;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ public class WebRechargeRecordsController {
 
     @Operation(summary = "用户充值", description = "用户向账户余额充值")
     @PostMapping("/auth/recharge/userRecharge")
-    public Result<String> rechargeUserRecharge(@RequestBody UserRechargeFrom vo) {
+    public Result<String> rechargeUserRecharge(@RequestBody @Valid UserRechargeFrom vo) {
         LoginUser loginUser = UserContextHolder.getUser();
         if (rechargeRecordsService.userRecharge(vo, loginUser.getUserId())) {
             return Result.ok("充值成功");

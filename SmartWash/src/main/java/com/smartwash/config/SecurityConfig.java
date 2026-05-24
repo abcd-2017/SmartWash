@@ -24,6 +24,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private JwtLogoutHandler jwtLogoutHandler;
     @Resource
     private CustomUserDetailsService userDetailsService;
 
@@ -33,8 +35,8 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())  // 启用 CORS
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)) // 使用自定义异常处理器
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "ADMIN" -> "ROLE_ADMIN"
-                    .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "USER" -> "ROLE_USER"
+                    .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "admin" -> "ROLE_admin"
+                    .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "user" -> "ROLE_user"
                     .requestMatchers("/auth/**").permitAll() // 认证接口（登录、注册、验证码）
                     .requestMatchers( // 公开的只读数据接口
                             "/web/orders/status",
@@ -51,7 +53,10 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .userDetailsService(userDetailsService) //配置自定义的 UserDetailsService 用于加载用户信息
             .formLogin(AbstractHttpConfigurer::disable) // Spring Security 默认启用基于表单的登录认证。如果你使用的是前后端分离的方式，通常不会使用传统的表单登录，因此禁用它。
-            .logout(LogoutConfigurer::permitAll); // 配置登出功能，允许所有用户进行登出。
+            .logout(logout -> logout
+                    .logoutUrl("/auth/logout")
+                    .addLogoutHandler(jwtLogoutHandler)
+                    .permitAll());
 
         return http.build();
     }

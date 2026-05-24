@@ -5,7 +5,6 @@ import com.smartwash.entity.Users;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * <p>
@@ -16,11 +15,9 @@ import java.util.List;
  * @since 2025-03-06
  */
 public interface UsersMapper extends BaseMapper<Users> {
-    List<Users> getUsersByPhoneNumber(@Param("phoneNumber") String phoneNumber);
-
     Users getUserByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 
     void addUserBalance(@Param("userId")Long userId, @Param("balance")BigDecimal balance);
 
-    void decrUserBalance(Long userId, BigDecimal amount);
+    int decrUserBalance(Long userId, BigDecimal amount);
 }

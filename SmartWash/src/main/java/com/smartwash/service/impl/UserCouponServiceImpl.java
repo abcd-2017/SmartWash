@@ -18,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,11 +38,10 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
     @Override
     public Boolean deleteCoupon(String ids) {
         log.info("删除用户优惠券, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
     @Override
@@ -63,6 +64,9 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
 
         //让当前用户领取到优惠券
         Coupon coupon = couponMapper.selectById(couponId);
+        if (coupon == null) {
+            throw new CustomExceptions("优惠券不存在");
+        }
         userCoupon = new UserCoupon();
         userCoupon.setCouponId(couponId);
         userCoupon.setUserId(userId);
@@ -77,7 +81,10 @@ public class UserCouponServiceImpl extends ServiceImpl<UserCouponMapper, UserCou
     @Override
     public List<UserCouponVo> getCanUseCoupon(Long userId, Long orderId) {
         Orders orders = ordersMapper.selectById(orderId);
-        return baseMapper.getCanUseCoupon(userId,orders.getTotalPrice().floatValue());
+        if (orders == null) {
+            throw new CustomExceptions("订单不存在");
+        }
+        return baseMapper.getCanUseCoupon(userId, orders.getTotalPrice());
     }
 
     @Override

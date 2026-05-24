@@ -13,9 +13,11 @@ import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.order.*;
 import com.smartwash.mapper.*;
+import com.smartwash.entity.LaundryItems;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
 import com.smartwash.vo.order.OrdersVo;
@@ -28,10 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -42,6 +46,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private final LockersMapper lockersMapper;
     private final UserCouponMapper userCouponMapper;
     private final CouponMapper couponMapper;
+    private final LaundryItemsMapper laundryItemsMapper;
     private final OrderTimeoutManager orderTimeoutManager;
 
     @Override
@@ -53,14 +58,13 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public Boolean deleteOrders(String ids) {
         log.info("删除订单, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @Override
     public Long createOrder(ReservationOrderFrom reservationOrderFrom, LoginUser loginUser) {
         Users user = usersMapper.selectById(loginUser.getUserId());
@@ -70,10 +74,14 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
         orders.setUserId(user.getUserId());
         orders.setSchoolId(user.getSchoolId());
-        //设置套餐，后续总价格可以叠加优惠券
+        //设置套餐，从数据库查询实际价格（不信任客户端传入的价格）
+        LaundryItems item = laundryItemsMapper.selectById(reservationOrderFrom.getItemsId());
+        if (item == null) {
+            throw new CustomExceptions("洗衣套餐不存在");
+        }
         orders.setLaundryItemsId(reservationOrderFrom.getItemsId());
-        orders.setTotalPrice(BigDecimal.valueOf(reservationOrderFrom.getTotalPrice()));
-        orders.setPayPrice(orders.getTotalPrice());
+        orders.setTotalPrice(item.getBasePrice());
+        orders.setPayPrice(item.getBasePrice());
 
         //设置订单状态
         orders.setStatus(OrderStatus.PENDING_PAYMENT.getStatus());
@@ -90,7 +98,16 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
     @Override
     public OrdersVo getOrderByOrderId(Long orderId) {
-        return ordersMapper.getOrderByOrderId(orderId);
+        OrdersVo order = ordersMapper.getOrderByOrderId(orderId);
+        if (order == null) {
+            return null;
+        }
+        // 校验订单归属：仅允许订单所属用户查看
+        LoginUser currentUser = UserContextHolder.getUser();
+        if (currentUser != null && order.getUserVo() != null && !Objects.equals(order.getUserVo().getUserId(), currentUser.getUserId())) {
+            throw new CustomExceptions("无权查看该订单");
+        }
+        return order;
     }
 
     @Override
@@ -119,11 +136,32 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return itemCountVo;
     }
 
-    @Transactional
+    // 合法的状态流转映射：key=当前状态, value=允许的目标状态集合
+    private static final Map<String, java.util.Set<String>> VALID_TRANSITIONS = Map.of(
+            OrderStatus.PENDING_PAYMENT.getStatus(), java.util.Set.of(OrderStatus.PENDING_SHIPMENT.getStatus(), OrderStatus.CANCELED.getStatus()),
+            OrderStatus.PENDING_SHIPMENT.getStatus(), java.util.Set.of(OrderStatus.RECEIVED.getStatus(), OrderStatus.CANCELED.getStatus()),
+            OrderStatus.RECEIVED.getStatus(), java.util.Set.of(OrderStatus.WASHING.getStatus()),
+            OrderStatus.WASHING.getStatus(), java.util.Set.of(OrderStatus.DRIED.getStatus(), OrderStatus.READY_FOR_PICKUP.getStatus()),
+            OrderStatus.DRIED.getStatus(), java.util.Set.of(OrderStatus.IN_DELIVERY.getStatus()),
+            OrderStatus.IN_DELIVERY.getStatus(), java.util.Set.of(OrderStatus.READY_FOR_PICKUP.getStatus()),
+            OrderStatus.READY_FOR_PICKUP.getStatus(), java.util.Set.of(OrderStatus.COMPLETED.getStatus())
+    );
+
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean updateOrderStatus(UpdateOrderStatus orderStatus) {
         log.info("管理员变更订单状态, orderId: {}, newStatus: {}", orderStatus.getOrderId(), orderStatus.getStatus());
         Orders orders = getById(orderStatus.getOrderId());
+        if (orders == null) {
+            throw new CustomExceptions("订单不存在");
+        }
+
+        // 校验状态流转是否合法
+        java.util.Set<String> allowed = VALID_TRANSITIONS.get(orders.getStatus());
+        if (allowed == null || !allowed.contains(orderStatus.getStatus())) {
+            throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(orderStatus.getStatus()));
+        }
+
         //当订单状态为清洗中，并且通过后台想要把订单设置成取件，手动模拟发货
         if (orders.getStatus().equals(OrderStatus.WASHING.getStatus()) && orderStatus.getStatus().equals(OrderStatus.READY_FOR_PICKUP.getStatus())) {
             orders.setLockerId(findAndAssignFreeLocker(orders.getSchoolId()));
@@ -132,6 +170,11 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             updateById(orders);
             return true;
         } else {
+            // 订单完成或取消时释放寄存柜
+            if (OrderStatus.COMPLETED.getStatus().equals(orderStatus.getStatus())
+                    || OrderStatus.CANCELED.getStatus().equals(orderStatus.getStatus())) {
+                lockersMapper.unLocker(orders.getLockerId(), LockerStatusEnum.FREE.getValue());
+            }
             LambdaUpdateWrapper<Orders> updateWrapper = new LambdaUpdateWrapper<Orders>()
                     .eq(Orders::getOrderId, orderStatus.getOrderId())
                     .set(Orders::getStatus, orderStatus.getStatus());
@@ -139,13 +182,13 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         }
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean pickupOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser) {
         return nextStatusOrder(statusFrom, loginUser, OrderStatus.COMPLETED.getStatus());
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean shippingOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser) {
         return nextStatusOrder(statusFrom, loginUser, OrderStatus.WASHING.getStatus());
@@ -161,6 +204,12 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return list(queryWrapper);
     }
 
+    @Override
+    public List<ShowOrderVo> getWashingOrderShowVo(LoginUser loginUser, int size) {
+        Page<ShowOrderVo> page = new Page<>(1, size);
+        return ordersMapper.getOrderList(page, OrderStatus.WASHING.getStatus(), loginUser.getUserId()).getRecords();
+    }
+
     /**
      * 取消订单
      *
@@ -168,11 +217,13 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
      * @param userId
      * @return
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean cancelOrder(Long orderId, Long userId) {
         Orders orders = getById(orderId);
-        if (orders == null || !orders.getStatus().equals(OrderStatus.PENDING_PAYMENT.getStatus())) {
+        if (orders == null
+                || !orders.getStatus().equals(OrderStatus.PENDING_PAYMENT.getStatus())
+                || !Objects.equals(orders.getUserId(), userId)) {
             throw new CustomExceptions("订单状态异常");
         }
         log.info("订单已取消, orderId: {}, userId: {}", orderId, userId);
@@ -243,6 +294,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         OrdersVo order = getOrderByOrderId(orderId);
         if (order == null) throw new CustomExceptions("订单状态异常");
         Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+        if (coupon == null) {
+            throw new CustomExceptions("优惠券不存在");
+        }
         if (order.getTotalPrice().compareTo(coupon.getThreshold()) < 0) {
             throw new CustomExceptions("未到达优惠券使用门槛");
         }
@@ -257,6 +311,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private Boolean nextStatusOrder(OrderNextStatusFrom statusFrom, LoginUser loginUser, String nextStatus) {
         //1.验证取件码是否正确
         Orders orders = getById(statusFrom.getOrderId());
+        if (orders == null) {
+            throw new CustomExceptions("订单不存在");
+        }
         if (!Objects.equals(loginUser.getUserId(), orders.getUserId())) {
             log.warn("订单用户不匹配, orderId: {}, userId: {}", statusFrom.getOrderId(), loginUser.getUserId());
             throw new CustomExceptions("订单错误");

@@ -1,9 +1,11 @@
 package com.smartwash.filter;
 
 import com.smartwash.exception.UserAuthenticationException;
+import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.utils.JwtUtil;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,12 +25,16 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final WebAuthenticationDetailsSource AUTHENTICATION_DETAILS_SOURCE = new WebAuthenticationDetailsSource();
+
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final JwtBlacklistService jwtBlacklistService;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService, JwtBlacklistService jwtBlacklistService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.jwtBlacklistService = jwtBlacklistService;
     }
 
 
@@ -51,38 +57,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         */
         if (StringUtils.hasText(token)) {
             try {
+                // 检查 token 是否在黑名单中（已登出）
+                Claims claims = jwtUtil.getPayloadFromToken(token);
+                String jti = claims.get("jti", String.class);
+                if (jti != null && jwtBlacklistService.isBlacklisted(jti)) {
+                    log.warn("JWT Token 已在黑名单中, jti: {}", jti);
+                    SecurityContextHolder.clearContext();
+                    UserContextHolder.clear();
+                    throw new UserAuthenticationException("登录失效，请重新登录");
+                }
+
                 // 从 token 获取 username
-                String username = jwtUtil.getUserNameFromToken(token);
+                String username = claims.get("sub", String.class);
 
                 // 加载与 token 关联的用户
                 LoginUser userDetails = (LoginUser) userDetailsService.loadUserByUsername(username);
 
-                /*
-                 * 创建一个 UsernamePasswordAuthenticationToken 实例，传入 userDetails 和该用户的权限（userDetails.getAuthorities()）。
-                 * UsernamePasswordAuthenticationToken 是 Spring Security 用来封装用户身份信息的一个对象，它包含了用户的身份信息和权限。
-                 * */
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
                         userDetails.getAuthorities()
                 );
 
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                authenticationToken.setDetails(AUTHENTICATION_DETAILS_SOURCE.buildDetails(request));
 
-                /*
-                 * 使用 SecurityContextHolder.getContext().setAuthentication(authenticationToken) 将身份认证信息（即 authenticationToken）存储在 Spring Security 的上下文中。
-                 * 这样，Spring Security 在处理后续请求时，就能基于这个认证信息对请求进行授权控制。
-                 * */
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 UserContextHolder.setUser(userDetails);
             } catch (Exception e) {
                 log.warn("JWT Token 验证失败: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
+                UserContextHolder.clear();
                 throw new UserAuthenticationException("登录失效，请重新登录");
             }
         } else {
             log.warn("JWT Token 缺失或无效");
             SecurityContextHolder.clearContext();
+            UserContextHolder.clear();
             throw new UserAuthenticationException("登录失效，请重新登录");
         }
 

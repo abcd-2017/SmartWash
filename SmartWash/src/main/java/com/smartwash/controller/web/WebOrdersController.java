@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
-import com.smartwash.entity.Orders;
 import com.smartwash.from.order.*;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.utils.LoginUser;
@@ -123,9 +122,9 @@ public class WebOrdersController {
 
     @Operation(summary = "获取正在清洗的订单", description = "获取用户当前正在清洗中的订单列表")
     @GetMapping("/auth/orders/getWashingOrder")
-    public Result<List<Orders>> getWashingOrder(@RequestParam(value = "size", defaultValue = "5") @Parameter(description = "返回数量", example = "5") int size) {
+    public Result<List<ShowOrderVo>> getWashingOrder(@RequestParam(value = "size", defaultValue = "5") @Parameter(description = "返回数量", example = "5") int size) {
         LoginUser loginUser = UserContextHolder.getUser();
-        return Result.ok(ordersService.getWashingOrder(loginUser, size));
+        return Result.ok(ordersService.getWashingOrderShowVo(loginUser, size));
     }
 
     @Operation(summary = "取消订单", description = "用户取消指定订单")

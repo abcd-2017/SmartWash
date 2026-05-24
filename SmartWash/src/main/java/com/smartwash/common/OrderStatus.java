@@ -22,4 +22,13 @@ public enum OrderStatus {
         this.status = status;
         this.description = description;
     }
+
+    public static String getDescriptionByStatus(String status) {
+        for (OrderStatus s : values()) {
+            if (s.status.equals(status)) {
+                return s.description;
+            }
+        }
+        return "未知状态";
+    }
 }

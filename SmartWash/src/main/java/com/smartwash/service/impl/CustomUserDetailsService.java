@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        String[] split = username.split("-");
+        String[] split = username.split("-", 2);
         if (split[0].equals(DefaultConstant.ADMIN_USER_LOGIN_TYPE)) {
             AdminUsers adminUsers = adminUsersMapper.selectOne(new LambdaQueryWrapper<AdminUsers>().eq(AdminUsers::getUsername, split[1]));
             if (adminUsers == null) {

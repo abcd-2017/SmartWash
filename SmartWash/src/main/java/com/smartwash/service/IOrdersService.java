@@ -44,6 +44,8 @@ public interface IOrdersService extends IService<Orders> {
 
     List<Orders> getWashingOrder(LoginUser loginUser, int size);
 
+    List<ShowOrderVo> getWashingOrderShowVo(LoginUser loginUser, int size);
+
     Boolean cancelOrder(Long orderId, Long userId);
 
     OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId);

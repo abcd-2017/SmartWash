@@ -11,7 +11,7 @@ public class AddAdminUserFrom {
     @NotBlank(message = "用户名不能为空")
     private String username;
 
-    private String passwordHash;
+    private String password;
 
     @NotNull(message = "请选择角色")
     private Long roleId;

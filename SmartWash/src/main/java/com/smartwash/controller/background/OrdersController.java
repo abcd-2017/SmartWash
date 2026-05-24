@@ -13,6 +13,7 @@ import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.service.ExportService;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.vo.order.OrdersVo;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -61,7 +62,7 @@ public class OrdersController {
 
     @Operation(summary = "更新订单状态", description = "手动更新指定订单的状态")
     @PostMapping("updateOrderStatus")
-    public Result<Boolean> updateOrderStatus(@RequestBody UpdateOrderStatus orderStatus) {
+    public Result<Boolean> updateOrderStatus(@RequestBody @Valid UpdateOrderStatus orderStatus) {
         return Result.ok(ordersService.updateOrderStatus(orderStatus));
     }
 

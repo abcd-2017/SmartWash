@@ -54,6 +54,9 @@ public class SchoolsController {
     @Operation(summary = "更新学校", description = "修改学校信息")
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
+        if (schoolsService.getById(schoolsFrom.getSchoolId()) == null) {
+            return Result.failMsg("学校不存在");
+        }
         Schools school = schoolsService.getSearchByName(schoolsFrom.getSchoolName());
         if (school != null && !Objects.equals(school.getSchoolId(), schoolsFrom.getSchoolId())) {
             return Result.failMsg("该学校已经存在了");

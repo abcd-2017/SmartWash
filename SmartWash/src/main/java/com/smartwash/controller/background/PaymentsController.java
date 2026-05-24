@@ -89,11 +89,10 @@ public class PaymentsController {
 
     @Operation(summary = "更新支付记录", description = "修改支付记录信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
-//        Payments user = paymentsService.getById(PaymentsFrom.getAdminId());
-//        if (!Objects.equals(user.getUsername(), PaymentsFrom.getUsername()) && PaymentsService.getPaymentByName(PaymentsFrom.getUsername()) != null) {
-//            return Result.fail("给付款记录名已被使用");
-//        }
+    public Result<String> updatePayment(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
+        if (paymentsService.getById(paymentsFrom.getPaymentId()) == null) {
+            return Result.failMsg("支付记录不存在");
+        }
         paymentsService.updatePayment(paymentsFrom);
         return Result.ok("修改成功");
     }

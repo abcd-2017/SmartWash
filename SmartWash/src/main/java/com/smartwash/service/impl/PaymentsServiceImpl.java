@@ -135,7 +135,7 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         return paymentVoPage;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean paymentOrder(LoginUser user, PaymentOrderFrom orderFrom) {
         Orders orders = ordersMapper.selectById(orderFrom.getOrderId());
@@ -150,11 +150,20 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         //如果用户优惠券id不为空，就使用优惠券
         if (orderFrom.getUserCouponId() != null) {
             userCoupon = userCouponMapper.selectById(orderFrom.getUserCouponId());
-            if (userCoupon == null || userCoupon.getIsUsed() || userCoupon.getExpiredAt().isBefore(LocalDateTime.now())) {
-                throw new CustomExceptions(("优惠券异常"));
+            if (userCoupon == null || userCoupon.getIsUsed()
+                    || userCoupon.getExpiredAt().isBefore(LocalDateTime.now())
+                    || !Objects.equals(userCoupon.getUserId(), user.getUserId())) {
+                throw new CustomExceptions("优惠券异常");
             }
 
             Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+            if (coupon == null) {
+                throw new CustomExceptions("优惠券不存在");
+            }
+            // 校验优惠券使用门槛
+            if (orders.getTotalPrice().compareTo(coupon.getThreshold()) < 0) {
+                throw new CustomExceptions("未到达优惠券使用门槛");
+            }
             if (orders.getTotalPrice().compareTo(coupon.getDiscount()) <= 0) orders.setPayPrice(BigDecimal.ZERO);
             else orders.setPayPrice(orders.getTotalPrice().subtract(coupon.getDiscount()));
             orders.setUserCouponId(userCoupon.getUserCouponId());
@@ -175,8 +184,12 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         saveOrUpdate(payments);
 
         //2.用户余额扣减
-        if (orders.getPayPrice().compareTo(BigDecimal.ZERO) > 0)
-            usersMapper.decrUserBalance(user.getUserId(), orders.getPayPrice());
+        if (orders.getPayPrice().compareTo(BigDecimal.ZERO) > 0) {
+            int rows = usersMapper.decrUserBalance(user.getUserId(), orders.getPayPrice());
+            if (rows == 0) {
+                throw new CustomExceptions("余额不足或扣减失败");
+            }
+        }
 
         //3.如果使用了优惠券，则修改优惠券状态
         if (userCoupon != null) {
@@ -241,10 +254,9 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
     @Override
     public Boolean deletePayments(String ids) {
         log.info("删除支付记录, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 }

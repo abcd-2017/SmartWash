@@ -64,8 +64,8 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         //如果密码为空，设置初始密码
         String password = "";
-        if (StringUtils.hasText(addAdminUsersFrom.getPasswordHash())) {
-            password = encoder.encode(addAdminUsersFrom.getPasswordHash());
+        if (StringUtils.hasText(addAdminUsersFrom.getPassword())) {
+            password = encoder.encode(addAdminUsersFrom.getPassword());
         } else {
             password = encoder.encode(DefaultConstant.generateDefaultPassword());
         }
@@ -104,10 +104,9 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     @Override
     public Boolean deleteAdminUsers(String ids) {
         log.info("删除管理员, ids: {}", ids);
-        String[] idList = ids.split(",");
-        for (String id : idList) {
-            removeById(Integer.parseInt(id));
-        }
-        return true;
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+        return removeByIds(idList);
     }
 }

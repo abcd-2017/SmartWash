@@ -63,7 +63,7 @@ public class LockersController {
 
     @Operation(summary = "新增柜子", description = "新增寄存柜，同一学校下柜子编号不可重复")
     @PostMapping("/add")
-    public Result<String> addAdminUser(@RequestBody @Valid AddLockerFrom addLockerFrom) {
+    public Result<String> addLocker(@RequestBody @Valid AddLockerFrom addLockerFrom) {
         if (lockersService.getLockerById(addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber()) != null) {
             return Result.failMsg("给存储柜名已被使用");
         }
@@ -73,7 +73,10 @@ public class LockersController {
 
     @Operation(summary = "更新柜子", description = "修改寄存柜信息")
     @PostMapping("/update")
-    public Result<String> updateSchool(@RequestBody @Valid UpdateLockerFrom lockerFrom) {
+    public Result<String> updateLocker(@RequestBody @Valid UpdateLockerFrom lockerFrom) {
+        if (lockersService.getById(lockerFrom.getLockerId()) == null) {
+            return Result.failMsg("寄存柜不存在");
+        }
         lockersService.updateLockers(lockerFrom);
         return Result.ok("修改成功");
     }
