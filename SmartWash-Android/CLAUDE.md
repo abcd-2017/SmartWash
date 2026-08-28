@@ -69,10 +69,18 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 - **LazyColumn 必须给 `key`**；列表参数注意稳定性，昂贵计算用 `remember`。
 - **catch 协程异常先 rethrow `CancellationException`**，否则取消会被当网络错误。
 
-## 相关 Skills
+## 相关 Skills 与子代理
 
-- `android-kotlin`、`android-jetpack-compose`：按 `.kt` 路径自动生效，无需手动调用。
-- 需要架构决策时调用 `android-clean-architecture`；做新 UI/改视觉时调用 `mobile-android-design`。
+**自动生效 skill**：`android-kotlin`、`android-jetpack-compose`（按 `.kt` 路径触发）；按需调用 `android-clean-architecture`、`mobile-android-design`。
+
+`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个 Android 子代理，按任务派发：
+
+- `android-dev` — 功能开发执行（MVVM/RequestState/新页面清单约束）
+- `android-review` — 提交前 Compose 正确性只读审查
+- `android-compose-ui` — 页面 UI 实现与重组性能治理、设计系统落地、pressScale 修复
+- `android-anim` — 转场/按压/微交互动效与触感分层（尊重减弱动态效果）
+- `android-architect` — Repository 边界、Room migration、Paging 3 统一、Hilt 依赖图
+- `android-tester` — TDD：拦截器/校验/枚举映射/分页边界的 JVM 单测
 
 ## 已知坑（改动前先看）
 

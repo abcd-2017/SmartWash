@@ -45,12 +45,20 @@
 - **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
 - 后端地址等环境差异见各子项目 CLAUDE.md 的「构建与运行」。
 
-## 相关 Skills 索引
+## 相关 Skills 与子代理编制
 
-- **Android**：`android-kotlin`（按 `*.kt` 路径自动生效）、`android-jetpack-compose`（自动生效）；需要时手动调用 `android-clean-architecture`、`mobile-android-design`。
-- **鸿蒙**：需要时手动调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`。
-- **Web**：涉及视觉/新 UI 设计时调用 `frontend-design` 或 `design`。
-- **后端**：无专用 skill，遵循 SmartWash/CLAUDE.md 中的分层与 MyBatis-Plus 约定。
+**库内 Skills**（`~/.agents/skills/`，共 50+ 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
+
+**各工程子代理**（`.claude/agents/`，已镜像到各工程 `.zcode/agents/`，每端 6 个）：
+
+| 工程 | 子代理 |
+|------|--------|
+| 后端 | backend-dev、backend-review、backend-architect、backend-tester、backend-debugger、backend-docs |
+| Android | android-dev、android-review、android-compose-ui、android-anim、android-architect、android-tester |
+| 鸿蒙 | harmony-dev、harmony-review、harmony-ui、arkts-syntax、harmony-debugger、harmony-docs |
+| Web | web-dev、web-review、web-ui、web-perf、web-tester、web-debugger |
+
+按任务性质派发：写功能用 `*-dev`，动效用 `*-anim`/`*-ui`，排查用 `*-debugger`，测试用 `*-tester`，结构决策用 `*-architect`，文档同步用 `*-docs`；`*-review` 在提交前做只读审查。
 
 ## 已知风险
 

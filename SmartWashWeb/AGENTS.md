@@ -1,6 +1,8 @@
 # AGENTS.md — SmartWashWeb 管理后台指南
 
 > SmartWash 智能洗衣系统的 Vue 3 管理后台：学校管理、学生管理、洗护套餐、寄存柜、订单、支付记录、充值记录、优惠券、角色与管理员用户管理。
+>
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 

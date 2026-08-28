@@ -78,6 +78,19 @@ mvn clean package -DskipTests  # 打包
 - `OrderTimeoutManager` 是单机内存调度，多实例部署会重复/遗漏；不要在事务内注册新的内存任务。
 - 测试仅 3 个类且无 test profile，新增核心逻辑请配套单测并避免依赖真实中间件。
 
+## 子代理与相关 Skills
+
+`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个后端子代理，按任务派发：
+
+- `backend-dev` — 功能开发执行（分层/资金硬规则约束）
+- `backend-review` — 提交前安全与资金一致性只读审查
+- `backend-architect` — 事务边界、状态机、缓存一致性、迁移与索引设计
+- `backend-tester` — TDD 单测与资金并发用例（不连真实中间件）
+- `backend-debugger` — 运行时问题排查（日志/Redis/SQL 只读诊断）
+- `backend-docs` — CLAUDE.md/AGENTS.md/评审报告与代码现实同步
+
+Java/Spring 无库内自动 skill，以上代理即本端的"规范载体"；跨端通用方法论（systematic-debugging、test-driven-development 等）可直接调用库内 skill。
+
 ## 提交规范
 
 提交代码时使用 `commit-commands:commit` skill：检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Backend): <描述>`，如 `fix(Backend): 修复订单状态更新失败`、`feat(Backend): 新增优惠券批量发放接口`。

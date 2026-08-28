@@ -1,6 +1,8 @@
 # AGENTS.md — SmartWash 鸿蒙端指南
 
 > 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件。接口与 Android 端 100% 对齐。
+>
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 

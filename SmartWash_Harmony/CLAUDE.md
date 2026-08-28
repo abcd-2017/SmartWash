@@ -80,9 +80,18 @@ interface BaseResponse<T> {
 
 toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined"）。
 
-## 相关 Skills
+## 相关 Skills 与子代理
 
-- 编写/排查 `.ets` 文件时调用 `arkts-development`（ArkUI 组件与状态管理）、`arkts-syntax-assistant`（语法迁移与严格模式约束）、`harmonyos-app`（Stage 模型与最佳实践）。
+**库内 skill**：编写/排查 `.ets` 文件时调用 `arkts-development`（组件与状态管理）、`arkts-syntax-assistant`（语法迁移与严格模式）、`harmonyos-app`（Stage 模型最佳实践）。
+
+`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个鸿蒙子代理，按任务派发：
+
+- `harmony-dev` — 功能开发执行（V2 生命周期/路由/401 清 token 硬规则）
+- `harmony-review` — 提交前生命周期与类型安全只读审查
+- `harmony-ui` — ArkUI 组件实现、AppComponents/DesignSystem 治理
+- `arkts-syntax` — 严格模式合规、TS→ArkTS 迁移、编译错误修复
+- `harmony-debugger` — 轮询/定时器/路由堆栈/preferences 时序排查
+- `harmony-docs` — 文档与代码一致性、页面路由清单、评审报告状态同步
 
 ## 已知坑（改动前先看）
 

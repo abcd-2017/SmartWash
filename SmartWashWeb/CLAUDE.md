@@ -58,10 +58,18 @@ npm run preview    # 预览生产构建
 
 **重要**：这套结构在 11 个列表页中是复制粘贴的（含 `formatTime`、时间范围 computed 均逐字重复）。新增列表页时，若发现逻辑在多页重复，优先抽取 composable（如 `useTableList`、`useTimeRange`）或放入 `src/utils/`，禁止继续复制第 12 份。枚举/字典值新增时建 `src/constants/` 统一维护，与后端枚举对齐。
 
-## 相关 Skills
+## 相关 Skills 与子代理
 
-- 涉及新页面视觉设计或整体风格调整时，调用 `frontend-design` 或 `design` skill。
-- 无 Vue 专用自动生效 skill，遵循本文档模式约定即可。
+**库内 skill**：新页面视觉设计或整体风格调整时调用 `frontend-design` 或 `design`；无 Vue 自动生效 skill。
+
+`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个 Web 子代理，按任务派发：
+
+- `web-dev` — 功能开发执行（CRUD 模式/composable 复用/安全红线约束）
+- `web-review` — 提交前权限与安全只读审查
+- `web-ui` — Element Plus 视觉一致性治理、组件抽象、状态设计
+- `web-perf` — 路由懒加载、按需引入、Vite 分包（量化驱动）
+- `web-tester` — vitest 基建修复与拦截器/工具用例（TDD）
+- `web-debugger` — 登录态/401/静默失败/Element Plus 行为坑排查
 
 ## 已知坑（改动前先看）
 

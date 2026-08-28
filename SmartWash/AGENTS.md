@@ -1,6 +1,8 @@
 # AGENTS.md — SmartWash 后端项目指南
 
 > 校园智能洗衣平台后端：为 Android / 鸿蒙用户端和 Vue3 管理后台提供 REST API。覆盖用户、订单、储物柜、优惠券、充值支付、管理端权限等模块。
+>
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 
