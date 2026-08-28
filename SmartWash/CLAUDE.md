@@ -1,49 +1,28 @@
 # CLAUDE.md
 
-本文件为 Claude Code (claude.ai/code) 在此仓库中工作时提供指导。
+本文件为编码 agent 在 SmartWash 后端工作时提供指导。仓库总纲见根目录 [CLAUDE.md](../CLAUDE.md)。
 
 **必须使用中文回答。**
 
 ## 项目概述
 
-**SmartWash** 后端 — 基于 Spring Boot 3.4.0 的校园洗衣寄存柜管理平台 REST API。仓库根目录 (`Android/SmartWash/`) 是多项目单体仓库：
-
-| 目录 | 说明 |
-|---|---|
-| `SmartWash/` | **本项目** — Spring Boot 后端 |
-| `SmartWash-Android/` | Android 原生客户端 |
-| `SmartWashWeb/` | Vue 3 + Vite Web 管理端/用户端 |
-| `SmartWash_Harmony/` | 鸿蒙端 |
-| `smart_wash.sql` | MySQL 建表语句 + 种子数据 |
+**SmartWash** 后端 — 基于 Spring Boot 3.4.0 的校园洗衣寄存柜管理平台 REST API。Java 17，未包含 Maven Wrapper — 使用系统安装的 `mvn`。
 
 ## 构建与运行
 
 ```bash
-# 启动应用（需要 MySQL 和 Redis）
-mvn spring-boot:run
-
-# 运行测试
-mvn test
-
-# 打包
-mvn clean package -DskipTests
+mvn spring-boot:run            # 启动（需要 MySQL 和 Redis）
+mvn test                       # 运行测试
+mvn clean package -DskipTests  # 打包
 ```
 
-Java 17，未包含 Maven Wrapper — 使用系统安装的 `mvn`。
-
-## 基础设施依赖
-
-- **MySQL 8.x** 地址 `127.0.0.1:3306`，数据库 `smart_wash`
-- **Redis** 地址 `127.0.0.1:6379`，database `3`
-- 配置位于 `src/main/resources/application.yaml`
+- **MySQL 8.x** `127.0.0.1:3306`，库 `smart_wash`；**Redis** `127.0.0.1:6379`，database `3`。配置在 `src/main/resources/application.yaml`。
+- **注意**：目前没有 dev/prod profile，`mvn test` 的 `SmartWashApplicationTests` 会连真实 MySQL/Redis。
+- 数据库结构变更走 Flyway 迁移（`src/main/resources/db/migration/`，已有 V1-V3），不要只改 `smart_wash.sql`。
 
 ## 架构
 
-标准 Spring Boot 分层架构：
-
-```
-controller → service (接口) → service/impl → mapper (接口) → mapper XML
-```
+标准分层：`controller → service (接口) → service/impl → mapper (接口) → mapper XML`
 
 ### URL 路由与权限
 
@@ -54,44 +33,51 @@ controller → service (接口) → service/impl → mapper (接口) → mapper 
 | `/web/auth/**` | 是 | `ROLE_USER` |
 | `/web/**` | 否 | 公开 Web 接口 |
 
-两种用户类型，登录流程不同：管理员（`/auth/adminUsers/login`）通过用户名认证，普通用户（`/auth/user/login`）通过手机号认证。登录成功返回 JWT（7天有效期）。JWT 的 `sub` 字段带前缀：`admin-{用户名}` 或 `user-{手机号}`。
+两种用户类型，登录流程不同：管理员（`/auth/adminUsers/login`）通过用户名认证，普通用户（`/auth/user/login`）通过手机号认证。登录成功返回 JWT（7 天有效期），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 
-认证链：`JwtAuthenticationFilter`（提取 Bearer token，通过 `CustomUserDetailsService` 加载 `LoginUser`，设置 `SecurityContext`）→ `SecurityConfig`（基于角色的访问控制）。
+认证链：`JwtAuthenticationFilter`（提取 Bearer token，经 `CustomUserDetailsService` 加载 `LoginUser`，设置 `SecurityContext`）→ `SecurityConfig`（基于角色的访问控制）。
 
 ### 包结构
 
 | 包 | 用途 |
 |---|---|
-| `common/` | 枚举类（`OrderStatus`、`LockerStatusEnum` 等）、常量（`DefaultConstant`）、统一响应封装 `Result<T>` |
-| `config/` | Spring 配置类：Security、CORS、MyBatis-Plus、Redis、全局异常处理 |
-| `controller/` | REST 控制器。`LoginController` 在顶层；`background/` 存放管理端 API，`web/` 存放用户端 API |
+| `common/` | 枚举（`OrderStatus`、`LockerStatusEnum` 等）、常量（`DefaultConstant`）、统一响应 `Result<T>` |
+| `config/` | Security、CORS、MyBatis-Plus、Redis、全局异常处理 |
+| `controller/` | `LoginController` 在顶层；`background/` 管理端 API，`web/` 用户端 API |
 | `entity/` | 数据库实体（MyBatis-Plus 映射） |
 | `exception/` | 自定义异常（`CustomExceptions`、`UserAuthenticationException`） |
 | `filter/` | `JwtAuthenticationFilter` — 每次请求执行 JWT 校验 |
-| `from/` | 请求 DTO / 表单对象。每个实体通常对应 `Add*From`、`Update*From`、`Search*From` |
-| `mapper/` | MyBatis-Plus `BaseMapper` 接口。自定义 SQL 在 `src/main/resources/mapper/*.xml` |
-| `service/` | 接口继承 `IService<T>`。实现在 `service/impl/` 中，继承 `ServiceImpl<M, T>` |
+| `from/` | 请求 DTO。命名 `{操作}{实体}From`（`Add*From`、`Update*From`、`Search*From`），分页继承 `BaseSearchFrom` |
+| `mapper/` | MyBatis-Plus `BaseMapper`。自定义 SQL 在 `src/main/resources/mapper/*.xml` |
+| `service/` | 接口继承 `IService<T>`；实现在 `service/impl/` 继承 `ServiceImpl<M, T>` |
+| `task/` | 定时任务（`OrderTimeoutManager` 订单超时取消） |
 | `utils/` | `JwtUtil`、`LoginUser`、`UserContextHolder`（ThreadLocal）、`SecurityUtil`、`QrCodeUtil` |
-| `vo/` | 返回给控制器的视图对象 |
+| `vo/` | 视图对象，命名 `{实体}Vo` |
 
 ### 关键模式
 
-- **`Result<T>`** 是统一 API 响应封装：成功用 `Result.ok(data)`，失败用 `Result.failMsg(msg)`。全局异常由 `ExceptionControllerAdvice` 捕获并返回 `Result`。
-- **MyBatis-Plus**：实体使用 `@TableName`、`@TableId`，逻辑删除字段 `isDelete`。`MybatisConfig` 启用了分页插件。复杂查询使用 XML mapper 配合 MyBatis 动态 SQL（`<if test="...">`）。
-- **MyBatis-Plus `ServiceImpl<M, T>`** 提供内置 CRUD（`save`、`removeById`、`getById`、`updateById`、`list`、`count`、`page`）。自定义方法在 mapper 接口和 XML 中添加。
-- **Form 对象**（`from/` 包）使用 `@Valid` + Jakarta Bean Validation 进行请求校验。`BaseSearchFrom` 基类提供 `page`/`size` 分页字段。
-- **ThreadLocal 用户上下文**：`UserContextHolder.setUser(loginUser)` 在 JWT 过滤器中设置，Service 层通过 `SecurityUtil.getCurrentUser()` 获取。
-- **Lombok** 全项目使用 — `@Data`、`@Slf4j`、`@AllArgsConstructor`。注解处理器已在 `pom.xml` 中配置。
-- **Hutool** (`cn.hutool`) 提供工具类，如 `Snowflake`（分布式ID）、`IdUtil`、`RandomUtil`。
-- **FastJSON 2** 是 JSON 库（阿里巴巴），非 Jackson。
+- **`Result<T>`** 统一 API 响应：成功 `Result.ok(data)`，失败 `Result.failMsg(msg)`。全局异常由 `ExceptionControllerAdvice` 捕获。**禁止直接返回实体或字符串**。
+- **MyBatis-Plus**：`@TableName`/`@TableId`，优先用内置方法（`save`、`removeById`、`getById`、`updateById`、`list`、`count`、`page`），复杂查询才写 XML。`MybatisConfig` 已启用分页插件。
+- **注意：本项目没有逻辑删除**——无 `@TableLogic`，表无 `is_delete` 列，删除均为物理删除。涉及资金类记录（payments/recharge_records）禁止新增删除入口。
+- **Form 对象**用 `@Valid` + Jakarta Bean Validation 校验。
+- **ThreadLocal 用户上下文**：`UserContextHolder.setUser(loginUser)` 在 JWT 过滤器设置，Service 层经 `SecurityUtil.getCurrentUser()` 获取。
+- **Lombok** 全项目使用（`@Data`、`@Slf4j`、`@AllArgsConstructor`）；**Hutool** 提供 `Snowflake`、`IdUtil` 等；**FastJSON 2** 是 JSON 库。
 
-## 约束
+## 硬性约束
 
-- **提交代码时使用 `commit-commands:commit` skill**：每次提交前通过该 skill 检查变更范围、生成规范的 commit message，确保一个 commit 对应一个完整的功能点而非单个文件。commit message 使用中文，格式：`<type>(Backend): <描述>`（如 `fix(Backend): 修复订单状态更新失败`、`feat(Backend): 新增优惠券批量发放接口`）。
-- **所有 API 返回统一使用 `Result<T>`**，禁止直接返回实体或字符串。成功用 `Result.ok(data)`，失败用 `Result.failMsg(msg)`。
-- **新增接口遵循现有 URL 路由规范**：管理端 `/admin/**`（ROLE_ADMIN），用户端需要认证 `/web/auth/**`（ROLE_USER），公开接口 `/web/**` 或 `/auth/**`。
-- **请求参数放在 `from/` 包**，命名遵循 `{操作}{实体}From`（如 `Add*From`、`Update*From`、`Search*From`）。分页查询继承 `BaseSearchFrom`。
-- **返回数据放在 `vo/` 包**，命名遵循 `{实体}Vo`。
-- **数据库操作优先使用 MyBatis-Plus 内置方法**（`save`、`removeById`、`getById`、`updateById`、`list`、`count`、`page`），复杂查询才写自定义 SQL。
-- **代码注释和日志使用中文**，日志使用 Lombok `@Slf4j`。
-- **不要将敏感信息硬编码**，数据库密码等配置项放在 `application.yaml` 中（当前已配置，不要提交到公开仓库）。
+- **资金/状态操作必须防并发**：任何"先查再改"的订单状态流转、优惠券核销/领取、余额扣减，必须用条件 UPDATE 判断影响行数或 `SELECT FOR UPDATE`，禁止 `getById` 后直接 `updateById`（已知竞态清单见评审报告第一章 P0）。
+- **支付/充值金额以后端计算为准**，不信任前端传入价格。
+- **新增接口遵循 URL 路由规范**（见上表），响应统一 `Result<T>`。
+- **不硬编码敏感信息**：密钥/密码走环境变量，`application.yaml` 中不落默认生产密钥。
+- **代码注释和日志使用中文**，日志用 Lombok `@Slf4j`，请求级高频日志用 debug 级别。
+
+## 已知坑（改动前先看）
+
+- `LoginController` 验证码：注册与重置密码共用同一 Redis key，校验无尝试次数限制——新增验证码场景时先隔离 purpose。
+- `DashboardMapper.xml` 引用了不存在的 `is_delete` 列，Dashboard 接口当前报错（见评审报告）。
+- `OrderTimeoutManager` 是单机内存调度，多实例部署会重复/遗漏；不要在事务内注册新的内存任务。
+- 测试仅 3 个类且无 test profile，新增核心逻辑请配套单测并避免依赖真实中间件。
+
+## 提交规范
+
+提交代码时使用 `commit-commands:commit` skill：检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Backend): <描述>`，如 `fix(Backend): 修复订单状态更新失败`、`feat(Backend): 新增优惠券批量发放接口`。

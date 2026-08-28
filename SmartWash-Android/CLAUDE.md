@@ -1,78 +1,88 @@
 # CLAUDE.md
 
-本文件为 Claude Code (claude.ai/code) 在此仓库中工作时提供指导。
+本文件为编码 agent 在 SmartWash Android 端工作时提供指导。仓库总纲见根目录 [CLAUDE.md](../CLAUDE.md)。
+
+**必须使用中文回答。**
 
 ## 基本规则
 
-- **必须使用中文回答** — 所有对话、代码注释、提交信息均使用中文。
-- **提交代码时使用 `commit-commands:commit` skill**：每次提交前通过该 skill 检查变更范围、生成规范的 commit message，确保一个 commit 对应一个完整的功能点而非单个文件。提交信息格式：`<type>(Android): <描述>`（如 `feat(Android): 新增订单详情页面`、`fix(Android): 修复登录 token 过期问题`），使用中文描述变更内容。
+- **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Android): <描述>`（如 `feat(Android): 新增订单详情页面`、`fix(Android): 修复登录 token 过期问题`）。
 - **新增页面必须注册路由** — 在 `PageConstant` 中添加路由常量，在 `MainActivity` 的 `NavHost` 中注册 composable。
-- **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一使用 `ResponseData<T>` 包装。
+- **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一 `ResponseData<T>` 包装。
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
-- **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，业务逻辑在 ViewModel 中，Page 只负责 UI 渲染。
-- **禁止字符串硬编码** — 所有用户可见的文本（UI 文案、Toast 消息、错误提示、枚举显示名等）必须定义在 `res/values/strings.xml` 中，代码中通过 `stringResource(R.string.xxx)` 引用。带参数的字符串使用 `%s`、`%d` 占位符。ViewModel 中需要的字符串通过 `application.getString(R.string.xxx)` 获取（注入 `@ApplicationContext` 或 `Application`）。常量字符串（SharedPreferences key、日志 TAG 等非用户可见的）定义在对应的常量类中，不得散落在业务代码里。
+- **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository 访问数据，Page 只负责 UI 渲染。
+- **禁止字符串硬编码** — 用户可见文本一律定义在 `res/values/strings.xml`，代码经 `stringResource(R.string.xxx)` 引用；ViewModel 内经 `application.getString(...)`；非用户可见常量（存储 key、TAG）定义在对应常量类中。
 
 ## 构建与运行
 
 ```bash
-# 构建 Debug APK
-./gradlew assembleDebug
-
-# 构建 Release APK（开启 ProGuard 混淆 + 资源压缩）
-./gradlew assembleRelease
-
-# 运行单元测试（JVM，不需要设备）
-./gradlew test
-
-# 运行 Android 插桩测试（需要设备或模拟器）
-./gradlew connectedAndroidTest
-
-# 运行单个测试类
-./gradlew test --tests "com.smartwash.ExampleTest"
-
-# 代码检查
-./gradlew lint
+./gradlew assembleDebug    # Debug APK
+./gradlew assembleRelease  # Release APK（ProGuard 混淆 + 资源收缩）
+./gradlew test             # JVM 单元测试
+./gradlew lint             # 代码检查
 ```
+
+- **环境配置**：BASE_URL 由 `app/build.gradle` 的 `buildConfigField` 按 buildType 注入（debug 指向局域网）。**当前 release 是占位符地址 `https://api.smartwash.example.com/`，发布前必须改为真实地址**——修改网络层时禁止新增硬编码 URL。
+- Manifest 中 `usesCleartextTraffic=true` 是为 debug 明文 HTTP 打开的全局开关，不要依赖它新增明文流量。
+- Maven 仓库用阿里云镜像；海外构建需改回 `google()` / `mavenCentral()`。
 
 ## 项目架构
 
-智慧校园洗衣服务 App，单模块 Gradle 项目（仅 `app/` 模块），使用 **MVVM + Jetpack Compose** + **Hilt 依赖注入**。
+智慧校园洗衣服务 App，单模块 Gradle 项目，**MVVM + Jetpack Compose + Hilt**。
 
 ### 分层结构
 
 ```
 ui/page/<功能>/     → Compose Page + ViewModel（页面级，一页一个 VM）
-network/api/        → Retrofit 接口（通过 Hilt 注入到 ViewModel）
-network/entity/     → 请求体对象 + ResponseData<T> 包装类 {code, message, data}
-network/vo/         → 服务端返回的值对象
-network/interceptor/ → OkHttp 拦截器（鉴权 & 错误处理）
-utils/              → 本地存储（DataStore）、RequestState 状态类、枚举常量
-paging/             → PagingSource 分页实现
-database/           → Room 数据库（已搭建，暂未启用）
+repository/         → 7 个 @Singleton Repository（User/Order/Laundry/Coupon/Payment/Recharge/School），
+                      ViewModel 一律经 Repository 访问数据；Laundry/School/Coupon 实现
+                      「内存 → Room → 网络」缓存降级
+network/api/        → Retrofit 接口（Hilt 注入到 Repository/ViewModel）
+network/entity/     → 请求体 + ResponseData<T> 包装 {code, message, data}
+network/vo/         → 服务端返回值对象
+network/interceptor/ → RequestInterceptor（鉴权注入）、ResponseInterceptor（错误转译）
+database/           → Room（Laundry/School/Coupon 三个 DAO 已在用）
+paging/             → Paging 3 分页实现（pagingFlow 封装 + OrderPagingSource 等）
+utils/              → DataStore 封装（SharePreferenceUtils）、RequestState、枚举常量、动效/触感工具
 ```
 
 ### 核心设计模式
 
-**单 Activity** — `MainActivity` 通过 `NavHost` 承载所有页面。路由常量定义在 `PageConstant` 密封类中。页面切换使用 Compose Navigation 的滑动 + 淡入淡出动画。
+**单 Activity** — `MainActivity` 通过 `NavHost` 承载所有页面，路由常量在 `PageConstant` 密封类，页面切换为滑动 + 淡入淡出动画。
 
-**鉴权流程** — 需要登录的 API 加 `@RequireAuthorization` 注解。`RequestInterceptor` 检测该注解后自动从 DataStore 中取出 token 并注入请求头 `Bearer <token>`。`ResponseInterceptor` 解析每个响应的 body；遇到 401 时清除本地 token 并触发 `App.globalRequestAfterCallback`，跳转回登录页。
+**鉴权流程** — API 方法加 `@RequireAuthorization` 注解，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测该注解后从 DataStore 取 token 注入 `Bearer <token>`。`ResponseInterceptor` 统一转译错误；遇 401 清除本地 token 并触发 `App.globalRequestAfterCallback` 跳回登录页（回调中 navigate 需 `launchSingleTop` 防堆叠）。
 
-**状态管理** — 每个 ViewModel 通过 `MutableStateFlow` → `asStateFlow()` 暴露状态。页面以 Compose State 方式收集。`RequestState` 密封类（Idle / Loading / Success / Error）是统一的异步 UI 状态模式。
+**状态管理** — ViewModel 用 `MutableStateFlow` → `asStateFlow()` 暴露状态；`RequestState` 密封类是统一异步 UI 状态。
 
-**依赖注入** — `RetrofitClient` 是 Hilt `@Module`，提供 Retrofit 单例及所有 API 接口实例。ViewModel 使用 `@HiltViewModel` 配合 `@Inject constructor` 获取依赖。
+**依赖注入** — `RetrofitClient` 是 Hilt `@Module`，提供 Retrofit 单例及 API 实例；ViewModel 用 `@HiltViewModel` + `@Inject constructor`。
 
-**分页** — `OrderPagingSource` 和 `UserCouponPagingSource` 实现 `PagingSource<Int, T>`，采用页码分页。
+**分页** — 订单/优惠券列表走手写 Map 分页（OrderViewModel），取件/充值记录走 Paging 3（`pagingFlow`：debounce + flatMapLatest + cachedIn）；新增分页列表优先用 Paging 3。
 
 ### API 返回格式
 
-所有接口返回数据统一使用 `ResponseData<T>` 包装：
+`ResponseData<T>`：`code: Int`（见 `HttpStatusCode` 枚举）、`message: String`、`data: T?`。业务失败时 Repository 应抛异常而非静默返回空集合，让 UI 能区分"无数据"与"失败"。
 
-- `code: Int` — 业务状态码（参见 `HttpStatusCode` 枚举）
-- `message: String` — 错误或成功提示信息
-- `data: T?` — 可空数据载荷
+## Compose 硬规则
 
-### 依赖说明
+- **组合期禁止副作用**：Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里（历史上多个页面踩过此坑）。
+- **禁止主线程阻塞 IO**：`runBlocking` 读写 DataStore 已知会阻塞 UI 线程，一律用 suspend/flow。
+- **LazyColumn 必须给 `key`**；列表参数注意稳定性，昂贵计算用 `remember`。
+- **catch 协程异常先 rethrow `CancellationException`**，否则取消会被当网络错误。
 
-- Maven 仓库使用阿里云镜像（国内下载更快）。如果在海外构建，需要改回 `google()` / `mavenCentral()`。
-- Hilt 使用 KAPT 注解处理，Room 使用 KSP。
-- Manifest 中开启了 `usesCleartextTraffic=true`，因为后端是 HTTP 协议而非 HTTPS。
+## 相关 Skills
+
+- `android-kotlin`、`android-jetpack-compose`：按 `.kt` 路径自动生效，无需手动调用。
+- 需要架构决策时调用 `android-clean-architecture`；做新 UI/改视觉时调用 `mobile-android-design`。
+
+## 已知坑（改动前先看）
+
+完整清单见 [docs/code-review-2026-08-28.md](../docs/code-review-2026-08-28.md) 第二章，重点关注：
+
+- `utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处按压反馈实际无效——修复前不要模仿该写法。
+- Room 无 migration 配置；缓存写入是 deleteAll + insertAll 无事务，改动 database/ 时需补 `@Transaction`。
+- `App.globalRequestBefore/AfterCallback` 静态 lateinit 在 setContent 前发请求会崩——新增早期请求路径需先处理。
+- 测试仅有模板类；给 ResponseInterceptor、参数校验等纯逻辑补单测时放 `app/src/test/`。
+
+## 提交规范
+
+见顶部基本规则。跨端改动（接口变更）需参照根目录 CLAUDE.md 的四端联动检查表。
