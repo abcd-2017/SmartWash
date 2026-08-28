@@ -38,8 +38,10 @@ import com.smartwash.network.vo.laundry.LaundryItem
 import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.utils.RequestState
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.IconBox
+import com.smartwash.utils.RequestState
+import com.smartwash.utils.pressScale
 
 @Composable
 fun ServicePage(
@@ -107,10 +109,12 @@ private fun ServiceItemCard(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .pressScale(0.98f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -119,7 +123,8 @@ private fun ServiceItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconBox(icon = serviceIcon(item))
+            // 增大图标盒至 48dp
+            IconBox(icon = serviceIcon(item), size = 48.dp, iconSize = 24.dp)
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

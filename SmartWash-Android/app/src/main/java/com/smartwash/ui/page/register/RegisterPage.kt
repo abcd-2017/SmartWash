@@ -143,7 +143,7 @@ fun RegisterPage(
         else -> {}
     }
 
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(28.dp)
 
     Box(
         modifier = Modifier
@@ -160,16 +160,29 @@ fun RegisterPage(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            // 品牌标识
+            // 品牌标识 — 外圈光环
             Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(GlassBg)
-                    .border(1.dp, GlassBorder, CircleShape),
+                modifier = Modifier.size(88.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✨", style = MaterialTheme.typography.headlineSmall)
+                // 外圈 — 淡光环
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape)
+                        .background(GlassBgSubtle)
+                )
+                // 内圈 — 图标
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(GlassBg)
+                        .border(1.dp, GlassBorder, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("✨", style = MaterialTheme.typography.headlineSmall)
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -191,25 +204,30 @@ fun RegisterPage(
             // 进度条
             Spacer(modifier = Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 激活态 — 渐变
                 Box(
                     modifier = Modifier
-                        .width(28.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Color.White)
+                        .width(32.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.White, Color.White.copy(alpha = 0.8f))
+                            )
+                        )
                 )
                 Box(
                     modifier = Modifier
-                        .width(28.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .width(32.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(4.dp))
                         .background(GlassInput)
                 )
                 Box(
                     modifier = Modifier
-                        .width(28.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .width(32.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(4.dp))
                         .background(GlassInput)
                 )
             }
@@ -223,7 +241,7 @@ fun RegisterPage(
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 12.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,

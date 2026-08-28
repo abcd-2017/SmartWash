@@ -61,10 +61,16 @@ import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
+import com.smartwash.utils.HapticEffect
+import com.smartwash.utils.currentView
+import com.smartwash.utils.defaultSpring
+import com.smartwash.utils.performHaptic
+import com.smartwash.utils.pressAlpha
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,6 +88,7 @@ fun OrderPage(
     val cancelOrderState by orderViewModel.cancelOrderState.collectAsState()
 
     val context = LocalContext.current
+    val view = currentView()
     var confirmPayShow by remember { mutableStateOf(false) }
     var currOrderId by remember { mutableLongStateOf(-1L) }
 
@@ -111,7 +118,12 @@ fun OrderPage(
                 tabs = ShowOrderStatus.entries.map { stringResource(it.descriptionRes) },
                 selectedIndex = pagerState.currentPage,
                 onTabSelected = { index ->
-                    scope.launch { pagerState.animateScrollToPage(index) }
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            page = index,
+                            animationSpec = defaultSpring()
+                        )
+                    }
                 }
             )
 
@@ -191,6 +203,7 @@ fun OrderPage(
         AppConfirmDialog(
             message = stringResource(R.string.confirm_cancel_order),
             onConfirm = {
+                view.performHaptic(HapticEffect.HEAVY)
                 if (currOrderId != -1L) orderViewModel.cancelOrder(currOrderId)
                 currOrderId = -1L
                 confirmPayShow = false
@@ -209,13 +222,15 @@ private fun OrderCard(
     cancelClick: (Long) -> Unit,
     itemClick: () -> Unit,
 ) {
+    val view = currentView()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .pressAlpha(0.95f)
             .clickable(onClick = itemClick),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -302,7 +317,10 @@ private fun OrderCard(
                         }
                         Spacer(Modifier.width(12.dp))
                         Button(
-                            onClick = paymentClick,
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                paymentClick()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
                             modifier = Modifier.height(36.dp)
@@ -310,7 +328,10 @@ private fun OrderCard(
                     }
                     ShowOrderStatus.PENDING_SHIPMENT.status -> {
                         OutlinedButton(
-                            onClick = shipmentClick,
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                shipmentClick()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.height(36.dp)
                         ) { Text(stringResource(R.string.go_ship), color = AppColors.colorScheme.primary) }
@@ -324,7 +345,10 @@ private fun OrderCard(
                     }
                     ShowOrderStatus.READY_FOR_PICKUP.status -> {
                         Button(
-                            onClick = pickupClick,
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                pickupClick()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
                             modifier = Modifier.height(36.dp)

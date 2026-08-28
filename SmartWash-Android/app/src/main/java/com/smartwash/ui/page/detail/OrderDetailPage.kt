@@ -53,6 +53,7 @@ import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.IconBox
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.RequestState
@@ -196,7 +197,7 @@ fun StatusCard(orderStatus: String) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level2,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -209,7 +210,7 @@ fun StatusCard(orderStatus: String) {
                 icon = info.icon,
                 size = 52.dp,
                 iconSize = 26.dp,
-                containerColor = info.statusColor.copy(alpha = 0.12f),
+                containerColor = info.statusColor.copy(alpha = 0.15f),
                 iconTint = info.statusColor
             )
             Spacer(modifier = Modifier.width(16.dp))

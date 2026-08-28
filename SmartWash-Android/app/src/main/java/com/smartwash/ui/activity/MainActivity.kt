@@ -5,11 +5,11 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +17,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import com.smartwash.utils.HapticEffect
+import com.smartwash.utils.defaultSpring
+import com.smartwash.utils.isReduceMotionEnabled
+import com.smartwash.utils.momentumSpring
+import com.smartwash.utils.performHaptic
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -58,6 +64,8 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val coroutineScope = rememberCoroutineScope()
             val context = LocalContext.current
+            val view = LocalView.current
+            val reduceMotion = isReduceMotionEnabled(context)
             //请求前判断是否需要带上token，
             App.globalRequestBeforeCallback = {
                 coroutineScope.launch(Dispatchers.Main) {
@@ -73,6 +81,7 @@ class MainActivity : ComponentActivity() {
             //判断请求后响应码是否为401，是的话就重新登录
             App.globalRequestAfterCallback = {
                 SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
+                view.performHaptic(HapticEffect.ERROR)
                 coroutineScope.launch(Dispatchers.Main) {
                     delay(200)
                     Toast.makeText(
@@ -91,16 +100,44 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = PageConstant.Login.text,
                         enterTransition = {
-                            fadeIn(animationSpec = tween(300, easing = LinearEasing))
+                            if (reduceMotion) {
+                                fadeIn(animationSpec = tween(200))
+                            } else {
+                                fadeIn(animationSpec = defaultSpring()) + scaleIn(
+                                    initialScale = 0.95f,
+                                    animationSpec = defaultSpring()
+                                )
+                            }
                         },
                         exitTransition = {
-                            fadeOut(animationSpec = tween(300, easing = LinearEasing))
+                            if (reduceMotion) {
+                                fadeOut(animationSpec = tween(200))
+                            } else {
+                                fadeOut(animationSpec = defaultSpring()) + scaleOut(
+                                    targetScale = 0.95f,
+                                    animationSpec = defaultSpring()
+                                )
+                            }
                         },
                         popEnterTransition = {
-                            fadeIn(animationSpec = tween(300, easing = LinearEasing))
+                            if (reduceMotion) {
+                                fadeIn(animationSpec = tween(200))
+                            } else {
+                                fadeIn(animationSpec = defaultSpring()) + scaleIn(
+                                    initialScale = 0.95f,
+                                    animationSpec = defaultSpring()
+                                )
+                            }
                         },
                         popExitTransition = {
-                            fadeOut(animationSpec = tween(300, easing = LinearEasing))
+                            if (reduceMotion) {
+                                fadeOut(animationSpec = tween(200))
+                            } else {
+                                fadeOut(animationSpec = defaultSpring()) + scaleOut(
+                                    targetScale = 0.95f,
+                                    animationSpec = defaultSpring()
+                                )
+                            }
                         }
                     ) {
                         composable(PageConstant.Login.text) {
@@ -162,26 +199,26 @@ class MainActivity : ComponentActivity() {
                             enterTransition = {
                                 slideInVertically(
                                     initialOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeIn(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             exitTransition = {
                                 slideOutVertically(
                                     targetOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeOut(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             popEnterTransition = {
                                 slideInVertically(
                                     initialOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeIn(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             popExitTransition = {
                                 slideOutVertically(
                                     targetOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeOut(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             }
                         ) { entity ->
                             PaymentPage(navController, entity.arguments?.getLong("orderId"))
@@ -200,26 +237,26 @@ class MainActivity : ComponentActivity() {
                             enterTransition = {
                                 slideInVertically(
                                     initialOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeIn(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             exitTransition = {
                                 slideOutVertically(
                                     targetOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeOut(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             popEnterTransition = {
                                 slideInVertically(
                                     initialOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeIn(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             },
                             popExitTransition = {
                                 slideOutVertically(
                                     targetOffsetY = { (it * 0.3f).toInt() },
-                                    animationSpec = tween(350, easing = FastOutSlowInEasing)
-                                ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing))
+                                    animationSpec = if (reduceMotion) tween(250) else momentumSpring()
+                                ) + fadeOut(animationSpec = if (reduceMotion) tween(250) else momentumSpring())
                             }
                         ) { entity ->
                             PaySuccessPage(

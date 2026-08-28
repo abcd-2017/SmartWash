@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.laundry
 
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,6 +40,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -55,7 +57,10 @@ import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.utils.RequestState
+import com.smartwash.utils.defaultSpring
+import com.smartwash.utils.pressScale
 
 @Composable
 fun LaundryPage(
@@ -208,14 +213,28 @@ fun LaundryPage(
                 }
             }
 
-            // 底部栏
+            // 底部栏（半透明 + 顶部渐变分割线）
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = AppColors.colorScheme.surface,
-                shadowElevation = 0.dp
+                color = AppColors.colorScheme.surface.copy(alpha = 0.9f),
+                shadowElevation = AppElevation.level3,
+                tonalElevation = 0.dp
             ) {
                 Column {
-                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                    // 顶部渐变分割线
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        AppColors.colorScheme.outline.copy(alpha = 0.3f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
                     Row(
                         modifier = Modifier
                             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.cardPadding)
@@ -261,14 +280,27 @@ private fun LaundryTypeItem(
     price: String,
     cardClick: () -> Unit,
 ) {
+    // 选中态颜色过渡动画
+    val bgColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
+        animationSpec = defaultSpring(),
+        label = "bgColor"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
+        animationSpec = defaultSpring(),
+        label = "borderColor"
+    )
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { cardClick() },
+            .clickable { cardClick() }
+            .pressScale(0.98f),
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        color = bgColor,
+        shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
+        border = BorderStroke(if (isSelected) 1.5.dp else 0.5.dp, borderColor)
     ) {
         Row(
             modifier = Modifier

@@ -55,9 +55,13 @@ import com.smartwash.ui.common.PasswordInput
 import com.smartwash.ui.common.PhoneNumberInput
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.utils.AppConstant
+import com.smartwash.utils.HapticEffect
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.SharePreferenceUtils
+import com.smartwash.utils.currentView
 import com.smartwash.utils.isValidPhone
+import com.smartwash.utils.performHaptic
+import com.smartwash.utils.pressScale
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
@@ -69,6 +73,7 @@ fun LoginPage(
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val view = currentView()
 
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -112,7 +117,7 @@ fun LoginPage(
         else -> {}
     }
 
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(28.dp)
 
     Box(
         modifier = Modifier
@@ -129,21 +134,34 @@ fun LoginPage(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            // 品牌标识
+            // 品牌标识 — 外圈光环
             Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(CircleShape)
-                    .background(GlassBg)
-                    .border(1.dp, GlassBorder, CircleShape),
+                modifier = Modifier.size(88.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.LocalLaundryService,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = Color.White
+                // 外圈 — 淡光环
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(CircleShape)
+                        .background(GlassBgSubtle)
                 )
+                // 内圈 — 图标
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(GlassBg)
+                        .border(1.dp, GlassBorder, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.LocalLaundryService,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
+                        tint = Color.White
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -171,7 +189,7 @@ fun LoginPage(
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 12.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -179,12 +197,8 @@ fun LoginPage(
                     contentColor = Color.White
                 ) {
                     if (it.length <= 11) phone = it
-                    // 只在输入完成（11位）或清空时验证
-                    isPhoneError = when {
-                        it.isEmpty() -> false
-                        it.length == 11 -> !isValidPhone(it)
-                        else -> false
-                    }
+                    // 实时校验：只在已显示错误后实时更新，避免输入中就报错
+                    isPhoneError = if (it.length == 11) !isValidPhone(it) else isPhoneError
                     // 输入完成自动跳转到密码框
                     if (it.length == 11 && isValidPhone(it)) {
                         passwordFocusRequester.requestFocus()
@@ -208,8 +222,10 @@ fun LoginPage(
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     if (it.length <= 16) password = it
-                    isPasswordError = if (it.isEmpty()) false
-                    else it.length < 6 || it.length > 16
+                    // 实时校验：只在已显示错误后实时更新
+                    isPasswordError = if (it.length >= 6) {
+                        it.length < 6 || it.length > 16
+                    } else isPasswordError
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -221,14 +237,18 @@ fun LoginPage(
                         isPasswordError = password.isEmpty() || password.length < 6 || password.length > 16
 
                         if (!isPhoneError && !isPasswordError) {
+                            view.performHaptic(HapticEffect.MEDIUM)
                             keyboardController?.hide()
                             loginViewModel.loginUser(phone, password)
+                        } else {
+                            view.performHaptic(HapticEffect.ERROR)
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .height(50.dp),
+                        .height(50.dp)
+                        .pressScale(0.98f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GlassBorder,
@@ -262,7 +282,8 @@ fun LoginPage(
             TextButton(
                 onClick = {
                     navController.navigate(PageConstant.Register.text)
-                }
+                },
+                modifier = Modifier.pressScale(0.98f)
             ) {
                 Text(
                     stringResource(R.string.no_account),

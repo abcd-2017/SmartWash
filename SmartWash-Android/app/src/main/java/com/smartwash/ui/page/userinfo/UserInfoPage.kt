@@ -74,8 +74,10 @@ import com.smartwash.ui.common.LoadingState
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.IconBox
 import com.smartwash.utils.RequestState
+import com.smartwash.utils.pressScale
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -198,91 +200,101 @@ fun UserInfoPage(
                 }
             }
 
-            // 用户信息区（居中大头像）
-            Column(
+            // 用户信息区（居中大头像）— 添加背景渐变
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clickable {
-                            imagePickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                AppColors.colorScheme.primary.copy(alpha = 0.06f),
+                                Color.Transparent
                             )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (avatarUploadState is RequestState.Loading) {
-                        Box(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(AppColors.colorScheme.primaryLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(28.dp),
-                                color = AppColors.colorScheme.primary,
-                                strokeWidth = 2.5.dp
+                        )
+                    )
+                    .padding(vertical = 28.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clickable {
+                                imagePickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (avatarUploadState is RequestState.Loading) {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(AppColors.colorScheme.primaryLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    color = AppColors.colorScheme.primary,
+                                    strokeWidth = 2.5.dp
+                                )
+                            }
+                        } else if (userInfo?.avatar.isNullOrBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(AppColors.colorScheme.primaryLight),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = stringResource(R.string.avatar),
+                                    modifier = Modifier.size(32.dp),
+                                    tint = AppColors.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            AsyncImage(
+                                model = userInfo?.avatar,
+                                contentDescription = stringResource(R.string.avatar),
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
                             )
                         }
-                    } else if (userInfo?.avatar.isNullOrBlank()) {
+                        // 相机角标
                         Box(
                             modifier = Modifier
-                                .size(72.dp)
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 2.dp, y = 2.dp)
+                                .size(22.dp)
                                 .clip(CircleShape)
-                                .background(AppColors.colorScheme.primaryLight),
+                                .background(AppColors.colorScheme.primary),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = stringResource(R.string.avatar),
-                                modifier = Modifier.size(32.dp),
-                                tint = AppColors.colorScheme.primary
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = stringResource(R.string.change_avatar),
+                                modifier = Modifier.size(13.dp),
+                                tint = Color.White
                             )
                         }
-                    } else {
-                        AsyncImage(
-                            model = userInfo?.avatar,
-                            contentDescription = stringResource(R.string.avatar),
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
                     }
-                    // 相机角标
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .offset(x = 2.dp, y = 2.dp)
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(AppColors.colorScheme.primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CameraAlt,
-                            contentDescription = stringResource(R.string.change_avatar),
-                            modifier = Modifier.size(13.dp),
-                            tint = Color.White
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = userInfo?.phoneNumber ?: stringResource(R.string.username),
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.student_id_format, userInfo?.studentId ?: ""),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.textSecondary
+                    )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = userInfo?.phoneNumber ?: stringResource(R.string.username),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.student_id_format, userInfo?.studentId ?: ""),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
-                )
             }
 
             // 余额信息卡（渐变绿底）
@@ -403,8 +415,8 @@ private fun BalanceCard(
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.cardRadius),
+        shadowElevation = AppElevation.level2,
         color = Color.Transparent,
-        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier
@@ -481,7 +493,7 @@ private fun OrderQuickGrid(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -548,6 +560,7 @@ private fun OrderQuickEntry(
 ) {
     Column(
         modifier = modifier
+            .pressScale(0.95f)
             .clickable(onClick = onClick)
             .padding(vertical = AppDimens.cardPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -555,7 +568,7 @@ private fun OrderQuickEntry(
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
                 .background(AppColors.colorScheme.primaryLight),
             contentAlignment = Alignment.Center
@@ -563,7 +576,7 @@ private fun OrderQuickEntry(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(22.dp),
                 tint = AppColors.colorScheme.primary
             )
         }
@@ -597,10 +610,11 @@ private fun FunctionItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .pressScale(0.98f)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(

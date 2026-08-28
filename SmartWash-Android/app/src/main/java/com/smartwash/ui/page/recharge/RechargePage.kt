@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.recharge
 
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,7 +58,10 @@ import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.utils.RequestState
+import com.smartwash.utils.defaultSpring
+import com.smartwash.utils.pressScale
 
 
 @Composable
@@ -188,7 +192,7 @@ fun RechargePage(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(AppDimens.cardRadius),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = 0.dp,
+                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
                     ) {
                         Column {
@@ -253,20 +257,33 @@ fun RechargePage(
 private fun AmountCard(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
+    // 选中态颜色过渡动画
+    val bgColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
+        animationSpec = defaultSpring(),
+        label = "amountBgColor"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary,
+        animationSpec = defaultSpring(),
+        label = "amountTextColor"
+    )
+
     Surface(
         modifier = modifier
             .height(72.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .pressScale(0.98f),
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        color = bgColor,
+        shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
         border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.currency_format, "${amount.toInt()}"),
                 style = MaterialTheme.typography.headlineSmall,
-                color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary
+                color = textColor
             )
         }
     }
@@ -327,6 +344,7 @@ private fun PaymentMethodCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .pressScale(0.98f)
             .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -147,3 +147,15 @@ val ErrorLight = Color(0xFFFFB4AB)   // 输入框错误态
 // ========== 第三方品牌色 ==========
 val WeChatGreen = Color(0xFF07C160)
 val AlipayBlue = Color(0xFF1677FF)
+
+// ========== 服务类型色彩 ==========
+val ServiceWash = Color(0xFF2D9B6A)       // 标准洗 — 自然绿
+val ServiceWashLight = Color(0xFFE8F6EF)
+val ServiceDry = Color(0xFF7C3AED)        // 干洗 — 优雅紫
+val ServiceDryLight = Color(0xFFF3EFFE)
+val ServicePress = Color(0xFFE07B00)      // 熨烫 — 暖橙
+val ServicePressLight = Color(0xFFFFF7ED)
+val ServiceLuxury = Color(0xFF0EA5E9)     // 奢护 — 清澈蓝
+val ServiceLuxuryLight = Color(0xFFEFF6FF)
+val ServiceShoes = Color(0xFFDC2626)      // 洗鞋 — 活力红
+val ServiceShoesLight = Color(0xFFFEF2F2)

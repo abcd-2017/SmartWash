@@ -41,6 +41,8 @@ import com.smartwash.ui.page.coupon.tab.ClaimedCouponsTab
 import com.smartwash.ui.page.coupon.tab.HistoricalCouponsTab
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
+import com.smartwash.utils.pressScale
 import com.smartwash.utils.RequestState
 
 @Composable
@@ -122,29 +124,35 @@ fun UserCouponCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isHistorical) 0.6f else 1f),
+            .alpha(if (isHistorical) 0.6f else 1f)
+            .pressScale(0.98f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .height(88.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.width(80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // 左侧金额区 — 浅色背景突出显示
+            Box(
+                modifier = Modifier
+                    .width(88.dp)
+                    .height(88.dp)
+                    .background(AppColors.colorScheme.primaryLight.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = stringResource(R.string.currency_format, String.format("%.0f", coupon.couponVo.discount)),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     color = AppColors.colorScheme.primary
                 )
             }
 
+            // 金额区与内容区之间的分隔线
             Box(
                 modifier = Modifier
                     .width(0.5.dp)

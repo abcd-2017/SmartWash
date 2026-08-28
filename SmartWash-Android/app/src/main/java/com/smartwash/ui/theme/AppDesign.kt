@@ -34,6 +34,7 @@ data class AppColorScheme(
     val primaryDark: Color,
     val background: Color,
     val surface: Color,
+    val surfaceVariant: Color,
     val onBackground: Color,
     val onSurface: Color,
     val textPrimary: Color,
@@ -55,6 +56,7 @@ val LightAppColorScheme = AppColorScheme(
     primaryDark = PrimaryDark,
     background = Background,
     surface = Surface,
+    surfaceVariant = SurfaceVariant,
     onBackground = OnBackground,
     onSurface = OnSurface,
     textPrimary = TextPrimary,
@@ -76,6 +78,7 @@ val DarkAppColorScheme = AppColorScheme(
     primaryDark = DarkPrimaryDark,
     background = DarkBackground,
     surface = DarkSurface,
+    surfaceVariant = DarkSurfaceVariant,
     onBackground = DarkOnBackground,
     onSurface = DarkOnSurface,
     textPrimary = DarkTextPrimary,
@@ -112,6 +115,24 @@ object AppDimens {
     val inputRadius = 14.dp
     val iconContainerRadius = 12.dp
     val bottomBarHeight = 56.dp
+}
+
+// ========== 海拔层级 (Elevation Levels) ==========
+object AppElevation {
+    val level0 = 0.dp   // 平面（背景）
+    val level1 = 1.dp   // 轻微浮起（普通卡片）
+    val level2 = 3.dp   // 中度浮起（重要卡片）
+    val level3 = 6.dp   // 高度浮起（交互卡片）
+    val level4 = 12.dp  // 最高（弹窗/Sheet）
+}
+
+// ========== 卡片圆角变体 ==========
+object AppCardRadius {
+    val small = 12.dp
+    val medium = 16.dp
+    val large = 20.dp
+    val xl = 24.dp
+    val circle = 999.dp
 }
 
 // ========== 可复用组件 ==========

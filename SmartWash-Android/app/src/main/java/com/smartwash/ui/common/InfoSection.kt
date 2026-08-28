@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.IconBox
 
 @Composable
@@ -30,7 +31,7 @@ fun InfoSection(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(

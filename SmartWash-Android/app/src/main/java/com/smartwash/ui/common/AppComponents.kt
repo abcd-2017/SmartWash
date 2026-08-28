@@ -1,5 +1,9 @@
 package com.smartwash.ui.common
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -16,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,9 +50,15 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.Primary
 import com.smartwash.ui.theme.PrimaryDark
 import com.smartwash.ui.theme.TextSecondary
+import com.smartwash.utils.HapticEffect
+import com.smartwash.utils.currentView
+import com.smartwash.utils.performHaptic
+import com.smartwash.utils.pressAlpha
+import com.smartwash.utils.pressScale
 
 // ========== 页面头部 ==========
 
@@ -100,7 +111,12 @@ fun AppCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .then(
+                if (onClick != null) Modifier
+                    .clickable(onClick = onClick)
+                    .pressAlpha(0.92f)
+                else Modifier
+            ),
         shape = shape,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp
@@ -123,7 +139,8 @@ fun AppButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
+            .height(52.dp)
+            .pressScale(0.98f),
         enabled = enabled && !loading,
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         colors = ButtonDefaults.buttonColors(
@@ -161,7 +178,12 @@ fun SettingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null) Modifier
+                    .clickable(onClick = onClick)
+                    .pressScale(0.98f)
+                else Modifier
+            )
             .height(56.dp)
             .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
@@ -194,25 +216,39 @@ fun EmptyState(
     message: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    AnimatedVisibility(
+        visible = true,
+        enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300))
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = AppColors.colorScheme.textTertiary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.colorScheme.textSecondary
-        )
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = 64.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // 图标 — 浅色圆形背景
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = AppColors.colorScheme.textSecondary
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.colorScheme.textSecondary
+            )
+        }
     }
 }
 
@@ -225,13 +261,19 @@ fun LoadingState(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 48.dp),
+            .padding(vertical = 64.dp),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            color = AppColors.colorScheme.primary,
-            strokeWidth = 2.dp
-        )
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(300))
+        ) {
+            CircularProgressIndicator(
+                color = AppColors.colorScheme.primary,
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(36.dp)
+            )
+        }
     }
 }
 
@@ -244,6 +286,7 @@ fun AppTabBar(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val view = currentView()
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -253,7 +296,10 @@ fun AppTabBar(
         tabs.forEachIndexed { index, title ->
             Column(
                 modifier = Modifier
-                    .clickable { onTabSelected(index) }
+                    .clickable {
+                        view.performHaptic(HapticEffect.SELECTION)
+                        onTabSelected(index)
+                    }
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -305,6 +351,8 @@ fun AppConfirmDialog(
         Surface(
             shape = RoundedCornerShape(AppDimens.cardRadius),
             color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.level4,
+            tonalElevation = 6.dp
         ) {
             Column {
                 Column(
@@ -373,6 +421,8 @@ fun AppInfoDialog(
         Surface(
             shape = RoundedCornerShape(AppDimens.cardRadius),
             color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.level4,
+            tonalElevation = 6.dp
         ) {
             Column {
                 Column(
@@ -427,6 +477,8 @@ fun AppInputDialog(
         Surface(
             shape = RoundedCornerShape(AppDimens.cardRadius),
             color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.level4,
+            tonalElevation = 6.dp
         ) {
             Column {
                 Column(

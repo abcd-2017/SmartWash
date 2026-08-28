@@ -1,8 +1,10 @@
 package com.smartwash.ui.page.index
 
 import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,8 +62,18 @@ import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
+import com.smartwash.ui.theme.AppElevation
+import com.smartwash.ui.theme.ServiceLuxury
+import com.smartwash.ui.theme.ServiceLuxuryLight
+import com.smartwash.ui.theme.ServicePress
+import com.smartwash.ui.theme.ServicePressLight
+import com.smartwash.ui.theme.ServiceWash
+import com.smartwash.ui.theme.ServiceWashLight
 import com.smartwash.utils.OrderStatus
 import com.smartwash.utils.RequestState
+import com.smartwash.utils.defaultSpring
+import com.smartwash.utils.pressAlpha
+import com.smartwash.utils.pressScale
 import java.util.Calendar
 
 @Composable
@@ -241,55 +253,65 @@ private fun GreetingHeader(
         else -> stringResource(R.string.home_greeting_evening)
     }
 
-    Row(
+    // 渐变背景包裹层 — 增强视觉冲击力
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                start = AppDimens.pagePadding,
-                end = AppDimens.pagePadding,
-                top = 16.dp,
-                bottom = 8.dp
-            ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = greeting + stringResource(R.string.home_greeting_suffix),
-                style = MaterialTheme.typography.displayLarge,
-                color = AppColors.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = AppColors.colorScheme.textSecondary
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        AppColors.colorScheme.primary.copy(alpha = 0.08f),
+                        AppColors.colorScheme.primaryLight.copy(alpha = 0.04f)
+                    )
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+            )
+            .padding(horizontal = AppDimens.pagePadding, vertical = 20.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
                 Text(
-                    text = schoolName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    text = greeting + stringResource(R.string.home_greeting_suffix),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = AppColors.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = AppColors.colorScheme.textSecondary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = schoolName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.textSecondary
+                    )
+                }
+            }
+
+            // 带边框的圆形头像
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.primaryLight)
+                    .border(2.dp, AppColors.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
+                    .clickable(onClick = onAvatarClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = AppColors.colorScheme.primary
                 )
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(AppColors.colorScheme.primaryLight)
-                .clickable(onClick = onAvatarClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.primary
-            )
         }
     }
 }
@@ -381,18 +403,24 @@ private fun ServiceGrid(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalLaundryService,
             label = stringResource(R.string.service_booking),
+            iconColor = ServiceWash,
+            iconBgColor = ServiceWashLight,
             onClick = onBookingClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalMall,
             label = stringResource(R.string.service_pickup),
+            iconColor = ServiceLuxury,
+            iconBgColor = ServiceLuxuryLight,
             onClick = onPickupClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalOffer,
             label = stringResource(R.string.service_coupon),
+            iconColor = ServicePress,
+            iconBgColor = ServicePressLight,
             onClick = onCouponClick
         )
     }
@@ -403,13 +431,17 @@ private fun ServiceEntry(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
+    iconColor: Color = AppColors.colorScheme.primary,
+    iconBgColor: Color = AppColors.colorScheme.primaryLight,
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .pressScale(0.95f),
         shape = RoundedCornerShape(AppDimens.smallCardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(
@@ -419,18 +451,19 @@ private fun ServiceEntry(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // 彩色图标背景 — 传入颜色参数
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AppColors.colorScheme.primaryLight),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(iconBgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = AppColors.colorScheme.primary
+                    modifier = Modifier.size(24.dp),
+                    tint = iconColor
                 )
             }
             Text(
@@ -452,13 +485,21 @@ private fun OrderCardWithProgress(
     val progress = orderProgress(orderVo.status)
     val statusText = orderStatus?.descriptionRes?.let { stringResource(it) } ?: ""
 
+    // 进度条动画值
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = defaultSpring(),
+        label = "progress"
+    )
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .pressAlpha(0.95f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(
@@ -507,7 +548,7 @@ private fun OrderCardWithProgress(
             Spacer(modifier = Modifier.height(12.dp))
 
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
