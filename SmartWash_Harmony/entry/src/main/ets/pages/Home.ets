@@ -27,12 +27,13 @@ struct Home {
         .fontColor(this.currentIndex === targetIndex ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
         .fontWeight(this.currentIndex === targetIndex ? FontWeight.Bold : FontWeight.Normal)
 
-      // 底部短横线指示器
+      // 底部指示器 — 选中时显示胶囊形
       if (this.currentIndex === targetIndex) {
-        Divider()
-          .strokeWidth(2)
+        Column()
           .width(24)
-          .color(DesignColor.PRIMARY)
+          .height(5)
+          .borderRadius(2.5)
+          .backgroundColor(Color(DesignColor.PRIMARY))
           .margin({ top: 4 })
       }
     }
@@ -72,11 +73,8 @@ struct Home {
         }
       })
       .barOverlap(true)
-      .backgroundColor(Color.White)
-      .divider({
-        strokeWidth: 0.5,
-        color: DesignColor.DIVIDER
-      })
+      .backgroundColor('#F2FFFFFF')  // 半透明白色
+      .divider(null)  // 移除硬分隔线
     }
     .hideTitleBar(true)
   }

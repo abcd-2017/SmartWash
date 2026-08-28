@@ -36,21 +36,33 @@ struct Login {
         // 占位：将内容推到垂直居中位置
         Blank()
 
-        // 品牌标识 — 居中圆形图标（毛玻璃底 + 白边）
-        Stack() {
-          SymbolGlyph($r('sys.symbol.wave_3_right'))
-            .fontSize(36)
-            .fontColor([Color.White])
+        // 品牌标识 — 外圈光环 + 内圈图标
+        Column() {
+          // 内圈 — 图标
+          Column() {
+            SymbolGlyph($r('sys.symbol.wave_3_right'))
+              .fontSize(36)
+              .fontColor([Color.White])
+          }
+          .width(72)
+          .height(72)
+          .borderRadius(36)
+          .backgroundColor(DesignColor.GLASS_BG)
+          .border({
+            width: 1,
+            color: DesignColor.GLASS_BORDER,
+            style: BorderStyle.Solid
+          })
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
         }
-        .width(72)
-        .height(72)
-        .borderRadius(36)
-        .backgroundColor(DesignColor.GLASS_BG)
-        .border({
-          width: 1,
-          color: DesignColor.GLASS_BORDER,
-          style: BorderStyle.Solid
-        })
+        // 外圈 — 淡光环
+        .width(88)
+        .height(88)
+        .borderRadius(44)
+        .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
 
         // 品牌文字
         Text("智能洗衣")
@@ -121,14 +133,14 @@ struct Login {
           }
         }
         .width("100%")
-        .borderRadius(24)
+        .borderRadius(28)
         .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
         .border({
           width: 1,
           color: DesignColor.GLASS_BORDER_SUBTLE,
           style: BorderStyle.Solid
         })
-        .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+        .padding({ left: 20, right: 20, top: 20, bottom: 20 })
         .margin({ top: 40, left: 24, right: 24 })
 
         // 登录按钮

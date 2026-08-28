@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
 
@@ -51,9 +51,9 @@ export struct Service {
       Column() {
         this.ServiceIconBuilder(item.itemName)
       }
-      .width(44)
-      .height(44)
-      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      .width(48)
+      .height(48)
+      .borderRadius(14)
       .backgroundColor(Color(DesignColor.PRIMARY_CONTAINER))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
@@ -83,7 +83,12 @@ export struct Service {
     .width("100%")
     .borderRadius(DesignDimens.CARD_RADIUS)
     .backgroundColor(Color(DesignColor.SURFACE))
-    .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: '#1A000000',
+      offsetX: 0,
+      offsetY: 1
+    })
     .padding(DesignDimens.CARD_PADDING)
   }
 

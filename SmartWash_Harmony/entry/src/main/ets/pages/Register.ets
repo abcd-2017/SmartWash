@@ -67,23 +67,34 @@ struct Register {
         Column() {
           // 顶部品牌标识区域
           Column({ space: 8 }) {
-            // 圆形品牌图标 - 白色毛玻璃底
+            // 品牌标识 — 外圈光环 + 内圈图标
             Column() {
-              SymbolGlyph($r('sys.symbol.wave_3_right'))
-                .fontSize(36)
-                .fontColor([Color.White])
+              // 内圈 — 图标
+              Column() {
+                Text('✨')
+                  .fontSize(DesignFontSize.PAGE_TITLE)
+                  .fontColor(Color.White)
+              }
+              .width(72)
+              .height(72)
+              .borderRadius(36)
+              .backgroundColor(DesignColor.GLASS_BG)
+              .border({
+                width: 1,
+                color: DesignColor.GLASS_BORDER,
+                style: BorderStyle.Solid
+              })
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
             }
-            .width(72)
-            .height(72)
-            .borderRadius(36)
-            .backgroundColor(DesignColor.GLASS_BG)
-            .border({
-              width: 1,
-              color: DesignColor.GLASS_BORDER
-            })
+            // 外圈 — 淡光环
+            .width(88)
+            .height(88)
+            .borderRadius(44)
+            .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
-            .margin({ top: 60 })
+            .margin({ top: 20 })
 
             // 品牌文字
             Text("创建账号")
@@ -100,20 +111,27 @@ struct Register {
 
             // 进度条
             Row({ space: 8 }) {
+              // 激活段 — 白色渐变
               Column()
-                .width(28)
-                .height(4)
-                .borderRadius(2)
-                .backgroundColor(Color.White)
+                .width(32)
+                .height(6)
+                .borderRadius(3)
+                .linearGradient({
+                  direction: GradientDirection.Right,
+                  colors: [[Color.White, 0.0], [0xCCFFFFFF, 1.0]]
+                })
+
+              // 未激活段
               Column()
-                .width(28)
-                .height(4)
-                .borderRadius(2)
+                .width(32)
+                .height(6)
+                .borderRadius(3)
                 .backgroundColor(DesignColor.GLASS_INPUT)
+
               Column()
-                .width(28)
-                .height(4)
-                .borderRadius(2)
+                .width(32)
+                .height(6)
+                .borderRadius(3)
                 .backgroundColor(DesignColor.GLASS_INPUT)
             }
             .margin({ top: 24 })
@@ -221,9 +239,9 @@ struct Register {
             }
           }
           .width("85%")
-          .padding(20)
+          .padding({ vertical: 12 })
           .backgroundColor(DesignColor.GLASS_BG)
-          .borderRadius(24)
+          .borderRadius(28)
           .border({
             width: 1,
             color: DesignColor.GLASS_BORDER

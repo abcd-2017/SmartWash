@@ -6,7 +6,7 @@ import { promptAction } from "@kit.ArkUI"
 import { CommonConstants } from "../constant/CommonConstants"
 import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
 
 @ComponentV2
@@ -113,55 +113,64 @@ export struct IndexPage {
 
   /**
    * 问候头部 — 左侧问候语+学校地址，右侧圆形头像
+   * 外层包裹渐变背景
    */
   @Builder
   GreetingHeader() {
-    Row() {
-      // 左侧问候信息
-      Column() {
-        Text(this.getGreeting())
-          .fontSize(DesignFontSize.PAGE_TITLE)
-          .fontWeight(DesignFontWeight.BOLD)
-          .fontColor(Color(DesignColor.ON_BACKGROUND))
+    Column() {
+      Row() {
+        // 左侧问候信息
+        Column() {
+          Text(this.getGreeting())
+            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontWeight(DesignFontWeight.BOLD)
+            .fontColor(Color(DesignColor.ON_BACKGROUND))
 
-        Row() {
-          SymbolGlyph($r('sys.symbol.location_fill'))
-            .fontSize(14)
-            .fontColor([Color(DesignColor.TEXT_SECONDARY)])
-          Text(this.userInfo?.schoolVo?.schoolName ?? "")
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(Color(DesignColor.TEXT_SECONDARY))
-            .margin({ left: 4 })
+          Row() {
+            SymbolGlyph($r('sys.symbol.location_fill'))
+              .fontSize(14)
+              .fontColor([Color(DesignColor.TEXT_SECONDARY)])
+            Text(this.userInfo?.schoolVo?.schoolName ?? "")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(Color(DesignColor.TEXT_SECONDARY))
+              .margin({ left: 4 })
+          }
+          .margin({ top: 4 })
         }
-        .margin({ top: 4 })
-      }
-      .alignItems(HorizontalAlign.Start)
+        .alignItems(HorizontalAlign.Start)
 
-      Blank()
+        Blank()
 
-      // 右侧圆形头像按钮
-      Column() {
-        SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
-          .fontSize(22)
-          .fontColor([Color(DesignColor.PRIMARY)])
+        // 右侧圆形头像按钮 — 添加边框
+        Column() {
+          SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
+            .fontSize(24)
+            .fontColor([Color(DesignColor.PRIMARY)])
+        }
+        .width(44)
+        .height(44)
+        .borderRadius(22)
+        .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+        .border({ width: 2, color: 0x4D2D9B6A, style: BorderStyle.Solid })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .onClick(() => {
+          this.userInfoClick()
+        })
       }
-      .width(40)
-      .height(40)
-      .borderRadius(20)
-      .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .onClick(() => {
-        this.userInfoClick()
+      .width("100%")
+      .alignItems(VerticalAlign.Center)
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: 20,
+        bottom: 8
       })
     }
     .width("100%")
-    .alignItems(VerticalAlign.Center)
-    .padding({
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING,
-      top: 16,
-      bottom: 8
+    .linearGradient({
+      direction: GradientDirection.Right,
+      colors: [[0x142D9B6A, 0.0], [0x0AF0FAF5, 1.0]]
     })
   }
 
@@ -219,21 +228,23 @@ export struct IndexPage {
   }
 
   /**
-   * 服务入口卡片 — 白底+边框样式
+   * 服务入口卡片 — 白底+边框样式，彩色图标容器
+   * @param serviceColor 图标颜色
+   * @param serviceColorLight 图标容器背景色
    */
   @Builder
-  ServiceEntryCard(icon: Resource, title: string, itemClick: () => void) {
+  ServiceEntryCard(icon: Resource, title: string, serviceColor: number, serviceColorLight: number, itemClick: () => void) {
     Column() {
       // 图标容器
       Column() {
         SymbolGlyph(icon)
-          .fontSize(22)
-          .fontColor([Color(DesignColor.PRIMARY)])
+          .fontSize(24)
+          .fontColor([Color(serviceColor)])
       }
-      .width(44)
-      .height(44)
-      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+      .width(48)
+      .height(48)
+      .borderRadius(14)
+      .backgroundColor(Color(serviceColorLight))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
@@ -315,8 +326,13 @@ export struct IndexPage {
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
     .backgroundColor(Color(DesignColor.SURFACE))
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: '#1A000000',
+      offsetX: 0,
+      offsetY: 1
+    })
     .onClick(() => {
       pathStack.pushPathByName("OrderDetail", order.orderId)
     })
@@ -362,17 +378,17 @@ export struct IndexPage {
           .margin({ top: DesignDimens.SECTION_SPACING })
 
         Row() {
-          this.ServiceEntryCard($r('sys.symbol.laundry'), "立即预约", () => {
+          this.ServiceEntryCard($r('sys.symbol.laundry'), "立即预约", DesignColor.SERVICE_WASH, DesignColor.SERVICE_WASH_LIGHT, () => {
             pathStack.pushPathByName("Laundry", null)
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", () => {
+          this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", DesignColor.SERVICE_LUXURY, DesignColor.SERVICE_LUXURY_LIGHT, () => {
             pathStack.pushPathByName("PickUp", null)
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", () => {
+          this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", DesignColor.SERVICE_PRESS, DesignColor.SERVICE_PRESS_LIGHT, () => {
             pathStack.pushPathByName("Coupon", null)
           })
         }

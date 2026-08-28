@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
@@ -106,8 +106,8 @@ export struct UserInfo {
           .fontSize(20)
           .fontColor([Color(DesignColor.PRIMARY)])
       }
-      .width(40)
-      .height(40)
+      .width(44)
+      .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
       .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
       .justifyContent(FlexAlign.Center)
@@ -173,7 +173,12 @@ export struct UserInfo {
     .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     .backgroundColor(Color(DesignColor.SURFACE))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: '#1A000000',
+      offsetX: 0,
+      offsetY: 1
+    })
     .onClick(onClick)
   }
 
@@ -251,10 +256,10 @@ export struct UserInfo {
 
           // 手机号
           Text(this.userInfo?.phoneNumber ?? "未登录")
-            .fontSize(18)
+            .fontSize(20)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(Color(DesignColor.TEXT_PRIMARY))
-            .margin({ top: 12 })
+            .margin({ top: 14 })
 
           // 学号
           Text(`学号：${this.userInfo?.studentId ?? ""}`)
@@ -264,7 +269,11 @@ export struct UserInfo {
         }
         .width("100%")
         .alignItems(HorizontalAlign.Center)
-        .padding({ top: 24, bottom: 24 })
+        .padding({ top: 28, bottom: 28 })
+        .linearGradient({
+          direction: GradientDirection.Bottom,
+          colors: [[0x0F2D9B6A, 0.0], [Color.Transparent, 1.0]]
+        })
 
         // ========== 余额信息卡（渐变绿底） ==========
         Column() {
@@ -375,7 +384,12 @@ export struct UserInfo {
         .margin({ top: 12 })
         .backgroundColor(Color(DesignColor.SURFACE))
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: '#1A000000',
+          offsetX: 0,
+          offsetY: 1
+        })
 
         // ========== 功能列表 ==========
         Column() {

@@ -1,8 +1,9 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
+import vibrator from '@ohos.vibrator'
 
 // ========== PageHeader 页面头部 ==========
 
@@ -73,6 +74,12 @@ export struct AppCard {
     .borderWidth(0.5)
     .borderColor(DesignColor.OUTLINE)
     .padding(this.paddingValue)
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: '#1A000000',
+      offsetX: 0,
+      offsetY: 1
+    })
   }
 }
 
@@ -114,6 +121,12 @@ export struct AppButton {
     .enabled(this.enabled && !this.loading)
     .onClick(() => {
       if (this.enabled && !this.loading) {
+        // 触觉反馈
+        try {
+          vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+        } catch (err) {
+          // 忽略不支持的设备
+        }
         this.click()
       }
     })
@@ -181,17 +194,26 @@ export struct EmptyState {
 
   build() {
     Column() {
-      SymbolGlyph(this.icon)
-        .fontSize(64)
-        .fontColor([DesignColor.TEXT_TERTIARY])
-        .margin({ bottom: 16 })
+      // 图标 — 圆形底色背景
+      Column() {
+        SymbolGlyph(this.icon)
+          .fontSize(40)
+          .fontColor([DesignColor.TEXT_SECONDARY])
+      }
+      .width(96)
+      .height(96)
+      .borderRadius(48)
+      .backgroundColor(Color(DesignColor.SURFACE_VARIANT))
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .margin({ bottom: 16 })
 
       Text(this.message)
         .fontSize(DesignFontSize.BODY)
         .fontColor(DesignColor.TEXT_SECONDARY)
     }
     .width('100%')
-    .padding({ top: 48, bottom: 48 })
+    .padding({ top: 64, bottom: 64 })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
   }
@@ -250,6 +272,12 @@ export struct AppConfirmDialog {
       right: DesignDimens.PAGE_PADDING,
       top: 20,
       bottom: 0
+    })
+    .shadow({
+      radius: DesignElevation.LEVEL_4,
+      color: '#33000000',
+      offsetX: 0,
+      offsetY: 4
     })
 
     // 分隔线

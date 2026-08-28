@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignElevation } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { OrderInfo } from "../network/vo/OrderInfo"
 
@@ -157,7 +157,12 @@ export struct OrderCard {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: '#1A000000',
+      offsetX: 0,
+      offsetY: 1
+    })
     .onClick(() => {
       this.itemClick()
     })

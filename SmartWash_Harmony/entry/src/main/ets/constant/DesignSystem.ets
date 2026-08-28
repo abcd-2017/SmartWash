@@ -81,6 +81,18 @@ export class DesignColor {
   // ========== 第三方品牌色 ==========
   static readonly WECHAT_GREEN: number = 0xFF07C160
   static readonly ALIPAY_BLUE: number = 0xFF1677FF
+
+  // ========== 服务类型色彩 ==========
+  static readonly SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿
+  static readonly SERVICE_WASH_LIGHT: number = 0xFFE8F6EF
+  static readonly SERVICE_DRY: number = 0xFF7C3AED        // 干洗 — 优雅紫
+  static readonly SERVICE_DRY_LIGHT: number = 0xFFF3EFFE
+  static readonly SERVICE_PRESS: number = 0xFFE07B00      // 熨烫 — 暖橙
+  static readonly SERVICE_PRESS_LIGHT: number = 0xFFFFF7ED
+  static readonly SERVICE_LUXURY: number = 0xFF0EA5E9     // 奢护 — 清澈蓝
+  static readonly SERVICE_LUXURY_LIGHT: number = 0xFFEFF6FF
+  static readonly SERVICE_SHOES: number = 0xFFDC2626      // 洗鞋 — 活力红
+  static readonly SERVICE_SHOES_LIGHT: number = 0xFFFEF2F2
 }
 
 // ========== 设计 Token ==========
@@ -99,6 +111,33 @@ export class DesignDimens {
   static readonly BUTTON_RADIUS: number = 14
   static readonly INPUT_RADIUS: number = 14
   static readonly ICON_CONTAINER_RADIUS: number = 12
+}
+
+// ========== 海拔层级 (Elevation Levels) ==========
+
+/**
+ * 清氧设计系统海拔层级常量
+ * 用于 shadow 的 radius 值（vp）
+ */
+export class DesignElevation {
+  static readonly LEVEL_0: number = 0   // 平面（背景）
+  static readonly LEVEL_1: number = 4   // 轻微浮起（普通卡片）
+  static readonly LEVEL_2: number = 8   // 中度浮起（重要卡片）
+  static readonly LEVEL_3: number = 12  // 高度浮起（交互卡片）
+  static readonly LEVEL_4: number = 20  // 最高（弹窗/Sheet）
+}
+
+// ========== 卡片圆角变体 ==========
+
+/**
+ * 清氧设计系统卡片圆角常量
+ * 单位：vp
+ */
+export class DesignCardRadius {
+  static readonly SMALL: number = 12
+  static readonly MEDIUM: number = 16
+  static readonly LARGE: number = 20
+  static readonly XL: number = 24
 }
 
 // ========== 字体大小常量 ==========
