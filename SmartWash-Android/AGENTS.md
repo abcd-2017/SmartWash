@@ -1,6 +1,8 @@
 # AGENTS.md — SmartWash Android 项目指南
 
 > 智慧校园洗衣服务 App，面向学生用户提供在线预约洗衣、寄存柜投递、订单追踪、优惠券、充值支付等功能。
+>
+> 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
 ---
 
@@ -455,10 +457,11 @@ Repository 层实现缓存优先：
 
 ### 构建配置
 
-- Debug BASE_URL: `http://192.168.1.61:8080/`（通过 `BuildConfig.BASE_URL` 获取）
-- Release: 开启 ProGuard 混淆和资源压缩
+- BASE_URL 通过 `app/build.gradle` 的 `buildConfigField` 按 buildType 注入，代码中一律读 `BuildConfig.BASE_URL`，**禁止硬编码 URL**
+- ⚠️ 当前 release 的 BASE_URL 是占位符 `https://api.smartwash.example.com/`，发布前必须改为真实地址
+- Release: 开启 ProGuard 混淆和资源压缩（建议补 `-keepattributes SourceFile,LineNumberTable` 便于定位崩溃栈）
 - Maven 仓库使用阿里云镜像（国内下载更快），海外构建需改回 `google()` / `mavenCentral()`
-- `usesCleartextTraffic=true`（后端为 HTTP 协议）
+- `usesCleartextTraffic=true`（为 debug 明文 HTTP 打开的全局开关，待收紧为 debug 专用 networkSecurityConfig）
 
 ---
 
@@ -501,9 +504,12 @@ data class PageData<T>(
 
 ## 十、已知问题与待办
 
-参见项目记忆文件中的完整清单，主要包括：
+完整四端评审清单（含行号与修复方向）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第二章。Android 端 P0/P1 级：
 
-- **安全**：数据库密码硬编码（S5）、默认密码过弱（S6）待修复
-- **流程断裂**：短信验证码未接入真实 SMS（F1）、支付无真实 SDK（F2）、部分按钮无交互（F3-F5）
-- **架构**：无数据库迁移工具（A4）、无单元测试（A5）
-- **待加功能**：订单状态追踪（N1）、推送通知（N2）、密码找回（N3）等 15 项
+- **按压反馈全量失效**：`utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处调用无效
+- **组合期副作用**：6 个页面（PaymentPage、PaySuccessPage、OrderDetailPage、IndexPage、RegisterPage、OrderPage）在 `when(state)` 渲染分支里直接 Toast/回写状态，需迁 `LaunchedEffect`
+- **主线程阻塞**：MainActivity/LoginPage/SettingPage 经 `runBlocking` 读写 DataStore，ANR 风险
+- **环境不对齐**：release BASE_URL 占位符 + `usesCleartextTraffic` 全局放行；Token 明文存 DataStore 且 backup_rules 未排除
+- **网络层健壮性**：ResponseInterceptor 空 body NPE、`peekBody(Long.MAX_VALUE)` 双重解析、Room 无 migration、缓存写入无事务
+- **分层破洞**：LaundryViewModel/CouponViewModel 直连 Api 绕过 Repository；订单分页手写 Map 与 Paging 3 双轨并存
+- **测试为零**：仅模板用例，优先给 ResponseInterceptor、ParamValidUtils、OrderStatus 映射补 JVM 单测

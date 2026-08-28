@@ -57,6 +57,9 @@ oh_modules/
 # === Superpowers ===
 .superpowers/
 
+# === ZCode 会话数据（agent 镜像、计划等，本地保留不提交） ===
+.zcode/
+
 # === 文档（不提交） ===
 **/docs/
 # 签名文件
