@@ -3,8 +3,10 @@ package com.smartwash.ui.page.recharge
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -269,11 +271,16 @@ private fun AmountCard(
         label = "amountTextColor"
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier
             .height(72.dp)
-            .clickable(onClick = onClick)
-            .pressScale(0.98f),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+            .pressScale(interactionSource, 0.98f),
         shape = RoundedCornerShape(16.dp),
         color = bgColor,
         shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
@@ -340,11 +347,16 @@ private fun CustomAmountCard(
 private fun PaymentMethodCard(
     method: PaymentMethod, isSelected: Boolean, onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .pressScale(0.98f)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+            .pressScale(interactionSource, 0.98f)
             .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

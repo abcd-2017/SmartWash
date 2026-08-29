@@ -3,8 +3,10 @@ package com.smartwash.ui.page.laundry
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -292,11 +294,16 @@ private fun LaundryTypeItem(
         label = "borderColor"
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { cardClick() }
-            .pressScale(0.98f),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = { cardClick() }
+            )
+            .pressScale(interactionSource, 0.98f),
         shape = RoundedCornerShape(16.dp),
         color = bgColor,
         shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,

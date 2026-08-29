@@ -2,8 +2,10 @@ package com.smartwash.ui.page.order
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,18 +94,19 @@ fun OrderPage(
     var confirmPayShow by remember { mutableStateOf(false) }
     var currOrderId by remember { mutableLongStateOf(-1L) }
 
-    when (cancelOrderState) {
-        is RequestState.Success -> {
-            LaunchedEffect(cancelOrderState) {
+    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
+    LaunchedEffect(cancelOrderState) {
+        when (cancelOrderState) {
+            is RequestState.Success -> {
                 Toast.makeText(context, context.getString(R.string.cancel_success), Toast.LENGTH_SHORT).show()
                 orderViewModel.resetCancelOrderState()
             }
+            is RequestState.Error -> {
+                Toast.makeText(context, (cancelOrderState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                orderViewModel.resetCancelOrderState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (cancelOrderState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            orderViewModel.resetCancelOrderState()
-        }
-        else -> {}
     }
 
     Box(
@@ -223,11 +226,16 @@ private fun OrderCard(
     itemClick: () -> Unit,
 ) {
     val view = currentView()
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .pressAlpha(0.95f)
-            .clickable(onClick = itemClick),
+            .pressAlpha(interactionSource, 0.95f)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = itemClick
+            ),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

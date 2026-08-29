@@ -3,9 +3,11 @@ package com.smartwash.ui.page.index
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,17 +92,18 @@ fun IndexPage(
     LaunchedEffect(pageNavController.currentBackStackEntry) {
         indexViewModel.getInfoData()
     }
-    when (userInfoStatus) {
-        is RequestState.Error -> {
-            val context = LocalContext.current
+
+    // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast/回写状态
+    val errorContext = LocalContext.current
+    LaunchedEffect(userInfoStatus) {
+        if (userInfoStatus is RequestState.Error) {
             Toast.makeText(
-                context,
-                (userInfoStatus as RequestState.Error).getMessage(context),
+                errorContext,
+                (userInfoStatus as RequestState.Error).getMessage(errorContext),
                 Toast.LENGTH_SHORT
             ).show()
             indexViewModel.resetState()
         }
-        else -> {}
     }
 
     Box(
@@ -435,10 +438,15 @@ private fun ServiceEntry(
     iconBgColor: Color = AppColors.colorScheme.primaryLight,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier
-            .clickable(onClick = onClick)
-            .pressScale(0.95f),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+            .pressScale(interactionSource, 0.95f),
         shape = RoundedCornerShape(AppDimens.smallCardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
@@ -492,11 +500,16 @@ private fun OrderCardWithProgress(
         label = "progress"
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .pressAlpha(0.95f),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+            .pressAlpha(interactionSource, 0.95f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

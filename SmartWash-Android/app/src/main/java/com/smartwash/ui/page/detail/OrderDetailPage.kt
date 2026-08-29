@@ -73,9 +73,10 @@ fun OrderDetailPage(
         }
     }
 
-    when (getOrderDetailState) {
-        is RequestState.Error -> {
-            val context = LocalContext.current
+    // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast
+    val context = LocalContext.current
+    LaunchedEffect(getOrderDetailState) {
+        if (getOrderDetailState is RequestState.Error) {
             Toast.makeText(
                 context,
                 (getOrderDetailState as RequestState.Error).getMessage(context),
@@ -83,7 +84,6 @@ fun OrderDetailPage(
             ).show()
             orderDetailViewModel.resetState()
         }
-        else -> {}
     }
 
     Box(

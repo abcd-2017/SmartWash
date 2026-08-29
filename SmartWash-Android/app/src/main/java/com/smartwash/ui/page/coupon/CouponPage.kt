@@ -42,7 +42,6 @@ import com.smartwash.ui.page.coupon.tab.HistoricalCouponsTab
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.AppElevation
-import com.smartwash.utils.pressScale
 import com.smartwash.utils.RequestState
 
 @Composable
@@ -124,8 +123,7 @@ fun UserCouponCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isHistorical) 0.6f else 1f)
-            .pressScale(0.98f),
+            .alpha(if (isHistorical) 0.6f else 1f),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

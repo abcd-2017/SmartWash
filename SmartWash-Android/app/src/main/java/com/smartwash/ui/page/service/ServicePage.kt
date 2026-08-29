@@ -41,7 +41,6 @@ import com.smartwash.ui.theme.AppDimens
 import com.smartwash.ui.theme.AppElevation
 import com.smartwash.ui.theme.IconBox
 import com.smartwash.utils.RequestState
-import com.smartwash.utils.pressScale
 
 @Composable
 fun ServicePage(
@@ -110,8 +109,7 @@ private fun ServiceItemCard(
 ) {
     Surface(
         modifier = modifier
-            .fillMaxWidth()
-            .pressScale(0.98f),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

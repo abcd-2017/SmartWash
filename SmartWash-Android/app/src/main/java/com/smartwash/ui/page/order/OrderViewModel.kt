@@ -10,6 +10,7 @@ import com.smartwash.utils.AppConstant
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.ShowOrderStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -68,6 +69,8 @@ class OrderViewModel @Inject constructor(
                 _pageMap.clear()
                 _pageMap.putAll(pages)
                 _loadState.value = RequestState.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(AppConstant.APP_NAME, "OrderViewModel.loadAllOrders: ${e.message}", e)
                 _loadState.value = RequestState.Error(R.string.error_network_fail)
@@ -95,6 +98,8 @@ class OrderViewModel @Inject constructor(
                     put(status, newItems.size >= 10)
                 }
                 _pageMap[status] = nextPage
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(AppConstant.APP_NAME, "OrderViewModel.loadMore: ${e.message}", e)
             } finally {
@@ -114,6 +119,8 @@ class OrderViewModel @Inject constructor(
                 orderRepository.cancelOrder(orderId)
                 _cancelOrderState.value = RequestState.Success
                 loadAllOrders()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(AppConstant.APP_NAME, "OrderViewModel.cancelOrder: ${e.message}", e)
                 _cancelOrderState.value = RequestState.Error(R.string.error_cancel_order_failed)

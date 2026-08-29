@@ -89,27 +89,31 @@ fun PaymentPage(
         LaunchedEffect(navController.currentBackStackEntry) { paymentViewModel.getaUserCoupon(orderId) }
     }
 
-    when (paymentState) {
-        is RequestState.Success -> {
-            confirmPayShow = false
-            LaunchedEffect(paymentState) {
+    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
+    LaunchedEffect(paymentState) {
+        when (paymentState) {
+            is RequestState.Success -> {
+                confirmPayShow = false
                 navController.navigate("${PageConstant.PaySuccess.text}/${orderId}") {
                     popUpTo(PageConstant.Home.text)
                 }
             }
+            is RequestState.Error -> {
+                Toast.makeText(current, (paymentState as RequestState.Error).getMessage(current), Toast.LENGTH_SHORT).show()
+                paymentViewModel.resetPaymentState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(current, (paymentState as RequestState.Error).getMessage(current), Toast.LENGTH_SHORT).show()
-            paymentViewModel.resetPaymentState()
-        }
-        else -> {}
     }
 
-    when (calculationOrderState) {
-        is RequestState.Error -> {
-            Toast.makeText(current, (calculationOrderState as RequestState.Error).getMessage(current), Toast.LENGTH_SHORT).show()
+    LaunchedEffect(calculationOrderState) {
+        if (calculationOrderState is RequestState.Error) {
+            Toast.makeText(
+                current,
+                (calculationOrderState as RequestState.Error).getMessage(current),
+                Toast.LENGTH_SHORT
+            ).show()
         }
-        else -> {}
     }
 
     Box(

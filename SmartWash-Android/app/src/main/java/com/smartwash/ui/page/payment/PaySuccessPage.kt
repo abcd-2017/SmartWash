@@ -68,8 +68,9 @@ fun PaySuccessPage(
         }
     }
 
-    when (getOrderDetailState) {
-        is RequestState.Error -> {
+    // 错误提示放 LaunchedEffect，禁止组合期直接弹 Toast
+    LaunchedEffect(getOrderDetailState) {
+        if (getOrderDetailState is RequestState.Error) {
             Toast.makeText(
                 context,
                 (getOrderDetailState as RequestState.Error).getMessage(context),
@@ -77,7 +78,6 @@ fun PaySuccessPage(
             ).show()
             orderDetailViewModel.resetState()
         }
-        else -> {}
     }
 
     Box(

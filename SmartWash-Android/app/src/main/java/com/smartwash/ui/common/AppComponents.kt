@@ -4,9 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -108,13 +111,18 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.cardRadius)
+    val interactionSource = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (onClick != null) Modifier
-                    .clickable(onClick = onClick)
-                    .pressAlpha(0.92f)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = LocalIndication.current,
+                        onClick = onClick
+                    )
+                    .pressAlpha(interactionSource, 0.92f)
                 else Modifier
             ),
         shape = shape,
@@ -135,12 +143,15 @@ fun AppButton(
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
+    // 按压缩放反馈：把同一个 InteractionSource 接入 Button 与 pressScale
+    val interactionSource = remember { MutableInteractionSource() }
     Button(
         onClick = onClick,
+        interactionSource = interactionSource,
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .pressScale(0.98f),
+            .pressScale(interactionSource, 0.98f),
         enabled = enabled && !loading,
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         colors = ButtonDefaults.buttonColors(
@@ -175,13 +186,18 @@ fun SettingRow(
     trailing: @Composable () -> Unit = {},
     onClick: (() -> Unit)? = null,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (onClick != null) Modifier
-                    .clickable(onClick = onClick)
-                    .pressScale(0.98f)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = LocalIndication.current,
+                        onClick = onClick
+                    )
+                    .pressScale(interactionSource, 0.98f)
                 else Modifier
             )
             .height(56.dp)

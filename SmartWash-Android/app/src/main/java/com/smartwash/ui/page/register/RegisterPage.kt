@@ -100,28 +100,31 @@ fun RegisterPage(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    when (captchaState) {
-        is RequestState.Success -> {
-            Toast.makeText(context, stringResource(R.string.captcha_sent), Toast.LENGTH_SHORT).show()
-            registerViewModel.setCaptchaIdle()
-        }
+    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
+    LaunchedEffect(captchaState) {
+        when (captchaState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.captcha_sent), Toast.LENGTH_SHORT).show()
+                registerViewModel.setCaptchaIdle()
+            }
 
-        is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (captchaState as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
-            registerViewModel.setCaptchaIdle()
-            countDown = AppConstant.SEND_CAPTCHA
-        }
+            is RequestState.Error -> {
+                Toast.makeText(
+                    context,
+                    (captchaState as RequestState.Error).getMessage(context),
+                    Toast.LENGTH_SHORT
+                ).show()
+                registerViewModel.setCaptchaIdle()
+                countDown = AppConstant.SEND_CAPTCHA
+            }
 
-        else -> {}
+            else -> {}
+        }
     }
 
-    when (registerState) {
-        is RequestState.Success -> {
-            LaunchedEffect(Unit) {
+    LaunchedEffect(registerState) {
+        when (registerState) {
+            is RequestState.Success -> {
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
@@ -129,18 +132,18 @@ fun RegisterPage(
                     popUpTo(PageConstant.Login.text) { inclusive = true }
                 }
             }
-        }
 
-        is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (registerState as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
-            registerViewModel.setRegisterIdle()
-        }
+            is RequestState.Error -> {
+                Toast.makeText(
+                    context,
+                    (registerState as RequestState.Error).getMessage(context),
+                    Toast.LENGTH_SHORT
+                ).show()
+                registerViewModel.setRegisterIdle()
+            }
 
-        else -> {}
+            else -> {}
+        }
     }
 
     val glassShape = RoundedCornerShape(28.dp)

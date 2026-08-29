@@ -1,8 +1,10 @@
 package com.smartwash.ui.page.login
 
 import android.widget.Toast
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -53,11 +55,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.ui.common.PasswordInput
 import com.smartwash.ui.common.PhoneNumberInput
+import com.smartwash.network.session.SessionManager
 import com.smartwash.ui.page.PageConstant
-import com.smartwash.utils.AppConstant
 import com.smartwash.utils.HapticEffect
 import com.smartwash.utils.RequestState
-import com.smartwash.utils.SharePreferenceUtils
 import com.smartwash.utils.currentView
 import com.smartwash.utils.isValidPhone
 import com.smartwash.utils.performHaptic
@@ -69,6 +70,7 @@ private val GradientBottom = AuthGradientBottom
 @Composable
 fun LoginPage(
     navController: NavController,
+    sessionManager: SessionManager,
     loginViewModel: LoginViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -83,9 +85,12 @@ fun LoginPage(
     val passwordFocusRequester = remember { FocusRequester() }
 
     val loginState by loginViewModel.loginState.collectAsState()
+    val loginButtonInteractionSource = remember { MutableInteractionSource() }
+    val registerEntryInteractionSource = remember { MutableInteractionSource() }
 
+    // 已有 token 直接进首页（suspend 读取，不阻塞主线程）
     LaunchedEffect(Unit) {
-        val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
+        val token = sessionManager.getToken()
         if (token.isNotBlank()) {
             navController.navigate(PageConstant.Home.text) {
                 popUpTo(PageConstant.Login.text) { inclusive = true }
@@ -93,9 +98,10 @@ fun LoginPage(
         }
     }
 
-    when (loginState) {
-        is RequestState.Success -> {
-            LaunchedEffect(Unit) {
+    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is RequestState.Success -> {
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
                 loginViewModel.resetLoginState()
@@ -103,18 +109,18 @@ fun LoginPage(
                     popUpTo(PageConstant.Login.text) { inclusive = true }
                 }
             }
-        }
 
-        is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (loginState as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
-            loginViewModel.resetLoginState()
-        }
+            is RequestState.Error -> {
+                Toast.makeText(
+                    context,
+                    (loginState as RequestState.Error).getMessage(context),
+                    Toast.LENGTH_SHORT
+                ).show()
+                loginViewModel.resetLoginState()
+            }
 
-        else -> {}
+            else -> {}
+        }
     }
 
     val glassShape = RoundedCornerShape(28.dp)
@@ -244,11 +250,12 @@ fun LoginPage(
                             view.performHaptic(HapticEffect.ERROR)
                         }
                     },
+                    interactionSource = loginButtonInteractionSource,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .height(50.dp)
-                        .pressScale(0.98f),
+                        .pressScale(loginButtonInteractionSource, 0.98f),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = GlassBorder,
@@ -283,7 +290,8 @@ fun LoginPage(
                 onClick = {
                     navController.navigate(PageConstant.Register.text)
                 },
-                modifier = Modifier.pressScale(0.98f)
+                interactionSource = registerEntryInteractionSource,
+                modifier = Modifier.pressScale(registerEntryInteractionSource, 0.98f)
             ) {
                 Text(
                     stringResource(R.string.no_account),

@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.smartwash.R
+import com.smartwash.network.session.SessionManager
 import com.smartwash.ui.common.AppCard
 import com.smartwash.ui.common.AppButton
 import com.smartwash.ui.common.AppConfirmDialog
@@ -45,12 +46,11 @@ import com.smartwash.ui.common.SettingRow
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
-import com.smartwash.utils.AppConstant
-import com.smartwash.utils.SharePreferenceUtils
 
 @Composable
 fun SettingPage(
-    navController: NavController
+    navController: NavController,
+    sessionManager: SessionManager,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -179,7 +179,8 @@ fun SettingPage(
             isDanger = true,
             onConfirm = {
                 showDialog = false
-                SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
+                // 登出：同步清内存缓存并异步清 DataStore，不再 runBlocking 阻塞主线程
+                sessionManager.clearToken()
                 navController.navigate(PageConstant.Login.text) {
                     popUpTo(PageConstant.Home.text) { inclusive = true }
                 }

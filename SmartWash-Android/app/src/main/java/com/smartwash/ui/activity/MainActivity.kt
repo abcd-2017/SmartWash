@@ -14,7 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -28,8 +28,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.smartwash.App
 import com.smartwash.R
+import com.smartwash.network.session.SessionEvent
+import com.smartwash.network.session.SessionEventBus
+import com.smartwash.network.session.SessionManager
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.coupon.CouponPage
 import com.smartwash.ui.page.detail.OrderDetailPage
@@ -48,49 +50,57 @@ import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.setting.SettingPage
 import com.smartwash.ui.page.update_userinfo.UpdateUserInfoPage
 import com.smartwash.ui.theme.SmartWashAndroidTheme
-import com.smartwash.utils.AppConstant
-import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var sessionEventBus: SessionEventBus
+    @Inject lateinit var sessionManager: SessionManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
-            val coroutineScope = rememberCoroutineScope()
             val context = LocalContext.current
             val view = LocalView.current
             val reduceMotion = isReduceMotionEnabled(context)
-            //请求前判断是否需要带上token，
-            App.globalRequestBeforeCallback = {
-                coroutineScope.launch(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.please_login),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    navController.popBackStack()
-                    navController.navigate(PageConstant.Login.text)
-                }
-            }
-            //判断请求后响应码是否为401，是的话就重新登录
-            App.globalRequestAfterCallback = {
-                SharePreferenceUtils.saveDataBlocking(AppConstant.TOKEN, "")
-                view.performHaptic(HapticEffect.ERROR)
-                coroutineScope.launch(Dispatchers.Main) {
-                    delay(200)
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.please_re_login),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    navController.popBackStack()
-                    navController.navigate(PageConstant.Login.text)
+
+            // 收集网络层会话事件：未登录拦截 / 401 登录失效 → 统一跳登录页。
+            // 事件总线侧已去重 + navigate 加 launchSingleTop，避免连发 401 堆叠多个登录页；
+            // token 清理由拦截器经 SessionManager 幂等处理，这里不再重复清。
+            LaunchedEffect(sessionEventBus) {
+                sessionEventBus.events.collect { event ->
+                    when (event) {
+                        SessionEvent.NeedLogin -> {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.please_login),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.popBackStack()
+                            navController.navigate(PageConstant.Login.text) {
+                                launchSingleTop = true
+                            }
+                        }
+
+                        SessionEvent.Unauthorized -> {
+                            view.performHaptic(HapticEffect.ERROR)
+                            delay(200)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.please_re_login),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            navController.popBackStack()
+                            navController.navigate(PageConstant.Login.text) {
+                                launchSingleTop = true
+                            }
+                        }
+                    }
                 }
             }
 
@@ -141,7 +151,7 @@ class MainActivity : ComponentActivity() {
                         }
                     ) {
                         composable(PageConstant.Login.text) {
-                            LoginPage(navController)
+                            LoginPage(navController, sessionManager)
                         }
                         composable(PageConstant.Register.text) {
                             RegisterPage(navController)
@@ -153,7 +163,7 @@ class MainActivity : ComponentActivity() {
                             UpdateUserInfoPage(navController)
                         }
                         composable(PageConstant.Setting.text) {
-                            SettingPage(navController)
+                            SettingPage(navController, sessionManager)
                         }
                         composable(PageConstant.Recharge.text) {
                             RechargePage(navController)

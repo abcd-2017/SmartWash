@@ -9,6 +9,7 @@ import com.smartwash.R
 import com.smartwash.repository.RechargeRepository
 import com.smartwash.utils.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -27,6 +28,8 @@ class RechargeViewModel @Inject constructor(
             try {
                 rechargeRepository.userRecharge(UserRecharge(amount, rechargeType))
                 _rechargeState.value = RequestState.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(AppConstant.APP_NAME, "RechargeViewModel.userRecharge: ${e.message}", e)
                 _rechargeState.value = RequestState.Error(R.string.error_recharge_failed)
