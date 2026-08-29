@@ -11,8 +11,8 @@ import com.smartwash.from.locker.UpdateLockerFrom;
 import com.smartwash.entity.Schools;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.mapper.LockersMapper;
+import com.smartwash.mapper.SchoolsMapper;
 import com.smartwash.service.ILockersService;
-import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
 import org.springframework.beans.BeanUtils;
@@ -39,7 +39,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> implements ILockersService {
 
-    private final ISchoolsService schoolsService;
+    // 仅读学校名称用 SchoolsMapper 而非 ISchoolsService：避免与 SchoolsServiceImpl（构造注入 ILockersService）
+    // 形成构造器循环依赖（Spring 无法解析构造注入环，会导致上下文启动失败）
+    private final SchoolsMapper schoolsMapper;
     //获取所有存储柜
     @Override
     public Page<LockersVo> getAllLockers(SearchLockersFrom lockersFrom) {
@@ -127,7 +129,7 @@ public class LockersServiceImpl extends ServiceImpl<LockersMapper, Lockers> impl
         for (Map.Entry<Long, List<Lockers>> entry : bySchool.entrySet()) {
             LockerStatusSummaryVo vo = new LockerStatusSummaryVo();
             vo.setSchoolId(entry.getKey());
-            Schools school = schoolsService.getById(entry.getKey());
+            Schools school = schoolsMapper.selectById(entry.getKey());
             vo.setSchoolName(school != null ? school.getSchoolName() : "未知");
 
             List<Lockers> lockers = entry.getValue();

@@ -98,6 +98,21 @@ public class AdminUsersServiceImpl extends ServiceImpl<AdminUsersMapper, AdminUs
     }
 
     @Override
+    public String getAdminRoleName(String username) {
+        AdminUsers adminUsers = getAdminUserByName(username);
+        if (adminUsers == null || adminUsers.getRoleId() == null) {
+            // 管理员不存在或未绑定角色时返回兜底角色名，避免登录响应缺少角色字段
+            return DefaultConstant.ADMIN_USER_LOGIN_TYPE;
+        }
+        Roles role = rolesService.getById(adminUsers.getRoleId());
+        if (role == null || !StringUtils.hasText(role.getRoleName())) {
+            log.warn("管理员角色不存在或角色名为空，登录角色回退为 admin, username: {}", username);
+            return DefaultConstant.ADMIN_USER_LOGIN_TYPE;
+        }
+        return role.getRoleName();
+    }
+
+    @Override
     public AdminUserVo getUserById(Long userId) {
         AdminUsers users = getById(userId);
         if (users == null) {

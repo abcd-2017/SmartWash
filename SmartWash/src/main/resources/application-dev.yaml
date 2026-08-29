@@ -1,0 +1,33 @@
+# =====================================================================
+# 开发环境 profile（本地开发：--spring.profiles.active=dev 或 SPRING_PROFILES_ACTIVE=dev）
+#
+# 职责：本地开发全量配置——数据库/Redis 指向 127.0.0.1，桩实现（短信/支付网关）显式开启。
+# 说明：JWT 密钥、CORS、MinIO 等公共配置与 demo 默认值仍继承 application.yaml，
+#       本文件不重复维护敏感默认值；如需覆盖，同样支持 ${ENV:默认值} 形式。
+# =====================================================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/smart_wash?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&allowMultiQueries=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&useSSL=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:admin123}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: 3
+      password: ${REDIS_PASSWORD:}
+
+# 桩实现开关：开发环境显式开启（未发送真实短信、未接入真实支付网关，
+# 验证码经 StubSmsServiceImpl 以 debug 日志输出、支付经 StubPaymentGatewayServiceImpl 同步回调成功）
+smartwash:
+  stub:
+    payment-enabled: true
+    sms-enabled: true
+
+# 日志：开发环境保持可见的 SQL 与业务日志（生产 profile 不得沿用该级别）
+logging:
+  level:
+    com.smartwash.mapper: debug

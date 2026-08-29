@@ -28,5 +28,13 @@ public interface IAdminUsersService extends IService<AdminUsers> {
 
     AdminUsers getAdminUserByName(String username);
 
+    /**
+     * 查询管理员的实际角色名（roles.role_name），登录响应用。
+     *
+     * @param username 管理员用户名（不带 admin- 前缀）
+     * @return 角色名；管理员不存在或未绑定角色时返回兜底值 admin
+     */
+    String getAdminRoleName(String username);
+
     AdminUserVo getUserById(Long userId);
 }

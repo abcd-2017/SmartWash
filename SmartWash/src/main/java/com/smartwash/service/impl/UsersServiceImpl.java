@@ -26,6 +26,7 @@ import com.smartwash.vo.users.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -103,7 +104,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         if (StringUtils.hasText(usersFrom.getPassword())) {
             users.setPassword(encoder.encode(usersFrom.getPassword()));
         }
-        return updateById(users);
+        try {
+            return updateById(users);
+        } catch (DuplicateKeyException e) {
+            // 唯一索引兜底：手机号/学号/校园卡与并发更新撞车时转友好提示，避免裸 500
+            // （正常路径已由 Controller 层逐项查重拦截，此处仅覆盖并发窗口，评审报告后端 #29）
+            log.warn("更新用户命中唯一索引冲突, userId: {}", usersFrom.getUserId());
+            throw new CustomExceptions("保存失败：手机号/学号/校园卡已被其他账号使用");
+        }
     }
 
     @Override
@@ -182,8 +190,20 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @Override
     public Boolean bingCampus(String campusCard, Long userId) {
         log.info("用户绑定校园卡, userId: {}", userId);
+        // 绑定前查重：同一张校园卡只允许绑定一个账号，已被他人绑定则拒绝（评审报告后端 #15）
+        Users boundUser = getUserByCampusCard(campusCard);
+        if (boundUser != null && !Objects.equals(boundUser.getUserId(), userId)) {
+            log.warn("校园卡绑定被拒绝：该卡已绑定其他账号, userId: {}, boundUserId: {}", userId, boundUser.getUserId());
+            throw new CustomExceptions("该校园卡已被其他账号绑定");
+        }
         LambdaUpdateWrapper<Users> updateWrapper = new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, campusCard);
-        return update(updateWrapper);
+        try {
+            return update(updateWrapper);
+        } catch (DuplicateKeyException e) {
+            // V7 迁移 uk_users_campus_card 唯一索引兜底：两个用户并发绑定同一张卡时第二方失败
+            log.warn("校园卡并发绑定命中唯一索引, userId: {}", userId);
+            throw new CustomExceptions("该校园卡已被其他账号绑定");
+        }
     }
 
     @Override

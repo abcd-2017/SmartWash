@@ -1,0 +1,46 @@
+# =====================================================================
+# 生产环境 profile（--spring.profiles.active=prod 或 SPRING_PROFILES_ACTIVE=prod）
+#
+# 围栏设计（对应评审报告后端 #31）：
+#   1. 全部敏感项一律 ${ENV} 且【无默认值】——环境变量缺失时 Spring 解析占位符失败、
+#      应用启动报错，这正是围栏目的：杜绝任何 demo 凭据被带上生产。
+#   2. 桩实现显式关闭（smartwash.stub.*-enabled: false）。若生产未提供真实
+#      SmsService / PaymentGatewayService 实现，容器缺少 Bean 同样启动失败。
+#      接入真实实现后按 @Primary/@Profile 装配替换桩（见 StubSmsServiceImpl 类注释）。
+# =====================================================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 以下占位符均无默认值：DB_HOST / DB_PORT / DB_USERNAME / DB_PASSWORD 必须由环境变量注入
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/smart_wash?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&allowMultiQueries=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&useSSL=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      database: ${REDIS_DATABASE:3}
+      password: ${REDIS_PASSWORD}
+
+# 桩实现围栏：生产强制关闭——未接入真实短信/支付网关前不允许带桩上线
+smartwash:
+  stub:
+    payment-enabled: false
+    sms-enabled: false
+
+# JWT 密钥：必须注入全新强密钥（Base64，解码后 >= 32 字节），历史 demo 密钥视为已泄露
+jwt:
+  secret: ${JWT_SECRET}
+
+# CORS：只放行实际域名，多个用逗号分隔；禁止内网通配
+cors:
+  allowed-origins: ${CORS_ORIGINS}
+
+# MinIO 对象存储：凭据与桶名全部由环境变量注入
+minio:
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket-name: ${MINIO_BUCKET}

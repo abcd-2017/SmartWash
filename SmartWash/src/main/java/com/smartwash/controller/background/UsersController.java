@@ -65,6 +65,12 @@ public class UsersController {
         if (user == null) {
             return Result.failMsg("用户不存在");
         }
+        // 手机号变更前查重：重复时返回友好提示，而非依赖唯一索引报 500（评审报告后端 #29）
+        if (StringUtils.hasText(usersFrom.getPhoneNumber())
+                && !Objects.equals(user.getPhoneNumber(), usersFrom.getPhoneNumber())
+                && usersService.getUserByPhone(usersFrom.getPhoneNumber()) != null) {
+            return Result.failMsg("该手机号已被使用");
+        }
         if ((!Objects.equals(user.getStudentId(), usersFrom.getStudentId())) && (usersService.getUserByStudentId(usersFrom.getStudentId()) != null)) {
             return Result.failMsg("该学号已注册账号");
         }
