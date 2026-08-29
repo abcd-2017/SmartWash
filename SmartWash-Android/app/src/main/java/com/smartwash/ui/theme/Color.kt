@@ -159,3 +159,48 @@ val ServiceLuxury = Color(0xFF0EA5E9)     // 奢护 — 清澈蓝
 val ServiceLuxuryLight = Color(0xFFEFF6FF)
 val ServiceShoes = Color(0xFFDC2626)      // 洗鞋 — 活力红
 val ServiceShoesLight = Color(0xFFFEF2F2)
+
+// ==================== 观象台（占卜模块）— 宣纸/玄墨令牌（追加） ====================
+// 取值来源：docs/design/占卜模块视觉原型.html CSS 变量 + UI 设计方案第 10.3/10.5 节。
+
+// 深色 · 玄墨（主推）
+val DivBgTopDark = Color(0xFF201D18)
+val DivBgMidDark = Color(0xFF1A1917)
+val DivBgBottomDark = Color(0xFF151412)
+val DivSurfaceDark = Color(0xFF1E1D1B)
+val DivSurface2Dark = Color(0xFF26241F)
+val DivTextPrimaryDark = Color(0xFFEFE9DA)   // 宣纸主文本（暖调去塑料感）
+val DivTextSecondaryDark = Color(0xFFB9B2A2)
+val DivTextTertiaryDark = Color(0xFF847E6F)
+val DivGoldDark = Color(0xFFC9A961)
+val DivGoldHiDark = Color(0xFFD4B878)
+val DivSealDark = Color(0xFFC8504A)
+val DivSealHiDark = Color(0xFFD06054)
+val DivJadeDark = Color(0xFF6FA593)
+val DivYaoTopDark = Color(0xFFEFE9DA)        // 黑底宣纸白爻
+val DivYaoBottomDark = Color(0xFFC9C2B0)
+
+// 浅色 · 宣纸（非简单反色：底色宣纸化、白字变墨字、金压暗、爻线反转为墨）
+val DivBgTopLight = Color(0xFFF8F3E7)
+val DivBgMidLight = Color(0xFFF5F1E8)
+val DivBgBottomLight = Color(0xFFEBE3D1)
+val DivSurfaceLight = Color(0xFFFBF9F3)
+val DivSurface2Light = Color(0xFFF1ECDD)
+val DivTextPrimaryLight = Color(0xFF2A251C)  // 暖墨
+val DivTextSecondaryLight = Color(0xFF6B6353)
+val DivTextTertiaryLight = Color(0xFF98907C)
+val DivGoldLight = Color(0xFF8F7233)         // 文字级暗金
+val DivGoldHiLight = Color(0xFF6E5626)
+val DivSealLight = Color(0xFFB8433A)         // 朱砂印两主题通用
+val DivSealHiLight = Color(0xFFA63A30)
+val DivJadeLight = Color(0xFF3F7261)
+val DivYaoTopLight = Color(0xFF3A342A)       // 白纸墨爻
+val DivYaoBottomLight = Color(0xFF26231C)
+
+// 六神色点（青/赤/白/黑/黄/紫，两主题共用）
+val DivSpiritQing = Color(0xFF6FA593)
+val DivSpiritChi = Color(0xFFD06054)
+val DivSpiritBai = Color(0xFFC9C2B0)
+val DivSpiritHei = Color(0xFF54679C)
+val DivSpiritHuang = Color(0xFFC9A961)
+val DivSpiritZi = Color(0xFF8A7A9C)

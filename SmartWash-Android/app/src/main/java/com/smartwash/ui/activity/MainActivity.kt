@@ -33,6 +33,11 @@ import com.smartwash.network.session.SessionEvent
 import com.smartwash.network.session.SessionEventBus
 import com.smartwash.network.session.SessionManager
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.divination.ui.page.ask.DivAskPage
+import com.smartwash.divination.ui.page.cast.DivCastPage
+import com.smartwash.divination.ui.page.chart.DivChartPage
+import com.smartwash.divination.ui.page.history.DivHistoryPage
+import com.smartwash.divination.ui.page.home.DivHomePage
 import com.smartwash.ui.page.coupon.CouponPage
 import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
@@ -297,6 +302,61 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(PageConstant.Pickup.text) {
                             PickupPage(navController)
+                        }
+                        // ==================== 观象台（占卜模块，追加） ====================
+                        composable(PageConstant.DivHome.text) {
+                            DivHomePage(navController)
+                        }
+                        composable(
+                            route = "${PageConstant.DivAsk.text}?method={method}",
+                            arguments = listOf(
+                                navArgument("method") {
+                                    type = NavType.StringType
+                                    defaultValue = "liuyao"
+                                }
+                            )
+                        ) { entity ->
+                            DivAskPage(navController, entity.arguments?.getString("method") ?: "liuyao")
+                        }
+                        composable(
+                            route = "${PageConstant.DivCast.text}?question={question}&category={category}",
+                            arguments = listOf(
+                                navArgument("question") {
+                                    type = NavType.StringType
+                                    defaultValue = ""
+                                },
+                                navArgument("category") {
+                                    type = NavType.StringType
+                                    defaultValue = "other"
+                                }
+                            )
+                        ) { entity ->
+                            DivCastPage(
+                                navController,
+                                question = entity.arguments?.getString("question").orEmpty(),
+                                categoryId = entity.arguments?.getString("category") ?: "other",
+                            )
+                        }
+                        composable(
+                            route = "${PageConstant.DivChart.text}/{recordId}?animate={animate}",
+                            arguments = listOf(
+                                navArgument("recordId") {
+                                    type = NavType.LongType
+                                },
+                                navArgument("animate") {
+                                    type = NavType.BoolType
+                                    defaultValue = false
+                                }
+                            )
+                        ) { entity ->
+                            DivChartPage(
+                                navController,
+                                recordId = entity.arguments?.getLong("recordId") ?: -1L,
+                                animateEntry = entity.arguments?.getBoolean("animate") ?: false,
+                            )
+                        }
+                        composable(PageConstant.DivHistory.text) {
+                            DivHistoryPage(navController)
                         }
                     }
                 }

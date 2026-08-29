@@ -353,4 +353,96 @@
     <string name="error_invalid_password">密码长度应为6-16位</string>
     <string name="error_invalid_student_id">学号格式不正确</string>
     <string name="error_campus_card_empty">校园卡号不能为空</string>
+
+    <!-- ==================== 观象台（占卜模块） ==================== -->
+    <string name="div_title">观象台</string>
+    <string name="div_home_xunkong_format">旬空 %1$s</string>
+    <string name="div_disclaimer_footer">内容基于玄学体系生成，仅供文化参考 · 不构成决策建议</string>
+    <string name="div_disclaimer_reading">本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。</string>
+
+    <!-- 四术玉牌 -->
+    <string name="div_method_liuyao_name">六爻</string>
+    <string name="div_method_liuyao_desc">摇铜钱问一事\n装卦最全 · 应期可推</string>
+    <string name="div_method_liuyao_tag">推 荐</string>
+    <string name="div_method_meihua_name">梅花</string>
+    <string name="div_method_meihua_desc">时间数字起卦\n体用生克 · 快占一事</string>
+    <string name="div_method_qimen_name">奇门</string>
+    <string name="div_method_qimen_desc">九宫排局\n择时择方 · 趋避有道</string>
+    <string name="div_method_liuren_name">六壬</string>
+    <string name="div_method_liuren_desc">月将加时 · 三传定机\n人事占验最精</string>
+
+    <!-- 今日一签 -->
+    <string name="div_sign_seal">签</string>
+    <string name="div_sign_card_title">今日一签 · %1$s</string>
+    <string name="div_sign_card_source">梅花时间卦</string>
+
+    <!-- 案卷 / 卦历 -->
+    <string name="div_home_ledger">案 卷</string>
+    <string name="div_home_ledger_more">卦历 ›</string>
+    <string name="div_history_title">卦历 · 案卷</string>
+    <string name="div_history_empty">案卷尚空，且去起一卦</string>
+    <string name="div_history_note">复盘沿用原盘原时刻 · 不因当前日期重算</string>
+    <string name="div_filter_all">全部</string>
+
+    <!-- 问事页 -->
+    <string name="div_ask_title">心中所问</string>
+    <string name="div_ask_hint">默念所问之事，一事一占</string>
+    <string name="div_question_example">例：未来三个月能否找到合适工作？</string>
+    <string name="div_ask_category_label">所问领域</string>
+    <string name="div_ask_category_auto">自动识别，可修改</string>
+    <string name="div_ask_category_manual">已手动选择</string>
+    <string name="div_category_career">事业</string>
+    <string name="div_category_wealth">财运</string>
+    <string name="div_category_love">感情</string>
+    <string name="div_category_study">学业</string>
+    <string name="div_category_travel">出行</string>
+    <string name="div_category_other">其他</string>
+    <string name="div_ask_cast_method_label">起卦方式</string>
+    <string name="div_cast_method_shake">静心摇卦</string>
+    <string name="div_cast_method_shake_sub">三枚铜钱 · 六掷成卦</string>
+    <string name="div_cast_method_lines">直接输入爻值</string>
+    <string name="div_cast_method_lines_sub">逐爻录入单拆重交</string>
+    <string name="div_cast_method_time">梅花时间卦</string>
+    <string name="div_cast_method_time_sub">以此时此刻起卦</string>
+    <string name="div_cast_method_number">随口报数</string>
+    <string name="div_cast_method_number_sub">心中默念两数</string>
+    <string name="div_cast_method_now_ju">立即起局</string>
+    <string name="div_cast_method_now_ju_sub">按当前时辰拆补转盘</string>
+    <string name="div_cast_method_now_ke">立即起课</string>
+    <string name="div_cast_method_now_ke_sub">月将加时 · 四课三传</string>
+    <string name="div_ask_go">静 心 · 起 卦</string>
+    <string name="div_ask_safety_hint">涉及医疗 / 安全等问题请寻求现实帮助</string>
+    <string name="div_manual_title">直接输入爻值</string>
+    <string name="div_manual_confirm">装 卦</string>
+    <string name="div_numbers_title">随口报数</string>
+    <string name="div_numbers_hint">心中默念两个 1–999 的数</string>
+
+    <!-- 高风险分流 -->
+    <string name="div_safety_seal">止</string>
+    <string name="div_safety_title">这个问题，请寻求现实帮助</string>
+    <string name="div_safety_body">医疗与身心健康请咨询医生或专业机构；涉及人身安全请立即联系警方（110）或校园保卫处；寻找失踪亲友请报警处理。占卜不适用于这些问题。</string>
+    <string name="div_safety_back">我知道了 · 返回</string>
+
+    <!-- 摇卦页 -->
+    <string name="div_cast_title">静 心 · 问 事</string>
+    <string name="div_cast_progress">第 %1$d 掷 · 共 6 掷</string>
+    <string name="div_cast_toss">掷 爻</string>
+    <string name="div_cast_done">成 卦 · 进入卦盘</string>
+    <string name="div_cast_quit_title">丢弃本次摇卦？</string>
+    <string name="div_cast_quit_body">爻盘未满六掷，离开将丢弃本次摇卦结果。</string>
+
+    <!-- 卦盘页 -->
+    <string name="div_chart_title">卦盘</string>
+    <string name="div_chart_loading">正在起盘…</string>
+    <string name="div_chart_missing">未找到卦盘记录</string>
+    <string name="div_chart_interpret">求 解 读</string>
+    <string name="div_chart_save">存入卦历</string>
+    <string name="div_chart_saved">已存入卦历</string>
+    <string name="div_liuyao_yongshen">用神</string>
+    <string name="div_liuyao_facts">规则事实</string>
+    <string name="div_meihua_tiyong">体用生克（规则层）</string>
+    <string name="div_meihua_tiyong_line">动爻在%1$d爻 → 下卦%2$s%3$s为用，上卦%4$s%5$s为体：%6$s，%7$s。</string>
+    <string name="div_qimen_yongshen">用神宫</string>
+    <string name="div_qimen_facts">宫位事实</string>
+    <string name="div_liuren_keti">课体 · %1$s · 九宗门 %2$s</string>
 </resources>

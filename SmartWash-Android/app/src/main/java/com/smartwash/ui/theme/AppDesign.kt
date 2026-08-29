@@ -238,3 +238,87 @@ fun StatusDot(
             .background(color)
     )
 }
+
+// ==================== 观象台（占卜模块）— 玄墨子主题（追加） ====================
+// 模块级子主题：进模块换氛围、退出即回清氧；照 LocalAppColors 模式，不污染全局 MaterialTheme。
+
+@Immutable
+data class DivinationColorScheme(
+    val bgColors: List<Color>,          // 页面底渐变（宣纸/玄墨径向收束，取三段）
+    val surface: Color,                 // 盘面卡片
+    val surface2: Color,                // 次级面（中宫/嵌套卡）
+    val line: Color,                    // 卡描边
+    val hair: Color,                    // 发丝分隔
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val textTertiary: Color,
+    val gold: Color,                    // 鎏金（文字级强调）
+    val goldHi: Color,                  // 鎏金高光
+    val goldSoft: Color,                // 8% 金底
+    val gold14: Color,                  // 14% 金底（选中 glow）
+    val goldLine: Color,                // 30% 金线
+    val goldHair: Color,                // 14% 金发丝线
+    val seal: Color,                    // 朱砂印
+    val sealHi: Color,
+    val jade: Color,                    // 青（吉/合/生标记）
+    val yaoTop: Color,                  // 爻线渐变（暗=宣纸白爻，亮=白纸墨爻）
+    val yaoBottom: Color,
+    val spirits: List<Color>,           // 六神色点：青赤白黑黄紫
+    val isDark: Boolean,
+)
+
+val DarkDivinationColors = DivinationColorScheme(
+    bgColors = listOf(DivBgTopDark, DivBgMidDark, DivBgBottomDark),
+    surface = DivSurfaceDark,
+    surface2 = DivSurface2Dark,
+    line = Color(0x38C9A961),           // 22% 金线
+    hair = Color(0x1FC9A961),           // 12% 发丝
+    textPrimary = DivTextPrimaryDark,
+    textSecondary = DivTextSecondaryDark,
+    textTertiary = DivTextTertiaryDark,
+    gold = DivGoldDark,
+    goldHi = DivGoldHiDark,
+    goldSoft = Color(0x14C9A961),
+    gold14 = Color(0x24C9A961),
+    goldLine = Color(0x4DC9A961),
+    goldHair = Color(0x24C9A961),
+    seal = DivSealDark,
+    sealHi = DivSealHiDark,
+    jade = DivJadeDark,
+    yaoTop = DivYaoTopDark,
+    yaoBottom = DivYaoBottomDark,
+    spirits = listOf(DivSpiritQing, DivSpiritChi, DivSpiritBai, DivSpiritHei, DivSpiritHuang, DivSpiritZi),
+    isDark = true,
+)
+
+val LightDivinationColors = DivinationColorScheme(
+    bgColors = listOf(DivBgTopLight, DivBgMidLight, DivBgBottomLight),
+    surface = DivSurfaceLight,
+    surface2 = DivSurface2Light,
+    line = Color(0x38947434),
+    hair = Color(0x1F947434),
+    textPrimary = DivTextPrimaryLight,
+    textSecondary = DivTextSecondaryLight,
+    textTertiary = DivTextTertiaryLight,
+    gold = DivGoldLight,
+    goldHi = DivGoldHiLight,
+    goldSoft = Color(0x14947434),
+    gold14 = Color(0x26947434),
+    goldLine = Color(0x52947434),
+    goldHair = Color(0x2E947434),
+    seal = DivSealLight,
+    sealHi = DivSealHiLight,
+    jade = DivJadeLight,
+    yaoTop = DivYaoTopLight,
+    yaoBottom = DivYaoBottomLight,
+    spirits = listOf(DivSpiritQing, DivSpiritChi, DivSpiritBai, DivSpiritHei, DivSpiritHuang, DivSpiritZi),
+    isDark = false,
+)
+
+val LocalDivinationColors = staticCompositionLocalOf { DarkDivinationColors }
+
+object DivColors {
+    val current: DivinationColorScheme
+        @Composable @ReadOnlyComposable
+        get() = LocalDivinationColors.current
+}
