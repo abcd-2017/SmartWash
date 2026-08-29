@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
 }
@@ -83,7 +82,8 @@ dependencies {
     //自动注入
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    kapt(libs.hilt.compiler)
+    // Hilt 注解处理统一走 KSP（与 Room 一致），Hilt 2.51 起官方支持
+    ksp(libs.hilt.compiler)
 
     //datastore
     implementation libs.androidx.datastore.preferences
