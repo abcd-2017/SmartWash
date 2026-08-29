@@ -16,18 +16,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** 订单页单一 UiState：列表 / hasMore / 加载更多合并为一次发射，避免多次发射间读到陈旧 hasMore */
+data class OrderUiState(
+    val orders: Map<String, List<OrderInfo>> = emptyMap(),
+    val hasMore: Map<String, Boolean> = emptyMap(),
+    val loadingMore: Map<String, Boolean> = emptyMap(),
+)
+
 @HiltViewModel
 class OrderViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
 ) : ViewModel() {
 
-    private val _ordersMap = MutableStateFlow<Map<String, List<OrderInfo>>>(emptyMap())
-    val ordersMap = _ordersMap.asStateFlow()
-
-    private val _hasMoreMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-
-    private val _loadingMoreMap = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val loadingMoreMap = _loadingMoreMap.asStateFlow()
+    private val _uiState = MutableStateFlow(OrderUiState())
+    val uiState = _uiState.asStateFlow()
 
     private val _pageMap = mutableMapOf<String, Int>()
 
@@ -64,8 +66,8 @@ class OrderViewModel @Inject constructor(
                     }
                 }
 
-                _ordersMap.value = orders
-                _hasMoreMap.value = hasMore
+                // 单一 UiState 一次性发射，orders 与 hasMore 不会出现发射间错位
+                _uiState.value = OrderUiState(orders = orders, hasMore = hasMore)
                 _pageMap.clear()
                 _pageMap.putAll(pages)
                 _loadState.value = RequestState.Success
@@ -79,37 +81,31 @@ class OrderViewModel @Inject constructor(
     }
 
     fun loadMore(status: String) {
-        val currentHasMore = _hasMoreMap.value[status] ?: false
-        val currentLoading = _loadingMoreMap.value[status] ?: false
-        if (!currentHasMore || currentLoading) return
+        val current = _uiState.value
+        if (current.hasMore[status] != true || current.loadingMore[status] == true) return
 
-        _loadingMoreMap.value = _loadingMoreMap.value.toMutableMap().apply { put(status, true) }
+        _uiState.value = current.copy(loadingMore = current.loadingMore + (status to true))
 
         viewModelScope.launch {
             try {
                 val nextPage = (_pageMap[status] ?: 1) + 1
                 val newItems = orderRepository.getOrderList(status, nextPage)
 
-                val currentList = _ordersMap.value[status] ?: emptyList()
-                _ordersMap.value = _ordersMap.value.toMutableMap().apply {
-                    put(status, currentList + newItems)
-                }
-                _hasMoreMap.value = _hasMoreMap.value.toMutableMap().apply {
-                    put(status, newItems.size >= 10)
-                }
+                val state = _uiState.value
+                _uiState.value = state.copy(
+                    orders = state.orders + (status to (state.orders[status].orEmpty() + newItems)),
+                    hasMore = state.hasMore + (status to (newItems.size >= AppConstant.PAGE_SIZE)),
+                )
                 _pageMap[status] = nextPage
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(AppConstant.APP_NAME, "OrderViewModel.loadMore: ${e.message}", e)
             } finally {
-                _loadingMoreMap.value = _loadingMoreMap.value.toMutableMap().apply { put(status, false) }
+                val state = _uiState.value
+                _uiState.value = state.copy(loadingMore = state.loadingMore + (status to false))
             }
         }
-    }
-
-    fun hasMoreForStatus(status: String): Boolean {
-        return _hasMoreMap.value[status] ?: false
     }
 
     fun cancelOrder(orderId: Long) {

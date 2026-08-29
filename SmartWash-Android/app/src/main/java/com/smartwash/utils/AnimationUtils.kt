@@ -36,8 +36,3 @@ fun <T> snappySpring(): SpringSpec<T> = spring(
     dampingRatio = Spring.DampingRatioNoBouncy,
     stiffness = Spring.StiffnessMedium
 )
-
-/** 如果减少动态效果开启则返回 null（调用方应处理为无动画/淡入淡出），否则返回弹簧 */
-fun <T> springIfAnimated(context: Context, spec: SpringSpec<T>): SpringSpec<T>? {
-    return if (isReduceMotionEnabled(context)) null else spec
-}

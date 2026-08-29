@@ -27,11 +27,14 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun getOrderGroup(size: Int = 10): Map<String, OrderGroupVo> {
-        return orderApi.getOrderGroup(size).data ?: emptyMap()
+        // data 为 null 按失败处理，让 UI 能区分"无数据"与"请求失败"
+        return orderApi.getOrderGroup(size).data
+            ?: throw NetworkException("订单分组数据为空", R.string.error_network_fail)
     }
 
     suspend fun getOrderList(status: String, page: Int, size: Int = 10): List<OrderInfo> {
-        return orderApi.getOrderList(status, page, size).data ?: emptyList()
+        return orderApi.getOrderList(status, page, size).data
+            ?: throw NetworkException("订单列表数据为空", R.string.error_network_fail)
     }
 
     suspend fun getOrderItemCount(from: OrderItemCountFrom): OrderItemCountVo {
@@ -44,7 +47,8 @@ class OrderRepository @Inject constructor(
     }
 
     suspend fun getWashingOrder(): List<OrderVo> {
-        return orderApi.getWashingOrder().data ?: emptyList()
+        return orderApi.getWashingOrder().data
+            ?: throw NetworkException("进行中订单数据为空", R.string.error_network_fail)
     }
 
     suspend fun cancelOrder(orderId: Long): Boolean {

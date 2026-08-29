@@ -3,12 +3,12 @@ package com.smartwash.ui.page.coupon
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.api.CouponApi
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.network.vo.coupon.CouponVo
 import com.smartwash.network.vo.coupon.UserCouponVo
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.RequestState
+import com.smartwash.repository.CouponRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CouponViewModel @Inject constructor(
-    private val couponApi: CouponApi,
+    private val couponRepository: CouponRepository,
 ) : ViewModel() {
 
     private val _loadState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -39,10 +39,11 @@ class CouponViewModel @Inject constructor(
         viewModelScope.launch {
             _loadState.value = RequestState.Loading
             try {
-                val data = couponApi.getAllCoupons().data
-                _availableCoupons.value = data?.available ?: emptyList()
-                _claimedCoupons.value = data?.claimed ?: emptyList()
-                _historicalCoupons.value = data?.historical ?: emptyList()
+                // 经 Repository 访问数据（含缓存降级链路），VM 不直接持有 API
+                val data = couponRepository.getAllCoupons()
+                _availableCoupons.value = data.available
+                _claimedCoupons.value = data.claimed
+                _historicalCoupons.value = data.historical
                 _loadState.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "CouponViewModel.loadAllCoupons: ${e.message}", e)
@@ -54,7 +55,7 @@ class CouponViewModel @Inject constructor(
     fun receiveCoupon(couponId: Long) {
         viewModelScope.launch {
             try {
-                couponApi.receiveCoupon(couponId)
+                couponRepository.receiveCoupon(couponId)
                 _receiveCouponState.value = RequestState.Success
                 loadAllCoupons()
             } catch (e: NetworkException) {

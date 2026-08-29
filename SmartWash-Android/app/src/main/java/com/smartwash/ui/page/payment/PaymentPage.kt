@@ -85,8 +85,10 @@ fun PaymentPage(
     var selectedCoupon by remember { mutableIntStateOf(-1) }
 
     if (orderId != null) {
+        // 进入页面各触发一次：以 Unit 为 key，避免依赖 currentBackStackEntry 时
+        // backstack 任何变化都重复请求（从优惠券页返回时页面重组会重新执行，刷新语义不变）
         LaunchedEffect(Unit) { paymentViewModel.initData(orderId) }
-        LaunchedEffect(navController.currentBackStackEntry) { paymentViewModel.getaUserCoupon(orderId) }
+        LaunchedEffect(Unit) { paymentViewModel.getaUserCoupon(orderId) }
     }
 
     // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
@@ -328,7 +330,10 @@ fun PaymentPage(
                         }
                     }
                 } else {
-                    items(userCouponList.size) { i ->
+                    items(
+                        count = userCouponList.size,
+                        key = { i -> userCouponList[i].userCouponId }
+                    ) { i ->
                         UserCouponItem(userCouponList[i], selectedCoupon == i) {
                             selectedCoupon = i
                             showBottomSheet = false

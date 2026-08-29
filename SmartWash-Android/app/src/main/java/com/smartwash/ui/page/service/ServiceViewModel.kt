@@ -3,7 +3,6 @@ package com.smartwash.ui.page.service
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.database.dao.LaundryItemDao
 import com.smartwash.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.laundry.LaundryItem
@@ -19,7 +18,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ServiceViewModel @Inject constructor(
     private val laundryRepository: LaundryRepository,
-    private val laundryItemDao: LaundryItemDao,
 ) : ViewModel() {
     private val _getLaundryItemState = MutableStateFlow<RequestState>(RequestState.Idle)
     val getLaundryItemState = _getLaundryItemState.asStateFlow()
@@ -28,10 +26,10 @@ class ServiceViewModel @Inject constructor(
 
     fun getLaundryItem() {
         viewModelScope.launch {
-            // 有缓存时先显示缓存，无缓存时显示 Loading
-            val cached = laundryItemDao.getAll()
+            // 有缓存时先显示缓存，无缓存时显示 Loading（缓存读取统一走 Repository，VM 不直接持有 DAO）
+            val cached = laundryRepository.getCachedLaundryItems()
             if (cached.isNotEmpty()) {
-                _laundryItems.value = cached.map { it.toVo() }
+                _laundryItems.value = cached
             } else {
                 _getLaundryItemState.value = RequestState.Loading
             }

@@ -198,7 +198,10 @@ fun IndexPage(
             }
 
             if (orderList.isNotEmpty()) {
-                items(orderList.size) { index ->
+                items(
+                    count = orderList.size,
+                    key = { index -> orderList[index].orderId }
+                ) { index ->
                     OrderCardWithProgress(
                         orderVo = orderList[index],
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)

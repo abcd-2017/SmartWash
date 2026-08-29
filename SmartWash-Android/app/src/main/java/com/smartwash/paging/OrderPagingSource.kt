@@ -7,15 +7,19 @@ import com.smartwash.network.api.OrderApi
 import com.smartwash.utils.AppConstant
 import com.smartwash.network.vo.order.OrderInfo
 
-class OrderPagingSource(private val orderApi: OrderApi, private val status: String) :
-    PagingSource<Int, OrderInfo>() {
+class OrderPagingSource(
+    private val orderApi: OrderApi,
+    private val status: String,
+    private val pageSize: Int = AppConstant.PAGE_SIZE,
+) : PagingSource<Int, OrderInfo>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, OrderInfo> {
         return try {
             val currentPage = params.key ?: 1
             val orderList =
-                orderApi.getOrderList(status, currentPage).data ?: emptyList()
+                orderApi.getOrderList(status, currentPage, pageSize).data ?: emptyList()
             val prevKey = if (currentPage == 1) null else currentPage - 1
-            val nextKey = if (orderList.isEmpty()) null else currentPage + 1
+            // 返回条数不足一页说明已是最后一页，避免整页恰好 10 条时多打一次空页
+            val nextKey = if (orderList.size < pageSize) null else currentPage + 1
 
             LoadResult.Page(
                 data = orderList,

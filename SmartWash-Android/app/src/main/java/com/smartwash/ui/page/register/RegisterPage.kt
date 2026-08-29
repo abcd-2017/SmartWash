@@ -284,15 +284,17 @@ fun RegisterPage(
                         }
                     },
                     onSendCaptcha = {
-                        registerViewModel.getCaptcha(phone)
+                        // 先校验手机号格式，通过后再请求验证码，避免无效手机号也发起请求
                         if (isValidPhone(phone)) {
+                            registerViewModel.getCaptcha(phone)
                             countDown = AppConstant.SEND_CAPTCHA
                             coroutineScope.launch {
                                 while (countDown > 0) {
                                     delay(1000)
                                     countDown--
                                 }
-                                countDown = AppConstant.SEND_CAPTCHA
+                                // 倒计时结束归零，允许重新发送
+                                countDown = 0
                                 withContext(Dispatchers.Main) {
                                     registerViewModel.setCaptchaIdle()
                                 }

@@ -84,9 +84,8 @@ fun OrderPage(
     val pagerState = rememberPagerState(initialPage = itemId) { ShowOrderStatus.entries.size }
     val scope = rememberCoroutineScope()
 
-    val ordersMap by orderViewModel.ordersMap.collectAsState()
+    val uiState by orderViewModel.uiState.collectAsState()
     val loadState by orderViewModel.loadState.collectAsState()
-    val loadingMoreMap by orderViewModel.loadingMoreMap.collectAsState()
     val cancelOrderState by orderViewModel.cancelOrderState.collectAsState()
 
     val context = LocalContext.current
@@ -142,9 +141,9 @@ fun OrderPage(
                         modifier = Modifier.fillMaxSize()
                     ) { pageIndex ->
                         val status = ShowOrderStatus.entries[pageIndex].status
-                        val orderList = ordersMap[status] ?: emptyList()
-                        val isLoadingMore = loadingMoreMap[status] ?: false
-                        val hasMore = orderViewModel.hasMoreForStatus(status)
+                        val orderList = uiState.orders[status] ?: emptyList()
+                        val isLoadingMore = uiState.loadingMore[status] ?: false
+                        val hasMore = uiState.hasMore[status] ?: false
 
                         if (orderList.isNotEmpty()) {
                             LazyColumn(

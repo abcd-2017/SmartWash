@@ -24,12 +24,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -43,13 +41,11 @@ class RetrofitClient {
         sessionManager: SessionManager,
         sessionEventBus: SessionEventBus,
     ): OkHttpClient {
-        val cacheDir = File(context.cacheDir, "http_cache")
-        val cache = Cache(cacheDir, 10 * 1024 * 1024)
+        // 不配置 HTTP 缓存：后端未返回缓存头，缓存恒不命中反而占用磁盘
         val builder = OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .cache(cache)
             .addInterceptor(RequestInterceptor(sessionManager, sessionEventBus))
             .addInterceptor(ResponseInterceptor(sessionManager, sessionEventBus))
 
