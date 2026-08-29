@@ -3,6 +3,7 @@ package com.smartwash.divination.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.divination.entity.DivRecord;
 import com.smartwash.divination.from.CreateRecordFrom;
+import com.smartwash.divination.from.FeedbackFrom;
 import com.smartwash.divination.from.SearchRecordFrom;
 import com.smartwash.divination.vo.RecordDetailVo;
 import com.smartwash.divination.vo.RecordVo;
@@ -35,4 +36,9 @@ public interface IDivRecordService {
      * 今日一签：服务端按当日时间卦生成/复用卦例（method=meihua, source=today）。
      */
     RecordDetailVo getTodayRecord(Long userId);
+
+    /**
+     * 反馈 + 应验回填。
+     */
+    void addFeedback(Long recordId, FeedbackFrom from, Long userId);
 }

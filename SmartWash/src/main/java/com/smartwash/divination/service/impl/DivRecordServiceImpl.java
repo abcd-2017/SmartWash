@@ -7,7 +7,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivRecord;
+import com.smartwash.divination.entity.DivFeedback;
+import com.smartwash.divination.mapper.DivFeedbackMapper;
 import com.smartwash.divination.from.CreateRecordFrom;
+import com.smartwash.divination.from.FeedbackFrom;
 import com.smartwash.divination.from.SearchRecordFrom;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
@@ -37,6 +40,7 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
 
     private final DivinationCore divinationCore;
     private final DivInterpretationMapper interpretationMapper;
+    private final DivFeedbackMapper feedbackMapper;
 
     @Override
     public Long createRecord(CreateRecordFrom from, Long userId) {
@@ -166,5 +170,23 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
         RecordDetailVo vo = new RecordDetailVo();
         BeanUtils.copyProperties(todayRecord, vo);
         return vo;
+    }
+
+    @Override
+    public void addFeedback(Long recordId, FeedbackFrom from, Long userId) {
+        DivRecord record = getById(recordId);
+        if (record == null || !record.getUserId().equals(userId)) {
+            throw new com.smartwash.exception.CustomExceptions("卦例不存在");
+        }
+        DivFeedback feedback = new DivFeedback();
+        feedback.setRecordId(recordId);
+        feedback.setInterpretationId(from.getInterpretationId());
+        feedback.setUserId(userId);
+        feedback.setRating(from.getRating());
+        feedback.setOutcome(from.getOutcome());
+        feedback.setOutcomeNote(from.getOutcomeNote());
+        feedbackMapper.insert(feedback);
+        log.info("反馈已提交, recordId: {}, interpretationId: {}, rating: {}",
+                recordId, from.getInterpretationId(), from.getRating());
     }
 }

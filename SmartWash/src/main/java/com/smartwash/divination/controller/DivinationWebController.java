@@ -3,6 +3,7 @@ package com.smartwash.divination.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.divination.from.CreateRecordFrom;
+import com.smartwash.divination.from.FeedbackFrom;
 import com.smartwash.divination.from.SearchRecordFrom;
 import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.divination.service.IDivRecordService;
@@ -77,5 +78,13 @@ public class DivinationWebController {
     public SseEmitter followup(@PathVariable("id") Long id, @RequestBody String question) {
         LoginUser user = UserContextHolder.getUser();
         return interpretationService.interpret(id, question, user.getUserId(), true);
+    }
+
+    @Operation(summary = "反馈与应验回填", description = "对解读进行评分（1-5）和应验回填")
+    @PostMapping("/records/{id}/feedback")
+    public Result<String> feedback(@PathVariable("id") Long id, @RequestBody @Valid FeedbackFrom from) {
+        LoginUser user = UserContextHolder.getUser();
+        recordService.addFeedback(id, from, user.getUserId());
+        return Result.ok("反馈已提交");
     }
 }
