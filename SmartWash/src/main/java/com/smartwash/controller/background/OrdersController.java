@@ -13,14 +13,13 @@ import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.service.ExportService;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.vo.order.OrdersVo;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -66,13 +65,13 @@ public class OrdersController {
         return Result.ok(ordersService.updateOrderStatus(orderStatus));
     }
 
-    @Operation(summary = "导出订单 CSV", description = "根据条件导出订单为 CSV 文件")
+    @Operation(summary = "导出订单 CSV", description = "根据条件导出订单为 CSV 文件（分批流式写出，全量导出无条数截断）")
     @GetMapping("/export")
-    public ResponseEntity<byte[]> exportOrders(SearchOrderFrom searchFrom) {
-        byte[] csv = exportService.exportOrdersCsv(searchFrom);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("text/csv;charset=utf-8"));
-        headers.setContentDispositionFormData("attachment", "orders.csv");
-        return ResponseEntity.ok().headers(headers).body(csv);
+    public void exportOrders(SearchOrderFrom searchFrom, HttpServletResponse response) throws IOException {
+        // 响应头语义与原实现一致：text/csv 附件下载，固定文件名 orders.csv
+        response.setContentType("text/csv;charset=utf-8");
+        response.setHeader("Content-Disposition", "attachment; filename=orders.csv");
+        // 分批流式写出，不整表进内存（评审报告后端 #32）
+        exportService.exportOrdersCsv(searchFrom, response.getOutputStream());
     }
 }
