@@ -29,4 +29,17 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
     List<UserCouponVo> getCanUseCoupon(@Param("userId") Long userId, @Param("totalPrice") BigDecimal totalPrice);
 
     List<UserCouponVo> getAllUserCoupons(Long userId);
+
+    /**
+     * 核销优惠券（条件更新，防并发重复核销）。
+     * 仅当该券属于指定用户且处于未使用状态时才更新，返回影响行数；
+     * 调用方必须以影响行数 == 1 判定核销成功，== 0 表示券已核销/不存在/不属于该用户。
+     * 本方法在支付事务中调用，禁止先 getById 检查再 updateById（check-then-act）。
+     *
+     * @param userCouponId 用户优惠券记录 ID
+     * @param userId       领取该券的用户 ID（归属校验，防止核销他人优惠券）
+     * @param orderId      核销该券的订单 ID
+     * @return 影响行数：1=核销成功，0=核销失败（已核销或归属不符）
+     */
+    int markUsed(@Param("userCouponId") Long userCouponId, @Param("userId") Long userId, @Param("orderId") Long orderId);
 }

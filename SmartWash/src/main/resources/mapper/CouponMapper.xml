@@ -2,4 +2,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.CouponMapper">
 
+    <!-- 领取限量：原子递增已发放数量，仅当未限量（total_limit IS NULL）或未达上限时生效，防止并发超发 -->
+    <update id="increaseIssuedCount">
+        update coupon
+        set issued_count = issued_count + 1
+        where coupon_id = #{couponId}
+          and (total_limit is null or issued_count &lt; total_limit)
+    </update>
+
 </mapper>

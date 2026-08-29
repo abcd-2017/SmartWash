@@ -87,6 +87,17 @@
           and now() &lt; expired_at
     </select>
 
+    <!-- 核销优惠券：条件更新判影响行数，仅 is_used=0 可核销，防止并发下同一张券被多笔订单重复使用 -->
+    <update id="markUsed">
+        update user_coupon
+        set is_used = 1,
+            order_id = #{orderId},
+            used_at = NOW()
+        where user_coupon_id = #{userCouponId}
+          and user_id = #{userId}
+          and is_used = 0
+    </update>
+
     <select id="getAllUserCoupons" resultType="com.smartwash.vo.user_coupon.UserCouponVo">
         select uc.user_coupon_id,
         u.phone_number,

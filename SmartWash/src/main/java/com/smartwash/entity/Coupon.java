@@ -89,6 +89,18 @@ public class Coupon implements Serializable {
     private Integer validDays;
 
     /**
+     * 发放总量上限（NULL 表示不限量）
+     */
+    @TableField("total_limit")
+    private Integer totalLimit;
+
+    /**
+     * 已发放数量（领取时原子递增，与领取操作同事务，防止超发）
+     */
+    @TableField("issued_count")
+    private Integer issuedCount;
+
+    /**
      * 创建时间
      */
     @TableField("created_at")
