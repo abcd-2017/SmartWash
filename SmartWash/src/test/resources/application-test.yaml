@@ -1,17 +1,33 @@
-# 测试环境配置 - 使用 H2 内存数据库
+# =====================================================================
+# 测试环境配置（mvn test 专用）：完全不依赖真实 MySQL / Redis / MinIO
+# - 数据库使用 H2 内存库（MySQL 兼容模式 MODE=MySQL），表结构由 src/test/resources/schema.sql 初始化
+#   （注意驱动类名必须是 org.h2.Driver，不能用 mysql-connector 的 com.mysql.cj.jdbc.Driver）
+# - Flyway 关闭：迁移脚本为 MySQL 方言（ENGINE/CHARSET/ON UPDATE），H2 不兼容
+# - Redis / MinIO 仅提供惰性配置占位：Lettuce 客户端与 MinioClient 创建阶段均不建连，
+#   上下文加载不依赖任何真实中间件（首次真正发起命令前不会 connect）
+# - JWT_SECRET 为仅测试用的合法 Base64 密钥（解码后 34 字节 >= JwtUtil 的 32 字节下限），
+#   满足 fail-fast 校验；严禁用于任何真实环境
+# =====================================================================
 spring:
   datasource:
     driver-class-name: org.h2.Driver
+    # MODE=MySQL 兼容 MySQL 方言；DB_CLOSE_DELAY=-1 在连接存活期间保留库内容
     url: jdbc:h2:mem:smart_wash_test;MODE=MySQL;DB_CLOSE_DELAY=-1
     username: sa
-    password:
+    password: ""
   flyway:
     enabled: false
+  sql:
+    init:
+      # 嵌入式库默认即执行 classpath:schema.sql，显式声明便于理解
+      mode: embedded
   data:
     redis:
       host: localhost
       port: 6379
       database: 3
+      # Lettuce 惰性建连：上下文启动阶段不会真正连接 Redis
+      timeout: 1000
   cache:
     type: simple
 
@@ -23,7 +39,15 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 jwt:
+  # 仅测试用密钥：dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3Nlcw== -> "testSecretKeyForJWTTestingPurposes"（34 字节）
   secret: dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3Nlcw==
 
 cors:
   allowed-origins: http://localhost:*
+
+minio:
+  # MinioClient 仅在 builder 阶段装配参数、不发起网络请求，占位值仅满足配置绑定与 @ConfigurationProperties 校验
+  endpoint: http://localhost:9000
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket-name: smartwash-test
