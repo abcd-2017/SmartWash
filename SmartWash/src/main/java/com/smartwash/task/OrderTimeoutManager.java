@@ -62,20 +62,32 @@ public class OrderTimeoutManager {
     }
 
     /**
-     * 超时回调：检查订单是否仍未支付，是则取消
+     * 超时回调：仅当订单仍处于待支付状态时取消（CAS 条件更新防与支付/手动取消并发）
      */
     private void cancelIfUnpaid(Long orderId) {
         try {
+            // 先读取订单以留存寄存柜 ID（读取仅用于释放柜子，状态是否可取消以 CAS 结果为准）
             Orders order = ordersMapper.selectById(orderId);
-            if (order != null && OrderStatus.PENDING_PAYMENT.getStatus().equals(order.getStatus())) {
-                // 释放寄存柜
-                if (order.getLockerId() != null) {
+            if (order == null) {
+                log.info("订单超时取消跳过：订单不存在, orderId: {}", orderId);
+                return;
+            }
+            // CAS 条件更新闸门：待支付 -> 已取消，影响行数为 0 说明支付/取消已并发完成
+            int rows = ordersMapper.casStatus(orderId, OrderStatus.PENDING_PAYMENT.getStatus(), OrderStatus.CANCELED.getStatus());
+            if (rows == 0) {
+                // 订单已支付或已取消，超时任务残留无害
+                log.info("订单超时取消跳过：订单状态已变更（已支付或已取消）, orderId: {}", orderId);
+                return;
+            }
+            log.info("订单超时自动取消, orderId: {}", orderId);
+            // 释放寄存柜（CAS 已清 locker_id，此处用读取时留存的 ID 释放）；失败仅告警，不影响取消结果
+            if (order.getLockerId() != null) {
+                try {
                     lockersMapper.unLocker(order.getLockerId(), LockerStatusEnum.FREE.getValue());
                     log.info("订单超时释放寄存柜, orderId: {}, lockerId: {}", orderId, order.getLockerId());
+                } catch (Exception le) {
+                    log.error("订单超时取消后释放寄存柜失败, orderId: {}, lockerId: {}", orderId, order.getLockerId(), le);
                 }
-                // 更新订单状态为已取消
-                ordersMapper.nextStatus(orderId, OrderStatus.CANCELED.getStatus());
-                log.info("订单超时自动取消, orderId: {}", orderId);
             }
         } catch (Exception e) {
             log.error("取消超时订单失败, orderId: {}", orderId, e);

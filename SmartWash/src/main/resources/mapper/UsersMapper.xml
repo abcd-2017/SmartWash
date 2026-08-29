@@ -11,6 +11,12 @@
         set balance = balance - #{amount}
         where user_id = #{userId} and balance >= #{amount};
     </update>
+    <!-- 余额增加（退款/入账），与 decrUserBalance 对应；金额由服务端以支付流水计算 -->
+    <update id="incrUserBalance">
+        update users
+        set balance = balance + #{amount}
+        where user_id = #{userId};
+    </update>
 
     <select id="getUserByPhoneNumber" resultType="com.smartwash.entity.Users" parameterType="java.lang.String">
         select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at from users where phone_number = #{phoneNumber}

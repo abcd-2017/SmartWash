@@ -17,7 +17,14 @@ import java.math.BigDecimal;
 public interface UsersMapper extends BaseMapper<Users> {
     Users getUserByPhoneNumber(@Param("phoneNumber") String phoneNumber);
 
-    void addUserBalance(@Param("userId")Long userId, @Param("balance")BigDecimal balance);
-
     int decrUserBalance(Long userId, BigDecimal amount);
+
+    /**
+     * 用户余额增加（退款/入账）：无条件累加，金额由调用方以库内流水计算，禁止信任前端传入
+     *
+     * @param userId 用户 ID
+     * @param amount 增加金额（必须为非负）
+     * @return 影响行数
+     */
+    int incrUserBalance(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
 }

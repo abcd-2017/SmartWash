@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.LockerStatusEnum;
 import com.smartwash.common.OrderStatus;
+import com.smartwash.common.PaymentStatus;
 import com.smartwash.entity.*;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.order.*;
@@ -47,6 +48,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     private final UserCouponMapper userCouponMapper;
     private final CouponMapper couponMapper;
     private final LaundryItemsMapper laundryItemsMapper;
+    private final PaymentsMapper paymentsMapper;
     private final OrderTimeoutManager orderTimeoutManager;
 
     @Override
@@ -147,6 +149,16 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             OrderStatus.READY_FOR_PICKUP.getStatus(), java.util.Set.of(OrderStatus.COMPLETED.getStatus())
     );
 
+    // 已支付且未终态的状态集合：管理员取消这些状态的订单时走退款链路
+    private static final java.util.Set<String> PAID_IN_FLIGHT_STATUSES = java.util.Set.of(
+            OrderStatus.PENDING_SHIPMENT.getStatus(),
+            OrderStatus.RECEIVED.getStatus(),
+            OrderStatus.WASHING.getStatus(),
+            OrderStatus.DRIED.getStatus(),
+            OrderStatus.IN_DELIVERY.getStatus(),
+            OrderStatus.READY_FOR_PICKUP.getStatus()
+    );
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean updateOrderStatus(UpdateOrderStatus orderStatus) {
@@ -154,6 +166,11 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         Orders orders = getById(orderStatus.getOrderId());
         if (orders == null) {
             throw new CustomExceptions("订单不存在");
+        }
+
+        // 管理员取消：区分待支付（直接取消）与已支付（退款）两条链路，API 契约不变
+        if (OrderStatus.CANCELED.getStatus().equals(orderStatus.getStatus())) {
+            return adminCancelOrder(orders);
         }
 
         // 校验状态流转是否合法
@@ -170,15 +187,114 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             updateById(orders);
             return true;
         } else {
-            // 订单完成或取消时释放寄存柜
-            if (OrderStatus.COMPLETED.getStatus().equals(orderStatus.getStatus())
-                    || OrderStatus.CANCELED.getStatus().equals(orderStatus.getStatus())) {
-                lockersMapper.unLocker(orders.getLockerId(), LockerStatusEnum.FREE.getValue());
+            // 订单完成：释放寄存柜时必须同步清空 orders.locker_id，避免悬挂引用已释放柜子。
+            // 复用 casStatus 条件更新（状态白名单已限定 READY_FOR_PICKUP → COMPLETED），
+            // 与批次一取消/退款"CAS 闸门 + 释放柜子"口径一致，影响行数 0 说明发生并发状态变更。
+            if (OrderStatus.COMPLETED.getStatus().equals(orderStatus.getStatus())) {
+                int rows = ordersMapper.casStatus(orderStatus.getOrderId(), orders.getStatus(), OrderStatus.COMPLETED.getStatus());
+                if (rows == 0) {
+                    throw new CustomExceptions("订单状态已变更，请刷新后重试");
+                }
+                releaseLockerSafely(orders.getLockerId(), orders.getOrderId());
+                return true;
             }
             LambdaUpdateWrapper<Orders> updateWrapper = new LambdaUpdateWrapper<Orders>()
                     .eq(Orders::getOrderId, orderStatus.getOrderId())
                     .set(Orders::getStatus, orderStatus.getStatus());
             return update(updateWrapper);
+        }
+    }
+
+    /**
+     * 管理员取消订单：待支付订单 CAS 直接取消并释放柜子；已支付且未终态订单走退款链路；
+     * 终态（已完成/已取消/已退款）订单拒绝取消
+     */
+    private Boolean adminCancelOrder(Orders orders) {
+        String currentStatus = orders.getStatus();
+        // 1. 待支付订单：CAS 取消，防止与用户支付并发
+        if (OrderStatus.PENDING_PAYMENT.getStatus().equals(currentStatus)) {
+            int rows = ordersMapper.casStatus(orders.getOrderId(), currentStatus, OrderStatus.CANCELED.getStatus());
+            if (rows == 0) {
+                throw new CustomExceptions("订单状态已变更，请刷新后重试");
+            }
+            releaseLockerSafely(orders.getLockerId(), orders.getOrderId());
+            // 取消超时任务（残留任务也会被 CAS 闸门拦截，此处提前清理）
+            orderTimeoutManager.cancelTimeout(orders.getOrderId());
+            log.info("管理员取消待支付订单, orderId: {}, lockerId: {}", orders.getOrderId(), orders.getLockerId());
+            return true;
+        }
+        // 2. 已支付且未终态订单：退款
+        if (PAID_IN_FLIGHT_STATUSES.contains(currentStatus)) {
+            refundPaidOrder(orders);
+            return true;
+        }
+        // 3. 终态或未知状态不可取消
+        log.warn("管理员取消被拒绝：订单处于终态或未知状态, orderId: {}, status: {}", orders.getOrderId(), currentStatus);
+        throw new CustomExceptions("当前订单状态不可取消：" + OrderStatus.getDescriptionByStatus(currentStatus));
+    }
+
+    /**
+     * 管理员取消已支付订单的退款链路：
+     * 1) CAS 流转到已退款作为防重复退款闸门；2) 退款金额以支付流水为准；
+     * 3) 退还用户余额；4) 还原订单所用优惠券；5) 释放寄存柜。
+     * 注意：本方法由 updateOrderStatus（@Transactional）同类内部调用，事务边界由调用方保证，
+     * 任一步骤抛异常将连同状态 CAS 一起整体回滚。
+     */
+    private void refundPaidOrder(Orders orders) {
+        Long orderId = orders.getOrderId();
+        // 1. CAS 防重复退款闸门：仅当前已支付状态可流转为已退款，0 行说明已被并发取消/退款
+        int rows = ordersMapper.casStatus(orderId, orders.getStatus(), OrderStatus.REFUNDED.getStatus());
+        if (rows == 0) {
+            throw new CustomExceptions("订单状态已变更，请刷新后重试");
+        }
+        // 2. 退款金额以库内支付流水为准，不信任订单快照或前端金额
+        // 仅认经支付网关产生的流水（out_trade_no 非空）：管理端手工新增的流水无幂等键，
+        // 若一并采信，管理员可伪造任意金额 SUCCESS 流水后取消订单凭空退款。
+        // 改造前支付的历史订单无 out_trade_no，如需退款走线下人工处理。
+        Payments payment = paymentsMapper.selectOne(new LambdaQueryWrapper<Payments>()
+                .eq(Payments::getOrderId, orderId)
+                .eq(Payments::getStatus, PaymentStatus.SUCCESS.getStatus())
+                .isNotNull(Payments::getOutTradeNo)
+                .orderByDesc(Payments::getPaidAt)
+                .last("limit 1"));
+        if (payment == null || payment.getAmount() == null) {
+            log.error("订单缺少成功支付流水，退款中止并整体回滚, orderId: {}", orderId);
+            throw new CustomExceptions("支付流水异常，无法退款");
+        }
+        BigDecimal refundAmount = payment.getAmount();
+        // 3. 退还用户余额（金额为 0 时无需入账）
+        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (usersMapper.incrUserBalance(orders.getUserId(), refundAmount) == 0) {
+                throw new CustomExceptions("余额退还失败，请稍后重试");
+            }
+        }
+        // 4. 还原订单使用的优惠券（MyBatis-Plus 内置方法；券记录不存在则跳过并告警）
+        if (orders.getUserCouponId() != null) {
+            UserCoupon userCoupon = userCouponMapper.selectById(orders.getUserCouponId());
+            if (userCoupon != null) {
+                userCoupon.setIsUsed(false);
+                userCouponMapper.updateById(userCoupon);
+            } else {
+                log.warn("退款时未找到优惠券记录，跳过还原, orderId: {}, userCouponId: {}", orderId, orders.getUserCouponId());
+            }
+        }
+        // 5. 释放寄存柜（CAS 已清 locker_id，此处用读取时留存的 ID 释放）
+        releaseLockerSafely(orders.getLockerId(), orderId);
+        log.info("管理员取消已支付订单并退款完成, orderId: {}, userId: {}, 退款金额: {}", orderId, orders.getUserId(), refundAmount);
+    }
+
+    /**
+     * 释放寄存柜：失败仅告警不抛出，避免影响已完成的取消/退款结果；柜子残留占用可由管理端人工修复
+     */
+    private void releaseLockerSafely(Long lockerId, Long orderId) {
+        if (lockerId == null) {
+            return;
+        }
+        try {
+            lockersMapper.unLocker(lockerId, LockerStatusEnum.FREE.getValue());
+            log.info("已释放寄存柜, orderId: {}, lockerId: {}", orderId, lockerId);
+        } catch (Exception e) {
+            log.error("释放寄存柜失败, orderId: {}, lockerId: {}", orderId, lockerId, e);
         }
     }
 
@@ -211,28 +327,31 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     }
 
     /**
-     * 取消订单
+     * 取消订单（用户端）：仅待支付订单可取消。
+     * 存在性与归属用读校验，状态流转用 CAS 条件更新作并发闸门，防止取消与支付竞态导致已支付订单被取消
      *
-     * @param orderId
-     * @param userId
-     * @return
+     * @param orderId 订单 ID
+     * @param userId  当前用户 ID
+     * @return 是否取消成功
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
     public Boolean cancelOrder(Long orderId, Long userId) {
         Orders orders = getById(orderId);
-        if (orders == null
-                || !orders.getStatus().equals(OrderStatus.PENDING_PAYMENT.getStatus())
-                || !Objects.equals(orders.getUserId(), userId)) {
+        if (orders == null || !Objects.equals(orders.getUserId(), userId)) {
             throw new CustomExceptions("订单状态异常");
         }
+        // CAS 闸门：待支付 -> 已取消，影响行数为 0 说明订单已被支付/取消/状态变更
+        int rows = ordersMapper.casStatus(orderId, OrderStatus.PENDING_PAYMENT.getStatus(), OrderStatus.CANCELED.getStatus());
+        if (rows == 0) {
+            log.info("用户取消订单失败：订单状态已变更, orderId: {}, userId: {}", orderId, userId);
+            throw new CustomExceptions("订单状态已变更，请刷新后重试");
+        }
         log.info("订单已取消, orderId: {}, userId: {}", orderId, userId);
-        //1.解除寄存柜占用
-        lockersMapper.unLocker(orders.getLockerId(), LockerStatusEnum.FREE.getValue());
+        //1.解除寄存柜占用（CAS 已清 locker_id，此处用查询留存的 ID 释放；失败仅告警）
+        releaseLockerSafely(orders.getLockerId(), orderId);
 
-        //2.修改订单状态
-        ordersMapper.nextStatus(orders.getOrderId(), OrderStatus.CANCELED.getStatus());
-        // 取消超时任务
+        //2.取消超时任务（残留任务也会被 CAS 闸门拦截，此处提前清理）
         orderTimeoutManager.cancelTimeout(orderId);
         return true;
     }
@@ -335,14 +454,15 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             throw new CustomExceptions("取件码错误");
         }
         log.info("订单状态变更, orderId: {}, nextStatus: {}", statusFrom.getOrderId(), nextStatus);
-        //2.修改订单状态
-        orders.setStatus(nextStatus);
+        //2.条件更新订单状态（CAS 闸门：0 行说明状态已被并发变更，如管理员已退款/取消，禁止把终态覆写为已完成）
+        int rows = ordersMapper.nextStatus(orders.getOrderId(), orders.getStatus(), nextStatus);
+        if (rows == 0) {
+            log.warn("订单状态并发变更，取件/寄件流转被拒绝, orderId: {}, expectStatus: {}, ip快照状态可能已过期", statusFrom.getOrderId(), orders.getStatus());
+            throw new CustomExceptions("订单状态已变更，请刷新后重试");
+        }
 
-        //3.解除被占用的寄存柜
-        Long lockerId = orders.getLockerId();
-        lockersMapper.unLocker(lockerId, LockerStatusEnum.FREE.getValue());
-
-        ordersMapper.nextStatus(orders.getOrderId(), nextStatus);
+        //3.解除被占用的寄存柜（SQL 已清 locker_id，此处用读取时留存的 ID 释放；释放失败不影响完成态，仅告警）
+        releaseLockerSafely(orders.getLockerId(), orders.getOrderId());
         return true;
     }
 
