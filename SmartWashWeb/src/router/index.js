@@ -149,6 +149,84 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 观象台（占卜模块）管理端 =====
+      {
+        path: '/divination/prompts',
+        name: 'DivPromptList',
+        component: () => import('@/views/divination/DivPromptList.vue'),
+        meta: {
+          title: 'Prompt 管理',
+          showInMenu: true,
+          icon: 'ChatLineRound',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/rag',
+        name: 'DivRagList',
+        component: () => import('@/views/divination/DivRagList.vue'),
+        meta: {
+          title: '语料管理',
+          showInMenu: true,
+          icon: 'Reading',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/audits',
+        name: 'DivAuditList',
+        component: () => import('@/views/divination/DivAuditList.vue'),
+        meta: {
+          title: '审计复审',
+          showInMenu: true,
+          icon: 'Warning',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/usage',
+        name: 'DivUsage',
+        component: () => import('@/views/divination/DivUsage.vue'),
+        meta: {
+          title: '用量看板',
+          showInMenu: true,
+          icon: 'DataAnalysis',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/blocked',
+        name: 'DivBlockedList',
+        component: () => import('@/views/divination/DivBlockedList.vue'),
+        meta: {
+          title: '拦截日志',
+          showInMenu: true,
+          icon: 'CircleClose',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/models',
+        name: 'DivModelList',
+        component: () => import('@/views/divination/DivModelList.vue'),
+        meta: {
+          title: '模型管理',
+          showInMenu: true,
+          icon: 'Cpu',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/divination/settings',
+        name: 'DivSettings',
+        component: () => import('@/views/divination/DivSettings.vue'),
+        meta: {
+          title: '平台设置',
+          showInMenu: true,
+          icon: 'Setting',
+          requiresAuth: true,
+        },
+      },
     ],
   },
   {

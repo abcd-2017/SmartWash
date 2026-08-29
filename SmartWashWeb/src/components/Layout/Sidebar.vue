@@ -37,6 +37,13 @@ import {
   Document,
   Ticket,
   CollectionTag,
+  ChatLineRound,
+  Reading,
+  Warning,
+  DataAnalysis,
+  CircleClose,
+  Cpu,
+  Setting,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -57,6 +64,14 @@ const iconRegistry = {
   Document: markRaw(Document),
   Ticket: markRaw(Ticket),
   CollectionTag: markRaw(CollectionTag),
+  // 观象台（占卜模块）
+  ChatLineRound: markRaw(ChatLineRound),
+  Reading: markRaw(Reading),
+  Warning: markRaw(Warning),
+  DataAnalysis: markRaw(DataAnalysis),
+  CircleClose: markRaw(CircleClose),
+  Cpu: markRaw(Cpu),
+  Setting: markRaw(Setting),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
