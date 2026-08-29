@@ -8,15 +8,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.PaymentStatus;
-import com.smartwash.entity.Payments;
-import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Schools;
 import com.smartwash.entity.Users;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
-import com.smartwash.mapper.PaymentsMapper;
-import com.smartwash.mapper.RechargeRecordsMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
@@ -43,8 +39,6 @@ import java.util.stream.Collectors;
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
     private final ISchoolsService schoolsService;
     private final MinioConfig minioConfig;
-    private final RechargeRecordsMapper rechargeRecordsMapper;
-    private final PaymentsMapper paymentsMapper;
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {
@@ -251,50 +245,32 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
                 .set(Users::getPassword, encodedPassword));
     }
 
+    /** 交易流水分页默认每页条数 */
+    private static final int TRANSACTION_DEFAULT_PAGE_SIZE = 10;
+    /** 交易流水分页每页条数上限：防止超大 pageSize 变相全量拉取（评审报告后端 #24） */
+    private static final int TRANSACTION_MAX_PAGE_SIZE = 50;
+
     @Override
-    public List<TransactionVo> getTransactionHistory(Long userId) {
-        List<TransactionVo> transactions = new ArrayList<>();
+    public Page<TransactionVo> getTransactionHistory(Long userId, Integer page, Integer pageSize) {
+        // 分页参数兜底：页码非法回退 1，每页条数非法回退默认值并封顶 50
+        int current = (page == null || page < 1) ? 1 : page;
+        int size = (pageSize == null || pageSize < 1)
+                ? TRANSACTION_DEFAULT_PAGE_SIZE
+                : Math.min(pageSize, TRANSACTION_MAX_PAGE_SIZE);
+        // 消费流水仅统计已支付状态（口径与原实现一致，状态码走 PaymentStatus 枚举，避免魔法值）
+        String successStatus = PaymentStatus.SUCCESS.getStatus();
 
-        // 查询充值记录
-        LambdaQueryWrapper<RechargeRecords> rechargeWrapper = new LambdaQueryWrapper<>();
-        rechargeWrapper.eq(RechargeRecords::getUserId, userId)
-                .orderByDesc(RechargeRecords::getRechargeTime);
-        List<RechargeRecords> rechargeRecords = rechargeRecordsMapper.selectList(rechargeWrapper);
-
-        for (RechargeRecords record : rechargeRecords) {
-            TransactionVo vo = new TransactionVo();
-            vo.setType("recharge");
-            vo.setAmount(record.getAmount());
-            vo.setDescription("账户充值");
-            vo.setTransactionTime(record.getRechargeTime());
-            vo.setStatus("success");
-            transactions.add(vo);
+        Page<TransactionVo> result = new Page<>(current, size);
+        long total = baseMapper.countTransactionHistory(userId, successStatus);
+        result.setTotal(total);
+        if (total == 0) {
+            // 无流水时不再下探分页查询，直接返回空记录
+            result.setRecords(Collections.emptyList());
+            return result;
         }
-
-        // 查询消费记录（仅统计已支付流水；状态码走 PaymentStatus 枚举，避免魔法值）
-        LambdaQueryWrapper<Payments> paymentWrapper = new LambdaQueryWrapper<>();
-        paymentWrapper.eq(Payments::getUserId, userId)
-                .eq(Payments::getStatus, PaymentStatus.SUCCESS.getStatus())
-                .orderByDesc(Payments::getPaidAt);
-        List<Payments> payments = paymentsMapper.selectList(paymentWrapper);
-
-        for (Payments payment : payments) {
-            TransactionVo vo = new TransactionVo();
-            vo.setType("payment");
-            vo.setAmount(payment.getAmount().negate()); // 消费为负数
-            vo.setDescription("洗衣服务消费");
-            vo.setTransactionTime(payment.getPaidAt());
-            vo.setStatus("success");
-            transactions.add(vo);
-        }
-
-        // 按时间倒序排序
-        transactions.sort((a, b) -> {
-            if (a.getTransactionTime() == null) return 1;
-            if (b.getTransactionTime() == null) return -1;
-            return b.getTransactionTime().compareTo(a.getTransactionTime());
-        });
-
-        return transactions;
+        // 合并排序、截取全部下沉到数据库（UNION ALL + LIMIT/OFFSET），不再把两表全量拉进内存
+        long offset = (long) (current - 1) * size;
+        result.setRecords(baseMapper.selectTransactionPage(userId, successStatus, offset, size));
+        return result;
     }
 }

@@ -9,8 +9,6 @@ import com.smartwash.vo.users.TransactionVo;
 import com.smartwash.vo.users.UserVo;
 import jakarta.validation.Valid;
 
-import java.util.List;
-
 /**
  * <p>
  * 服务类
@@ -52,5 +50,12 @@ public interface IUsersService extends IService<Users> {
 
     Boolean resetPassword(String phoneNumber, String newPassword);
 
-    List<TransactionVo> getTransactionHistory(Long userId);
+    /**
+     * 交易流水分页查询（充值+支付合并，数据库层分页，评审报告后端 #24）
+     *
+     * @param userId   用户 ID
+     * @param page     页码（从 1 开始，非法值回退 1）
+     * @param pageSize 每页条数（默认 10，上限 50）
+     */
+    Page<TransactionVo> getTransactionHistory(Long userId, Integer page, Integer pageSize);
 }

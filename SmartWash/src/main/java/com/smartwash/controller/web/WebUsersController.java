@@ -1,6 +1,7 @@
 package com.smartwash.controller.web;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.DefaultConstant;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -91,11 +91,13 @@ public class WebUsersController {
         return Result.ok(usersService.unBingCampus(user.getUserId()));
     }
 
-    @Operation(summary = "获取交易记录", description = "获取当前用户的充值和消费记录")
+    @Operation(summary = "获取交易记录", description = "分页获取当前用户的充值和消费记录（page 默认 1，pageSize 默认 10、上限 50）")
     @GetMapping("/auth/user/transactions")
-    public Result<List<TransactionVo>> getTransactions() {
+    public Result<Page<TransactionVo>> getTransactions(
+            @RequestParam(value = "page", defaultValue = "1") @Parameter(description = "页码，从 1 开始", example = "1") Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页条数，最大 50", example = "10") Integer pageSize) {
         LoginUser user = UserContextHolder.getUser();
-        return Result.ok(usersService.getTransactionHistory(user.getUserId()));
+        return Result.ok(usersService.getTransactionHistory(user.getUserId(), page, pageSize));
     }
 
     @Operation(summary = "上传头像", description = "上传或更新当前用户的头像图片")

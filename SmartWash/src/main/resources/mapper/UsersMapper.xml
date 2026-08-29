@@ -21,4 +21,44 @@
     <select id="getUserByPhoneNumber" resultType="com.smartwash.entity.Users" parameterType="java.lang.String">
         select user_id, phone_number, password, school_id, student_id, campus_card, balance, created_at from users where phone_number = #{phoneNumber}
     </select>
+
+    <!--
+        交易流水分页查询（评审报告后端 #24）：充值与支付流水 UNION ALL 合并后排序，数据库层 LIMIT/OFFSET，
+        替代原"两表全量拉进内存排序"的实现。
+        口径与原实现保持一致：
+        - 充值取 recharge_records.recharge_time，不过滤状态（历史行为：失败/处理中充值也展示，VO 状态恒为 success）；
+        - 支付仅取 status = #{paymentStatus}（PaymentStatus.SUCCESS）的已支付流水，金额取负数为支出；
+        - 按时间倒序，NULL 时间排最后（MySQL DESC 默认行为，与原 Java 排序一致）；
+        - 以 type desc（recharge 在前）+ biz_id 作为同时间的稳定排序键，保证 LIMIT/OFFSET 翻页不重不漏。
+    -->
+    <select id="selectTransactionPage" resultType="com.smartwash.vo.users.TransactionVo">
+        select t.type, t.amount, t.description, t.transaction_time, t.status
+        from (
+            select 'recharge' as type,
+                   r.amount as amount,
+                   '账户充值' as description,
+                   r.recharge_time as transaction_time,
+                   'success' as status,
+                   r.record_id as biz_id
+            from recharge_records r
+            where r.user_id = #{userId}
+            union all
+            select 'payment' as type,
+                   -p.amount as amount,
+                   '洗衣服务消费' as description,
+                   p.paid_at as transaction_time,
+                   'success' as status,
+                   p.payment_id as biz_id
+            from payments p
+            where p.user_id = #{userId} and p.status = #{paymentStatus}
+        ) t
+        order by t.transaction_time desc, t.type desc, t.biz_id desc
+        limit #{limit} offset #{offset}
+    </select>
+
+    <!-- 交易流水总数：与 selectTransactionPage 同口径（充值全量 + 已支付消费），供 Page 组装 total -->
+    <select id="countTransactionHistory" resultType="long">
+        select (select count(*) from recharge_records where user_id = #{userId})
+             + (select count(*) from payments where user_id = #{userId} and status = #{paymentStatus})
+    </select>
 </mapper>
