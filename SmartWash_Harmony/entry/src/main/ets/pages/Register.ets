@@ -11,7 +11,6 @@ export function RegisterBuilder() {
   Register()
 }
 
-@Entry
 @Component
 struct Register {
   @State phoneNumber: string | null = null

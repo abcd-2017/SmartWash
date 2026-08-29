@@ -15,7 +15,6 @@ export function AddSchoolBuilder() {
 const SEARCH_DEBOUNCE_MS: number = 300
 
 @Component
-@Entry
 struct AddSchool {
   @State schoolId: number | null = null
   @State schoolName: string | null = null

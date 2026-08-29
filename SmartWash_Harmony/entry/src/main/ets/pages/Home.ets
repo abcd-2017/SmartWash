@@ -8,7 +8,6 @@ export function HomeBuilder() {
   Home()
 }
 
-@Entry
 @Component
 struct Home {
   private controller: TabsController = new TabsController()

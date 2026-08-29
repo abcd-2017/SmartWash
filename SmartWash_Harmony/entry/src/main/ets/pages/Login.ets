@@ -11,7 +11,6 @@ export function LoginBuilder() {
   Login()
 }
 
-@Entry
 @Component
 struct Login {
   @State phoneNumber: string | null = null
