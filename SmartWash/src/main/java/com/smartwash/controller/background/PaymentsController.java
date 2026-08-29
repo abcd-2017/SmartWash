@@ -4,7 +4,6 @@ package com.smartwash.controller.background;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.PayType;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.common.Result;
@@ -69,12 +68,6 @@ public class PaymentsController {
             if (!phoneNumber.matches("^(\\+86)?1[3-9]\\d{9}$")) return Result.failMsg("手机号格式错误");
         }
         return Result.ok(paymentsService.getAllPayments(paymentFrom));
-    }
-
-    @Operation(summary = "批量删除支付记录", description = "根据ID批量删除支付记录，多个ID用逗号分隔")
-    @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> deletePayments(@PathVariable("ids") @Parameter(description = "支付记录ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
-        return Result.ok(paymentsService.deletePayments(ids));
     }
 
     @Operation(summary = "新增支付记录", description = "手动新增一条支付记录")

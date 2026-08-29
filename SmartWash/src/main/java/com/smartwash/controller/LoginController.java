@@ -24,10 +24,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.SecureRandom;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Tag(name = "认证管理", description = "用户登录、注册、验证码接口")
@@ -40,6 +42,14 @@ public class LoginController {
     private static final int CAPTCHA_LENGTH = 6;
     private static final int LOGIN_MAX_ATTEMPTS = 5;
     private static final long LOGIN_LOCKOUT_MINUTES = 5;
+
+    /**
+     * 时序对齐用 BCrypt 校验器与伪哈希（启动时由随机 UUID 生成，不对应任何真实账号凭证，非密钥）：
+     * "手机号未注册"分支对伪哈希执行一次哑校验，使该分支耗时与"已注册+BCrypt 密码校验"路径相当，
+     * 抹平响应时序差，防止通过响应时间枚举注册手机号
+     */
+    private static final BCryptPasswordEncoder DUMMY_PASSWORD_ENCODER = new BCryptPasswordEncoder();
+    private static final String DUMMY_BCRYPT_HASH = new BCryptPasswordEncoder().encode(UUID.randomUUID().toString());
     /**
      * IP 维度登录失败上限：同一 IP 在统计窗口（LOGIN_IP_LOCKOUT_MINUTES）内失败达到该次数即限制该 IP 登录。
      * 阈值远高于单账号锁定阈值（5 次），正常用户不受影响，仅拦截单点高频爆破/恶意锁号行为（评审报告后端 #18）。
@@ -134,6 +144,9 @@ public class LoginController {
         }
 
         if (usersService.getUserByPhone(userLoginFrom.getPhoneNumber()) == null) {
+            // 哑 BCrypt 校验对齐时序：未注册分支直接返回会快于已注册分支的密码 BCrypt 校验，
+            // 攻击者可据此区分手机号是否注册；先执行一次等成本校验再返回相同错误文案
+            DUMMY_PASSWORD_ENCODER.matches(userLoginFrom.getPassword(), DUMMY_BCRYPT_HASH);
             log.warn("用户登录失败：手机号未注册, phone: {}, ip: {}", maskPhone(userLoginFrom.getPhoneNumber()), clientIp);
             // 手机号未注册同样计入 IP 失败计数：该分支对外与密码错误不可区分，
             // 不计数会被用于绕过账号锁定做手机号枚举/爆破

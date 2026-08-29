@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.DefaultConstant;
+import com.smartwash.common.PaymentStatus;
 import com.smartwash.entity.Payments;
 import com.smartwash.entity.RechargeRecords;
 import com.smartwash.entity.Schools;
@@ -87,9 +88,33 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         }
         BeanUtils.copyProperties(addUsersFrom, users);
         users.setPassword(password);
-        boolean result = save(users);
-        log.info("管理员新增用户, userId: {}", users.getUserId());
-        return result;
+        try {
+            boolean result = save(users);
+            log.info("管理员新增用户, userId: {}", users.getUserId());
+            return result;
+        } catch (DuplicateKeyException e) {
+            // 唯一索引兜底：并发窗口下手机号/学号/校园卡撞车时转友好提示，避免裸 500
+            // （正常路径已由 Controller 层逐项查重拦截，此处与 updateUser 对称覆盖并发窗口，评审报告后端 #29）
+            log.warn("管理员新增用户命中唯一索引冲突, phone: {}", DesensitizedUtil.mobilePhone(addUsersFrom.getPhoneNumber()));
+            throw resolveDuplicateFieldMessage(addUsersFrom);
+        }
+    }
+
+    /**
+     * 新增/更新用户命中唯一索引后，回查定位冲突字段并给出对应友好提示；
+     * 回查也未命中（如刚被删除）时返回通用兜底提示
+     */
+    private CustomExceptions resolveDuplicateFieldMessage(AddUserFrom addUsersFrom) {
+        if (StringUtils.hasText(addUsersFrom.getPhoneNumber()) && getUserByPhone(addUsersFrom.getPhoneNumber()) != null) {
+            return new CustomExceptions("该手机号已被注册");
+        }
+        if (StringUtils.hasText(addUsersFrom.getStudentId()) && getUserByStudentId(addUsersFrom.getStudentId()) != null) {
+            return new CustomExceptions("该学号已注册账号");
+        }
+        if (StringUtils.hasText(addUsersFrom.getCampusCard()) && getUserByCampusCard(addUsersFrom.getCampusCard()) != null) {
+            return new CustomExceptions("该校园卡已绑定账号");
+        }
+        return new CustomExceptions("保存失败：手机号/学号/校园卡已被其他账号使用");
     }
 
     @Override
@@ -246,10 +271,10 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
             transactions.add(vo);
         }
 
-        // 查询消费记录
+        // 查询消费记录（仅统计已支付流水；状态码走 PaymentStatus 枚举，避免魔法值）
         LambdaQueryWrapper<Payments> paymentWrapper = new LambdaQueryWrapper<>();
         paymentWrapper.eq(Payments::getUserId, userId)
-                .eq(Payments::getStatus, "1") // 已支付
+                .eq(Payments::getStatus, PaymentStatus.SUCCESS.getStatus())
                 .orderByDesc(Payments::getPaidAt);
         List<Payments> payments = paymentsMapper.selectList(paymentWrapper);
 

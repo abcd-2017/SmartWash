@@ -25,7 +25,7 @@ public interface IPaymentsService extends IService<Payments> {
 
     Boolean updatePayment(UpdatePaymentFrom paymentsFrom);
 
-    Boolean deletePayments(String ids);
+    // 支付凭证为资金记录，禁止物理删除（项目硬规则；原 DELETE /admin/payments/delete/{ids} 已摘除）
 
     Page<PaymentVo> getAllPayments(SearchPaymentFrom paymentFrom);
 

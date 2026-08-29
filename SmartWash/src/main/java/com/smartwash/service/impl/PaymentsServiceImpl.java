@@ -360,12 +360,5 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         return updateById(payment);
     }
 
-    @Override
-    public Boolean deletePayments(String ids) {
-        log.info("删除支付记录, ids: {}", ids);
-        List<Long> idList = Arrays.stream(ids.split(","))
-                .map(Long::valueOf)
-                .collect(Collectors.toList());
-        return removeByIds(idList);
-    }
+    // 支付凭证为资金记录，禁止物理删除（项目硬规则；删除入口已随 DELETE /admin/payments/delete/{ids} 一并摘除）
 }
