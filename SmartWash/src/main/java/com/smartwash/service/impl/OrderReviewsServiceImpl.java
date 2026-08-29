@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.entity.OrderReviews;
 import com.smartwash.entity.Orders;
+import com.smartwash.entity.Users;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.review.AddReviewFrom;
 import com.smartwash.mapper.OrderReviewsMapper;
@@ -20,8 +21,13 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -75,6 +81,15 @@ public class OrderReviewsServiceImpl extends ServiceImpl<OrderReviewsMapper, Ord
                 .orderByDesc(OrderReviews::getCreatedAt);
 
         Page<OrderReviews> reviewPage = page(pageParam, wrapper);
+        // 批量装配评价人手机号，消除循环内逐条 selectById 的 N+1（评审报告后端 #26）
+        Set<Long> userIds = reviewPage.getRecords().stream()
+                .map(OrderReviews::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Users> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : usersMapper.selectBatchIds(userIds).stream()
+                        .collect(Collectors.toMap(Users::getUserId, Function.identity()));
+
         Page<ReviewVo> voPage = new Page<>();
         voPage.setRecords(reviewPage.getRecords().stream().map(r -> {
             ReviewVo vo = new ReviewVo();
@@ -84,7 +99,7 @@ public class OrderReviewsServiceImpl extends ServiceImpl<OrderReviewsMapper, Ord
             vo.setRating(r.getRating());
             vo.setContent(r.getContent());
             vo.setCreatedAt(r.getCreatedAt());
-            var user = usersMapper.selectById(r.getUserId());
+            Users user = userMap.get(r.getUserId());
             if (user != null) {
                 vo.setUserPhone(DesensitizedUtil.mobilePhone(user.getPhoneNumber()));
             }

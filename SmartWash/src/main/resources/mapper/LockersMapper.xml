@@ -22,4 +22,19 @@
         limit 1
         for update;
     </select>
+
+    <!-- 按学校聚合柜子状态汇总（JOIN schools + GROUP BY 单条 SQL）：
+         替代原先"全表 list + 循环逐校查校名"的 N+1 与全量加载（评审报告后端 #27）；
+         状态值与 LockerStatusEnum 对应，由调用方以参数传入避免魔法值 -->
+    <select id="summarizeBySchool" resultType="com.smartwash.vo.locker.LockerStatusSummaryVo">
+        select l.school_id        as schoolId,
+               s.school_name      as schoolName,
+               count(*)           as totalCount,
+               sum(case when l.status = #{freeStatus} then 1 else 0 end)  as freeCount,
+               sum(case when l.status = #{useStatus} then 1 else 0 end)   as usedCount,
+               sum(case when l.status = #{faultStatus} then 1 else 0 end) as faultCount
+        from lockers l
+        left join schools s on l.school_id = s.school_id
+        group by l.school_id, s.school_name;
+    </select>
 </mapper>

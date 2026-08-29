@@ -4,7 +4,6 @@ import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.smartwash.common.LockerStatusEnum;
@@ -21,6 +20,7 @@ import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
+import com.smartwash.vo.order.OrderStatusCountVo;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.order.ShowOrderVo;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +42,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> implements IOrdersService {
+
+    /**
+     * "全部订单"分组标识（接口契约约定的魔法值 "001"，表示不限状态）：
+     * 前端按该 key 解析订单摘要/订单列表响应，取值不可变更
+     */
+    private static final String ORDER_GROUP_ALL = "001";
+
     private final OrdersMapper ordersMapper;
     private final UsersMapper usersMapper;
     private final LockersMapper lockersMapper;
@@ -115,7 +122,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public List<ShowOrderVo> getOrderList(OrderListFrom orderListFrom, LoginUser loginUser) {
         Page<ShowOrderVo> page = new Page<>(orderListFrom.getPage(), orderListFrom.getSize());
-        if (Objects.equals(orderListFrom.getStatus(), "001")) {
+        if (Objects.equals(orderListFrom.getStatus(), ORDER_GROUP_ALL)) {
             return ordersMapper.getOrderList(page, null, loginUser.getUserId()).getRecords();
         } else {
             return ordersMapper.getOrderList(page, orderListFrom.getStatus(), loginUser.getUserId()).getRecords();
@@ -125,16 +132,18 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
 
     @Override
     public OrderItemCountVo getOrderItemCount(OrderItemCountFrom itemCountFrom, Long userId) {
+        // 一次聚合查询取回该用户各状态订单数，按前端传入的状态码装配，替代原先 4 次逐状态 count（评审报告后端 #25）
+        Map<String, Long> statusCountMap = countGroupByStatusMap(userId);
         OrderItemCountVo itemCountVo = new OrderItemCountVo();
 
         //待支付数量
-        itemCountVo.setPendingPaymentCount(getItemCount(userId, itemCountFrom.getPendingPaymentStatus()));
+        itemCountVo.setPendingPaymentCount(toStatusCount(statusCountMap, itemCountFrom.getPendingPaymentStatus()));
         //待清洗数量
-        itemCountVo.setProcessingCount(getItemCount(userId, itemCountFrom.getProcessingStatus()));
+        itemCountVo.setProcessingCount(toStatusCount(statusCountMap, itemCountFrom.getProcessingStatus()));
         //待取件数量
-        itemCountVo.setPendingPickupCount(getItemCount(userId, itemCountFrom.getPendingPickupStatus()));
+        itemCountVo.setPendingPickupCount(toStatusCount(statusCountMap, itemCountFrom.getPendingPickupStatus()));
         //待寄件数量
-        itemCountVo.setShippedCount(getItemCount(userId, itemCountFrom.getShippedStatus()));
+        itemCountVo.setShippedCount(toStatusCount(statusCountMap, itemCountFrom.getShippedStatus()));
         return itemCountVo;
     }
 
@@ -179,30 +188,48 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             throw new CustomExceptions("非法的状态变更：" + OrderStatus.getDescriptionByStatus(orders.getStatus()) + " -> " + OrderStatus.getDescriptionByStatus(orderStatus.getStatus()));
         }
 
-        // 订单到达待取件状态时，分配寄存柜和生成取件码
+        // 订单到达待取件状态时，分配寄存柜和生成取件码（条件 UPDATE 判影响行数作并发闸门）
         if (OrderStatus.READY_FOR_PICKUP.getStatus().equals(orderStatus.getStatus())) {
-            orders.setLockerId(findAndAssignFreeLocker(orders.getSchoolId()));
-            orders.setStatus(orderStatus.getStatus());
-            orders.setPickupCode(String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000)));
-            updateById(orders);
-            return true;
-        } else {
-            // 订单完成：释放寄存柜时必须同步清空 orders.locker_id，避免悬挂引用已释放柜子。
-            // 复用 casStatus 条件更新（状态白名单已限定 READY_FOR_PICKUP → COMPLETED），
-            // 与批次一取消/退款"CAS 闸门 + 释放柜子"口径一致，影响行数 0 说明发生并发状态变更。
-            if (OrderStatus.COMPLETED.getStatus().equals(orderStatus.getStatus())) {
-                int rows = ordersMapper.casStatus(orderStatus.getOrderId(), orders.getStatus(), OrderStatus.COMPLETED.getStatus());
-                if (rows == 0) {
-                    throw new CustomExceptions("订单状态已变更，请刷新后重试");
-                }
-                releaseLockerSafely(orders.getLockerId(), orders.getOrderId());
-                return true;
+            // 订单原持有的寄件柜：CAS 命中后立即释放，否则旧柜将永久停留"使用中"造成资源泄漏
+            Long previousLockerId = orders.getLockerId();
+            Long lockerId = findAndAssignFreeLocker(orders.getSchoolId());
+            String pickupCode = String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000));
+            // 状态 + 新柜子 + 取件码一次条件更新写入，expect 取读取快照的当前状态
+            int assignedRows = ordersMapper.casStatusAssignPickup(orderStatus.getOrderId(), orders.getStatus(), orderStatus.getStatus(), lockerId, pickupCode);
+            if (assignedRows == 0) {
+                // 0 行说明订单已被并发取消/退款；上面分配的柜子随当前事务整体回滚，不会泄漏占用
+                log.warn("管理员流转到待取件被拒绝：订单状态已并发变更, orderId: {}, expectStatus: {}",
+                        orders.getOrderId(), orders.getStatus());
+                throw new CustomExceptions("订单状态已变更，请刷新后重试");
             }
-            LambdaUpdateWrapper<Orders> updateWrapper = new LambdaUpdateWrapper<Orders>()
-                    .eq(Orders::getOrderId, orderStatus.getOrderId())
-                    .set(Orders::getStatus, orderStatus.getStatus());
-            return update(updateWrapper);
+            // 释放寄件柜（取件柜从空闲柜中分配，不会与寄件柜相同）；释放失败仅告警不回滚流转
+            releaseLockerSafely(previousLockerId, orders.getOrderId());
+            log.info("管理员流转订单到待取件, orderId: {}, pickupLockerId: {}, releasedLockerId: {}", orders.getOrderId(), lockerId, previousLockerId);
+            return true;
         }
+
+        // 订单完成：释放寄存柜时必须同步清空 orders.locker_id，避免悬挂引用已释放柜子。
+        // 复用 casStatus 条件更新（状态白名单已限定 READY_FOR_PICKUP → COMPLETED），
+        // 与批次一取消/退款"CAS 闸门 + 释放柜子"口径一致，影响行数 0 说明发生并发状态变更。
+        if (OrderStatus.COMPLETED.getStatus().equals(orderStatus.getStatus())) {
+            int rows = ordersMapper.casStatus(orderStatus.getOrderId(), orders.getStatus(), OrderStatus.COMPLETED.getStatus());
+            if (rows == 0) {
+                throw new CustomExceptions("订单状态已变更，请刷新后重试");
+            }
+            releaseLockerSafely(orders.getLockerId(), orders.getOrderId());
+            return true;
+        }
+
+        // 其余普通流转：统一 CAS 条件更新判影响行数（expect=读取快照状态，0 行说明已被并发取消/退款/流转，拒绝而非静默覆盖）。
+        // 仅 set status、保留 locker_id——待支付→待寄件等在途流转柜子仍被订单持有，
+        // 不能复用会固定清空 locker_id 的 casStatus，否则造成在途订单柜子悬挂泄漏
+        int rows = ordersMapper.casStatusKeepLocker(orderStatus.getOrderId(), orders.getStatus(), orderStatus.getStatus());
+        if (rows == 0) {
+            log.warn("管理员流转订单被拒绝：订单状态已并发变更, orderId: {}, expectStatus: {}, targetStatus: {}",
+                    orders.getOrderId(), orders.getStatus(), orderStatus.getStatus());
+            throw new CustomExceptions("订单状态已变更，请刷新后重试");
+        }
+        return true;
     }
 
     /**
@@ -359,33 +386,33 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
     @Override
     public Map<String, OrderGroupVo> getOrderSummary(LoginUser loginUser, int size) {
         Map<String, OrderGroupVo> result = new HashMap<>();
+        // 一次聚合查询取回该用户各状态订单数，替代原先 5 次逐状态 count（评审报告后端 #25）
+        Map<String, Long> statusCountMap = countGroupByStatusMap(loginUser.getUserId());
 
         // 全部订单
         List<ShowOrderVo> allOrders = getOrderListByStatus(null, loginUser.getUserId(), 1, size);
-        long allTotal = countByUserIdAndStatus(loginUser.getUserId(), null);
-        result.put("001", new OrderGroupVo(allOrders, allOrders.size() >= size, (int) allTotal));
+        long allTotal = statusCountMap.values().stream().mapToLong(Long::longValue).sum();
+        result.put(ORDER_GROUP_ALL, new OrderGroupVo(allOrders, allOrders.size() >= size, (int) allTotal));
 
         // 待支付
-        List<ShowOrderVo> pendingPayment = getOrderListByStatus(OrderStatus.PENDING_PAYMENT.getStatus(), loginUser.getUserId(), 1, size);
-        long pendingPaymentTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.PENDING_PAYMENT.getStatus());
-        result.put("0", new OrderGroupVo(pendingPayment, pendingPayment.size() >= size, (int) pendingPaymentTotal));
-
-        // 待发货
-        List<ShowOrderVo> pendingShipment = getOrderListByStatus(OrderStatus.PENDING_SHIPMENT.getStatus(), loginUser.getUserId(), 1, size);
-        long pendingShipmentTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.PENDING_SHIPMENT.getStatus());
-        result.put("1", new OrderGroupVo(pendingShipment, pendingShipment.size() >= size, (int) pendingShipmentTotal));
-
+        putOrderGroup(result, statusCountMap, OrderStatus.PENDING_PAYMENT.getStatus(), loginUser.getUserId(), size);
+        // 待寄件
+        putOrderGroup(result, statusCountMap, OrderStatus.PENDING_SHIPMENT.getStatus(), loginUser.getUserId(), size);
         // 洗涤中
-        List<ShowOrderVo> washing = getOrderListByStatus(OrderStatus.WASHING.getStatus(), loginUser.getUserId(), 1, size);
-        long washingTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.WASHING.getStatus());
-        result.put("3", new OrderGroupVo(washing, washing.size() >= size, (int) washingTotal));
-
+        putOrderGroup(result, statusCountMap, OrderStatus.WASHING.getStatus(), loginUser.getUserId(), size);
         // 待取件
-        List<ShowOrderVo> readyForPickup = getOrderListByStatus(OrderStatus.READY_FOR_PICKUP.getStatus(), loginUser.getUserId(), 1, size);
-        long readyForPickupTotal = countByUserIdAndStatus(loginUser.getUserId(), OrderStatus.READY_FOR_PICKUP.getStatus());
-        result.put("6", new OrderGroupVo(readyForPickup, readyForPickup.size() >= size, (int) readyForPickupTotal));
+        putOrderGroup(result, statusCountMap, OrderStatus.READY_FOR_PICKUP.getStatus(), loginUser.getUserId(), size);
 
         return result;
+    }
+
+    /**
+     * 装配单个状态分组的摘要项：分组 key 即状态码（前端契约），数量取自聚合查询结果
+     */
+    private void putOrderGroup(Map<String, OrderGroupVo> result, Map<String, Long> statusCountMap, String status, Long userId, int size) {
+        List<ShowOrderVo> orders = getOrderListByStatus(status, userId, 1, size);
+        long total = statusCountMap.getOrDefault(status, 0L);
+        result.put(status, new OrderGroupVo(orders, orders.size() >= size, (int) total));
     }
 
     private List<ShowOrderVo> getOrderListByStatus(String status, Long userId, int page, int size) {
@@ -393,13 +420,16 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return ordersMapper.getOrderList(pageParam, status, userId).getRecords();
     }
 
-    private long countByUserIdAndStatus(Long userId, String status) {
-        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Orders::getUserId, userId);
-        if (status != null) {
-            wrapper.eq(Orders::getStatus, status);
-        }
-        return count(wrapper);
+    /**
+     * 聚合查询（GROUP BY status 单条 SQL）各状态订单数并转为 status -> count 映射
+     */
+    private Map<String, Long> countGroupByStatusMap(Long userId) {
+        return ordersMapper.countGroupByStatus(userId).stream()
+                .collect(Collectors.toMap(OrderStatusCountVo::getStatus, OrderStatusCountVo::getCount));
+    }
+
+    private Integer toStatusCount(Map<String, Long> statusCountMap, String status) {
+        return Math.toIntExact(statusCountMap.getOrDefault(status, 0L));
     }
 
     //计算使用优惠券后的订单价格
@@ -477,12 +507,5 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         lockersMapper.updateById(freeLocker);
         log.info("分配寄存柜, lockerId: {}, schoolId: {}", freeLocker.getLockerId(), schoolId);
         return freeLocker.getLockerId();
-    }
-
-    private Integer getItemCount(Long userId, String status) {
-        LambdaQueryWrapper<Orders> wrapper = new LambdaQueryWrapper<Orders>()
-                .eq(Orders::getUserId, userId)
-                .and(b -> b.eq(Orders::getStatus, status));
-        return Math.toIntExact(count(wrapper));
     }
 }

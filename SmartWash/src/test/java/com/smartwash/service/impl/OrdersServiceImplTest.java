@@ -1,12 +1,15 @@
 package com.smartwash.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.LockerStatusEnum;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.PaymentStatus;
+import com.smartwash.entity.Lockers;
 import com.smartwash.entity.Orders;
 import com.smartwash.entity.Payments;
 import com.smartwash.entity.UserCoupon;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.from.order.OrderItemCountFrom;
 import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.mapper.CouponMapper;
 import com.smartwash.mapper.LaundryItemsMapper;
@@ -17,6 +20,10 @@ import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.vo.order.OrderGroupVo;
+import com.smartwash.vo.order.OrderItemCountVo;
+import com.smartwash.vo.order.OrderStatusCountVo;
+import com.smartwash.vo.order.ShowOrderVo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +37,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -382,5 +392,142 @@ class OrdersServiceImplTest {
 
         assertEquals("当前订单状态不可取消：已完成", ex.getMessage());
         verify(ordersMapper, never()).casStatus(anyLong(), anyString(), anyString());
+    }
+
+    // ==================== 管理员普通流转 CAS（批次三：普通流转也走条件更新闸门） ====================
+
+    private UpdateOrderStatus transitionRequest(String targetStatus) {
+        UpdateOrderStatus from = new UpdateOrderStatus();
+        from.setOrderId(ORDER_ID);
+        from.setStatus(targetStatus);
+        return from;
+    }
+
+    @Test
+    @DisplayName("管理员普通流转：条件更新命中时返回 true，且不释放柜子（在途流转柜子仍被持有）")
+    void updateOrderStatus_normalTransition_casHit() {
+        when(ordersMapper.selectById(ORDER_ID)).thenReturn(order(OrderStatus.RECEIVED.getStatus()));
+        when(ordersMapper.casStatusKeepLocker(ORDER_ID, OrderStatus.RECEIVED.getStatus(), OrderStatus.WASHING.getStatus()))
+                .thenReturn(1);
+
+        Boolean result = service.updateOrderStatus(transitionRequest(OrderStatus.WASHING.getStatus()));
+
+        assertTrue(result, "普通流转条件更新命中应成功");
+        verify(ordersMapper, times(1)).casStatusKeepLocker(ORDER_ID, OrderStatus.RECEIVED.getStatus(), OrderStatus.WASHING.getStatus());
+        // 清洗中流转不涉及柜子释放
+        verify(lockersMapper, never()).unLocker(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员普通流转：条件更新 0 行（已被并发取消/退款）时抛异常，不得静默覆写终态")
+    void updateOrderStatus_normalTransition_casMiss_throws() {
+        when(ordersMapper.selectById(ORDER_ID)).thenReturn(order(OrderStatus.RECEIVED.getStatus()));
+        when(ordersMapper.casStatusKeepLocker(ORDER_ID, OrderStatus.RECEIVED.getStatus(), OrderStatus.WASHING.getStatus()))
+                .thenReturn(0);
+
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.updateOrderStatus(transitionRequest(OrderStatus.WASHING.getStatus())));
+
+        assertEquals("订单状态已变更，请刷新后重试", ex.getMessage());
+        verify(lockersMapper, never()).unLocker(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员流转到待取件：分配取件柜并条件写入，命中时释放原寄件柜防泄漏")
+    void updateOrderStatus_transitionToReadyForPickup_casHit() {
+        when(ordersMapper.selectById(ORDER_ID)).thenReturn(order(OrderStatus.WASHING.getStatus()));
+        Lockers freeLocker = new Lockers();
+        freeLocker.setLockerId(99L);
+        when(lockersMapper.getFreeLockerBySchoolIdForUpdate(100L)).thenReturn(freeLocker);
+        when(ordersMapper.casStatusAssignPickup(eq(ORDER_ID), eq(OrderStatus.WASHING.getStatus()),
+                eq(OrderStatus.READY_FOR_PICKUP.getStatus()), eq(99L), anyString())).thenReturn(1);
+
+        Boolean result = service.updateOrderStatus(transitionRequest(OrderStatus.READY_FOR_PICKUP.getStatus()));
+
+        assertTrue(result, "流转到待取件的条件更新命中应成功");
+        // 原寄件柜（夹具 lockerId=LOCKER_ID）在分配取件柜后必须释放，否则永久停留"使用中"
+        verify(lockersMapper, times(1)).unLocker(LOCKER_ID, LockerStatusEnum.FREE.getValue());
+    }
+
+    @Test
+    @DisplayName("管理员流转到待取件：条件更新 0 行时抛异常（已分配柜子随事务回滚，此处验证不释放任何柜）")
+    void updateOrderStatus_transitionToReadyForPickup_casMiss_throws() {
+        when(ordersMapper.selectById(ORDER_ID)).thenReturn(order(OrderStatus.WASHING.getStatus()));
+        Lockers freeLocker = new Lockers();
+        freeLocker.setLockerId(99L);
+        when(lockersMapper.getFreeLockerBySchoolIdForUpdate(100L)).thenReturn(freeLocker);
+        when(ordersMapper.casStatusAssignPickup(eq(ORDER_ID), eq(OrderStatus.WASHING.getStatus()),
+                eq(OrderStatus.READY_FOR_PICKUP.getStatus()), eq(99L), anyString())).thenReturn(0);
+
+        CustomExceptions ex = assertThrows(CustomExceptions.class,
+                () -> service.updateOrderStatus(transitionRequest(OrderStatus.READY_FOR_PICKUP.getStatus())));
+
+        assertEquals("订单状态已变更，请刷新后重试", ex.getMessage());
+        verify(lockersMapper, never()).unLocker(anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("管理员订单完成：CAS 命中时释放寄存柜（清空 locker_id 闸门口径）")
+    void updateOrderStatus_complete_casHit_releasesLocker() {
+        when(ordersMapper.selectById(ORDER_ID)).thenReturn(order(OrderStatus.READY_FOR_PICKUP.getStatus()));
+        when(ordersMapper.casStatus(ORDER_ID, OrderStatus.READY_FOR_PICKUP.getStatus(), OrderStatus.COMPLETED.getStatus()))
+                .thenReturn(1);
+
+        Boolean result = service.updateOrderStatus(transitionRequest(OrderStatus.COMPLETED.getStatus()));
+
+        assertTrue(result, "订单完成 CAS 命中应成功");
+        verify(lockersMapper, times(1)).unLocker(LOCKER_ID, LockerStatusEnum.FREE.getValue());
+    }
+
+    // ==================== 聚合查询：订单摘要与条目计数（批次三 SQL 合并回归） ====================
+
+    @Test
+    @DisplayName("getOrderItemCount：单条 GROUP BY 聚合装配各状态计数，缺失状态按 0 返回")
+    void getOrderItemCount_usesGroupByAggregate() {
+        when(ordersMapper.countGroupByStatus(USER_ID)).thenReturn(List.of(
+                new OrderStatusCountVo(OrderStatus.PENDING_PAYMENT.getStatus(), 2L),
+                new OrderStatusCountVo(OrderStatus.WASHING.getStatus(), 1L),
+                new OrderStatusCountVo(OrderStatus.READY_FOR_PICKUP.getStatus(), 3L)
+        ));
+        OrderItemCountFrom from = new OrderItemCountFrom();
+        from.setPendingPaymentStatus(OrderStatus.PENDING_PAYMENT.getStatus());
+        from.setProcessingStatus(OrderStatus.WASHING.getStatus());
+        from.setPendingPickupStatus(OrderStatus.READY_FOR_PICKUP.getStatus());
+        from.setShippedStatus(OrderStatus.PENDING_SHIPMENT.getStatus());
+
+        OrderItemCountVo vo = service.getOrderItemCount(from, USER_ID);
+
+        assertEquals(2, vo.getPendingPaymentCount(), "待支付计数取自聚合查询");
+        assertEquals(1, vo.getProcessingCount(), "待清洗计数取自聚合查询");
+        assertEquals(3, vo.getPendingPickupCount(), "待取件计数取自聚合查询");
+        assertEquals(0, vo.getShippedCount(), "聚合结果缺失的状态应计 0，与原逐状态 count 语义一致");
+        // 仅 1 次聚合查询，不得再逐状态 count
+        verify(ordersMapper, times(1)).countGroupByStatus(USER_ID);
+    }
+
+    @Test
+    @DisplayName("getOrderSummary：单条聚合提供各分组 total，分组 key 与原契约一致（001/0/1/3/6）")
+    void getOrderSummary_usesGroupByAggregate_withContractKeys() {
+        when(ordersMapper.countGroupByStatus(USER_ID)).thenReturn(List.of(
+                new OrderStatusCountVo(OrderStatus.PENDING_PAYMENT.getStatus(), 2L),
+                new OrderStatusCountVo(OrderStatus.PENDING_SHIPMENT.getStatus(), 1L),
+                new OrderStatusCountVo(OrderStatus.WASHING.getStatus(), 3L),
+                new OrderStatusCountVo(OrderStatus.READY_FOR_PICKUP.getStatus(), 4L)
+        ));
+        Page<ShowOrderVo> emptyPage = new Page<>(1, 10);
+        emptyPage.setRecords(List.of());
+        when(ordersMapper.getOrderList(any(), any(), eq(USER_ID))).thenReturn(emptyPage);
+
+        Map<String, OrderGroupVo> summary = service.getOrderSummary(loginUser(), 10);
+
+        assertEquals(5, summary.size(), "分组数与原实现一致：全部+4 个状态分组");
+        assertEquals(10, summary.get("001").getTotal(), "全部订单 total 应为各状态计数之和");
+        assertEquals(2, summary.get(OrderStatus.PENDING_PAYMENT.getStatus()).getTotal());
+        assertEquals(1, summary.get(OrderStatus.PENDING_SHIPMENT.getStatus()).getTotal());
+        assertEquals(3, summary.get(OrderStatus.WASHING.getStatus()).getTotal());
+        assertEquals(4, summary.get(OrderStatus.READY_FOR_PICKUP.getStatus()).getTotal());
+        assertFalse(summary.get("001").isHasMore(), "空列表 hasMore 应为 false，与原语义一致");
+        assertNull(summary.get(OrderStatus.COMPLETED.getStatus()), "不得出现契约外的分组 key");
+        verify(ordersMapper, times(1)).countGroupByStatus(USER_ID);
     }
 }

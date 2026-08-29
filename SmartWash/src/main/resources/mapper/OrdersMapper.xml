@@ -11,14 +11,43 @@
           and status = #{expectStatus};
     </update>
 
-    <!-- CAS 条件更新订单状态：取消/超时/退款的唯一并发闸门，条件更新判影响行数，禁止 check-then-act -->
+    <!-- CAS 条件更新订单状态：取消/超时/退款/完成的唯一并发闸门，条件更新判影响行数，禁止 check-then-act；
+         终态顺带清空 locker_id 与 pickup_code（取件码随终态失效，保持数据卫生） -->
     <update id="casStatus">
         update orders
-        set status    = #{targetStatus},
-            locker_id = null
+        set status      = #{targetStatus},
+            locker_id   = null,
+            pickup_code = null
         where order_id = #{orderId}
           and status = #{expectStatus};
     </update>
+
+    <!-- 普通流转的条件更新（管理员非取消/非完成流转的并发闸门）：仅流转状态、保留 locker_id——
+         待支付→待寄件等在途流转柜子仍被订单持有，禁止像 casStatus 一样清空 locker_id 造成柜子悬挂泄漏 -->
+    <update id="casStatusKeepLocker">
+        update orders
+        set status = #{targetStatus}
+        where order_id = #{orderId}
+          and status = #{expectStatus};
+    </update>
+
+    <!-- 流转到待取件的条件更新（并发闸门）：状态 + 新分配柜子 + 取件码一次条件写入，0 行说明已被并发取消/退款 -->
+    <update id="casStatusAssignPickup">
+        update orders
+        set status      = #{targetStatus},
+            locker_id   = #{lockerId},
+            pickup_code = #{pickupCode}
+        where order_id = #{orderId}
+          and status = #{expectStatus};
+    </update>
+
+    <!-- 按状态聚合统计某用户的订单数量：替代原"每状态一条 count"的多次往返（评审报告后端 #25） -->
+    <select id="countGroupByStatus" resultType="com.smartwash.vo.order.OrderStatusCountVo">
+        select status, count(*) as count
+        from orders
+        where user_id = #{userId}
+        group by status;
+    </select>
 
     <select id="getOrderByOrderNo" resultType="com.smartwash.entity.Orders" parameterType="java.lang.String">
         select order_id, order_no, user_id, school_id, locker_id, laundry_items_id,
