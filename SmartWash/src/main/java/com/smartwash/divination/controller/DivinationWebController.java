@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.divination.from.CreateRecordFrom;
 import com.smartwash.divination.from.SearchRecordFrom;
+import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.divination.service.IDivRecordService;
 import com.smartwash.divination.vo.RecordDetailVo;
 import com.smartwash.divination.vo.RecordVo;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 观象台用户端控制器。
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class DivinationWebController {
 
     private final IDivRecordService recordService;
+    private final IDivInterpretationService interpretationService;
 
     @Operation(summary = "创建卦例", description = "服务端 core 重算权威盘面并与客户端盘面比对校验")
     @PostMapping("/records")
@@ -60,5 +63,19 @@ public class DivinationWebController {
     public Result<RecordDetailVo> getTodayRecord() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(recordService.getTodayRecord(user.getUserId()));
+    }
+
+    @Operation(summary = "SSE 流式解读", description = "对卦例进行 LLM 流式解读（event: delta/done/error）")
+    @PostMapping("/records/{id}/interpret")
+    public SseEmitter interpret(@PathVariable("id") Long id, @RequestBody(required = false) String question) {
+        LoginUser user = UserContextHolder.getUser();
+        return interpretationService.interpret(id, question, user.getUserId(), false);
+    }
+
+    @Operation(summary = "同卦追问", description = "对同一卦例进行追问（SSE 流式）")
+    @PostMapping("/records/{id}/followup")
+    public SseEmitter followup(@PathVariable("id") Long id, @RequestBody String question) {
+        LoginUser user = UserContextHolder.getUser();
+        return interpretationService.interpret(id, question, user.getUserId(), true);
     }
 }
