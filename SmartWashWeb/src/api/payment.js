@@ -22,9 +22,6 @@ export function getPaymentList(params) {
     })
 }
 
-export function deletePayment(ids) {
-    return request({
-        url: `/admin/payments/delete/${ids}`,
-        method: 'delete'
-    })
-}
+// 注：后端批次三已摘除支付凭证删除入口（DELETE /admin/payments/delete/{ids}），
+// 支付/充值凭证禁止物理删除，前端不再提供对应函数与按钮。
+

@@ -2,27 +2,15 @@ import {
     createRouter,
     createWebHistory
 } from 'vue-router'
+// 布局壳保持静态引入（所有登录页共用，无需分包），
+// 页面组件全部改为路由懒加载（评审 #8）：按路由拆 chunk，首屏只加载当前页面
 import Layout from '@/components/Layout/Layout.vue'
-import Home from '@/views/Home.vue'
-import SchoolList from "@/views/system/SchoolList.vue"
-import UserList from "@/views/system/UserList.vue"
-import RechargeList from "@/views/system/RechargeList.vue"
-import LaundryList from "@/views/system/LaundryList.vue"
-import RoleList from "@/views/system/RoleList.vue"
-import AdminUserList from "@/views/system/AdminUserList.vue"
-import LockerList from "@/views/system/LockerList.vue"
-import PaymentList from "@/views/system/PaymentList.vue"
-import OrderList from "@/views/system/OrderList.vue"
-import LoginPage from "@/views/LoginPage.vue"
-import CouponList from "@/views/system/CouponList.vue"
-import UserCouponList from "@/views/system/UserCouponList.vue"
-import NotFound from "@/views/NotFound.vue"
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [{
     path: '/login',
     name: 'LoginPage',
-    component: LoginPage,
+    component: () => import('@/views/LoginPage.vue'),
     meta: {
         requiresAuth: false
     }
@@ -32,110 +20,122 @@ const routes = [{
     children: [{
             path: '/',
             name: 'Home',
-            component: Home,
+            component: () => import('@/views/Home.vue'),
             meta: {
                 title: '首页',
                 showInMenu: true,
+                icon: 'HomeFilled',
                 requiresAuth: true
             }
         },
         {
             path: '/schools',
             name: 'SchoolList',
-            component: SchoolList,
+            component: () => import('@/views/system/SchoolList.vue'),
             meta: {
                 title: '学校管理',
                 showInMenu: true,
+                icon: 'School',
                 requiresAuth: true
             }
         }, {
             path: '/users',
             name: 'Users',
-            component: UserList,
+            component: () => import('@/views/system/UserList.vue'),
             meta: {
                 title: '学生管理',
                 showInMenu: true,
+                icon: 'UserFilled',
                 requiresAuth: true
             }
         }, {
             path: '/recharge',
             name: 'RechargeList',
-            component: RechargeList,
+            component: () => import('@/views/system/RechargeList.vue'),
             meta: {
                 title: '充值记录',
                 showInMenu: true,
+                icon: 'Coin',
                 requiresAuth: true
             }
         }, {
             path: '/laundry',
             name: 'LaundryList',
-            component: LaundryList,
+            component: () => import('@/views/system/LaundryList.vue'),
             meta: {
                 title: '洗护套餐',
                 showInMenu: true,
+                icon: 'ShoppingBag',
                 requiresAuth: true
             }
         }, {
             path: '/roles',
             name: 'RoleList',
-            component: RoleList,
+            component: () => import('@/views/system/RoleList.vue'),
             meta: {
                 title: '角色管理',
                 showInMenu: true,
+                icon: 'Key',
                 requiresAuth: true
             }
         }, {
             path: '/adminUsers',
             name: 'AdminUserList',
-            component: AdminUserList,
+            component: () => import('@/views/system/AdminUserList.vue'),
             meta: {
                 title: '管理员角色管理',
                 showInMenu: true,
+                icon: 'Avatar',
                 requiresAuth: true
             }
         }, {
             path: '/lockers',
             name: 'LockerList',
-            component: LockerList,
+            component: () => import('@/views/system/LockerList.vue'),
             meta: {
                 title: '寄存柜管理',
                 showInMenu: true,
+                icon: 'Box',
                 requiresAuth: true
             }
         }, {
             path: '/payment',
             name: 'PaymentList',
-            component: PaymentList,
+            component: () => import('@/views/system/PaymentList.vue'),
             meta: {
                 title: '支付记录',
                 showInMenu: true,
+                icon: 'CreditCard',
                 requiresAuth: true
             }
         }, {
             path: '/orders',
             name: 'OrderList',
-            component: OrderList,
+            component: () => import('@/views/system/OrderList.vue'),
             meta: {
                 title: '订单管理',
                 showInMenu: true,
+                icon: 'Document',
                 requiresAuth: true
             }
         }, {
             path: '/coupon',
             name: 'CouponList',
-            component: CouponList,
+            component: () => import('@/views/system/CouponList.vue'),
             meta: {
                 title: '优惠券管理',
                 showInMenu: true,
+                icon: 'Ticket',
                 requiresAuth: true
             }
         }, {
             path: '/userCoupon',
             name: 'UserCouponList',
-            component: UserCouponList,
+            component: () => import('@/views/system/UserCouponList.vue'),
             meta: {
                 title: '用户优惠券领取管理',
                 showInMenu: true,
+                icon: 'CollectionTag',
                 requiresAuth: true
             }
         }
@@ -144,7 +144,7 @@ const routes = [{
     // 404 兜底页：未匹配到的路径不再静默重定向首页，而是明确提示页面不存在
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: NotFound,
+    component: () => import('@/views/NotFound.vue'),
     meta: {
         title: '页面不存在',
         requiresAuth: false

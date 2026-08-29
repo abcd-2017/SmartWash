@@ -9,19 +9,21 @@ import {
     createPinia
 } from 'pinia'
 import App from './App.vue'
-import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
-import 'element-plus/dist/index.css'
+
+// Element Plus 按需引入（评审 #9）：
+// - 组件与指令由 unplugin-vue-components 在模板中按需注册（见 vite.config.js），
+//   全量 app.use(ElementPlus) 与全量图标注册已移除；
+// - 此处仅补齐「脚本中直接调用」的组件样式（Message/MessageBox）与 v-loading 指令样式兜底，
+//   避免按需模式下样式缺失；
+// - 中文语言包改由 App.vue 的 el-config-provider 下发。
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/loading/style/css'
 
 dayjs.locale('zh-cn')
 
 const app = createApp(App)
-app.use(ElementPlus, { locale: zhCn })
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
 app.config.globalProperties.$dayjs = dayjs
 app.use(createPinia())
 app.use(router);

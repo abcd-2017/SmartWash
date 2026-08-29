@@ -78,12 +78,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button
-            type="danger"
-            :disabled="multipleSelection.length === 0"
-            @click="handleBatchDelete"
-            >批量删除</el-button
-          >
+          <!-- 后端已摘除支付凭证删除入口，批量删除按钮一并移除（四端联动契约同步） -->
         </el-form-item>
       </el-form>
     </div>
@@ -91,14 +86,11 @@
     <!-- 数据表格 -->
     <div class="table-card">
     <el-table
-      ref="tableRef"
       v-loading="listLoading"
       :data="paymentList"
       fit
       highlight-current-row
-      @selection-change="handleSelectionChange"
     >
-      <el-table-column type="selection" width="55" />
       <el-table-column prop="paymentId" label="支付ID" min-width="90" />
       <el-table-column prop="orderNo" label="订单号" min-width="200" />
       <el-table-column label="用户" min-width="150">
@@ -116,7 +108,7 @@
       </el-table-column>
       <el-table-column label="状态" min-width="120">
         <template #default="{ row }">
-          <el-tag :type="getStatusTagType(row.status)">
+          <el-tag :type="payStatusTagType(row.status)">
             {{ payStatusOptions[row.status] || "-" }}
           </el-tag>
         </template>
@@ -124,21 +116,17 @@
       <el-table-column label="支付时间" min-width="180">
         <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="120" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
+      <!-- 操作列（原删除按钮）已按后端契约移除：支付/充值凭证禁止物理删除 -->
     </el-table>
     <div class="pagination-bar">
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -147,45 +135,51 @@
 </template>
   
   <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
-import {
-  getPayTypes,
-  getPayStatus,
-  getPaymentList,
-  deletePayment,
-} from "@/api/payment";
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage } from "element-plus";
+import { getPayTypes, getPayStatus, getPaymentList } from "@/api/payment";
+import { formatTime } from "@/utils/format";
+import { payStatusTagType } from "@/constants/dict";
+import { useTableList } from "@/composables/useTableList";
+import { useTimeRange } from "@/composables/useTimeRange";
 
-const tableRef = ref(null);
-const paymentList = ref([]);
-const total = ref(0);
-const listLoading = ref(false);
-const multipleSelection = ref([]);
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  paymentId: null,
-  orderNo: "",
-  phoneNumber: "",
-  paymentMethod: null,
-  status: null,
-  startTime: null,
-  endTime: null,
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: paymentList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getPaymentList,
+  baseQuery: {
+    paymentId: null,
+    orderNo: "",
+    phoneNumber: "",
+    paymentMethod: null,
+    status: null,
+    startTime: null,
+    endTime: null,
+  },
+  buildParams: (q) => ({
+    ...q,
+    paymentId: q.paymentId || undefined,
+    paymentMethod: q.paymentMethod || undefined,
+    status: q.status || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
 
-// 时间范围处理
-const timeRange = computed({
-  get: () => [listQuery.startTime, listQuery.endTime],
-  set: (val) => {
-    listQuery.startTime = val?.[0] || null;
-    listQuery.endTime = val?.[1] || null;
-  },
-});
+// 时间范围处理（评审 #14：抽离为公共 composable）
+const timeRange = useTimeRange(listQuery);
 
 // 初始化数据
 onMounted(async () => {
@@ -214,31 +208,6 @@ const fetchPayStatus = async () => {
   }
 };
 
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      paymentId: listQuery.paymentId || undefined,
-      paymentMethod: listQuery.paymentMethod || undefined,
-      status: listQuery.status || undefined,
-    };
-    const res = await getPaymentList(params);
-    paymentList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 处理多选
-const handleSelectionChange = (val) => {
-  multipleSelection.value = val;
-};
-
 // 手机号验证
 const validatePhone = () => {
   const phone = listQuery.phoneNumber;
@@ -246,91 +215,6 @@ const validatePhone = () => {
     ElMessage.warning("手机号格式不正确");
     listQuery.phoneNumber = "";
   }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.paymentId = null;
-  listQuery.orderNo = "";
-  listQuery.phoneNumber = "";
-  listQuery.paymentMethod = null;
-  listQuery.status = null;
-  listQuery.startTime = null;
-  listQuery.endTime = null;
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
-
-// 删除单个
-const handleDelete = async (row) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认删除支付记录 ${row.paymentId} 吗？`,
-      "警告",
-      {
-        confirmButtonText: "确认",
-        cancelButtonText: "取消",
-        type: "warning",
-      }
-    );
-    await deletePayment(row.paymentId);
-    ElMessage.success("删除成功");
-    fetchData();
-  } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
-  }
-};
-
-// 批量删除
-const handleBatchDelete = async () => {
-  try {
-    const ids = multipleSelection.value.map((item) => item.paymentId).join(",");
-    await ElMessageBox.confirm(
-      `确认删除选中的 ${multipleSelection.value.length} 条记录吗？`,
-      "警告",
-      { confirmButtonText: "确认", cancelButtonText: "取消", type: "warning" }
-    );
-    await deletePayment(ids);
-    ElMessage.success("删除成功");
-    fetchData();
-    tableRef.value.clearSelection();
-  } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
-  }
-};
-
-// 状态标签颜色
-const getStatusTagType = (status) => {
-  switch (status) {
-    case "0":
-      return "warning"; // 待支付
-    case "1":
-      return "success"; // 已支付
-    case "2":
-      return "danger"; // 失败
-    default:
-      return "info";
-  }
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
 };
 </script>
   
