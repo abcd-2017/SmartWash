@@ -16,6 +16,8 @@ import com.smartwash.network.api.SchoolApi
 import com.smartwash.network.api.UserApi
 import com.smartwash.network.interceptor.RequestInterceptor
 import com.smartwash.network.interceptor.ResponseInterceptor
+import com.smartwash.network.session.SessionEventBus
+import com.smartwash.network.session.SessionManager
 import com.smartwash.utils.AppConstant
 import dagger.Module
 import dagger.Provides
@@ -36,7 +38,11 @@ import javax.inject.Singleton
 class RetrofitClient {
     @Provides
     @Singleton
-    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+        sessionManager: SessionManager,
+        sessionEventBus: SessionEventBus,
+    ): OkHttpClient {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = Cache(cacheDir, 10 * 1024 * 1024)
         val builder = OkHttpClient.Builder()
@@ -44,8 +50,8 @@ class RetrofitClient {
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .cache(cache)
-            .addInterceptor(RequestInterceptor())
-            .addInterceptor(ResponseInterceptor())
+            .addInterceptor(RequestInterceptor(sessionManager, sessionEventBus))
+            .addInterceptor(ResponseInterceptor(sessionManager, sessionEventBus))
 
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor()
@@ -94,7 +100,10 @@ class RetrofitClient {
             context,
             AppDatabase::class.java,
             "smartwash_db",
-        ).build()
+        )
+            // 缓存库无存量数据，schema 变更时允许破坏性重建（正式数据表迁移到服务端）
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

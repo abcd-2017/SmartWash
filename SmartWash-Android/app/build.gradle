@@ -7,6 +7,11 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// 统一后端地址（与鸿蒙端/Web 端对齐）：demo 阶段 debug 与 release 共用同一台演示服务器。
+// 该服务器为明文 HTTP，明文放行仅限定此地址，见 app/src/main/res/xml/network_security_config.xml。
+// 生产发布切换方式：替换为 HTTPS 域名（保留末尾斜杠），并同步删除 network_security_config.xml 中对应的明文放行。
+def SMART_WASH_BASE_URL = '"http://8.148.70.81:9000/"'
+
 android {
     namespace 'com.smartwash'
     compileSdk 35
@@ -27,10 +32,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField "String", "BASE_URL", '"http://192.168.1.61:8080/"'
+            buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
         }
         release {
-            buildConfigField "String", "BASE_URL", '"https://api.smartwash.example.com/"'
+            buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

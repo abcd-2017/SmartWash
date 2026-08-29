@@ -1,5 +1,7 @@
 package com.smartwash.repository
 
+import androidx.room.withTransaction
+import com.smartwash.database.AppDatabase
 import com.smartwash.database.dao.LaundryItemDao
 import com.smartwash.database.entity.LaundryItemEntity
 import com.smartwash.network.api.LaundryItemsApi
@@ -11,6 +13,7 @@ import javax.inject.Singleton
 class LaundryRepository @Inject constructor(
     private val laundryItemsApi: LaundryItemsApi,
     private val laundryItemDao: LaundryItemDao,
+    private val appDatabase: AppDatabase,
 ) {
     /**
      * Cache-first 策略：先读缓存，再请求网络更新缓存。
@@ -22,8 +25,11 @@ class LaundryRepository @Inject constructor(
 
         return try {
             val networkData = laundryItemsApi.getLaundryItems().data ?: emptyList()
-            laundryItemDao.deleteAll()
-            laundryItemDao.insertAll(networkData.map { LaundryItemEntity.fromVo(it) })
+            // deleteAll + insertAll 包进事务，中途失败不会清空缓存
+            appDatabase.withTransaction {
+                laundryItemDao.deleteAll()
+                laundryItemDao.insertAll(networkData.map { LaundryItemEntity.fromVo(it) })
+            }
             networkData
         } catch (e: Exception) {
             if (cached.isNotEmpty()) cached else throw e

@@ -7,6 +7,7 @@ import com.smartwash.network.entity.user.LoginUser
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.entity.user.UpdateUserInfo
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.network.vo.user.LoginVo
 import com.smartwash.network.vo.user.UserInfoVo
 import okhttp3.MultipartBody
 import javax.inject.Inject
@@ -24,8 +25,10 @@ class UserRepository @Inject constructor(
         return userApi.register(registerUser).data ?: ""
     }
 
-    suspend fun login(loginUser: LoginUser): String {
-        return userApi.login(loginUser).data ?: ""
+    suspend fun login(loginUser: LoginUser): LoginVo {
+        // data 为 {token, role} 对象（后端 LoginVo）；为空按失败处理，不静默返回
+        return userApi.login(loginUser).data
+            ?: throw NetworkException("登录响应数据为空", R.string.error_login_failed)
     }
 
     suspend fun getUserInfo(): UserInfoVo {

@@ -14,7 +14,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.smartwash.App
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 
 object SharePreferenceUtils {
     private val PREF_NAME = "SmartWashAndroid"
@@ -45,14 +44,6 @@ object SharePreferenceUtils {
             is Boolean -> getBooleanData(key, defaultValue) as T
             else -> throw IllegalAccessException("This type cannot be saved to the Data Store")
         }
-    }
-
-    fun saveDataBlocking(key: String, value: String) = runBlocking {
-        saveData(key, value)
-    }
-
-    fun getDataBlocking(key: String, defaultValue: String): String = runBlocking {
-        getData(key, defaultValue)
     }
 
     private suspend fun putIntData(key: String, value: Int) = dataStore.edit {

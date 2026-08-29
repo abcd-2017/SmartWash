@@ -1,16 +1,20 @@
 package com.smartwash.network.interceptor
 
 import android.util.Log
-import com.smartwash.App
 import com.smartwash.R
 import com.smartwash.network.annotation.RequireAuthorization
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.network.session.SessionEventBus
+import com.smartwash.network.session.SessionManager
 import com.smartwash.utils.AppConstant
-import com.smartwash.utils.SharePreferenceUtils
 import okhttp3.Interceptor
 import okhttp3.Response
+import javax.inject.Inject
 
-class RequestInterceptor : Interceptor {
+class RequestInterceptor @Inject constructor(
+    private val sessionManager: SessionManager,
+    private val sessionEventBus: SessionEventBus,
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
@@ -19,11 +23,12 @@ class RequestInterceptor : Interceptor {
         val annotated = method?.annotations?.any { it is RequireAuthorization }
 
         if (annotated == true) {
-            val token = SharePreferenceUtils.getDataBlocking(AppConstant.TOKEN, "")
+            // 同步读进程内 token 缓存，不再 runBlocking 读 DataStore
+            val token = sessionManager.currentToken()
 
             if (token.isBlank()) {
                 Log.w(AppConstant.APP_NAME, "Request: ${request.method} ${request.url} — token 为空，拦截请求")
-                App.globalRequestBeforeCallback()
+                sessionEventBus.notifyNeedLogin()
                 throw NetworkException("未登录，请先登录", R.string.error_login_expired)
             }
 

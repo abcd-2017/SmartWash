@@ -5,6 +5,7 @@ import com.smartwash.network.entity.ApiResult
 import com.smartwash.network.entity.user.LoginUser
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.entity.user.UpdateUserInfo
+import com.smartwash.network.vo.user.LoginVo
 import com.smartwash.network.vo.user.UserInfoVo
 import okhttp3.MultipartBody
 import retrofit2.http.Body
@@ -37,12 +38,12 @@ interface UserApi {
     ): ApiResult<String>
 
     /**
-     * 登录
+     * 登录（data 为 {token, role} 对象，见 LoginVo；注册接口仍是字符串 token，勿混用）
      */
     @POST("/auth/user/login")
     suspend fun login(
         @Body loginUser: LoginUser,
-    ): ApiResult<String>
+    ): ApiResult<LoginVo>
 
     /**
      * 完善用户信息

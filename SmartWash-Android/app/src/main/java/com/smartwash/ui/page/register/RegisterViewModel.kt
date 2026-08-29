@@ -5,12 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.network.entity.user.RegisterUser
 import com.smartwash.network.exception.NetworkException
+import com.smartwash.network.session.SessionManager
 import com.smartwash.utils.AppConstant
 import com.smartwash.utils.HttpStatusCode
 import com.smartwash.R
 import com.smartwash.repository.UserRepository
 import com.smartwash.utils.RequestState
-import com.smartwash.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
     private val _registerState = MutableStateFlow<RequestState>(RequestState.Idle)
     val registerState = _registerState.asStateFlow()
@@ -49,7 +50,8 @@ class RegisterViewModel @Inject constructor(
                 _registerState.value = RequestState.Loading
                 val token = userRepository.register(RegisterUser(phoneNumber, password, captcha))
                 _registerState.value = RequestState.Success
-                SharePreferenceUtils.saveData(AppConstant.TOKEN, token)
+                // 经 SessionManager 保存：内存缓存与 DataStore 同步更新
+                sessionManager.saveToken(token)
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "RegisterViewModel.userRegister: ${e.message}", e)
                 _registerState.value = RequestState.Error(e.resId, e.message)
