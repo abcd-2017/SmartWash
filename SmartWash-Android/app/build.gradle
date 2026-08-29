@@ -32,9 +32,12 @@ android {
     buildTypes {
         debug {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
+            // 观象台解读网关（LLM 走后端，密钥不出服务端）：endpoint 统一此处注入，禁止硬编码
+            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
         }
         release {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
+            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-08-29T09:51:29.994Z",
+  "sessionId": "sess_bbe0c80b-b2ff-4bb8-8e85-e02dafa657bc",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "/Users/admin/code/Android/SmartWash/SmartWash-Android/app/src/test/java/com/smartwash/divination/core/liuyao/LiuYaoAnchorTest.kt",
+  "outcome": "inconclusive",
+  "coverage": "partial",
+  "findingCount": 0,
+  "durationMs": 5,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

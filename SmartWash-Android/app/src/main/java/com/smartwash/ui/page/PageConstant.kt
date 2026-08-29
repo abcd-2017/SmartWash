@@ -3,8 +3,10 @@ package com.smartwash.ui.page
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,6 +28,15 @@ sealed class PageConstant(val text: String, val description: String) {
     data object PickupDelivery : PageConstant("PickupDelivery", "寄件取件页面")
     data object Coupon : PageConstant("Coupon", "优惠券页面")
     data object Pickup : PageConstant("Pickup", "取件页面")
+
+    // ==================== 观象台（占卜模块） ====================
+    data object DivHome : PageConstant("DivHome", "观象台首页")
+    data object DivAsk : PageConstant("DivAsk", "心中所问")
+    data object DivCast : PageConstant("DivCast", "摇卦")
+    data object DivChart : PageConstant("DivChart", "卦盘")
+    data object DivReading : PageConstant("DivReading", "解读")
+    data object DivFollowUp : PageConstant("DivFollowUp", "继续追问")
+    data object DivHistory : PageConstant("DivHistory", "卦历案卷")
 }
 
 sealed class HomePageConstant(
@@ -45,6 +56,10 @@ sealed class HomePageConstant(
 
 //    data object Locker :
 //        HomePageConstant("Locker", "寄存柜", Icons.Outlined.Receipt, Icons.Filled.Receipt)
+
+    // 问卜（观象台）— 罗盘线描意象
+    data object Divination :
+        HomePageConstant("DivHome", "问卜", Icons.Outlined.Explore, Icons.Filled.Explore)
 
     data object UserInfo :
         HomePageConstant("UserInfo", "主页", Icons.Outlined.Person, Icons.Filled.Person)
