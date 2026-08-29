@@ -85,63 +85,58 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="paymentList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="paymentId" label="支付ID" min-width="90" />
-      <el-table-column prop="orderNo" label="订单号" min-width="200" />
-      <el-table-column label="用户" min-width="150">
-        <template #default="{ row }">
-          {{ row.user?.phoneNumber || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="金额" min-width="120">
-        <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
-      </el-table-column>
-      <el-table-column label="支付方式" min-width="120">
-        <template #default="{ row }">
-          {{ payTypeOptions[row.paymentMethod] || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" min-width="120">
-        <template #default="{ row }">
-          <el-tag :type="payStatusTagType(row.status)">
-            {{ payStatusOptions[row.status] || "-" }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="支付时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
-      </el-table-column>
-      <!-- 操作列（原删除按钮）已按后端契约移除：支付/充值凭证禁止物理删除 -->
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="paymentList" fit highlight-current-row>
+        <el-table-column prop="paymentId" label="支付ID" min-width="90" />
+        <el-table-column prop="orderNo" label="订单号" min-width="200" />
+        <el-table-column label="用户" min-width="150">
+          <template #default="{ row }">
+            {{ row.user?.phoneNumber || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="金额" min-width="120">
+          <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column label="支付方式" min-width="120">
+          <template #default="{ row }">
+            {{ payTypeOptions[row.paymentMethod] || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="payStatusTagType(row.status)">
+              {{ payStatusOptions[row.status] || '-' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="支付时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.paidAt) }}</template>
+        </el-table-column>
+        <!-- 操作列（原删除按钮）已按后端契约移除：支付/充值凭证禁止物理删除 -->
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
   </div>
 </template>
-  
-  <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import { getPayTypes, getPayStatus, getPaymentList } from "@/api/payment";
-import { formatTime } from "@/utils/format";
-import { payStatusTagType } from "@/constants/dict";
-import { useTableList } from "@/composables/useTableList";
-import { useTimeRange } from "@/composables/useTimeRange";
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getPayTypes, getPayStatus, getPaymentList } from '@/api/payment';
+import { formatTime } from '@/utils/format';
+import { payStatusTagType } from '@/constants/dict';
+import { useTableList } from '@/composables/useTableList';
+import { useTimeRange } from '@/composables/useTimeRange';
 
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});
@@ -162,8 +157,8 @@ const {
   fetchApi: getPaymentList,
   baseQuery: {
     paymentId: null,
-    orderNo: "",
-    phoneNumber: "",
+    orderNo: '',
+    phoneNumber: '',
     paymentMethod: null,
     status: null,
     startTime: null,
@@ -175,7 +170,7 @@ const {
     paymentMethod: q.paymentMethod || undefined,
     status: q.status || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 时间范围处理（评审 #14：抽离为公共 composable）
@@ -193,8 +188,8 @@ const fetchPayTypes = async () => {
   try {
     const res = await getPayTypes();
     payTypeOptions.value = res;
-  } catch (error) {
-    ElMessage.error("获取支付类型失败");
+  } catch {
+    ElMessage.error('获取支付类型失败');
   }
 };
 
@@ -203,8 +198,8 @@ const fetchPayStatus = async () => {
   try {
     const res = await getPayStatus();
     payStatusOptions.value = res;
-  } catch (error) {
-    ElMessage.error("获取支付状态失败");
+  } catch {
+    ElMessage.error('获取支付状态失败');
   }
 };
 
@@ -212,12 +207,12 @@ const fetchPayStatus = async () => {
 const validatePhone = () => {
   const phone = listQuery.phoneNumber;
   if (phone && !/^(?:\+86)?1[3-9]\d{9}$/.test(phone)) {
-    ElMessage.warning("手机号格式不正确");
-    listQuery.phoneNumber = "";
+    ElMessage.warning('手机号格式不正确');
+    listQuery.phoneNumber = '';
   }
 };
 </script>
-  
-  <style scoped>
+
+<style scoped>
 @import '@/assets/pages.css';
 </style>

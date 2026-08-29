@@ -28,21 +28,21 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { SwitchButton } from "@element-plus/icons-vue";
-import { getCurrentAdminUser } from "@/api/adminUser";
-import { useAuthStore } from "@/stores/auth";
-import { useConfirm } from "@/composables/useConfirm";
+import { computed, ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { SwitchButton } from '@element-plus/icons-vue';
+import { getCurrentAdminUser } from '@/api/adminUser';
+import { useAuthStore } from '@/stores/auth';
+import { useConfirm } from '@/composables/useConfirm';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const currentRouteName = computed(() => route.meta.title || "");
+const currentRouteName = computed(() => route.meta.title || '');
 
-const username = ref("");
+const username = ref('');
 const userInitial = computed(() => {
-  return username.value ? username.value.charAt(0).toUpperCase() : "";
+  return username.value ? username.value.charAt(0).toUpperCase() : '';
 });
 
 const fetchUserInfo = async () => {
@@ -60,13 +60,13 @@ onMounted(() => {
 
 const handleLogout = async () => {
   // 确认弹窗统一走 useConfirm：取消/关闭静默返回 false（评审 #23）
-  const confirmed = await useConfirm("确定要退出登录吗？", "提示", {
-    confirmButtonText: "确定",
+  const confirmed = await useConfirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
   });
   if (!confirmed) return;
   // 登录态统一走 store 清理（内存 + localStorage 一并清空）
   authStore.clearLogin();
-  router.push("/login");
+  router.push('/login');
 };
 </script>
 

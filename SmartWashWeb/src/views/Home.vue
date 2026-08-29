@@ -72,25 +72,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue'
-import { getDashboardStats } from '@/api/dashboard'
+import { ref, onMounted } from 'vue';
+import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
+import { getDashboardStats } from '@/api/dashboard';
 
 const stats = ref({
   schoolCount: 0,
   userCount: 0,
   todayOrderCount: 0,
-  todayIncome: 0
-})
+  todayIncome: 0,
+});
 
 onMounted(async () => {
   try {
-    const data = await getDashboardStats()
-    stats.value = data
+    const data = await getDashboardStats();
+    stats.value = data;
   } catch {
     // 请求失败由 http 拦截器统一弹出提示，页面保持默认 0 值展示
   }
-})
+});
 </script>
 
 <style scoped>

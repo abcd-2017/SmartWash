@@ -17,8 +17,8 @@
 </template>
 
 <script setup>
-import Sidebar from "./Sidebar.vue";
-import Navbar from "./Navbar.vue";
+import Sidebar from './Sidebar.vue';
+import Navbar from './Navbar.vue';
 </script>
 
 <style scoped>

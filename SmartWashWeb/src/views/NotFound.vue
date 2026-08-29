@@ -4,21 +4,19 @@
       <div class="not-found-code">404</div>
       <div class="not-found-title">页面不存在</div>
       <div class="not-found-desc">抱歉，您访问的页面不存在或已被移除</div>
-      <el-button type="primary" class="back-btn" @click="goHome">
-        返回首页
-      </el-button>
+      <el-button type="primary" class="back-btn" @click="goHome"> 返回首页 </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
 // 404 兜底页：替代原先通配路由直接 redirect 首页的行为，明确告知用户路径无效
-import { useRouter } from "vue-router";
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
 const goHome = () => {
-  router.push("/");
+  router.push('/');
 };
 </script>
 

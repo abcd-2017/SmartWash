@@ -22,8 +22,8 @@
 </template>
 
 <script setup>
-import { computed, markRaw } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, markRaw } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   HomeFilled,
   School,
@@ -37,7 +37,7 @@ import {
   Document,
   Ticket,
   CollectionTag,
-} from "@element-plus/icons-vue";
+} from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -63,7 +63,7 @@ const iconRegistry = {
 const resolveIcon = (name) => iconRegistry[name] || null;
 
 const menuRoutes = computed(() => {
-  const layoutRoute = router.options.routes.find((r) => r.path === "/");
+  const layoutRoute = router.options.routes.find((r) => r.path === '/');
   return layoutRoute?.children?.filter((r) => r.meta?.showInMenu) || [];
 });
 

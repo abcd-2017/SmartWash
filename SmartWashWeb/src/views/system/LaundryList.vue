@@ -31,42 +31,35 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="laundryList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="itemId" label="ID" min-width="80" />
-      <el-table-column prop="itemName" label="套餐名称" min-width="180" />
-      <el-table-column prop="basePrice" label="基础价格" min-width="120">
-        <template #default="{ row }">￥{{ row.basePrice?.toFixed(2) || '0.00' }}</template>
-      </el-table-column>
-      <el-table-column prop="description" label="套餐描述" min-width="240" />
-      <el-table-column prop="createdAt" label="创建时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="laundryList" fit highlight-current-row>
+        <el-table-column prop="itemId" label="ID" min-width="80" />
+        <el-table-column prop="itemName" label="套餐名称" min-width="180" />
+        <el-table-column prop="basePrice" label="基础价格" min-width="120">
+          <template #default="{ row }">￥{{ row.basePrice?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column prop="description" label="套餐描述" min-width="240" />
+        <el-table-column prop="createdAt" label="创建时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -75,17 +68,9 @@
       v-model="dialogVisible"
       width="600px"
     >
-      <el-form
-        ref="formRef"
-        :model="tempLaundry"
-        label-width="100px"
-        :rules="rules"
-      >
+      <el-form ref="formRef" :model="tempLaundry" label-width="100px" :rules="rules">
         <el-form-item label="套餐名称" prop="itemName" style="margin: 20px">
-          <el-input
-            v-model="tempLaundry.itemName"
-            placeholder="请输入套餐名称"
-          />
+          <el-input v-model="tempLaundry.itemName" placeholder="请输入套餐名称" />
         </el-form-item>
 
         <el-form-item label="基础价格" prop="basePrice" style="margin: 20px">
@@ -116,24 +101,19 @@
     </el-dialog>
   </div>
 </template>
-  
-  <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import {
-  getLaundryList,
-  addLaundry,
-  updateLaundry,
-  deleteLaundry,
-} from "@/api/laundry";
-import { laundryOptionsCache } from "@/utils/optionCache";
-import { formatTime } from "@/utils/format";
-import { useTableList } from "@/composables/useTableList";
-import { useConfirm } from "@/composables/useConfirm";
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getLaundryList, addLaundry, updateLaundry, deleteLaundry } from '@/api/laundry';
+import { laundryOptionsCache } from '@/utils/optionCache';
+import { formatTime } from '@/utils/format';
+import { useTableList } from '@/composables/useTableList';
+import { useConfirm } from '@/composables/useConfirm';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
-const dialogType = ref("create");
+const dialogType = ref('create');
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -151,32 +131,32 @@ const {
   fetchApi: getLaundryList,
   baseQuery: {
     itemId: null,
-    itemName: "",
+    itemName: '',
   },
   buildParams: (q) => ({
     ...q,
     itemId: q.itemId || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 表单数据
 const tempLaundry = reactive({
   itemId: null,
-  itemName: "",
+  itemName: '',
   basePrice: 0,
-  description: "",
+  description: '',
 });
 
 // 验证规则
 const rules = reactive({
   itemName: [
-    { required: true, message: "请输入套餐名称", trigger: "blur" },
-    { max: 50, message: "名称不超过50字", trigger: "blur" },
+    { required: true, message: '请输入套餐名称', trigger: 'blur' },
+    { max: 50, message: '名称不超过50字', trigger: 'blur' },
   ],
   basePrice: [
-    { required: true, message: "请输入基础价格", trigger: "blur" },
-    { type: "number", min: 0, message: "价格不能为负数" },
+    { required: true, message: '请输入基础价格', trigger: 'blur' },
+    { type: 'number', min: 0, message: '价格不能为负数' },
   ],
 });
 
@@ -187,19 +167,19 @@ onMounted(() => {
 
 // 打开新增弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
+  dialogType.value = 'create';
   dialogVisible.value = true;
   Object.assign(tempLaundry, {
     itemId: null,
-    itemName: "",
+    itemName: '',
     basePrice: 0,
-    description: "",
+    description: '',
   });
 };
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
+  dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempLaundry, { ...row });
 };
@@ -209,19 +189,19 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
 
-    if (dialogType.value === "create") {
+    if (dialogType.value === 'create') {
       await addLaundry(tempLaundry);
-      ElMessage.success("新增成功");
+      ElMessage.success('新增成功');
     } else {
       await updateLaundry(tempLaundry);
-      ElMessage.success("修改成功");
+      ElMessage.success('修改成功');
     }
     // 套餐数据有变，失效套餐下拉的全量缓存（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "操作失败");
+    ElMessage.error(error.message || '操作失败');
   }
 };
 
@@ -232,16 +212,16 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteLaundry(row.itemId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     // 套餐下拉缓存同步失效（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 </script>
-  
-  <style scoped>
+
+<style scoped>
 @import '@/assets/pages.css';
 </style>

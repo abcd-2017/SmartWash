@@ -76,50 +76,43 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="lockerList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="lockerId" label="ID" min-width="80" />
-      <el-table-column label="学校" min-width="180">
-        <template #default="{ row }">
-          {{ schoolMap[row.schoolId]?.schoolName || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="lockerNumber" label="柜号" min-width="100" />
-      <el-table-column label="状态" min-width="120">
-        <template #default="{ row }">
-          <el-tag :type="lockerStatusTagType(row.status)">
-            {{ formatStatus(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.lastUsedAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="lockerList" fit highlight-current-row>
+        <el-table-column prop="lockerId" label="ID" min-width="80" />
+        <el-table-column label="学校" min-width="180">
+          <template #default="{ row }">
+            {{ schoolMap[row.schoolId]?.schoolName || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="lockerNumber" label="柜号" min-width="100" />
+        <el-table-column label="状态" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="lockerStatusTagType(row.status)">
+              {{ formatStatus(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="lastUsedAt" label="最后使用时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.lastUsedAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -128,12 +121,7 @@
       v-model="dialogVisible"
       width="600px"
     >
-      <el-form
-        ref="formRef"
-        :model="tempLocker"
-        label-width="100px"
-        :rules="rules"
-      >
+      <el-form ref="formRef" :model="tempLocker" label-width="100px" :rules="rules">
         <el-form-item label="学校" prop="schoolId" style="margin: 20px">
           <el-select
             v-model="tempLocker.schoolId"
@@ -162,11 +150,7 @@
         </el-form-item>
 
         <el-form-item label="状态" prop="status" style="margin: 20px">
-          <el-select
-            v-model="tempLocker.status"
-            placeholder="选择状态"
-            style="width: 100%"
-          >
+          <el-select v-model="tempLocker.status" placeholder="选择状态" style="width: 100%">
             <el-option
               v-for="(desc, code) in statusOptions"
               :key="code"
@@ -184,30 +168,30 @@
     </el-dialog>
   </div>
 </template>
-  
-  <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
 import {
   getLockerStatus,
   getLockerList,
   addLocker,
   updateLocker,
   deleteLocker,
-} from "@/api/locker";
-import { schoolOptionsCache } from "@/utils/optionCache";
-import { formatTime } from "@/utils/format";
-import { lockerStatusTagType } from "@/constants/dict";
-import { useTableList } from "@/composables/useTableList";
-import { useTimeRange } from "@/composables/useTimeRange";
-import { useConfirm } from "@/composables/useConfirm";
+} from '@/api/locker';
+import { schoolOptionsCache } from '@/utils/optionCache';
+import { formatTime } from '@/utils/format';
+import { lockerStatusTagType } from '@/constants/dict';
+import { useTableList } from '@/composables/useTableList';
+import { useTimeRange } from '@/composables/useTimeRange';
+import { useConfirm } from '@/composables/useConfirm';
 
 // 数据
 const statusOptions = ref({}); // 状态选项（键值对格式）
 const schoolOptions = ref([]); // 学校选项
 const schoolMap = ref({}); // 学校ID到名称的映射
 const dialogVisible = ref(false); // 弹窗显示状态
-const dialogType = ref("create"); // 弹窗类型（新增/编辑）
+const dialogType = ref('create'); // 弹窗类型（新增/编辑）
 const formRef = ref(null); // 引用表单组件
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
@@ -239,7 +223,7 @@ const {
     lockerNumber: q.lockerNumber || undefined,
     status: q.status || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 时间范围处理（评审 #14：抽离为公共 composable）
@@ -250,20 +234,20 @@ const tempLocker = reactive({
   lockerId: null,
   schoolId: null,
   lockerNumber: null,
-  status: "0", // 默认状态为“空闲”
+  status: '0', // 默认状态为“空闲”
 });
 
 // 验证规则
 const rules = reactive({
   schoolId: [
-    { required: true, message: "请选择学校", trigger: "change" },
-    { type: "number", min: 1, message: "学校ID必须大于0" },
+    { required: true, message: '请选择学校', trigger: 'change' },
+    { type: 'number', min: 1, message: '学校ID必须大于0' },
   ],
   lockerNumber: [
-    { required: true, message: "请输入柜号", trigger: "change" },
-    { type: "number", min: 1, message: "柜号必须大于0" },
+    { required: true, message: '请输入柜号', trigger: 'change' },
+    { type: 'number', min: 1, message: '柜号必须大于0' },
   ],
-  status: [{ required: true, message: "请选择状态", trigger: "change" }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
 // 初始化数据
@@ -278,8 +262,8 @@ const fetchStatus = async () => {
   try {
     const res = await getLockerStatus();
     statusOptions.value = res;
-  } catch (error) {
-    ElMessage.error("获取状态失败");
+  } catch {
+    ElMessage.error('获取状态失败');
   }
 };
 
@@ -292,26 +276,26 @@ const fetchSchools = async () => {
       map[school.schoolId] = school;
       return map;
     }, {});
-  } catch (error) {
-    ElMessage.error("获取学校列表失败");
+  } catch {
+    ElMessage.error('获取学校列表失败');
   }
 };
 
 // 打开新增弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
+  dialogType.value = 'create';
   dialogVisible.value = true;
   Object.assign(tempLocker, {
     lockerId: null,
     schoolId: null,
     lockerNumber: null,
-    status: "0", // 默认状态为“空闲”
+    status: '0', // 默认状态为“空闲”
   });
 };
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
+  dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempLocker, { ...row });
 };
@@ -327,18 +311,18 @@ const submitForm = async () => {
       lockerNumber: tempLocker.lockerNumber || undefined,
     };
 
-    if (dialogType.value === "create") {
+    if (dialogType.value === 'create') {
       await addLocker(submitData);
-      ElMessage.success("新增成功");
+      ElMessage.success('新增成功');
     } else {
       await updateLocker(submitData);
-      ElMessage.success("修改成功");
+      ElMessage.success('修改成功');
     }
 
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "操作失败");
+    ElMessage.error(error.message || '操作失败');
   }
 };
 
@@ -349,19 +333,19 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteLocker(row.lockerId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 
 // 状态文本转换
 const formatStatus = (status) => {
-  return statusOptions.value[status] || "未知状态";
+  return statusOptions.value[status] || '未知状态';
 };
 </script>
-  
-  <style scoped>
+
+<style scoped>
 @import '@/assets/pages.css';
 </style>

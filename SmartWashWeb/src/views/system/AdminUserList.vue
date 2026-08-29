@@ -55,42 +55,40 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      ref="tableRef"
-      v-loading="listLoading"
-      :data="adminList"
-      fit
-      highlight-current-row
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="55" />
-      <el-table-column prop="adminId" label="ID" min-width="80" />
-      <el-table-column prop="username" label="用户名" min-width="150" />
-      <el-table-column prop="roles.roleName" label="角色" min-width="180" />
-      <el-table-column label="创建时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table
+        ref="tableRef"
+        v-loading="listLoading"
+        :data="adminList"
+        fit
+        highlight-current-row
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="adminId" label="ID" min-width="80" />
+        <el-table-column prop="username" label="用户名" min-width="150" />
+        <el-table-column prop="roles.roleName" label="角色" min-width="180" />
+        <el-table-column label="创建时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -99,12 +97,7 @@
       v-model="dialogVisible"
       width="600px"
     >
-      <el-form
-        ref="formRef"
-        :model="tempAdmin"
-        label-width="100px"
-        :rules="rules"
-      >
+      <el-form ref="formRef" :model="tempAdmin" label-width="100px" :rules="rules">
         <el-form-item label="用户名" prop="username" style="margin: 20px">
           <el-input v-model="tempAdmin.username" placeholder="请输入用户名" />
         </el-form-item>
@@ -123,11 +116,7 @@
           />
         </el-form-item>
 
-        <el-form-item
-          label="修改密码"
-          v-if="dialogType === 'edit'"
-          style="margin: 20px"
-        >
+        <el-form-item label="修改密码" v-if="dialogType === 'edit'" style="margin: 20px">
           <el-input
             v-model="tempAdmin.password"
             type="password"
@@ -161,25 +150,20 @@
     </el-dialog>
   </div>
 </template>
-  
+
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import {
-  getAdminUserList,
-  addAdminUser,
-  updateAdminUser,
-  deleteAdminUser,
-} from "@/api/adminUser";
-import { roleOptionsCache } from "@/utils/optionCache";
-import { formatTime } from "@/utils/format";
-import { useTableList } from "@/composables/useTableList";
-import { useConfirm } from "@/composables/useConfirm";
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getAdminUserList, addAdminUser, updateAdminUser, deleteAdminUser } from '@/api/adminUser';
+import { roleOptionsCache } from '@/utils/optionCache';
+import { formatTime } from '@/utils/format';
+import { useTableList } from '@/composables/useTableList';
+import { useConfirm } from '@/composables/useConfirm';
 
 const tableRef = ref(null);
 const formRef = ref(null);
 const dialogVisible = ref(false);
-const dialogType = ref("create");
+const dialogType = ref('create');
 const multipleSelection = ref([]);
 const roleOptions = ref([]); // 角色选项列表
 
@@ -199,7 +183,7 @@ const {
   fetchApi: getAdminUserList,
   baseQuery: {
     adminId: null,
-    username: "",
+    username: '',
     roleId: null,
   },
   buildParams: (q) => ({
@@ -207,31 +191,31 @@ const {
     adminId: q.adminId || undefined,
     roleId: q.roleId || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 表单数据
 const tempAdmin = reactive({
   adminId: null,
-  username: "",
-  password: "",
+  username: '',
+  password: '',
   roleId: null,
 });
 
 // 验证规则
 const rules = reactive({
   username: [
-    { required: true, message: "请输入用户名", trigger: "blur" },
-    { min: 3, max: 20, message: "长度在 3 到 20 个字符", trigger: "blur" },
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' },
   ],
   password: [
     {
       required: true,
-      message: "请输入密码",
-      trigger: "blur",
+      message: '请输入密码',
+      trigger: 'blur',
       validator: (rule, value, callback) => {
-        if (dialogType.value === "create" && !value) {
-          callback(new Error("请输入密码"));
+        if (dialogType.value === 'create' && !value) {
+          callback(new Error('请输入密码'));
         } else {
           callback();
         }
@@ -239,8 +223,8 @@ const rules = reactive({
     },
   ],
   roleId: [
-    { required: true, message: "请选择角色", trigger: "change" },
-    { type: "number", min: 1, message: "角色ID必须大于0" },
+    { required: true, message: '请选择角色', trigger: 'change' },
+    { type: 'number', min: 1, message: '角色ID必须大于0' },
   ],
 });
 
@@ -254,8 +238,8 @@ onMounted(() => {
 const fetchRoles = async () => {
   try {
     roleOptions.value = await roleOptionsCache.load();
-  } catch (error) {
-    ElMessage.error("获取角色列表失败");
+  } catch {
+    ElMessage.error('获取角色列表失败');
   }
 };
 
@@ -271,36 +255,36 @@ const handleBatchDelete = async () => {
   const confirmed = await useConfirm(`确认删除选中的 ${count} 个管理员吗？`);
   if (!confirmed) return;
   try {
-    const ids = multipleSelection.value.map((item) => item.adminId).join(",");
+    const ids = multipleSelection.value.map((item) => item.adminId).join(',');
     await deleteAdminUser(ids);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
     tableRef.value.clearSelection();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 
 // 打开创建弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
+  dialogType.value = 'create';
   dialogVisible.value = true;
   Object.assign(tempAdmin, {
     adminId: null,
-    username: "",
-    password: "",
+    username: '',
+    password: '',
     roleId: null,
   });
 };
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
+  dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempAdmin, {
     adminId: row.adminId,
     username: row.username,
-    password: "", // 清空密码字段
+    password: '', // 清空密码字段
     roleId: row.roles?.roleId || null, // 正确设置角色ID
   });
 };
@@ -316,12 +300,12 @@ const submitForm = async () => {
       password: tempAdmin.password || undefined,
     };
 
-    if (dialogType.value === "create") {
+    if (dialogType.value === 'create') {
       await addAdminUser(submitData);
-      ElMessage.success("新增成功");
+      ElMessage.success('新增成功');
     } else {
       await updateAdminUser(submitData);
-      ElMessage.success("修改成功");
+      ElMessage.success('修改成功');
     }
 
     dialogVisible.value = false;
@@ -330,7 +314,7 @@ const submitForm = async () => {
     if (error.message) {
       ElMessage.error(error.message);
     } else {
-      ElMessage.error("操作失败，请检查输入");
+      ElMessage.error('操作失败，请检查输入');
     }
   }
 };
@@ -342,14 +326,14 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteAdminUser(row.adminId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 </script>
-  
+
 <style scoped>
 @import '@/assets/pages.css';
 </style>

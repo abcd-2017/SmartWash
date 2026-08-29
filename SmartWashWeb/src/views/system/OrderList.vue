@@ -92,70 +92,58 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="orderList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="orderNo" label="订单号" min-width="200" />
-      <el-table-column label="用户信息" min-width="150">
-        <template #default="{ row }">
-          {{ row.userVo?.phoneNumber || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="学校" min-width="180">
-        <template #default="{ row }">
-          {{ row.schoolsVo?.schoolName || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="洗护套餐" min-width="180">
-        <template #default="{ row }">
-          {{ row.laundryPackageVo?.itemName || "-" }}
-        </template>
-      </el-table-column>
-      <el-table-column label="总价" min-width="120">
-        <template #default="{ row }"
-          >￥{{ row.totalPrice?.toFixed(2) || '0.00' }}</template
-        >
-      </el-table-column>
-      <el-table-column label="状态" min-width="120">
-        <template #default="{ row }">
-          <el-tag :type="orderStatusTagType(row.status)">
-            {{ formatStatus(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="pickupCode" label="取件码" min-width="120" />
-      <el-table-column label="创建时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button
-            size="small"
-            type="primary"
-            @click="handleUpdateStatus(row)"
-            >修改状态</el-button
-          >
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="orderList" fit highlight-current-row>
+        <el-table-column prop="orderNo" label="订单号" min-width="200" />
+        <el-table-column label="用户信息" min-width="150">
+          <template #default="{ row }">
+            {{ row.userVo?.phoneNumber || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="学校" min-width="180">
+          <template #default="{ row }">
+            {{ row.schoolsVo?.schoolName || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="洗护套餐" min-width="180">
+          <template #default="{ row }">
+            {{ row.laundryPackageVo?.itemName || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="总价" min-width="120">
+          <template #default="{ row }">￥{{ row.totalPrice?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="orderStatusTagType(row.status)">
+              {{ formatStatus(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="pickupCode" label="取件码" min-width="120" />
+        <el-table-column label="创建时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" type="primary" @click="handleUpdateStatus(row)"
+              >修改状态</el-button
+            >
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 修改状态对话框 -->
@@ -183,9 +171,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="statusDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmUpdateStatus">
-            确认
-          </el-button>
+          <el-button type="primary" @click="confirmUpdateStatus"> 确认 </el-button>
         </span>
       </template>
     </el-dialog>
@@ -193,20 +179,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import {
-  getOrderStatus,
-  getOrderList,
-  deleteOrder,
-  updateOrderStatus,
-} from "@/api/order";
-import { schoolOptionsCache, laundryOptionsCache } from "@/utils/optionCache";
-import { formatTime } from "@/utils/format";
-import { orderStatusTagType } from "@/constants/dict";
-import { useTableList } from "@/composables/useTableList";
-import { useTimeRange } from "@/composables/useTimeRange";
-import { useConfirm } from "@/composables/useConfirm";
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getOrderStatus, getOrderList, deleteOrder, updateOrderStatus } from '@/api/order';
+import { schoolOptionsCache, laundryOptionsCache } from '@/utils/optionCache';
+import { formatTime } from '@/utils/format';
+import { orderStatusTagType } from '@/constants/dict';
+import { useTableList } from '@/composables/useTableList';
+import { useTimeRange } from '@/composables/useTimeRange';
+import { useConfirm } from '@/composables/useConfirm';
 
 // 数据
 const statusOptions = ref({}); // 状态选项
@@ -228,9 +209,9 @@ const {
 } = useTableList({
   fetchApi: getOrderList,
   baseQuery: {
-    phoneNumber: "",
-    schoolName: "",
-    orderNo: "",
+    phoneNumber: '',
+    schoolName: '',
+    orderNo: '',
     laundryItemsId: null,
     status: null,
     startTime: null,
@@ -241,7 +222,7 @@ const {
     laundryItemsId: q.laundryItemsId || undefined,
     status: q.status || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 时间范围处理（评审 #14：抽离为公共 composable）
@@ -251,9 +232,9 @@ const timeRange = useTimeRange(listQuery);
 const statusDialogVisible = ref(false);
 const statusForm = reactive({
   orderId: null,
-  orderNo: "",
-  currentStatus: "",
-  newStatus: "",
+  orderNo: '',
+  currentStatus: '',
+  newStatus: '',
 });
 // 初始化数据
 onMounted(async () => {
@@ -268,8 +249,8 @@ const fetchStatus = async () => {
   try {
     const res = await getOrderStatus();
     statusOptions.value = res;
-  } catch (error) {
-    ElMessage.error("获取状态失败");
+  } catch {
+    ElMessage.error('获取状态失败');
   }
 };
 
@@ -277,8 +258,8 @@ const fetchStatus = async () => {
 const fetchSchools = async () => {
   try {
     schoolOptions.value = await schoolOptionsCache.load();
-  } catch (error) {
-    ElMessage.error("获取学校列表失败");
+  } catch {
+    ElMessage.error('获取学校列表失败');
   }
 };
 
@@ -286,8 +267,8 @@ const fetchSchools = async () => {
 const fetchLaundry = async () => {
   try {
     laundryOptions.value = await laundryOptionsCache.load();
-  } catch (error) {
-    ElMessage.error("获取洗护套餐失败");
+  } catch {
+    ElMessage.error('获取洗护套餐失败');
   }
 };
 
@@ -298,10 +279,10 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteOrder(row.orderId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 
@@ -310,14 +291,14 @@ const handleUpdateStatus = (row) => {
   statusForm.orderId = row.orderId;
   statusForm.orderNo = row.orderNo;
   statusForm.currentStatus = row.status;
-  statusForm.newStatus = "";
+  statusForm.newStatus = '';
   statusDialogVisible.value = true;
 };
 
 // 确认更新状态
 const confirmUpdateStatus = async () => {
   if (!statusForm.newStatus) {
-    ElMessage.warning("请选择新状态");
+    ElMessage.warning('请选择新状态');
     return;
   }
 
@@ -326,17 +307,17 @@ const confirmUpdateStatus = async () => {
       orderId: statusForm.orderId,
       status: statusForm.newStatus,
     });
-    ElMessage.success("状态更新成功");
+    ElMessage.success('状态更新成功');
     statusDialogVisible.value = false;
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "状态更新失败");
+    ElMessage.error(error.message || '状态更新失败');
   }
 };
 
 // 状态文本转换
 const formatStatus = (status) => {
-  return statusOptions.value[status] || "未知状态";
+  return statusOptions.value[status] || '未知状态';
 };
 </script>
 

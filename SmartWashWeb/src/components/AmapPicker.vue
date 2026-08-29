@@ -52,8 +52,12 @@
         </div>
         <div v-if="selectedLocation" class="amap-location-info">
           <el-descriptions :column="3" border size="small">
-            <el-descriptions-item label="经度">{{ selectedLocation.longitude }}</el-descriptions-item>
-            <el-descriptions-item label="纬度">{{ selectedLocation.latitude }}</el-descriptions-item>
+            <el-descriptions-item label="经度">{{
+              selectedLocation.longitude
+            }}</el-descriptions-item>
+            <el-descriptions-item label="纬度">{{
+              selectedLocation.latitude
+            }}</el-descriptions-item>
             <el-descriptions-item label="省">{{ selectedLocation.province }}</el-descriptions-item>
             <el-descriptions-item label="市">{{ selectedLocation.city }}</el-descriptions-item>
             <el-descriptions-item label="区">{{ selectedLocation.district }}</el-descriptions-item>
@@ -73,133 +77,137 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue'
-import { Location } from '@element-plus/icons-vue'
-import AMapLoader from '@amap/amap-jsapi-loader'
+import { ref, nextTick, watch } from 'vue';
+import { Location } from '@element-plus/icons-vue';
+import AMapLoader from '@amap/amap-jsapi-loader';
 
 const props = defineProps({
   modelValue: {
     type: Object,
-    default: null
+    default: null,
   },
   address: {
     type: String,
-    default: ''
+    default: '',
   },
   schoolName: {
     type: String,
-    default: ''
+    default: '',
   },
   city: {
     type: String,
-    default: ''
-  }
-})
+    default: '',
+  },
+});
 
-const emit = defineEmits(['update:modelValue', 'update:address', 'change'])
+const emit = defineEmits(['update:modelValue', 'update:address', 'change']);
 
-const dialogVisible = ref(false)
-const searchKeyword = ref('')
-const searchResults = ref([])
-const selectedLocation = ref(null)
-const addressDisplay = ref('')
-const mapContainer = ref(null)
-const searchCity = ref('')
+const dialogVisible = ref(false);
+const searchKeyword = ref('');
+const searchResults = ref([]);
+const selectedLocation = ref(null);
+const addressDisplay = ref('');
+const mapContainer = ref(null);
+const searchCity = ref('');
 
-let mapInstance = null
-let markerInstance = null
-let geocoderInstance = null
-let AMapRef = null
+let mapInstance = null;
+let markerInstance = null;
+let geocoderInstance = null;
+let AMapRef = null;
 
 // 同步外部值 — 只在有坐标时（地图选点确认后）才显示地址
-watch(() => props.modelValue, (val) => {
-  if (val && val.longitude && val.latitude) {
-    selectedLocation.value = { ...val }
-    addressDisplay.value = props.address || ''
-  } else {
-    selectedLocation.value = null
-    addressDisplay.value = ''
-  }
-}, { immediate: true })
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val && val.longitude && val.latitude) {
+      selectedLocation.value = { ...val };
+      addressDisplay.value = props.address || '';
+    } else {
+      selectedLocation.value = null;
+      addressDisplay.value = '';
+    }
+  },
+  { immediate: true }
+);
 
 async function openPicker() {
   // 构造搜索关键词：城市 + 学校名
-  const parts = []
-  if (props.city) parts.push(props.city)
-  if (props.schoolName) parts.push(props.schoolName)
-  searchKeyword.value = parts.join(' ')
-  searchCity.value = props.city || ''
+  const parts = [];
+  if (props.city) parts.push(props.city);
+  if (props.schoolName) parts.push(props.schoolName);
+  searchKeyword.value = parts.join(' ');
+  searchCity.value = props.city || '';
 
-  dialogVisible.value = true
-  await nextTick()
-  await initMap()
+  dialogVisible.value = true;
+  await nextTick();
+  await initMap();
 
   // 如果没有已选位置，但有城市信息，先定位到城市
   if (!selectedLocation.value && props.city) {
-    geocodeCity(props.city)
+    geocodeCity(props.city);
   }
 
   // 如果有搜索关键词，自动搜索
   if (searchKeyword.value.trim()) {
-    handleSearch()
+    handleSearch();
   }
 }
 
 async function initMap() {
-  if (mapInstance) return
+  if (mapInstance) return;
 
   AMapRef = await AMapLoader.load({
     key: import.meta.env.VITE_AMAP_KEY,
     version: '2.0',
-    plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.AutoComplete']
-  })
+    plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.AutoComplete'],
+  });
 
   mapInstance = new AMapRef.Map(mapContainer.value, {
     zoom: 12,
     center: selectedLocation.value
       ? [selectedLocation.value.longitude, selectedLocation.value.latitude]
-      : [116.397428, 39.90923]
-  })
+      : [116.397428, 39.90923],
+  });
 
-  geocoderInstance = new AMapRef.Geocoder()
+  geocoderInstance = new AMapRef.Geocoder();
 
   mapInstance.on('click', async (e) => {
-    const lnglat = e.lnglat
-    await updateLocationByLnglat(lnglat.lng, lnglat.lat)
-  })
+    const lnglat = e.lnglat;
+    await updateLocationByLnglat(lnglat.lng, lnglat.lat);
+  });
 
   if (selectedLocation.value) {
-    placeMarker(selectedLocation.value.longitude, selectedLocation.value.latitude)
+    placeMarker(selectedLocation.value.longitude, selectedLocation.value.latitude);
   }
 }
 
 // 地理编码城市名 → 经纬度，用于定位地图中心
 function geocodeCity(cityName) {
-  if (!geocoderInstance || !cityName) return
+  if (!geocoderInstance || !cityName) return;
   geocoderInstance.getLocation(cityName, (status, result) => {
     if (status === 'complete' && result.geocodes && result.geocodes.length) {
-      const loc = result.geocodes[0].location
-      mapInstance.setCenter([loc.lng, loc.lat])
-      mapInstance.setZoom(11)
+      const loc = result.geocodes[0].location;
+      mapInstance.setCenter([loc.lng, loc.lat]);
+      mapInstance.setZoom(11);
     }
-  })
+  });
 }
 
 async function updateLocationByLnglat(lng, lat) {
-  placeMarker(lng, lat)
+  placeMarker(lng, lat);
 
   geocoderInstance.getAddress([lng, lat], (status, result) => {
     if (status === 'complete' && result.regeocode) {
-      const addr = result.regeocode
-      const addrComponent = addr.addressComponent
+      const addr = result.regeocode;
+      const addrComponent = addr.addressComponent;
       selectedLocation.value = {
         longitude: lng,
         latitude: lat,
         province: addrComponent.province || '',
         city: addrComponent.city || '',
         district: addrComponent.district || '',
-        address: addr.formattedAddress || ''
-      }
+        address: addr.formattedAddress || '',
+      };
     } else {
       selectedLocation.value = {
         longitude: lng,
@@ -207,90 +215,90 @@ async function updateLocationByLnglat(lng, lat) {
         province: '',
         city: '',
         district: '',
-        address: ''
-      }
+        address: '',
+      };
     }
-  })
+  });
 }
 
 function placeMarker(lng, lat) {
   if (markerInstance) {
-    markerInstance.setPosition([lng, lat])
+    markerInstance.setPosition([lng, lat]);
   } else {
     markerInstance = new AMapRef.Marker({
       position: [lng, lat],
-      map: mapInstance
-    })
+      map: mapInstance,
+    });
   }
-  mapInstance.setCenter([lng, lat])
+  mapInstance.setCenter([lng, lat]);
 }
 
 async function handleSearch() {
-  if (!searchKeyword.value.trim()) return
+  if (!searchKeyword.value.trim()) return;
 
   const placeSearch = new AMapRef.PlaceSearch({
     pageSize: 10,
     pageIndex: 1,
-    city: searchCity.value || undefined
-  })
+    city: searchCity.value || undefined,
+  });
 
   placeSearch.search(searchKeyword.value, (status, result) => {
     if (status === 'complete' && result.poiList) {
-      searchResults.value = result.poiList.pois.map(poi => ({
+      searchResults.value = result.poiList.pois.map((poi) => ({
         id: poi.id,
         name: poi.name,
         address: poi.address,
         lng: poi.location.lng,
-        lat: poi.location.lat
-      }))
+        lat: poi.location.lat,
+      }));
       // 如果有结果，自动定位到第一个
       if (searchResults.value.length > 0) {
-        const first = searchResults.value[0]
-        placeMarker(first.lng, first.lat)
-        mapInstance.setZoom(14)
+        const first = searchResults.value[0];
+        placeMarker(first.lng, first.lat);
+        mapInstance.setZoom(14);
       }
     } else {
-      searchResults.value = []
+      searchResults.value = [];
     }
-  })
+  });
 }
 
 function selectSearchResult(item) {
-  searchResults.value = []
-  searchKeyword.value = item.name
-  updateLocationByLnglat(item.lng, item.lat)
-  mapInstance.setZoom(16)
+  searchResults.value = [];
+  searchKeyword.value = item.name;
+  updateLocationByLnglat(item.lng, item.lat);
+  mapInstance.setZoom(16);
 }
 
 function confirmSelection() {
-  if (!selectedLocation.value) return
+  if (!selectedLocation.value) return;
   emit('update:modelValue', {
     longitude: selectedLocation.value.longitude,
-    latitude: selectedLocation.value.latitude
-  })
-  emit('update:address', selectedLocation.value.address)
-  emit('change', selectedLocation.value)
-  addressDisplay.value = selectedLocation.value.address
-  dialogVisible.value = false
+    latitude: selectedLocation.value.latitude,
+  });
+  emit('update:address', selectedLocation.value.address);
+  emit('change', selectedLocation.value);
+  addressDisplay.value = selectedLocation.value.address;
+  dialogVisible.value = false;
 }
 
 function handleClear() {
-  selectedLocation.value = null
-  emit('update:modelValue', null)
-  emit('update:address', '')
-  emit('change', null)
+  selectedLocation.value = null;
+  emit('update:modelValue', null);
+  emit('update:address', '');
+  emit('change', null);
 }
 
 function handleDialogClosed() {
   if (mapInstance) {
-    mapInstance.destroy()
-    mapInstance = null
-    markerInstance = null
-    geocoderInstance = null
+    mapInstance.destroy();
+    mapInstance = null;
+    markerInstance = null;
+    geocoderInstance = null;
   }
-  searchResults.value = []
-  searchKeyword.value = ''
-  searchCity.value = ''
+  searchResults.value = [];
+  searchKeyword.value = '';
+  searchCity.value = '';
 }
 </script>
 

@@ -1,7 +1,7 @@
 // src/composables/useTimeRange.js
 // 时间范围筛选的双向绑定 computed（评审 #14）：
 // 消除 4 个列表页（Order/Recharge/Payment/Locker）逐字重复的 timeRange computed。
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 /**
  * @param {Object} query 响应式查询对象（须含起始/结束时间两个字段）
@@ -13,8 +13,8 @@ export function useTimeRange(query, startKey = 'startTime', endKey = 'endTime') 
   return computed({
     get: () => [query[startKey], query[endKey]],
     set: (val) => {
-      query[startKey] = val?.[0] || null
-      query[endKey] = val?.[1] || null
+      query[startKey] = val?.[0] || null;
+      query[endKey] = val?.[1] || null;
     },
-  })
+  });
 }

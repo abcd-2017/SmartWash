@@ -1,9 +1,9 @@
 // src/utils/format.js
 // 通用格式化工具（评审 #13：收敛 11 个列表页逐字重复的 formatTime）
-import dayjs from 'dayjs'
+import dayjs from 'dayjs';
 
 // 默认时间格式
-export const DEFAULT_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+export const DEFAULT_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
 /**
  * 统一时间格式化
@@ -14,7 +14,7 @@ export const DEFAULT_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
  */
 export function formatTime(time, fmt = DEFAULT_TIME_FORMAT) {
   if (time === null || time === undefined || time === '') {
-    return '-'
+    return '-';
   }
-  return dayjs(time).format(fmt)
+  return dayjs(time).format(fmt);
 }

@@ -15,11 +15,7 @@
         @keyup.enter="handleLogin"
       >
         <el-form-item label="用户名" prop="username">
-          <el-input
-            v-model="loginForm.username"
-            placeholder="请输入用户名"
-            clearable
-          />
+          <el-input v-model="loginForm.username" placeholder="请输入用户名" clearable />
         </el-form-item>
 
         <el-form-item label="密码" prop="password">
@@ -32,12 +28,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
-            :loading="loading"
-            class="login-btn"
-            color="#1e293b"
-            @click="handleLogin"
-          >
+          <el-button :loading="loading" class="login-btn" color="#1e293b" @click="handleLogin">
             登 录
           </el-button>
         </el-form-item>
@@ -49,25 +40,25 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { ElMessage } from "element-plus";
-import { useRouter } from "vue-router";
-import { login } from "@/api/auth";
-import { useAuthStore } from "@/stores/auth";
+import { ref, reactive } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+import { login } from '@/api/auth';
+import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const formRef = ref(null);
 const loginForm = reactive({
-  username: "",
-  password: "",
+  username: '',
+  password: '',
 });
 
 const rules = reactive({
-  username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [
-    { required: true, message: "请输入密码", trigger: "blur" },
-    { min: 6, max: 16, message: "密码长度在6到16个字符", trigger: "blur" },
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 16, message: '密码长度在6到16个字符', trigger: 'blur' },
   ],
 });
 
@@ -83,15 +74,15 @@ const handleLogin = async () => {
     // 后端登录响应 data 已改为对象 { token, role }，role 为该管理员实际角色名
     const data = await login(loginForm);
     if (!data?.token) {
-      throw new Error("登录响应缺少凭证，请稍后重试");
+      throw new Error('登录响应缺少凭证，请稍后重试');
     }
     // 登录态统一写入 Pinia store（内部持久化到 localStorage），角色以后端返回为准
     authStore.login(data.token, data.role);
 
-    ElMessage.success("登录成功");
-    router.push("/");
+    ElMessage.success('登录成功');
+    router.push('/');
   } catch (error) {
-    ElMessage.error(error.message || "登录失败");
+    ElMessage.error(error.message || '登录失败');
   } finally {
     loading.value = false;
   }

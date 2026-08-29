@@ -22,39 +22,32 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="roleList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="roleId" label="ID" min-width="80" />
-      <el-table-column prop="roleName" label="角色名称" min-width="150" />
-      <el-table-column prop="description" label="角色描述" min-width="200" />
-      <el-table-column label="创建时间" min-width="180">
-        <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="roleList" fit highlight-current-row>
+        <el-table-column prop="roleId" label="ID" min-width="80" />
+        <el-table-column prop="roleName" label="角色名称" min-width="150" />
+        <el-table-column prop="description" label="角色描述" min-width="200" />
+        <el-table-column label="创建时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -63,12 +56,7 @@
       v-model="dialogVisible"
       width="600px"
     >
-      <el-form
-        ref="formRef"
-        :model="tempRole"
-        label-width="100px"
-        :rules="rules"
-      >
+      <el-form ref="formRef" :model="tempRole" label-width="100px" :rules="rules">
         <el-form-item label="角色名称" prop="roleName" style="margin: 20px">
           <el-input v-model="tempRole.roleName" placeholder="请输入角色名称" />
         </el-form-item>
@@ -90,19 +78,19 @@
     </el-dialog>
   </div>
 </template>
-  
-  <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import { getRoleList, addRole, updateRole, deleteRole } from "@/api/role";
-import { roleOptionsCache } from "@/utils/optionCache";
-import { formatTime } from "@/utils/format";
-import { useTableList } from "@/composables/useTableList";
-import { useConfirm } from "@/composables/useConfirm";
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getRoleList, addRole, updateRole, deleteRole } from '@/api/role';
+import { roleOptionsCache } from '@/utils/optionCache';
+import { formatTime } from '@/utils/format';
+import { useTableList } from '@/composables/useTableList';
+import { useConfirm } from '@/composables/useConfirm';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
-const dialogType = ref("create");
+const dialogType = ref('create');
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -119,23 +107,23 @@ const {
 } = useTableList({
   fetchApi: getRoleList,
   baseQuery: {
-    roleName: "",
+    roleName: '',
   },
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 表单数据
 const tempRole = reactive({
   roleId: null,
-  roleName: "",
-  description: "",
+  roleName: '',
+  description: '',
 });
 
 // 验证规则
 const rules = reactive({
   roleName: [
-    { required: true, message: "请输入角色名称", trigger: "blur" },
-    { max: 20, message: "名称不超过20字", trigger: "blur" },
+    { required: true, message: '请输入角色名称', trigger: 'blur' },
+    { max: 20, message: '名称不超过20字', trigger: 'blur' },
   ],
 });
 
@@ -146,18 +134,18 @@ onMounted(() => {
 
 // 打开新增弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
+  dialogType.value = 'create';
   dialogVisible.value = true;
   Object.assign(tempRole, {
     roleId: null,
-    roleName: "",
-    description: "",
+    roleName: '',
+    description: '',
   });
 };
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
+  dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempRole, { ...row });
 };
@@ -167,19 +155,19 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
 
-    if (dialogType.value === "create") {
+    if (dialogType.value === 'create') {
       await addRole(tempRole);
-      ElMessage.success("新增成功");
+      ElMessage.success('新增成功');
     } else {
       await updateRole(tempRole);
-      ElMessage.success("修改成功");
+      ElMessage.success('修改成功');
     }
     // 角色数据有变，失效角色下拉的全量缓存（评审 #15 的失效入口）
     roleOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "操作失败");
+    ElMessage.error(error.message || '操作失败');
   }
 };
 
@@ -190,16 +178,16 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteRole(row.roleId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     // 角色下拉缓存同步失效（评审 #15 的失效入口）
     roleOptionsCache.invalidate();
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 </script>
-  
-  <style scoped>
+
+<style scoped>
 @import '@/assets/pages.css';
 </style>

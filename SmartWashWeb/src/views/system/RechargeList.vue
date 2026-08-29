@@ -69,59 +69,48 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      v-loading="listLoading"
-      :data="rechargeList"
-      fit
-      highlight-current-row
-    >
-      <el-table-column prop="recordId" label="记录ID" min-width="100" />
-      <el-table-column label="手机号" min-width="120">
-        <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
-      </el-table-column>
-      <el-table-column label="充值金额" min-width="150">
-        <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
-      </el-table-column>
-      <el-table-column label="充值类型" min-width="120">
-        <template #default="{ row }">
-          <el-tag :type="rechargeTypeTagType(row.rechargeType)">
-            {{ rechargeTypeText(row.rechargeType) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="充值时间" min-width="180">
-        <template #default="{ row }">{{
-          formatTime(row.rechargeTime)
-        }}</template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table v-loading="listLoading" :data="rechargeList" fit highlight-current-row>
+        <el-table-column prop="recordId" label="记录ID" min-width="100" />
+        <el-table-column label="手机号" min-width="120">
+          <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="充值金额" min-width="150">
+          <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column label="充值类型" min-width="120">
+          <template #default="{ row }">
+            <el-tag :type="rechargeTypeTagType(row.rechargeType)">
+              {{ rechargeTypeText(row.rechargeType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="充值时间" min-width="180">
+          <template #default="{ row }">{{ formatTime(row.rechargeTime) }}</template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
-import { getRechargeList } from "@/api/recharge";
-import { formatTime } from "@/utils/format";
-import {
-  RECHARGE_TYPE_OPTIONS,
-  rechargeTypeText,
-  rechargeTypeTagType,
-} from "@/constants/dict";
-import { useTableList } from "@/composables/useTableList";
-import { useTimeRange } from "@/composables/useTimeRange";
+import { onMounted } from 'vue';
+import { getRechargeList } from '@/api/recharge';
+import { formatTime } from '@/utils/format';
+import { RECHARGE_TYPE_OPTIONS, rechargeTypeText, rechargeTypeTagType } from '@/constants/dict';
+import { useTableList } from '@/composables/useTableList';
+import { useTimeRange } from '@/composables/useTimeRange';
 
 // 充值类型选项（枚举字典统一维护，评审 #16）
 const rechargeTypeOptions = RECHARGE_TYPE_OPTIONS;
@@ -154,7 +143,7 @@ const {
     amount: q.amount || undefined,
     rechargeType: q.rechargeType || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 监听时间范围选择（评审 #14：抽离为公共 composable）

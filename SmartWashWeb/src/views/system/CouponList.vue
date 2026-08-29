@@ -49,57 +49,55 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-    <el-table
-      ref="tableRef"
-      v-loading="listLoading"
-      :data="couponList"
-      fit
-      highlight-current-row
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="55" />
-      <el-table-column prop="couponId" label="ID" min-width="80" />
-      <el-table-column prop="title" label="标题" min-width="150" />
-      <el-table-column label="折扣金额" min-width="120">
-        <template #default="{ row }">￥{{ row.discount?.toFixed(2) || '0.00' }}</template>
-      </el-table-column>
-      <el-table-column label="使用门槛" min-width="120">
-        <template #default="{ row }">￥{{ row.threshold?.toFixed(2) || '0.00' }}</template>
-      </el-table-column>
-      <el-table-column label="有效期" min-width="220">
-        <template #default="{ row }">
-          {{ formatTime(row.startTime, "YYYY-MM-DD HH:mm") }} ~
-          {{ formatTime(row.endTime, "YYYY-MM-DD HH:mm") }}
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" min-width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
-            {{ row.status === "ACTIVE" ? "可用" : "已失效" }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination-bar">
-      <el-pagination
-        background
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :page-sizes="pageSizes"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
+      <el-table
+        ref="tableRef"
+        v-loading="listLoading"
+        :data="couponList"
+        fit
+        highlight-current-row
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="couponId" label="ID" min-width="80" />
+        <el-table-column prop="title" label="标题" min-width="150" />
+        <el-table-column label="折扣金额" min-width="120">
+          <template #default="{ row }">￥{{ row.discount?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column label="使用门槛" min-width="120">
+          <template #default="{ row }">￥{{ row.threshold?.toFixed(2) || '0.00' }}</template>
+        </el-table-column>
+        <el-table-column label="有效期" min-width="220">
+          <template #default="{ row }">
+            {{ formatTime(row.startTime, 'YYYY-MM-DD HH:mm') }} ~
+            {{ formatTime(row.endTime, 'YYYY-MM-DD HH:mm') }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" min-width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
+              {{ row.status === 'ACTIVE' ? '可用' : '已失效' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination-bar">
+        <el-pagination
+          background
+          :current-page="listQuery.page"
+          :page-size="listQuery.size"
+          :page-sizes="pageSizes"
+          :total="total"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -108,12 +106,7 @@
       v-model="dialogVisible"
       width="800px"
     >
-      <el-form
-        ref="formRef"
-        :model="tempCoupon"
-        label-width="120px"
-        :rules="rules"
-      >
+      <el-form ref="formRef" :model="tempCoupon" label-width="120px" :rules="rules">
         <el-form-item label="优惠券标题" prop="title" style="margin: 20px">
           <el-input v-model="tempCoupon.title" placeholder="请输入标题" />
         </el-form-item>
@@ -196,11 +189,7 @@
         </el-row>
 
         <el-form-item label="状态" prop="status" style="margin: 20px">
-          <el-select
-            v-model="tempCoupon.status"
-            placeholder="请选择状态"
-            style="width: 100%"
-          >
+          <el-select v-model="tempCoupon.status" placeholder="请选择状态" style="width: 100%">
             <el-option label="可用" value="ACTIVE" />
             <el-option label="已失效" value="INACTIVE" />
           </el-select>
@@ -214,25 +203,20 @@
     </el-dialog>
   </div>
 </template>
-  
-  <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage } from "element-plus";
-import dayjs from "dayjs";
-import {
-  getCouponList,
-  addCoupon,
-  updateCoupon,
-  deleteCoupon,
-} from "@/api/coupon";
-import { formatTime } from "@/utils/format";
-import { useTableList } from "@/composables/useTableList";
-import { useConfirm } from "@/composables/useConfirm";
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import dayjs from 'dayjs';
+import { getCouponList, addCoupon, updateCoupon, deleteCoupon } from '@/api/coupon';
+import { formatTime } from '@/utils/format';
+import { useTableList } from '@/composables/useTableList';
+import { useConfirm } from '@/composables/useConfirm';
 
 const tableRef = ref(null);
 const formRef = ref(null);
 const dialogVisible = ref(false);
-const dialogType = ref("create");
+const dialogType = ref('create');
 const multipleSelection = ref([]);
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
@@ -251,42 +235,42 @@ const {
   fetchApi: getCouponList,
   baseQuery: {
     couponId: null,
-    title: "",
-    status: "",
+    title: '',
+    status: '',
   },
   buildParams: (q) => ({
     ...q,
     couponId: q.couponId || undefined,
   }),
-  errorMsg: "获取数据失败",
+  errorMsg: '获取数据失败',
 });
 
 // 表单数据
 const tempCoupon = reactive({
   couponId: null,
-  title: "",
-  description: "",
+  title: '',
+  description: '',
   discount: 0.01,
   threshold: 0,
   startTime: null,
   endTime: null,
   validDays: 1,
   isNewUser: false,
-  status: "ACTIVE",
+  status: 'ACTIVE',
 });
 
 // 验证规则
 const rules = reactive({
   title: [
-    { required: true, message: "请输入标题", trigger: "blur" },
-    { max: 50, message: "标题不超过50字", trigger: "blur" },
+    { required: true, message: '请输入标题', trigger: 'blur' },
+    { max: 50, message: '标题不超过50字', trigger: 'blur' },
   ],
-  discount: [{ required: true, message: "请输入折扣金额", trigger: "change" }],
-  threshold: [{ required: true, message: "请输入使用门槛", trigger: "change" }],
-  startTime: [{ required: true, message: "请选择开始时间", trigger: "change" }],
-  endTime: [{ required: true, message: "请选择结束时间", trigger: "change" }],
-  validDays: [{ required: true, message: "请输入有效天数", trigger: "blur" }],
-  status: [{ required: true, message: "请选择状态", trigger: "change" }],
+  discount: [{ required: true, message: '请输入折扣金额', trigger: 'change' }],
+  threshold: [{ required: true, message: '请输入使用门槛', trigger: 'change' }],
+  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
+  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }],
+  validDays: [{ required: true, message: '请输入有效天数', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
 // 初始化数据
@@ -306,42 +290,42 @@ const handleBatchDelete = async () => {
   const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？`);
   if (!confirmed) return;
   try {
-    const ids = multipleSelection.value.map((item) => item.couponId).join(",");
+    const ids = multipleSelection.value.map((item) => item.couponId).join(',');
     await deleteCoupon(ids);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
     tableRef.value.clearSelection();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 
 // 打开新增弹窗
 const handleCreate = () => {
-  dialogType.value = "create";
+  dialogType.value = 'create';
   dialogVisible.value = true;
   Object.assign(tempCoupon, {
     couponId: null,
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     discount: 0.01,
     threshold: 0,
     startTime: null,
     endTime: null,
     validDays: 1,
     isNewUser: false,
-    status: "ACTIVE",
+    status: 'ACTIVE',
   });
 };
 
 // 打开编辑弹窗
 const handleEdit = (row) => {
-  dialogType.value = "edit";
+  dialogType.value = 'edit';
   dialogVisible.value = true;
   Object.assign(tempCoupon, {
     ...row,
-    startTime: dayjs(row.startTime).format("YYYY-MM-DD HH:mm:ss"),
-    endTime: dayjs(row.endTime).format("YYYY-MM-DD HH:mm:ss"),
+    startTime: dayjs(row.startTime).format('YYYY-MM-DD HH:mm:ss'),
+    endTime: dayjs(row.endTime).format('YYYY-MM-DD HH:mm:ss'),
   });
 };
 
@@ -353,22 +337,22 @@ const submitForm = async () => {
     // 处理时间格式
     const submitData = {
       ...tempCoupon,
-      startTime: dayjs(tempCoupon.startTime).format("YYYY-MM-DD HH:mm:ss"),
-      endTime: dayjs(tempCoupon.endTime).format("YYYY-MM-DD HH:mm:ss"),
+      startTime: dayjs(tempCoupon.startTime).format('YYYY-MM-DD HH:mm:ss'),
+      endTime: dayjs(tempCoupon.endTime).format('YYYY-MM-DD HH:mm:ss'),
     };
 
-    if (dialogType.value === "create") {
+    if (dialogType.value === 'create') {
       await addCoupon(submitData);
-      ElMessage.success("新增成功");
+      ElMessage.success('新增成功');
     } else {
       await updateCoupon(submitData);
-      ElMessage.success("修改成功");
+      ElMessage.success('修改成功');
     }
 
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "操作失败");
+    ElMessage.error(error.message || '操作失败');
   }
 };
 
@@ -379,14 +363,14 @@ const handleDelete = async (row) => {
   if (!confirmed) return;
   try {
     await deleteCoupon(row.couponId);
-    ElMessage.success("删除成功");
+    ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
-    ElMessage.error(error.message || "删除失败");
+    ElMessage.error(error.message || '删除失败');
   }
 };
 </script>
-  
-  <style scoped>
+
+<style scoped>
 @import '@/assets/pages.css';
 </style>

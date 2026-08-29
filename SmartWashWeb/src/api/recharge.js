@@ -1,9 +1,9 @@
-import request from '@/utils/http'
+import request from '@/utils/http';
 
 export function getRechargeList(params) {
-    return request({
-        url: '/admin/rechargeRecords/all',
-        method: 'get',
-        params
-    })
+  return request({
+    url: '/admin/rechargeRecords/all',
+    method: 'get',
+    params,
+  });
 }
