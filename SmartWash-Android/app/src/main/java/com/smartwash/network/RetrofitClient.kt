@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.smartwash.BuildConfig
 import com.smartwash.database.AppDatabase
+import com.smartwash.database.DivRecordMigration
 import com.smartwash.database.dao.CouponVoDao
 import com.smartwash.database.dao.LaundryItemDao
 import com.smartwash.database.dao.SchoolNameDao
@@ -97,7 +98,9 @@ class RetrofitClient {
             AppDatabase::class.java,
             "smartwash_db",
         )
-            // 缓存库无存量数据，schema 变更时允许破坏性重建（正式数据表迁移到服务端）
+            // 缓存库无存量数据，schema 变更时允许破坏性重建（正式数据表迁移到服务端）；
+            // v2 新增 div_records 卦历表由 DivRecordMigration 显式迁移，升级时保留用户卦历。
+            .addMigrations(DivRecordMigration())
             .fallbackToDestructiveMigration()
             .build()
     }
