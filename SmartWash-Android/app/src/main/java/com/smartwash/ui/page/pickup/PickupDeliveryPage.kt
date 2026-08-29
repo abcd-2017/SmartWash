@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.pickup
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +58,8 @@ import com.smartwash.ui.theme.IconBox
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.utils.RequestState
 import com.smartwash.utils.generateQrCodeBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @SuppressLint("RememberReturnType")
 @Composable
@@ -85,8 +89,16 @@ fun PickupDeliveryPage(
     val pickupCode = orderInfo?.pickupCode?.let { it.split(":").getOrNull(2) } ?: ""
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
 
-    val qrBitmap = remember(pickupCode) {
-        if (pickupCode.isNotBlank()) generateQrCodeBitmap(pickupCode) else null
+    // 二维码异步生成（评审 #17）：原实现用 remember(pickupCode) 在组合期同步执行 512×512
+    // 逐像素双循环，阻塞主线程。改为 produceState 以 pickupCode 为 key：生成期间保持 null
+    // 展示占位（复用下方"加载中"盒子），完成后更新；重组不会重复生成，pickupCode 变化时
+    // 旧生成任务随协程取消。generateQrCodeBitmap 本身保持纯函数，调用侧切到 Dispatchers.Default
+    val qrBitmap by produceState<Bitmap?>(initialValue = null, pickupCode) {
+        if (pickupCode.isBlank()) {
+            value = null
+            return@produceState
+        }
+        value = withContext(Dispatchers.Default) { generateQrCodeBitmap(pickupCode) }
     }
     val imageBitmap = qrBitmap?.asImageBitmap()
 

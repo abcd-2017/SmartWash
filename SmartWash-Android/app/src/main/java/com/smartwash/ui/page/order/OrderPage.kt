@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,12 +39,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -143,10 +146,41 @@ fun OrderPage(
                         val status = ShowOrderStatus.entries[pageIndex].status
                         val orderList = uiState.orders[status] ?: emptyList()
                         val isLoadingMore = uiState.loadingMore[status] ?: false
-                        val hasMore = uiState.hasMore[status] ?: false
 
                         if (orderList.isNotEmpty()) {
+                            val listState = rememberLazyListState()
+
+                            // 加载更多触发（评审 #12）：原实现把 LaunchedEffect 嵌在 item 内容里、
+                            // 靠 order == orderList.last() 判等触发，易漏触发/重复触发。改为标准做法：
+                            // 在 LazyColumn 外用 derivedStateOf 派生"滚动接近末尾"，snapshotFlow
+                            // 监听其变化后统一触发 loadMore；hasMore=false / loadingMore=true 的
+                            // 防重入口由收集时读取的最新 UiState 与 ViewModel.loadMore 内部校验共同保证
+                            val nearListEnd by remember {
+                                derivedStateOf {
+                                    val layoutInfo = listState.layoutInfo
+                                    val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                                    // 末尾往前多看一个 item 即视为接近末尾；totalItemsCount 含"加载中"占位 item
+                                    layoutInfo.totalItemsCount > 0 &&
+                                        lastVisibleIndex >= layoutInfo.totalItemsCount - 2
+                                }
+                            }
+                            LaunchedEffect(status) {
+                                snapshotFlow {
+                                    // 同时监听"接近末尾"与列表长度：末尾绝对位置未变（如批次仅 1-2 条）
+                                    // 时也能再次触发，对齐 Paging 3"填满视口"语义
+                                    nearListEnd to (uiState.orders[status]?.size ?: 0)
+                                }.collect { (nearEnd, listSize) ->
+                                    if (!nearEnd || listSize == 0) return@collect
+                                    // 经 by 委托读取的是最新 UiState，不会捕获组合期的陈旧值
+                                    val current = uiState
+                                    if (current.hasMore[status] == true && current.loadingMore[status] != true) {
+                                        orderViewModel.loadMore(status)
+                                    }
+                                }
+                            }
+
                             LazyColumn(
+                                state = listState,
                                 verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -167,12 +201,6 @@ fun OrderPage(
                                         },
                                     ) {
                                         navController.navigate("${PageConstant.OrderDetail.text}/${order.orderId}")
-                                    }
-
-                                    if (order == orderList.last() && hasMore && !isLoadingMore) {
-                                        LaunchedEffect(status) {
-                                            orderViewModel.loadMore(status)
-                                        }
                                     }
                                 }
 
