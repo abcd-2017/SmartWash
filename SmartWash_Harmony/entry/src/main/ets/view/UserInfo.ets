@@ -104,23 +104,23 @@ export struct UserInfo {
       Column() {
         SymbolGlyph(icon)
           .fontSize(20)
-          .fontColor([Color(DesignColor.PRIMARY)])
+          .fontColor([DesignColor.PRIMARY])
       }
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+      .backgroundColor(DesignColor.PRIMARY_LIGHT)
       .justifyContent(FlexAlign.Center)
 
       Text(label)
         .fontSize(DesignFontSize.BODY)
-        .fontColor(Color(DesignColor.TEXT_PRIMARY))
+        .fontColor(DesignColor.TEXT_PRIMARY)
         .margin({ top: 8 })
 
       if (count > 0) {
         Text(`${count}单`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(Color(DesignColor.PRIMARY))
+          .fontColor(DesignColor.PRIMARY)
           .margin({ top: 4 })
       } else {
         Text(" ")
@@ -142,22 +142,22 @@ export struct UserInfo {
       Column() {
         SymbolGlyph(icon)
           .fontSize(18)
-          .fontColor([Color(DesignColor.PRIMARY)])
+          .fontColor([DesignColor.PRIMARY])
       }
       .width(36)
       .height(36)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+      .backgroundColor(DesignColor.PRIMARY_LIGHT)
       .justifyContent(FlexAlign.Center)
 
       // 标题 + 副标题
       Column() {
         Text(title)
           .fontSize(DesignFontSize.CARD_TITLE)
-          .fontColor(Color(DesignColor.TEXT_PRIMARY))
+          .fontColor(DesignColor.TEXT_PRIMARY)
         Text(subtitle)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(Color(DesignColor.TEXT_SECONDARY))
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 2 })
       }
       .alignItems(HorizontalAlign.Start)
@@ -167,11 +167,11 @@ export struct UserInfo {
       // 右侧箭头
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(16)
-        .fontColor([Color(DesignColor.TEXT_SECONDARY)])
+        .fontColor([DesignColor.TEXT_SECONDARY])
     }
     .width("100%")
     .padding({ left: 16, right: 16, top: 14, bottom: 14 })
-    .backgroundColor(Color(DesignColor.SURFACE))
+    .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
     .shadow({
       radius: DesignElevation.LEVEL_1,
@@ -190,11 +190,11 @@ export struct UserInfo {
           Text("个人中心")
             .fontSize(DesignFontSize.PAGE_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(Color(DesignColor.ON_BACKGROUND))
+            .fontColor(DesignColor.ON_BACKGROUND)
 
           SymbolGlyph($r('sys.symbol.gearshape'))
             .fontSize(24)
-            .fontColor([Color(DesignColor.TEXT_SECONDARY)])
+            .fontColor([DesignColor.TEXT_SECONDARY])
             .padding(12)
             .onClick(() => {
               pathStack.pushPathByName("Setting", null)
@@ -215,7 +215,7 @@ export struct UserInfo {
                 .width(72)
                 .height(72)
                 .borderRadius(36)
-                .objectFit(ImageFit.Crop)
+                .objectFit(ImageFit.Cover) // ImageFit.Crop 不存在：Cover 等价（等比缩放填满并裁剪多余部分）
             } else {
               // 无头像时显示默认图标
               Column() {
@@ -227,13 +227,13 @@ export struct UserInfo {
                 } else {
                   SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
                     .fontSize(32)
-                    .fontColor([Color(DesignColor.PRIMARY)])
+                    .fontColor([DesignColor.PRIMARY])
                 }
               }
               .width(72)
               .height(72)
               .borderRadius(36)
-              .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+              .backgroundColor(DesignColor.PRIMARY_LIGHT)
               .justifyContent(FlexAlign.Center)
             }
 
@@ -246,7 +246,7 @@ export struct UserInfo {
             .width(22)
             .height(22)
             .borderRadius(11)
-            .backgroundColor(Color(DesignColor.PRIMARY))
+            .backgroundColor(DesignColor.PRIMARY)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
           }
@@ -258,13 +258,13 @@ export struct UserInfo {
           Text(this.userInfo?.phoneNumber ?? "未登录")
             .fontSize(20)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(Color(DesignColor.TEXT_PRIMARY))
+            .fontColor(DesignColor.TEXT_PRIMARY)
             .margin({ top: 14 })
 
           // 学号
           Text(`学号：${this.userInfo?.studentId ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(Color(DesignColor.TEXT_SECONDARY))
+            .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
         }
         .width("100%")
@@ -330,14 +330,14 @@ export struct UserInfo {
         .borderRadius(DesignDimens.CARD_RADIUS)
         .linearGradient({
           direction: GradientDirection.Right,
-          colors: [[Color(DesignColor.PRIMARY), 0.0], [Color(DesignColor.PRIMARY_DARK), 1.0]]
+          colors: [[DesignColor.PRIMARY, 0.0], [DesignColor.PRIMARY_DARK, 1.0]]
         })
 
         // ========== 订单快捷入口 ==========
         Text("订单管理")
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(Color(DesignColor.ON_BACKGROUND))
+          .fontColor(DesignColor.ON_BACKGROUND)
           .margin({ top: DesignDimens.SECTION_SPACING })
           .width("100%")
 
@@ -351,7 +351,7 @@ export struct UserInfo {
             .strokeWidth(0.5)
             .vertical(true)
             .height(72)
-            .color(Color(DesignColor.DIVIDER))
+            .color(DesignColor.DIVIDER)
 
           this.orderQuickEntry($r('sys.symbol.laundry'), "清洗中",
             this.orderItemCount?.processingCount ?? 0, () => {
@@ -362,7 +362,7 @@ export struct UserInfo {
             .strokeWidth(0.5)
             .vertical(true)
             .height(72)
-            .color(Color(DesignColor.DIVIDER))
+            .color(DesignColor.DIVIDER)
 
           this.orderQuickEntry($r('sys.symbol.envelope_open'), "待取件",
             this.orderItemCount?.pendingPickupCount ?? 0, () => {
@@ -373,7 +373,7 @@ export struct UserInfo {
             .strokeWidth(0.5)
             .vertical(true)
             .height(72)
-            .color(Color(DesignColor.DIVIDER))
+            .color(DesignColor.DIVIDER)
 
           this.orderQuickEntry($r('sys.symbol.arrow_counterclockwise_clock'), "历史订单",
             0, () => {
@@ -382,7 +382,7 @@ export struct UserInfo {
         }
         .width("100%")
         .margin({ top: 12 })
-        .backgroundColor(Color(DesignColor.SURFACE))
+        .backgroundColor(DesignColor.SURFACE)
         .borderRadius(DesignDimens.CARD_RADIUS)
         .shadow({
           radius: DesignElevation.LEVEL_1,
@@ -392,7 +392,8 @@ export struct UserInfo {
         })
 
         // ========== 功能列表 ==========
-        Column() {
+        // Column 无 .space 属性（原写法为 Flex 用法），改用构造参数 { space } 实现行间距
+        Column({ space: DesignDimens.CARD_SPACING }) {
           this.functionItem($r('sys.symbol.label'), "优惠券", "可领取优惠券", () => {
             pathStack.pushPathByName("Coupon", null)
           })
@@ -407,7 +408,6 @@ export struct UserInfo {
         }
         .width("100%")
         .margin({ top: DesignDimens.SECTION_SPACING })
-        .space({ space: DesignDimens.CARD_SPACING, direction: FlexDirection.Column })
 
         // 底部安全距离
         Row().height(72)
@@ -418,7 +418,7 @@ export struct UserInfo {
     .width("100%")
     .height("100%")
     .align(Alignment.TopStart)
-    .backgroundColor(Color(DesignColor.BACKGROUND))
+    .backgroundColor(DesignColor.BACKGROUND)
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 }

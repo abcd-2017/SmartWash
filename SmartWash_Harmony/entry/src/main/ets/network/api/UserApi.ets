@@ -5,14 +5,16 @@ import { UpdateUserInfo } from "../entity/UpdateUserInfo";
 import { httpUtil } from "../HttpUtil"
 import { LoginVo } from "../vo/LoginVo";
 import { UserInfoVo } from "../vo/UserInfoVo";
+import { FormData, Type } from "@ohos/axios"
+import { fileIo as fs } from "@kit.CoreFileKit"
 
 //获取验证码
 async function getCaptcha(phoneNumber: string): Promise<BaseResponse<string>> {
   return httpUtil.get<string>(`/auth/user/captcha/${phoneNumber}`);
 }
 
-//注册
-async function register(user: RegisterUser): Promise<BaseResponse<String>> {
+//注册（后端信封 data 为 token 字符串；ArkTS 禁用包装类型 String，统一用小写 string）
+async function register(user: RegisterUser): Promise<BaseResponse<string>> {
   return httpUtil.post<string>("/auth/user/register", user)
 }
 
@@ -52,9 +54,24 @@ async function unBindCampus(): Promise<BaseResponse<boolean>> {
 }
 
 //上传头像
+/**
+ * 适配 @ohos/axios 的 FormData 契约（ArkTS 无浏览器 DOM FormData，原写法 new FormData() 无法编译）：
+ * - 文件内容支持 internal://cache/ URI 或 ArrayBuffer，相册选择器返回的 file://media/... 均不支持；
+ * - 故将所选图片读为 ArrayBuffer 后附加，经 option 指定文件名与 MIME（Type 接口）。
+ */
 async function uploadAvatar(uri: string): Promise<BaseResponse<string>> {
-  let formData = new FormData()
-  formData.append("file", { uri: uri, name: "avatar.jpg", type: "image/jpeg" })
+  const formData: FormData = new FormData()
+  const stat = fs.statSync(uri)
+  const file = fs.openSync(uri, fs.OpenMode.READ_ONLY)
+  try {
+    const buffer = new ArrayBuffer(stat.size)
+    fs.readSync(file.fd, buffer)
+    const option: Type = { filename: "avatar.jpg", type: "image/jpeg" }
+    formData.append("file", buffer, option)
+  } finally {
+    // 文件句柄必须释放，避免泄漏
+    fs.closeSync(file)
+  }
   return httpUtil.upload<string>("/web/auth/user/avatar", formData)
 }
 

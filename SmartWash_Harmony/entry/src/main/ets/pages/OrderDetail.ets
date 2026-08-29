@@ -6,9 +6,26 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 
+// @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
+@Builder
+function emptyContent() {
+}
+
 @Builder
 export function OrderDetailBuilder() {
   OrderDetail()
+}
+
+/**
+ * 订单状态卡片的展示元数据。
+ * ArkTS @Builder 内仅允许 UI 语法（不允许 let/switch 局部语句），
+ * 状态 → 文案/颜色/图标/描述 的映射收敛为类 + 私有方法计算。
+ */
+class StatusMeta {
+  text: string = ""
+  color: number = DesignColor.PRIMARY
+  icon: Resource = $r('sys.symbol.checkmark_circle')
+  description: string = ""
 }
 
 @Component
@@ -32,80 +49,80 @@ struct OrderDetail {
     }
   }
 
-  @Builder
-  StatusCardBuilder() {
-    let statusText: string = ""
-    let statusColor: number = DesignColor.PRIMARY
-    let statusIcon: Resource = $r('sys.symbol.checkmark_circle')
-    let description: string = ""
-
+  // 订单状态 → 展示元数据映射（原写在 @Builder 内的 switch 不满足 ArkTS 语法）
+  private statusMeta(): StatusMeta {
+    const meta: StatusMeta = new StatusMeta()
     switch (this.orderInfo?.status) {
       case OrderStatusEnum.PENDING_PAYMENT:
-        statusText = "待支付"
-        statusColor = DesignColor.WARNING
-        statusIcon = $r('sys.symbol.hourglass_bottomhalf_filled')
-        description = "请尽快完成支付"
+        meta.text = "待支付"
+        meta.color = DesignColor.WARNING
+        meta.icon = $r('sys.symbol.hourglass_bottomhalf_filled')
+        meta.description = "请尽快完成支付"
         break
       case OrderStatusEnum.PENDING_SHIPMENT:
-        statusText = "待寄件"
-        statusColor = DesignColor.PRIMARY
-        statusIcon = $r('sys.symbol.paperplane')
-        description = "请尽快将衣物放入寄存柜"
+        meta.text = "待寄件"
+        meta.color = DesignColor.PRIMARY
+        meta.icon = $r('sys.symbol.paperplane')
+        meta.description = "请尽快将衣物放入寄存柜"
         break
       case OrderStatusEnum.WASHING:
-        statusText = "清洗中"
-        statusColor = DesignColor.PRIMARY
-        statusIcon = $r('sys.symbol.wash_light')
-        description = "衣物正在清洗中"
+        meta.text = "清洗中"
+        meta.color = DesignColor.PRIMARY
+        meta.icon = $r('sys.symbol.wash_light')
+        meta.description = "衣物正在清洗中"
         break
       case OrderStatusEnum.READY_FOR_PICKUP:
-        statusText = "待取件"
-        statusColor = DesignColor.PRIMARY
-        statusIcon = $r('sys.symbol.checkmark_circle')
-        description = "衣物已放入寄存柜"
+        meta.text = "待取件"
+        meta.color = DesignColor.PRIMARY
+        meta.icon = $r('sys.symbol.checkmark_circle')
+        meta.description = "衣物已放入寄存柜"
         break
       case OrderStatusEnum.COMPLETED:
-        statusText = "已完成"
-        statusColor = DesignColor.SUCCESS
-        statusIcon = $r('sys.symbol.checkmark_circle')
-        description = "订单已完成"
+        meta.text = "已完成"
+        meta.color = DesignColor.SUCCESS
+        meta.icon = $r('sys.symbol.checkmark_circle')
+        meta.description = "订单已完成"
         break
       case OrderStatusEnum.CANCELED:
-        statusText = "已取消"
-        statusColor = DesignColor.ERROR
-        statusIcon = $r('sys.symbol.xmark_circle')
-        description = "订单已取消"
+        meta.text = "已取消"
+        meta.color = DesignColor.ERROR
+        meta.icon = $r('sys.symbol.xmark_circle')
+        meta.description = "订单已取消"
         break
       default:
-        statusText = getOrderStatusDescription(this.orderInfo?.status ?? "-10") ?? ""
-        statusColor = DesignColor.TEXT_SECONDARY
-        statusIcon = $r('sys.symbol.checkmark_circle')
-        description = ""
+        meta.text = getOrderStatusDescription(this.orderInfo?.status ?? "-10") ?? ""
+        meta.color = DesignColor.TEXT_SECONDARY
+        meta.icon = $r('sys.symbol.checkmark_circle')
+        meta.description = ""
         break
     }
+    return meta
+  }
 
+  @Builder
+  StatusCardBuilder() {
     Row() {
       // 左侧图标容器
       Column() {
-        SymbolGlyph(statusIcon)
+        SymbolGlyph(this.statusMeta().icon)
           .fontSize(26)
-          .fontColor([statusColor])
+          .fontColor([this.statusMeta().color])
       }
       .width(52)
       .height(52)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(statusColor & 0x1FFFFFFF)
+      .backgroundColor(this.statusMeta().color & 0x1FFFFFFF)
       .justifyContent(FlexAlign.Center)
 
       // 右侧文字
       Column() {
-        Text(statusText)
+        Text(this.statusMeta().text)
           .fontSize(18)
           .fontWeight(FontWeight.Bold)
-          .fontColor(statusColor)
+          .fontColor(this.statusMeta().color)
 
-        if (description) {
-          Text(description)
+        if (this.statusMeta().description) {
+          Text(this.statusMeta().description)
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
@@ -120,32 +137,6 @@ struct OrderDetail {
     .backgroundColor(DesignColor.SURFACE)
     .border({ width: 0.5, color: DesignColor.OUTLINE })
     .alignItems(VerticalAlign.Center)
-  }
-
-  @Builder
-  InfoSectionBuilder(title: string, icon: Resource, builder: () => void) {
-    Column() {
-      // 标题行
-      Row() {
-        SymbolGlyph(icon)
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontColor([DesignColor.PRIMARY])
-
-        Text(title)
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .margin({ left: 10 })
-      }
-      .width("100%")
-      .margin({ bottom: 12 })
-
-      builder()
-    }
-    .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(DesignColor.SURFACE)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
   }
 
   @Builder
@@ -175,7 +166,7 @@ struct OrderDetail {
               .fontSize(24)
               .fontColor([DesignColor.TEXT_PRIMARY])
               .onClick(() => {
-                pathStack.back()
+                pathStack.pop()
               })
 
             Text("订单详情")
@@ -193,36 +184,52 @@ struct OrderDetail {
             this.StatusCardBuilder()
 
             // 套餐信息
-            this.InfoSectionBuilder("套餐信息", $r('sys.symbol.laundry'), () => {
-              this.InfoRowBuilder("套餐类型", `${this.orderInfo?.laundryPackageVo?.itemName}`)
-              this.InfoRowBuilder("价格", `￥${this.orderInfo?.totalPrice}`)
-              this.InfoRowBuilder("实付款", `￥${this.orderInfo?.payPrice}`, true)
+            InfoSectionCard({
+              title: "套餐信息",
+              icon: $r('sys.symbol.laundry'),
+              content: () => {
+                this.InfoRowBuilder("套餐类型", `${this.orderInfo?.laundryPackageVo?.itemName}`)
+                this.InfoRowBuilder("价格", `￥${this.orderInfo?.totalPrice}`)
+                this.InfoRowBuilder("实付款", `￥${this.orderInfo?.payPrice}`, true)
+              }
             })
             .margin({ top: DesignDimens.CARD_SPACING })
 
             // 学校信息
-            this.InfoSectionBuilder("学校信息", $r('sys.symbol.company'), () => {
-              this.InfoRowBuilder("学校名称", `${this.orderInfo?.schoolsVo?.schoolName}`)
-              this.InfoRowBuilder("地址", `${this.orderInfo?.schoolsVo?.location}`)
+            InfoSectionCard({
+              title: "学校信息",
+              icon: $r('sys.symbol.company'),
+              content: () => {
+                this.InfoRowBuilder("学校名称", `${this.orderInfo?.schoolsVo?.schoolName}`)
+                this.InfoRowBuilder("地址", `${this.orderInfo?.schoolsVo?.location}`)
+              }
             })
             .margin({ top: DesignDimens.CARD_SPACING })
 
             // 寄存柜信息 — 待取件/待寄件时显示
             if (this.orderInfo?.status == OrderStatusEnum.READY_FOR_PICKUP ||
               this.orderInfo?.status == OrderStatusEnum.PENDING_SHIPMENT) {
-              this.InfoSectionBuilder("寄存柜信息", $r('sys.symbol.externaldrive_fill_3'), () => {
-                this.InfoRowBuilder("柜号", `${this.orderInfo?.lockersVo?.lockerNumber}`)
-                this.InfoRowBuilder("取件码", `${this.orderInfo?.pickupCode?.split(":").pop() ?? ""}`)
+              InfoSectionCard({
+                title: "寄存柜信息",
+                icon: $r('sys.symbol.externaldrive_fill_3'),
+                content: () => {
+                  this.InfoRowBuilder("柜号", `${this.orderInfo?.lockersVo?.lockerNumber}`)
+                  this.InfoRowBuilder("取件码", `${this.orderInfo?.pickupCode?.split(":").pop() ?? ""}`)
+                }
               })
               .margin({ top: DesignDimens.CARD_SPACING })
             }
 
             // 订单信息
-            this.InfoSectionBuilder("订单信息", $r('sys.symbol.list_square_bill'), () => {
-              this.InfoRowBuilder("订单编号", `${this.orderInfo?.orderNo}`)
-              this.InfoRowBuilder("下单时间", `${this.orderInfo?.createdAt}`)
-              this.InfoRowBuilder("当前状态", `${getOrderStatusDescription(this.orderInfo?.status ?? "001")}`)
-              this.InfoRowBuilder("完成时间", "-")
+            InfoSectionCard({
+              title: "订单信息",
+              icon: $r('sys.symbol.list_square_bill'),
+              content: () => {
+                this.InfoRowBuilder("订单编号", `${this.orderInfo?.orderNo}`)
+                this.InfoRowBuilder("下单时间", `${this.orderInfo?.createdAt}`)
+                this.InfoRowBuilder("当前状态", `${getOrderStatusDescription(this.orderInfo?.status ?? "001")}`)
+                this.InfoRowBuilder("完成时间", "-")
+              }
             })
             .margin({ top: DesignDimens.CARD_SPACING })
           }
@@ -240,5 +247,42 @@ struct OrderDetail {
       .scrollBar(BarState.Off)
     }
     .hideTitleBar(true)
+  }
+}
+
+/**
+ * 通用信息分组卡片（标题行 + 内容插槽）。
+ * 原实现为 @Builder 方法接收 `builder: () => void` 参数并链式 .margin()——
+ * ArkTS 中 @Builder 调用返回 void、且 builder() 不满足 UI 语法，故改为子组件 + @BuilderParam。
+ */
+@Component
+struct InfoSectionCard {
+  @Prop title: string = ""
+  icon: Resource = $r('sys.symbol.checkmark_circle')
+  @BuilderParam content: () => void = emptyContent
+
+  build() {
+    Column() {
+      // 标题行
+      Row() {
+        SymbolGlyph(this.icon)
+          .fontSize(DesignFontSize.SECTION_TITLE)
+          .fontColor([DesignColor.PRIMARY])
+
+        Text(this.title)
+          .fontSize(DesignFontSize.CARD_TITLE)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .margin({ left: 10 })
+      }
+      .width("100%")
+      .margin({ bottom: 12 })
+
+      this.content()
+    }
+    .padding(DesignDimens.CARD_PADDING)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 0.5, color: DesignColor.OUTLINE })
   }
 }

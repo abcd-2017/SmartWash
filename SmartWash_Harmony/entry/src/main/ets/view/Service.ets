@@ -25,22 +25,22 @@ export struct Service {
       // 干洗
       SymbolGlyph($r('sys.symbol.wind'))
         .fontSize(24)
-        .fontColor([Color(DesignColor.PRIMARY)])
+        .fontColor([DesignColor.PRIMARY])
     } else if (itemName != null && (itemName.includes("精") || itemName.includes("护理") || itemName.includes("奢"))) {
-      // 精洗/护理/奢护
-      SymbolGlyph($r('sys.symbol.hanger'))
+      // 精洗/护理/奢护（sys.symbol.hanger 不存在，SDK 5.0.5 无该符号，就近换用衣架+毛巾符号）
+      SymbolGlyph($r('sys.symbol.hanger_and_towels'))
         .fontSize(24)
-        .fontColor([Color(DesignColor.PRIMARY)])
+        .fontColor([DesignColor.PRIMARY])
     } else if (itemName != null && itemName.includes("熨")) {
-      // 熨烫
-      SymbolGlyph($r('sys.symbol.steam'))
+      // 熨烫（sys.symbol.steam 不存在，SDK 5.0.5 无该符号，就近换用热浪符号）
+      SymbolGlyph($r('sys.symbol.heat_waves'))
         .fontSize(24)
-        .fontColor([Color(DesignColor.PRIMARY)])
+        .fontColor([DesignColor.PRIMARY])
     } else {
       // 默认洗衣
       SymbolGlyph($r('sys.symbol.laundry'))
         .fontSize(24)
-        .fontColor([Color(DesignColor.PRIMARY)])
+        .fontColor([DesignColor.PRIMARY])
     }
   }
 
@@ -54,7 +54,7 @@ export struct Service {
       .width(48)
       .height(48)
       .borderRadius(14)
-      .backgroundColor(Color(DesignColor.PRIMARY_CONTAINER))
+      .backgroundColor(DesignColor.PRIMARY_CONTAINER)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
@@ -63,17 +63,17 @@ export struct Service {
         Text(item.itemName)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(Color(DesignColor.TEXT_PRIMARY))
+          .fontColor(DesignColor.TEXT_PRIMARY)
 
         Text(item.description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(Color(DesignColor.TEXT_SECONDARY))
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 2 })
 
         Text(`¥${item.basePrice}`)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(Color(DesignColor.PRIMARY))
+          .fontColor(DesignColor.PRIMARY)
           .margin({ top: 6 })
       }
       .layoutWeight(1)
@@ -82,7 +82,7 @@ export struct Service {
     }
     .width("100%")
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(Color(DesignColor.SURFACE))
+    .backgroundColor(DesignColor.SURFACE)
     .shadow({
       radius: DesignElevation.LEVEL_1,
       color: '#1A000000',
@@ -100,11 +100,11 @@ export struct Service {
           Text("洗衣服务")
             .fontSize(DesignFontSize.PAGE_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(Color(DesignColor.TEXT_PRIMARY))
+            .fontColor(DesignColor.TEXT_PRIMARY)
 
           Text("专业洗护，安心交付")
             .fontSize(14)
-            .fontColor(Color(DesignColor.TEXT_SECONDARY))
+            .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
         }
         .alignItems(HorizontalAlign.Start)
@@ -131,7 +131,7 @@ export struct Service {
     .scrollBar(BarState.Off)
     .width("100%")
     .height("100%")
-    .backgroundColor(Color(DesignColor.BACKGROUND))
+    .backgroundColor(DesignColor.BACKGROUND)
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 }

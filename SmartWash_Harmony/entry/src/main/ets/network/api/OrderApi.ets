@@ -45,9 +45,10 @@ async function cancelOrder(orderId: number): Promise<BaseResponse<boolean>> {
   return httpUtil.delete<boolean>(`/web/auth/orders/${orderId}`);
 }
 
-//计算订单优惠券
+//计算订单优惠券（ArkTS 禁止裸对象字面量，查询参数用 Record 并按索引赋值）
 async function calculationOrder(orderId: number, userCouponId: number): Promise<BaseResponse<OrderInfo>> {
-  return httpUtil.get<OrderInfo>(`/web/auth/orders/${orderId}/calculation`, { userCouponId });
+  const params: Record<string, Object> = { 'userCouponId': userCouponId }
+  return httpUtil.get<OrderInfo>(`/web/auth/orders/${orderId}/calculation`, params);
 }
 
 //生成二维码

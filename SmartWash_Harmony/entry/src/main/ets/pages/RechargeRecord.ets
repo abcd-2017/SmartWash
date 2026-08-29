@@ -26,7 +26,11 @@ struct RechargeRecord {
   }
 
   async loadRecords() {
-    let res = await getRechargeRecordList({ page: this.page, size: 10 })
+    // ArkTS 禁止裸对象字面量作参数（arkts-no-untyped-obj-literals），查询参数用 Record 并按索引赋值
+    const param: Record<string, Object> = {}
+    param['page'] = this.page
+    param['size'] = 10
+    let res = await getRechargeRecordList(param)
     if (res.code == HttpStatusCode.Ok && res.data != null) {
       let records = res.data!.records
       if (records == null || records.length == 0) {

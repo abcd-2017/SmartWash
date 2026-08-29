@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, toColorString } from "../constant/DesignSystem"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
 import { promptAction } from "@kit.ArkUI"
@@ -65,7 +65,8 @@ struct Recharge {
           .maxLength(8) // 8 位可完整输入上限金额 "10000.00"（含两位小数，评审 #19）
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .placeholderFont({ size: DesignFontSize.BODY, color: DesignColor.TEXT_TERTIARY })
+          .placeholderColor(DesignColor.TEXT_TERTIARY)
+          .placeholderFont({ size: DesignFontSize.BODY })
           .caretPosition(25)
           .onFocus(() => {
             this.currItem = 5
@@ -210,7 +211,7 @@ struct Recharge {
           Blank()
 
           // 历史记录图标按钮
-          SymbolGlyph($r('sys.symbol.clock_arrow_circlepath'))
+          SymbolGlyph($r('sys.symbol.clock_arrow_2_circlepath')) // sys.symbol.clock_arrow_circlepath 不存在，换用有效的时钟+环形箭头符号
             .fontSize(22)
             .fontColor([DesignColor.TEXT_SECONDARY])
             .onClick(() => {
@@ -297,8 +298,8 @@ struct Recharge {
             promptAction.showDialog({
               title: "提示",
               message: "是否确认充值",
-              buttons: [{ text: "取消", color: DesignColor.TEXT_PRIMARY },
-                { text: "确认", color: DesignColor.TEXT_PRIMARY }],
+              buttons: [{ text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
+                { text: "确认", color: toColorString(DesignColor.TEXT_PRIMARY) }],
             }, async (err, data) => {
               if (data.index == 1) {
                 this.check()

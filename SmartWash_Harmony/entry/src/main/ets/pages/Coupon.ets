@@ -215,13 +215,22 @@ struct AvailableCouponCard {
   @Param coupon: CouponVo | null = null
   @Event onReceive: (couponId: number) => void = (couponId: number) => {}
 
-  build() {
-    let isReceived: boolean = (this.coupon?.status ?? "0") == CouponStatus.RECEIVE.toString()
-    let thresholdText: string = this.coupon?.threshold == 0 ?
+  // ArkTS build() 内仅允许 UI 语法（不允许 let/局部语句），文案计算收敛为私有方法
+  private isReceived(): boolean {
+    return (this.coupon?.status ?? "0") == CouponStatus.RECEIVE.toString()
+  }
+
+  private thresholdText(): string {
+    return this.coupon?.threshold == 0 ?
       "无门槛" :
       `满${this.coupon?.threshold?.toFixed(0)}元可用`
-    let dateText: string = `${this.coupon?.startTime?.split(" ")[0] ?? ""} - ${this.coupon?.endTime?.split(" ")[0] ?? ""}`
+  }
 
+  private dateText(): string {
+    return `${this.coupon?.startTime?.split(" ")[0] ?? ""} - ${this.coupon?.endTime?.split(" ")[0] ?? ""}`
+  }
+
+  build() {
     Row() {
       // 左侧金额
       Column() {
@@ -250,17 +259,17 @@ struct AvailableCouponCard {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        Text(dateText)
+        Text(this.dateText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_TERTIARY)
           .margin({ top: 4 })
 
-        Text(thresholdText)
+        Text(this.thresholdText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 2 })
 
-        if (isReceived) {
+        if (this.isReceived()) {
           Text("已领取")
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.TEXT_SECONDARY)
@@ -299,12 +308,18 @@ struct AvailableCouponCard {
 struct ClaimedCouponCard {
   @Param userCoupon: UserCouponVo | null = null
 
-  build() {
-    let thresholdText: string = this.userCoupon?.couponVo?.threshold == 0 ?
+  // ArkTS build() 内仅允许 UI 语法（不允许 let/局部语句），文案计算收敛为私有方法
+  private thresholdText(): string {
+    return this.userCoupon?.couponVo?.threshold == 0 ?
       "无门槛" :
       `满${this.userCoupon?.couponVo?.threshold?.toFixed(0)}元可用`
-    let dateText: string = `有效期至 ${this.userCoupon?.expiredAt ?? ""}`
+  }
 
+  private dateText(): string {
+    return `有效期至 ${this.userCoupon?.expiredAt ?? ""}`
+  }
+
+  build() {
     Row() {
       // 左侧金额
       Column() {
@@ -333,12 +348,12 @@ struct ClaimedCouponCard {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        Text(dateText)
+        Text(this.dateText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_TERTIARY)
           .margin({ top: 4 })
 
-        Text(thresholdText)
+        Text(this.thresholdText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 2 })
@@ -369,13 +384,22 @@ struct ClaimedCouponCard {
 struct HistoricalCouponCard {
   @Param userCoupon: UserCouponVo | null = null
 
-  build() {
-    let thresholdText: string = this.userCoupon?.couponVo?.threshold == 0 ?
+  // ArkTS build() 内仅允许 UI 语法（不允许 let/局部语句），文案计算收敛为私有方法
+  private thresholdText(): string {
+    return this.userCoupon?.couponVo?.threshold == 0 ?
       "无门槛" :
       `满${this.userCoupon?.couponVo?.threshold?.toFixed(0)}元可用`
-    let dateText: string = `有效期至 ${this.userCoupon?.expiredAt ?? ""}`
-    let statusText: string = this.userCoupon?.isUsed ? "已使用" : "已过期"
+  }
 
+  private dateText(): string {
+    return `有效期至 ${this.userCoupon?.expiredAt ?? ""}`
+  }
+
+  private statusText(): string {
+    return this.userCoupon?.isUsed ? "已使用" : "已过期"
+  }
+
+  build() {
     Row() {
       // 左侧金额
       Column() {
@@ -404,17 +428,17 @@ struct HistoricalCouponCard {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-        Text(dateText)
+        Text(this.dateText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_TERTIARY)
           .margin({ top: 4 })
 
-        Text(thresholdText)
+        Text(this.thresholdText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 2 })
 
-        Text(statusText)
+        Text(this.statusText())
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 8 })

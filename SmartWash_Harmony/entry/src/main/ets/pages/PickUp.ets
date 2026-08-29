@@ -141,7 +141,7 @@ struct PickUp {
             .fontSize(24)
             .fontColor([DesignColor.TEXT_PRIMARY])
             .onClick(() => {
-              pathStack.back()
+              pathStack.pop() // NavPathStack 无 back()，出栈统一用 pop()
             })
 
           Text("取件")

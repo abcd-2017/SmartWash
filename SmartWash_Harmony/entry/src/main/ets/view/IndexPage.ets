@@ -149,15 +149,16 @@ export struct IndexPage {
           Text(this.getGreeting())
             .fontSize(DesignFontSize.PAGE_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(Color(DesignColor.ON_BACKGROUND))
+            .fontColor(DesignColor.ON_BACKGROUND)
 
           Row() {
-            SymbolGlyph($r('sys.symbol.location_fill'))
+            // sys.symbol.location_fill 不存在（SDK 5.0.5 无该符号），就近换用地图定位 pin 符号
+            SymbolGlyph($r('sys.symbol.pin_fill'))
               .fontSize(14)
-              .fontColor([Color(DesignColor.TEXT_SECONDARY)])
+              .fontColor([DesignColor.TEXT_SECONDARY])
             Text(this.userInfo?.schoolVo?.schoolName ?? "")
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(Color(DesignColor.TEXT_SECONDARY))
+              .fontColor(DesignColor.TEXT_SECONDARY)
               .margin({ left: 4 })
           }
           .margin({ top: 4 })
@@ -170,12 +171,12 @@ export struct IndexPage {
         Column() {
           SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
             .fontSize(24)
-            .fontColor([Color(DesignColor.PRIMARY)])
+            .fontColor([DesignColor.PRIMARY])
         }
         .width(44)
         .height(44)
         .borderRadius(22)
-        .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+        .backgroundColor(DesignColor.PRIMARY_LIGHT)
         .border({ width: 2, color: 0x4D2D9B6A, style: BorderStyle.Solid })
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
@@ -248,7 +249,7 @@ export struct IndexPage {
     .padding(20)
     .linearGradient({
       direction: GradientDirection.Right,
-      colors: [[Color(DesignColor.PRIMARY), 0.0], [Color(DesignColor.PRIMARY_DARK), 1.0]]
+      colors: [[DesignColor.PRIMARY, 0.0], [DesignColor.PRIMARY_DARK, 1.0]]
     })
   }
 
@@ -264,26 +265,26 @@ export struct IndexPage {
       Column() {
         SymbolGlyph(icon)
           .fontSize(24)
-          .fontColor([Color(serviceColor)])
+          .fontColor([serviceColor])
       }
       .width(48)
       .height(48)
       .borderRadius(14)
-      .backgroundColor(Color(serviceColorLight))
+      .backgroundColor(serviceColorLight)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
       Text(title)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(Color(DesignColor.TEXT_PRIMARY))
+        .fontColor(DesignColor.TEXT_PRIMARY)
         .margin({ top: 8 })
     }
     .layoutWeight(1)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
-    .border({ width: 0.5, color: Color(DesignColor.OUTLINE) })
-    .backgroundColor(Color(DesignColor.SURFACE))
+    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    .backgroundColor(DesignColor.SURFACE)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .onClick(() => {
@@ -302,12 +303,12 @@ export struct IndexPage {
         Column() {
           SymbolGlyph($r('sys.symbol.laundry'))
             .fontSize(20)
-            .fontColor([Color(DesignColor.PRIMARY)])
+            .fontColor([DesignColor.PRIMARY])
         }
         .width(40)
         .height(40)
         .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-        .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+        .backgroundColor(DesignColor.PRIMARY_LIGHT)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .margin({ right: 12 })
@@ -317,10 +318,10 @@ export struct IndexPage {
           Text(getOrderStatusDescription(order.status ?? "") ?? "")
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(Color(DesignColor.TEXT_PRIMARY))
+            .fontColor(DesignColor.TEXT_PRIMARY)
           Text(`订单号：${order.orderNo ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(Color(DesignColor.TEXT_SECONDARY))
+            .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
         }
         .alignItems(HorizontalAlign.Start)
@@ -330,7 +331,7 @@ export struct IndexPage {
         Text(`￥${order.payPrice ?? 0}`)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.BOLD)
-          .fontColor(Color(DesignColor.PRIMARY))
+          .fontColor(DesignColor.PRIMARY)
       }
       .width("100%")
       .alignItems(VerticalAlign.Center)
@@ -345,13 +346,13 @@ export struct IndexPage {
         .height(4)
         .margin({ top: 12 })
         .borderRadius(2)
-        .color(Color(DesignColor.PRIMARY))
-        .backgroundColor(Color(DesignColor.PRIMARY_LIGHT))
+        .color(DesignColor.PRIMARY)
+        .backgroundColor(DesignColor.PRIMARY_LIGHT)
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(Color(DesignColor.SURFACE))
+    .backgroundColor(DesignColor.SURFACE)
     .shadow({
       radius: DesignElevation.LEVEL_1,
       color: '#1A000000',
@@ -371,10 +372,10 @@ export struct IndexPage {
     Row() {
       SymbolGlyph($r('sys.symbol.info_circle_fill'))
         .fontSize(14)
-        .fontColor([Color(DesignColor.TEXT_TERTIARY)])
+        .fontColor([DesignColor.TEXT_TERTIARY])
       Text("请在营业时间内完成取件，超时将收取额外保管费用")
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(Color(DesignColor.TEXT_TERTIARY))
+        .fontColor(DesignColor.TEXT_TERTIARY)
         .margin({ left: 6 })
     }
     .width("100%")
@@ -397,7 +398,7 @@ export struct IndexPage {
         Text("洗衣服务")
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(Color(DesignColor.ON_BACKGROUND))
+          .fontColor(DesignColor.ON_BACKGROUND)
           .width("100%")
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SECTION_SPACING })
@@ -426,13 +427,13 @@ export struct IndexPage {
           Text("进行中订单")
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(Color(DesignColor.ON_BACKGROUND))
+            .fontColor(DesignColor.ON_BACKGROUND)
 
           Blank()
 
           Text("查看全部")
             .fontSize(DesignFontSize.BODY)
-            .fontColor(Color(DesignColor.PRIMARY))
+            .fontColor(DesignColor.PRIMARY)
             .onClick(() => {
               pathStack.pushPathByName("OrderList", 3)
             })
@@ -451,7 +452,7 @@ export struct IndexPage {
           } else {
             Text("暂无进行中的订单")
               .fontSize(DesignFontSize.BODY)
-              .fontColor(Color(DesignColor.TEXT_SECONDARY))
+              .fontColor(DesignColor.TEXT_SECONDARY)
               .width("100%")
               .height(60)
               .textAlign(TextAlign.Center)
@@ -461,9 +462,11 @@ export struct IndexPage {
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         .margin({ top: 12 })
 
-        // 5. 服务须知
-        this.ServiceTips()
-          .margin({ top: DesignDimens.SECTION_SPACING })
+        // 5. 服务须知（@Builder 调用返回 void，无法链式 .margin，外包一层容器承载间距）
+        Column() {
+          this.ServiceTips()
+        }
+        .margin({ top: DesignDimens.SECTION_SPACING })
 
         // 底部间距
         Row() {
@@ -474,7 +477,7 @@ export struct IndexPage {
     .width("100%")
     .height("100%")
     .align(Alignment.TopStart)
-    .backgroundColor(Color(DesignColor.BACKGROUND))
+    .backgroundColor(DesignColor.BACKGROUND)
   }
 
   onUserInfoChange(changedPropertyName: string) {

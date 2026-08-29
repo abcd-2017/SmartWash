@@ -4,6 +4,19 @@
 // ========== 颜色常量 ==========
 
 /**
+ * 将 ARGB 数值色（0xAARRGGBB）转为 ArkUI 通用资源色可接受的 rgba() 字符串。
+ * 使用场景：部分 SDK API（如 promptAction.showDialog 的按钮 color）仅接受 string | Resource，
+ * 不接受 number 色值，需经此函数转换后传入。
+ */
+export function toColorString(color: number): string {
+  const alpha = ((color >>> 24) & 0xFF) / 255
+  const red = (color >>> 16) & 0xFF
+  const green = (color >>> 8) & 0xFF
+  const blue = color & 0xFF
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}
+
+/**
  * 清氧设计系统颜色常量
  * 颜色值使用 ARGB 格式（0xAARRGGBB）
  */

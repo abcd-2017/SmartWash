@@ -7,7 +7,7 @@ import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { BaseResponse } from "../network/BaseResponse"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, toColorString } from "../constant/DesignSystem"
 
 @Builder
 export function PickupDeliveryBuilder() {
@@ -68,7 +68,7 @@ struct PickupDelivery {
               .fontSize(24)
               .fontColor([DesignColor.TEXT_PRIMARY])
               .onClick(() => {
-                pathStack.back()
+                pathStack.pop() // NavPathStack 无 back()，出栈统一用 pop()
               })
 
             Text(this.isPickup ? "取件" : "寄件")
@@ -143,8 +143,8 @@ struct PickupDelivery {
             .onClick((event: ClickEvent) => {
               promptAction.showDialog({
                 message: `${this.isPickup ? "确认已将衣服放入寄存柜" : "确认已取出衣服"}`,
-                buttons: [{ text: "取消", color: DesignColor.TEXT_PRIMARY },
-                  { text: "确认", color: DesignColor.TEXT_PRIMARY }],
+                buttons: [{ text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
+                  { text: "确认", color: toColorString(DesignColor.TEXT_PRIMARY) }],
               }, async (err, data) => {
                 if (data.index == 1) {
                   let res: BaseResponse<boolean>

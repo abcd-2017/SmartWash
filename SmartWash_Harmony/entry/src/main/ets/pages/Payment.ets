@@ -10,7 +10,7 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { payment } from "../network/api/PaymentApi"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PaymentType } from "../constant/PaymentType"
-import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, toColorString } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentBuilder() {
@@ -451,8 +451,8 @@ struct Payment {
                   title: "余额不足",
                   message: "当前余额不足，请先充值",
                   buttons: [
-                    { text: "取消", color: DesignColor.TEXT_PRIMARY },
-                    { text: "确认", color: DesignColor.PRIMARY }
+                    { text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
+                    { text: "确认", color: toColorString(DesignColor.PRIMARY) }
                   ],
                 }, async (err, data) => {
                   if (data.index == 1) {

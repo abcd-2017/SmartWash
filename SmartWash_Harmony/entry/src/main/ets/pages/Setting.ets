@@ -198,29 +198,7 @@ struct Setting {
     })
   }
 
-  // 分组卡片
-  @Builder
-  SectionCard(sectionTitle: string, children: () => void) {
-    Column() {
-      // 分组标题
-      Text(sectionTitle)
-        .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ bottom: 12 })
-
-      // 卡片
-      Column() {
-        children()
-      }
-      .width("100%")
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .backgroundColor(Color.White)
-      .border({ width: 0.5, color: DesignColor.OUTLINE })
-    }
-    .width("100%")
-  }
-
+  // 分组卡片（原 @Builder 接收 children 并链式 .margin 的写法不满足 ArkTS UI 语法，改为子组件 SectionCard）
   // 分隔线
   @Builder
   CardDivider() {
@@ -255,69 +233,78 @@ struct Setting {
         // 滚动内容
         Scroll(this.scroller) {
           Column() {
-            // 通知设置
-            this.SectionCard("通知设置") {
-              this.SettingRowBuilder(
-                $r('sys.symbol.bell'),
-                "消息通知",
-                "订单状态、活动提醒等",
-                () => {
-                  promptAction.showToast({ message: "功能开发中" })
-                }
-              )
-              this.CardDivider()
-              this.SettingRowBuilder(
-                $r('sys.symbol.envelope'),
-                "邮件通知",
-                "账单、优惠信息等",
-                () => {
-                  promptAction.showToast({ message: "功能开发中" })
-                }
-              )
-            }
+            // 通知设置（ArkTS 不支持尾随闭包传 @Builder 参数，改为显式箭头函数）
+            SectionCard({
+              sectionTitle: "通知设置",
+              content: () => {
+                this.SettingRowBuilder(
+                  $r('sys.symbol.bell'),
+                  "消息通知",
+                  "订单状态、活动提醒等",
+                  () => {
+                    promptAction.showToast({ message: "功能开发中" })
+                  }
+                )
+                this.CardDivider()
+                this.SettingRowBuilder(
+                  $r('sys.symbol.envelope'),
+                  "邮件通知",
+                  "账单、优惠信息等",
+                  () => {
+                    promptAction.showToast({ message: "功能开发中" })
+                  }
+                )
+              }
+            })
 
             // 隐私设置
-            this.SectionCard("隐私设置") {
-              this.SettingRowBuilder(
-                $r('sys.symbol.key_shield'),
-                "隐私设置",
-                "个人信息、数据收集等",
-                () => {
-                  promptAction.showToast({ message: "功能开发中" })
-                }
-              )
-              this.CardDivider()
-              this.SettingRowBuilder(
-                $r('sys.symbol.lock_fill'),
-                "账号安全",
-                "密码、登录设备等",
-                () => {
-                  promptAction.showToast({ message: "功能开发中" })
-                }
-              )
-            }
+            SectionCard({
+              sectionTitle: "隐私设置",
+              content: () => {
+                this.SettingRowBuilder(
+                  $r('sys.symbol.key_shield'),
+                  "隐私设置",
+                  "个人信息、数据收集等",
+                  () => {
+                    promptAction.showToast({ message: "功能开发中" })
+                  }
+                )
+                this.CardDivider()
+                this.SettingRowBuilder(
+                  $r('sys.symbol.lock_fill'),
+                  "账号安全",
+                  "密码、登录设备等",
+                  () => {
+                    promptAction.showToast({ message: "功能开发中" })
+                  }
+                )
+              }
+            })
             .margin({ top: DesignDimens.SECTION_SPACING })
 
             // 其他
-            this.SectionCard("其他") {
-              this.SettingRowBuilder(
-                $r('sys.symbol.info_circle'),
-                "关于我们",
-                "版本信息、用户协议等",
-                () => {
-                  this.aboutDialogController.open()
-                }
-              )
-              this.CardDivider()
-              this.SettingRowBuilder(
-                $r('sys.symbol.questionmark_circle'),
-                "帮助与反馈",
-                "常见问题、意见反馈",
-                () => {
-                  promptAction.showToast({ message: "功能开发中" })
-                }
-              )
-            }
+            SectionCard({
+              sectionTitle: "其他",
+              content: () => {
+                this.SettingRowBuilder(
+                  $r('sys.symbol.info_circle'),
+                  "关于我们",
+                  "版本信息、用户协议等",
+                  () => {
+                    this.aboutDialogController.open()
+                  }
+                )
+                this.CardDivider()
+                this.SettingRowBuilder(
+                  $r('sys.symbol.questionmark_circle'),
+                  "帮助与反馈",
+                  "常见问题、意见反馈",
+                  () => {
+                    promptAction.showToast({ message: "功能开发中" })
+                  }
+                )
+              }
+            })
             .margin({ top: DesignDimens.SECTION_SPACING })
 
             // 退出登录按钮 — 白底 + 红色边框 + 红色文字
@@ -348,4 +335,41 @@ struct Setting {
     .height("100%")
     .width("100%")
   }
+}
+
+/**
+ * 通用分组卡片（组标题 + 内容插槽）。
+ * 原 @Builder 方法接收 `children: () => void` 参数：@Builder 调用返回 void 无法链式设置外边距、
+ * 且 children() 不满足 UI 组件语法，故改为子组件 + @BuilderParam（ArkTS 标准插槽模式）。
+ */
+@Component
+struct SectionCard {
+  @Prop sectionTitle: string = ""
+  @BuilderParam content: () => void = emptyContent
+
+  build() {
+    Column() {
+      // 分组标题
+      Text(this.sectionTitle)
+        .fontSize(DesignFontSize.SECTION_TITLE)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .margin({ bottom: 12 })
+
+      // 卡片
+      Column() {
+        this.content()
+      }
+      .width("100%")
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .backgroundColor(Color.White)
+      .border({ width: 0.5, color: DesignColor.OUTLINE })
+    }
+    .width("100%")
+  }
+}
+
+// @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
+@Builder
+function emptyContent() {
 }

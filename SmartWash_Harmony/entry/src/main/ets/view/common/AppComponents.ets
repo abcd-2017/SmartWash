@@ -5,6 +5,11 @@ import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontW
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
 
+// @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
+@Builder
+function emptyContent() {
+}
+
 // ========== PageHeader 页面头部 ==========
 
 @ComponentV2
@@ -59,10 +64,10 @@ export struct PageHeader {
  */
 @ComponentV2
 export struct AppCard {
-  @Param borderRadius: number = DesignDimens.CARD_RADIUS
+  // 命名注意：不能叫 borderRadius（与 CustomComponent 基类的同名属性方法冲突导致编译错误）
+  @Param cardRadius: number = DesignDimens.CARD_RADIUS
   @Param paddingValue: number = DesignDimens.CARD_PADDING
-  @BuilderParam content: () => void = () => {
-  }
+  @BuilderParam content: () => void = emptyContent
 
   build() {
     Column() {
@@ -70,7 +75,7 @@ export struct AppCard {
     }
     .width('100%')
     .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(this.borderRadius)
+    .borderRadius(this.cardRadius)
     .borderWidth(0.5)
     .borderColor(DesignColor.OUTLINE)
     .padding(this.paddingValue)
@@ -93,7 +98,8 @@ export struct AppCard {
 @ComponentV2
 export struct AppButton {
   @Param text: string = ''
-  @Param enabled: boolean = true
+  // 命名注意：不能叫 enabled（与 CustomComponent 基类的同名属性方法冲突导致编译错误）
+  @Param isEnabled: boolean = true
   @Param loading: boolean = false
   @Event click: () => void = () => {
   }
@@ -116,11 +122,11 @@ export struct AppButton {
     .width('100%')
     .height(52)
     .borderRadius(DesignDimens.BUTTON_RADIUS)
-    .backgroundColor(this.enabled && !this.loading ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
-    .stateEffect(this.enabled && !this.loading)
-    .enabled(this.enabled && !this.loading)
+    .backgroundColor(this.isEnabled && !this.loading ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
+    .stateEffect(this.isEnabled && !this.loading)
+    .enabled(this.isEnabled && !this.loading)
     .onClick(() => {
-      if (this.enabled && !this.loading) {
+      if (this.isEnabled && !this.loading) {
         // 触觉反馈
         try {
           vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
@@ -203,7 +209,7 @@ export struct EmptyState {
       .width(96)
       .height(96)
       .borderRadius(48)
-      .backgroundColor(Color(DesignColor.SURFACE_VARIANT))
+      .backgroundColor(DesignColor.SURFACE_VARIANT)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
       .margin({ bottom: 16 })
@@ -240,7 +246,8 @@ export struct EmptyState {
  */
 @CustomDialog
 export struct AppConfirmDialog {
-  controller: CustomDialogController = new CustomDialogController({ builder: () => {} })
+  // 由父组件注入控制器（与 Setting.ets 的弹窗写法一致；空 builder 的自建控制器不合法）
+  controller: CustomDialogController
   @Prop title: string = ''
   @Prop message: string = ''
   @Prop confirmText: string = '确认'
@@ -251,75 +258,80 @@ export struct AppConfirmDialog {
   }
 
   build() {
+    // build 只允许单根节点：内容 Column / 分隔线 / 按钮行统一收进一个 Column（原多根节点不满足 UI 语法）
     Column() {
-      // 标题
-      if (this.title !== '') {
-        Text(this.title)
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .margin({ bottom: 12 })
+      // 内容区
+      Column() {
+        // 标题
+        if (this.title !== '') {
+          Text(this.title)
+            .fontSize(DesignFontSize.SECTION_TITLE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .margin({ bottom: 12 })
+        }
+
+        // 内容
+        Text(this.message)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .margin({ bottom: 20 })
       }
+      .width('100%')
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: 20,
+        bottom: 0
+      })
+      .shadow({
+        radius: DesignElevation.LEVEL_4,
+        color: '#33000000',
+        offsetX: 0,
+        offsetY: 4
+      })
 
-      // 内容
-      Text(this.message)
-        .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .margin({ bottom: 20 })
-    }
-    .padding({
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING,
-      top: 20,
-      bottom: 0
-    })
-    .shadow({
-      radius: DesignElevation.LEVEL_4,
-      color: '#33000000',
-      offsetX: 0,
-      offsetY: 4
-    })
-
-    // 分隔线
-    Divider()
-      .color(DesignColor.DIVIDER)
-      .strokeWidth(0.5)
-
-    // 按钮行
-    Row() {
-      Button(this.cancelText)
-        .type(ButtonType.Normal)
-        .layoutWeight(1)
-        .height(48)
-        .backgroundColor(Color.Transparent)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .fontSize(DesignFontSize.BODY)
-        .borderRadius(0)
-        .onClick(() => {
-          this.onDismiss()
-          this.controller.close()
-        })
-
+      // 分隔线
       Divider()
-        .vertical(true)
         .color(DesignColor.DIVIDER)
         .strokeWidth(0.5)
-        .height(48)
 
-      Button(this.confirmText)
-        .type(ButtonType.Normal)
-        .layoutWeight(1)
-        .height(48)
-        .backgroundColor(Color.Transparent)
-        .fontColor(DesignColor.PRIMARY)
-        .fontSize(DesignFontSize.BODY)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .borderRadius(0)
-        .onClick(() => {
-          this.onConfirm()
-          this.controller.close()
-        })
+      // 按钮行
+      Row() {
+        Button(this.cancelText)
+          .type(ButtonType.Normal)
+          .layoutWeight(1)
+          .height(48)
+          .backgroundColor(Color.Transparent)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontSize(DesignFontSize.BODY)
+          .borderRadius(0)
+          .onClick(() => {
+            this.onDismiss()
+            this.controller.close()
+          })
+
+        Divider()
+          .vertical(true)
+          .color(DesignColor.DIVIDER)
+          .strokeWidth(0.5)
+          .height(48)
+
+        Button(this.confirmText)
+          .type(ButtonType.Normal)
+          .layoutWeight(1)
+          .height(48)
+          .backgroundColor(Color.Transparent)
+          .fontColor(DesignColor.PRIMARY)
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .borderRadius(0)
+          .onClick(() => {
+            this.onConfirm()
+            this.controller.close()
+          })
+      }
+      .width('100%')
     }
-    .width('100%')
   }
 }

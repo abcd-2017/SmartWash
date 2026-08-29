@@ -41,7 +41,7 @@ struct Login {
         Column() {
           // 内圈 — 图标
           Column() {
-            SymbolGlyph($r('sys.symbol.wave_3_right'))
+            SymbolGlyph($r('sys.symbol.water_waves')) // sys.symbol.wave_3_right 不存在（SDK 5.0.5 无该符号），就近换用水波符号，保持"清水洗衣"品牌意象
               .fontSize(36)
               .fontColor([Color.White])
           }

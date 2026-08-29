@@ -7,7 +7,7 @@ import { OrderCard } from "../view/OrderCard"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
-import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, toColorString } from "../constant/DesignSystem"
 
 @Builder
 export function OrderListBuilder() {
@@ -148,8 +148,8 @@ struct OrderList {
                       promptAction.showDialog({
                         message: "确定要取消订单",
                         buttons: [
-                          { text: "取消", color: DesignColor.TEXT_PRIMARY },
-                          { text: "确认", color: DesignColor.PRIMARY }
+                          { text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
+                          { text: "确认", color: toColorString(DesignColor.PRIMARY) }
                         ],
                       }, async (err, data) => {
                         if (data.index == 1) {

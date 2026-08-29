@@ -252,7 +252,8 @@ struct Register {
             }
           }
           .width("85%")
-          .padding({ vertical: 12 })
+          // ArkUI 的 Padding 无 vertical 字段，拆分为 top/bottom（视觉效果不变）
+          .padding({ top: 12, bottom: 12 })
           .backgroundColor(DesignColor.GLASS_BG)
           .borderRadius(28)
           .border({
@@ -261,7 +262,8 @@ struct Register {
           })
           .margin({ top: 40 })
 
-          Spacer()
+          // ArkUI 无 Spacer 组件（原为跨框架误用），Blank() 等价：在 Column 中撑满剩余空间
+          Blank()
 
           // 注册按钮
           Button(this.registering ? "注册中..." : "注册")

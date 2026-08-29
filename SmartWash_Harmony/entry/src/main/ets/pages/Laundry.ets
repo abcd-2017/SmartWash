@@ -21,7 +21,11 @@ struct Laundry {
   @State totalPrice: number | null = 0
 
   async aboutToAppear() {
-    let [res, itemRes] = await Promise.all([getUserInfo(), getLaundryItems()])
+    // ArkTS 禁止解构声明（arkts-no-destruct-decls），改为先并发发起、再逐个 await（保持并发语义）
+    const resTask = getUserInfo()
+    const itemResTask = getLaundryItems()
+    let res = await resTask
+    let itemRes = await itemResTask
     if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
@@ -36,8 +40,7 @@ struct Laundry {
 
   @Builder
   LaundryTypeItem(item: LaundryItem) {
-    let isSelected: boolean = this.selectItemId == item.itemId
-
+    // @Builder 内仅允许 UI 语法，选中态直接内联计算（原 let isSelected 不合法）
     Row() {
       Column() {
         Row() {
@@ -59,14 +62,14 @@ struct Laundry {
         Text(`￥${item.basePrice}`)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(FontWeight.Bold)
-          .fontColor(isSelected ? DesignColor.PRIMARY : DesignColor.TEXT_PRIMARY)
+          .fontColor(this.selectItemId == item.itemId ? DesignColor.PRIMARY : DesignColor.TEXT_PRIMARY)
       }.margin({ left: 18 })
     }
     .backgroundColor(DesignColor.SURFACE)
     .padding(DesignDimens.CARD_PADDING)
     .border({
-      width: isSelected ? 2 : 0.5,
-      color: isSelected ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+      width: this.selectItemId == item.itemId ? 2 : 0.5,
+      color: this.selectItemId == item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE,
       radius: DesignDimens.CARD_RADIUS
     })
     .borderRadius(DesignDimens.CARD_RADIUS)
@@ -93,7 +96,7 @@ struct Laundry {
                 .fontSize(24)
                 .fontColor([DesignColor.TEXT_PRIMARY])
                 .onClick(() => {
-                  pathStack.back()
+                  pathStack.pop()
                 })
 
               Text("预约寄存")

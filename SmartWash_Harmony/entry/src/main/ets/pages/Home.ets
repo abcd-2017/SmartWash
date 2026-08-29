@@ -33,7 +33,7 @@ struct Home {
           .width(24)
           .height(5)
           .borderRadius(2.5)
-          .backgroundColor(Color(DesignColor.PRIMARY))
+          .backgroundColor(DesignColor.PRIMARY)
           .margin({ top: 4 })
       }
     }
