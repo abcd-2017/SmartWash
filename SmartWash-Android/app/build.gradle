@@ -104,4 +104,7 @@ dependencies {
 
     //图片加载
     implementation libs.coil.compose
+
+    //历法底座（观象台）：四柱/节气/中气/农历/旬空，纯 Java 可单测
+    implementation libs.lunar
 }
