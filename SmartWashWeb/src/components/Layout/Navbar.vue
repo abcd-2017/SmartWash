@@ -33,9 +33,11 @@ import { useRoute, useRouter } from "vue-router";
 import { SwitchButton } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
 import { getCurrentAdminUser } from "@/api/adminUser";
+import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 const currentRouteName = computed(() => route.meta.title || "");
 
 const username = ref("");
@@ -47,8 +49,8 @@ const fetchUserInfo = async () => {
   try {
     const userInfo = await getCurrentAdminUser();
     username.value = userInfo.username;
-  } catch (error) {
-    console.error("获取用户信息失败:", error);
+  } catch {
+    // 请求失败由 http 拦截器统一弹出提示，这里保持用户名为空即可
   }
 };
 
@@ -63,8 +65,8 @@ const handleLogout = () => {
     type: "warning",
   })
     .then(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
+      // 登录态统一走 store 清理（内存 + localStorage 一并清空）
+      authStore.clearLogin();
       router.push("/login");
     })
     .catch(() => {});

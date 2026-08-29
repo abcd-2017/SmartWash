@@ -16,6 +16,8 @@ import OrderList from "@/views/system/OrderList.vue"
 import LoginPage from "@/views/LoginPage.vue"
 import CouponList from "@/views/system/CouponList.vue"
 import UserCouponList from "@/views/system/UserCouponList.vue"
+import NotFound from "@/views/NotFound.vue"
+import { useAuthStore } from '@/stores/auth'
 
 const routes = [{
     path: '/login',
@@ -139,8 +141,14 @@ const routes = [{
         }
     ]
 }, {
+    // 404 兜底页：未匹配到的路径不再静默重定向首页，而是明确提示页面不存在
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'NotFound',
+    component: NotFound,
+    meta: {
+        title: '页面不存在',
+        requiresAuth: false
+    }
 }]
 
 const router = createRouter({
@@ -149,16 +157,17 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
+    // 登录态统一从 Pinia store 读取（store 初始化时自动从 localStorage 恢复）
+    const auth = useAuthStore();
     // 已登录用户访问登录页，重定向到首页
-    if (to.path === '/login' && token) {
+    if (to.path === '/login' && auth.token) {
         next('/')
-    } else if (to.meta.requiresAuth !== false && !token) {
+    } else if (to.meta.requiresAuth !== false && !auth.token) {
         next('/login')
-    } else if (to.meta.requiresAuth !== false && role !== 'admin') {
-        localStorage.removeItem('token')
-        localStorage.removeItem('role')
+    } else if (to.meta.requiresAuth !== false && !auth.role) {
+        // 仅拦截角色缺失（后端登录接口必返回 role）；管理端账号均为管理员，
+        // 角色名为中文展示名（如"超级管理员"），具体接口权限由后端 /admin/** 的 ROLE_ADMIN 强校验兜底
+        auth.clearLogin()
         next('/login')
     } else {
         next()

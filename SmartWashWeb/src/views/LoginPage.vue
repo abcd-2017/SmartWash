@@ -53,8 +53,10 @@ import { ref, reactive } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { login } from "@/api/auth";
+import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
+const authStore = useAuthStore();
 const formRef = ref(null);
 const loginForm = reactive({
   username: "",
@@ -78,9 +80,13 @@ const handleLogin = async () => {
     await formRef.value.validate();
     loading.value = true;
 
-    const token = await login(loginForm);
-    localStorage.setItem("token", token);
-    localStorage.setItem("role", "admin");
+    // 后端登录响应 data 已改为对象 { token, role }，role 为该管理员实际角色名
+    const data = await login(loginForm);
+    if (!data?.token) {
+      throw new Error("登录响应缺少凭证，请稍后重试");
+    }
+    // 登录态统一写入 Pinia store（内部持久化到 localStorage），角色以后端返回为准
+    authStore.login(data.token, data.role);
 
     ElMessage.success("登录成功");
     router.push("/");
