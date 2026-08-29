@@ -1,3 +1,17 @@
+# =====================================================================
+# 敏感配置说明（本项目当前为 demo：以下默认值仅供本地/演示环境开箱即用）
+#
+# 所有 ${ENV:default} 均支持环境变量覆盖；生产部署时必须通过环境变量注入
+# 全新强口令，不得沿用 demo 默认值：
+#   DB_PASSWORD        默认 admin123（demo）
+#   JWT_SECRET         默认为 demo 专用随机密钥（Base64，解码 32 字节，满足 JwtUtil 强度校验）
+#                      —— 历史 demo 密钥已随 git 提交入库，生产必须更换
+#   MINIO_ACCESS_KEY   默认 minioadmin（demo）
+#   MINIO_SECRET_KEY   默认 minioadmin（demo）
+#
+# 可选环境变量（已有本地开发默认值）：DB_HOST、DB_PORT、DB_USERNAME、REDIS_HOST、REDIS_PORT、
+#   REDIS_PASSWORD、CORS_ORIGINS、MINIO_ENDPOINT、MINIO_BUCKET
+# =====================================================================
 server:
   error:
     include-message: never
@@ -8,6 +22,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/smart_wash?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&autoReconnect=true&allowMultiQueries=true&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&useSSL=true
     username: ${DB_USERNAME:root}
+    # demo 默认口令，生产环境必须通过 DB_PASSWORD 覆盖
     password: ${DB_PASSWORD:admin123}
 
   data:
@@ -37,8 +52,9 @@ spring.flyway:
   baseline-version: 0
 
 jwt:
-  # 生产环境务必通过环境变量 JWT_SECRET 覆盖此默认值（Base64 编码的 32 字节密钥）
-  secret: ${JWT_SECRET:hfsBEX6lFJyBuy9nBTRnQS7WMEZkEp+IZeYpBf6Heoc=}
+  # demo 专用随机密钥（Base64，解码 32 字节，通过 JwtUtil 强度校验）；
+  # 生产环境必须通过 JWT_SECRET 注入全新密钥（历史 demo 密钥已随 git 入库，视为可公开）
+  secret: ${JWT_SECRET:eYdsyyhfg0ohfPOMG0df+MaM62KkA2hIA3rjlM9DS4Q=}
 
 cors:
   # 生产环境配置实际域名，多个用逗号分隔，支持通配符模式（如 https://*.smartwash.com）
@@ -47,6 +63,14 @@ cors:
 # MinIO 对象存储配置
 minio:
   endpoint: ${MINIO_ENDPOINT:http://192.168.1.61:9000}
+  # demo 默认凭据，生产环境必须通过 MINIO_ACCESS_KEY / MINIO_SECRET_KEY 覆盖
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: ${MINIO_BUCKET:smartwash}
+
+# 登录防护
+security:
+  # 可信反向代理网段（IPv4 CIDR，逗号分隔，如 "10.0.0.0/8,172.16.0.0/12"）。
+  # 仅当请求的 TCP 直连地址落在该网段内，登录 IP 解析才采信 X-Forwarded-For / X-Real-IP；
+  # 直连部署（当前 demo 形态）保持为空，否则客户端可伪造头部绕过 IP 登录锁定或定向锁定他人出口 IP
+  trusted-proxy-cidrs:

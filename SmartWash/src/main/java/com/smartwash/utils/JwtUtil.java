@@ -23,11 +23,28 @@ public class JwtUtil {
 
     public static final Long JWT_TTL = 7 * 24 * 60 * 60 * 1000L; // 7天
     private static final String ISSUER = "SmartWash";
+    /** JWT 密钥解码后的最小字节数（HmacSHA256 建议 32 字节以上），不足则拒绝启动 */
+    private static final int JWT_SECRET_MIN_BYTES = 32;
 
     private final SecretKey key;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
-        this.key = new SecretKeySpec(Base64.getDecoder().decode(secret), "HmacSHA256");
+        // fail-fast：密钥未配置或强度不足时直接终止启动，禁止以空密钥/弱密钥对外签发 token
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "JWT 签名密钥未配置：请通过环境变量 JWT_SECRET 注入 Base64 编码的随机密钥（解码后至少 32 字节），应用拒绝以空密钥启动");
+        }
+        byte[] keyBytes;
+        try {
+            keyBytes = Base64.getDecoder().decode(secret);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("JWT 签名密钥格式非法：JWT_SECRET 必须为 Base64 编码字符串", e);
+        }
+        if (keyBytes.length < JWT_SECRET_MIN_BYTES) {
+            throw new IllegalStateException(
+                    "JWT 签名密钥强度不足：解码后为 " + keyBytes.length + " 字节，低于安全下限 32 字节，请更换更长的随机密钥后重启");
+        }
+        this.key = new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 
     public static String getUUID() {
