@@ -6,6 +6,7 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { OrderCard } from "../view/OrderCard"
 import { pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
+import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
 
 @Builder
@@ -33,10 +34,10 @@ struct OrderList {
 
   async getOrderListByStatus() {
     let res = await getOrderList({ status: this.orderStatus, page: this.page, size: 10 })
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       if (res.data == null || res.data?.length == 0) {
         if (this.orderList.length > 0) {
-          promptAction.showToast({ message: "没有更多数据了" })
+          showToastSafety("没有更多数据了")
         }
       } else {
         if (this.page == 1) {
@@ -45,7 +46,7 @@ struct OrderList {
         this.orderList.push(...res.data)
       }
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "订单加载失败")
     }
   }
 
@@ -152,29 +153,24 @@ struct OrderList {
                       }, async (err, data) => {
                         if (data.index == 1) {
                           let res = await cancelOrder(order.orderId ?? -1)
-                          if (res.code == HttpStatusCode.Ok) {
+                          if (res.code === HttpStatusCode.Ok) {
                             this.refreshOrder()
-                            promptAction.showToast({ message: "取消成功" })
+                            showToastSafety("取消成功")
                           } else {
-                            promptAction.showToast({ message: res.message })
+                            showToastSafety(res.message, "取消失败")
                           }
                         }
                       })
                     },
                     paymentClick: () => {
-                      pathStack.pushPathByName("Payment", order.orderId, (popInfo) => {
-                        this.refreshOrder()
-                      })
+                      // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
+                      pathStack.pushPathByName("Payment", order.orderId)
                     },
                     shipmentClick: () => {
-                      pathStack.pushPathByName("PickupDelivery", order, (popInfo) => {
-                        this.refreshOrder()
-                      })
+                      pathStack.pushPathByName("PickupDelivery", order)
                     },
                     pickupClick: () => {
-                      pathStack.pushPathByName("PickupDelivery", order, (popInfo) => {
-                        this.refreshOrder()
-                      })
+                      pathStack.pushPathByName("PickupDelivery", order)
                     },
                     itemClick: () => {
                       pathStack.pushPathByName("OrderDetail", order.orderId)
@@ -240,5 +236,14 @@ struct OrderList {
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)
+    .onShown(() => {
+      // 支付/寄件等 pop() 均不带 result，原 onPop 回调不触发（评审 #8）；
+      // 改为每次展示时重置分页后重拉：page==1 分支会在响应返回后整体替换列表，避免追加重复数据
+      this.isRefreshing = false
+      this.isLoadingMore = false
+      this.canLoad = false
+      this.page = 1
+      this.getOrderListByStatus()
+    })
   }
 }

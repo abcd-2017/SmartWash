@@ -1,12 +1,12 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
-import { promptAction } from "@kit.ArkUI"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getOrderList } from "../network/api/OrderApi"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
@@ -32,10 +32,10 @@ struct PickUp {
       status: OrderStatusEnum.READY_FOR_PICKUP,
       page: this.page, size: 10
     })
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       if (res.data == null || res.data.length == 0) {
         if (this.orderList?.length > 0) {
-          promptAction.showToast({ message: "没有更多数据了" })
+          showToastSafety("没有更多数据了")
         }
       } else {
         if (this.page == 1) {
@@ -44,16 +44,16 @@ struct PickUp {
         this.orderList?.push(...res.data)
       }
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "取件订单加载失败")
     }
   }
 
   async refreshUserInfo() {
     let res = await getUserInfo()
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "用户信息加载失败")
     }
   }
 
@@ -223,6 +223,11 @@ struct PickUp {
     }
     .hideTitleBar(true)
     .onShown(() => {
+      // 每次展示先重置分页再拉取，避免从寄件页返回后 page>1 继续追加重复数据（评审 #14）
+      this.isRefreshing = false
+      this.isLoadingMore = false
+      this.canLoad = false
+      this.page = 1
       this.getPickupOrder()
     })
   }

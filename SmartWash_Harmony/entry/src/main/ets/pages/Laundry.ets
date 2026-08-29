@@ -1,11 +1,11 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getUserInfo } from "../network/api/UserApi"
-import { promptAction } from "@kit.ArkUI"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { LaundryItem } from "../network/vo/LaundryItem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { reservationLaundry } from "../network/api/OrderApi"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
@@ -22,15 +22,15 @@ struct Laundry {
 
   async aboutToAppear() {
     let [res, itemRes] = await Promise.all([getUserInfo(), getLaundryItems()])
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "用户信息加载失败")
     }
-    if (itemRes.code == HttpStatusCode.Ok) {
+    if (itemRes.code === HttpStatusCode.Ok) {
       this.laundryItemList = itemRes.data
     } else {
-      promptAction.showToast({ message: itemRes.message })
+      showToastSafety(itemRes.message, "套餐加载失败")
     }
   }
 
@@ -205,17 +205,22 @@ struct Laundry {
             Button("确定预约")
               .onClick(async (event: ClickEvent) => {
                 if (this.selectItemId == null) {
-                  promptAction.showToast({ message: "请选择套餐" })
+                  showToastSafety("请选择套餐")
                 } else {
                   let res = await reservationLaundry({
                     itemsId: this.selectItemId,
                     totalPrice: this.totalPrice
                   })
-                  if (res.code == HttpStatusCode.Ok) {
-                    pathStack.pop()
-                    pathStack.pushPathByName("Payment", `${res.data}`)
+                  if (res.code === HttpStatusCode.Ok) {
+                    if (res.data !== null) {
+                      pathStack.pop()
+                      // 统一传 number 类型 orderId（评审 #6：原模板字符串导致 Payment 收到字符串）
+                      pathStack.pushPathByName("Payment", res.data)
+                    } else {
+                      showToastSafety(res.message, "下单失败，请稍后重试")
+                    }
                   } else {
-                    promptAction.showToast({ message: res.message })
+                    showToastSafety(res.message, "下单失败，请稍后重试")
                   }
                 }
               })

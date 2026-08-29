@@ -1,8 +1,7 @@
 import { pathStack } from "../utils/PathStackUtil"
 import { getCaptcha, register } from "../network/api/UserApi"
-import { logger } from "../utils/Logger"
 import { HttpStatusCode } from "@ohos/axios"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
@@ -22,10 +21,24 @@ struct Register {
   @State checkPassword: boolean = false
   @State checkCode: boolean = false
   @State countDown: number = 0
+  // 注册请求进行中标记：按钮展示 loading 并拦截连点（评审 #12）
+  @State registering: boolean = false
   private timer: number = -1
+
+  // 页面销毁时清理验证码倒计时定时器，避免泄漏（评审 #5）
+  aboutToDisappear() {
+    if (this.timer !== -1) {
+      clearInterval(this.timer)
+      this.timer = -1
+    }
+  }
 
   startCountDown() {
     this.countDown = 60
+    // 重复点击获取验证码前先清理旧定时器，防止多个倒计时并存
+    if (this.timer !== -1) {
+      clearInterval(this.timer)
+    }
     this.timer = setInterval(() => {
       this.countDown--
       if (this.countDown <= 0) {
@@ -193,10 +206,10 @@ struct Register {
                   if (!this.checkPhoneNumber) {
                     this.startCountDown()
                     let res = await getCaptcha(this.phoneNumber ?? "")
-                    if (res.code == HttpStatusCode.Ok) {
-                      promptAction.showToast({ message: res.data ?? "验证码已发送" })
+                    if (res.code === HttpStatusCode.Ok) {
+                      showToastSafety(res.data, "验证码已发送")
                     } else {
-                      promptAction.showToast({ message: res.message })
+                      showToastSafety(res.message, "验证码发送失败")
                       clearInterval(this.timer)
                       this.timer = -1
                       this.countDown = 0
@@ -251,7 +264,7 @@ struct Register {
           Spacer()
 
           // 注册按钮
-          Button("注册")
+          Button(this.registering ? "注册中..." : "注册")
             .width("85%")
             .height(50)
             .fontSize(DesignFontSize.SECTION_TITLE)
@@ -259,23 +272,33 @@ struct Register {
             .fontColor(Color.White)
             .backgroundColor(DesignColor.GLASS_INPUT)
             .borderRadius(16)
+            .enabled(!this.registering)
             .onClick(async (event: ClickEvent) => {
+              // 防连点：请求进行中直接忽略
+              if (this.registering) {
+                return
+              }
               this.check()
               if (this.checkPhoneNumber || this.checkPassword || this.checkCode) {
                 return
               }
-              let res = await register({
-                phoneNumber: this.phoneNumber,
-                code: this.verificationCode,
-                password: this.password
-              })
-              logger.info("info", `${res}`)
-              if (res.code == HttpStatusCode.Ok) {
-                promptAction.showToast({ message: "注册成功" })
-                setValue(CommonConstants.USER_TOKEN, `${res.data}`)
-                pathStack.replacePathByName("AddSchool", null)
-              } else {
-                promptAction.showToast({ message: res.message })
+              this.registering = true
+              try {
+                let res = await register({
+                  phoneNumber: this.phoneNumber,
+                  code: this.verificationCode,
+                  password: this.password
+                })
+                if (res.code === HttpStatusCode.Ok) {
+                  showToastSafety("注册成功")
+                  // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
+                  await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
+                  pathStack.replacePathByName("AddSchool", null)
+                } else {
+                  showToastSafety(res.message, "注册失败")
+                }
+              } finally {
+                this.registering = false
               }
             })
 

@@ -6,7 +6,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { OrderItemCountVo } from "../network/vo/OrderItemCountVo"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
 
 @Component
@@ -45,7 +45,7 @@ export struct UserInfo {
       this.userInfo = res.data
       this.avatarUrl = this.userInfo?.avatar ?? null
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "用户信息加载失败")
     }
   }
 
@@ -63,15 +63,15 @@ export struct UserInfo {
         let res = await uploadAvatar(uri)
         if (res.code == HttpStatusCode.Ok) {
           this.avatarUrl = res.data
-          promptAction.showToast({ message: "头像上传成功" })
+          showToastSafety("头像上传成功")
         } else {
-          promptAction.showToast({ message: res.message ?? "头像上传失败" })
+          showToastSafety(res.message, "头像上传失败")
         }
         this.isUploading = false
       }
     } catch (err) {
       this.isUploading = false
-      promptAction.showToast({ message: "头像上传失败" })
+      showToastSafety("头像上传失败")
     }
   }
 
@@ -85,7 +85,7 @@ export struct UserInfo {
     if (res.code == HttpStatusCode.Ok) {
       this.orderItemCount = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "订单数量加载失败")
     }
   }
 

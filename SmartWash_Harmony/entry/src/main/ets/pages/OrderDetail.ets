@@ -1,10 +1,10 @@
-import { promptAction } from "@kit.ArkUI"
 import { HttpStatusCode } from "@ohos/axios"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 
 @Builder
 export function OrderDetailBuilder() {
@@ -22,7 +22,7 @@ struct OrderDetail {
     if (res.code == HttpStatusCode.Ok) {
       this.orderInfo = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "订单详情加载失败")
     }
   }
 

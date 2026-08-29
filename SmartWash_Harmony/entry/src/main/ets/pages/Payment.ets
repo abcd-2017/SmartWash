@@ -8,6 +8,7 @@ import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { payment } from "../network/api/PaymentApi"
+import { showToastSafety } from "../utils/ToastUtil"
 import { PaymentType } from "../constant/PaymentType"
 import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
 
@@ -25,34 +26,40 @@ struct Payment {
   @State selectCoupon: UserCouponVo | null = null
   @State showSheet: boolean = false
   @State selectCouponId: number | null = null
+  // 支付请求进行中标记：按钮展示 loading 并拦截连点，防止重复扣款（评审 #12）
+  @State paying: boolean = false
 
   async aboutToAppear() {
-    this.orderId = pathStack.getParamByName("Payment")[0] as number
-    if (this.orderId != null) {
+    // 上游（Laundry/OrderList）统一传 number 类型 orderId；
+    // Number() 显式转换替代 as 强转（评审 #6），NaN 视为参数缺失/非法
+    const raw = pathStack.getParamByName("Payment")[0]
+    const id = Number(raw)
+    this.orderId = Number.isNaN(id) ? null : id
+    if (this.orderId !== null) {
       let res = await getOrderInfo(this.orderId)
-      if (res.code == HttpStatusCode.Ok) {
+      if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
-        promptAction.showToast({ message: res.message })
+        showToastSafety(res.message, "订单信息加载失败")
       }
     }
   }
 
   async getCurrUserInfo() {
     let res = await getUserInfo()
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "用户信息加载失败")
     }
   }
 
   async getUserCoupons() {
     let couponRes = await getCanUseCoupon(this.orderId ?? -1)
-    if (couponRes.code == HttpStatusCode.Ok) {
+    if (couponRes.code === HttpStatusCode.Ok) {
       this.userCoupon = couponRes.data
     } else {
-      promptAction.showToast({ message: couponRes.message })
+      showToastSafety(couponRes.message, "优惠券加载失败")
     }
   }
 
@@ -60,12 +67,12 @@ struct Payment {
     this.selectCouponId = coupon.userCouponId
     this.showSheet = false
     this.selectCoupon = coupon
-    if (this.orderId != null) {
+    if (this.orderId !== null) {
       let res = await calculationOrder(this.orderId, coupon.userCouponId ?? -1)
-      if (res.code == HttpStatusCode.Ok) {
+      if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
-        promptAction.showToast({ message: res.message })
+        showToastSafety(res.message, "优惠券试算失败")
       }
     }
   }
@@ -371,7 +378,7 @@ struct Payment {
           Blank()
 
           // ========== 确认支付按钮 ==========
-          Button(`确认支付￥${this.orderInfo?.payPrice}`)
+          Button(this.paying ? "支付中..." : `确认支付￥${this.orderInfo?.payPrice}`)
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(FontWeight.Bold)
             .fontColor(DesignColor.ON_PRIMARY)
@@ -379,19 +386,29 @@ struct Payment {
             .borderRadius(DesignDimens.BUTTON_RADIUS)
             .width("100%")
             .height(48)
+            .enabled(!this.paying)
             .onClick(async (event: ClickEvent) => {
+              // 防连点：请求进行中直接忽略，防止重复扣款
+              if (this.paying) {
+                return
+              }
               if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
-                let res = await payment({
-                  orderId: this.orderId,
-                  paymentType: `${PaymentType.PURSE}`,
-                  userCouponId: this.selectCoupon?.userCouponId ?? null
-                })
-                if (res.code == HttpStatusCode.Ok) {
-                  promptAction.showToast({ message: res.data })
-                  pathStack.pop()
-                  pathStack.pushPathByName("PaymentSuccess", this.orderId)
-                } else {
-                  promptAction.showToast({ message: res.message })
+                this.paying = true
+                try {
+                  let res = await payment({
+                    orderId: this.orderId,
+                    paymentType: `${PaymentType.PURSE}`,
+                    userCouponId: this.selectCoupon?.userCouponId ?? null
+                  })
+                  if (res.code === HttpStatusCode.Ok) {
+                    showToastSafety(res.data, "支付成功")
+                    pathStack.pop()
+                    pathStack.pushPathByName("PaymentSuccess", this.orderId)
+                  } else {
+                    showToastSafety(res.message, "支付失败，请稍后重试")
+                  }
+                } finally {
+                  this.paying = false
                 }
               } else {
                 promptAction.showDialog({

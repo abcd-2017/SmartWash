@@ -1,10 +1,10 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getAllCoupon, getUserCoupon, receiveCoupon } from "../network/api/CouponApi"
 import { CouponVo } from "../network/vo/CouponVo"
-import { promptAction } from "@kit.ArkUI"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { UserCouponStatus } from "../constant/UserCouponStatus"
 import { CouponStatus } from "../constant/CouponStatus"
+import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
@@ -33,7 +33,7 @@ struct Coupon {
       this.coupons = []
       this.coupons = couponRes.data
     } else {
-      promptAction.showToast({ message: couponRes.message })
+      showToastSafety(couponRes.message, "优惠券加载失败")
     }
   }
 
@@ -44,7 +44,7 @@ struct Coupon {
       this.userCoupons = []
       this.userCoupons = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "优惠券加载失败")
     }
   }
 
@@ -202,9 +202,9 @@ struct Coupon {
     let res = await receiveCoupon(couponId)
     if (res.code == HttpStatusCode.Ok) {
       this.getCouponList()
-      promptAction.showToast({ message: "领取成功" })
+      showToastSafety("领取成功")
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "领取失败")
     }
   }
 }

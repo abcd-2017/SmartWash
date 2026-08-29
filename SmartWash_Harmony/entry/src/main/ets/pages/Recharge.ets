@@ -4,6 +4,7 @@ import { promptAction } from "@kit.ArkUI"
 import { userRecharge } from "../network/api/ReChargeApi"
 import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton } from "../view/common/AppComponents"
 
 @Builder
@@ -278,9 +279,9 @@ struct Recharge {
                 })
                 if (res.code == HttpStatusCode.Ok) {
                   pathStack.pop()
-                  promptAction.showToast({ message: "充值成功" })
+                  showToastSafety("充值成功")
                 } else {
-                  promptAction.showToast({ message: res.message })
+                  showToastSafety(res.message, "充值失败")
                 }
               }
             })

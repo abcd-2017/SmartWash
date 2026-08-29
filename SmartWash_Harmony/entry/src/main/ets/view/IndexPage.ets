@@ -2,12 +2,15 @@ import { HttpStatusCode } from "@ohos/axios"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
 import { CommonConstants } from "../constant/CommonConstants"
 import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
+import { showToastSafety } from "../utils/ToastUtil"
+
+// 连续轮询失败达到该次数才提示一次（评审 #4：避免每 5s 弹 toast）
+const POLLING_FAILURE_THRESHOLD: number = 3
 
 @ComponentV2
 export struct IndexPage {
@@ -17,6 +20,8 @@ export struct IndexPage {
   @Local orderList: Array<OrderVo> | null = []
   @Param isActive: boolean = true
   private pollingTimer: number = -1
+  // 连续轮询失败计数：失败静默，连续失败达到阈值才提示一次；成功后清零
+  private pollingFailureCount: number = 0
 
   aboutToAppear() {
     this.refreshUserInfo()
@@ -29,18 +34,23 @@ export struct IndexPage {
     this.stopPolling()
   }
 
-  onDidUpdate() {
+  // @ComponentV2 不存在 onDidUpdate 生命周期，改用 @Monitor 监听 isActive（Tab 切换）启停轮询（评审 #4）
+  @Monitor('isActive')
+  onIsActiveChange() {
     if (this.isActive) {
-      if (this.pollingTimer === -1) {
-        this.getOrderList()
-        this.startPolling()
-      }
+      // 重新激活时立即拉取一次，再启动 5s 轮询
+      this.getOrderList()
+      this.startPolling()
     } else {
       this.stopPolling()
     }
   }
 
   private startPolling() {
+    // 防御：避免重复 start 造成多个定时器并存
+    if (this.pollingTimer !== -1) {
+      return
+    }
     this.pollingTimer = setInterval(() => {
       this.getOrderList()
     }, 5000)
@@ -55,19 +65,34 @@ export struct IndexPage {
 
   async refreshUserInfo() {
     let res = await getUserInfo()
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "用户信息加载失败")
     }
   }
 
   async getOrderList() {
-    let res = await getWashingOrder();
-    if (res.code == HttpStatusCode.Ok) {
-      this.orderList = res.data
-    } else {
-      promptAction.showToast({ message: res.message })
+    try {
+      let res = await getWashingOrder()
+      if (res.code === HttpStatusCode.Ok) {
+        this.pollingFailureCount = 0
+        this.orderList = res.data
+      } else {
+        // 失败静默计数，连续失败达到阈值才提示一次（评审 #4）
+        this.handlePollingFailure(res.message)
+      }
+    } catch (e) {
+      // 轮询请求异常（网络断开/401 跳转等）同样静默计数，不每 5s 弹 toast
+      this.handlePollingFailure(null)
+    }
+  }
+
+  /** 轮询失败静默计数：连续失败达到阈值时提示一次 */
+  private handlePollingFailure(message: string | null | undefined): void {
+    this.pollingFailureCount++
+    if (this.pollingFailureCount === POLLING_FAILURE_THRESHOLD) {
+      showToastSafety(message, "订单状态刷新失败")
     }
   }
 

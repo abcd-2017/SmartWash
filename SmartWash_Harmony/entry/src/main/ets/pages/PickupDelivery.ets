@@ -4,6 +4,7 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { promptAction } from "@kit.ArkUI"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { BaseResponse } from "../network/BaseResponse"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
@@ -29,7 +30,7 @@ struct PickupDelivery {
     if (res.code == HttpStatusCode.Ok) {
       this.qrCode = res.data ?? ""
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "取件码生成失败")
     }
   }
 
@@ -158,10 +159,10 @@ struct PickupDelivery {
                     })
                   }
                   if (res.code == HttpStatusCode.Ok) {
-                    promptAction.showToast({ message: "操作成功" })
+                    showToastSafety("操作成功")
                     pathStack.pop()
                   } else {
-                    promptAction.showToast({ message: res.message })
+                    showToastSafety(res.message, "操作失败")
                   }
                 }
               })

@@ -4,7 +4,7 @@ import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
 import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 
 @Builder
 export function RechargeRecordBuilder() {
@@ -30,7 +30,7 @@ struct RechargeRecord {
       let records = res.data!.records
       if (records == null || records.length == 0) {
         if (this.recordList.length > 0) {
-          promptAction.showToast({ message: "没有更多数据了" })
+          showToastSafety("没有更多数据了")
         }
         this.hasMore = false
       } else {
@@ -40,7 +40,7 @@ struct RechargeRecord {
         this.recordList.push(...records)
       }
     } else {
-      promptAction.showToast({ message: res.message })
+      showToastSafety(res.message, "充值记录加载失败")
     }
   }
 

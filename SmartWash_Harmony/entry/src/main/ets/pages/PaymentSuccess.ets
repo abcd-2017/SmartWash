@@ -2,7 +2,7 @@ import { HttpStatusCode } from "@ohos/axios"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
@@ -23,7 +23,7 @@ struct PaymentSuccess {
       if (res.code == HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
-        promptAction.showToast({ message: res.message })
+        showToastSafety(res.message, "订单信息加载失败")
       }
     }
   }

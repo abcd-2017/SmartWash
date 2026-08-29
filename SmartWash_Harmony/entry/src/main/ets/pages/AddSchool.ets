@@ -2,8 +2,8 @@ import { HttpStatusCode } from "@ohos/axios"
 import { getAllSchool } from "../network/api/SchoolApi"
 import { getUserByStudentId, updateUserInfo } from "../network/api/UserApi"
 import { SchoolName } from "../network/vo/SchoolName"
-import { promptAction } from "@kit.ArkUI"
 import { pathStack } from "../utils/PathStackUtil"
+import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens } from "../constant/DesignSystem"
 
 @Builder
@@ -161,7 +161,7 @@ struct AddSchool {
             }
             let checkStudentRes = await getUserByStudentId(this.checkStudentData)
             if (checkStudentRes.code == HttpStatusCode.Ok && !checkStudentRes.data) {
-              promptAction.showToast({ message: "该学号已注册" })
+              showToastSafety("该学号已注册")
               return
             }
             let res = await updateUserInfo({
@@ -174,7 +174,7 @@ struct AddSchool {
               }
               AppStorage.setOrCreate("userLoginFlag", true)
             } else {
-              promptAction.showToast({ message: res.message })
+              showToastSafety(res.message, "学校信息保存失败")
             }
           })
           .width("85%")

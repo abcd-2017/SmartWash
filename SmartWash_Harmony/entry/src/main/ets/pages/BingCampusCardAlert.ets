@@ -4,7 +4,7 @@ import { bindCampus, unBindCampus } from "../network/api/UserApi"
 import { BaseResponse } from "../network/BaseResponse"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 
 @Builder
 export function BingCampusCardAlertBuilder() {
@@ -76,9 +76,9 @@ struct BingCampusCardAlert {
               if (res.code == HttpStatusCode.Ok) {
                 this.inputController.stopEditing()
                 pathStack.pop()
-                promptAction.showToast({ message: this.isBingFlag ? "绑定成功" : "解绑成功" })
+                showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
               } else {
-                promptAction.showToast({ message: res.message })
+                showToastSafety(res.message, "操作失败")
               }
             }).fontColor($r('sys.color.brand')).fontSize(16)
           }.width("100%")
