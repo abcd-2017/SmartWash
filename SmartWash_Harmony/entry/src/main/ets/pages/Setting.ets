@@ -130,7 +130,11 @@ struct Setting {
   private logoutDialogController: CustomDialogController = new CustomDialogController({
     builder: LogoutConfirmDialog({
       onConfirm: () => {
+        // 与网络层 401 处理同语义（评审 #23，参照 Axios.ets clearLoginState）：
+        // 清本地 token + 复位内存登录态，只清 token 不复位 AppStorage 标志，
+        // 重启后 Index 会按残留登录态直接进首页并循环 401
         setValue(CommonConstants.USER_TOKEN, "")
+        AppStorage.setOrCreate("userLoginFlag", false)
         pathStack.clear()
         pathStack.pushPathByName("Login", null)
       }

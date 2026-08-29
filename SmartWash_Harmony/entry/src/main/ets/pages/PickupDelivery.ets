@@ -3,7 +3,7 @@ import { generateQrCode, pickupOrder, shippingOrder } from "../network/api/Order
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { promptAction } from "@kit.ArkUI"
 import { OrderStatusEnum } from "../constant/OrderStatus"
-import { pathStack } from "../utils/PathStackUtil"
+import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { BaseResponse } from "../network/BaseResponse"
@@ -22,7 +22,8 @@ struct PickupDelivery {
   @State pickCode: string = ""
 
   async aboutToAppear() {
-    this.orderInfo = pathStack.getParamByName("PickupDelivery")[0] as OrderInfo
+    // 安全取参（评审 #31）：参数缺失/非对象时返回 null，不再 as 强转崩溃
+    this.orderInfo = getObjectParam<OrderInfo>("PickupDelivery")
     this.pickCode = this.orderInfo?.pickupCode?.split(":").pop() ?? "error"
     this.isPickup = this.orderInfo?.status == OrderStatusEnum.READY_FOR_PICKUP
 

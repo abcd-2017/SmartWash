@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { calculationOrder, getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
-import { pathStack } from "../utils/PathStackUtil"
+import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { promptAction } from "@kit.ArkUI"
 import { getCanUseCoupon } from "../network/api/CouponApi"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
@@ -30,11 +30,8 @@ struct Payment {
   @State paying: boolean = false
 
   async aboutToAppear() {
-    // 上游（Laundry/OrderList）统一传 number 类型 orderId；
-    // Number() 显式转换替代 as 强转（评审 #6），NaN 视为参数缺失/非法
-    const raw = pathStack.getParamByName("Payment")[0]
-    const id = Number(raw)
-    this.orderId = Number.isNaN(id) ? null : id
+    // 安全取参（评审 #31 / #6）：统一走 getNumberParam，缺失/非法返回 null（Number() 显式转换，NaN 同视为缺失）
+    this.orderId = getNumberParam("Payment")
     if (this.orderId !== null) {
       let res = await getOrderInfo(this.orderId)
       if (res.code === HttpStatusCode.Ok) {
@@ -63,12 +60,16 @@ struct Payment {
     }
   }
 
-  async calculationOrder(coupon: UserCouponVo) {
-    this.selectCouponId = coupon.userCouponId
+  /**
+   * 试算订单金额（评审 #17）：coupon 传 null 表示"不使用优惠券"，
+   * 按无券（userCouponId=-1）重新试算并清空选中态，使优惠券可随时取消选择。
+   */
+  async calculationOrder(coupon: UserCouponVo | null) {
+    this.selectCouponId = coupon?.userCouponId ?? null
     this.showSheet = false
     this.selectCoupon = coupon
     if (this.orderId !== null) {
-      let res = await calculationOrder(this.orderId, coupon.userCouponId ?? -1)
+      let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? -1)
       if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
@@ -140,6 +141,41 @@ struct Payment {
         .width("100%")
         .justifyContent(FlexAlign.Center)
       } else {
+        // "不使用优惠券"选项（评审 #17）：默认选中，用于从已选优惠券切换回不使用
+        Row() {
+          Column() {
+            Text("不使用优惠券")
+              .fontSize(DesignFontSize.CARD_TITLE)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+
+            Text("按订单原价支付")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .margin({ top: 6 })
+          }
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
+
+          Radio({ value: "noCoupon", group: "userCoupon" })
+            .checked(this.selectCouponId == null)
+            .onChange((flag) => {
+              if (flag) {
+                this.calculationOrder(null)
+              }
+            })
+        }
+        .width("100%")
+        .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
+        .backgroundColor(DesignColor.SURFACE)
+        .border({ width: 0.5, color: DesignColor.OUTLINE })
+        .padding(DesignDimens.CARD_PADDING)
+        .justifyContent(FlexAlign.SpaceBetween)
+        .margin({ bottom: DesignDimens.CARD_SPACING })
+        .onClick(() => {
+          this.calculationOrder(null)
+        })
+
         List({ space: DesignDimens.CARD_SPACING }) {
           ForEach(this.userCoupon, (coupon: UserCouponVo) => {
             ListItem() {

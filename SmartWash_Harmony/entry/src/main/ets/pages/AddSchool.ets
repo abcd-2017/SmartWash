@@ -11,6 +11,9 @@ export function AddSchoolBuilder() {
   AddSchool()
 }
 
+// 学校搜索防抖间隔（毫秒）：停顿该时长后才发起请求（评审 #20）
+const SEARCH_DEBOUNCE_MS: number = 300
+
 @Component
 @Entry
 struct AddSchool {
@@ -24,14 +27,44 @@ struct AddSchool {
   private scroller: Scroller = new Scroller()
   @State showSchoolList: boolean = false
   checkStudentData: Record<string, Object> = {}
+  // 防抖定时器句柄，-1 表示当前无待触发的搜索
+  private searchTimerId: number = -1
+  // 搜索请求序号：响应返回时仅采纳序号等于当前值的最新请求结果（异步竞态防护，评审 #20）
+  private searchSeq: number = 0
 
   aboutToAppear() {
     this.getSchoolName()
   }
 
+  aboutToDisappear() {
+    // 页面销毁前清理未触发的防抖定时器，避免页面销毁后仍回调（定时器硬规则）
+    if (this.searchTimerId !== -1) {
+      clearTimeout(this.searchTimerId)
+      this.searchTimerId = -1
+    }
+  }
+
+  /**
+   * 学校搜索 300ms 防抖（评审 #20）：连续输入只保留最后一次，停顿 300ms 才发起请求。
+   */
+  debounceSearch() {
+    if (this.searchTimerId !== -1) {
+      clearTimeout(this.searchTimerId)
+    }
+    this.searchTimerId = setTimeout(() => {
+      this.searchTimerId = -1
+      this.getSchoolName()
+    }, SEARCH_DEBOUNCE_MS)
+  }
+
   async getSchoolName() {
+    const seq = ++this.searchSeq
     this.searchData['schoolName'] = `${this.schoolName ?? ""}`
     let res = await getAllSchool(this.searchData)
+    if (seq !== this.searchSeq) {
+      // 等待期间又发起了更新的搜索，丢弃本次过期结果，避免慢响应覆盖新结果（评审 #20）
+      return
+    }
     if (res.code == HttpStatusCode.Ok) {
       this.schoolList = res.data
     }
@@ -72,7 +105,7 @@ struct AddSchool {
                   .padding({ right: "20" })
                   .onChange(it => {
                     this.schoolName = it
-                    this.getSchoolName()
+                    this.debounceSearch()
                   })
                   .key("schoolNameInput")
                   .onFocus(() => {

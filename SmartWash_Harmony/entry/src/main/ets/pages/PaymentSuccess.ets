@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
-import { pathStack } from "../utils/PathStackUtil"
+import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
@@ -17,7 +17,8 @@ struct PaymentSuccess {
   @State orderInfo: OrderInfo | null = null
 
   async aboutToAppear() {
-    this.orderId = pathStack.getParamByName("PaymentSuccess")[0] as number
+    // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
+    this.orderId = getNumberParam("PaymentSuccess")
     if (this.orderId != null) {
       let res = await getOrderInfo(this.orderId)
       if (res.code == HttpStatusCode.Ok) {
@@ -70,7 +71,8 @@ struct PaymentSuccess {
                 Text("寄存柜信息")
                   .fontWeight(FontWeight.Bold)
                   .fontSize(16)
-                Text(`请前往寄存柜${this.orderInfo?.lockersVo?.lockerNumber ?? -1}柜存放衣物`)
+                // 柜号空值兜底显示 "-"（空值语义），不再误显示 "-1柜"（评审 #34）
+                Text(`请前往寄存柜${this.orderInfo?.lockersVo?.lockerNumber ?? "-"}柜存放衣物`)
                   .fontSize(13)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .margin({ top: 6, bottom: 6 })

@@ -1,11 +1,17 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { PaymentMethod } from "../constant/PaymentMethod"
+import { RechargeType } from "../constant/RechargeType"
 import { promptAction } from "@kit.ArkUI"
 import { userRecharge } from "../network/api/ReChargeApi"
 import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton } from "../view/common/AppComponents"
+
+// 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
+const MAX_RECHARGE_AMOUNT: number = 10000
+// 金额格式：正整数或最多两位小数，与后端 scale<=2 校验一致（评审 #19）
+const AMOUNT_PATTERN: RegExp = /^\d+(\.\d{1,2})?$/
 
 @Builder
 export function RechargeBuilder() {
@@ -21,6 +27,8 @@ struct Recharge {
   @State currItem: number | null = null
   @State checkPayType: boolean = false
   @State checkPayNumber: boolean = false
+  // 金额校验失败的具体文案（评审 #19：错误提示友好化）
+  @State checkPayNumberMsg: string = "请选择或输入充值金额"
 
   @Builder
   AmountCard(amount: number, index: number) {
@@ -54,7 +62,7 @@ struct Recharge {
           .backgroundColor(Color.Transparent)
           .type(InputType.Number)
           .textAlign(TextAlign.Center)
-          .maxLength(7)
+          .maxLength(8) // 8 位可完整输入上限金额 "10000.00"（含两位小数，评审 #19）
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .placeholderFont({ size: DesignFontSize.BODY, color: DesignColor.TEXT_TERTIARY })
@@ -90,8 +98,7 @@ struct Recharge {
   }
 
   @Builder
-  PayTypeCard(method: PaymentMethod, title: string, icon: Resource,
-    brandColor: number) {
+  PayTypeCard(method: PaymentMethod, title: string, icon: Resource) {
     Row() {
       // 品牌图标容器
       Row() {
@@ -102,8 +109,9 @@ struct Recharge {
       .width(36)
       .height(36)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      // 品牌浅色底收敛到 DesignSystem 常量（评审 #18）
       .backgroundColor(method == PaymentMethod.WECHAT ?
-        0x1A07C160 : 0x1A1677FF)
+        DesignColor.WECHAT_GREEN_LIGHT : DesignColor.ALIPAY_BLUE_LIGHT)
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
@@ -139,19 +147,45 @@ struct Recharge {
   }
 
   check() {
-    if (this.currItem == null) {
-      this.checkPayNumber = true
-    } else if (this.currItem == 5) {
-      if (this.inputPreset == null || this.inputPreset == "") {
-        this.checkPayNumber = true
-        return
-      }
-      this.payNum = parseInt(this.inputPreset)
-    } else {
-      this.checkPayNumber = false
-    }
-
+    // 金额精确校验（评审 #19）：不合法时 checkPayNumberMsg 已写入具体原因
+    this.checkPayNumber = !this.validateAmount()
     this.checkPayType = this.payType == null
+  }
+
+  /**
+   * 充值金额精确校验（评审 #19）：必须为正数、最多两位小数、不超过单笔上限 10000（与后端一致）。
+   * 替代原 parseInt 实现（会截断小数，且缺少 >0 与上限校验）。
+   * 预设金额卡片取值固定合法；自定义金额逐项校验，失败原因写入 checkPayNumberMsg 友好提示。
+   */
+  validateAmount(): boolean {
+    if (this.currItem == null) {
+      this.checkPayNumberMsg = "请选择或输入充值金额"
+      return false
+    }
+    if (this.currItem !== 5) {
+      return true
+    }
+    const raw = (this.inputPreset ?? "").trim()
+    if (raw === "") {
+      this.checkPayNumberMsg = "请输入充值金额"
+      return false
+    }
+    if (!AMOUNT_PATTERN.test(raw)) {
+      this.checkPayNumberMsg = "金额格式不正确，最多支持两位小数"
+      return false
+    }
+    const amount = parseFloat(raw)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      this.checkPayNumberMsg = "充值金额必须大于 0 元"
+      return false
+    }
+    if (amount > MAX_RECHARGE_AMOUNT) {
+      this.checkPayNumberMsg = `单笔充值金额不能超过 ${MAX_RECHARGE_AMOUNT} 元`
+      return false
+    }
+    // parseFloat 保留小数精度，替代原 parseInt 截断（评审 #19）
+    this.payNum = amount
+    return true
   }
 
   build() {
@@ -215,7 +249,7 @@ struct Recharge {
         .height(150)
 
         if (this.checkPayNumber) {
-          Text("请选择或输入充值金额")
+          Text(this.checkPayNumberMsg)
             .fontColor(DesignColor.ERROR)
             .fontSize(DesignFontSize.CAPTION)
             .margin({ top: 8 })
@@ -231,16 +265,14 @@ struct Recharge {
           .alignSelf(ItemAlign.Start)
 
         Column() {
-          this.PayTypeCard(PaymentMethod.WECHAT, "微信支付", $r('app.media.wechat'),
-            DesignColor.WECHAT_GREEN)
+          this.PayTypeCard(PaymentMethod.WECHAT, "微信支付", $r('app.media.wechat'))
 
           Divider()
             .color(DesignColor.DIVIDER)
             .strokeWidth(0.5)
             .width("85%")
 
-          this.PayTypeCard(PaymentMethod.ALIPAY, "支付宝", $r('app.media.alipay'),
-            DesignColor.ALIPAY_BLUE)
+          this.PayTypeCard(PaymentMethod.ALIPAY, "支付宝", $r('app.media.alipay'))
         }
         .width("100%")
         .backgroundColor(DesignColor.SURFACE)
@@ -275,7 +307,9 @@ struct Recharge {
                 }
                 let res = await userRecharge({
                   amount: this.payNum,
-                  rechargeType: this.payType!.toString()
+                  // 充值渠道类型码用具名常量，替代魔法值（评审 #30）：1=微信 2=支付宝
+                  rechargeType: this.payType == PaymentMethod.WECHAT ?
+                    RechargeType.WECHAT : RechargeType.ALIPAY
                 })
                 if (res.code == HttpStatusCode.Ok) {
                   pathStack.pop()

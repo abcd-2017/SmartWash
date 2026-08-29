@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "SmartWash"
+    },
+    {
+      "name": "internet_reason",
+      "value": "用于访问网络与 SmartWash 服务器通信，支撑登录、学校信息、订单、支付、充值等在线功能"
     }
   ]
 }

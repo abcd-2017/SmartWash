@@ -52,7 +52,7 @@
     "requestPermissions": [
       {
         "name": "ohos.permission.INTERNET",
-        "reason": "$string:app_name"
+        "reason": "$string:internet_reason"
       }
     ]
   }

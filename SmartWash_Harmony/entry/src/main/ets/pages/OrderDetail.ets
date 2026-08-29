@@ -3,7 +3,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
-import { pathStack } from "../utils/PathStackUtil"
+import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 
 @Builder
@@ -17,7 +17,13 @@ struct OrderDetail {
   @State orderId: number | null = null
 
   async aboutToAppear() {
-    this.orderId = pathStack.getParamByName("OrderDetail")[0] as number
+    // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
+    this.orderId = getNumberParam("OrderDetail")
+    if (this.orderId === null) {
+      // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求
+      showToastSafety("订单信息加载失败")
+      return
+    }
     let res = await getOrderInfo(this.orderId)
     if (res.code == HttpStatusCode.Ok) {
       this.orderInfo = res.data

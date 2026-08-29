@@ -81,6 +81,9 @@ export class DesignColor {
   // ========== 第三方品牌色 ==========
   static readonly WECHAT_GREEN: number = 0xFF07C160
   static readonly ALIPAY_BLUE: number = 0xFF1677FF
+  // 品牌色 10% 透明底，用于支付渠道图标容器背景（评审 #18：收敛页面硬编码色值）
+  static readonly WECHAT_GREEN_LIGHT: number = 0x1A07C160
+  static readonly ALIPAY_BLUE_LIGHT: number = 0x1A1677FF
 
   // ========== 服务类型色彩 ==========
   static readonly SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿

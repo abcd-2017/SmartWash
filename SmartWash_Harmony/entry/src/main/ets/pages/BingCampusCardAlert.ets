@@ -3,7 +3,7 @@ import { CommonConstants } from "../constant/CommonConstants"
 import { bindCampus, unBindCampus } from "../network/api/UserApi"
 import { BaseResponse } from "../network/BaseResponse"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
-import { pathStack } from "../utils/PathStackUtil"
+import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 
 @Builder
@@ -20,7 +20,8 @@ struct BingCampusCardAlert {
   private inputController = new TextInputController()
 
   aboutToAppear(): void {
-    this.userInfo = pathStack.getParamByName("BingCampusCardAlert")[0] as UserInfoVo
+    // 安全取参（评审 #31）：参数缺失/非对象时返回 null，isBingFlag 兜底为绑定态
+    this.userInfo = getObjectParam<UserInfoVo>("BingCampusCardAlert")
     this.isBingFlag = (this.userInfo?.campusCard ?? "") == ""
   }
 

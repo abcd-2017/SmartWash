@@ -4,7 +4,7 @@ import { cancelOrder, getOrderList } from "../network/api/OrderApi"
 import { promptAction } from "@kit.ArkUI"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { OrderCard } from "../view/OrderCard"
-import { pathStack } from "../utils/PathStackUtil"
+import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { DesignColor, DesignDimens, DesignFontSize } from "../constant/DesignSystem"
@@ -27,7 +27,8 @@ struct OrderList {
   @State currOrderId: number | null = null
 
   aboutToAppear(): void {
-    this.currIndex = pathStack.getParamByName("OrderList")[0] as number
+    // 安全取参（评审 #31）：参数缺失/非法时兜底第 0 个页签
+    this.currIndex = getNumberParam("OrderList") ?? 0
     this.orderStatus = this.list[this.currIndex]
     this.getOrderListByStatus()
   }

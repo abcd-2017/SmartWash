@@ -1,4 +1,5 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
 import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
 import { HttpStatusCode } from "@ohos/axios"
@@ -59,11 +60,11 @@ struct RechargeRecord {
     Row() {
       // 左侧：支付方式图标容器
       Row() {
-        if (record.rechargeType == "1") {
+        if (record.rechargeType == RechargeType.WECHAT) {
           Image($r('app.media.wechat'))
             .width(22)
             .height(22)
-        } else if (record.rechargeType == "2") {
+        } else if (record.rechargeType == RechargeType.ALIPAY) {
           Image($r('app.media.alipay'))
             .width(22)
             .height(22)
@@ -76,15 +77,16 @@ struct RechargeRecord {
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(record.rechargeType == "1" ? 0x1A07C160 :
-        record.rechargeType == "2" ? 0x1A1677FF : DesignColor.PRIMARY_LIGHT)
+      // 品牌浅色底收敛到 DesignSystem 常量（评审 #18），视觉不变
+      .backgroundColor(record.rechargeType == RechargeType.WECHAT ? DesignColor.WECHAT_GREEN_LIGHT :
+        record.rechargeType == RechargeType.ALIPAY ? DesignColor.ALIPAY_BLUE_LIGHT : DesignColor.PRIMARY_LIGHT)
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
       // 中间：支付方式名称 + 充值时间
       Column() {
-        Text(record.rechargeType == "1" ? "微信支付" :
-          record.rechargeType == "2" ? "支付宝" : "充值")
+        Text(record.rechargeType == RechargeType.WECHAT ? "微信支付" :
+          record.rechargeType == RechargeType.ALIPAY ? "支付宝" : "充值")
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.TEXT_PRIMARY)
