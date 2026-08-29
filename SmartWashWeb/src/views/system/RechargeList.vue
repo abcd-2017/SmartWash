@@ -94,13 +94,6 @@
           formatTime(row.rechargeTime)
         }}</template>
       </el-table-column>
-      <!-- <el-table-column label="操作" width="120" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" type="danger" @click="handleDelete(row)"
-            >删除</el-button
-          >
-        </template>
-      </el-table-column> -->
     </el-table>
     <div class="pagination-bar">
       <el-pagination
@@ -118,7 +111,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import dayjs from "dayjs";
 import { getRechargeList } from "@/api/recharge";
 
@@ -213,24 +206,6 @@ const handlePageChange = (val) => {
   listQuery.page = val;
   fetchData();
 };
-
-// 删除记录
-// const handleDelete = async (row) => {
-//   try {
-//     await ElMessageBox.confirm(`确认删除该充值记录吗？`, "警告", {
-//       confirmButtonText: "确认",
-//       cancelButtonText: "取消",
-//       type: "warning",
-//     });
-//     await deleteRecharge(row.recordId);
-//     ElMessage.success("删除成功");
-//     fetchData();
-//   } catch (error) {
-//     if (error !== "cancel") {
-//       ElMessage.error(error.message || "删除失败");
-//     }
-//   }
-// };
 
 // 时间格式化
 const formatTime = (time) => {

@@ -7,8 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vite App</title>
   <script>
+    // 高德地图安全密钥改为构建时由 .env.* 的 VITE_AMAP_SECURITY_CODE 注入，不再明文硬编码；
+    // 地图 key（VITE_AMAP_KEY）由 RegionCascader / AmapPicker 组件通过 import.meta.env 读取。
+    // 注意：旧 key 与安全密钥已随 git 入库视为泄露，上线前必须到高德控制台轮换后更新 .env.production。
     window._AMapSecurityConfig = {
-      securityJsCode: 'cc4d5ecf17753529fc46880a4c102cae',
+      securityJsCode: '%VITE_AMAP_SECURITY_CODE%',
     }
   </script>
 </head>

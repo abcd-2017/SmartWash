@@ -87,8 +87,8 @@ onMounted(async () => {
   try {
     const data = await getDashboardStats()
     stats.value = data
-  } catch (e) {
-    console.error('获取工作台数据失败:', e)
+  } catch {
+    // 请求失败由 http 拦截器统一弹出提示，页面保持默认 0 值展示
   }
 })
 </script>

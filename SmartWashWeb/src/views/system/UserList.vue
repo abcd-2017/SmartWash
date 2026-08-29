@@ -250,8 +250,13 @@ onMounted(() => {
 
 // 获取学校列表
 const fetchSchools = async () => {
-  const res = await getSchoolList({ page: 1, size: 1000 });
-  schoolOptions.value = res.records;
+  try {
+    const res = await getSchoolList({ page: 1, size: 1000 });
+    schoolOptions.value = res.records;
+  } catch (error) {
+    // HTTP 层错误已由拦截器统一提示，这里仅记录日志避免未处理 rejection
+    console.error("获取学校列表失败:", error);
+  }
 };
 
 // 获取用户列表

@@ -6,9 +6,9 @@ describe('http.js', () => {
     vi.restoreAllMocks()
   })
 
-  it('有正确的 baseURL', async () => {
+  it('有正确的 baseURL（默认 /api，由 vite 代理转发）', async () => {
     const { default: http } = await import('@/utils/http')
-    expect(http.defaults.baseURL).toBe('http://127.0.0.1:8080')
+    expect(http.defaults.baseURL).toBe('/api')
   })
 
   it('请求拦截器在 token 存在时添加 Authorization 头', async () => {
@@ -35,14 +35,13 @@ describe('http.js', () => {
     await expect(handler.fulfilled(response)).rejects.toThrow('服务器错误')
   })
 
-  it('响应拦截器对 code === 200 正常返回 res', async () => {
+  it('响应拦截器对 code === 200 解包返回业务数据 res.data', async () => {
     const { default: http } = await import('@/utils/http')
 
     const response = { data: { code: 200, data: { id: 1 }, message: 'ok' } }
     const handler = http.interceptors.response.handlers[0]
 
     const result = handler.fulfilled(response)
-    expect(result.code).toBe(200)
-    expect(result.data.id).toBe(1)
+    expect(result.id).toBe(1)
   })
 })
