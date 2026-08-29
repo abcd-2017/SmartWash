@@ -116,9 +116,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -209,34 +211,54 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
+import { ElMessage } from "element-plus";
 import {
   getSchoolList,
   addSchool,
   updateSchool,
   deleteSchool,
 } from "@/api/school";
+import { schoolOptionsCache } from "@/utils/optionCache";
+import { formatTime } from "@/utils/format";
+import { useTableList } from "@/composables/useTableList";
+import { useConfirm } from "@/composables/useConfirm";
 import RegionCascader from '@/components/RegionCascader.vue'
 import AmapPicker from '@/components/AmapPicker.vue'
 
 const formRef = ref(null);
-const schoolList = ref([]);
-const total = ref(0);
-const listLoading = ref(false);
 const dialogVisible = ref(false);
 const dialogType = ref("create");
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  schoolId: null,
-  schoolName: "",
-  schoolCode: "",
-  province: "",
-  city: "",
-  lockerCount: null,
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: schoolList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getSchoolList,
+  baseQuery: {
+    schoolId: null,
+    schoolName: "",
+    schoolCode: "",
+    province: "",
+    city: "",
+    lockerCount: null,
+  },
+  buildParams: (q) => ({
+    ...q,
+    schoolId: q.schoolId || undefined,
+    schoolCode: q.schoolCode || undefined,
+    province: q.province || undefined,
+    city: q.city || undefined,
+  }),
+  errorMsg: "获取学校列表失败",
 });
 
 // 表单数据
@@ -294,50 +316,6 @@ onMounted(() => {
   fetchData();
 });
 
-// 获取学校列表
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      schoolId: listQuery.schoolId || undefined,
-      schoolCode: listQuery.schoolCode || undefined,
-      province: listQuery.province || undefined,
-      city: listQuery.city || undefined,
-    };
-    const res = await getSchoolList(params);
-    schoolList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取学校列表失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.schoolId = null;
-  listQuery.schoolName = "";
-  listQuery.schoolCode = "";
-  listQuery.province = "";
-  listQuery.city = "";
-  listQuery.lockerCount = null;
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
-
 // 打开新增弹窗
 const handleCreate = () => {
   dialogType.value = 'create'
@@ -386,6 +364,8 @@ const submitForm = async () => {
       await updateSchool(tempSchool);
       ElMessage.success("修改成功");
     }
+    // 学校数据有变，失效学校下拉的全量缓存，其他页面下次进入时重新拉取
+    schoolOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
@@ -395,25 +375,18 @@ const submitForm = async () => {
 
 // 删除学校
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除学校 ${row.schoolName} 吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除学校 ${row.schoolName} 吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteSchool(row.schoolId);
     ElMessage.success("删除成功");
+    // 学校下拉缓存同步失效（评审 #15 的失效入口）
+    schoolOptionsCache.invalidate();
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
 };
 </script>
 

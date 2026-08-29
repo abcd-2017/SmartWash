@@ -84,8 +84,8 @@
       </el-table-column>
       <el-table-column label="充值类型" min-width="120">
         <template #default="{ row }">
-          <el-tag :type="rechargeTypeTag(row.rechargeType)">
-            {{ formatRechargeType(row.rechargeType) }}
+          <el-tag :type="rechargeTypeTagType(row.rechargeType)">
+            {{ rechargeTypeText(row.rechargeType) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -99,9 +99,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -110,107 +112,53 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
-import { ElMessage } from "element-plus";
-import dayjs from "dayjs";
+import { onMounted } from "vue";
 import { getRechargeList } from "@/api/recharge";
+import { formatTime } from "@/utils/format";
+import {
+  RECHARGE_TYPE_OPTIONS,
+  rechargeTypeText,
+  rechargeTypeTagType,
+} from "@/constants/dict";
+import { useTableList } from "@/composables/useTableList";
+import { useTimeRange } from "@/composables/useTimeRange";
 
-const listLoading = ref(false);
-const rechargeList = ref([]);
-const total = ref(0);
+// 充值类型选项（枚举字典统一维护，评审 #16）
+const rechargeTypeOptions = RECHARGE_TYPE_OPTIONS;
 
-// 充值类型选项
-const rechargeTypeOptions = [
-  { value: "1", label: "微信支付" },
-  { value: "2", label: "支付宝支付" },
-];
-
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  recordId: null,
-  phoneNumber: null,
-  amount: null,
-  rechargeType: null,
-  startTime: null,
-  endTime: null,
-});
-
-// 监听时间范围选择
-const timeRange = computed({
-  get: () => [listQuery.startTime, listQuery.endTime],
-  set: (val) => {
-    listQuery.startTime = val?.[0] || null;
-    listQuery.endTime = val?.[1] || null;
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: rechargeList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getRechargeList,
+  baseQuery: {
+    recordId: null,
+    phoneNumber: null,
+    amount: null,
+    rechargeType: null,
+    startTime: null,
+    endTime: null,
   },
+  buildParams: (q) => ({
+    ...q,
+    recordId: q.recordId || undefined,
+    amount: q.amount || undefined,
+    rechargeType: q.rechargeType || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
 
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      recordId: listQuery.recordId || undefined,
-      amount: listQuery.amount || undefined,
-      rechargeType: listQuery.rechargeType || undefined,
-    };
-    const res = await getRechargeList(params);
-    rechargeList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 格式化充值类型
-const formatRechargeType = (type) => {
-  const map = {
-    1: "微信支付",
-    2: "支付宝支付",
-  };
-  return map[type] || "未知类型";
-};
-
-// 充值类型标签样式
-const rechargeTypeTag = (type) => {
-  const map = {
-    1: "success", // 微信支付
-    2: "primary", // 支付宝支付
-  };
-  return map[type] || "info";
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.recordId = null;
-  listQuery.phoneNumber = null;
-  listQuery.amount = null;
-  listQuery.rechargeType = null;
-  listQuery.startTime = null;
-  listQuery.endTime = null;
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
-};
+// 监听时间范围选择（评审 #14：抽离为公共 composable）
+const timeRange = useTimeRange(listQuery);
 
 onMounted(() => {
   fetchData();

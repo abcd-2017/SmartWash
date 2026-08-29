@@ -13,7 +13,7 @@
     >
       <template v-for="route in menuRoutes" :key="route.path">
         <el-menu-item :index="route.path">
-          <el-icon><component :is="iconMap[route.name]" /></el-icon>
+          <el-icon><component :is="resolveIcon(route.meta.icon)" /></el-icon>
           <span>{{ route.meta.title }}</span>
         </el-menu-item>
       </template>
@@ -42,20 +42,25 @@ import {
 const route = useRoute();
 const router = useRouter();
 
-const iconMap = {
-  Home: markRaw(HomeFilled),
-  SchoolList: markRaw(School),
-  Users: markRaw(UserFilled),
-  RechargeList: markRaw(Coin),
-  LaundryList: markRaw(ShoppingBag),
-  RoleList: markRaw(Key),
-  AdminUserList: markRaw(Avatar),
-  LockerList: markRaw(Box),
-  PaymentList: markRaw(CreditCard),
-  OrderList: markRaw(Document),
-  CouponList: markRaw(Ticket),
-  UserCouponList: markRaw(CollectionTag),
+// 图标清单已收敛进路由 meta.icon（评审 #26），这里只负责「图标名 → 组件」的解析。
+// 新增菜单图标：给路由 meta 加 icon 名，并在此登记同名图标组件。
+const iconRegistry = {
+  HomeFilled: markRaw(HomeFilled),
+  School: markRaw(School),
+  UserFilled: markRaw(UserFilled),
+  Coin: markRaw(Coin),
+  ShoppingBag: markRaw(ShoppingBag),
+  Key: markRaw(Key),
+  Avatar: markRaw(Avatar),
+  Box: markRaw(Box),
+  CreditCard: markRaw(CreditCard),
+  Document: markRaw(Document),
+  Ticket: markRaw(Ticket),
+  CollectionTag: markRaw(CollectionTag),
 };
+
+// 按图标名解析组件，未登记的图标回退为空（不渲染）
+const resolveIcon = (name) => iconRegistry[name] || null;
 
 const menuRoutes = computed(() => {
   const layoutRoute = router.options.routes.find((r) => r.path === "/");

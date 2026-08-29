@@ -97,9 +97,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -189,29 +191,48 @@
   
   <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
+import { ElMessage } from "element-plus";
 import { getUserList, addUser, updateUser, deleteUser } from "@/api/user";
-import { getSchoolList } from "@/api/school";
+import { schoolOptionsCache } from "@/utils/optionCache";
+import { formatTime } from "@/utils/format";
+import { useTableList } from "@/composables/useTableList";
+import { useConfirm } from "@/composables/useConfirm";
 
 const formRef = ref(null);
-const schoolOptions = ref([]);
-const userList = ref([]);
-const total = ref(0);
-const listLoading = ref(false);
 const dialogVisible = ref(false);
 const dialogType = ref("create");
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  userId: null,
-  schoolId: null,
-  phoneNumber: "",
-  studentId: "",
-  campusCard: "",
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: userList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getUserList,
+  baseQuery: {
+    userId: null,
+    schoolId: null,
+    phoneNumber: "",
+    studentId: "",
+    campusCard: "",
+  },
+  buildParams: (q) => ({
+    ...q,
+    userId: q.userId || undefined,
+    schoolId: q.schoolId || undefined,
+  }),
+  errorMsg: "获取用户列表失败",
 });
+
+// 学校下拉选项（模块级缓存：首次拉取后复用，不再每次进页面 size:1000 全量拉取）
+const schoolOptions = ref([]);
 
 // 表单数据
 const tempUser = reactive({
@@ -251,53 +272,11 @@ onMounted(() => {
 // 获取学校列表
 const fetchSchools = async () => {
   try {
-    const res = await getSchoolList({ page: 1, size: 1000 });
-    schoolOptions.value = res.records;
+    schoolOptions.value = await schoolOptionsCache.load();
   } catch (error) {
     // HTTP 层错误已由拦截器统一提示，这里仅记录日志避免未处理 rejection
     console.error("获取学校列表失败:", error);
   }
-};
-
-// 获取用户列表
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      userId: listQuery.userId || undefined,
-      schoolId: listQuery.schoolId || undefined,
-    };
-    const res = await getUserList(params);
-    userList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取用户列表失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.userId = null;
-  listQuery.schoolId = null;
-  listQuery.phoneNumber = "";
-  listQuery.studentId = "";
-  listQuery.campusCard = "";
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
 };
 
 // 打开新增弹窗
@@ -347,24 +326,16 @@ const submitForm = async () => {
 
 // 删除用户
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除用户 ${row.phoneNumber} 吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除用户 ${row.phoneNumber} 吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteUser(row.userId);
     ElMessage.success("删除成功");
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
 };
 </script>
   

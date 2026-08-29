@@ -31,9 +31,9 @@
 import { computed, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { SwitchButton } from "@element-plus/icons-vue";
-import { ElMessageBox } from "element-plus";
 import { getCurrentAdminUser } from "@/api/adminUser";
 import { useAuthStore } from "@/stores/auth";
+import { useConfirm } from "@/composables/useConfirm";
 
 const route = useRoute();
 const router = useRouter();
@@ -58,18 +58,15 @@ onMounted(() => {
   fetchUserInfo();
 });
 
-const handleLogout = () => {
-  ElMessageBox.confirm("确定要退出登录吗？", "提示", {
+const handleLogout = async () => {
+  // 确认弹窗统一走 useConfirm：取消/关闭静默返回 false（评审 #23）
+  const confirmed = await useConfirm("确定要退出登录吗？", "提示", {
     confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(() => {
-      // 登录态统一走 store 清理（内存 + localStorage 一并清空）
-      authStore.clearLogin();
-      router.push("/login");
-    })
-    .catch(() => {});
+  });
+  if (!confirmed) return;
+  // 登录态统一走 store 清理（内存 + localStorage 一并清空）
+  authStore.clearLogin();
+  router.push("/login");
 };
 </script>
 

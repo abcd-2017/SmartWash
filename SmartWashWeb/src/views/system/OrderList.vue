@@ -121,7 +121,7 @@
       </el-table-column>
       <el-table-column label="状态" min-width="120">
         <template #default="{ row }">
-          <el-tag :type="getStatusTagType(row.status)">
+          <el-tag :type="orderStatusTagType(row.status)">
             {{ formatStatus(row.status) }}
           </el-tag>
         </template>
@@ -148,9 +148,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -163,7 +165,7 @@
           <span>{{ statusForm.orderNo }}</span>
         </el-form-item>
         <el-form-item label="当前状态">
-          <el-tag :type="getStatusTagType(statusForm.currentStatus)">
+          <el-tag :type="orderStatusTagType(statusForm.currentStatus)">
             {{ formatStatus(statusForm.currentStatus) }}
           </el-tag>
         </el-form-item>
@@ -191,47 +193,60 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage } from "element-plus";
 import {
   getOrderStatus,
   getOrderList,
   deleteOrder,
   updateOrderStatus,
 } from "@/api/order";
-import { getSchoolList } from "@/api/school";
-import { getLaundryList } from "@/api/laundry";
+import { schoolOptionsCache, laundryOptionsCache } from "@/utils/optionCache";
+import { formatTime } from "@/utils/format";
+import { orderStatusTagType } from "@/constants/dict";
+import { useTableList } from "@/composables/useTableList";
+import { useTimeRange } from "@/composables/useTimeRange";
+import { useConfirm } from "@/composables/useConfirm";
 
 // 数据
 const statusOptions = ref({}); // 状态选项
 const schoolOptions = ref([]); // 学校选项
 const laundryOptions = ref([]); // 洗护套餐选项
-const orderList = ref([]); // 订单列表
-const total = ref(0); // 总条数
-const listLoading = ref(false); // 加载状态
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  phoneNumber: "",
-  schoolName: "",
-  orderNo: "",
-  laundryItemsId: null,
-  status: null,
-  startTime: null,
-  endTime: null,
-});
-
-// 时间范围处理
-const timeRange = computed({
-  get: () => [listQuery.startTime, listQuery.endTime],
-  set: (val) => {
-    listQuery.startTime = val?.[0] || null;
-    listQuery.endTime = val?.[1] || null;
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: orderList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getOrderList,
+  baseQuery: {
+    phoneNumber: "",
+    schoolName: "",
+    orderNo: "",
+    laundryItemsId: null,
+    status: null,
+    startTime: null,
+    endTime: null,
   },
+  buildParams: (q) => ({
+    ...q,
+    laundryItemsId: q.laundryItemsId || undefined,
+    status: q.status || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
+
+// 时间范围处理（评审 #14：抽离为公共 composable）
+const timeRange = useTimeRange(listQuery);
+
 // 状态更新相关
 const statusDialogVisible = ref(false);
 const statusForm = reactive({
@@ -258,84 +273,35 @@ const fetchStatus = async () => {
   }
 };
 
-// 获取学校列表
+// 获取学校列表（模块级缓存：多页面共用一份全量数据，评审 #15）
 const fetchSchools = async () => {
   try {
-    const res = await getSchoolList({ page: 1, size: 1000 });
-    schoolOptions.value = res.records;
+    schoolOptions.value = await schoolOptionsCache.load();
   } catch (error) {
     ElMessage.error("获取学校列表失败");
   }
 };
 
-// 获取洗护套餐列表
+// 获取洗护套餐列表（模块级缓存，评审 #15）
 const fetchLaundry = async () => {
   try {
-    const res = await getLaundryList({ page: 1, size: 1000 });
-    laundryOptions.value = res.records;
+    laundryOptions.value = await laundryOptionsCache.load();
   } catch (error) {
     ElMessage.error("获取洗护套餐失败");
   }
 };
 
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      laundryItemsId: listQuery.laundryItemsId || undefined,
-      status: listQuery.status || undefined,
-    };
-    const res = await getOrderList(params);
-    orderList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.phoneNumber = "";
-  listQuery.schoolName = "";
-  listQuery.orderNo = "";
-  listQuery.laundryItemsId = null;
-  listQuery.status = null;
-  listQuery.startTime = null;
-  listQuery.endTime = null;
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
-
 // 删除订单
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除订单 ${row.orderNo} 吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除订单 ${row.orderNo} 吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteOrder(row.orderId);
     ElMessage.success("删除成功");
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
 };
 
@@ -367,42 +333,10 @@ const confirmUpdateStatus = async () => {
     ElMessage.error(error.message || "状态更新失败");
   }
 };
-// 状态标签颜色
-const getStatusTagType = (status) => {
-  switch (status) {
-    case "-2":
-      return "info"; // 已取消
-    case "-1":
-      return "warning"; // 已退款
-    case "0":
-      return "danger"; // 待支付
-    case "1":
-      return ""; // 待寄件（默认）
-    case "2":
-      return "success"; // 已收取
-    case "3":
-      return "primary"; // 清洗中
-    case "4":
-      return ""; // 已烘干（默认）
-    case "5":
-      return "warning"; // 配送中
-    case "6":
-      return "success"; // 待取件
-    case "7":
-      return "success"; // 已完成
-    default:
-      return "info";
-  }
-};
 
 // 状态文本转换
 const formatStatus = (status) => {
   return statusOptions.value[status] || "未知状态";
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
 };
 </script>
 

@@ -77,9 +77,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -88,23 +90,39 @@
 </template>
   
   <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
+import { ref, onMounted } from "vue";
+import { ElMessage } from "element-plus";
 import { getUserCouponList, deleteUserCoupon } from "@/api/userCoupon";
 import { getCouponList } from "@/api/coupon";
+import { formatTime } from "@/utils/format";
+import { useTableList } from "@/composables/useTableList";
+import { useConfirm } from "@/composables/useConfirm";
 
 const couponOptions = ref([]); // 优惠券选项
-const couponList = ref([]); // 数据列表
-const total = ref(0); // 总条数
-const listLoading = ref(false); // 加载状态
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  phoneNumber: "",
-  couponId: null,
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: couponList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getUserCouponList,
+  baseQuery: {
+    phoneNumber: "",
+    couponId: null,
+  },
+  buildParams: (q) => ({
+    ...q,
+    couponId: q.couponId || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
 
 // 初始化数据
@@ -123,64 +141,18 @@ const fetchCoupons = async () => {
   }
 };
 
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      couponId: listQuery.couponId || undefined,
-    };
-    const res = await getUserCouponList(params);
-    couponList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.phoneNumber = "";
-  listQuery.couponId = null;
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
-
 // 删除记录
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除该领取记录吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除该领取记录吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteUserCoupon(row.userCouponId);
     ElMessage.success("删除成功");
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return time ? dayjs(time).format("YYYY-MM-DD HH:mm:ss") : "-";
 };
 </script>
   

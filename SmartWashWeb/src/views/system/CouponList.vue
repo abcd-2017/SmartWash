@@ -68,7 +68,8 @@
       </el-table-column>
       <el-table-column label="有效期" min-width="220">
         <template #default="{ row }">
-          {{ formatTime(row.startTime) }} ~ {{ formatTime(row.endTime) }}
+          {{ formatTime(row.startTime, "YYYY-MM-DD HH:mm") }} ~
+          {{ formatTime(row.endTime, "YYYY-MM-DD HH:mm") }}
         </template>
       </el-table-column>
       <el-table-column label="状态" min-width="100">
@@ -91,9 +92,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -214,7 +217,7 @@
   
   <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import dayjs from "dayjs";
 import {
   getCouponList,
@@ -222,23 +225,40 @@ import {
   updateCoupon,
   deleteCoupon,
 } from "@/api/coupon";
+import { formatTime } from "@/utils/format";
+import { useTableList } from "@/composables/useTableList";
+import { useConfirm } from "@/composables/useConfirm";
 
 const tableRef = ref(null);
 const formRef = ref(null);
-const couponList = ref([]);
-const total = ref(0);
-const listLoading = ref(false);
 const dialogVisible = ref(false);
 const dialogType = ref("create");
 const multipleSelection = ref([]);
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  couponId: null,
-  title: "",
-  status: "",
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: couponList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getCouponList,
+  baseQuery: {
+    couponId: null,
+    title: "",
+    status: "",
+  },
+  buildParams: (q) => ({
+    ...q,
+    couponId: q.couponId || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
 
 // 表单数据
@@ -274,24 +294,6 @@ onMounted(() => {
   fetchData();
 });
 
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      couponId: listQuery.couponId || undefined,
-    };
-    const res = await getCouponList(params);
-    couponList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
 // 处理多选
 const handleSelectionChange = (val) => {
   multipleSelection.value = val;
@@ -299,46 +301,19 @@ const handleSelectionChange = (val) => {
 
 // 批量删除
 const handleBatchDelete = async () => {
+  const count = multipleSelection.value.length;
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除选中的 ${count} 个优惠券吗？`);
+  if (!confirmed) return;
   try {
     const ids = multipleSelection.value.map((item) => item.couponId).join(",");
-    await ElMessageBox.confirm(
-      `确认删除选中的 ${multipleSelection.value.length} 个优惠券吗？`,
-      "警告",
-      {
-        confirmButtonText: "确认",
-        cancelButtonText: "取消",
-        type: "warning",
-      }
-    );
     await deleteCoupon(ids);
     ElMessage.success("删除成功");
     fetchData();
     tableRef.value.clearSelection();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.couponId = null;
-  listQuery.title = "";
-  listQuery.status = "";
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
 };
 
 // 打开新增弹窗
@@ -399,25 +374,16 @@ const submitForm = async () => {
 
 // 删除优惠券
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除优惠券 "${row.title}" 吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除优惠券 "${row.title}" 吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteCoupon(row.couponId);
     ElMessage.success("删除成功");
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm");
 };
 </script>
   

@@ -59,9 +59,11 @@
       <el-pagination
         background
         :current-page="listQuery.page"
-        layout="prev, pager, next"
-        :total="total"
         :page-size="listQuery.size"
+        :page-sizes="pageSizes"
+        :total="total"
+        layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange"
         @current-change="handlePageChange"
       />
     </div>
@@ -117,28 +119,45 @@
   
   <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import dayjs from "dayjs";
+import { ElMessage } from "element-plus";
 import {
   getLaundryList,
   addLaundry,
   updateLaundry,
   deleteLaundry,
 } from "@/api/laundry";
+import { laundryOptionsCache } from "@/utils/optionCache";
+import { formatTime } from "@/utils/format";
+import { useTableList } from "@/composables/useTableList";
+import { useConfirm } from "@/composables/useConfirm";
 
 const formRef = ref(null);
-const laundryList = ref([]);
-const total = ref(0);
-const listLoading = ref(false);
 const dialogVisible = ref(false);
 const dialogType = ref("create");
 
-// 查询参数
-const listQuery = reactive({
-  page: 1,
-  size: 10,
-  itemId: null,
-  itemName: "",
+// 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
+const {
+  list: laundryList,
+  total,
+  listLoading,
+  listQuery,
+  pageSizes,
+  fetchData,
+  handleSearch,
+  resetSearch,
+  handlePageChange,
+  handleSizeChange,
+} = useTableList({
+  fetchApi: getLaundryList,
+  baseQuery: {
+    itemId: null,
+    itemName: "",
+  },
+  buildParams: (q) => ({
+    ...q,
+    itemId: q.itemId || undefined,
+  }),
+  errorMsg: "获取数据失败",
 });
 
 // 表单数据
@@ -165,43 +184,6 @@ const rules = reactive({
 onMounted(() => {
   fetchData();
 });
-
-// 获取数据
-const fetchData = async () => {
-  listLoading.value = true;
-  try {
-    const params = {
-      ...listQuery,
-      itemId: listQuery.itemId || undefined,
-    };
-    const res = await getLaundryList(params);
-    laundryList.value = res.records;
-    total.value = res.total;
-  } catch (error) {
-    ElMessage.error(error.message || "获取数据失败");
-  } finally {
-    listLoading.value = false;
-  }
-};
-
-// 搜索
-const handleSearch = () => {
-  listQuery.page = 1;
-  fetchData();
-};
-
-// 重置搜索
-const resetSearch = () => {
-  listQuery.itemId = null;
-  listQuery.itemName = "";
-  handleSearch();
-};
-
-// 分页
-const handlePageChange = (val) => {
-  listQuery.page = val;
-  fetchData();
-};
 
 // 打开新增弹窗
 const handleCreate = () => {
@@ -234,6 +216,8 @@ const submitForm = async () => {
       await updateLaundry(tempLaundry);
       ElMessage.success("修改成功");
     }
+    // 套餐数据有变，失效套餐下拉的全量缓存（评审 #15 的失效入口）
+    laundryOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
@@ -243,25 +227,18 @@ const submitForm = async () => {
 
 // 删除套餐
 const handleDelete = async (row) => {
+  // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
+  const confirmed = await useConfirm(`确认删除套餐 ${row.itemName} 吗？`);
+  if (!confirmed) return;
   try {
-    await ElMessageBox.confirm(`确认删除套餐 ${row.itemName} 吗？`, "警告", {
-      confirmButtonText: "确认",
-      cancelButtonText: "取消",
-      type: "warning",
-    });
     await deleteLaundry(row.itemId);
     ElMessage.success("删除成功");
+    // 套餐下拉缓存同步失效（评审 #15 的失效入口）
+    laundryOptionsCache.invalidate();
     fetchData();
   } catch (error) {
-    if (error !== "cancel") {
-      ElMessage.error(error.message || "删除失败");
-    }
+    ElMessage.error(error.message || "删除失败");
   }
-};
-
-// 时间格式化
-const formatTime = (time) => {
-  return dayjs(time).format("YYYY-MM-DD HH:mm:ss");
 };
 </script>
   

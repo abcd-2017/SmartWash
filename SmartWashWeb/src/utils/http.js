@@ -8,7 +8,9 @@ import { useAuthStore } from '@/stores/auth';
 // 生产环境由 .env.production 注入完整地址；生产建议改用 Nginx 反代 + HTTPS 域名
 const http = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL || '/api',
-    timeout: 5000, // 请求超时（毫秒）
+    // 请求超时 30 秒：与 Android（OkHttp read 30s）、鸿蒙端（readTimeout 30s）三端统一基准（评审 #20），
+    // 覆盖导出、地图选点等慢接口，避免大分页/弱网下被 5s 误杀
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
