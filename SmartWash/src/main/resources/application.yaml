@@ -68,6 +68,20 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: ${MINIO_BUCKET:smartwash}
 
+# 观象台（占卜模块）配置
+# 密钥一律走环境变量注入，下方仅作占位/兜底；生产必须通过环境变量覆盖
+div:
+  llm:
+    # bootstrap 兜底：仅当 DB 平台配置(div_model_config)缺失/事故时启用
+    providers: []
+  master-key-env: DIV_MASTER_KEY
+  limit:
+    interpret-per-user-day: 20
+    interpret-per-ip-day: 60
+  rag:
+    top-k: 6
+    max-chunk: 20000
+
 # 登录防护
 security:
   # 可信反向代理网段（IPv4 CIDR，逗号分隔，如 "10.0.0.0/8,172.16.0.0/12"）。

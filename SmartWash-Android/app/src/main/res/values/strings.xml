@@ -445,4 +445,22 @@
     <string name="div_qimen_yongshen">用神宫</string>
     <string name="div_qimen_facts">宫位事实</string>
     <string name="div_liuren_keti">课体 · %1$s · 九宗门 %2$s</string>
+
+    <!-- 解读页 -->
+    <string name="div_reading_title">解 读</string>
+    <string name="div_reading_summary">盘面摘要</string>
+    <string name="div_reading_action">总结与行动</string>
+    <string name="div_reading_followup">继 续 追 问</string>
+    <string name="div_reading_share">分 享</string>
+    <string name="div_reading_loading">正在推演解读…</string>
+    <string name="div_reading_error">解读暂不可用，请稍后重试</string>
+    <string name="div_reading_endseal">观</string>
+
+    <!-- 追问页 -->
+    <string name="div_followup_title">继续追问</string>
+    <string name="div_followup_subtitle">沿用原盘 · 不重算</string>
+    <string name="div_followup_input_hint">基于本卦继续追问…</string>
+    <string name="div_followup_send">发 送</string>
+    <string name="div_followup_empty">还没有追问，输入你的问题吧</string>
+    <string name="div_followup_thinking">正在推演…</string>
 </resources>

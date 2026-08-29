@@ -36,8 +36,10 @@ import com.smartwash.ui.page.PageConstant
 import com.smartwash.divination.ui.page.ask.DivAskPage
 import com.smartwash.divination.ui.page.cast.DivCastPage
 import com.smartwash.divination.ui.page.chart.DivChartPage
+import com.smartwash.divination.ui.page.followup.DivFollowUpPage
 import com.smartwash.divination.ui.page.history.DivHistoryPage
 import com.smartwash.divination.ui.page.home.DivHomePage
+import com.smartwash.divination.ui.page.reading.DivReadingPage
 import com.smartwash.ui.page.coupon.CouponPage
 import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
@@ -357,6 +359,32 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(PageConstant.DivHistory.text) {
                             DivHistoryPage(navController)
+                        }
+                        composable(
+                            route = "${PageConstant.DivReading.text}/{recordId}",
+                            arguments = listOf(
+                                navArgument("recordId") {
+                                    type = NavType.LongType
+                                }
+                            )
+                        ) { entity ->
+                            DivReadingPage(
+                                navController,
+                                recordId = entity.arguments?.getLong("recordId") ?: -1L,
+                            )
+                        }
+                        composable(
+                            route = "${PageConstant.DivFollowUp.text}/{recordId}",
+                            arguments = listOf(
+                                navArgument("recordId") {
+                                    type = NavType.LongType
+                                }
+                            )
+                        ) { entity ->
+                            DivFollowUpPage(
+                                navController,
+                                recordId = entity.arguments?.getLong("recordId") ?: -1L,
+                            )
                         }
                     }
                 }
