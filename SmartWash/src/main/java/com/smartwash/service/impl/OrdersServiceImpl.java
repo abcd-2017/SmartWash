@@ -2,7 +2,6 @@ package com.smartwash.service.impl;
 
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -17,6 +16,7 @@ import com.smartwash.entity.LaundryItems;
 import com.smartwash.service.IOrdersService;
 import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.PickupCodeUtils;
 import com.smartwash.utils.UserContextHolder;
 import com.smartwash.vo.order.OrderGroupVo;
 import com.smartwash.vo.order.OrderItemCountVo;
@@ -119,6 +119,26 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         return order;
     }
 
+    /**
+     * 取件二维码归属校验（评审报告后端 #42）：校验当前用户确有匹配该取件码片段的订单。
+     * 库内存储完整取件码 userId:orderId:随机段，客户端仅传随机段，故按 ":随机段" 后缀匹配并限定 user_id 归属。
+     *
+     * @param userId   当前登录用户 ID
+     * @param pickCode 取件码随机段（客户端从完整取件码拆出的末段）
+     * @return true=该用户名下存在匹配订单，允许生成二维码
+     */
+    @Override
+    public boolean ownsPickupCode(Long userId, String pickCode) {
+        // 片段仅允许 4~6 位纯数字（新取件码随机段 6 位 / 历史取件码 4 位），同时杜绝 LIKE 通配符注入
+        if (userId == null || pickCode == null || !pickCode.matches("\\d{4,6}")) {
+            return false;
+        }
+        Long ownedCount = ordersMapper.selectCount(new LambdaQueryWrapper<Orders>()
+                .eq(Orders::getUserId, userId)
+                .likeLeft(Orders::getPickupCode, ":" + pickCode));
+        return ownedCount != null && ownedCount > 0;
+    }
+
     @Override
     public List<ShowOrderVo> getOrderList(OrderListFrom orderListFrom, LoginUser loginUser) {
         Page<ShowOrderVo> page = new Page<>(orderListFrom.getPage(), orderListFrom.getSize());
@@ -193,7 +213,9 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
             // 订单原持有的寄件柜：CAS 命中后立即释放，否则旧柜将永久停留"使用中"造成资源泄漏
             Long previousLockerId = orders.getLockerId();
             Long lockerId = findAndAssignFreeLocker(orders.getSchoolId());
-            String pickupCode = String.format("%d:%d:%s", orders.getUserId(), orders.getOrderId(), RandomUtil.randomInt(1000, 10000));
+            // 取件码：userId:orderId:6位纯随机数字（保留三段冒号契约，随机段收敛可预测成分，见评审报告后端 #40）
+            String pickupCode = PickupCodeUtils.generate(orders.getUserId(), orders.getOrderId(),
+                    code -> count(new LambdaQueryWrapper<Orders>().eq(Orders::getPickupCode, code)) > 0);
             // 状态 + 新柜子 + 取件码一次条件更新写入，expect 取读取快照的当前状态
             int assignedRows = ordersMapper.casStatusAssignPickup(orderStatus.getOrderId(), orders.getStatus(), orderStatus.getStatus(), lockerId, pickupCode);
             if (assignedRows == 0) {

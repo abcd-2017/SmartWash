@@ -2,7 +2,6 @@ package com.smartwash.service.impl;
 
 
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -21,6 +20,7 @@ import com.smartwash.service.IPaymentsService;
 import com.smartwash.service.PaymentGatewayService;
 import com.smartwash.task.OrderTimeoutManager;
 import com.smartwash.utils.LoginUser;
+import com.smartwash.utils.PickupCodeUtils;
 import com.smartwash.vo.order.OrdersVo;
 import com.smartwash.vo.payment.PaymentVo;
 import com.smartwash.vo.users.UserVo;
@@ -304,9 +304,15 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
                 && userCouponMapper.markUsed(orders.getUserCouponId(), payment.getUserId(), orders.getOrderId()) == 0) {
             throw new CustomExceptions("优惠券已被使用");
         }
-        // 7.订单置待寄件 + 生成取件码（当前处于订单行锁保护内，updateById 安全）
-        int pickCode = RandomUtil.randomInt(1000, 10000);
-        orders.setPickupCode(String.format("%d:%d:%s", payment.getUserId(), orders.getOrderId(), pickCode));
+        // 7.订单置待寄件 + 生成取件码（当前处于订单行锁保护内，updateById 安全）。
+        //   取件码 userId:orderId:6位纯随机数字：保留三段冒号契约，随机段收敛可预测成分（评审报告后端 #40）；
+        //   生成时查重，pickup_code 唯一索引兜底，连续冲突抛异常随本事务整体回滚
+        String pickupCode = PickupCodeUtils.generate(payment.getUserId(), orders.getOrderId(),
+                code -> {
+                    Long existCount = ordersMapper.selectCount(new LambdaQueryWrapper<Orders>().eq(Orders::getPickupCode, code));
+                    return existCount != null && existCount > 0;
+                });
+        orders.setPickupCode(pickupCode);
         orders.setStatus(OrderStatus.PENDING_SHIPMENT.getStatus());
         ordersMapper.updateById(orders);
         // 8.支付成功，取消订单超时任务

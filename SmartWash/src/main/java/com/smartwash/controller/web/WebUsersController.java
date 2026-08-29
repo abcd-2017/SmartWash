@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 
 /**
@@ -100,18 +102,21 @@ public class WebUsersController {
         return Result.ok(usersService.getTransactionHistory(user.getUserId(), page, pageSize));
     }
 
-    @Operation(summary = "上传头像", description = "上传或更新当前用户的头像图片")
+    /** 头像大小上限 5MB（与 spring.servlet.multipart 配置双保险，代码层兜底防配置回退） */
+    private static final long MAX_AVATAR_SIZE = 5L * 1024 * 1024;
+
+    @Operation(summary = "上传头像", description = "上传或更新当前用户的头像图片（仅支持 JPG/PNG/WebP，校验文件魔数与扩展名）")
     @PostMapping("/auth/user/avatar")
     public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
-        // 验证文件类型
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            return Result.failMsg("只能上传图片文件");
+        // 验证文件大小（5MB，代码层兜底）
+        if (file.getSize() > MAX_AVATAR_SIZE) {
+            return Result.failMsg("图片大小不能超过5MB");
         }
 
-        // 验证文件大小（5MB）
-        if (file.getSize() > 5 * 1024 * 1024) {
-            return Result.failMsg("图片大小不能超过5MB");
+        // 验证文件真实内容：魔数 + 扩展名一致性，仅信 contentType 可被伪造（评审报告后端 #23）
+        String invalidReason = validateImageContent(file);
+        if (invalidReason != null) {
+            return Result.failMsg(invalidReason);
         }
 
         // 获取当前用户
@@ -134,5 +139,66 @@ public class WebUsersController {
         usersService.updateById(user);
 
         return Result.ok(avatarUrl);
+    }
+
+    /**
+     * 校验上传文件的真实图片类型（评审报告后端 #23）：
+     * 读文件头前 12 字节判断魔数（JPEG: FF D8 FF / PNG: 89 50 4E 47 / WebP: RIFF....WEBP），
+     * 并要求扩展名与魔数识别出的类型一致，防止改扩展名上传非图片（如 HTML/脚本）内容。
+     *
+     * @return null=校验通过；否则返回失败原因文案
+     */
+    private String validateImageContent(MultipartFile file) {
+        // 1. 扩展名白名单（统一小写比对）
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.lastIndexOf('.') >= 0) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase();
+        }
+        boolean extJpeg = "jpg".equals(extension) || "jpeg".equals(extension);
+        if (!extJpeg && !"png".equals(extension) && !"webp".equals(extension)) {
+            return "仅支持 JPG/PNG/WebP 格式图片";
+        }
+
+        // 2. 读取文件头 12 字节判断魔数
+        byte[] header = new byte[12];
+        int read;
+        try (InputStream is = file.getInputStream()) {
+            read = is.readNBytes(header, 0, header.length);
+        } catch (IOException e) {
+            log.warn("头像文件读取失败", e);
+            return "图片读取失败，请重试";
+        }
+        if (read < header.length) {
+            return "图片内容不合法";
+        }
+
+        // 3. 魔数与扩展名必须一致
+        if (isJpeg(header)) {
+            return extJpeg ? null : "图片内容与扩展名不符";
+        }
+        if (isPng(header)) {
+            return "png".equals(extension) ? null : "图片内容与扩展名不符";
+        }
+        if (isWebp(header)) {
+            return "webp".equals(extension) ? null : "图片内容与扩展名不符";
+        }
+        return "仅支持 JPG/PNG/WebP 格式图片";
+    }
+
+    /** JPEG 魔数：FF D8 FF */
+    private static boolean isJpeg(byte[] b) {
+        return (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF;
+    }
+
+    /** PNG 魔数：89 50 4E 47 */
+    private static boolean isPng(byte[] b) {
+        return (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G';
+    }
+
+    /** WebP 魔数：第 0-3 字节为 RIFF，第 8-11 字节为 WEBP */
+    private static boolean isWebp(byte[] b) {
+        return b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+                && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P';
     }
 }

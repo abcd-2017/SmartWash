@@ -33,7 +33,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 log.warn("管理员认证失败：用户名不存在, username: {}", split[1]);
                 throw new UsernameNotFoundException("Admin User not found");
             }
-            log.info("管理员认证成功, username: {}", split[1]);
+            // 每请求都会触发，高频日志降为 debug 防刷屏（评审报告后端 #37）
+            log.debug("管理员认证成功, username: {}", split[1]);
             //将信息添加到User也可以说是UserDetails 对象中
             return new LoginUser(adminUsers.getAdminId(), adminUsers.getUsername(), adminUsers.getPasswordHash(),
                     null, split[0], List.of(new SimpleGrantedAuthority(String.format("ROLE_%s", split[0]))));
@@ -43,7 +44,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 log.warn("用户认证失败：手机号未注册, phone: {}", split[1].replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
                 throw new UsernameNotFoundException("User not found");
             }
-            log.info("用户认证成功, phone: {}", split[1].replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
+            // 每请求都会触发，高频日志降为 debug 防刷屏（评审报告后端 #37）
+            log.debug("用户认证成功, phone: {}", split[1].replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2"));
             //将信息添加到User也可以说是UserDetails 对象中
             return new LoginUser(user.getUserId(), null, user.getPassword(),
                     user.getPhoneNumber(), split[0], List.of(new SimpleGrantedAuthority(String.format("ROLE_%s", split[0]))));

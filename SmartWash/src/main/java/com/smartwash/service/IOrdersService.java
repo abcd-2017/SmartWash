@@ -51,4 +51,13 @@ public interface IOrdersService extends IService<Orders> {
     OrdersVo calculationOrder(Long userId, Long orderId, Long userCouponId);
 
     Map<String, OrderGroupVo> getOrderSummary(LoginUser loginUser, int size);
+
+    /**
+     * 取件二维码归属校验：校验当前用户确有匹配该取件码片段的订单（评审报告后端 #42）
+     *
+     * @param userId   当前登录用户 ID
+     * @param pickCode 取件码随机段（客户端从完整取件码拆出的末段）
+     * @return true=该用户名下存在匹配订单，允许生成二维码
+     */
+    boolean ownsPickupCode(Long userId, String pickCode);
 }
