@@ -2,4 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.PaymentsMapper">
 
+    <!-- 支付成功幂等闸门：处理中(3) → 已支付(1)，同一语句写入 paid_at。
+         状态码语义见 common/PaymentStatus（SUCCESS='1' 被 Dashboard 收入统计依赖，不可变更）。
+         以 out_trade_no + status 双条件更新判影响行数，重复回调/重放影响 0 行，不会重复扣款。 -->
+    <update id="markSuccess">
+        update payments
+        set status = '1',
+            paid_at = NOW()
+        where out_trade_no = #{outTradeNo}
+          and status = '3'
+    </update>
+
+    <!-- 支付失败闸门：处理中(3) → 失败(2)，仅收敛处理中记录（订单已取消/流转时拒绝入账），重复回调幂等安全 -->
+    <update id="markFail">
+        update payments
+        set status = '2'
+        where out_trade_no = #{outTradeNo}
+          and status = '3'
+    </update>
+
 </mapper>

@@ -37,6 +37,11 @@ public class Payments implements Serializable {
 
     private String paymentMethod;
 
+    /**
+     * 网关统一订单号（幂等键）：PAY + yyyyMMdd + 雪花ID，唯一索引 uk_payments_out_trade_no 防重
+     */
+    private String outTradeNo;
+
     private String status;
 
     private LocalDateTime paidAt;

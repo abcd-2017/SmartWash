@@ -37,4 +37,14 @@ public class RechargeRecords implements Serializable {
     private LocalDateTime rechargeTime;
 
     private String rechargeType;
+
+    /**
+     * 充值状态：0-待支付，1-充值成功，2-充值失败，3-处理中（复用 PaymentStatus 语义）
+     */
+    private String status;
+
+    /**
+     * 网关统一订单号（幂等键）：RCH + yyyyMMdd + 雪花ID，唯一索引 uk_recharge_records_out_trade_no 防重
+     */
+    private String outTradeNo;
 }

@@ -2,4 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.mapper.RechargeRecordsMapper">
 
+    <!-- 充值成功幂等闸门：处理中(3) → 已到账(1)，状态码语义与 common/PaymentStatus 对齐。
+         以 out_trade_no + status 双条件更新判影响行数，重复回调/重放影响 0 行，不会重复加钱。 -->
+    <update id="markSuccess">
+        update recharge_records
+        set status = '1'
+        where out_trade_no = #{outTradeNo}
+          and status = '3'
+    </update>
+
 </mapper>
