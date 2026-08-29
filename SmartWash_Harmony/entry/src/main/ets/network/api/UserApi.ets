@@ -3,6 +3,7 @@ import { LoginUser } from "../entity/LoginUser";
 import { RegisterUser } from "../entity/RegisterUser";
 import { UpdateUserInfo } from "../entity/UpdateUserInfo";
 import { httpUtil } from "../HttpUtil"
+import { LoginVo } from "../vo/LoginVo";
 import { UserInfoVo } from "../vo/UserInfoVo";
 
 //获取验证码
@@ -15,9 +16,9 @@ async function register(user: RegisterUser): Promise<BaseResponse<String>> {
   return httpUtil.post<string>("/auth/user/register", user)
 }
 
-//登录
-async function login(user: LoginUser): Promise<BaseResponse<String>> {
-  return httpUtil.post<string>("/auth/user/login", user)
+//登录（后端信封 data 为 {token, role} 对象，不再直接是 token 字符串）
+async function login(user: LoginUser): Promise<BaseResponse<LoginVo>> {
+  return httpUtil.post<LoginVo>("/auth/user/login", user)
 }
 
 //获取当前登录用户学校id

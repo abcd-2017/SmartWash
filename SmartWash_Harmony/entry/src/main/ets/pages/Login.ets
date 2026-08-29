@@ -1,10 +1,9 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { getUserSchoolId, login } from "../network/api/UserApi"
 import { pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
+import { showToastSafety } from "../utils/ToastUtil"
 import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
-import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
@@ -20,6 +19,8 @@ struct Login {
   @State checkPhoneNumber: boolean = false
   @State checkPassword: boolean = false
   @State showPassword: boolean = false
+  // 登录请求进行中标记：按钮展示 loading 并拦截连点，防止重复提交（评审 #12）
+  @State loginLoading: boolean = false
   private controller = new TextInputController()
 
   check() {
@@ -144,7 +145,7 @@ struct Login {
         .margin({ top: 40, left: 24, right: 24 })
 
         // 登录按钮
-        Text("登录")
+        Text(this.loginLoading ? "登录中..." : "登录")
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(Color.White)
@@ -155,31 +156,51 @@ struct Login {
           .backgroundColor(DesignColor.GLASS_INPUT)
           .margin({ top: 20, left: 40, right: 40 })
           .onClick(async (event: ClickEvent) => {
+            // 防连点：请求进行中直接忽略
+            if (this.loginLoading) {
+              return
+            }
             this.check()
             if (this.checkPhoneNumber || this.checkPassword) {
               return
             }
-            let res = await login({
-              phoneNumber: this.phoneNumber,
-              password: this.password
-            })
-            if (res.code == HttpStatusCode.Ok) {
-              setValue(CommonConstants.USER_TOKEN, `${res.data}`)
-              let getIdRes = await getUserSchoolId()
-              if (getIdRes.code == HttpStatusCode.Ok) {
-                this.controller.stopEditing()
-                if (getIdRes.data == null) {
-                  pathStack.replacePathByName("AddSchool", null)
+            this.loginLoading = true
+            try {
+              let res = await login({
+                phoneNumber: this.phoneNumber,
+                password: this.password
+              })
+              if (res.code === HttpStatusCode.Ok) {
+                // 后端登录信封 data 为 {token, role} 对象（评审 #1 适配），取 data.token 持久化
+                const token = res.data?.token ?? ""
+                if (token === "") {
+                  showToastSafety(res.message, "登录失败，请稍后重试")
                   return
-                } else {
-                  if (pathStack.size() > 0) {
-                    pathStack.clear()
-                  }
-                  AppStorage.setOrCreate("userLoginFlag", true)
                 }
+                // await 确保写入完成后，后续 getUserSchoolId 等请求才能带上新 token
+                await setValue(CommonConstants.USER_TOKEN, token)
+                // role 存入 AppStorage 备用（普通用户固定 "user"）
+                AppStorage.setOrCreate("userRole", res.data?.role ?? "user")
+                let getIdRes = await getUserSchoolId()
+                if (getIdRes.code === HttpStatusCode.Ok) {
+                  this.controller.stopEditing()
+                  if (getIdRes.data == null) {
+                    pathStack.replacePathByName("AddSchool", null)
+                    return
+                  } else {
+                    if (pathStack.size() > 0) {
+                      pathStack.clear()
+                    }
+                    AppStorage.setOrCreate("userLoginFlag", true)
+                  }
+                } else {
+                  showToastSafety(getIdRes.message, "获取学校信息失败，请重新登录")
+                }
+              } else {
+                showToastSafety(res.message, "登录失败，请稍后重试")
               }
-            } else {
-              promptAction.showToast({ message: res.message })
+            } finally {
+              this.loginLoading = false
             }
           })
 
