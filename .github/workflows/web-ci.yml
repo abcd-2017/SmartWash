@@ -1,0 +1,31 @@
+name: web-ci
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'SmartWashWeb/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'SmartWashWeb/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./SmartWashWeb
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: SmartWashWeb/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
