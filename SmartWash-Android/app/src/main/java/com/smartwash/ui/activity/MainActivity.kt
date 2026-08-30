@@ -109,6 +109,10 @@ class MainActivity : ComponentActivity() {
                 updateViewModel.checkForUpdate(silent = true)
             }
 
+            // 下载中的 WorkManager 进度监听（用户点「立即更新」后由 enqueueApkDownload 入队）
+            // 声明必须早于下方 LaunchedEffect(updateViewModel) 的首次使用
+            val currentDownloadWorkId = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+
             // 监听预签名下载地址：获取成功后调度 Worker 开始下载
             LaunchedEffect(updateViewModel) {
                 updateViewModel.downloadUrl.collect { url ->
@@ -120,8 +124,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // 下载中的 WorkManager 进度监听（用户点「立即更新」后由 enqueueApkDownload 入队）
-            val currentDownloadWorkId = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
             LaunchedEffect(currentDownloadWorkId.value) {
                 val workId = currentDownloadWorkId.value ?: return@LaunchedEffect
                 val uuid = try { java.util.UUID.fromString(workId) } catch (_: Exception) { return@LaunchedEffect }
