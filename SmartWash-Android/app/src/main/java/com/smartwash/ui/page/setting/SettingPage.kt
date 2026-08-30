@@ -19,12 +19,15 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +47,7 @@ import com.smartwash.ui.common.AppInfoDialog
 import com.smartwash.ui.common.PageHeader
 import com.smartwash.ui.common.SettingRow
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.page.update.UpdateViewModel
 import com.smartwash.ui.theme.AppColors
 import com.smartwash.ui.theme.AppDimens
 
@@ -51,10 +55,28 @@ import com.smartwash.ui.theme.AppDimens
 fun SettingPage(
     navController: NavController,
     sessionManager: SessionManager,
+    updateViewModel: UpdateViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // 订阅更新状态，手动检查时给出 Toast 反馈
+    val updateState by updateViewModel.state.collectAsState()
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is com.smartwash.ui.page.update.UpdateState.LatestVersion -> {
+                Toast.makeText(context, context.getString(R.string.already_latest), Toast.LENGTH_SHORT).show()
+                updateViewModel.reset()
+            }
+            is com.smartwash.ui.page.update.UpdateState.Error -> {
+                val msg = (updateState as com.smartwash.ui.page.update.UpdateState.Error).message
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                updateViewModel.reset()
+            }
+            else -> {}
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -129,6 +151,14 @@ fun SettingPage(
             )
             Spacer(modifier = Modifier.height(12.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                SettingRow(
+                    icon = Icons.Default.SystemUpdate,
+                    title = stringResource(R.string.check_update),
+                    subtitle = stringResource(R.string.check_update_desc, updateViewModel.getCurrentVersionName()),
+                    trailing = { IconChevron() },
+                    onClick = { updateViewModel.checkForUpdate(silent = false) }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
                 SettingRow(
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.about_us),

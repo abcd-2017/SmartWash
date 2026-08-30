@@ -5,6 +5,16 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,6 +25,10 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -55,7 +69,15 @@ import com.smartwash.ui.page.recharge.RechargeRecordPage
 import com.smartwash.ui.page.register.RegisterPage
 import com.smartwash.ui.page.service.ServicePage
 import com.smartwash.ui.page.setting.SettingPage
+import com.smartwash.ui.page.update.UpdateState
+import com.smartwash.ui.page.update.UpdateViewModel
+import com.smartwash.ui.page.update.UpdateAvailableDialog
+import com.smartwash.ui.page.update.DownloadProgressDialog
+import com.smartwash.ui.page.update.DownloadCompleteDialog
+import com.smartwash.ui.page.update.ForceUpdateRequiredDialog
 import com.smartwash.ui.page.update_userinfo.UpdateUserInfoPage
+import com.smartwash.service.ApkDownloadWorker
+import com.smartwash.service.ApkInstaller
 import com.smartwash.ui.theme.SmartWashAndroidTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -66,6 +88,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var sessionEventBus: SessionEventBus
     @Inject lateinit var sessionManager: SessionManager
+    @Inject lateinit var workManager: WorkManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +98,95 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val view = LocalView.current
             val reduceMotion = isReduceMotionEnabled(context)
+
+            // 更新 ViewModel
+            val updateViewModel: UpdateViewModel = viewModel()
+            val updateState by updateViewModel.state.collectAsState()
+
+            // 启动时延迟静默检查更新（等主 UI 渲染完）
+            LaunchedEffect(Unit) {
+                delay(1500)
+                updateViewModel.checkForUpdate(silent = true)
+            }
+
+            // 下载中的 WorkManager 进度监听（用户点「立即更新」后由 enqueueApkDownload 入队）
+            val currentDownloadWorkId = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+            LaunchedEffect(currentDownloadWorkId.value) {
+                val workId = currentDownloadWorkId.value ?: return@LaunchedEffect
+                val uuid = try { java.util.UUID.fromString(workId) } catch (_: Exception) { return@LaunchedEffect }
+                workManager.getWorkInfoByIdFlow(uuid).collect { workInfo ->
+                    when (workInfo?.state) {
+                        WorkInfo.State.RUNNING -> {
+                            val progress = workInfo.progress.getInt(ApkDownloadWorker.KEY_PROGRESS, 0)
+                            updateViewModel.onDownloadProgress(progress)
+                        }
+                        WorkInfo.State.SUCCEEDED -> {
+                            val apkPath = workInfo.outputData.getString(ApkDownloadWorker.KEY_APK_PATH)
+                            if (apkPath != null) {
+                                updateViewModel.onDownloadComplete(java.io.File(apkPath))
+                            } else {
+                                updateViewModel.onDownloadFailed(context.getString(R.string.download_failed))
+                            }
+                            currentDownloadWorkId.value = null
+                        }
+                        WorkInfo.State.FAILED -> {
+                            val error = workInfo.outputData.getString(ApkDownloadWorker.KEY_ERROR)
+                            updateViewModel.onDownloadFailed(error ?: context.getString(R.string.download_failed))
+                            currentDownloadWorkId.value = null
+                        }
+                        WorkInfo.State.CANCELLED -> {
+                            updateViewModel.reset()
+                            currentDownloadWorkId.value = null
+                        }
+                        else -> {}
+                    }
+                }
+            }
+
+            // 更新弹窗 UI — 根据状态展示对应弹窗
+            val currentState = updateState
+            when (currentState) {
+                is UpdateState.UpdateAvailable -> {
+                    val version = currentState.version
+                    if (version.forceUpdate) {
+                        ForceUpdateRequiredDialog(
+                            onUpdateNow = {
+                                enqueueApkDownload(context, workManager, version, currentDownloadWorkId)
+                            }
+                        )
+                    } else {
+                        UpdateAvailableDialog(
+                            version = version,
+                            onUpdateNow = {
+                                enqueueApkDownload(context, workManager, version, currentDownloadWorkId)
+                            },
+                            onUpdateLater = { updateViewModel.reset() }
+                        )
+                    }
+                }
+                is UpdateState.Downloading -> {
+                    DownloadProgressDialog(
+                        progress = currentState.progress,
+                        downloadedBytes = 0L,
+                        totalBytes = (updateViewModel.getLatestVersion()?.fileSize ?: 0L),
+                        onCancel = {
+                            currentDownloadWorkId.value?.let { id ->
+                                try { workManager.cancelWorkById(java.util.UUID.fromString(id)) } catch (_: Exception) {}
+                            }
+                            updateViewModel.reset()
+                        },
+                    )
+                }
+                is UpdateState.Downloaded -> {
+                    DownloadCompleteDialog(
+                        onInstallNow = {
+                            handleApkInstall(context, updateViewModel, currentState.file)
+                        },
+                        onInstallLater = { updateViewModel.reset() },
+                    )
+                }
+                else -> { /* Idle / Checking / LatestVersion / Error / Installing 不弹窗 */ }
+            }
 
             // 收集网络层会话事件：未登录拦截 / 401 登录失效 → 统一跳登录页。
             // 事件总线侧已去重 + navigate 加 launchSingleTop，避免连发 401 堆叠多个登录页；
@@ -390,6 +502,58 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+/**
+ * 入队 APK 下载 Worker，并将 workId 写入 state 触发 LaunchedEffect 监听进度
+ */
+private fun enqueueApkDownload(
+    context: android.content.Context,
+    workManager: WorkManager,
+    version: com.smartwash.network.vo.AppVersionVo,
+    currentDownloadWorkId: androidx.compose.runtime.MutableState<String?>,
+) {
+    val inputData = workDataOf(
+        ApkDownloadWorker.KEY_APK_URL to version.apkUrl,
+        ApkDownloadWorker.KEY_SHA256 to version.sha256,
+    )
+
+    val downloadRequest = OneTimeWorkRequestBuilder<ApkDownloadWorker>()
+        .setInputData(inputData)
+        .setConstraints(
+            Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+        )
+        .build()
+
+    workManager.enqueueUniqueWork(
+        "apk_download_${version.versionCode}",
+        ExistingWorkPolicy.REPLACE,
+        downloadRequest
+    )
+
+    // 记录 workId，触发 LaunchedEffect 收集进度
+    currentDownloadWorkId.value = downloadRequest.id.toString()
+}
+
+/**
+ * 处理 APK 安装：检查权限后调起系统安装器
+ */
+private fun handleApkInstall(
+    context: android.content.Context,
+    updateViewModel: com.smartwash.ui.page.update.UpdateViewModel,
+    apkFile: java.io.File,
+) {
+    if (ApkInstaller.canInstallApk(context)) {
+        updateViewModel.onInstallStarted()
+        ApkInstaller.installViaIntent(context, apkFile)
+        ApkInstaller.deleteLocalApk(context)
+        updateViewModel.reset()
+    } else {
+        // 无安装权限，跳转系统设置
+        ApkInstaller.openInstallPermissionSettings(context)
     }
 }
 

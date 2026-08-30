@@ -60,6 +60,7 @@ dependencies {
 
     implementation libs.androidx.core.ktx
     implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel.compose
     implementation libs.androidx.activity.compose
     implementation platform(libs.androidx.compose.bom)
     implementation libs.androidx.ui
@@ -110,4 +111,9 @@ dependencies {
 
     //历法底座（观象台）：四柱/节气/中气/农历/旬空，纯 Java 可单测
     implementation libs.lunar
+
+    // APK 后台下载（WorkManager + Hilt Worker）
+    implementation libs.androidx.work.runtime.ktx
+    implementation libs.androidx.hilt.work
+    ksp libs.androidx.hilt.compiler
 }
