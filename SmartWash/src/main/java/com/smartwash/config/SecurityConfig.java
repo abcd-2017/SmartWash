@@ -47,7 +47,9 @@ public class SecurityConfig {
                             "/web/lockers/all",
                             "/web/schools/allName",
                             "/web/payments/payType",
-                            "/web/payments/payStatus"
+                            "/web/payments/payStatus",
+                            "/web/app/version",
+                            "/web/app/download"
                     ).permitAll()
                     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**", "/v3/api-docs/**").permitAll() // Swagger API 文档
                     .anyRequest().authenticated()

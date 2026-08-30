@@ -17,6 +17,9 @@ public class AppVersionVo {
     /** APK 下载地址 */
     private String apkUrl;
 
+    /** MinIO 对象名（如 app-1.0.2.apk），用于生成预签名下载 URL */
+    private String fileName;
+
     /** APK 文件大小（字节） */
     private Long fileSize;
 
