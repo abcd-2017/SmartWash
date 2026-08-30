@@ -1,5 +1,6 @@
 name: web-ci
 on:
+  workflow_dispatch:
   push:
     branches:
       - main

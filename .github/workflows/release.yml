@@ -1,0 +1,165 @@
+name: build-release
+
+on:
+  workflow_dispatch: 
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    tags:
+      - 'v*'
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./SmartWash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR
+        run: mvn -B package -DskipTests
+
+      - name: Upload JAR to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "SmartWash/target/*.jar"
+          target: "${{ secrets.REMOTE_DEPLOY_PATH }}"
+          strip_components: 2
+
+      - name: Restart backend service
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            systemctl restart smartwash-backend
+            systemctl status smartwash-backend --no-pager
+
+  web:
+    needs: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./SmartWashWeb
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: SmartWashWeb/package-lock.json
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Nginx
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "SmartWashWeb/dist/**"
+          target: "${{ secrets.NGINX_DEPLOY_PATH }}"
+          strip_components: 2
+
+  android:
+    needs: backend
+    runs-on: ubuntu-latest
+    outputs:
+      sha256: ${{ steps.calc-sha256.outputs.sha256 }}
+    defaults:
+      run:
+        working-directory: ./SmartWash-Android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Build release APK
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
+          ./gradlew assembleRelease -PversionCode=$VERSION_CODE -PversionName=$VERSION
+
+      - name: Install MinIO Client
+        run: |
+          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          sudo mv mc /usr/local/bin/
+
+      - name: Configure MinIO
+        run: |
+          mc alias set smartwash ${{ secrets.MINIO_ENDPOINT }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
+
+      - name: Upload APK to MinIO
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mc cp app/build/outputs/apk/release/app-release.apk \
+            smartwash/${{ secrets.MINIO_BUCKET }}/android/app-${VERSION}.apk
+
+      - name: Calculate SHA256
+        id: calc-sha256
+        run: |
+          SHA=$(sha256sum app/build/outputs/apk/release/app-release.apk | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+
+  update-version:
+    needs: [backend, web, android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate version.json
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          # 1.0.2 → 10002 (major*10000 + minor*100 + patch)
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
+          SHA256="${{ needs.android.outputs.sha256 }}"
+          cat > version.json << EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION}",
+            "fileName": "app-${VERSION}.apk",
+            "sha256": "${SHA256}",
+            "forceUpdate": false,
+            "minVersionCode": 10000,
+            "changelog": "详见发布说明",
+            "releaseDate": "$(date +%Y-%m-%d)"
+          }
+          EOF
+
+      - name: Upload version.json to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "version.json"
+          target: "${{ secrets.REMOTE_VERSION_PATH }}/"
