@@ -109,6 +109,17 @@ class MainActivity : ComponentActivity() {
                 updateViewModel.checkForUpdate(silent = true)
             }
 
+            // 监听预签名下载地址：获取成功后调度 Worker 开始下载
+            LaunchedEffect(updateViewModel) {
+                updateViewModel.downloadUrl.collect { url ->
+                    if (url != null) {
+                        val version = updateViewModel.getLatestVersion() ?: return@collect
+                        enqueueApkDownload(context, workManager, url, version, currentDownloadWorkId)
+                        updateViewModel.consumeDownloadUrl()
+                    }
+                }
+            }
+
             // 下载中的 WorkManager 进度监听（用户点「立即更新」后由 enqueueApkDownload 入队）
             val currentDownloadWorkId = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
             LaunchedEffect(currentDownloadWorkId.value) {
@@ -151,14 +162,14 @@ class MainActivity : ComponentActivity() {
                     if (version.forceUpdate) {
                         ForceUpdateRequiredDialog(
                             onUpdateNow = {
-                                enqueueApkDownload(context, workManager, version, currentDownloadWorkId)
+                                updateViewModel.startDownload(context)
                             }
                         )
                     } else {
                         UpdateAvailableDialog(
                             version = version,
                             onUpdateNow = {
-                                enqueueApkDownload(context, workManager, version, currentDownloadWorkId)
+                                updateViewModel.startDownload(context)
                             },
                             onUpdateLater = { updateViewModel.reset() }
                         )
@@ -507,15 +518,18 @@ class MainActivity : ComponentActivity() {
 
 /**
  * 入队 APK 下载 Worker，并将 workId 写入 state 触发 LaunchedEffect 监听进度
+ * @param downloadUrl 预签名下载地址（从后端 /web/app/download 获取）
+ * @param version 版本信息（用于 fileSize、sha256 校验与 workName 唯一标识）
  */
 private fun enqueueApkDownload(
     context: android.content.Context,
     workManager: WorkManager,
+    downloadUrl: String,
     version: com.smartwash.network.vo.AppVersionVo,
     currentDownloadWorkId: androidx.compose.runtime.MutableState<String?>,
 ) {
     val inputData = workDataOf(
-        ApkDownloadWorker.KEY_APK_URL to version.apkUrl,
+        ApkDownloadWorker.KEY_APK_URL to downloadUrl,
         ApkDownloadWorker.KEY_SHA256 to version.sha256,
     )
 

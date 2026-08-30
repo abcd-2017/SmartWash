@@ -1,5 +1,6 @@
 package com.smartwash.ui.page.update
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.R
@@ -39,6 +40,10 @@ class UpdateViewModel @Inject constructor(
 
     private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
     val state: StateFlow<UpdateState> = _state.asStateFlow()
+
+    /** 预签名下载地址，由 startDownload 获取后暴露给 UI 层调度 Worker */
+    private val _downloadUrl = MutableStateFlow<String?>(null)
+    val downloadUrl: StateFlow<String?> = _downloadUrl.asStateFlow()
 
     /** 防重复触发检查 */
     private var isChecking = false
@@ -85,6 +90,30 @@ class UpdateViewModel @Inject constructor(
     }
 
     /**
+     * 启动下载流程：先获取预签名下载地址，成功后通过 downloadUrl 暴露给 UI 层
+     */
+    fun startDownload(context: Context) {
+        val version = latestVersion ?: return
+        viewModelScope.launch {
+            try {
+                val url = repository.getPresignedDownloadUrl()
+                _downloadUrl.value = url
+            } catch (e: NetworkException) {
+                _state.value = UpdateState.Error(e.message ?: context.getString(R.string.download_url_empty))
+            } catch (e: Exception) {
+                _state.value = UpdateState.Error(e.message ?: context.getString(R.string.download_url_empty))
+            }
+        }
+    }
+
+    /**
+     * 消费已获取的预签名 URL（防止重复调度 Worker）
+     */
+    fun consumeDownloadUrl() {
+        _downloadUrl.value = null
+    }
+
+    /**
      * 下载进度回调
      */
     fun onDownloadProgress(progress: Int) {
@@ -117,6 +146,7 @@ class UpdateViewModel @Inject constructor(
      */
     fun reset() {
         _state.value = UpdateState.Idle
+        _downloadUrl.value = null
         isChecking = false
     }
 

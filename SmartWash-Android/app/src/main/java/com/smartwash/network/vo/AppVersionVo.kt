@@ -10,6 +10,7 @@ data class AppVersionVo(
     val versionCode: Int,
     val versionName: String,
     val apkUrl: String,
+    val fileName: String = "",
     val fileSize: Long = 0L,
     val sha256: String = "",
     val forceUpdate: Boolean = false,

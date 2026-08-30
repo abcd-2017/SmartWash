@@ -13,4 +13,10 @@ interface AppUpdateApi {
      */
     @GET("/web/app/version")
     suspend fun getLatestVersion(): ApiResult<AppVersionVo>
+
+    /**
+     * 获取 APK 预签名下载地址（从 MinIO 获取临时下载链接）
+     */
+    @GET("/web/app/download")
+    suspend fun getPresignedDownloadUrl(): ApiResult<String>
 }

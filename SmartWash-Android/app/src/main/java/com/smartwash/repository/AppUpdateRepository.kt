@@ -28,6 +28,14 @@ class AppUpdateRepository @Inject constructor(
     }
 
     /**
+     * 从服务端获取 APK 预签名下载地址
+     */
+    suspend fun getPresignedDownloadUrl(): String {
+        val response = appUpdateApi.getPresignedDownloadUrl()
+        return response.data ?: throw NetworkException("下载地址为空", R.string.download_url_empty)
+    }
+
+    /**
      * 当前客户端 versionCode
      */
     fun getCurrentVersionCode(): Int = BuildConfig.VERSION_CODE

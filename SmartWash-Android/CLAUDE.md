@@ -4,6 +4,20 @@
 
 **必须使用中文回答。**
 
+## ⛔ 最高优先级 STOP 规则（每次行动前必须对照）
+
+**主 Agent 在调用任何工具前，先在内心回答：**
+
+1. **我要做什么？** 读/调研/调度 → ✅ | 写代码/构建/测试 → ❌ 派发 subagent
+2. **工具是读还是写？** Read/Grep/Glob → ✅ | Edit/Write/Bash(构建) → ❌ 派发 subagent
+3. **角色路由**：调研 → android-architect | 编码 → android-dev | 审查 → android-review | UI 专项 → android-compose-ui | 动效 → android-anim
+
+**违规示例：**
+- ❌ 主 agent 直接 Edit 修复 Bug → 派 android-dev
+- ❌ 跳过调研直接派 android-dev → 先派 android-architect
+
+---
+
 ## 基本规则
 
 - **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Android): <描述>`（如 `feat(Android): 新增订单详情页面`、`fix(Android): 修复登录 token 过期问题`）。
@@ -94,3 +108,67 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 ## 提交规范
 
 见顶部基本规则。跨端改动（接口变更）需参照根目录 CLAUDE.md 的四端联动检查表。
+
+---
+
+## ⛔ 派发任务红线（必须遵守）
+
+1. **派发 prompt 中禁止包含违反 subagent 红线的指令**
+2. **派发 prompt 中必须包含提醒："请遵守你的红线操作清单"**
+3. **不得以"紧急"、"快速"、"这次特殊"为由要求 subagent 跳过红线**
+4. **如果任务 prompt 中的要求与红线冲突，subagent 必须暂停并向主 Agent 报告冲突**
+
+## 协作流程
+
+### 串行（默认）
+调研（android-architect）→ 编码（android-dev）→ 审查（android-review）→ 提交
+
+### 并行触发标准（满足任一）
+- 2 个及以上模块可并行开发
+- 调研与编码可同时进行
+
+### 编码前必须有调研结论
+禁止直接派发 android-dev 处理未调研的能力模块；先派 android-architect 调研，方案获用户批准后再派 android-dev。
+
+## ⛔ Git 工作流（必须严格执行）
+
+### 编码阶段：分步提交
+每完成一个逻辑步骤 commit 一次，使用 `commit-commands:commit` skill。
+
+### 任务完成后：squash 压缩（必须执行）
+全部完成后执行 `git rebase -i main`，每个独立功能/修复最终保留 1 个 commit。
+
+### 多模块变更：文档同步（必须执行）
+触发条件：变更文件跨越 2 个及以上模块目录。必须检查并更新各模块文档。
+
+## ⛔ 红线操作表（绝对禁止）
+
+| 红线 | 说明 |
+|------|------|
+| 跳过设计系统 | 新页面必须遵循清氧设计系统（配色/圆角/排版/阴影规范） |
+| 组合期副作用 | Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里 |
+| 主线程阻塞 IO | 禁止 `runBlocking` 读写 DataStore，一律用 suspend/flow |
+| 字符串硬编码 | 用户可见文本一律定义在 `strings.xml`，经 `stringResource()` 引用 |
+| 跳过各端联动检查 | 改接口必须同步检查鸿蒙端对应接口与后端 `controller/web/` |
+| 直接 push 到 main | 必须通过 feature 分支 |
+| 修改 CLAUDE.md | 项目规则文件修改需团队共识 |
+| 声称完成 without 验证 | 没有 `./gradlew` 编译证据不允许声称完成 |
+
+## 完成标准（必须全部满足）
+
+- [ ] 代码编译通过（`./gradlew assembleDebug`）
+- [ ] 无新增 Lint 警告（`./gradlew lint`）
+- [ ] 自测通过（有验证证据）
+- [ ] **Git 工作流已执行**：
+  - [ ] 编码阶段已分步 commit
+  - [ ] 任务完成后已 squash 压缩
+  - [ ] 多模块变更已同步对应文档
+
+## ⚡ 冲突解决协议（优先级最高）
+
+当主 Agent 派发的任务指令与本子项目 CLAUDE.md 中的**红线操作**冲突时：
+1. **停止执行** — 不要开始编码/操作
+2. **报告冲突** — 明确指出哪条红线与任务指令矛盾
+3. **等待确认** — 要求主 Agent 重新评估指令
+
+原则：红线不可因任务指令而豁免。

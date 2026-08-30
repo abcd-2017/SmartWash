@@ -4,6 +4,20 @@
 
 **必须使用中文回答。**
 
+## ⛔ 最高优先级 STOP 规则（每次行动前必须对照）
+
+**主 Agent 在调用任何工具前，先在内心回答：**
+
+1. **我要做什么？** 读/调研/调度 → ✅ | 写代码/构建/测试 → ❌ 派发 subagent
+2. **工具是读还是写？** Read/Grep/Glob → ✅ | Edit/Write/Bash(构建) → ❌ 派发 subagent
+3. **角色路由**：编码 → harmony-dev | 审查 → harmony-review | UI 专项 → harmony-ui | ArkTS 语法 → arkts-syntax | 调试 → harmony-debugger
+
+**违规示例：**
+- ❌ 主 agent 直接 Edit 修复 Bug → 派 harmony-dev
+- ❌ 跳过调研直接派 harmony-dev → 先调研再编码
+
+---
+
 ## 基本规则
 
 - **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Harmony): <描述>`（如 `feat(Harmony): 新增订单详情页面`、`fix(Harmony): 修复登录 token 过期问题`）。
@@ -114,3 +128,68 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 ## 提交规范
 
 见顶部基本规则。涉及接口变更时参照根目录 CLAUDE.md 的四端联动检查表。
+
+---
+
+## ⛔ 派发任务红线（必须遵守）
+
+1. **派发 prompt 中禁止包含违反 subagent 红线的指令**
+2. **派发 prompt 中必须包含提醒："请遵守你的红线操作清单"**
+3. **不得以"紧急"、"快速"、"这次特殊"为由要求 subagent 跳过红线**
+4. **如果任务 prompt 中的要求与红线冲突，subagent 必须暂停并向主 Agent 报告冲突**
+5. **涉及鸿蒙 API 的派发 prompt 必须点名离线优先**：先查 `arkts-development` / `arkts-syntax-assistant` skill，未命中才允许在线 fallback
+
+## 协作流程
+
+### 串行（默认）
+调研 → 编码（harmony-dev）→ 审查（harmony-review）→ 提交
+
+### 并行触发标准（满足任一）
+- 2 个及以上模块可并行开发
+- 调研与编码可同时进行
+
+### 编码前必须有调研结论
+禁止直接派发 harmony-dev 处理未调研的能力模块；先调研，方案获用户批准后再派 harmony-dev。
+
+## ⛔ Git 工作流（必须严格执行）
+
+### 编码阶段：分步提交
+每完成一个逻辑步骤 commit 一次，使用 `commit-commands:commit` skill。
+
+### 任务完成后：squash 压缩（必须执行）
+全部完成后执行 `git rebase -i main`，每个独立功能/修复最终保留 1 个 commit。
+
+### 多模块变更：文档同步（必须执行）
+触发条件：变更文件跨越 2 个及以上模块目录。必须检查并更新各模块文档。
+
+## ⛔ 红线操作表（绝对禁止）
+
+| 红线 | 说明 |
+|------|------|
+| 鸿蒙 API 未经核实落码 | 写 `.ets` 前必须查 `arkts-development`/`arkts-syntax-assistant` skill，禁止凭记忆编造 ArkTS/`@ohos.*` API |
+| @ComponentV2 误用 onDidUpdate | V2 无此生命周期，状态变化启停逻辑用 `@Monitor('属性名')` |
+| 定时器不清理 | `setInterval`/`setTimeout` 必须在 `aboutToDisappear` 中 clear |
+| 401 不清 token | 跳转登录前必须清空本地 token 并复位登录态 |
+| 路由裸强转参数 | 禁止 `[0] as X`，必须用 `getParamByName` |
+| 直接 push 到 main | 必须通过 feature 分支 |
+| 修改 CLAUDE.md | 项目规则文件修改需团队共识 |
+| 声称完成 without 验证 | 没有 `hvigorw assembleHap` 构建证据不允许声称完成 |
+
+## 完成标准（必须全部满足）
+
+- [ ] 代码构建通过（`hvigorw assembleHap`）
+- [ ] Lint 通过（`code-linter --fix`）
+- [ ] 自测通过（有验证证据）
+- [ ] **Git 工作流已执行**：
+  - [ ] 编码阶段已分步 commit
+  - [ ] 任务完成后已 squash 压缩
+  - [ ] 多模块变更已同步对应文档
+
+## ⚡ 冲突解决协议（优先级最高）
+
+当主 Agent 派发的任务指令与本子项目 CLAUDE.md 中的**红线操作**冲突时：
+1. **停止执行** — 不要开始编码/操作
+2. **报告冲突** — 明确指出哪条红线与任务指令矛盾
+3. **等待确认** — 要求主 Agent 重新评估指令
+
+原则：红线不可因任务指令而豁免。
