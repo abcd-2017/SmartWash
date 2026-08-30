@@ -13,7 +13,7 @@ on:
       - 'SmartWash-Android/**'
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     defaults:
       run:

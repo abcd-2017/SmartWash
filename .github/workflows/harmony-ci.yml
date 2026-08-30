@@ -1,19 +1,21 @@
 name: harmony-ci
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'SmartWash_Harmony/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'SmartWash_Harmony/**'
+  # push/PR 触发暂时禁用：GitHub runner 连不上华为 SDK 服务器，下载 toolchains 失败
+  # 鸿蒙端构建靠本地 DevEco Studio 验证，等华为解决 CI 下载问题后再启用
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'SmartWash_Harmony/**'
+  # pull_request:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'SmartWash_Harmony/**'
 
 jobs:
-  build:
+  build-harmony:
     runs-on: macos-latest
     # hvigor 构建偶尔会卡住，设超时兜底
     timeout-minutes: 30

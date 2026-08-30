@@ -13,7 +13,7 @@ on:
       - 'SmartWashWeb/**'
 
 jobs:
-  build:
+  build-web:
     runs-on: ubuntu-latest
     defaults:
       run:
