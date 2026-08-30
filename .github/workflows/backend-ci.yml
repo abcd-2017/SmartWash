@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'SmartWash/**'
   pull_request:
     branches:
       - main
-    paths:
-      - 'SmartWash/**'
 
 jobs:
   build-backend:

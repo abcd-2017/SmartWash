@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'SmartWash-Android/**'
   pull_request:
     branches:
       - main
-    paths:
-      - 'SmartWash-Android/**'
 
 jobs:
   build-android:
