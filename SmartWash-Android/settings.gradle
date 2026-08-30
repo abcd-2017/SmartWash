@@ -1,14 +1,7 @@
 pluginManagement {
     repositories {
-        maven {
-            url 'https://maven.aliyun.com/repository/google/'
-            content {
-                // 阿里云 google 镜像没有 KSP，502 会导致 Gradle 中止、不 fallback
-                // 排除 com.google.devtools.* 让它走真正的 Google Maven
-                excludeGroupByRegex("com\\.google\\.devtools.*")
-            }
-        }
-        maven { url 'https://maven.aliyun.com/repository/public/' }
+//        maven { url 'https://maven.aliyun.com/repository/google/' }
+//        maven { url 'https://maven.aliyun.com/repository/public/' }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -17,11 +10,11 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven { url 'https://maven.aliyun.com/repository/google/' }
-        maven { url 'https://maven.aliyun.com/repository/public/' }
+//        maven { url 'https://maven.aliyun.com/repository/google/' }
+//        maven { url 'https://maven.aliyun.com/repository/public/' }
         google()
         mavenCentral()
-        maven { url = uri( "https://maven.google.com") }
+        maven { url = uri("https://maven.google.com") }
     }
 }
 
