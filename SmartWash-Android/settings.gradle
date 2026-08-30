@@ -1,14 +1,8 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                maven { url 'https://maven.aliyun.com/repository/google/' }
-                maven { url 'https://maven.aliyun.com/repository/public/' }
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        maven { url 'https://maven.aliyun.com/repository/google/' }
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
