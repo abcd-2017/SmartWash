@@ -2,6 +2,7 @@ package com.smartwash.divination.llm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
  *   event: error   data: {"code":500,"message":"供应商暂时不可用，已降级"}
  */
 @Slf4j
+@Component
 public class SseBridge {
 
     /**
