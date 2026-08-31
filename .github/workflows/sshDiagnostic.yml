@@ -25,7 +25,6 @@ jobs:
 
           HASH=$(sha256sum scp-test/payload.bin | cut -d ' ' -f1)
           printf '%s  payload.bin\n' "$HASH" > scp-test/SHA256SUMS
-
           ls -lh scp-test
 
       - name: Test SSH commands
@@ -35,7 +34,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           port: ${{ secrets.SSH_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          fingerprint: ${{ secrets.SSH_HOST_FINGERP
+          fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
           timeout: 30s
           command_timeout: 1m
           debug: true
@@ -43,14 +42,15 @@ jobs:
           script: |
             set -eu
 
-            TEST_DIR="/tmp/gha-scp-${{ github.run_it }}"
+            TEST_DIR="/tmp/gha-scp-${{ github.run_id }}-${{ github.run_attempt }}"
 
             echo "Connected successfully"
             echo "User: $(whoami)"
             echo "UID: $(id -u)"
             hostname
             id
- [ "$(id -u)" -eq 0 ]; then
+
+            if [ "$(id -u)" -eq 0 ]; then
               echo "WARNING: GitHub Actions is logged in as root"
             fi
 
@@ -74,7 +74,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           fingerprint: ${{ secrets.SSH_HOST_FINGERPRINT }}
           source: "scp-test/*"
-          target: "/tmp/gha-scp-${{ github.run_id }}/"
+          target: "/tmp/gha-scp-${{ github.run_id }}-${{ github.run_attempt }}/"
           strip_components: 1
           tar_tmp_path: "/tmp/"
           timeout: 30s
@@ -103,7 +103,7 @@ jobs:
             ls -lh
             test -f payload.bin
             test -f SHA256SUMS
-            test "$(wc -c < payload.bin)" -eq 10485
+            test "$(wc -c < payload.bin)" -eq 1048576
             sha256sum -c SHA256SUMS
 
             echo "SSH and SCP diagnostic passed"
