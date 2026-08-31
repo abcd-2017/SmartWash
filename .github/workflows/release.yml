@@ -5,93 +5,138 @@ on:
   push:
     tags:
       - 'v*'
-  pull_request:
-    tags:
-      - 'v*'
+
+# 默认只给 GITHUB_TOKEN 读权限，各 job 按需单独提升
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ github.ref_name }}
+
+  # 阿里云 ACR
+  REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  BACKEND_IMAGE: registry.cn-hangzhou.aliyuncs.com/your-namespace/smartwash-backend
+  WEB_IMAGE: registry.cn-hangzhou.aliyuncs.com/your-namespace/smartwash-web
+
+  # 部署 Webhook（IP / 端口拆为独立变量，便于分环境维护）
+  DEPLOY_WEBHOOK_HOST: ${{ secrets.DEPLOY_WEBHOOK_HOST }}
+  DEPLOY_WEBHOOK_PORT: ${{ secrets.DEPLOY_WEBHOOK_PORT }}
 
 jobs:
+
+  # =========================================================
+  # 1. 构建 Backend Docker Image → 推送到 ACR
+  # =========================================================
   backend:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+
     defaults:
       run:
         working-directory: ./SmartWash
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v6
+      - name: Login to Alibaba Cloud ACR
+        uses: docker/login-action@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build JAR
-        run: mvn -B package -DskipTests
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: Upload JAR to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Build and push backend image
+        id: build
+        uses: docker/build-push-action@v7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "SmartWash/target/*.jar"
-          target: "${{ secrets.REMOTE_DEPLOY_PATH }}"
-          strip_components: 2
+          context: ./SmartWash
+          file: ./SmartWash/Dockerfile
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.ref_name }}
+            ${{ env.BACKEND_IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          sbom: true
+          provenance: true
 
-      - name: Restart backend service
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            systemctl restart smartwash-backend
-            systemctl status smartwash-backend --no-pager
 
+  # =========================================================
+  # 2. 构建 Web Docker Image → 推送到 ACR
+  # =========================================================
   web:
-    needs: backend
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+
     defaults:
       run:
         working-directory: ./SmartWashWeb
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - name: Login to Alibaba Cloud ACR
+        uses: docker/login-action@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: SmartWashWeb/package-lock.json
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Install & Build
-        run: |
-          npm ci
-          npm run build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: Deploy to Nginx
-        uses: appleboy/scp-action@v0.1.7
+      - name: Build and push web image
+        id: build
+        uses: docker/build-push-action@v7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "SmartWashWeb/dist/**"
-          target: "${{ secrets.NGINX_DEPLOY_PATH }}"
-          strip_components: 2
+          context: ./SmartWashWeb
+          file: ./SmartWashWeb/Dockerfile
+          push: true
+          tags: |
+            ${{ env.WEB_IMAGE }}:${{ github.ref_name }}
+            ${{ env.WEB_IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.version=${{ github.ref_name }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          sbom: true
+          provenance: true
 
+
+  # =========================================================
+  # 3. 构建 Android APK
+  # =========================================================
   android:
-    needs: backend
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
     outputs:
       sha256: ${{ steps.calc-sha256.outputs.sha256 }}
+
     defaults:
       run:
         working-directory: ./SmartWash-Android
+
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -107,59 +152,132 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
-          ./gradlew assembleRelease -PversionCode=$VERSION_CODE -PversionName=$VERSION
+          ./gradlew assembleRelease \
+            -PversionCode=$VERSION_CODE \
+            -PversionName=$VERSION
 
-      - name: Install MinIO Client
-        run: |
-          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
-          chmod +x mc
-          sudo mv mc /usr/local/bin/
-
-      - name: Configure MinIO
-        run: |
-          mc alias set smartwash ${{ secrets.MINIO_ENDPOINT }} ${{ secrets.MINIO_ACCESS_KEY }} ${{ secrets.MINIO_SECRET_KEY }}
-
-      - name: Upload APK to MinIO
+      - name: Rename APK
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          mc cp app/build/outputs/apk/release/app-release.apk \
-            smartwash/${{ secrets.MINIO_BUCKET }}/android/app-${VERSION}.apk
+          mv \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/app-${VERSION}.apk
 
       - name: Calculate SHA256
         id: calc-sha256
         run: |
-          SHA=$(sha256sum app/build/outputs/apk/release/app-release.apk | awk '{print $1}')
-          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+          VERSION=${GITHUB_REF_NAME#v}
+          SHA=$(sha256sum \
+            app/build/outputs/apk/release/app-${VERSION}.apk \
+            | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
 
-  update-version:
-    needs: [backend, web, android]
+
+  # =========================================================
+  # 4. 创建 GitHub Release
+  #    APK + version.json
+  # =========================================================
+  release:
+    needs:
+      - backend
+      - web
+      - android
+
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
-      - name: Generate version.json
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Generate release metadata
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          # 1.0.2 → 10002 (major*10000 + minor*100 + patch)
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
-          SHA256="${{ needs.android.outputs.sha256 }}"
+
           cat > version.json << EOF
           {
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION}",
             "fileName": "app-${VERSION}.apk",
-            "sha256": "${SHA256}",
+            "sha256": "${{ needs.android.outputs.sha256 }}",
             "forceUpdate": false,
             "minVersionCode": 10000,
-            "changelog": "详见发布说明",
-            "releaseDate": "$(date +%Y-%m-%d)"
+            "changelog": "详见 GitHub Release",
+            "releaseDate": "$(date +%Y-%m-%d)",
+            "backendImage": "${{ env.BACKEND_IMAGE }}:${{ github.ref_name }}",
+            "backendDigest": "${{ needs.backend.outputs.digest }}",
+            "webImage": "${{ env.WEB_IMAGE }}:${{ github.ref_name }}",
+            "webDigest": "${{ needs.web.outputs.digest }}"
           }
           EOF
 
-      - name: Upload version.json to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Prepare APK
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mkdir -p release-assets
+          cp \
+            SmartWash-Android/app/build/outputs/apk/release/app-${VERSION}.apk \
+            release-assets/app-${VERSION}.apk
+          cp version.json release-assets/version.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "version.json"
-          target: "${{ secrets.REMOTE_VERSION_PATH }}/"
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release-assets/app-*.apk
+            release-assets/version.json
+
+
+  # =========================================================
+  # 5. 通知服务器执行部署
+  #    通过 Webhook 触发，服务器拉取镜像并滚动更新
+  # =========================================================
+  deploy:
+    needs:
+      - backend
+      - web
+      - release
+
+    runs-on: ubuntu-latest
+
+    environment: production
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Trigger production deployment
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
+          BACKEND_DIGEST: ${{ needs.backend.outputs.digest }}
+          WEB_IMAGE: ${{ env.WEB_IMAGE }}
+          WEB_DIGEST: ${{ needs.web.outputs.digest }}
+        run: |
+          DEPLOY_URL="http://${DEPLOY_WEBHOOK_HOST}:${DEPLOY_WEBHOOK_PORT}/api/deploy"
+
+          echo "Deploying version ${VERSION} via ${DEPLOY_URL}..."
+
+          curl --fail-with-body \
+            --silent \
+            --show-error \
+            --request POST \
+            "$DEPLOY_URL" \
+            --header "Authorization: Bearer $DEPLOY_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data @- <<EOF
+          {
+            "version": "${VERSION}",
+            "backendImage": "${BACKEND_IMAGE}",
+            "backendDigest": "${BACKEND_DIGEST}",
+            "webImage": "${WEB_IMAGE}",
+            "webDigest": "${WEB_DIGEST}"
+          }
+          EOF
