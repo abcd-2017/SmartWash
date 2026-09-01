@@ -14,9 +14,9 @@ env:
   VERSION: ${{ github.ref_name }}
 
   # 阿里云 ACR
-  REGISTRY: registry.cn-hangzhou.aliyuncs.com
-  BACKEND_IMAGE: registry.cn-hangzhou.aliyuncs.com/your-namespace/smartwash-backend
-  WEB_IMAGE: registry.cn-hangzhou.aliyuncs.com/your-namespace/smartwash-web
+  REGISTRY: ${{ secrets.ACR_REGISTRY }}
+  BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+  WEB_IMAGE: ${{ secrets.WEB_IMAGE }}
 
   # 部署 Webhook（IP / 端口拆为独立变量，便于分环境维护）
   DEPLOY_WEBHOOK_HOST: ${{ secrets.DEPLOY_WEBHOOK_HOST }}
