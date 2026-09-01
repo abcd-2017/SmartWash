@@ -212,21 +212,54 @@ jobs:
       - name: Prepare APK
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          mkdir -p release-assets
-          cp \
-            SmartWash-Android/app/build/outputs/apk/release/app-${VERSION}.apk \
-            release-assets/app-${VERSION}.apk
-          cp version.json release-assets/version.json
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
-          files: |
-            release-assets/app-*.apk
-            release-assets/version.json
+      
+          echo "Looking for APK..."
+      
+          APK_FILES=()
+          while IFS= read -r -d '' file; do
+            APK_FILES+=("$file")
+          done < <(
+            find app/build/outputs/apk \
+              -type f \
+              -name "*.apk" \
+              -print0
+          )
+      
+          if [ "${#APK_FILES[@]}" -eq 0 ]; then
+            echo "ERROR: No APK file found."
+            echo "Available build outputs:"
+            find app/build/outputs -type f -print
+            exit 1
+          fi
+      
+          if [ "${#APK_FILES[@]}" -gt 1 ]; then
+            echo "ERROR: Multiple APK files found:"
+            printf '%s\n' "${APK_FILES[@]}"
+            echo "Please configure the workflow to select the correct APK."
+            exit 1
+          fi
+      
+          APK="${APK_FILES[0]}"
+          APK_DIR="$(dirname "$APK")"
+          TARGET="${APK_DIR}/app-${VERSION}.apk"
+      
+          echo "Source APK : $APK"
+          echo "Target APK : $TARGET"
+      
+          mv "$APK" "$TARGET"
+      
+          echo "APK renamed successfully:"
+          ls -lh "$TARGET"
+      
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v3
+              with:
+                tag_name: ${{ github.ref_name }}
+                name: Release ${{ github.ref_name }}
+                generate_release_notes: true
+                files: |
+                  release-assets/app-*.apk
+                  release-assets/version.json
 
 
   # =========================================================
