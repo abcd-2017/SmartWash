@@ -61,6 +61,7 @@ jobs:
           context: ./SmartWash
           file: ./SmartWash/Dockerfile
           push: true
+          provenance: false
           tags: |
             ${{ secrets.BACKEND_IMAGE }}:${{ github.ref_name }}
             ${{ secrets.BACKEND_IMAGE }}:latest
@@ -106,12 +107,14 @@ jobs:
           context: ./SmartWashWeb
           file: ./SmartWashWeb/Dockerfile
           push: true
+          provenance: false
           tags: |
             ${{ secrets.WEB_IMAGE }}:${{ github.ref_name }}
             ${{ secrets.WEB_IMAGE }}:latest
           labels: |
             org.opencontainers.image.version=${{ github.ref_name }}
             org.opencontainers.image.revision=${{ github.sha }}
+
 
   # =========================================================
   # 3. 构建 Android APK
@@ -124,6 +127,7 @@ jobs:
 
     outputs:
       sha256: ${{ steps.calc-sha256.outputs.sha256 }}
+      apk_name: ${{ steps.rename.outputs.apk_name }}
 
     defaults:
       run:
@@ -152,11 +156,49 @@ jobs:
             -PversionName=$VERSION
 
       - name: Rename APK
+        id: rename
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          mv \
-            app/build/outputs/apk/release/app-release.apk \
-            app/build/outputs/apk/release/app-${VERSION}.apk
+
+          echo "Looking for built APK..."
+          find app/build/outputs/apk -type f -name "*.apk" -print
+
+          APK_FILES=()
+          while IFS= read -r -d '' file; do
+            APK_FILES+=("$file")
+          done < <(
+            find app/build/outputs/apk \
+              -type f \
+              -name "*.apk" \
+              -print0
+          )
+
+          if [ "${#APK_FILES[@]}" -eq 0 ]; then
+            echo "ERROR: No APK file found."
+            echo "Available build outputs:"
+            find app/build/outputs -type f -print
+            exit 1
+          fi
+
+          if [ "${#APK_FILES[@]}" -gt 1 ]; then
+            echo "WARNING: Multiple APK files found:"
+            printf '%s\n' "${APK_FILES[@]}"
+            echo "Using the first one."
+          fi
+
+          APK="${APK_FILES[0]}"
+          APK_DIR="$(dirname "$APK")"
+          TARGET="${APK_DIR}/app-${VERSION}.apk"
+
+          echo "Source APK : $APK"
+          echo "Target APK : $TARGET"
+
+          mv "$APK" "$TARGET"
+
+          echo "APK renamed successfully:"
+          ls -lh "$TARGET"
+
+          echo "apk_name=app-${VERSION}.apk" >> "$GITHUB_OUTPUT"
 
       - name: Calculate SHA256
         id: calc-sha256
@@ -166,6 +208,13 @@ jobs:
             app/build/outputs/apk/release/app-${VERSION}.apk \
             | awk '{print $1}')
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: SmartWash-Android/app/build/outputs/apk/release/app-*.apk
+          retention-days: 30
 
 
   # =========================================================
@@ -187,12 +236,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: release-assets
+
       - name: Generate release metadata
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
 
-          cat > version.json << EOF
+          mkdir -p release-assets
+
+          cat > release-assets/version.json << EOF
           {
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION}",
@@ -202,9 +259,9 @@ jobs:
             "minVersionCode": 10000,
             "changelog": "详见 GitHub Release",
             "releaseDate": "$(date +%Y-%m-%d)",
-            "backendImage": "${{ env.BACKEND_IMAGE }}:${{ github.ref_name }}",
+            "backendImage": "${{ secrets.BACKEND_IMAGE }}:${{ github.ref_name }}",
             "backendDigest": "${{ needs.backend.outputs.digest }}",
-            "webImage": "${{ env.WEB_IMAGE }}:${{ github.ref_name }}",
+            "webImage": "${{ secrets.WEB_IMAGE }}:${{ github.ref_name }}",
             "webDigest": "${{ needs.web.outputs.digest }}"
           }
           EOF
@@ -212,54 +269,55 @@ jobs:
       - name: Prepare APK
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-      
-          echo "Looking for APK..."
-      
+
+          echo "Looking for APK in release-assets..."
+
           APK_FILES=()
           while IFS= read -r -d '' file; do
             APK_FILES+=("$file")
           done < <(
-            find app/build/outputs/apk \
+            find release-assets \
               -type f \
               -name "*.apk" \
               -print0
           )
-      
+
           if [ "${#APK_FILES[@]}" -eq 0 ]; then
             echo "ERROR: No APK file found."
-            echo "Available build outputs:"
-            find app/build/outputs -type f -print
+            echo "Available files:"
+            find release-assets -type f -print
             exit 1
           fi
-      
+
           if [ "${#APK_FILES[@]}" -gt 1 ]; then
             echo "ERROR: Multiple APK files found:"
             printf '%s\n' "${APK_FILES[@]}"
-            echo "Please configure the workflow to select the correct APK."
             exit 1
           fi
-      
+
           APK="${APK_FILES[0]}"
           APK_DIR="$(dirname "$APK")"
           TARGET="${APK_DIR}/app-${VERSION}.apk"
-      
+
           echo "Source APK : $APK"
           echo "Target APK : $TARGET"
-      
-          mv "$APK" "$TARGET"
-      
-          echo "APK renamed successfully:"
+
+          if [ "$APK" != "$TARGET" ]; then
+            mv "$APK" "$TARGET"
+          fi
+
+          echo "APK ready:"
           ls -lh "$TARGET"
-      
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v3
-              with:
-                tag_name: ${{ github.ref_name }}
-                name: Release ${{ github.ref_name }}
-                generate_release_notes: true
-                files: |
-                  release-assets/app-*.apk
-                  release-assets/version.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release-assets/app-*.apk
+            release-assets/version.json
 
 
   # =========================================================
@@ -284,9 +342,9 @@ jobs:
         env:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
           VERSION: ${{ github.ref_name }}
-          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
+          BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
           BACKEND_DIGEST: ${{ needs.backend.outputs.digest }}
-          WEB_IMAGE: ${{ env.WEB_IMAGE }}
+          WEB_IMAGE: ${{ secrets.WEB_IMAGE }}
           WEB_DIGEST: ${{ needs.web.outputs.digest }}
         run: |
           DEPLOY_URL="http://${DEPLOY_WEBHOOK_HOST}:${DEPLOY_WEBHOOK_PORT}/api/deploy"
