@@ -74,7 +74,7 @@ public class AppDownloadController {
             }
 
             // 拼接完整的 MinIO 对象路径（前缀 + 文件名），生成 1 小时有效期的预签名下载 URL
-            String objectName = APK_OBJECT_PREFIX + fileName;
+            String objectName = apkObjectPrefix + fileName;
             String downloadUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(minioConfig.getBucketName())
