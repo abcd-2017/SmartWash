@@ -44,12 +44,9 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
-# Flyway 数据库迁移
+# Flyway 已废弃，数据库结构统一由根目录 smart_wash.sql 管理
 spring.flyway:
-  enabled: true
-  locations: classpath:db/migration
-  baseline-on-migrate: true
-  baseline-version: 0
+  enabled: false
 
 jwt:
   # demo 专用随机密钥（Base64，解码 32 字节，通过 JwtUtil 强度校验）；

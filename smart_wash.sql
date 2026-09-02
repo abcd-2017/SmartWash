@@ -35,7 +35,7 @@ CREATE TABLE `admin_users`  (
 -- Records of admin_users
 -- ----------------------------
 INSERT INTO `admin_users` VALUES (1, 'root', '$2a$10$mmC5QCrgV67kdBLYitSLbes2eB3Jwejj.lUVq4Abfa5PlP5HFIM0u', 1, '2025-03-09 11:17:54');
-INSERT INTO `admin_users` VALUES (2, 'admin', 'a66abb5684c45962d887564f08346e8d', 2, '2025-03-09 12:25:16');
+INSERT INTO `admin_users` VALUES (2, 'admin', '$2y$10$MJZDPvq402JQpwgOQwnByuTFZyhd1cwbFOkPk6gWB30xRS69bSWBe', 2, '2025-03-09 12:25:16');
 INSERT INTO `admin_users` VALUES (3, 'lisi', '$2a$10$AQGk1nZRxKPb4LP/rY7pz.aCsmDvBp7HrIo4HFlpyfBbhig0SkxoK', 2, '2025-03-09 12:29:48');
 
 -- ----------------------------
@@ -55,6 +55,8 @@ CREATE TABLE `coupon`  (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `valid_days` int NOT NULL COMMENT '领取后有效天数',
+  `total_limit` int NULL DEFAULT NULL COMMENT '发放总量上限（NULL 表示不限量）',
+  `issued_count` int NOT NULL DEFAULT 0 COMMENT '已发放数量',
   PRIMARY KEY (`coupon_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf16 COLLATE = utf16_bin COMMENT = '优惠券模板' ROW_FORMAT = Dynamic;
 
@@ -784,8 +786,9 @@ CREATE TABLE `payments`  (
   `user_id` bigint NOT NULL,
   `amount` decimal(10, 2) NOT NULL,
   `payment_method` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL COMMENT '\'钱包余额\' - 1, \'支付宝\' - 2, \'微信\' - 3',
-  `status` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT '0' COMMENT '\'待支付\'-0, \'已支付\'-1, \'失败\'-2',
-  `paid_at` timestamp NULL DEFAULT NULL COMMENT '支付完成时间，仅在支付成功时设置',
+  `out_trade_no` varchar(64) NULL DEFAULT NULL COMMENT '网关统一订单号（幂等键），格式：PAY + yyyyMMdd + 雪花ID',
+  `status` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT '0' COMMENT '支付状态：0-待支付，1-已支付，2-失败，3-处理中',
+  `paid_at` timestamp NULL DEFAULT NULL COMMENT '实际支付时间',
   PRIMARY KEY (`payment_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  
@@ -799,6 +802,8 @@ CREATE TABLE `recharge_records`  (
   `amount` decimal(10, 2) NOT NULL,
   `recharge_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `recharge_type` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL COMMENT '充值类型，1--微信支付，2--支付宝支付',
+  `status` varchar(10) NULL DEFAULT '3' COMMENT '充值状态：3-处理中（默认），1-充值成功，2-充值失败',
+  `out_trade_no` varchar(64) NULL DEFAULT NULL COMMENT '网关统一订单号（幂等键），格式：RCH + yyyyMMdd + 雪花ID',
   PRIMARY KEY (`record_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  
@@ -890,10 +895,265 @@ CREATE TABLE `users`  (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`) USING BTREE,
   UNIQUE INDEX `phone_number`(`phone_number` ASC) USING BTREE,
-  UNIQUE INDEX `student_id`(`student_id` ASC) USING BTREE
+  UNIQUE INDEX `student_id`(`student_id` ASC) USING BTREE,
+  UNIQUE INDEX `uk_users_campus_card` (`campus_card`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
- 
--- 用户头像字段迁移
-ALTER TABLE `users` ADD COLUMN `avatar` varchar(500) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT NULL COMMENT '头像URL' AFTER `balance`;
+
+-- ----------------------------
+-- Table structure for order_reviews（订单评价）
+-- ----------------------------
+DROP TABLE IF EXISTS `order_reviews`;
+CREATE TABLE `order_reviews` (
+  `review_id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `rating` int NOT NULL COMMENT '评分 1-5',
+  `content` varchar(500) NULL DEFAULT NULL COMMENT '评价内容',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`review_id`),
+  KEY `idx_order_id` (`order_id`),
+  KEY `idx_user_id` (`user_id`),
+  UNIQUE INDEX `uk_order_reviews_order_id` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- Indexes & Constraints（来自 Flyway V3/V5/V7）
+-- ----------------------------
+CREATE INDEX idx_lockers_school_id ON lockers(school_id);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_school_id ON orders(school_id);
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_user_id ON payments(user_id);
+CREATE INDEX idx_user_coupon_user_id ON user_coupon(user_id);
+CREATE INDEX idx_user_coupon_coupon_id ON user_coupon(coupon_id);
+CREATE INDEX idx_recharge_records_user_id ON recharge_records(user_id);
+CREATE INDEX idx_lockers_school_status ON lockers(school_id, status);
+CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+CREATE INDEX idx_payments_status_paid_at ON payments(status, paid_at);
+CREATE UNIQUE INDEX idx_orders_order_no ON orders(order_no);
+CREATE UNIQUE INDEX uk_school_locker ON lockers(school_id, locker_number);
+CREATE UNIQUE INDEX uk_payments_out_trade_no ON payments(out_trade_no);
+CREATE UNIQUE INDEX uk_recharge_records_out_trade_no ON recharge_records(out_trade_no);
+CREATE UNIQUE INDEX uk_user_coupon ON user_coupon(user_id, coupon_id);
+
+-- =====================================================================
+-- 占卜模块（观象台）—— 11 张业务表
+-- =====================================================================
+
+SET NAMES utf8mb4;
+
+-- ----------------------------
+-- Table structure for div_record（卦例主表）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_record`;
+CREATE TABLE `div_record` (
+  `id`             BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`        BIGINT       NOT NULL COMMENT 'users.id',
+  `method`         VARCHAR(16)  NOT NULL COMMENT 'liuyao/meihua/qimen/liuren',
+  `category`       VARCHAR(16)  DEFAULT 'general' COMMENT 'general/career/wealth/...',
+  `question`       VARCHAR(255) NOT NULL,
+  `cast_method`    VARCHAR(16)  NOT NULL COMMENT 'auto/manual/time',
+  `cast_at`        DATETIME(3)  NOT NULL COMMENT '起卦时刻(权威,追问沿用)',
+  `tz_offset`      INT          NOT NULL DEFAULT 480 COMMENT '分钟, 东八=480',
+  `source`         VARCHAR(16)  NOT NULL DEFAULT 'app' COMMENT 'app/today',
+  `lines`          JSON         NULL COMMENT '起卦原始输入(六爻爻值数组等)',
+  `client_chart`   JSON         NULL COMMENT '端上排盘结果快照',
+  `server_chart`   JSON         NOT NULL COMMENT '服务端core重算权威盘面',
+  `chart_verified` TINYINT      NOT NULL DEFAULT 1 COMMENT '端上/服务端盘面一致',
+  `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_time` (`user_id`, `created_at`),
+  KEY `idx_method_time` (`method`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='占卜卦例';
+
+-- ----------------------------
+-- Table structure for div_interpretation（LLM解读）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_interpretation`;
+CREATE TABLE `div_interpretation` (
+  `id`                BIGINT      NOT NULL AUTO_INCREMENT,
+  `record_id`         BIGINT      NOT NULL,
+  `user_id`           BIGINT      NOT NULL,
+  `prompt_version_id` BIGINT      NOT NULL,
+  `kind`              VARCHAR(16) NOT NULL DEFAULT 'first' COMMENT 'first/followup',
+  `question`          VARCHAR(255) DEFAULT NULL COMMENT '追问时的子问题',
+  `provider`          VARCHAR(32) NOT NULL,
+  `model`             VARCHAR(64) NOT NULL,
+  `key_source`        VARCHAR(16) NOT NULL DEFAULT 'platform' COMMENT 'platform/user',
+  `config_id`         BIGINT      NULL COMMENT '模型配置id(平台目录或用户BYOK)',
+  `content_md`        MEDIUMTEXT  NOT NULL,
+  `tokens_in`         INT         NOT NULL DEFAULT 0,
+  `tokens_out`        INT         NOT NULL DEFAULT 0,
+  `latency_ms`        INT         NOT NULL DEFAULT 0,
+  `cache_hit`         TINYINT     NOT NULL DEFAULT 0,
+  `audit_status`      TINYINT     NOT NULL DEFAULT 0 COMMENT '0待审/1通过/2不一致',
+  `audit_json`        JSON        NULL COMMENT '审计明细:引用字段vs盘面diff',
+  `created_at`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_record` (`record_id`, `created_at`),
+  KEY `idx_audit` (`audit_status`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='LLM解读';
+
+-- ----------------------------
+-- Table structure for div_feedback（解读反馈）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_feedback`;
+CREATE TABLE `div_feedback` (
+  `id`                BIGINT      NOT NULL AUTO_INCREMENT,
+  `record_id`         BIGINT      NOT NULL,
+  `interpretation_id` BIGINT      NOT NULL,
+  `user_id`           BIGINT      NOT NULL,
+  `rating`            TINYINT     NOT NULL COMMENT '1-5',
+  `outcome`           TINYINT     DEFAULT 0 COMMENT '0未回填/1应验/2未验/3难说',
+  `outcome_note`      VARCHAR(500) DEFAULT NULL,
+  `created_at`        DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_record` (`record_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='解读反馈';
+
+-- ----------------------------
+-- Table structure for div_prompt_version（Prompt版本）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_prompt_version`;
+CREATE TABLE `div_prompt_version` (
+  `id`             BIGINT      NOT NULL AUTO_INCREMENT,
+  `method`         VARCHAR(16) NOT NULL,
+  `version`        VARCHAR(16) NOT NULL COMMENT '如 liuyao-v1.2',
+  `system_prompt`  TEXT        NOT NULL,
+  `method_text`    TEXT        NOT NULL COMMENT '领域分析方法文本',
+  `output_config`  JSON        NOT NULL COMMENT 'temperature/max_tokens等',
+  `status`         TINYINT     NOT NULL DEFAULT 0 COMMENT '0草稿/1激活/2退役',
+  `remark`         VARCHAR(255) DEFAULT NULL,
+  `created_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_method_version` (`method`, `version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Prompt版本';
+
+-- ----------------------------
+-- Table structure for div_rag_document（古籍文档）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_rag_document`;
+CREATE TABLE `div_rag_document` (
+  `id`         BIGINT      NOT NULL AUTO_INCREMENT,
+  `title`      VARCHAR(128) NOT NULL COMMENT '如 增删卜易',
+  `book`       VARCHAR(64)  NOT NULL,
+  `method`     VARCHAR(16)  NOT NULL COMMENT '适用术数',
+  `status`     TINYINT      NOT NULL DEFAULT 0 COMMENT '0导入中/1可用',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='古籍文档';
+
+-- ----------------------------
+-- Table structure for div_rag_chunk（语料切片）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_rag_chunk`;
+CREATE TABLE `div_rag_chunk` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT,
+  `document_id` BIGINT      NOT NULL,
+  `chapter`     VARCHAR(128) DEFAULT NULL,
+  `seq`         INT         NOT NULL,
+  `content`     TEXT        NOT NULL,
+  `embedding`   JSON        NOT NULL COMMENT 'float数组',
+  `token_count` INT         NOT NULL DEFAULT 0,
+  `created_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_doc` (`document_id`, `seq`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='语料切片';
+
+-- ----------------------------
+-- Table structure for div_blocked_question（拦截问题）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_blocked_question`;
+CREATE TABLE `div_blocked_question` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT       NOT NULL,
+  `question`   VARCHAR(255) NOT NULL,
+  `method`     VARCHAR(16)  DEFAULT NULL,
+  `reason`     VARCHAR(255) NOT NULL COMMENT '规则id或llm',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='拦截问题';
+
+-- ----------------------------
+-- Table structure for div_usage_daily（每日用量）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_usage_daily`;
+CREATE TABLE `div_usage_daily` (
+  `id`              BIGINT      NOT NULL AUTO_INCREMENT,
+  `stat_date`       DATE        NOT NULL,
+  `method`          VARCHAR(16) NOT NULL,
+  `record_count`    INT         NOT NULL DEFAULT 0,
+  `interpret_count` INT         NOT NULL DEFAULT 0,
+  `cache_hit_count` INT         NOT NULL DEFAULT 0,
+  `blocked_count`   INT         NOT NULL DEFAULT 0,
+  `tokens_in`       BIGINT      NOT NULL DEFAULT 0,
+  `tokens_out`      BIGINT      NOT NULL DEFAULT 0,
+  `active_users`    INT         NOT NULL DEFAULT 0,
+  `created_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_date_method` (`stat_date`, `method`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日用量';
+
+-- ----------------------------
+-- Table structure for div_model_config（平台模型目录）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_model_config`;
+CREATE TABLE `div_model_config` (
+  `id`             BIGINT       NOT NULL AUTO_INCREMENT,
+  `name`           VARCHAR(64)  NOT NULL COMMENT '显示名,如 GLM-4.7',
+  `provider`       VARCHAR(32)  NOT NULL DEFAULT 'openai_compat',
+  `base_url`       VARCHAR(255) NOT NULL,
+  `model_id`       VARCHAR(64)  NOT NULL COMMENT '供应商模型标识',
+  `api_key_cipher` VARCHAR(512) NOT NULL COMMENT 'AES-256-GCM 密文 v{ver}:{iv}:{ct}',
+  `api_key_mask`   VARCHAR(32)  NOT NULL COMMENT '掩码 sk-****abc4',
+  `priority`       INT          NOT NULL DEFAULT 100 COMMENT '越小越优先',
+  `enabled`        TINYINT      NOT NULL DEFAULT 1,
+  `key_version`    INT          NOT NULL DEFAULT 1 COMMENT '加密主密钥版本',
+  `last_test_at`   DATETIME     NULL,
+  `last_test_ok`   TINYINT      NULL,
+  `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台模型目录';
+
+-- ----------------------------
+-- Table structure for div_platform_setting（平台全局设置）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_platform_setting`;
+CREATE TABLE `div_platform_setting` (
+  `id`                   BIGINT NOT NULL,
+  `default_model_id`     BIGINT NOT NULL COMMENT 'div_model_config.id',
+  `fallback_model_id`    BIGINT NULL COMMENT '备用模型',
+  `byok_enabled`         TINYINT NOT NULL DEFAULT 0 COMMENT '是否允许用户自带key',
+  `byok_daily_limit`     INT    NOT NULL DEFAULT 50,
+  `platform_daily_limit` INT    NOT NULL DEFAULT 20,
+  `updated_at`           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='占卜平台全局设置';
+
+-- ----------------------------
+-- Table structure for div_user_api_config（用户自带API BYOK）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_user_api_config`;
+CREATE TABLE `div_user_api_config` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`         BIGINT       NOT NULL,
+  `model_config_id` BIGINT       NULL COMMENT '用平台预设供应商时引用 div_model_config.id',
+  `custom_base_url` VARCHAR(255) NULL COMMENT '完全自定义接入点时填',
+  `custom_model`    VARCHAR(64)  NULL,
+  `api_key_cipher`  VARCHAR(512) NOT NULL COMMENT 'AES-256-GCM 密文',
+  `api_key_mask`    VARCHAR(32)  NOT NULL COMMENT '掩码',
+  `key_version`     INT          NOT NULL DEFAULT 1,
+  `verified`        TINYINT      NOT NULL DEFAULT 0 COMMENT '保存前试呼通过',
+  `last_test_at`    DATETIME     NULL,
+  `enabled`         TINYINT      NOT NULL DEFAULT 1,
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户自带API(BYOK)';
 
 SET FOREIGN_KEY_CHECKS = 1;
