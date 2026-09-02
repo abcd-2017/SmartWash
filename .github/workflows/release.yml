@@ -148,12 +148,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build release APK
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
           ./gradlew assembleRelease \
             -PversionCode=$VERSION_CODE \
-            -PversionName=$VERSION
+            -PversionName=$VERSION \
+            -PbaseUrl=$BASE_URL
 
       - name: Rename APK
         id: rename
