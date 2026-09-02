@@ -34,9 +34,13 @@ import java.nio.file.Paths;
 @RequiredArgsConstructor
 public class AppDownloadController {
 
-    /** 版本文件路径，可通过配置文件覆盖；默认 /opt/smartwash/releases/latest/version.json */
-    @Value("${app.version.file-path:/opt/smartwash/releases/latest/version.json}")
+    /** 版本文件路径，可通过配置文件覆盖；默认 /app/config/releases/latest/version.json */
+    @Value("${app.version.file-path:/app/config/releases/latest/version.json}")
     private String versionFilePath;
+
+    /** APK 在 MinIO 桶下的对象前缀路径，与 deploy.sh 的 MINIO_APK_PATH 保持一致 */
+    @Value("${app.apk.object-prefix:android/}")
+    private String apkObjectPrefix;
 
     private final MinioClient minioClient;
     private final MinioConfig minioConfig;
@@ -69,11 +73,12 @@ public class AppDownloadController {
                 return Result.failMsg("版本信息缺少文件名");
             }
 
-            // 生成 1 小时有效期的预签名下载 URL
+            // 拼接完整的 MinIO 对象路径（前缀 + 文件名），生成 1 小时有效期的预签名下载 URL
+            String objectName = APK_OBJECT_PREFIX + fileName;
             String downloadUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(minioConfig.getBucketName())
-                            .object(fileName)
+                            .object(objectName)
                             .method(io.minio.http.Method.GET)
                             .expiry(3600)
                             .build()

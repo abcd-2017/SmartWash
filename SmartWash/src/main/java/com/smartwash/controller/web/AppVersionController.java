@@ -28,8 +28,8 @@ import java.nio.file.Paths;
 @RequestMapping("/web")
 public class AppVersionController {
 
-    /** 版本文件路径，可通过配置文件覆盖；默认 /opt/smartwash/releases/latest/version.json */
-    @Value("${app.version.file-path:/opt/smartwash/releases/latest/version.json}")
+    /** 版本文件路径，可通过配置文件覆盖；默认 /app/config/releases/latest/version.json */
+    @Value("${app.version.file-path:/app/config/releases/latest/version.json}")
     private String versionFilePath;
 
     /**
