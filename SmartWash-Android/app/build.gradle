@@ -29,6 +29,17 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release 签名配置：密码通过 ~/.gradle/gradle.properties 或 CI 环境变量传入，不入库。
+    // 本地开发构建 release 时若未配置，signingConfig 会回退到 debug keystore（仅用于测试，不可发布）。
+    signingConfigs {
+        release {
+            storeFile file(project.findProperty('SMART_WASH_STORE_FILE') ?: 'none')
+            storePassword project.findProperty('SMART_WASH_STORE_PASSWORD') ?: ''
+            keyAlias project.findProperty('SMART_WASH_KEY_ALIAS') ?: ''
+            keyPassword project.findProperty('SMART_WASH_KEY_PASSWORD') ?: ''
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
@@ -36,6 +47,8 @@ android {
             buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
         }
         release {
+            // 签名：CI 环境注入 release 签名；本地未配置时回退 debug keystore（仅测试用）
+            signingConfig signingConfigs.release
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
             buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
             minifyEnabled true // 开启代码压缩与混淆
