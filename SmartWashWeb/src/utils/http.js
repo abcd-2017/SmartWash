@@ -7,7 +7,9 @@ import { useAuthStore } from '@/stores/auth';
 // baseURL 从环境变量读取：开发环境为 /api（走 vite 代理转发），
 // 生产环境由 .env.production 注入完整地址；生产建议改用 Nginx 反代 + HTTPS 域名
 const http = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL || '/api',
+  // 编译时由 vite.config.js define 注入 __SMART_WASH_BASE_URL__（与 Android 端对齐）；
+  // 兜底：VITE_BASE_URL（.env 文件）→ /api（开发代理）
+  baseURL: __SMART_WASH_BASE_URL__ || import.meta.env.VITE_BASE_URL || '/api',
   // 请求超时 30 秒：与 Android（OkHttp read 30s）、鸿蒙端（readTimeout 30s）三端统一基准（评审 #20），
   // 覆盖导出、地图选点等慢接口，避免大分页/弱网下被 5s 误杀
   timeout: 30000,

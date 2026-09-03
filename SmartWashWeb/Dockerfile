@@ -12,6 +12,10 @@ RUN npm ci
 
 # 复制源码并构建
 COPY . .
+
+# 编译时注入后端地址（与 Android -PbaseUrl 对齐），未传则为空——禁止明文 IP 入库
+ARG SMART_WASH_BASE_URL=
+ENV SMART_WASH_BASE_URL=${SMART_WASH_BASE_URL}
 RUN npm run build
 
 # ------------------------------------------------------------

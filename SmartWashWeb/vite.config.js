@@ -13,8 +13,16 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
+// 统一后端地址（与 Android 端对齐）：通过环境变量注入，无兜底——未传则构建报错，禁止明文 IP 入库。
+// 本地开发：npm run dev 走 Vite 代理，不依赖此值。
+// 生产构建：SMART_WASH_BASE_URL=https://your-domain.com/ npm run build
+const smartwashBaseUrl = process.env.SMART_WASH_BASE_URL || ''
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __SMART_WASH_BASE_URL__: JSON.stringify(smartwashBaseUrl),
+  },
   plugins: [
     vue(),
     vueDevTools(),
