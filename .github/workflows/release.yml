@@ -114,6 +114,9 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ github.ref_name }}
             org.opencontainers.image.revision=${{ github.sha }}
+          # 编译时注入后端地址（与 Android -PbaseUrl 对齐）
+          build-args: |
+            SMART_WASH_BASE_URL=${{ secrets.BASE_URL }}
 
 
   # =========================================================
@@ -147,9 +150,17 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      # 解码 release 签名密钥库（base64 编码存储于 secrets，避免明文入库）
+      - name: Decode Keystore
+        run: echo "${{ secrets.SMART_WASH_STORE_BASE64 }}" | base64 -d > /tmp/smartwash.jks
+
       - name: Build release APK
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
+          SMART_WASH_STORE_FILE: /tmp/smartwash.jks
+          SMART_WASH_STORE_PASSWORD: ${{ secrets.SMART_WASH_STORE_PASSWORD }}
+          SMART_WASH_KEY_ALIAS: ${{ secrets.SMART_WASH_KEY_ALIAS }}
+          SMART_WASH_KEY_PASSWORD: ${{ secrets.SMART_WASH_KEY_PASSWORD }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
