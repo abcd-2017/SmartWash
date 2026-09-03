@@ -169,12 +169,13 @@ jobs:
             -PversionName=$VERSION \
             -PbaseUrl=$BASE_URL
 
-      - name: Rename APK
+      # ABI 分包后生成多个 APK，按架构重命名
+      - name: Rename APKs
         id: rename
         run: |
           VERSION=${GITHUB_REF_NAME#v}
 
-          echo "Looking for built APK..."
+          echo "Looking for built APKs..."
           find app/build/outputs/apk -type f -name "*.apk" -print
 
           APK_FILES=()
@@ -194,32 +195,34 @@ jobs:
             exit 1
           fi
 
-          if [ "${#APK_FILES[@]}" -gt 1 ]; then
-            echo "WARNING: Multiple APK files found:"
-            printf '%s\n' "${APK_FILES[@]}"
-            echo "Using the first one."
-          fi
+          RENAMED_APKS=()
+          for APK in "${APK_FILES[@]}"; do
+            APK_DIR="$(dirname "$APK")"
+            # 从文件名提取 ABI（如 app-arm64-v8a-release.apk → arm64-v8a）
+            ABI=$(echo "$APK" | grep -oE 'arm64-v8a|armeabi-v7a|x86|x86_64' || echo "universal")
+            TARGET="${APK_DIR}/app-${VERSION}-${ABI}.apk"
 
-          APK="${APK_FILES[0]}"
-          APK_DIR="$(dirname "$APK")"
-          TARGET="${APK_DIR}/app-${VERSION}.apk"
+            echo "Source APK : $APK"
+            echo "Target APK : $TARGET"
 
-          echo "Source APK : $APK"
-          echo "Target APK : $TARGET"
+            mv "$APK" "$TARGET"
+            RENAMED_APKS+=("app-${VERSION}-${ABI}.apk")
+            echo "apk_name_${ABI}=app-${VERSION}-${ABI}.apk" >> "$GITHUB_OUTPUT"
+          done
 
-          mv "$APK" "$TARGET"
+          echo "APKs renamed successfully:"
+          ls -lh "$APK_DIR"/app-*.apk
 
-          echo "APK renamed successfully:"
-          ls -lh "$TARGET"
-
-          echo "apk_name=app-${VERSION}.apk" >> "$GITHUB_OUTPUT"
+          # 默认 APK（arm64-v8a）用于 version.json
+          echo "apk_name=app-${VERSION}-arm64-v8a.apk" >> "$GITHUB_OUTPUT"
 
       - name: Calculate SHA256
         id: calc-sha256
         run: |
           VERSION=${GITHUB_REF_NAME#v}
+          # 计算默认 APK（arm64-v8a）的 SHA256
           SHA=$(sha256sum \
-            app/build/outputs/apk/release/app-${VERSION}.apk \
+            app/build/outputs/apk/release/app-${VERSION}-arm64-v8a.apk \
             | awk '{print $1}')
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
 
@@ -280,48 +283,10 @@ jobs:
           }
           EOF
 
-      - name: Prepare APK
+      - name: Prepare APKs
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
-
-          echo "Looking for APK in release-assets..."
-
-          APK_FILES=()
-          while IFS= read -r -d '' file; do
-            APK_FILES+=("$file")
-          done < <(
-            find release-assets \
-              -type f \
-              -name "*.apk" \
-              -print0
-          )
-
-          if [ "${#APK_FILES[@]}" -eq 0 ]; then
-            echo "ERROR: No APK file found."
-            echo "Available files:"
-            find release-assets -type f -print
-            exit 1
-          fi
-
-          if [ "${#APK_FILES[@]}" -gt 1 ]; then
-            echo "ERROR: Multiple APK files found:"
-            printf '%s\n' "${APK_FILES[@]}"
-            exit 1
-          fi
-
-          APK="${APK_FILES[0]}"
-          APK_DIR="$(dirname "$APK")"
-          TARGET="${APK_DIR}/app-${VERSION}.apk"
-
-          echo "Source APK : $APK"
-          echo "Target APK : $TARGET"
-
-          if [ "$APK" != "$TARGET" ]; then
-            mv "$APK" "$TARGET"
-          fi
-
-          echo "APK ready:"
-          ls -lh "$TARGET"
+          echo "APKs in release-assets:"
+          ls -lh release-assets/*.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

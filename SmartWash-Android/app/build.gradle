@@ -29,6 +29,16 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // ABI 分包：每种架构生成独立 APK，体积减半（GitHub Release 直接分发，不用 App Bundle）
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            universalApk false
+        }
+    }
+
     // Release 签名配置：优先读取 Gradle 属性（本地 ~/.gradle/gradle.properties），
     // 其次读取环境变量（CI 传入），均无则回退到 'none'（构建即失败，强制必须配置）。
     signingConfigs {
