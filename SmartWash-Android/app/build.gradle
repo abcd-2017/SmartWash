@@ -29,14 +29,14 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    // Release 签名配置：密码通过 ~/.gradle/gradle.properties 或 CI 环境变量传入，不入库。
-    // 本地开发构建 release 时若未配置，signingConfig 会回退到 debug keystore（仅用于测试，不可发布）。
+    // Release 签名配置：优先读取 Gradle 属性（本地 ~/.gradle/gradle.properties），
+    // 其次读取环境变量（CI 传入），均无则回退到 'none'（构建即失败，强制必须配置）。
     signingConfigs {
         release {
-            storeFile file(project.findProperty('SMART_WASH_STORE_FILE') ?: 'none')
-            storePassword project.findProperty('SMART_WASH_STORE_PASSWORD') ?: ''
-            keyAlias project.findProperty('SMART_WASH_KEY_ALIAS') ?: ''
-            keyPassword project.findProperty('SMART_WASH_KEY_PASSWORD') ?: ''
+            storeFile file(project.findProperty('SMART_WASH_STORE_FILE') ?: System.getenv('SMART_WASH_STORE_FILE') ?: 'none')
+            storePassword project.findProperty('SMART_WASH_STORE_PASSWORD') ?: System.getenv('SMART_WASH_STORE_PASSWORD') ?: ''
+            keyAlias project.findProperty('SMART_WASH_KEY_ALIAS') ?: System.getenv('SMART_WASH_KEY_ALIAS') ?: ''
+            keyPassword project.findProperty('SMART_WASH_KEY_PASSWORD') ?: System.getenv('SMART_WASH_KEY_PASSWORD') ?: ''
         }
     }
 
