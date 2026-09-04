@@ -273,9 +273,7 @@ jobs:
             "minVersionCode": 10000,
             "changelog": "详见 GitHub Release",
             "releaseDate": "$(date +%Y-%m-%d)",
-            "backendImage": "${{ secrets.BACKEND_IMAGE }}:${{ github.ref_name }}",
             "backendDigest": "${{ needs.backend.outputs.digest }}",
-            "webImage": "${{ secrets.WEB_IMAGE }}:${{ github.ref_name }}",
             "webDigest": "${{ needs.web.outputs.digest }}"
           }
           EOF
