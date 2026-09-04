@@ -52,10 +52,6 @@ public class SecurityConfig {
                             "/web/app/download"
                     ).permitAll()
                     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**", "/v3/api-docs/**").permitAll() // Swagger API 文档
-                    .requestMatchers(
-                        "/actuator/health",
-                        "/actuator/health/**"
-                    ).permitAll()
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
