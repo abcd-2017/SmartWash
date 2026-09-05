@@ -2,7 +2,6 @@
 # 测试环境配置（mvn test 专用）：完全不依赖真实 MySQL / Redis / MinIO
 # - 数据库使用 H2 内存库（MySQL 兼容模式 MODE=MySQL），表结构由 src/test/resources/schema.sql 初始化
 #   （注意驱动类名必须是 org.h2.Driver，不能用 mysql-connector 的 com.mysql.cj.jdbc.Driver）
-# - Flyway 关闭：迁移脚本为 MySQL 方言（ENGINE/CHARSET/ON UPDATE），H2 不兼容
 # - Redis / MinIO 仅提供惰性配置占位：Lettuce 客户端与 MinioClient 创建阶段均不建连，
 #   上下文加载不依赖任何真实中间件（首次真正发起命令前不会 connect）
 # - JWT_SECRET 为仅测试用的合法 Base64 密钥（解码后 34 字节 >= JwtUtil 的 32 字节下限），
@@ -15,8 +14,6 @@ spring:
     url: jdbc:h2:mem:smart_wash_test;MODE=MySQL;DB_CLOSE_DELAY=-1
     username: sa
     password: ""
-  flyway:
-    enabled: false
   sql:
     init:
       # 嵌入式库默认即执行 classpath:schema.sql，显式声明便于理解

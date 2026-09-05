@@ -18,7 +18,7 @@
 | 认证 | JWT（jjwt，7 天有效期，Redis 登出黑名单） |
 | JSON | FastJSON 2 |
 | 工具库 | Lombok、Hutool（Snowflake/IdUtil）、MinIO（对象存储） |
-| 数据库迁移 | Flyway（`src/main/resources/db/migration/`，已有 V1-V3） |
+| 数据库结构 | 统一由根目录 `smart_wash.sql` 管理 |
 | 构建 | Maven（无 Wrapper，用系统 `mvn`） |
 
 ---
@@ -80,7 +80,7 @@ src/main/java/com/smartwash/
 1. 所有 API 返回 `Result<T>`，禁止直接返回实体/字符串。
 2. 新接口遵循上表路由规范；参数进 `from/`、返回进 `vo/`。
 3. **资金与状态流转必须防并发**：条件 UPDATE 判影响行数或 `SELECT FOR UPDATE`，禁止 check-then-act；金额一律后端计算。
-4. 数据库结构变更走 Flyway 迁移，不改根目录 smart_wash.sql；禁止给 payments/recharge_records 加删除入口。
+4. 数据库结构变更统一修改根目录 `smart_wash.sql`；禁止给 payments/recharge_records 加删除入口。
 5. 代码注释、日志用中文；请求级高频日志用 debug。
 6. 敏感信息走环境变量，不落 `application.yaml` 默认值。
 
@@ -94,7 +94,7 @@ mvn test                       # 测试（注意：当前会连真实 MySQL/Redi
 mvn clean package -DskipTests  # 打包
 ```
 
-- 无多环境 profile（待建 application-{dev,prod}.yaml）；短信/支付为桩实现（StubSmsServiceImpl、StubPaymentGatewayServiceImpl）。
+- 提供 `application-dev.yaml`（开发，桩实现开启）与 `application-prod.yaml`（生产，敏感项无默认值围栏，桩实现关闭）两套 profile；短信/支付为桩实现（StubSmsServiceImpl、StubPaymentGatewayServiceImpl）。
 - Swagger 与 CORS 含内网通配放行（`http://192.168.*`），按 profile 收紧前不要用于公网。
 
 ---

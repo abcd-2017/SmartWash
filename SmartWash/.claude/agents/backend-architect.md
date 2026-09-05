@@ -1,6 +1,6 @@
 ---
 name: backend-architect
-description: SmartWash 后端架构决策代理。设计新模块、划分事务边界、设计订单状态机扩展、Redis 缓存一致性策略、Flyway 迁移与索引方案时使用。输出结构改动方案并可直接实施结构性重构。
+description: SmartWash 后端架构决策代理。设计新模块、划分事务边界、设计订单状态机扩展、Redis 缓存一致性策略、索引方案时使用。输出结构改动方案并可直接实施结构性重构。
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
@@ -12,7 +12,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - 事务边界方案：多表一致性操作的事务范围、事务内禁止注册非事务资源（内存任务/MQ）
 - 订单状态机扩展：流转白名单（参照 `OrdersServiceImpl` 现有实现）+ 条件更新 SQL 设计
 - 缓存一致性：`@Cacheable`/`@CacheEvict` 配对方案（历史事故：优惠券缓存未随领取失效）
-- Flyway 迁移与索引设计：条件更新必须配套唯一索引/条件索引；迁移只增不改历史文件
+- 索引设计：条件更新必须配套唯一索引/条件索引
 
 ## 硬约束
 

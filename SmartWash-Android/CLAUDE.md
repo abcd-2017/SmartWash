@@ -36,8 +36,8 @@
 ./gradlew lint             # 代码检查
 ```
 
-- **环境配置**：BASE_URL 由 `app/build.gradle` 的 `buildConfigField` 按 buildType 注入（debug 指向局域网）。**当前 release 是占位符地址 `https://api.smartwash.example.com/`，发布前必须改为真实地址**——修改网络层时禁止新增硬编码 URL。
-- Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP。**发版前须按生产地址改为 HTTPS 并移除该开关**，不再维护 IP 白名单。
+- **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
+- Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP，并声明 `REQUEST_INSTALL_PACKAGES`（APK 热更新）与 FileProvider（APK 安装）。**发版前须按生产地址改为 HTTPS 并移除该开关**。
 - Maven 仓库用阿里云镜像；海外构建需改回 `google()` / `mavenCentral()`。
 
 ## 项目架构
@@ -47,17 +47,27 @@
 ### 分层结构
 
 ```
-ui/page/<功能>/     → Compose Page + ViewModel（页面级，一页一个 VM）
-repository/         → 7 个 @Singleton Repository（User/Order/Laundry/Coupon/Payment/Recharge/School），
+ui/page/<功能>/     → Compose Page + ViewModel（页面级，一页一个 VM），含观象台 7 个页面
+  ui/page/divination/ → 观象台子页面（home/ask/cast/chart/reading/followup/history）
+repository/         → 8 个 @Singleton Repository（User/Order/Laundry/Coupon/Payment/Recharge/School/AppUpdate），
                       ViewModel 一律经 Repository 访问数据；Laundry/School/Coupon 实现
                       「内存 → Room → 网络」缓存降级
-network/api/        → Retrofit 接口（Hilt 注入到 Repository/ViewModel）
+network/api/        → Retrofit 接口（含 AppUpdateApi，共 8 个，Hilt 注入）
 network/entity/     → 请求体 + ResponseData<T> 包装 {code, message, data}
 network/vo/         → 服务端返回值对象
 network/interceptor/ → RequestInterceptor（鉴权注入）、ResponseInterceptor（错误转译）
+network/session/    → SessionManager + SessionEventBus（会话事件总线）
 database/           → Room（Laundry/School/Coupon 三个 DAO 已在用）
 paging/             → Paging 3 分页实现（pagingFlow 封装 + OrderPagingSource 等）
-utils/              → DataStore 封装（SharePreferenceUtils）、RequestState、枚举常量、动效/触感工具
+service/            → ApkDownloadWorker（WorkManager 后台下载）+ ApkInstaller（APK 安装器）
+di/                 → Hilt 模块（UpdateModule 提供 AppUpdate 相关依赖）
+divination/         → 完整占卜子系统
+  divination/core/  → 四套算法内核（liuren 六壬 / liuyao 六爻 / meihua 梅花 / qimen 奇门）+ 公共干支/爻
+  divination/network/ → DivinationApi（Retrofit）
+  divination/data/  → 数据层
+  divination/di/    → Hilt 依赖注入模块
+  divination/ui/    → 观象台 UI 组件与页面
+utils/              → DataStore 封装（SharePreferenceUtils）、RequestState、枚举常量、动效/触感工具（AnimationUtils/HapticUtils）
 ```
 
 ### 核心设计模式
@@ -68,7 +78,7 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 
 **状态管理** — ViewModel 用 `MutableStateFlow` → `asStateFlow()` 暴露状态；`RequestState` 密封类是统一异步 UI 状态。
 
-**依赖注入** — `RetrofitClient` 是 Hilt `@Module`，提供 Retrofit 单例及 API 实例；ViewModel 用 `@HiltViewModel` + `@Inject constructor`。
+**依赖注入** — `RetrofitClient` 是 Hilt `@Module`，提供 Retrofit 单例及 API 实例；ViewModel 用 `@HiltViewModel` + `@Inject constructor`。Hilt 注解处理统一走 **KSP**（`build.gradle` 使用 `ksp(libs.hilt.compiler)`，与 Room 一致）。
 
 **分页** — 订单/优惠券列表走手写 Map 分页（OrderViewModel），取件/充值记录走 Paging 3（`pagingFlow`：debounce + flatMapLatest + cachedIn）；新增分页列表优先用 Paging 3。
 
@@ -87,7 +97,7 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 
 **自动生效 skill**：`android-kotlin`、`android-jetpack-compose`（按 `.kt` 路径触发）；按需调用 `android-clean-architecture`、`mobile-android-design`。
 
-`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个 Android 子代理，按任务派发：
+`.claude/agents/` 提供 6 个 Android 子代理，按任务派发：
 
 - `android-dev` — 功能开发执行（MVVM/RequestState/新页面清单约束）
 - `android-review` — 提交前 Compose 正确性只读审查
@@ -103,7 +113,7 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 - `utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处按压反馈实际无效——修复前不要模仿该写法。
 - Room 无 migration 配置；缓存写入是 deleteAll + insertAll 无事务，改动 database/ 时需补 `@Transaction`。
 - `App.globalRequestBefore/AfterCallback` 静态 lateinit 在 setContent 前发请求会崩——新增早期请求路径需先处理。
-- 测试仅有模板类；给 ResponseInterceptor、参数校验等纯逻辑补单测时放 `app/src/test/`。
+- 测试除模板类 `ExampleUnitTest` 外，还有观象台四套算法内核的锚点单测（`divination/core/liuren|liuyao|meihua|qimen/*AnchorTest.kt`）；给 ResponseInterceptor、参数校验等纯逻辑补单测时放 `app/src/test/`。
 
 ## 提交规范
 

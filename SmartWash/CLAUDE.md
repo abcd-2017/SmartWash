@@ -31,8 +31,8 @@ mvn clean package -DskipTests  # 打包
 ```
 
 - **MySQL 8.x** `127.0.0.1:3306`，库 `smart_wash`；**Redis** `127.0.0.1:6379`，database `3`。配置在 `src/main/resources/application.yaml`。
-- **注意**：目前没有 dev/prod profile，`mvn test` 的 `SmartWashApplicationTests` 会连真实 MySQL/Redis。
-- 数据库结构变更走 Flyway 迁移（`src/main/resources/db/migration/`，已有 V1-V3），不要只改 `smart_wash.sql`。
+- 提供 `application-dev.yaml`（开发，桩实现开启）与 `application-prod.yaml`（生产，敏感项无默认值围栏）两套 profile。`mvn test` 的 `SmartWashApplicationTests` 会连真实 MySQL/Redis（无 test profile）。
+- 数据库结构统一由根目录 `smart_wash.sql` 管理，结构变更请直接修改该文件。
 
 ## 架构
 
@@ -65,6 +65,7 @@ mvn clean package -DskipTests  # 打包
 | `mapper/` | MyBatis-Plus `BaseMapper`。自定义 SQL 在 `src/main/resources/mapper/*.xml` |
 | `service/` | 接口继承 `IService<T>`；实现在 `service/impl/` 继承 `ServiceImpl<M, T>` |
 | `task/` | 定时任务（`OrderTimeoutManager` 订单超时取消） |
+| `divination/` | 「观象台」占卜子系统（controller / core 四算法 / llm / prompt / entity / mapper / service / vo / from / task） |
 | `utils/` | `JwtUtil`、`LoginUser`、`UserContextHolder`（ThreadLocal）、`SecurityUtil`、`QrCodeUtil` |
 | `vo/` | 视图对象，命名 `{实体}Vo` |
 
@@ -94,7 +95,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 子代理与相关 Skills
 
-`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个后端子代理，按任务派发：
+`.claude/agents/` 提供 6 个后端子代理，按任务派发：
 
 - `backend-dev` — 功能开发执行（分层/资金硬规则约束）
 - `backend-review` — 提交前安全与资金一致性只读审查
