@@ -37,7 +37,7 @@
 ```
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 的 `buildConfigField` 按 buildType 注入（debug 指向局域网）。**当前 release 是占位符地址 `https://api.smartwash.example.com/`，发布前必须改为真实地址**——修改网络层时禁止新增硬编码 URL。
-- Manifest 中 `usesCleartextTraffic=true` 是为 debug 明文 HTTP 打开的全局开关，不要依赖它新增明文流量。
+- Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP。**发版前须按生产地址改为 HTTPS 并移除该开关**，不再维护 IP 白名单。
 - Maven 仓库用阿里云镜像；海外构建需改回 `google()` / `mavenCentral()`。
 
 ## 项目架构

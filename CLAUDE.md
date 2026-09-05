@@ -41,7 +41,7 @@
 
 ## 环境红线
 
-- **生产禁明文 HTTP**：当前鸿蒙/Web 硬编码 `http://8.148.70.81:9000`、Android release BASE_URL 是占位符（详见评审报告 P0），改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。
+- **生产禁明文 HTTP**：当前鸿蒙/Web 硬编码 `http://8.148.70.81:9000`（详见评审报告 P0），改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。Android 端 `usesCleartextTraffic=true` 为 demo 全局放行，发版前须按生产地址改为 HTTPS 并移除该开关。
 - **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
 - 后端地址等环境差异见各子项目 CLAUDE.md 的「构建与运行」。
 
