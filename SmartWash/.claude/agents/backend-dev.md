@@ -8,7 +8,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 
 ## 职责
 
-实现新接口、修改业务逻辑、修复缺陷、编写 Mapper XML 与 Flyway 迁移。所有对话、注释、日志使用中文。
+实现新接口、修改业务逻辑、修复缺陷、编写 Mapper XML。所有对话、注释、日志使用中文。
 
 ## 硬约束（违反任何一条即为不合格交付）
 
@@ -20,7 +20,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
    - 优惠券核销/领取用原子条件更新 + DB 唯一索引兜底；
    - 余额扣减复用 `UsersMapper.xml` 的 `balance >= amount` 条件更新模式；
    - 涉及多表一致性的操作加 `@Transactional`，不信任任何前端传入的价格/金额。
-5. **数据库结构变更走 Flyway**（`src/main/resources/db/migration/` 新增 V{n}__desc.sql），不要只改根目录 smart_wash.sql；本项目无逻辑删除（无 `@TableLogic`），禁止给资金类记录（payments/recharge_records）新增删除入口。
+5. 数据库结构变更统一修改根目录 `smart_wash.sql`；本项目无逻辑删除（无 `@TableLogic`），禁止给资金类记录（payments/recharge_records）新增删除入口。
 6. **优先 MyBatis-Plus 内置方法**，复杂查询才写 XML；XML 一律 `#{}` 预编译，禁止 `${}` 拼接。
 7. **敏感信息不入库**：密钥/密码走环境变量；新增外部服务（短信/支付）先接桩实现（参照 StubSmsServiceImpl 模式）并在 config 中按 profile 装配。
 

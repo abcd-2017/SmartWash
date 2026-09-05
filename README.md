@@ -38,10 +38,11 @@ SmartWash/
 ```
 com.smartwash/
 ├── controller/
-│   ├── web/                  # 移动端 API（Android / 鸿蒙消费）
+│   ├── LoginController.java  # 登录/注册/验证码（顶层）
+│   ├── web/                  # 移动端 API（Android / 鸿蒙消费）+ AppDownloadController、AppVersionController
 │   └── background/           # 后台管理 API（Web 消费）
-├── service/                  # 业务逻辑层
-├── mapper/                   # MyBatis-Plus 数据访问层
+├── service/                  # 业务逻辑层（接口 + impl/）
+├── mapper/                   # MyBatis-Plus 数据访问层（自定义 SQL 在 resources/mapper/）
 ├── entity/                   # 数据库实体
 ├── from/                     # 请求表单对象（DTO）
 ├── vo/                       # 视图响应对象（VO）
@@ -49,10 +50,11 @@ com.smartwash/
 ├── filter/                   # JWT 认证过滤器
 ├── common/                   # 公共类（统一响应、分页等）
 ├── utils/                    # 工具类
+├── task/                     # 定时任务（OrderTimeoutManager）
 ├── exception/                # 全局异常定义
 └── divination/               # 「观象台」AI 占卜子系统
     ├── controller/           # 占卜 Web/Admin 接口
-    ├── core/                 # 六十四卦算法内核
+    ├── core/                 # 六十四卦 / 六壬 / 奇门 / 梅花算法内核
     ├── llm/                  # LLM 网关与 SSE 流式解读
     ├── prompt/               # Prompt 模板管理
     ├── entity/ / mapper/ / service/ / vo/ / from/
@@ -85,7 +87,6 @@ com.smartwash/
 | Hutool | 5.8.35 | 工具库 |
 | FastJSON | 2.0.56 | JSON 序列化 |
 | Minio | — | 文件存储（图片上传） |
-| Flyway | — | 数据库版本迁移 |
 | Lombok | 1.18.30 | 样板代码 |
 
 ### Android 用户端
@@ -165,19 +166,19 @@ com.smartwash/
 | 用户优惠券 | 已发放优惠券管理 |
 | 角色权限 | 超级管理员 / 学校管理员 / 厂房管理员 |
 | 后台用户 | 管理员账号管理 |
-| 观象台管理 | 模型目录、Prompt 版本、RAG 语料、审计复审、黑名单、用量看板、平台设置 |
+| 观象台管理 | 模型目录、Prompt 版本、RAG 语料、审计复审、拦截日志、用量看板、平台设置 |
 
 ---
 
 ## 数据库设计
 
-### 核心表（共 14 张）
+### 核心表
 
 | 表名 | 说明 |
 |------|------|
 | `users` | 用户表（手机号、密码、余额、学校等） |
-| `admin_users` | 后台管理员 |
-| `roles` | 角色表（root / schools_admin / plant） |
+| `admin_users` | 后台管理员（root / admin / lisi） |
+| `roles` | 角色表（root 超级管理员 / schools_admin 学校管理员） |
 | `schools` | 学校信息（含经纬度） |
 | `lockers` | 储物柜（格口、关联学校） |
 | `laundry_items` | 洗衣套餐（名称、价格、图片） |
@@ -187,22 +188,26 @@ com.smartwash/
 | `recharge_records` | 充值记录（含幂等键） |
 | `coupon` | 优惠券模板 |
 | `user_coupon` | 用户领取优惠券记录 |
-| `divination_*` | 占卜子系统表（卦象、解读、审计、用量等，见 V8 迁移） |
 
-### 数据库迁移
+### 占卜子系统表（divination，共 11 张）
 
-结构变更以 `SmartWash/src/main/resources/db/migration/` 为准，由 Flyway 管理：
-
-| 版本 | 说明 |
+| 表名 | 说明 |
 |------|------|
-| V1 | 基准表结构 |
-| V2 | 订单评价表 |
-| V3 | 索引与修复 |
-| V4 | 支付/充值幂等键 |
-| V5 | 优惠券原子性 |
-| V6 | 管理员种子密码修复 |
-| V7 | 批量修复（第二轮评审） |
-| V8 | 占卜子系统表 |
+| `div_record` | 起卦记录 |
+| `div_interpretation` | AI 解读记录 |
+| `div_feedback` | 用户反馈 |
+| `div_prompt_version` | Prompt 版本管理 |
+| `div_rag_document` | RAG 语料文档 |
+| `div_rag_chunk` | RAG 语料分块 |
+| `div_blocked_question` | 拦截问题黑名单 |
+| `div_usage_daily` | 每日用量统计 |
+| `div_model_config` | LLM 模型配置 |
+| `div_platform_setting` | 平台设置 |
+| `div_user_api_config` | 用户 API 配置 |
+
+### 数据库结构管理
+
+> 数据库结构统一由根目录 `smart_wash.sql` 管理。结构变更请直接修改该文件。
 
 ---
 
@@ -227,27 +232,29 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 
 | 接口 | 说明 |
 |------|------|
-| `POST /auth/login` | 用户登录 |
-| `POST /auth/register` | 用户注册 |
-| `GET /web/laundry-items` | 洗衣套餐列表 |
-| `POST /web/orders` | 创建订单 |
-| `GET /web/orders` | 我的订单列表 |
-| `POST /web/payments` | 发起支付 |
-| `POST /web/recharge` | 钱包充值 |
-| `GET /web/coupons` | 可领优惠券 |
-| `POST /web/user-coupons` | 领取优惠券 |
-| `POST /web/divination` | 起卦（占卜） |
+| `POST /auth/user/login` | 用户登录（手机号） |
+| `POST /auth/user/register` | 用户注册 |
+| `POST /auth/adminUsers/login` | 管理员登录（用户名） |
+| `GET /web/laundryItems/all` | 洗衣套餐列表 |
+| `POST /web/auth/orders/reservation` | 创建订单（预约洗衣） |
+| `GET /web/auth/orders` | 我的订单列表 |
+| `POST /web/auth/payments/payment` | 发起支付 |
+| `POST /web/auth/recharge/userRecharge` | 钱包充值 |
+| `GET /web/auth/coupon/allCoupon` | 可领优惠券 |
+| `POST /web/auth/userCoupon/receiveCoupon/{id}` | 领取优惠券 |
+| `GET /web/app/version` | App 版本检查 |
+| `GET /web/app/download` | APK 预签名下载链接 |
 
 **管理端（`/admin/**`）：**
 
 | 接口 | 说明 |
 |------|------|
-| `POST /auth/admin/login` | 管理员登录 |
+| `POST /auth/adminUsers/login` | 管理员登录 |
 | `GET /admin/users` | 用户列表 |
 | `GET /admin/orders` | 订单列表 |
-| `POST /admin/laundry-items` | 新增洗衣项目 |
+| `POST /admin/laundryItems` | 新增洗衣项目 |
 | `GET /admin/dashboard` | 仪表盘数据 |
-| `GET /admin/divination/audit` | 占卜审计列表 |
+| 观象台管理接口 | 模型/Prompt/RAG/审计/黑名单/用量/设置（见 `controller/background/` 与 `divination/controller/`） |
 
 ---
 
@@ -271,13 +278,13 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 
 | 文件 | 说明 |
 |------|------|
-| `.env.development` | `VITE_BASE_URL=/api`（Vite 代理转发） |
-| `.env.production` | `VITE_BASE_URL` 指向生产地址 |
-| `.env.development` / `.env.production` | `VITE_AMAP_KEY`、`VITE_AMAP_SECURITY_CODE`（高德地图） |
+| `.env.development` | `VITE_BASE_URL=/api`（Vite 代理转发至 `127.0.0.1:8080`） |
+| `.env.production` | 生产 API 地址由构建时环境变量 `SMART_WASH_BASE_URL` 注入（不再写死 IP） |
+| `.env.development` / `.env.production` | `VITE_AMAP_KEY`（当前为空，需配置）、`VITE_AMAP_SECURITY_CODE`（高德地图，旧值已泄露待轮换） |
 
 ### Android
 
-`local.properties` 配置 SDK 路径；`build.gradle` 中 `applicationId = "com.smartwash"`。
+`local.properties` 配置 SDK 路径；`applicationId = "com.smartwash"`；BASE_URL 通过 Gradle 属性 `baseUrl` 注入（生产 `-PbaseUrl=https://your-domain.com/`）。
 
 ### 鸿蒙
 
@@ -293,7 +300,7 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 mysql -u root -p < smart_wash.sql
 ```
 
-> 后续结构变更通过 Flyway 迁移（`mvn spring-boot:run` 启动时自动执行）。
+> 后续结构变更请直接修改 `smart_wash.sql`。
 
 ### 2. 启动后端
 
@@ -315,11 +322,11 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:5173`，API 请求由 Vite 代理转发至后端。
+访问 `http://localhost:5000`，API 请求由 Vite 代理转发至后端。
 
 ### 4. 启动 Android 客户端
 
-用 Android Studio 打开 `SmartWash-Android` 目录，同步 Gradle 后运行。需确保后端已启动且 `BASE_URL` 指向正确（模拟器可用 `10.0.2.2:8080`）。
+用 Android Studio 打开 `SmartWash-Android` 目录，同步 Gradle 后运行。需确保后端已启动且 `BASE_URL` 指向正确（默认指向演示服务器，生产通过 `-PbaseUrl=` 注入）。
 
 ### 5. 启动鸿蒙客户端
 
@@ -335,8 +342,9 @@ npm run dev
 |--------|------|------|
 | `root` | 超级管理员 (root) | 全部权限 |
 | `admin` | 学校管理员 (schools_admin) | 指定学校管理权限 |
+| `lisi` | 学校管理员 (schools_admin) | 指定学校管理权限 |
 
-> 初始密码见 `smart_wash.sql` 种子数据；生产部署前务必修改。
+> 初始密码为 BCrypt 哈希，见 `smart_wash.sql` 种子数据；生产部署前务必修改。
 
 ### 用户端
 
@@ -379,15 +387,14 @@ npm run dev
 ### P0（必须修复）
 
 - 后端资金链路（支付/充值/优惠券）存在并发竞态与幂等缺失
-- 生产环境明文 HTTP 硬编码（鸿蒙 / Web）
-- Android release BASE_URL 为占位符
-- 高德安全密钥已入库（需轮换）
+- 鸿蒙端 BASE_URL 硬编码演示服务器明文 HTTP（待环境化）
+- 高德安全密钥已入库 / 入 env（需轮换）
 
 ### P1
 
-- 鸿蒙端 401 未清 token
-- Web 端 401 用 reload 而非 replace
+- Android `usesCleartextTraffic=true` demo 全局放行（发版前须移除）
 - 部分接口缺少参数校验
+- 鸿蒙 token 明文存 preferences（待迁移 HUKS/Asset Store）
 
 > 做任何涉及订单、支付、充值、优惠券的改动前，先读评审报告第一章的 P0 项。
 

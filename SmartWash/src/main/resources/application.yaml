@@ -44,10 +44,6 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
-# Flyway 已废弃，数据库结构统一由根目录 smart_wash.sql 管理
-spring.flyway:
-  enabled: false
-
 jwt:
   # demo 专用随机密钥（Base64，解码 32 字节，通过 JwtUtil 强度校验）；
   # 生产环境必须通过 JWT_SECRET 注入全新密钥（历史 demo 密钥已随 git 入库，视为可公开）

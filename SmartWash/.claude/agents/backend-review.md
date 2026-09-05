@@ -30,7 +30,7 @@ tools: Read, Grep, Glob
 ## 背景知识
 
 - 本项目已知历史问题集中在：超时取消与支付竞态（`task/OrderTimeoutManager.java`）、优惠券核销无锁（`PaymentsServiceImpl`）、充值无幂等（`RechargeRecordsServiceImpl`）、验证码共用 Redis key（`LoginController`）。完整清单见仓库 `docs/code-review-2026-08-28.md` 第一章（本地文件，Read 直接读路径 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md`）。
-- 本项目无逻辑删除（无 `@TableLogic`）；Flyway 迁移在 `src/main/resources/db/migration/`。
+- 本项目无逻辑删除（无 `@TableLogic`）；数据库结构统一由根目录 `smart_wash.sql` 管理。
 
 ## 输出格式
 

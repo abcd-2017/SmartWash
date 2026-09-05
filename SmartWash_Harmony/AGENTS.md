@@ -55,7 +55,7 @@ entry/src/main/ets/
 
 ## 三、页面与路由
 
-- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 15+ 条命名路由；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
+- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 16 条命名路由；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
 - **导航**：一律经 `utils/PathStackUtil.ets` 全局 `pathStack`（`pushPathByName` / `replacePathByName` / `pop`），禁止 `@ohos.router`。需要替换当前页（如跳登录）用 `replacePathByName`，并发 401 场景禁止连续 push。
 - **传参**：页面参数用 `getParamByName` 获取——禁止 `[0] as X` 裸强转（参数缺失即崩溃），禁止字符串/number 类型错位（Laundry→Payment 曾 orderId 传成字符串）。
 
@@ -63,7 +63,7 @@ entry/src/main/ets/
 
 ## 四、核心模式
 
-- **鉴权流程**：请求拦截器检测 URL 以 `/web` 开头 → 从 preferences 读 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 与网络错误。**401 必须清空本地 token 并复位登录态**（当前实现不清 token，属待修项）。
+- **鉴权流程**：请求拦截器检测 URL 以 `/web` 开头 → 从 preferences 读 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 与网络错误。**401 已统一为「清 token → 清内存登录态 → replace 到登录页」+ 1.5s 防抖**（`Axios.ets` `handleUnauthorized`）。
 - **HTTP 链路**：`页面 → HttpUtil.get/post<T>() → Axios 实例（拦截器）→ errorHandle → BaseResponse<T>`。
 - **全局状态**：`@StorageLink('userLoginFlag')` 共享登录态；AppStorage flag + @Watch 是粗糙的事件模拟，跨组件通知优先 `@Monitor` 或 emitter。
 - **按钮**：统一用 `AppButton`（自带 loading 防重），提交类操作必须接 loading。
@@ -77,7 +77,7 @@ entry/src/main/ets/
 2. **定时器必须清理**：`setInterval`/`setTimeout` 在 `aboutToDisappear` 中 clear（验证码倒计时曾泄漏）。
 3. **严格模式**：`!==`/`===`（禁宽松比较）；VO 用 interface + 转换函数（不靠 class 直接接 JSON）；padding/margin 传 number；金额用 parseFloat 并校验 > 0（禁 parseInt 截断小数）。
 4. **日志脱敏**：release 禁止打印完整响应体（手机号/余额），仅 DEBUG 开 body 日志。
-5. **BASE_URL 禁止新增硬编码**（当前为明文 HTTP 公网 IP，待环境化，与 Android 分环境机制对齐）。
+5. **BASE_URL 禁止新增硬编码**（当前为明文 HTTP 演示服务器地址 `http://8.148.70.81:9000`，待环境化，与 Android 分环境机制对齐）。
 
 ---
 
@@ -113,8 +113,9 @@ code-linter --fix      # Lint
 
 完整评审清单（含行号）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第四章。P0 级：
 
-- baseURL 硬编码公网明文 HTTP 且与 Android 不对齐（`network/Axios.ets:17`）
-- 401 不清 token（循环失效）+ 并发重复压栈 Login（`Axios.ets:32,45-49`）
-- `@ComponentV2` 误用 `onDidUpdate`，轮询启停永不生效（`view/IndexPage.ets:32-41`）
-- 验证码倒计时定时器泄漏（`pages/Register.ets:27-37`）；Laundry→Payment 传参类型错位（`pages/Laundry.ets:216`）
+- baseURL 硬编码演示服务器明文 HTTP 且与 Android 不对齐（`network/Axios.ets:22`）——待环境化
+- 401 处理已修复：清 token + 清内存登录态 + replace 登录 + 1.5s 防抖（原 `Axios.ets:32,45-49` 问题已解决）
+- `@ComponentV2` 轮询已改用 `@Monitor('isActive')`（原 `view/IndexPage.ets:32-41` 问题已解决）
+- Laundry→Payment 传参已统一 `number` 类型（已修复）；支付按钮已加 `paying` 防重、Radio 已支持取消选券（已修复）
+- 金额校验已改用 `parseFloat` 并校验 >0 与上限（`pages/Recharge.ets` 已修复）
 - 启动闪登录页无 loading 态（`pages/Index.ets:14-30`）

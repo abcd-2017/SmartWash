@@ -163,7 +163,7 @@ jobs:
           SMART_WASH_KEY_PASSWORD: ${{ secrets.SMART_WASH_KEY_PASSWORD }}
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
           ./gradlew assembleRelease \
             -PversionCode=$VERSION_CODE \
             -PversionName=$VERSION \
@@ -259,7 +259,7 @@ jobs:
       - name: Generate release metadata
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%02d%02d", $1, $2, $3}')
+          VERSION_CODE=$(echo "$VERSION" | awk -F'.' '{printf "%d%03d%03d", $1, $2, $3}')
 
           mkdir -p release-assets
 
@@ -270,7 +270,7 @@ jobs:
             "fileName": "app-${VERSION}.apk",
             "sha256": "${{ needs.android.outputs.sha256 }}",
             "forceUpdate": false,
-            "minVersionCode": 10000,
+            "minVersionCode": 1000000,
             "changelog": "详见 GitHub Release",
             "releaseDate": "$(date +%Y-%m-%d)",
             "backendDigest": "${{ needs.backend.outputs.digest }}",

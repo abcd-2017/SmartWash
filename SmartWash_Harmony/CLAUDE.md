@@ -29,10 +29,10 @@
 
 ## ArkTS 硬规则
 
-- **`@ComponentV2` 没有 `onDidUpdate` 生命周期**（V2 仅有 aboutToAppear/onReuse/aboutToRecycle/aboutToDisappear）。需要监听状态变化启停逻辑（如轮询）时用 `@Monitor('属性名')`——`IndexPage.ets` 曾因误用 `onDidUpdate` 导致轮询永不停止。
+- **`@ComponentV2` 没有 `onDidUpdate` 生命周期**（V2 仅有 aboutToAppear/onReuse/aboutToRecycle/aboutToDisappear）。需要监听状态变化启停逻辑（如轮询）时用 `@Monitor('属性名')`——`IndexPage.ets` 已改用 `@Monitor('isActive')` 启停轮询。
 - **定时器必须清理**：`setInterval`/`setTimeout` 在 `aboutToDisappear` 中对应 clear，验证码倒计时等页面级定时器不得泄漏。
-- **严格模式约束**：禁用 `!=`/`==` 宽松比较（用 `!==`/`===`）；禁止 `as` 强转代替类型转换（如路由传参 `as number`）；VO 定义用 interface + 转换函数，不要依赖 class 直接接 JSON。
-- **401 必须清空本地 token** 并复位登录态后再跳转登录页——只跳转不清 token 会导致重启后循环 401（`Axios.ets` 此处为待修项，改网络层时先修这里）。
+- **严格模式约束**：禁用 `!=`/`==` 宽松比较（用 `!==`/`===`）；禁止 `as` 强转代替类型转换（路由传参统一走 `getNumberParam`）；VO 定义用 interface + 转换函数，不要依赖 class 直接接 JSON。
+- **401 处理**：已统一为「清 token → 清内存登录态 → replace 到登录页」并带 1.5s 防抖（`Axios.ets` `handleUnauthorized`）。新增 401 路径须保持此语义。
 - **日志按构建模式输出**：release 下禁止打印完整响应体（含手机号、余额等敏感字段），参照 Android 端仅 DEBUG 开启 body 日志。
 
 ## 构建与运行
@@ -58,7 +58,9 @@ code-linter --fix            # Lint 检查
 entry/src/main/ets/
   entryability/       → EntryAbility（主 UIAbility，应用入口）
   pages/              → 页面组件（每个页面暴露 @Builder 函数）
-  view/               → 可复用 UI 组件（view/common/AppComponents 有支持 loading 的 AppButton）
+  view/               → 可复用 UI 组件（view/common/AppComponents 有支持 loading 的 AppButton；
+                        IndexPage 首页框架 + Service/UserInfo Tab 内容页；
+                        OrderCard/OrderItemRow/LoadingFooter 在用组件）
   network/
     api/              → API 函数（按业务域拆分，返回 Promise<BaseResponse<T>>）
     entity/           → 请求体 DTO
@@ -67,14 +69,14 @@ entry/src/main/ets/
     BaseResponse.ets  → 通用响应包装 {data, code, message}
     HttpUtil.ets      → GET/POST 封装（单例）
   constant/           → 枚举、状态常量、设计系统色值
-  utils/              → StorageUtil、PathStackUtil、Logger、TimeUtil、CheckStatus
+  utils/              → StorageUtil、PathStackUtil、Logger、TimeUtil、CheckStatus、ToastUtil
 ```
 
 ### 核心设计模式
 
-**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 15+ 条命名路由，页面经全局 `pathStack` 跳转。
+**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 16 条命名路由，页面经全局 `pathStack` 跳转。
 
-**鉴权流程** — Axios 请求拦截器检测 URL 以 `/web` 开头时，从 preferences 读取 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 和网络错误（401 当前未清 token，见上方硬规则）。
+**鉴权流程** — Axios 请求拦截器检测 URL 以 `/web` 开头时，从 preferences 读取 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 和网络错误。401 已统一为「清 token → 清内存登录态 → replace 到登录页」+ 1.5s 防抖。
 
 **全局状态** — `@StorageLink('userLoginFlag')` 跨页面共享登录态。注意：AppStorage 布尔 flag + @Watch 只是粗糙的事件模拟，跨组件通知优先用 `@Monitor` 或 emitter。
 
@@ -98,7 +100,7 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 
 **库内 skill**：编写/排查 `.ets` 文件时调用 `arkts-development`（组件与状态管理）、`arkts-syntax-assistant`（语法迁移与严格模式）、`harmonyos-app`（Stage 模型最佳实践）。
 
-`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个鸿蒙子代理，按任务派发：
+`.claude/agents/` 提供 6 个鸿蒙子代理，按任务派发：
 
 - `harmony-dev` — 功能开发执行（V2 生命周期/路由/401 清 token 硬规则）
 - `harmony-review` — 提交前生命周期与类型安全只读审查
@@ -111,11 +113,12 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 
 完整清单见 [docs/code-review-2026-08-28.md](../docs/code-review-2026-08-28.md) 第四章，重点关注：
 
-- `network/Axios.ets:17` 硬编码公网明文 HTTP 地址（与 Android 分环境不一致）——改网络层时一并环境化。
-- `view/IndexPage.ets` 的 `onDidUpdate` 轮询启停失效（见硬规则）。
-- `pages/Register.ets` 验证码倒计时定时器泄漏；`pages/Laundry.ets → Payment` 传参字符串/number 错位。
-- `pages/Payment.ets` 支付按钮无防重、Radio 无法取消选券；`pages/Recharge.ets` 金额校验用 parseInt 会截断小数。
-- 死代码：`view/CouponCard.ets`、`UserCouponCard.ets`、`OrderStatusCard.ets`、`utils/TimeUtil.ets` 无引用，待删除，不要复用。
+- `network/Axios.ets:22` 硬编码演示服务器明文 HTTP 地址（与 Android 分环境不一致）——改网络层时一并环境化（参照 Android 端 Gradle 属性注入或 DevEco 多 target/profile）。
+- `view/IndexPage.ets` 轮询已改用 `@Monitor('isActive')` 启停（已修复）。
+- `pages/Laundry.ets → Payment` 传参已统一 `number` 类型（已修复）。
+- `pages/Payment.ets` 支付按钮已加 `paying` loading 防重、Radio 已支持取消选券（已修复）。
+- `pages/Recharge.ets` 金额校验已改用 `parseFloat` 并校验 >0 与上限（已修复）。
+- 待清理代码：`view/CouponCard.ets`、`UserCouponCard.ets`、`OrderStatusCard.ets` 无引用，待删除，不要复用（`OrderCard.ets`、`OrderItemRow.ets`、`LoadingFooter.ets` 为在用组件）。
 - `StorageUtil` 依赖非空断言且初始化未 await，存在时序隐患；token 明文存储待迁移 HUKS/Asset Store。
 
 ## 依赖说明

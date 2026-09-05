@@ -14,7 +14,7 @@
 | `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [SmartWash_Harmony/CLAUDE.md](SmartWash_Harmony/CLAUDE.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [SmartWashWeb/CLAUDE.md](SmartWashWeb/CLAUDE.md) |
-| `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以 `SmartWash/src/main/resources/db/migration/` 为准） | — | — |
+| `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
 
 ## 全局规则
 
@@ -37,11 +37,11 @@
   - `/web/auth/**` 用户端，需 ROLE_USER（Android / 鸿蒙消费）
   - `/web/**` 公开 Web 接口
 - **认证**：JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
-- **401 语义三端必须一致**：清空本地 token → 清内存登录态 → replace（非 push）到登录页，并发 401 去重只跳一次。鸿蒙端当前未清 token、Web 端用 reload 页面，均为待修项。
+- **401 语义三端必须一致**：清空本地 token → 清内存登录态 → replace（非 push）到登录页，并发 401 去重只跳一次。
 
 ## 环境红线
 
-- **生产禁明文 HTTP**：当前鸿蒙/Web 硬编码 `http://8.148.70.81:9000`、Android release BASE_URL 是占位符（详见评审报告 P0），改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。
+- **生产禁明文 HTTP**：鸿蒙端 BASE_URL 当前硬编码演示服务器地址（明文 HTTP），Web 端生产地址已改为构建时环境变量注入（不再写死 IP）。改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。Android 端 `usesCleartextTraffic=true` 为 demo 全局放行，发版前须按生产地址改为 HTTPS 并移除该开关。
 - **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
 - 后端地址等环境差异见各子项目 CLAUDE.md 的「构建与运行」。
 
@@ -49,7 +49,7 @@
 
 **库内 Skills**（`~/.agents/skills/`，共 50+ 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
 
-**各工程子代理**（`.claude/agents/`，已镜像到各工程 `.zcode/agents/`，每端 6 个）：
+**各工程子代理**（位于各子项目 `.claude/agents/`，每端 6 个，共 24 个）：
 
 | 工程 | 子代理 |
 |------|--------|

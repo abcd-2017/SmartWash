@@ -39,22 +39,22 @@ npm run build      # 生产构建，输出到 dist/
 npm run preview    # 预览生产构建
 ```
 
-- **测试**：vitest + happy-dom + @vue/test-utils 已在 `vite.config.js` 配置好，但 `package.json` 尚无 `test` script，且现有 `src/__tests__/http.test.js` 的 baseURL 与响应解包断言已和实现脱节（跑必挂）——新增测试前先修这两处。
-- **环境变量**：`.env.production` 定义 API 地址（当前为明文 HTTP 固定 IP，待改 HTTPS 域名）；地图相关组件依赖 `VITE_AMAP_KEY`，**该变量目前未在任何 env 文件定义**，新增地图功能前先补配置。
+- **测试**：vitest + happy-dom + @vue/test-utils 已配置，`package.json` 已含 `test`（`vitest run`）与 `lint`/`lint:fix` script；现有 `src/__tests__/http.test.js` 的 baseURL 与响应解包断言已和实现脱节（跑必挂）——新增测试前先修这两处。
+- **环境变量**：生产 API 地址已改为构建时环境变量 `SMART_WASH_BASE_URL` 注入（不再写死 IP）；地图组件依赖 `VITE_AMAP_KEY` 与 `VITE_AMAP_SECURITY_CODE`，**两者已在 `.env.development`/`.env.production` 声明**（`VITE_AMAP_KEY` 当前为空需配置，`VITE_AMAP_SECURITY_CODE` 已迁移自 `index.html` 内联，旧值已泄露待轮换）。
 
 ## 技术架构
 
-**技术栈**：Vue 3（Composition API，`<script setup>`）、Vite 6、Element Plus、Pinia、Vue Router、Axios、Day.js。`@` 别名映射到 `src/`。
+**技术栈**：Vue 3（Composition API，`<script setup>`）、Vite 6、Element Plus（按需引入 via unplugin-auto-import/vue-components）、Pinia、Vue Router、Axios、Day.js。`@` 别名映射到 `src/`。
 
 ### 分层结构
 
 1. **入口** — `src/main.js`：注册 Element Plus、Pinia、Router，`$dayjs` 全局属性。
-2. **HTTP 层** — `src/utils/http.js`：Axios 实例。请求拦截器从 localStorage 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`res.code !== 200` 视为错误，401 清 token 跳登录（当前实现是 `window.location.reload()`，属待修项——新代码不要模仿）。
-3. **API 层** — `src/api/*.js`：按领域拆分（order/user/school/… 共 12 个模块），统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。
-4. **状态管理** — `src/stores/` **当前为空目录**：Pinia 已在 main.js 注册但没有任何 store，登录态散落在 localStorage 各处读写。新建全局状态（如 `useAuthStore` 管理 token/角色）时放这里，不要新增裸 localStorage 读写。
-5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 是唯一 `requiresAuth: false` 路由；`beforeEach` 守卫检查 token。**当前路由全部静态 import，新页面应使用 `() => import(...)` 懒加载**。
+2. **HTTP 层** — `src/utils/http.js`：Axios 实例。请求拦截器从 `useAuthStore` 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`res.code !== 200` 视为错误。新代码保持「清 token + 跳 `/login`」语义，不要使用 `window.location.reload()`。
+3. **API 层** — `src/api/*.js`：按领域拆分（共 13 个模块：order/user/school/laundry/locker/payment/recharge/coupon/role/adminUser/auth/dashboard/userCoupon/divination），统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。
+4. **状态管理** — `src/stores/auth.js`：Pinia `useAuthStore` 统一管理 token/角色（初始化自动从 localStorage 恢复），路由守卫与 HTTP 拦截器统一从 store 读取登录态。不要新增裸 localStorage 读写。
+5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 免认证；**所有页面已使用 `() => import(...)` 懒加载**（含 404 兜底页 `NotFound.vue`，通配路由 `/:pathMatch(.*)*`）。`beforeEach` 守卫从 `useAuthStore` 检查 token/角色。
 6. **布局** — `src/components/Layout/Layout.vue`：`Sidebar`（菜单，按 `meta.showInMenu` 过滤）+ `Navbar`（meta 面包屑 + 用户下拉）+ `<router-view />`。菜单/面包屑/图标均由路由 `meta` 驱动，新增页面记得配齐 meta（title、showInMenu、icon）。
-7. **页面** — `src/views/`：登录页 + `src/views/system/` 下各管理模块 CRUD 页面。
+7. **页面** — `src/views/`：登录页 + `src/views/system/` 下 11 个管理模块 CRUD 页面 + `src/views/divination/` 下 7 个观象台管理页面（Prompt/语料/审计/用量/拦截/模型/设置）+ `NotFound.vue`（404 兜底）。
 
 ### API 响应约定
 
@@ -76,7 +76,7 @@ npm run preview    # 预览生产构建
 
 **库内 skill**：新页面视觉设计或整体风格调整时调用 `frontend-design` 或 `design`；无 Vue 自动生效 skill。
 
-`.claude/agents/`（已镜像到 `.zcode/agents/`）提供 6 个 Web 子代理，按任务派发：
+`.claude/agents/` 提供 6 个 Web 子代理，按任务派发：
 
 - `web-dev` — 功能开发执行（CRUD 模式/composable 复用/安全红线约束）
 - `web-review` — 提交前权限与安全只读审查
@@ -89,10 +89,10 @@ npm run preview    # 预览生产构建
 
 完整清单见 [docs/code-review-2026-08-28.md](../docs/code-review-2026-08-28.md) 第三章，重点关注：
 
-- `index.html:10` 内联硬编码高德 securityJsCode（已泄露，待轮换）；地图 key 走 env 但未配置——两者统一收敛到 env + 构建注入。
+- 高德 securityJsCode 已从 `index.html` 内联迁移至 `.env.*` 的 `VITE_AMAP_SECURITY_CODE`（旧值 `cc4d5ecf...` 已随 git 入库视为泄露，待轮换）；`VITE_AMAP_KEY` 已声明但当前为空——地图功能暂不可用，需到高德控制台创建/轮换后填入。
 - 下拉选项多处用 `size:1000` 拉全量（`UserList.vue` 等），数据量大即卡——新增下拉优先做专用接口或全局缓存。
-- 无 ESLint/Prettier 配置；`RechargeList.vue` 有整块注释死代码待清理。
-- 无 404 页面（通配路由直接 redirect 首页）。
+- 已配置 ESLint（`eslint.config` 扁平配置 + `eslint-plugin-vue`）与 Prettier，`package.json` 含 `lint`/`lint:fix` script；`RechargeList.vue` 有整块注释死代码待清理。
+- 404 页面已存在（`NotFound.vue` + 通配路由 `/:pathMatch(.*)*`）。
 
 ## 提交规范
 

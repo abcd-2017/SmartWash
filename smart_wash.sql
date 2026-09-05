@@ -917,7 +917,7 @@ CREATE TABLE `order_reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ----------------------------
--- Indexes & Constraints（来自 Flyway V3/V5/V7）
+-- Indexes & Constraints
 -- ----------------------------
 CREATE INDEX idx_lockers_school_id ON lockers(school_id);
 CREATE INDEX idx_orders_user_id ON orders(user_id);

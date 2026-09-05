@@ -13,7 +13,7 @@
 | 语言 | Kotlin，JVM Target 17 |
 | UI 框架 | Jetpack Compose + Material 3 |
 | 架构模式 | MVVM（Page + ViewModel + Repository） |
-| 依赖注入 | Hilt（KAPT 注解处理） |
+| 依赖注入 | Hilt（KSP 注解处理，与 Room 一致） |
 | 网络 | Retrofit + Gson + OkHttp |
 | 本地存储 | DataStore Preferences（主用）、Room（缓存层） |
 | 分页 | Paging 3 |
@@ -22,7 +22,7 @@
 | 权限 | Accompanist Permissions |
 | 导航 | Compose Navigation |
 | 编译 | compileSdk 35 / minSdk 30 / targetSdk 35 |
-| 注解处理 | KAPT（Hilt）、KSP（Room） |
+| 注解处理 | KSP（Hilt 与 Room 统一走 KSP） |
 
 ---
 
@@ -45,7 +45,8 @@ app/src/main/java/com/smartwash/
 │   ├── RetrofitClient.kt           # Hilt @Module，提供 Retrofit/OkHttp/API/Room 单例
 │   ├── annotation/
 │   │   └── RequireAuthorization.kt # 鉴权注解
-│   ├── api/                        # Retrofit 接口定义
+│   ├── api/                        # Retrofit 接口定义（共 8 个）
+│   │   ├── AppUpdateApi.kt        # 2 个端点（版本检查 + 预签名下载）
 │   │   ├── CouponApi.kt           # 5 个端点
 │   │   ├── LaundryItemsApi.kt     # 1 个端点
 │   │   ├── OrderApi.kt            # 10 个端点
@@ -53,6 +54,9 @@ app/src/main/java/com/smartwash/
 │   │   ├── RechargeApi.kt         # 2 个端点
 │   │   ├── SchoolApi.kt           # 1 个端点
 │   │   └── UserApi.kt             # 10 个端点
+│   ├── session/                    # 会话层
+│   │   ├── SessionEventBus.kt     # 会话事件总线
+│   │   └── SessionManager.kt      # 会话管理器
 │   ├── entity/                     # 请求体对象
 │   │   ├── ApiResult.kt           # 统一响应包装 {code, message, data}
 │   │   ├── PageData.kt            # 分页响应 {records, total, size, current}
@@ -78,7 +82,8 @@ app/src/main/java/com/smartwash/
 │   ├── RechargeRecordPagingSource.kt # 充值记录分页
 │   ├── UserCouponPagingSource.kt  # 用户优惠券分页
 │   └── PagingUtils.kt             # pagingFlow() 扩展（300ms 防抖）
-├── repository/                      # 数据仓库层（缓存优先策略）
+├── repository/                      # 数据仓库层（缓存优先策略，共 8 个）
+│   ├── AppUpdateRepository.kt     # 应用更新（版本检查 + 下载）
 │   ├── CouponRepository.kt
 │   ├── LaundryRepository.kt
 │   ├── OrderRepository.kt
@@ -86,6 +91,24 @@ app/src/main/java/com/smartwash/
 │   ├── RechargeRepository.kt
 │   ├── SchoolRepository.kt        # 三级缓存：内存 → 数据库 → 网络
 │   └── UserRepository.kt
+├── service/                        # 后台服务
+│   ├── ApkDownloadWorker.kt       # WorkManager APK 后台下载
+│   └── ApkInstaller.kt            # APK 安装器
+├── di/                             # Hilt 依赖注入模块
+│   └── UpdateModule.kt            # AppUpdate 相关依赖提供
+├── divination/                     # 观象台占卜子系统
+│   ├── core/                      # 四套算法内核 + 公共基础
+│   │   ├── liuren/                # 六壬
+│   │   ├── liuyao/                # 六爻
+│   │   ├── meihua/                # 梅花
+│   │   ├── qimen/                 # 奇门
+│   │   ├── DivinationCommon.kt    # 公共定义
+│   │   ├── GanZhi.kt              # 干支
+│   │   └── Yao.kt                 # 爻
+│   ├── network/DivinationApi.kt   # 观象台 Retrofit 接口
+│   ├── data/                      # 数据层
+│   ├── di/                        # Hilt 模块
+│   └── ui/                        # UI 组件与页面（page/ 含 home/ask/cast/chart/reading/followup/history）
 ├── ui/
 │   ├── activity/
 │   │   └── MainActivity.kt        # 单 Activity，NavHost 承载所有页面
@@ -96,7 +119,7 @@ app/src/main/java/com/smartwash/
 │   │   ├── PasswordInput.kt       # 密码输入框
 │   │   └── PhoneNumberInput.kt    # 手机号输入框
 │   ├── page/                       # 页面（每个功能一个目录）
-│   │   ├── PageConstant.kt        # 路由常量密封类（16 个路由 + 3 个底部 Tab）
+│   │   ├── PageConstant.kt        # 路由常量密封类（16 个主路由 + 7 个观象台路由 + 4 个底部 Tab）
 │   │   ├── coupon/                # 优惠券（三 Tab：可领取/已领取/历史）
 │   │   ├── detail/                # 订单详情
 │   │   ├── home/                  # 主页框架（底部导航 + 嵌套 NavHost）
@@ -110,6 +133,7 @@ app/src/main/java/com/smartwash/
 │   │   ├── register/              # 注册（毛玻璃设计）
 │   │   ├── service/               # 服务目录
 │   │   ├── setting/               # 设置
+│   │   ├── update/                # App 更新页
 │   │   ├── update_userinfo/       # 学校信息补全
 │   │   └── userinfo/              # 个人中心 Tab
 │   └── theme/                      # 设计系统
@@ -118,15 +142,18 @@ app/src/main/java/com/smartwash/
 │       ├── Theme.kt               # 主题配置
 │       └── Type.kt                # 字体排版
 └── utils/                           # 工具类
+    ├── AnimationUtils.kt          # 动效工具
     ├── AppConstant.kt             # 应用常量（APP_NAME, TOKEN key 等）
     ├── BitmapUtil.kt              # ZXing 二维码生成
     ├── CouponStatus.kt            # 优惠券状态枚举
+    ├── HapticUtils.kt             # 触感反馈工具
     ├── HttpStatusCode.kt          # HTTP 状态码枚举
     ├── OrderStatus.kt             # 订单状态枚举（10 种）+ Tab 显示状态（5 种）
     ├── ParamValidUtils.kt         # 手机号校验
     ├── PaymentType.kt             # 支付方式枚举
     ├── PermissionsUtil.kt         # 权限请求工具
     ├── PickupDeliveryType.kt      # 取件/寄件类型枚举
+    ├── PressFeedbackModifier.kt   # 按压反馈（已知坑：未接入 clickable，31 处无效）
     ├── RequestState.kt            # 异步状态密封类（Idle/Loading/Success/Error）
     ├── SharePreferenceUtils.kt    # DataStore 封装（suspend + 阻塞双模式）
     └── UserCouponStatus.kt        # 用户优惠券状态枚举
@@ -136,7 +163,7 @@ app/src/main/java/com/smartwash/
 
 ## 三、页面清单与路由
 
-### 路由常量（PageConstant）— 16 个页面路由
+### 路由常量（PageConstant）— 16 个主路由 + 7 个观象台路由
 
 | 常量 | 路由字符串 | 参数 | 说明 |
 |------|-----------|------|------|
@@ -156,13 +183,21 @@ app/src/main/java/com/smartwash/
 | `Coupon` | `"Coupon"` | — | 优惠券管理 |
 | `Service` | `"Service"` | — | 服务页（独立访问） |
 | `Setting` | `"Setting"` | — | 设置页 |
+| `DivHome` | `"DivHome"` | — | 观象台首页 |
+| `DivAsk` | `"DivAsk"` | — | 心中所问 |
+| `DivCast` | `"DivCast"` | — | 摇卦 |
+| `DivChart` | `"DivChart"` | — | 卦盘 |
+| `DivReading` | `"DivReading"` | — | 解读 |
+| `DivFollowUp` | `"DivFollowUp"` | — | 继续追问 |
+| `DivHistory` | `"DivHistory"` | — | 卦历案卷 |
 
-### 底部导航 Tab（HomePageConstant）
+### 底部导航 Tab（HomePageConstant）— 4 个 Tab
 
 | Tab | 图标 | 对应页面 |
 |-----|------|---------|
 | `Index` | Home | `IndexPage` |
 | `Service` | List | `ServicePage` |
+| `Divination` | Explore | `DivHomePage`（观象台） |
 | `UserInfo` | Person | `UserInfoPage` |
 
 ---
@@ -312,6 +347,13 @@ Repository 层实现缓存优先：
 |------|------|------|------|
 | GET | `/web/laundryItems/all` | 否 | 获取所有洗衣项目 |
 
+### 应用更新模块（AppUpdateApi）— 2 个端点
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/web/app/version` | 否 | 获取最新版本信息 |
+| GET | `/web/app/download` | 否 | 获取 APK 预签名下载 URL |
+
 ### 学校模块（SchoolApi）— 1 个端点
 
 | 方法 | 端点 | 鉴权 | 说明 |
@@ -457,11 +499,11 @@ Repository 层实现缓存优先：
 
 ### 构建配置
 
-- BASE_URL 通过 `app/build.gradle` 的 `buildConfigField` 按 buildType 注入，代码中一律读 `BuildConfig.BASE_URL`，**禁止硬编码 URL**
-- ⚠️ 当前 release 的 BASE_URL 是占位符 `https://api.smartwash.example.com/`，发布前必须改为真实地址
-- Release: 开启 ProGuard 混淆和资源压缩（建议补 `-keepattributes SourceFile,LineNumberTable` 便于定位崩溃栈）
+- BASE_URL 通过 Gradle 属性 `baseUrl` 注入（`app/build.gradle`），代码中一律读 `BuildConfig.BASE_URL`，**禁止硬编码 URL**；兜底值为演示服务器 `http://8.148.70.81:9000/`，生产通过 `-PbaseUrl=https://your-domain.com/` 注入
+- `DIVINATION_BASE_URL` 与 BASE_URL 同步注入（观象台 LLM 网关）
+- Release: 开启 ProGuard 混淆和资源压缩，签名配置优先读取 Gradle 属性 / 环境变量（`SMART_WASH_STORE_FILE` 等），未配置则构建失败
 - Maven 仓库使用阿里云镜像（国内下载更快），海外构建需改回 `google()` / `mavenCentral()`
-- `usesCleartextTraffic=true`（为 debug 明文 HTTP 打开的全局开关，待收紧为 debug 专用 networkSecurityConfig）
+- `usesCleartextTraffic=true`（demo 全局放行明文 HTTP，发版前须按生产地址改为 HTTPS 并移除）
 
 ---
 
@@ -509,7 +551,7 @@ data class PageData<T>(
 - **按压反馈全量失效**：`utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处调用无效
 - **组合期副作用**：6 个页面（PaymentPage、PaySuccessPage、OrderDetailPage、IndexPage、RegisterPage、OrderPage）在 `when(state)` 渲染分支里直接 Toast/回写状态，需迁 `LaunchedEffect`
 - **主线程阻塞**：MainActivity/LoginPage/SettingPage 经 `runBlocking` 读写 DataStore，ANR 风险
-- **环境不对齐**：release BASE_URL 占位符 + `usesCleartextTraffic` 全局放行；Token 明文存 DataStore 且 backup_rules 未排除
+- **环境不对齐**：BASE_URL 兜底为演示服务器 `http://8.148.70.81:9000/`（生产须通过 `-PbaseUrl=` 注入）+ `usesCleartextTraffic` 全局放行；Token 明文存 DataStore 且 backup_rules 未排除
 - **网络层健壮性**：ResponseInterceptor 空 body NPE、`peekBody(Long.MAX_VALUE)` 双重解析、Room 无 migration、缓存写入无事务
 - **分层破洞**：LaundryViewModel/CouponViewModel 直连 Api 绕过 Repository；订单分页手写 Map 与 Paging 3 双轨并存
-- **测试为零**：仅模板用例，优先给 ResponseInterceptor、ParamValidUtils、OrderStatus 映射补 JVM 单测
+- **测试覆盖**：含模板用例 `ExampleUnitTest` + 观象台四套算法内核锚点单测（`divination/core/liuren|liuyao|meihua|qimen/*AnchorTest.kt`）；优先给 ResponseInterceptor、ParamValidUtils、OrderStatus 映射补 JVM 单测

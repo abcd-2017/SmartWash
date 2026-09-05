@@ -12,13 +12,13 @@
 |------|----------|
 | 框架 | Vue 3.5（Composition API，`<script setup>`） |
 | 构建 | Vite 6 + `@vitejs/plugin-vue` |
-| UI | Element Plus 2.9（全量引入，待改按需） |
-| 状态 | Pinia 3（已注册，stores/ 目前为空） |
+| UI | Element Plus 2.9（按需引入 via unplugin-auto-import/vue-components） |
+| 状态 | Pinia 3（已注册，stores/auth.js 管理登录态） |
 | 路由 | Vue Router 4（Layout 子路由模式） |
 | HTTP | Axios 1.8 |
 | 时间 | Day.js（`$dayjs` 全局属性） |
 | 地图 | @amap/amap-jsapi-loader（高德） |
-| 测试 | Vitest 4 + happy-dom + @vue/test-utils（已配置，无 test script） |
+| 测试 | Vitest 4 + happy-dom + @vue/test-utils（已配置，含 test/lint script） |
 | 语言 | JavaScript（jsconfig.json 仅配 `@` → `src/` 别名） |
 
 ---
@@ -29,8 +29,8 @@
 src/
 ├── main.js                 # 入口：注册 Element Plus、Pinia、Router、$dayjs
 ├── App.vue
-├── api/                    # API 层：12 个领域模块，统一 request({url,method,params})
-│   ├── adminUser.js  auth.js  coupon.js  dashboard.js  laundry.js  locker.js
+├── api/                    # API 层：13 个领域模块，统一 request({url,method,params})
+│   ├── adminUser.js  auth.js  coupon.js  dashboard.js  divination.js  laundry.js  locker.js
 │   ├── order.js  payment.js  recharge.js  role.js  school.js  user.js  userCoupon.js
 ├── utils/
 │   └── http.js             # Axios 实例：Bearer 注入、响应解包、401 处理
@@ -40,9 +40,11 @@ src/
 ├── views/
 │   ├── LoginPage.vue       # 登录
 │   ├── Home.vue            # Dashboard 首页
-│   ├── system/             # 各管理模块 CRUD 页面（UserList、OrderList、SchoolList、
+│   ├── NotFound.vue        # 404 兜底页
+│   ├── system/             # 11 个管理模块 CRUD 页面（UserList、OrderList、SchoolList、
 │   │                       #   LockerList、RechargeList、PaymentList、AdminUserList 等）
-│   └── ...（地图选点 AmapPicker、行政区划 RegionCascader 等组件）
+│   └── divination/         # 7 个观象台管理页面（DivPromptList/DivRagList/DivAuditList/
+│                           #   DivUsage/DivBlockedList/DivModelList/DivSettings）
 └── __tests__/http.test.js  # 唯一测试（断言已过时，跑必挂）
 ```
 
@@ -50,7 +52,7 @@ src/
 
 ## 三、HTTP 层与 API 约定
 
-- **请求**：拦截器从 localStorage 取 token 加 `Bearer` 头；baseURL 来自 `.env.production`（当前为明文 HTTP 固定 IP，待改 HTTPS 域名）。
+- **请求**：拦截器从 Pinia `useAuthStore` 取 token 加 `Bearer` 头；生产 baseURL 由构建时环境变量 `SMART_WASH_BASE_URL` 注入（不再写死 IP），本地开发走 Vite 代理 `/api` → `127.0.0.1:8080`。
 - **响应信封**：后端统一 `{ code: 200, message, data }`；拦截器对 `code !== 200` reject，`code/data` 成功时解包返回 `res.data`（分页接口即 `{ records, total }`）。
 - **API 函数**：`code === 200` 返回 `res.data`，失败 `throw Error(res.message)`；页面用 try/catch 配合 ElMessage 提示。
 - **401 处理**（待修项）：当前实现是 `window.location.reload()` 且业务码 401 与 HTTP 401 两处重复——新代码不要模仿，统一应为清 token + 跳 `/login` 并去重。
@@ -59,10 +61,10 @@ src/
 
 ## 四、路由与权限
 
-- 所有管理页面挂 `Layout`（`/`）下；`/login` 是唯一 `requiresAuth: false` 路由。
+- 所有管理页面挂 `Layout`（`/`）下；`/login` 免认证；通配路由 `/:pathMatch(.*)*` 渲染 404 页。
 - 菜单、面包屑、图标由路由 `meta` 驱动（`title`/`showInMenu`/icon），新增页面必须配齐 meta；图标经 `markRaw` 包裹。
-- **权限现状（待修项）**：守卫仅检查 localStorage 中的 `role`，且登录后硬编码写入 `"admin"`（`LoginPage.vue:82-83`），可被篡改。权限必须以后端接口鉴权为准，前端只做展示控制。
-- 路由当前全部静态 import（待改懒加载）；新增页面一律 `component: () => import('@/views/...')`。
+- **权限现状（待修项）**：守卫从 `useAuthStore` 检查 token/角色，角色由后端登录接口返回（中文展示名），具体接口权限由后端 `/admin/**` 的 ROLE_ADMIN 强校验兜底。权限必须以后端接口鉴权为准，前端只做展示控制。
+- 路由已全部懒加载（`component: () => import(...)`）；新增页面保持此模式。
 
 ---
 
@@ -98,8 +100,8 @@ npm run build   # 生产构建 → dist/
 npm run preview # 预览生产构建
 ```
 
-- 测试：`npx vitest` 可运行（package.json 暂无 test script），运行前先修复 `src/__tests__/http.test.js` 的过时断言（baseURL、响应解包）。
-- 无 ESLint/Prettier 配置（缩进/分号风格混乱），改代码时与就近文件保持一致。
+- 测试：`npm test`（`vitest run`）可运行，运行前先修复 `src/__tests__/http.test.js` 的过时断言（baseURL、响应解包）。
+- 已配置 ESLint（扁平配置 + `eslint-plugin-vue`）与 Prettier，`npm run lint`/`npm run lint:fix` 可用。
 
 ---
 
@@ -113,7 +115,7 @@ npm run preview # 预览生产构建
 
 完整评审清单（含行号）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第三章。P0 级：
 
-- 高德 securityJsCode 明文入库（`index.html:10`，需轮换）；`VITE_AMAP_KEY` 未配置（地图功能失效）
-- 登录硬编码 `role="admin"`、权限仅前端可篡改（`LoginPage.vue`、`router/index.js:159`）
-- 生产 API 明文 HTTP 固定 IP（`.env.production`）
-- 测试断言与实现脱节且无 test script
+- 高德 securityJsCode 已迁移至 `.env.*`（旧值已泄露待轮换）；`VITE_AMAP_KEY` 已声明但未配置（地图功能暂不可用）
+- 登录态统一由 `useAuthStore` 管理（`stores/auth.js`），角色由后端登录接口返回；权限以后端 `/admin/**` ROLE_ADMIN 强校验兜底（`router/index.js`）
+- 生产 API 地址已改为构建时 `SMART_WASH_BASE_URL` 环境变量注入（不再写死 IP）
+- 测试断言与实现脱节（`http.test.js`），已含 test/lint script
