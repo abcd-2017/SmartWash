@@ -149,6 +149,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 演示工具 =====
+      {
+        path: '/captcha',
+        name: 'CaptchaQuery',
+        component: () => import('@/views/system/CaptchaQuery.vue'),
+        meta: {
+          title: '验证码查询',
+          showInMenu: true,
+          icon: 'Message',
+          requiresAuth: true,
+        },
+      },
       // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',
