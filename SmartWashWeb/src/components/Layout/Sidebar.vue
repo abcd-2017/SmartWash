@@ -44,6 +44,7 @@ import {
   CircleClose,
   Cpu,
   Setting,
+  Message,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -72,6 +73,7 @@ const iconRegistry = {
   CircleClose: markRaw(CircleClose),
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
+  Message: markRaw(Message),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
