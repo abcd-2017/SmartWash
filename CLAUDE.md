@@ -63,3 +63,17 @@
 ## 已知风险
 
 四端深度评审（2026-08-28）发现的问题清单与优先级路线图见 **[docs/code-review-2026-08-28.md](docs/code-review-2026-08-28.md)**。做任何涉及订单、支付、充值、优惠券的改动前，先读该报告第一章的 P0 项——后端资金链路存在已知的并发竞态与幂等缺失。
+
+## Agent skills
+
+### Issue tracker
+
+Issues 存放在本仓库 GitHub Issues，使用 `gh` CLI 操作。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用五个标准分诊角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+Single-context 布局：根目录一个 `CONTEXT.md` + `docs/adr/`。详见 `docs/agents/domain.md`。
