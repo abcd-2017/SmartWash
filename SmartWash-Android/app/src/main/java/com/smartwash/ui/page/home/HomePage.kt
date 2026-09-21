@@ -45,6 +45,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.smartwash.divination.ui.page.home.DivHomePage
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.index.IndexPage
@@ -95,6 +96,9 @@ fun HomePage(
                 IndexPage(homePageNavController, navController)
             }
             composable(HomePageConstant.Service.text) { ServicePage() }
+            composable(HomePageConstant.Divination.text) {
+                DivHomePage(navController)
+            }
             composable(HomePageConstant.UserInfo.text) {
                 UserInfoPage(navController, homePageNavController)
             }
@@ -107,6 +111,7 @@ fun BottomBar(navController: NavHostController) {
     val bottomNavItems = listOf(
         HomePageConstant.Index,
         HomePageConstant.Service,
+        HomePageConstant.Divination,
         HomePageConstant.UserInfo
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()

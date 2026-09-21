@@ -82,8 +82,10 @@ data class LiuRenChart(
                 val name = convertQiName(entry.key)
                 if (name !in ZHONG_QI) continue
                 val s = entry.value
-                val stamp = s.year * 100_000_000L + s.month * 1_000_000L + s.day * 10_000L + s.hour * 100L + s.minute
-                val target = solar.year * 100_000_000L + solar.month * 1_000_000L + solar.day * 10_000L + solar.hour * 100L + solar.minute
+                val stamp =
+                    s.year * 100_000_000L + s.month * 1_000_000L + s.day * 10_000L + s.hour * 100L + s.minute
+                val target =
+                    solar.year * 100_000_000L + solar.month * 1_000_000L + solar.day * 10_000L + solar.hour * 100L + solar.minute
                 if (stamp <= target && (best == null || stamp > best.first)) {
                     best = stamp to entry
                 }
@@ -105,158 +107,177 @@ data class LiuRenChart(
             else -> key
         }
 
-    private val TIAN_JIANG = listOf(
-        "贵人", "螣蛇", "朱雀", "六合", "勾陈", "青龙",
-        "天空", "白虎", "太常", "玄武", "太阴", "天后",
-    )
+        private val TIAN_JIANG = listOf(
+            "贵人", "螣蛇", "朱雀", "六合", "勾陈", "青龙",
+            "天空", "白虎", "太常", "玄武", "太阴", "天后",
+        )
 
-    /** 贵人歌诀：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸蛇兔藏，六辛逢马虎 */
-    private val GUI_REN_TABLE = mapOf(
-        TianGan.JIA to (DiZhi.CHOU to DiZhi.WEI),
-        TianGan.WU to (DiZhi.CHOU to DiZhi.WEI),
-        TianGan.GENG to (DiZhi.CHOU to DiZhi.WEI),
-        TianGan.YI to (DiZhi.ZI to DiZhi.SHEN),
-        TianGan.JI to (DiZhi.ZI to DiZhi.SHEN),
-        TianGan.BING to (DiZhi.HAI to DiZhi.YOU),
-        TianGan.DING to (DiZhi.HAI to DiZhi.YOU),
-        TianGan.REN to (DiZhi.SI to DiZhi.MAO),
-        TianGan.GUI to (DiZhi.SI to DiZhi.MAO),
-        TianGan.XIN to (DiZhi.WU to DiZhi.YIN),
-    )
+        /** 贵人歌诀：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸蛇兔藏，六辛逢马虎 */
+        private val GUI_REN_TABLE = mapOf(
+            TianGan.JIA to (DiZhi.CHOU to DiZhi.WEI),
+            TianGan.WU to (DiZhi.CHOU to DiZhi.WEI),
+            TianGan.GENG to (DiZhi.CHOU to DiZhi.WEI),
+            TianGan.YI to (DiZhi.ZI to DiZhi.SHEN),
+            TianGan.JI to (DiZhi.ZI to DiZhi.SHEN),
+            TianGan.BING to (DiZhi.HAI to DiZhi.YOU),
+            TianGan.DING to (DiZhi.HAI to DiZhi.YOU),
+            TianGan.REN to (DiZhi.SI to DiZhi.MAO),
+            TianGan.GUI to (DiZhi.SI to DiZhi.MAO),
+            TianGan.XIN to (DiZhi.WU to DiZhi.YIN),
+        )
 
-    fun compile(dayGanZhi: GanZhi, hourGanZhi: GanZhi, yueJiang: DiZhi, yueJiangName: String): LiuRenChart {
-        // 天地盘：月将加时（月将落时支之上，顺布十二支）
-        val offset = (yueJiang.ordinal - hourGanZhi.zhi.ordinal + 12) % 12
-        val tianPan: Map<DiZhi, DiZhi> = DiZhi.entries.associate { it to DiZhi.entries[(it.ordinal + offset) % 12] }
+        fun compile(
+            dayGanZhi: GanZhi,
+            hourGanZhi: GanZhi,
+            yueJiang: DiZhi,
+            yueJiangName: String
+        ): LiuRenChart {
+            // 天地盘：月将加时（月将落时支之上，顺布十二支）
+            val offset = (yueJiang.ordinal - hourGanZhi.zhi.ordinal + 12) % 12
+            val tianPan: Map<DiZhi, DiZhi> =
+                DiZhi.entries.associate { it to DiZhi.entries[(it.ordinal + offset) % 12] }
 
-        // 四课：一课=日干寄宫之上神，二课=一课上神之上神，三课=日支之上神，四课=三课上神之上神
-        val ganGong = jiGong(dayGanZhi.gan)
-        val upper1 = tianPan.getValue(ganGong)
-        val upper2 = tianPan.getValue(upper1)
-        val upper3 = tianPan.getValue(dayGanZhi.zhi)
-        val upper4 = tianPan.getValue(upper3)
+            // 四课：一课=日干寄宫之上神，二课=一课上神之上神，三课=日支之上神，四课=三课上神之上神
+            val ganGong = jiGong(dayGanZhi.gan)
+            val upper1 = tianPan.getValue(ganGong)
+            val upper2 = tianPan.getValue(upper1)
+            val upper3 = tianPan.getValue(dayGanZhi.zhi)
+            val upper4 = tianPan.getValue(upper3)
 
-        fun course(label: String, upper: DiZhi, lower: String, lowerIsGan: Boolean, lowerWx: WuXing): LiuRenCourse {
-            val upperWx = upper.wuXing
-            return LiuRenCourse(
-                label = label,
-                upper = upper.label,
-                lower = lower,
-                lowerIsGan = lowerIsGan,
-                shangKeXia = upperWx == lowerWx.overcomeBy(),
-                xiaZeShang = lowerWx == upperWx.overcomeBy(),
+            fun course(
+                label: String,
+                upper: DiZhi,
+                lower: String,
+                lowerIsGan: Boolean,
+                lowerWx: WuXing
+            ): LiuRenCourse {
+                val upperWx = upper.wuXing
+                return LiuRenCourse(
+                    label = label,
+                    upper = upper.label,
+                    lower = lower,
+                    lowerIsGan = lowerIsGan,
+                    shangKeXia = upperWx == lowerWx.overcomeBy(),
+                    xiaZeShang = lowerWx == upperWx.overcomeBy(),
+                )
+            }
+
+            val courses = listOf(
+                course("一课", upper1, dayGanZhi.gan.label, true, dayGanZhi.gan.wuXing),
+                course("二课", upper2, upper1.label, false, upper1.wuXing),
+                course("三课", upper3, dayGanZhi.zhi.label, false, dayGanZhi.zhi.wuXing),
+                course("四课", upper4, upper3.label, false, upper3.wuXing),
+            )
+
+            // 十二天将：昼夜定贵人（卯~申昼占），贵人乘贵人支，临亥子丑寅卯辰顺布、余逆布（ZhouYiLab 口径）
+            val isDay = hourGanZhi.zhi.ordinal in 3..8
+            val guiRen =
+                if (isDay) GUI_REN_TABLE.getValue(dayGanZhi.gan).first else GUI_REN_TABLE.getValue(
+                    dayGanZhi.gan
+                ).second
+            val clockwise = guiRen == DiZhi.HAI || guiRen.ordinal <= DiZhi.CHEN.ordinal
+            val step = if (clockwise) 1 else -1
+            val tianJiang: Map<DiZhi, String> = (0 until 12).associate { i ->
+                val pos = (guiRen.ordinal + i * step + 24) % 12
+                DiZhi.entries[pos] to TIAN_JIANG[i]
+            }
+
+            // 三传（九宗门）
+            var sanChuan: List<DiZhi>? = null
+            var keTi: String? = null
+            var jiuZongMen: String? = null
+            var unsupported: String? = null
+            try {
+                val result = resolveSanChuan(dayGanZhi, tianPan, courses)
+                sanChuan = result.chuan
+                keTi = result.keTi
+                jiuZongMen = result.gate
+            } catch (e: LiuRenUnsupportedException) {
+                unsupported = e.gate
+            }
+
+            return LiuRenChart(
+                dayGanZhi = dayGanZhi.label,
+                hourGanZhi = hourGanZhi.label,
+                yueJiang = yueJiang.label,
+                yueJiangName = yueJiangName,
+                tianPan = tianPan.entries.associate { it.key.label to it.value.label },
+                courses = courses,
+                sanChuan = sanChuan?.map { it.label },
+                sanChuanJiang = sanChuan?.map { tianJiang.getValue(it) },
+                keTi = keTi,
+                jiuZongMen = jiuZongMen,
+                unsupportedNote = unsupported?.let { "三传九宗门「$it」暂不支持，敬请期待" },
+                guiRen = guiRen.label,
+                isDay = isDay,
+                tianJiang = tianJiang.entries.associate { it.key.label to it.value },
             )
         }
 
-        val courses = listOf(
-            course("一课", upper1, dayGanZhi.gan.label, true, dayGanZhi.gan.wuXing),
-            course("二课", upper2, upper1.label, false, upper1.wuXing),
-            course("三课", upper3, dayGanZhi.zhi.label, false, dayGanZhi.zhi.wuXing),
-            course("四课", upper4, upper3.label, false, upper3.wuXing),
-        )
+        internal data class ChuanResult(val chuan: List<DiZhi>, val keTi: String, val gate: String)
 
-        // 十二天将：昼夜定贵人（卯~申昼占），贵人乘贵人支，临亥子丑寅卯辰顺布、余逆布（ZhouYiLab 口径）
-        val isDay = hourGanZhi.zhi.ordinal in 3..8
-        val guiRen = if (isDay) GUI_REN_TABLE.getValue(dayGanZhi.gan).first else GUI_REN_TABLE.getValue(dayGanZhi.gan).second
-        val clockwise = guiRen == DiZhi.HAI || guiRen.ordinal <= DiZhi.CHEN.ordinal
-        val step = if (clockwise) 1 else -1
-        val tianJiang: Map<DiZhi, String> = (0 until 12).associate { i ->
-            val pos = (guiRen.ordinal + i * step + 24) % 12
-            DiZhi.entries[pos] to TIAN_JIANG[i]
+        /** 九宗门主链：伏吟/返吟暂不支持 → 贼克（重审）→ 克（元首）→ 比用；涉害及以下 TODO */
+        internal fun resolveSanChuan(
+            dayGanZhi: GanZhi,
+            tianPan: Map<DiZhi, DiZhi>,
+            courses: List<LiuRenCourse>,
+        ): ChuanResult {
+            // 伏吟/返吟盘先判（ZhouYiLab 口径）
+            if (tianPan.values.all { it.ordinal == it.ordinal }) {
+                // unreachable（天盘支不等于自身判断见下）
+            }
+            val fuYin = tianPan.all { (di, tian) -> di == tian }
+            val fanYin = tianPan.all { (di, tian) -> di == tian.chong() }
+            if (fuYin) throw LiuRenUnsupportedException("伏吟")
+            if (fanYin) throw LiuRenUnsupportedException("返吟")
+
+            val dayYang = dayGanZhi.gan.isYang
+
+            // 下贼上优先，其次上克下；同去重（ZhouYiLab remove_duplicate_lessons）
+            val zei = dedupe(courses.filter { it.xiaZeShang })
+            val ke = dedupe(courses.filter { it.shangKeXia && !it.xiaZeShang })
+
+            fun chuanOf(first: DiZhi): List<DiZhi> =
+                listOf(first, tianPan.getValue(first), tianPan.getValue(tianPan.getValue(first)))
+
+            if (zei.isNotEmpty()) {
+                if (zei.size == 1) return ChuanResult(
+                    chuanOf(zhiOf(zei[0].upper)),
+                    "重审课",
+                    "贼克"
+                )
+                return biYong(zei, dayYang, ::chuanOf)
+            }
+            if (ke.isNotEmpty()) {
+                if (ke.size == 1) return ChuanResult(chuanOf(zhiOf(ke[0].upper)), "元首课", "贼克")
+                return biYong(ke, dayYang, ::chuanOf)
+            }
+            // 无克 → 遥克/昴星/别责/八专 TODO
+            throw LiuRenUnsupportedException("遥克")
         }
 
-        // 三传（九宗门）
-        var sanChuan: List<DiZhi>? = null
-        var keTi: String? = null
-        var jiuZongMen: String? = null
-        var unsupported: String? = null
-        try {
-            val result = resolveSanChuan(dayGanZhi, tianPan, courses)
-            sanChuan = result.chuan
-            keTi = result.keTi
-            jiuZongMen = result.gate
-        } catch (e: LiuRenUnsupportedException) {
-            unsupported = e.gate
+        /** 比用：取与日干阴阳俱比的上神；俱不比/多比 → 涉害 TODO */
+        internal fun biYong(
+            candidates: List<LiuRenCourse>,
+            dayYang: Boolean,
+            chuanOf: (DiZhi) -> List<DiZhi>,
+        ): ChuanResult {
+            val matched = candidates.filter { zhiOf(it.upper).isYang == dayYang }
+            if (matched.size == 1) {
+                return ChuanResult(chuanOf(zhiOf(matched[0].upper)), "比用课", "比用")
+            }
+            throw LiuRenUnsupportedException("涉害")
         }
 
-        return LiuRenChart(
-            dayGanZhi = dayGanZhi.label,
-            hourGanZhi = hourGanZhi.label,
-            yueJiang = yueJiang.label,
-            yueJiangName = yueJiangName,
-            tianPan = tianPan.entries.associate { it.key.label to it.value.label },
-            courses = courses,
-            sanChuan = sanChuan?.map { it.label },
-            sanChuanJiang = sanChuan?.map { tianJiang.getValue(it) },
-            keTi = keTi,
-            jiuZongMen = jiuZongMen,
-            unsupportedNote = unsupported?.let { "三传九宗门「$it」暂不支持，敬请期待" },
-            guiRen = guiRen.label,
-            isDay = isDay,
-            tianJiang = tianJiang.entries.associate { it.key.label to it.value },
-        )
-    }
+        private fun zhiOf(label: String): DiZhi = DiZhi.entries.first { it.label == label }
 
-    internal data class ChuanResult(val chuan: List<DiZhi>, val keTi: String, val gate: String)
-
-    /** 九宗门主链：伏吟/返吟暂不支持 → 贼克（重审）→ 克（元首）→ 比用；涉害及以下 TODO */
-    internal fun resolveSanChuan(
-        dayGanZhi: GanZhi,
-        tianPan: Map<DiZhi, DiZhi>,
-        courses: List<LiuRenCourse>,
-    ): ChuanResult {
-        // 伏吟/返吟盘先判（ZhouYiLab 口径）
-        if (tianPan.values.all { it.ordinal == it.ordinal }) {
-            // unreachable（天盘支不等于自身判断见下）
-        }
-        val fuYin = tianPan.all { (di, tian) -> di == tian }
-        val fanYin = tianPan.all { (di, tian) -> di == tian.chong() }
-        if (fuYin) throw LiuRenUnsupportedException("伏吟")
-        if (fanYin) throw LiuRenUnsupportedException("返吟")
-
-        val dayYang = dayGanZhi.gan.isYang
-
-        // 下贼上优先，其次上克下；同去重（ZhouYiLab remove_duplicate_lessons）
-        val zei = dedupe(courses.filter { it.xiaZeShang })
-        val ke = dedupe(courses.filter { it.shangKeXia && !it.xiaZeShang })
-
-        fun chuanOf(first: DiZhi): List<DiZhi> =
-            listOf(first, tianPan.getValue(first), tianPan.getValue(tianPan.getValue(first)))
-
-        if (zei.isNotEmpty()) {
-            if (zei.size == 1) return ChuanResult(chuanOf(zhiOf(zei[0].upper)), "重审课", "贼克")
-            return biYong(zei, dayYang, ::chuanOf)
-        }
-        if (ke.isNotEmpty()) {
-            if (ke.size == 1) return ChuanResult(chuanOf(zhiOf(ke[0].upper)), "元首课", "贼克")
-            return biYong(ke, dayYang, ::chuanOf)
-        }
-        // 无克 → 遥克/昴星/别责/八专 TODO
-        throw LiuRenUnsupportedException("遥克")
-    }
-
-    /** 比用：取与日干阴阳俱比的上神；俱不比/多比 → 涉害 TODO */
-    internal fun biYong(
-        candidates: List<LiuRenCourse>,
-        dayYang: Boolean,
-        chuanOf: (DiZhi) -> List<DiZhi>,
-    ): ChuanResult {
-        val matched = candidates.filter { zhiOf(it.upper).isYang == dayYang }
-        if (matched.size == 1) {
-            return ChuanResult(chuanOf(zhiOf(matched[0].upper)), "比用课", "比用")
-        }
-        throw LiuRenUnsupportedException("涉害")
-    }
-
-    private fun zhiOf(label: String): DiZhi = DiZhi.entries.first { it.label == label }
-
-    /** 课去重：干课按天干、支课按地支（ZhouYiLab remove_duplicate_lessons 口径） */
-    private fun dedupe(courses: List<LiuRenCourse>): List<LiuRenCourse> {
-        val ganSeen = mutableSetOf<String>()
-        val zhiSeen = mutableSetOf<String>()
-        return courses.filter { c ->
-            if (c.lowerIsGan) ganSeen.add(c.lower) else zhiSeen.add(c.lower)
+        /** 课去重：干课按天干、支课按地支（ZhouYiLab remove_duplicate_lessons 口径） */
+        private fun dedupe(courses: List<LiuRenCourse>): List<LiuRenCourse> {
+            val ganSeen = mutableSetOf<String>()
+            val zhiSeen = mutableSetOf<String>()
+            return courses.filter { c ->
+                if (c.lowerIsGan) ganSeen.add(c.lower) else zhiSeen.add(c.lower)
+            }
         }
     }
-}
 }

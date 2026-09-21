@@ -143,7 +143,11 @@ data class GanZhi(val gan: TianGan, val zhi: DiZhi) {
     val jiaZiIndex: Int = (0 until 60).first { it % 10 == gan.ordinal && it % 12 == zhi.ordinal }
 
     /** 所在旬首（甲子/甲戌/甲申/甲午/甲辰/甲寅） */
-    val xun: GanZhi get() = GanZhi(TianGan.JIA, DiZhi.entries[(zhi.ordinal - gan.ordinal + 12 * 2) % 12])
+    val xun: GanZhi
+        get() = GanZhi(
+            TianGan.JIA,
+            DiZhi.entries[(zhi.ordinal - gan.ordinal + 12 * 2) % 12]
+        )
 
     /**
      * 旬空两支：旬首地支前两位。
