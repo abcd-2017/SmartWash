@@ -49,16 +49,16 @@
 
 **库内 Skills**（`~/.agents/skills/`，共 50+ 个）：Android 端 `android-kotlin`、`android-jetpack-compose` 按 `.kt` 路径自动生效；鸿蒙按需调用 `arkts-development`、`arkts-syntax-assistant`、`harmonyos-app`；Web 视觉用 `frontend-design`/`design`；跨端通用方法论 `systematic-debugging`、`test-driven-development`、`verification-before-completion` 等。
 
-**各工程子代理**（位于各子项目 `.claude/agents/`，每端 6 个，共 24 个）：
+**各工程子代理**（位于各子项目 `.claude/agents/`，每端 1 个全栈代理，共 4 个）：
 
-| 工程 | 子代理 |
-|------|--------|
-| 后端 | backend-dev、backend-review、backend-architect、backend-tester、backend-debugger、backend-docs |
-| Android | android-dev、android-review、android-compose-ui、android-anim、android-architect、android-tester |
-| 鸿蒙 | harmony-dev、harmony-review、harmony-ui、arkts-syntax、harmony-debugger、harmony-docs |
-| Web | web-dev、web-review、web-ui、web-perf、web-tester、web-debugger |
+| 工程 | 代理文件 | 覆盖职责 |
+|------|---------|---------|
+| 后端 | `SmartWash/.claude/agents/smartwash-backend.md` | 开发、审查、调试、测试、架构 |
+| Android | `SmartWash-Android/.claude/agents/smartwash-android.md` | 开发、审查、调试、测试、UI/动效 |
+| 鸿蒙 | `SmartWash_Harmony/.claude/agents/smartwash-harmony.md` | 开发、审查、调试、测试、ArkTS 语法 |
+| Web | `SmartWashWeb/.claude/agents/smartwash-web.md` | 开发、审查、调试、测试、性能 |
 
-按任务性质派发：写功能用 `*-dev`，动效用 `*-anim`/`*-ui`，排查用 `*-debugger`，测试用 `*-tester`，结构决策用 `*-architect`，文档同步用 `*-docs`；`*-review` 在提交前做只读审查。
+工作流统一采用 mattpocock-skills：`/implement`（内含 `/tdd`）→ `/code-review`，调试用 `/diagnosing-bugs`，架构用 `/improve-codebase-architecture`。
 
 ## 已知风险
 
