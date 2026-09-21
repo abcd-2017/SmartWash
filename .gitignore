@@ -62,6 +62,7 @@ oh_modules/
 
 # === 文档（不提交） ===
 **/docs/
+!docs/agents/shared-rules.md
 # 签名文件
 *.keystore
 *.jks
