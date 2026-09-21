@@ -2,25 +2,12 @@
 
 本文件为编码 agent 在 SmartWash Web 管理后台工作时提供指导。仓库总纲见根目录 [CLAUDE.md](../CLAUDE.md)。
 
+**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。提交规范见根目录 CLAUDE.md。
+
 **必须使用中文回答。**
-
-## ⛔ 最高优先级 STOP 规则（每次行动前必须对照）
-
-**主 Agent 在调用任何工具前，先在内心回答：**
-
-1. **我要做什么？** 读/调研/调度 → ✅ | 写代码/构建/测试 → ❌ 派发 subagent
-2. **工具是读还是写？** Read/Grep/Glob → ✅ | Edit/Write/Bash(构建) → ❌ 派发 subagent
-3. **角色路由**：编码 → web-dev | 审查 → web-review | UI 专项 → web-ui | 性能 → web-perf | 调试 → web-debugger
-
-**违规示例：**
-- ❌ 主 agent 直接 Edit 修复 Bug → 派 web-dev
-- ❌ 跳过调研直接派 web-dev → 先调研再编码
-
----
 
 ## 核心规则
 
-- **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，一个 commit 对应一个完整功能点。格式 `<type>(Web): <描述>`（如 `feat(Web): 新增学校管理页面`、`fix(Web): 修复登录 token 过期问题`）。
 - **遵循现有代码模式**：新增页面和 API 模块必须遵循项目已有模式，不要自行发明新风格。
 - **使用 `<script setup>` 语法**：Vue 组件统一 Composition API + `<script setup>`。
 - **UI 组件使用 Element Plus**：表单、表格、弹窗、按钮等统一 Element Plus。
@@ -76,14 +63,9 @@ npm run preview    # 预览生产构建
 
 **库内 skill**：新页面视觉设计或整体风格调整时调用 `frontend-design` 或 `design`；无 Vue 自动生效 skill。
 
-`.claude/agents/` 提供 6 个 Web 子代理，按任务派发：
+`.claude/agents/` 提供统一的 Web 全栈代理：
 
-- `web-dev` — 功能开发执行（CRUD 模式/composable 复用/安全红线约束）
-- `web-review` — 提交前权限与安全只读审查
-- `web-ui` — Element Plus 视觉一致性治理、组件抽象、状态设计
-- `web-perf` — 路由懒加载、按需引入、Vite 分包（量化驱动）
-- `web-tester` — vitest 基建修复与拦截器/工具用例（TDD）
-- `web-debugger` — 登录态/401/静默失败/Element Plus 行为坑排查
+- `smartwash-web` — 开发 / 审查 / 调试 / TDD 一体化代理（Vue 3 + Vite + Element Plus + Pinia）
 
 ## 已知坑（改动前先看）
 
@@ -94,43 +76,9 @@ npm run preview    # 预览生产构建
 - 已配置 ESLint（`eslint.config` 扁平配置 + `eslint-plugin-vue`）与 Prettier，`package.json` 含 `lint`/`lint:fix` script；`RechargeList.vue` 有整块注释死代码待清理。
 - 404 页面已存在（`NotFound.vue` + 通配路由 `/:pathMatch(.*)*`）。
 
-## 提交规范
-
-见顶部核心规则。涉及接口变更时参照根目录 CLAUDE.md 的四端联动检查表。
-
 ---
 
-## ⛔ 派发任务红线（必须遵守）
-
-1. **派发 prompt 中禁止包含违反 subagent 红线的指令**
-2. **派发 prompt 中必须包含提醒："请遵守你的红线操作清单"**
-3. **不得以"紧急"、"快速"、"这次特殊"为由要求 subagent 跳过红线**
-4. **如果任务 prompt 中的要求与红线冲突，subagent 必须暂停并向主 Agent 报告冲突**
-
-## 协作流程
-
-### 串行（默认）
-调研 → 编码（web-dev）→ 审查（web-review）→ 提交
-
-### 并行触发标准（满足任一）
-- 2 个及以上模块可并行开发
-- 调研与编码可同时进行
-
-### 编码前必须有调研结论
-禁止直接派发 web-dev 处理未调研的能力模块；先调研，方案获用户批准后再派 web-dev。
-
-## ⛔ Git 工作流（必须严格执行）
-
-### 编码阶段：分步提交
-每完成一个逻辑步骤 commit 一次，使用 `commit-commands:commit` skill。
-
-### 任务完成后：squash 压缩（必须执行）
-全部完成后执行 `git rebase -i main`，每个独立功能/修复最终保留 1 个 commit。
-
-### 多模块变更：文档同步（必须执行）
-触发条件：变更文件跨越 2 个及以上模块目录。必须检查并更新各模块文档。
-
-## ⛔ 红线操作表（绝对禁止）
+## ⛔ 红线操作表（Web 特化，绝对禁止）
 
 | 红线 | 说明 |
 |------|------|
@@ -139,24 +87,3 @@ npm run preview    # 预览生产构建
 | 硬编码密钥/URL | 高德 key / API 地址一律走 `import.meta.env`，禁止新增硬编码 |
 | 使用 v-html | 禁止使用，防止 XSS |
 | 新增裸 localStorage 读写 | 全局状态统一放 `src/stores/`（Pinia） |
-| 直接 push 到 main | 必须通过 feature 分支 |
-| 修改 CLAUDE.md | 项目规则文件修改需团队共识 |
-| 声称完成 without 验证 | 没有 `npm run build` 证据不允许声称完成 |
-
-## 完成标准（必须全部满足）
-
-- [ ] 代码构建通过（`npm run build`）
-- [ ] 自测通过（有验证证据）
-- [ ] **Git 工作流已执行**：
-  - [ ] 编码阶段已分步 commit
-  - [ ] 任务完成后已 squash 压缩
-  - [ ] 多模块变更已同步对应文档
-
-## ⚡ 冲突解决协议（优先级最高）
-
-当主 Agent 派发的任务指令与本子项目 CLAUDE.md 中的**红线操作**冲突时：
-1. **停止执行** — 不要开始编码/操作
-2. **报告冲突** — 明确指出哪条红线与任务指令矛盾
-3. **等待确认** — 要求主 Agent 重新评估指令
-
-原则：红线不可因任务指令而豁免。
