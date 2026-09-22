@@ -1,0 +1,27 @@
+# Git
+.git
+.gitattributes
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.iml
+
+# 构建产物（多阶段构建不需要，避免重复复制）
+target/
+logs/
+
+# 文档
+*.md
+docs/
+
+# Docker 自身
+Dockerfile
+.dockerignore
+
+# 其他
+.DS_Store
+.claude/
+AGENTS.md
+CLAUDE.md
