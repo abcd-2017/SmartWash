@@ -88,13 +88,11 @@ dependencies {
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
 
-    //网络请求框架
+    //网络请求框架（OkHttp/Retrofit 基础设施在 :common:network，此处仅 app 直接消费的部分：
+    //Retrofit 供 di/ 各业务 API @Provides，okhttp 供上传/下载，gson 供观象台卦例编解码）
     implementation libs.retrofit
-    implementation libs.converter.gson
-    implementation libs.okhttp.logging
-
-    //辅助工具库,权限申请
-    implementation libs.accompanist.permissions
+    implementation libs.okhttp
+    implementation libs.gson
 
     //自动注入
     implementation(libs.hilt.android)
@@ -102,9 +100,6 @@ dependencies {
     // Hilt 注解处理统一走 KSP（与 Room 一致），Hilt 2.51 起官方支持
     ksp(libs.hilt.compiler)
 
-    //datastore
-    implementation libs.androidx.datastore.preferences
-    implementation libs.androidx.datastore.preferences.core
     implementation libs.androidx.navigation.compose
     implementation libs.androidx.material.icons.extended
 
@@ -112,12 +107,9 @@ dependencies {
     implementation libs.androidx.paging.compose
     implementation libs.androidx.paging.runtime.ktx
 
-    //Room
-    implementation libs.androidx.room.runtime
-    implementation libs.androidx.room.ktx
+    //Room（基础设施在 :common:database，runtime/ktx 经其 api 传递；
+    //ksp 处理器留 app：divination/database 的 DivinationDatabase 在本模块编译）
     ksp libs.androidx.room.compiler
-
-    implementation libs.core
 
     //图片加载
     implementation libs.coil.compose
@@ -132,4 +124,19 @@ dependencies {
 
     //启动任务引擎（core:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
     implementation project(":core:init")
+
+    //跨模块共享数据契约（T2.1）：响应信封 ApiResult/PageData、HttpStatusCode、RequestState
+    implementation project(":common:model")
+
+    //跨模块通用工具（T2.2）：DataStore 封装、动效/触感、二维码、参数校验、按压反馈
+    implementation project(":common:utils")
+
+    //网络基础设施（T2.3）：OkHttp/Retrofit 供给、鉴权与错误转译拦截器、@RequireAuthorization、NetworkException
+    implementation project(":common:network")
+
+    //Room 缓存库（T2.4）：AppDatabase + Laundry/School/Coupon 三表 DAO 供给
+    implementation project(":common:database")
+
+    //清氧设计系统 + 共享 UI 组件（T2.5）：theme（AppDesign/Color/Theme/Type）+ ui/common 组件
+    implementation project(":common:ui")
 }

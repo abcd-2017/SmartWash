@@ -1,0 +1,28 @@
+// :common:network —— 网络基础设施（OkHttp/Retrofit 供给、鉴权与错误转译拦截器、@RequireAuthorization、NetworkException）。
+// 业务 Retrofit 接口（UserApi 等）与 session 域暂留 app（阶段 5-7 跟各自 feature 走）；
+// token/会话事件经 TokenProvider/SessionEventNotifier 接口由 app 侧 @Binds 绑定实现。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.common.network'
+
+    buildFeatures {
+        // NetworkModule 按 BuildConfig.DEBUG 决定是否挂日志拦截器（library 变体跟随 app debug/release）
+        buildConfig true
+    }
+}
+
+dependencies {
+    // Retrofit 类型经 api 暴露：app 侧 di/ 各业务 API @Provides 仍直接消费 Retrofit
+    api libs.retrofit
+    implementation libs.converter.gson
+    implementation libs.okhttp.logging
+    // ResponseInterceptor 解析响应信封（ApiResult/HttpStatusCode）
+    implementation project(':common:model')
+    // NetworkException 的 @StringRes 注解
+    implementation libs.androidx.annotation
+}
