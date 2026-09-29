@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 热更新链路文案（T3.1 随 AppUpdateRepository/UpdateViewModel 迁入；
+     弹窗文案在壳层 app 的 strings.xml） -->
+<resources>
+    <string name="update_check_failed">检查更新失败</string>
+    <string name="download_url_empty">获取下载地址失败，请重试</string>
+</resources>

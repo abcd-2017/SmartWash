@@ -117,10 +117,11 @@ dependencies {
     //历法底座（观象台）：四柱/节气/中气/农历/旬空，纯 Java 可单测
     implementation libs.lunar
 
-    // APK 后台下载（WorkManager + Hilt Worker）
+    // APK 后台下载（WorkManager：MainActivity 调度/监听进度用；@HiltWorker 与
+    // androidx hilt-compiler 已随 ApkDownloadWorker 迁入 :feature:update）。
+    // hilt-work 供 App 注入 HiltWorkerFactory（feature 的 implementation 依赖不传递，app 需自行声明）
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.hilt.work
-    ksp libs.androidx.hilt.compiler
 
     //启动任务引擎（core:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
     implementation project(":core:init")
@@ -139,4 +140,8 @@ dependencies {
 
     //清氧设计系统 + 共享 UI 组件（T2.5）：theme（AppDesign/Color/Theme/Type）+ ui/common 组件
     implementation project(":common:ui")
+
+    //应用热更新链路（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
+    //消费 UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller（app → feature 依赖方向）
+    implementation project(":feature:update")
 }
