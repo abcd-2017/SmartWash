@@ -1,0 +1,58 @@
+// :feature:divination —— 观象台（占卜子系统）整模块。
+// 四套算法内核（liuren/liuyao/meihua/qimen）+ 卦历独立库 DivinationDatabase +
+// 解读网关 DivinationApi + 观象台 7 页面；经 app 的 Hilt 聚合对外提供页面 composable
+// 与 Repository（app → feature 依赖方向）。路由常量 DivRoute 为模块内单一事实来源，
+// app 壳层 PageConstant.Div* 委托其值（T8.1 统一拆路由后由本模块直接对外暴露）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.divination'
+}
+
+dependencies {
+    // 响应信封 ApiResult / 异步状态 RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ @RequireAuthorization（DivinationApi 消费，
+    // 鉴权/错误转译拦截器经 common:network 的 NetworkModule 自动生效）
+    implementation project(':common:network')
+    // 观象台宣纸/玄墨子主题（DivinationColors）+ AppConfirmDialog
+    implementation project(':common:ui')
+    // 触感/动效降级/按压反馈（performHaptic/isReduceMotionEnabled/pressScale 等；
+    // common:ui 对 common:utils 是 implementation，不传递，本模块直接消费须显式声明）
+    implementation project(':common:utils')
+
+    // Room：runtime/ktx 经 common:database 的 api 传递；DivinationDatabase 在本模块编译，
+    // ksp 处理器须自持（与 common:database 编译 AppDatabase 同模式）
+    implementation project(':common:database')
+    ksp libs.androidx.room.compiler
+
+    // ViewModel 基类 + viewModelScope + SavedStateHandle
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（传递 lifecycle-viewmodel-savedstate）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面间跳转）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（Column/Canvas/LazyColumn 等；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 动效（Animatable/infiniteRepeatable/spring 等）
+    implementation libs.androidx.compose.animation
+    // BackHandler（问事/摇卦页系统返回键拦截；app 的 activity-compose 是 implementation 不传递）
+    implementation libs.androidx.activity.compose
+    // 图标（ArrowBack 等）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（DivinationApi 的请求/返回体；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+
+    // 卦例编解码（DivChartCodec 的 chartJson 序列化）
+    implementation libs.gson
+    // 历法底座：四柱/节气/中气/农历/旬空，纯 Java 可单测
+    implementation libs.lunar
+
+    // 四套算法内核锚点单测（liuren/liuyao/meihua/qimen，任何改动必须先跑对拍）
+    testImplementation libs.junit
+}

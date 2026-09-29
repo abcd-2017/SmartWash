@@ -1,0 +1,19 @@
+// :feature:user:api —— 用户域对外服务契约（api/impl 样板的 api 侧，纯接口 + 模型）。
+// 刻意保持最小依赖：不引 Hilt 运行时、不引 Compose、零项目依赖、零 Android UI 依赖——
+// 消费方（order / payment / laundry 等 feature-impl 与 app 壳）仅经本模块访问用户域，
+// 用户域实现细节（SessionManager / UserRepository / 页面）全部留在 :feature:user:impl（T5.2）。
+// 注意：与 app 内 Retrofit 接口 com.smartwash.network.api.UserApi 同名不同包，
+// T5.2 迁移 UserRepository 时两者会共存于 user-impl，import 需显式区分（或届时重命名 Retrofit 侧）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+}
+
+android {
+    namespace 'com.smartwash.feature.user.api'
+}
+
+dependencies {
+    // SharedFlow / Flow 契约（kotlinx.coroutines.flow 位于 coroutines-core，无需 android 变体）
+    implementation libs.kotlinx.coroutines.core
+}

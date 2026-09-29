@@ -43,14 +43,11 @@ android {
     buildTypes {
         debug {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
-            // 观象台解读网关（LLM 走后端，密钥不出服务端）：endpoint 统一此处注入，禁止硬编码
-            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
         }
         release {
             // 签名：CI 环境注入 release 签名；本地未配置时回退 debug keystore（仅测试用）
             signingConfig signingConfigs.release
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
-            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -89,10 +86,9 @@ dependencies {
     debugImplementation libs.androidx.ui.test.manifest
 
     //网络请求框架（OkHttp/Retrofit 基础设施在 :common:network，此处仅 app 直接消费的部分：
-    //Retrofit 供 di/ 各业务 API @Provides，okhttp 供上传/下载，gson 供观象台卦例编解码）
+    //Retrofit 供 di/ 各业务 API @Provides，okhttp 供上传/下载）
     implementation libs.retrofit
     implementation libs.okhttp
-    implementation libs.gson
 
     //自动注入
     implementation(libs.hilt.android)
@@ -108,14 +104,9 @@ dependencies {
     implementation libs.androidx.paging.runtime.ktx
 
     //Room（基础设施在 :common:database，runtime/ktx 经其 api 传递；
-    //ksp 处理器留 app：divination/database 的 DivinationDatabase 在本模块编译）
-    ksp libs.androidx.room.compiler
-
+    //ksp 处理器已随 DivinationDatabase 迁入 :feature:divination，app 无 Room 注解类）
     //图片加载
     implementation libs.coil.compose
-
-    //历法底座（观象台）：四柱/节气/中气/农历/旬空，纯 Java 可单测
-    implementation libs.lunar
 
     // APK 后台下载（WorkManager：MainActivity 调度/监听进度用；@HiltWorker 与
     // androidx hilt-compiler 已随 ApkDownloadWorker 迁入 :feature:update）。
@@ -144,4 +135,17 @@ dependencies {
     //应用热更新链路（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
     //消费 UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller（app → feature 依赖方向）
     implementation project(":feature:update")
+
+    //观象台占卜子系统（T4.1）：四套算法内核+卦历库+解读网关+7 页面整模块迁入；
+    //MainActivity NavHost / HomePage 问卜页签消费页面 composable，PageConstant.Div* 委托 DivRoute
+    implementation project(":feature:divination")
+
+    //用户域对外契约（T5.3）：app 壳（MainActivity 会话事件/登录页注册）与 home/index/
+    //laundry 消费方一律注入 UserApi（isLogin/getUserInfo 缓存/loginEvents），不触碰 impl
+    implementation project(":feature:user-api")
+
+    //用户域实现（T5.2）：会话+用户网络链路+登录/注册/用户中心/资料编辑/设置页面迁入；
+    //app 壳仅剩 NavHost 页面注册（LoginPage/RegisterPage/SettingPage/UpdateUserInfoPage，
+    //T8.1 拆 NavGraphBuilder 聚合后摘除）与 OrderInfo 的 UserInfoVo 反序列化字段（T6.1 迁移）
+    implementation project(":feature:user-impl")
 }
