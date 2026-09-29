@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 订单域实现模块（T6.1 自 app 迁入）：无自有 manifest 声明（页面经宿主 NavHost 承载），
+     此文件仅保留模块占位，manifest merger 合入宿主。 -->
+<manifest />

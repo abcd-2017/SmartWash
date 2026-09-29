@@ -1,0 +1,27 @@
+// :feature:order:api —— 订单域对外服务契约（api/impl 样板，模式对齐 :feature:user:api）。
+// 纯接口 + 模型 + 路由常量 + 状态枚举：不引 Hilt 运行时、不引 Compose、零 feature 依赖——
+// 消费方（app 壳留守页面 detail/index/laundry/pickup、payment 域 T6.2、user-impl 的
+// 订单计数 T6.3 切换）一律经本模块访问订单域，实现细节全部留在 :feature:order:impl。
+// 与 user-api 的两点差异（均为消费面驱动）：
+// 1. androidx.paging:paging-common（纯 KMP 接口库，无 Android 框架依赖）——
+//    orderPagingSource(status) 工厂返回 PagingSource，取件页分页浏览订单所需；
+// 2. 自带 res（order_status_* 文案）+ androidx.annotation（@StringRes）——
+//    OrderStatus/ShowOrderStatus 状态枚举是订单域对外契约（index/detail/pickup 页
+//    与 T6.3 后的 user-impl 计数查询都消费），单一事实来源放本模块避免双份漂移。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+}
+
+android {
+    namespace 'com.smartwash.feature.order.api'
+}
+
+dependencies {
+    // suspend 契约（coroutines-core，无需 android 变体）
+    implementation libs.kotlinx.coroutines.core
+    // PagingSource 契约（orderPagingSource 工厂；纯接口库，无 Android 框架依赖）
+    implementation libs.androidx.paging.common
+    // @StringRes（OrderStatus/ShowOrderStatus 的状态文案资源引用）
+    implementation libs.androidx.annotation
+}

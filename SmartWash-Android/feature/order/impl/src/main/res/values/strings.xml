@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 订单域字符串（T6.1 随 OrderPage/OrderViewModel 自 app 迁入）。
+     注意：completed/currency_format/error_network_fail 为 app 壳与其他域仍在使用的
+     共享文案，app 侧保留同名定义，本模块持同值副本（模式同 user-impl，模块资源经
+     manifest merger 各自独立，无冲突）；其余为订单页独占，已从 app 移除。
+     订单状态文案（order_status_*）随 OrderStatus 枚举归 :feature:order:api。 -->
+<resources>
+    <!-- 订单页 -->
+    <string name="my_orders">我的订单</string>
+    <string name="no_orders">暂无订单</string>
+    <string name="confirm_cancel_order">确定要取消订单？</string>
+    <string name="cancel_order">取消订单</string>
+    <string name="go_pay">去支付</string>
+    <string name="go_ship">去寄件</string>
+    <string name="washing">清洗中</string>
+    <string name="go_pickup">去取件</string>
+    <string name="completed">已完成</string>
+    <string name="order_no_label">订单号：%s</string>
+    <string name="order_time_label">下单时间：%s</string>
+    <string name="cancel_success">取消成功</string>
+    <string name="error_cancel_order_failed">取消订单失败</string>
+
+    <!-- 共享文案（app 侧同名保留） -->
+    <string name="currency_format">¥%s</string>
+    <string name="error_network_fail">请求失败</string>
+</resources>

@@ -1,0 +1,51 @@
+// :feature:order:impl —— 订单域实现（api/impl 样板的 impl 侧，T6.1）。
+// 订单网络链路（OrderServiceApi/OrderRepository）+ 订单页（OrderPage/OrderViewModel）
+// + OrderPagingSource；对外仅经 :feature:order:api 的 OrderApi 契约暴露（di @Binds），
+// 跨模块消费方不得触碰本模块实现细节。
+// 依赖方向：order-api / common（禁止依赖 app 壳与其他 feature-impl）。
+// T6.1 调研结论：订单域不调用 PaymentRepository（仅经导航跳转支付页，无数据依赖），
+// 故无需 payment seam；订单域也不直接消费用户域（无 UserApi 注入点）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.order.impl'
+}
+
+dependencies {
+    // 对外服务契约（OrderApi/OrderRoute/OrderInfo 等模型/OrderStatus 枚举）
+    implementation project(':feature:order:api')
+
+    // 支付域路由常量（PaymentRoute；订单页「去支付」跨域跳转，T6.2 起替换 HostRoutes 过渡字面量）
+    implementation project(':feature:payment:api')
+
+    // 响应信封 ApiResult / HttpStatusCode / RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens 主题 + AppTabBar/EmptyState 等组件）
+    implementation project(':common:ui')
+    // 触感/按压反馈（common:ui 对 common:utils 是 implementation，不传递，直接消费须显式声明）
+    implementation project(':common:utils')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面跳转经 HostRoutes 过渡字面量）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（HorizontalPager/LazyColumn/rememberLazyListState；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 图标（LocalLaundryService）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（网络 VO/请求体；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+    // PagingSource 实现（OrderPagingSource）
+    implementation libs.androidx.paging.runtime.ktx
+    // OrderViewModel 的协程 launch
+    implementation libs.kotlinx.coroutines.android
+}

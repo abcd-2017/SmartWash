@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 订单状态文案（T6.1 随 OrderStatus/ShowOrderStatus 枚举自 app 迁入）。
+     原因：状态枚举是订单域对外契约（app 壳留守页面与 T6.3 后的 user-impl 均消费），
+     文案与枚举绑定随之进入本模块；app 侧同名定义已删（无其他消费者）。
+     注意：user-impl 持其中 3 条的同值副本（用户中心快捷入口文案），模块资源经
+     manifest merger 各自独立，无冲突。 -->
+<resources>
+    <string name="order_status_cancelled">已取消</string>
+    <string name="order_status_refunded">已退款</string>
+    <string name="order_status_pending_payment">待支付</string>
+    <string name="order_status_pending_shipment">待寄件</string>
+    <string name="order_status_received">已收取</string>
+    <string name="order_status_washing">清洗中</string>
+    <string name="order_status_dried">已烘干</string>
+    <string name="order_status_in_delivery">配送中</string>
+    <string name="order_status_ready_for_pickup">待取件</string>
+    <string name="order_status_completed">已完成</string>
+    <string name="order_status_all">全部订单</string>
+</resources>

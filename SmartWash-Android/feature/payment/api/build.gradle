@@ -1,0 +1,14 @@
+// :feature:payment:api —— 支付域对外契约（T6.2，含充值 Recharge 域）。
+// 暴露面经 T6.2 调研定为最小化：仅 PaymentRoute 路由常量，无接口、无模型——
+// payment 域零跨模块数据消费（T6.1 已查明 order 域不调 payment，本任务复核确认
+// PaymentRepository/RechargeRepository 仅支付/充值页面自用），跨模块诉求只有导航：
+// order-impl 订单页跳支付页、user-impl 用户中心跳充值页、app 壳 NavHost 注册。
+// 后续出现真实跨模块数据消费方时再增补接口与模型（YAGNI，避免提前固化契约）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+}
+
+android {
+    namespace 'com.smartwash.feature.payment.api'
+}

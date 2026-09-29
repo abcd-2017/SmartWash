@@ -1,0 +1,62 @@
+// :feature:payment:impl —— 支付域实现（T6.2，含充值 Recharge 域并入，同属资金链路）。
+// 支付+充值网络链路（PaymentApi/RechargeApi/PaymentRepository/RechargeRepository）
+// + 支付/支付成功/充值/充值记录页面；对外仅经 :feature:payment:api 的 PaymentRoute
+// 路由常量暴露（payment 域零跨模块数据消费，无 api 接口）。
+// 消费 order-api 经接口（PaymentViewModel/PaySuccessViewModel 注入 OrderApi）；
+// 优惠券数据经 coupon-api 的 CouponApi 契约取自 :feature:coupon:impl（T7.2 起
+// 原 CouponSource seam 与 app 壳 PaymentImplSeamModule 实现删除）。
+// 依赖方向：payment-api / order-api / coupon-api / common（禁止依赖 app 壳与其他 feature-impl）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.payment.impl'
+}
+
+dependencies {
+    // 本域路由常量（PaymentRoute；域内页面互跳与跨域消费方统一取值来源）
+    implementation project(':feature:payment:api')
+
+    // 订单域服务契约（PaymentViewModel/PaySuccessViewModel 注入 OrderApi：
+    // 订单详情/优惠券试算；不触碰 order-impl 实现细节）
+    implementation project(':feature:order:api')
+
+    // 优惠券域契约（CouponApi/UsableCoupon：支付页选券注入 CouponApi 取订单可用
+    // 优惠券；CouponRoute：选券弹层「去领取」跳优惠券页。T7.2 起替换 CouponSource seam
+    // 与 HostRoutes.COUPON 过渡字面量，不触碰 coupon:impl 实现细节）
+    implementation project(':feature:coupon:api')
+
+    // 响应信封 ApiResult/PageData/RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens 主题 + AppButton/AppConfirmDialog/PageHeader 等组件）
+    implementation project(':common:ui')
+    // 按压反馈/动效（common:ui 对 common:utils 是 implementation，不传递，直接消费须显式声明）
+    implementation project(':common:utils')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面跳转经 HostRoutes 过渡字面量）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/verticalScroll/ModalBottomSheet；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // animateColorAsState（充值页金额卡选中态颜色过渡）
+    implementation libs.androidx.compose.animation
+    // 图标（LocalOffer/LocalShipping/History/AccountBalanceWallet 等）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（网络 VO/请求体；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+    // PagingSource 实现（RechargeRecordPagingSource/pagingFlow 的 Pager）
+    implementation libs.androidx.paging.runtime.ktx
+    // collectAsLazyPagingItems（充值记录页列表）
+    implementation libs.androidx.paging.compose
+    // ViewModel 协程 launch / Flow
+    implementation libs.kotlinx.coroutines.android
+}

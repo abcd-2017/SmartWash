@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 支付+充值域文案（T6.2 随页面自 app 迁入；payment_type_* 随 PaymentType.descriptionRes
+     死字段删除，T8.2）。9 条与 app 壳/user-impl 同名同值（coupon、coupon_min_amount_format、
+     currency_format、go_recharge、locker_info_section、order_info、order_number、tip、
+     valid_until）——模块资源经 manifest merger 各自独立、值保持一致（同 order-api 先例）。 -->
+<resources>
+    <!-- 支付页 -->
+    <string name="payment">支付</string>
+    <string name="payment_method">支付方式</string>
+    <string name="payment_amount">支付金额</string>
+    <string name="balance_payment">余额支付</string>
+    <string name="current_balance_format">当前余额：¥%s</string>
+    <string name="amount_due">应付金额</string>
+    <string name="order_information">订单信息</string>
+    <string name="order_number">订单编号</string>
+    <string name="service_type">服务类型</string>
+    <string name="estimated_completion_time">预计完成</string>
+    <string name="within_24_hours">24小时内</string>
+    <string name="confirm_pay_format">确认支付 ¥%s</string>
+    <string name="confirm_pay_question">确定要支付？</string>
+    <string name="insufficient_balance">余额不足</string>
+    <string name="insufficient_balance_tip">当前余额不足，请先充值</string>
+    <string name="go_recharge">去充值</string>
+    <string name="currency_format">¥%s</string>
+    <string name="coupon">优惠券</string>
+    <string name="do_not_use">不使用</string>
+    <string name="select_coupon">选择优惠券</string>
+    <string name="go_claim">去领取</string>
+    <string name="no_coupons">暂无优惠券</string>
+    <string name="coupon_amount_format">%s元优惠券</string>
+    <string name="coupon_discount_format">满%s减%s</string>
+    <string name="coupon_min_amount_format">满%s元可用</string>
+    <string name="valid_until">有效期至：%s</string>
+
+    <!-- 支付成功页 -->
+    <string name="pay_success">支付成功</string>
+    <string name="thanks_for_using">感谢使用智慧洗衣</string>
+    <string name="order_info">订单信息</string>
+    <string name="order_time_display">下单时间</string>
+    <string name="locker_info_section">寄存柜信息</string>
+    <string name="locker_info_title">寄存柜信息</string>
+    <string name="go_to_locker_format">请前往寄存柜 %s柜存放衣物</string>
+    <string name="locker_process_tip">寄存柜将在24小时内处理您的订单</string>
+    <string name="go_ship_now">立即寄件</string>
+
+    <!-- 充值页 -->
+    <string name="recharge">充值</string>
+    <string name="recharge_amount">充值金额</string>
+    <string name="recharge_record">充值记录</string>
+    <string name="custom">自定义</string>
+    <string name="custom_amount">自定义金额</string>
+    <string name="select_or_input_amount">请选择或输入充值金额</string>
+    <string name="select_payment_method">请选择充值方式</string>
+    <string name="confirm_recharge_question">是否确认充值？</string>
+    <string name="recharge_success">充值成功</string>
+    <string name="error_recharge_failed">充值失败</string>
+    <string name="tip">提示</string>
+    <string name="weixin_pay">微信支付</string>
+    <string name="alipay">支付宝</string>
+
+    <!-- 充值记录页 -->
+    <string name="no_recharge_records">暂无充值记录</string>
+    <string name="recharge_record_amount_format">+%s</string>
+</resources>
