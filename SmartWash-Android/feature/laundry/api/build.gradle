@@ -1,0 +1,16 @@
+// :feature:laundry:api —— 洗衣域对外契约（T7.1，含 School 域并入）。
+// 暴露面经 T7.1 调研定为两件：LaundryRoute 路由常量（宿主 NavHost 注册 / 首页服务网格
+// 跳转 / PageConstant 委托）+ SchoolSearchSource 学校搜索契约（user-impl 资料编辑页
+// 按关键字搜学校——T7.1 调研确认其消费的是「学校列表搜索」，与 UserApi.getUserInfo
+// 携带的用户已绑定学校不同源，故洗衣域存在真实跨模块数据消费方，契约由数据持有方
+// 的 api 模块持有，模式同 user-api 的 UserApi / order-api 的 OrderApi）。
+// 原 user-impl 内的 SchoolSearchSource 过渡 seam（app 壳 UserImplSeamModule 实现）
+// 随本模块就位删除；T7.2 coupon 域的 CouponSource seam 删除时复制本模式。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+}
+
+android {
+    namespace 'com.smartwash.feature.laundry.api'
+}

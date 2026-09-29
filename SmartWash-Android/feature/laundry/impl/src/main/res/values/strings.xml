@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 洗衣域文案（T7.1 随页面自 app 迁入）。
+     9 条为洗衣/服务页专有（app 侧同名定义已删）；4 条同值副本（laundry_service、
+     change_school_contact_service、currency_format、error_network_fail）仍被 app 壳
+     页面使用，模块资源经 manifest merger 各自独立，值保持一致（同 payment-impl 先例）。 -->
+<resources>
+    <!-- 服务 tab 页 -->
+    <string name="laundry_service">洗衣服务</string>
+    <string name="service_page_subtitle">选择您需要的洗护服务</string>
+    <string name="currency_format">¥%s</string>
+
+    <!-- 洗衣预约页 -->
+    <string name="book_locker">预约寄存</string>
+    <string name="delivery_locker">投递柜</string>
+    <string name="change">更换</string>
+    <string name="laundry_package">洗护套餐</string>
+    <string name="estimated_cost">预估费用</string>
+    <string name="confirm_booking">确认预约</string>
+    <string name="please_select_package">请选择套餐</string>
+    <string name="change_school_contact_service">更换学校信息请联系客服！</string>
+
+    <!-- 错误 -->
+    <string name="error_network_fail">请求失败</string>
+    <string name="error_booking_failed">预约失败</string>
+</resources>

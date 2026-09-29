@@ -32,10 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.smartwash.R
-import com.smartwash.network.vo.AppVersionVo
-import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.AppElevation
+import com.smartwash.feature.update.model.AppVersionVo
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import java.io.File
 
 /**

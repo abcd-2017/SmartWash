@@ -8,11 +8,11 @@
 
 ## 基本规则
 
-- **新增页面必须注册路由** — 在 `PageConstant` 中添加路由常量，在 `MainActivity` 的 `NavHost` 中注册 composable。
-- **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一 `ResponseData<T>` 包装。
+- **新增页面必须注册路由** — 各域页面在本域 `*Graph.kt`（如 `OrderGraph.kt`）中注册 composable，壳层 `MainActivity` 经 `NavGraphBuilder.xxxGraph` 聚合；壳层留守页面（取件页等）注册于 `shellGraph`。路由常量以各域 `*Route` 密封类为单一事实来源（`OrderRoute`/`PaymentRoute`/`UserRoute`/`LaundryRoute`/`CouponRoute`/`DivRoute`）。
+- **API 接口遵循既有模式** — 需要认证的接口加 `@RequireAuthorization` 注解；返回值统一 `ApiResult<T>` 包装。
 - **异步状态统一使用 `RequestState`** — ViewModel 中所有网络请求状态用 `RequestState`（Idle/Loading/Success/Error）管理，页面通过 `StateFlow` 收集。
-- **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository 访问数据，Page 只负责 UI 渲染。
-- **禁止字符串硬编码** — 用户可见文本一律定义在 `res/values/strings.xml`，代码经 `stringResource(R.string.xxx)` 引用；ViewModel 内经 `application.getString(...)`；非用户可见常量（存储 key、TAG）定义在对应常量类中。
+- **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository（或跨域经 api 接口）访问数据，Page 只负责 UI 渲染。
+- **禁止字符串硬编码** — 用户可见文本一律定义在模块内 `res/values/strings.xml`，代码经 `stringResource(R.string.xxx)` 引用；ViewModel 内经 `application.getString(...)`；非用户可见常量（存储 key、TAG）定义在对应常量类中。
 
 ## 构建与运行
 
@@ -21,61 +21,81 @@
 ./gradlew assembleRelease  # Release APK（ProGuard 混淆 + 资源收缩）
 ./gradlew test             # JVM 单元测试
 ./gradlew lint             # 代码检查
+./gradlew feature:divination:test  # 观象台算法锚点单测（亦含于全量 test）
 ```
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
 - Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP，并声明 `REQUEST_INSTALL_PACKAGES`（APK 热更新）与 FileProvider（APK 安装）。**发版前须按生产地址改为 HTTPS 并移除该开关**。
-- Maven 仓库用阿里云镜像；海外构建需改回 `google()` / `mavenCentral()`。
+- Maven 仓库用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `build-logic` 两处注释）；海外构建需改回 `google()` / `mavenCentral()`。
 
 ## 项目架构
 
-智慧校园洗衣服务 App，单模块 Gradle 项目，**MVVM + Jetpack Compose + Hilt**。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。已完成模块化重构（阶段 0–8，提交 3276513 起），从单模块拆为 16 个 Gradle 模块。
 
-### 分层结构
+### 模块地图
 
 ```
-ui/page/<功能>/     → Compose Page + ViewModel（页面级，一页一个 VM），含观象台 7 个页面
-  ui/page/divination/ → 观象台子页面（home/ask/cast/chart/reading/followup/history）
-repository/         → 8 个 @Singleton Repository（User/Order/Laundry/Coupon/Payment/Recharge/School/AppUpdate），
-                      ViewModel 一律经 Repository 访问数据；Laundry/School/Coupon 实现
-                      「内存 → Room → 网络」缓存降级
-network/api/        → Retrofit 接口（含 AppUpdateApi，共 8 个，Hilt 注入）
-network/entity/     → 请求体 + ResponseData<T> 包装 {code, message, data}
-network/vo/         → 服务端返回值对象
-network/interceptor/ → RequestInterceptor（鉴权注入）、ResponseInterceptor（错误转译）
-network/session/    → SessionManager + SessionEventBus（会话事件总线）
-database/           → Room（Laundry/School/Coupon 三个 DAO 已在用）
-paging/             → Paging 3 分页实现（pagingFlow 封装 + OrderPagingSource 等）
-service/            → ApkDownloadWorker（WorkManager 后台下载）+ ApkInstaller（APK 安装器）
-di/                 → Hilt 模块（UpdateModule 提供 AppUpdate 相关依赖）
-divination/         → 完整占卜子系统
-  divination/core/  → 四套算法内核（liuren 六壬 / liuyao 六爻 / meihua 梅花 / qimen 奇门）+ 公共干支/爻
-  divination/network/ → DivinationApi（Retrofit）
-  divination/data/  → 数据层
-  divination/di/    → Hilt 依赖注入模块
-  divination/ui/    → 观象台 UI 组件与页面
-utils/              → DataStore 封装（SharePreferenceUtils）、RequestState、枚举常量、动效/触感工具（AnimationUtils/HapticUtils）
+:app                             壳：Application + MainActivity(NavHost 聚合) + 更新弹窗 UI + 取件留守页
+:core:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
+:common:model                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState
+:common:utils                   DataStore 封装(SharePreferenceUtils) / RequestState / 动效触感 / 二维码 / pagingFlow
+:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
+:common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
+:common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
+:feature:update                 热更新全链路 + UpdateInitTask（InitTask 首业务案例）
+:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + 解读网关 + 7 页面 + 独立库）
+:feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
+:feature:user:impl              SessionManager + UserRepository + 登录/注册/用户中心/资料编辑/设置页
+:feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
+:feature:order:impl             OrderRepository + 订单页
+:feature:payment:api            PaymentRoute 路由常量（零跨模块数据消费）
+:feature:payment:impl           支付 + 充值网络链路与页面
+:feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
+:feature:laundry:impl           Laundry/School Repository + 洗衣预约/服务页（内存→Room→网络 缓存降级）
+:feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
+:feature:coupon:impl            CouponRepository + 优惠券页
+build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
 
-### 核心设计模式
+### 六条依赖铁律（强制，`scripts/check-deps.sh` 静态校验前四条）
 
-**单 Activity** — `MainActivity` 通过 `NavHost` 承载所有页面，路由常量在 `PageConstant` 密封类，页面切换为滑动 + 淡入淡出动画。
+1. **方向单向**：`app → feature:impl → feature:api → common → core:init`，禁止反向。
+2. **feature 间仅 impl → 他人 api**：禁止 `impl→impl`、禁止 `api→api`、禁止 `api→任何 feature`。
+3. **core:init 零项目依赖**：不依赖 common 任何模块、不依赖 Compose。
+4. **common 不依赖 feature**。
+5. **业务模型跟各自 api 模块走**；`common:model` 只放 `ApiResult`/`PageData`/`HttpStatusCode`/`RequestState` 等真共享物。
+6. **构建配置统一 convention plugin**（build-logic），模块 `build.gradle` 只声明差异依赖。
 
-**鉴权流程** — API 方法加 `@RequireAuthorization` 注解，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测该注解后从 DataStore 取 token 注入 `Bearer <token>`。`ResponseInterceptor` 统一转译错误；遇 401 清除本地 token 并触发 `App.globalRequestAfterCallback` 跳回登录页（回调中 navigate 需 `launchSingleTop` 防堆叠）。
+### 核心机制
 
-**状态管理** — ViewModel 用 `MutableStateFlow` → `asStateFlow()` 暴露状态；`RequestState` 密封类是统一异步 UI 状态。
+**InitTask（core:init）** — 启动任务抽象（taskId/priority/dependencies/blocking/timeoutMs/suspend execute），`InitEngine` 拓扑排序 + 阻塞串行/非阻塞 launch 即返回 + 超时保护 + 进度 StateFlow。收集用 Hilt `@IntoSet` 多绑定：
 
-**依赖注入** — `RetrofitClient` 是 Hilt `@Module`，提供 Retrofit 单例及 API 实例；ViewModel 用 `@HiltViewModel` + `@Inject constructor`。Hilt 注解处理统一走 **KSP**（`build.gradle` 使用 `ksp(libs.hilt.compiler)`，与 Room 一致）。
+```kotlin
+// 在各 impl 模块的 Hilt Module 里提供
+@Module @InstallIn(SingletonComponent::class)
+abstract class XxxInitModule {
+    @Binds @IntoSet
+    abstract fun bindXxxInitTask(task: XxxInitTask): InitTask
+}
+```
 
-**分页** — 订单/优惠券列表走手写 Map 分页（OrderViewModel），取件/充值记录走 Paging 3（`pagingFlow`：debounce + flatMapLatest + cachedIn）；新增分页列表优先用 Paging 3。
+`App.onCreate` 注入 `InitTaskRegistry`，经 `applicationScope.launch { InitEngine(registry.getTasks()).executeAll() }` 调度。已接入：`SessionInitTask`（user:impl，阻塞高优先级，预热 token）、`UpdateInitTask`（feature:update，非阻塞，静默检查）。
 
-### API 返回格式
+**api/impl 服务化** — api 模块（纯 Kotlin/轻 Android，不引 Hilt 运行时）放接口 + 模型 + 路由常量；impl 模块 `@Binds Api → ApiImpl`；消费方 `@Inject` 接口。api 模块**可带 res** 先例：`feature:order:api`（OrderStatus/ShowOrderStatus 枚举的 descriptionRes）、`feature:payment:api`（无 res）、`feature:coupon:api`（枚举带 res）。判断标准：res 仅服务于本 api 模块的枚举/模型即可带。
 
-`ResponseData<T>`：`code: Int`（见 `HttpStatusCode` 枚举）、`message: String`、`data: T?`。业务失败时 Repository 应抛异常而非静默返回空集合，让 UI 能区分"无数据"与"失败"。
+**鉴权流程** — API 方法加 `@RequireAuthorization`，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测后从 `TokenProvider`（user:impl 的 SessionManager `@Binds`）取 token 注入 `Bearer <token>`。`ResponseInterceptor` 遇 401 清 token 并经 `SessionEventNotifier`（user:impl 的 SessionEventBus `@Binds`）通知 UI 跳登录。
 
-## Compose 硬规则
+**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
 
-- **组合期禁止副作用**：Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里（历史上多个页面踩过此坑）。
+**状态管理** — ViewModel 用 `MutableStateFlow` → `asStateFlow()`；`RequestState` 密封类统一异步 UI 状态。
+
+**依赖注入** — Hilt，ViewModel 用 `@HiltViewModel` + `@Inject constructor`。注解处理统一 **KSP**。
+
+**分页** — Paging 3，`pagingFlow`（debounce + flatMapLatest + cachedIn）统一封装在 `:common:utils`。
+
+### Compose 硬规则
+
+- **组合期禁止副作用**：Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里。
 - **禁止主线程阻塞 IO**：`runBlocking` 读写 DataStore 已知会阻塞 UI 线程，一律用 suspend/flow。
 - **LazyColumn 必须给 `key`**；列表参数注意稳定性，昂贵计算用 `remember`。
 - **catch 协程异常先 rethrow `CancellationException`**，否则取消会被当网络错误。
@@ -92,8 +112,9 @@ utils/              → DataStore 封装（SharePreferenceUtils）、RequestStat
 
 - `utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处按压反馈实际无效——修复前不要模仿该写法。
 - Room 无 migration 配置；缓存写入是 deleteAll + insertAll 无事务，改动 database/ 时需补 `@Transaction`。
-- `App.globalRequestBefore/AfterCallback` 静态 lateinit 在 setContent 前发请求会崩——新增早期请求路径需先处理。
-- 测试除模板类 `ExampleUnitTest` 外，还有观象台四套算法内核的锚点单测（`divination/core/liuren|liuyao|meihua|qimen/*AnchorTest.kt`）；给 ResponseInterceptor、参数校验等纯逻辑补单测时放 `app/src/test/`。
+- ⚠️ `App.globalRequestBefore/AfterCallback` 已不存在（原静态 lateinit 回调在模块化中移除，鉴权失败改走 `SessionEventNotifier` 契约）；新增早期请求路径时勿引用该回调。
+- 测试除模板类 `ExampleUnitTest` 外，还有观象台四套算法内核的锚点单测（`feature:divination/src/test/.../liuren|liuyao|meihua|qimen/*AnchorTest.kt`）；给拦截器、参数校验等纯逻辑补单测时放对应模块的 `src/test/`。
+- ⚠️ **RechargePage 组合期副作用**（独立任务，本任务不修）：`RechargePage.kt` 的金额选择/支付状态分支中存在写在 `when(state)` 渲染分支里的副作用，违反 Compose 硬规则，待独立任务修复。
 
 ## ⛔ Android 特化红线操作表（绝对禁止）
 

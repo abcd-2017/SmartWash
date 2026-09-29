@@ -47,16 +47,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
-import com.smartwash.ui.common.InfoRow
-import com.smartwash.ui.common.InfoSection
-import com.smartwash.ui.common.LoadingState
-import com.smartwash.ui.common.PageHeader
-import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.AppElevation
-import com.smartwash.ui.theme.IconBox
-import com.smartwash.utils.OrderStatus
-import com.smartwash.utils.RequestState
+import com.smartwash.common.ui.components.InfoRow
+import com.smartwash.common.ui.components.InfoSection
+import com.smartwash.common.ui.components.LoadingState
+import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.feature.order.api.model.OrderStatus
+import com.smartwash.common.model.RequestState
 
 @Composable
 fun OrderDetailPage(
@@ -176,7 +176,7 @@ fun StatusCard(orderStatus: String) {
             R.string.pending_payment, AppColors.colorScheme.warning, Icons.Rounded.HourglassEmpty, R.string.please_pay_soon
         )
         OrderStatus.WASHING.status -> OrderStatusInfo(
-            R.string.order_status_washing, AppColors.colorScheme.primary, Icons.Rounded.Wash, R.string.please_pay_soon
+            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, Icons.Rounded.Wash, R.string.please_pay_soon
         )
         OrderStatus.PENDING_SHIPMENT.status -> OrderStatusInfo(
             R.string.pending_shipment, AppColors.colorScheme.primary, Icons.Rounded.LocalLaundryService, R.string.please_ship_soon

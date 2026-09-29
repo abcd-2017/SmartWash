@@ -57,25 +57,29 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
-import com.smartwash.network.vo.order.OrderVo
-import com.smartwash.ui.common.AppInfoDialog
-import com.smartwash.ui.common.LoadingState
+import com.smartwash.feature.order.api.model.OrderBrief
+import com.smartwash.common.ui.components.AppInfoDialog
+import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
-import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.AppElevation
-import com.smartwash.ui.theme.ServiceLuxury
-import com.smartwash.ui.theme.ServiceLuxuryLight
-import com.smartwash.ui.theme.ServicePress
-import com.smartwash.ui.theme.ServicePressLight
-import com.smartwash.ui.theme.ServiceWash
-import com.smartwash.ui.theme.ServiceWashLight
-import com.smartwash.utils.OrderStatus
-import com.smartwash.utils.RequestState
-import com.smartwash.utils.defaultSpring
-import com.smartwash.utils.pressAlpha
-import com.smartwash.utils.pressScale
+import com.smartwash.feature.coupon.api.CouponRoute
+import com.smartwash.feature.laundry.api.LaundryRoute
+import com.smartwash.feature.order.api.OrderRoute
+import com.smartwash.feature.payment.api.PaymentRoute
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.ServiceLuxury
+import com.smartwash.common.ui.theme.ServiceLuxuryLight
+import com.smartwash.common.ui.theme.ServicePress
+import com.smartwash.common.ui.theme.ServicePressLight
+import com.smartwash.common.ui.theme.ServiceWash
+import com.smartwash.common.ui.theme.ServiceWashLight
+import com.smartwash.feature.order.api.model.OrderStatus
+import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.pressAlpha
+import com.smartwash.common.utils.pressScale
 import java.util.Calendar
 
 @Composable
@@ -120,7 +124,7 @@ fun IndexPage(
             // 问候头部
             item {
                 GreetingHeader(
-                    schoolName = userInfo?.schoolVo?.schoolName ?: "",
+                    schoolName = userInfo?.school?.schoolName ?: "",
                     onAvatarClick = {
                         pageNavController.navigate(HomePageConstant.UserInfo.text) {
                             popUpTo(pageNavController.graph.startDestinationId) {
@@ -139,7 +143,7 @@ fun IndexPage(
                 AccountOverviewCard(
                     balance = userInfo?.balance ?: 0f,
                     onRechargeClick = {
-                        navController.navigate(PageConstant.Recharge.text)
+                        navController.navigate(PaymentRoute.Recharge.text)
                     }
                 )
             }
@@ -155,7 +159,7 @@ fun IndexPage(
                 Spacer(modifier = Modifier.height(12.dp))
                 ServiceGrid(
                     onBookingClick = {
-                        navController.navigate(PageConstant.Laundry.text) {
+                        navController.navigate(LaundryRoute.Laundry.text) {
                             popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
@@ -165,7 +169,7 @@ fun IndexPage(
                         navController.navigate(PageConstant.Pickup.text)
                     },
                     onCouponClick = {
-                        navController.navigate(PageConstant.Coupon.text)
+                        navController.navigate(CouponRoute.Coupon.text)
                     }
                 )
             }
@@ -185,7 +189,7 @@ fun IndexPage(
                         style = MaterialTheme.typography.headlineMedium
                     )
                     TextButton(onClick = {
-                        navController.navigate("${PageConstant.Order.text}/${OrderStatus.WASHING.status}")
+                        navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
                     }) {
                         Text(
                             stringResource(R.string.view_all),
@@ -206,7 +210,7 @@ fun IndexPage(
                         orderVo = orderList[index],
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                     ) {
-                        navController.navigate("${PageConstant.OrderDetail.text}/${orderList[index].orderId}")
+                        navController.navigate("${OrderRoute.OrderDetail.text}/${orderList[index].orderId}")
                     }
                     if (index < orderList.size - 1) {
                         Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
@@ -488,7 +492,7 @@ private fun ServiceEntry(
 
 @Composable
 private fun OrderCardWithProgress(
-    orderVo: OrderVo,
+    orderVo: OrderBrief,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {

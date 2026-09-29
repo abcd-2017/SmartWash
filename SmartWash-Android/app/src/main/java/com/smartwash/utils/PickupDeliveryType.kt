@@ -1,9 +1,13 @@
 package com.smartwash.utils
 
-import androidx.annotation.StringRes
-import com.smartwash.R
+import com.smartwash.feature.order.api.OrderRoute
 
-enum class PickupDeliveryType(val type: Int, @StringRes val descriptionRes: Int) {
-    PICKUP(0, R.string.pickup_type),
-    DELIVERY(1, R.string.delivery_type)
+/**
+ * 取件/寄件类型（壳层取件域页面用）。
+ * type 值委托 [OrderRoute.PICKUP_TYPE_*]（PickupDelivery 路由参数的单一事实来源，
+ * T8.2 收敛双处定义；descriptionRes 零消费随 T8.2 删除）。
+ */
+enum class PickupDeliveryType(val type: Int) {
+    PICKUP(OrderRoute.PICKUP_TYPE_PICKUP),
+    DELIVERY(OrderRoute.PICKUP_TYPE_DELIVERY)
 }

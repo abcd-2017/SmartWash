@@ -1,0 +1,15 @@
+// :feature:coupon:api —— 优惠券域对外契约（T7.2，按域嵌套结构 feature/coupon/{api,impl}）。
+// 暴露面经 T7.2 调研定为两件：CouponRoute 路由常量（宿主 NavHost 注册 / 首页服务
+// 网格与用户中心、支付页的跨域跳转 / PageConstant 委托）+ CouponApi 服务契约
+// （支付页选券需要「订单可用优惠券」——coupon 域存在真实跨模块数据消费方，
+// 契约由数据持有方的 api 模块持有，命名对齐 user-api 的 UserApi / order-api 的
+// OrderApi 先例）。原 payment-impl 内的 CouponSource 过渡 seam（app 壳
+// PaymentImplSeamModule 实现）随本模块就位删除，模式同 T7.1 的 laundry-api。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+}
+
+android {
+    namespace 'com.smartwash.feature.coupon.api'
+}

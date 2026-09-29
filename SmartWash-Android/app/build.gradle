@@ -142,28 +142,43 @@ dependencies {
 
     //用户域对外契约（T5.3）：app 壳（MainActivity 会话事件/登录页注册）与 home/index/
     //laundry 消费方一律注入 UserApi（isLogin/getUserInfo 缓存/loginEvents），不触碰 impl
-    implementation project(":feature:user-api")
+    implementation project(":feature:user:api")
 
     //用户域实现（T5.2）：会话+用户网络链路+登录/注册/用户中心/资料编辑/设置页面迁入；
     //app 壳仅剩 NavHost 页面注册（LoginPage/RegisterPage/SettingPage/UpdateUserInfoPage，
     //T8.1 拆 NavGraphBuilder 聚合后摘除）
-    implementation project(":feature:user-impl")
+    implementation project(":feature:user:impl")
 
     //订单域对外契约（T6.1）：app 壳留守页面（detail/index/laundry/pickup/payment）与
     //UserImplSeamModule 一律注入 OrderApi（详情/试算/下单/计数/寄件取件/分页源），
     //不触碰 impl；OrderVo→OrderBrief、OrderStatus/ShowOrderStatus 枚举同随本模块
-    implementation project(":feature:order-api")
+    implementation project(":feature:order:api")
 
     //订单域实现（T6.1）：订单网络链路（OrderServiceApi/OrderRepository）+ 订单页迁入；
     //app 壳仅剩 NavHost 页面注册（OrderPage，T8.1 拆 NavGraphBuilder 聚合后摘除）
-    implementation project(":feature:order-impl")
+    implementation project(":feature:order:impl")
 
     //支付域对外契约（T6.2，含充值）：仅 PaymentRoute 路由常量（零跨模块数据消费）；
     //PageConstant 支付/充值四路由委托本模块，order-impl/user-impl 跨域跳转同源取值
-    implementation project(":feature:payment-api")
+    implementation project(":feature:payment:api")
 
     //支付域实现（T6.2）：支付+充值网络链路与页面迁入；app 壳仅剩 NavHost 页面注册
-    //（PaymentPage/PaySuccessPage/RechargePage/RechargeRecordPage，T8.1 拆聚合后摘除）；
-    //优惠券数据经 app/di/PaymentImplSeamModule 的 CouponSource seam 供给（T7.2 后删）
-    implementation project(":feature:payment-impl")
+    //（PaymentPage/PaySuccessPage/RechargePage/RechargeRecordPage，T8.1 拆聚合后摘除）
+    implementation project(":feature:payment:impl")
+
+    //洗衣域对外契约（T7.1，含 School 域）：LaundryRoute 路由常量（PageConstant 洗衣/服务
+    //两路由委托本模块）+ SchoolSearchSource 学校搜索契约（user-impl 资料编辑页消费）
+    implementation project(":feature:laundry:api")
+
+    //洗衣域实现（T7.1）：洗衣+学校网络链路与页面（服务 tab 页/洗衣预约页）迁入；
+    //app 壳仅剩 NavHost 页面注册与 HomePage 服务 tab 内嵌（T8.1 拆聚合后摘除）
+    implementation project(":feature:laundry:impl")
+
+    //优惠券域对外契约（T7.2，按域嵌套 feature/coupon/{api,impl}）：CouponRoute 路由常量
+    //（PageConstant 优惠券路由委托本模块）+ CouponApi 服务契约（payment-impl 支付页选券消费）
+    implementation project(":feature:coupon:api")
+
+    //优惠券域实现（T7.2）：优惠券网络链路与优惠券页迁入；app 壳仅剩 NavHost 页面注册
+    //（CouponPage，T8.1 拆聚合后摘除）；CouponSource seam 与 PaymentImplSeamModule 已删
+    implementation project(":feature:coupon:impl")
 }

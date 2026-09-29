@@ -3,14 +3,13 @@ package com.smartwash.ui.page.pickup
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.network.entity.order.OrderNextStatus
-import com.smartwash.network.exception.NetworkException
+import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.utils.AppConstant
-import com.smartwash.network.vo.order.OrderInfo
+import com.smartwash.feature.order.api.OrderApi
+import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.utils.PickupDeliveryType
 import com.smartwash.R
-import com.smartwash.repository.OrderRepository
-import com.smartwash.utils.RequestState
+import com.smartwash.common.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PickupDeliveryViewModel @Inject constructor(
-    private val orderRepository: OrderRepository,
+    private val orderApi: OrderApi,
 ) : ViewModel() {
     private val _getOrderInfoDetail = MutableStateFlow<RequestState>(RequestState.Idle)
     val getOrderInfoDetail = _getOrderInfoDetail.asStateFlow()
@@ -32,7 +31,7 @@ class PickupDeliveryViewModel @Inject constructor(
         _getOrderInfoDetail.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                _orderInfo.value = orderRepository.getOrderInfo(orderId)
+                _orderInfo.value = orderApi.getOrderInfo(orderId)
                 _getOrderInfoDetail.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(AppConstant.APP_NAME, "PickupDeliveryViewModel.getOrderDetail: ${e.message}", e)
@@ -45,11 +44,10 @@ class PickupDeliveryViewModel @Inject constructor(
         _setOrderNextState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val nextStatus = OrderNextStatus(orderId, pickupCode)
                 val success = if (type == PickupDeliveryType.DELIVERY.type) {
-                    orderRepository.shippingOrder(nextStatus)
+                    orderApi.shippingOrder(orderId, pickupCode)
                 } else {
-                    orderRepository.pickupOrder(nextStatus)
+                    orderApi.pickupOrder(orderId, pickupCode)
                 }
                 if (success) {
                     _setOrderNextState.value = RequestState.Success

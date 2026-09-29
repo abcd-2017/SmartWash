@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!--  网络权限  -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!--  安装未知应用权限（APK 热更新）  -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!--  安装未知应用权限与 APK FileProvider 已随热更新链路迁 :feature:update（T3.1，manifest merger 合入）  -->
 
     <application
         android:name=".App"
@@ -29,15 +28,18 @@
             </intent-filter>
         </activity>
 
-        <!--  APK 安装 FileProvider  -->
+        <!--  WorkManager 改按需初始化（App 实现 Configuration.Provider 注入 HiltWorkerFactory，
+              供 :feature:update 的 @HiltWorker ApkDownloadWorker 实例化）：
+              移除默认 initializer，否则其抢先以默认配置初始化，App 的配置永不生效  -->
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
-            android:grantUriPermissions="true">
+            tools:node="merge">
             <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
     </application>
 

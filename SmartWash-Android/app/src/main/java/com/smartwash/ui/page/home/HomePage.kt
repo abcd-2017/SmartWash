@@ -35,24 +35,24 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.smartwash.utils.HapticEffect
-import com.smartwash.utils.currentView
-import com.smartwash.utils.defaultSpring
-import com.smartwash.utils.performHaptic
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.performHaptic
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.smartwash.divination.ui.page.home.DivHomePage
+import com.smartwash.feature.divination.ui.page.home.DivHomePage
 import com.smartwash.ui.page.HomePageConstant
-import com.smartwash.ui.page.PageConstant
 import com.smartwash.ui.page.index.IndexPage
-import com.smartwash.ui.page.service.ServicePage
-import com.smartwash.ui.page.userinfo.UserInfoPage
-import com.smartwash.ui.theme.AppColors
-import com.smartwash.utils.RequestState
+import com.smartwash.feature.user.api.UserRoute
+import com.smartwash.feature.laundry.ui.service.ServicePage
+import com.smartwash.feature.user.impl.ui.userinfo.UserInfoPage
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.model.RequestState
 
 @Composable
 fun HomePage(
@@ -71,7 +71,7 @@ fun HomePage(
             is RequestState.Success -> {
                 if (hasUserSchool == -1L) {
                     navController.popBackStack()
-                    navController.navigate(PageConstant.UpdateUserInfoPage.text)
+                    navController.navigate(UserRoute.UpdateUserInfo.text)
                 }
             }
             else -> {}

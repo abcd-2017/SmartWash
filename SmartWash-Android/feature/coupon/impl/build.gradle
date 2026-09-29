@@ -1,0 +1,48 @@
+// :feature:coupon:impl —— 优惠券域实现（T7.2，按域嵌套结构 feature/coupon/{api,impl}；
+// 包名/namespace 保持 com.smartwash.feature.coupon，与模块路径解耦）。
+// 优惠券网络链路（CouponServiceApi/CouponRepository）+ 优惠券页（三 tab：可领取/
+// 已领取/历史）；对外经 :feature:coupon:api 的 CouponRoute 路由常量与 CouponApi
+// 服务契约暴露（di @Binds），跨模块消费方不得触碰本模块实现细节。
+// CouponVo 缓存表仍在 :common:database（三表共库，拆表与 LaundryItem/SchoolName
+// 统一评估归 T8.2，本任务不扩面）。
+// 调研说明：优惠券页经 getAllCoupons 聚合接口一次拉取三类数据，无分页需求；
+// app 壳的 UserCouponPagingSource 为零引用死代码，随本任务删除（不迁入），
+// pagingFlow 双份副本（app 原件/payment-impl 副本）维持现状待 T8.2 统一收敛。
+// 依赖方向：coupon:api / common（禁止依赖 app 壳与其他 feature-impl）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.coupon'
+}
+
+dependencies {
+    // 本域路由常量与服务契约（CouponRoute/CouponApi/UsableCoupon）
+    implementation project(':feature:coupon:api')
+
+    // 响应信封 ApiResult / HttpStatusCode / RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens/AppElevation 主题 + AppTabBar/LoadingState/PageHeader 组件）
+    implementation project(':common:ui')
+    // Room 缓存库（AppDatabase/CouponVoDao/CouponVoEntity；runtime/ktx 经其 api 传递）
+    implementation project(':common:database')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（优惠券页返回上级）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/BorderStroke/RoundedCornerShape；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // @Keep（网络 VO；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+    // ViewModel 协程 launch / MutableStateFlow
+    implementation libs.kotlinx.coroutines.android
+}

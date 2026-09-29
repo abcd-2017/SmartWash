@@ -10,35 +10,32 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.smartwash.feature.divination.DivRoute
+import com.smartwash.feature.laundry.api.LaundryRoute
+import com.smartwash.feature.user.api.UserRoute
 
+/**
+ * 壳层页面路由常量（T8.1 拆路由后仅剩壳层留守、无域归属的页面）。
+ *
+ * 各域路由的单一事实来源已归位（宿主 NavHost 经 NavGraphBuilder.xxxGraph 聚合注册）：
+ * 用户域 UserRoute（user-api）、订单域 OrderRoute（order-api，含留壳订单详情/寄件取件
+ * 的常量）、支付域 PaymentRoute（payment-api）、洗衣域 LaundryRoute（laundry-api）、
+ * 优惠券域 CouponRoute（coupon-api）、观象台 DivRoute（:feature:divination）、
+ * 主页壳 ShellRoute（common:ui 壳层路由契约）。本类原有委托常量（Login/Register/
+ * Recharge/Order/Div* 等）拆路由后零消费者，T8.1 删除。
+ */
 sealed class PageConstant(val text: String, val description: String) {
-    data object Register : PageConstant("Register", "注册页面")
-    data object Login : PageConstant("Login", "登录页面")
-    data object Home : PageConstant("Home", "主页")
-    data object UpdateUserInfoPage : PageConstant("UpdateUserInfoPage", "用户学校信息修改")
-    data object Setting : PageConstant("Setting", "设置页面")
-    data object Recharge : PageConstant("Recharge", "充值页面")
-    data object RechargeRecord : PageConstant("RechargeRecord", "充值记录页面")
-    data object Order : PageConstant("Order", "订单页面")
-    data object OrderDetail : PageConstant("OrderDetail", "订单详情页面")
-    data object Service : PageConstant("Service", "服务页面")
-    data object Payment : PageConstant("Payment", "支付页面")
-    data object Laundry : PageConstant("Laundry", "洗衣预约页面")
-    data object PaySuccess : PageConstant("PaySuccess", "支付成功页面")
-    data object PickupDelivery : PageConstant("PickupDelivery", "寄件取件页面")
-    data object Coupon : PageConstant("Coupon", "优惠券页面")
+    /** 取件页（壳层留守页面，注册于壳层 shellGraph；取件域页面外迁时随迁） */
     data object Pickup : PageConstant("Pickup", "取件页面")
-
-    // ==================== 观象台（占卜模块） ====================
-    data object DivHome : PageConstant("DivHome", "观象台首页")
-    data object DivAsk : PageConstant("DivAsk", "心中所问")
-    data object DivCast : PageConstant("DivCast", "摇卦")
-    data object DivChart : PageConstant("DivChart", "卦盘")
-    data object DivReading : PageConstant("DivReading", "解读")
-    data object DivFollowUp : PageConstant("DivFollowUp", "继续追问")
-    data object DivHistory : PageConstant("DivHistory", "卦历案卷")
 }
 
+/**
+ * 主页壳底部 tab 常量（HomePage 内 NavHost 注册 + BottomBar 渲染）。
+ * tab 页面归属各域的，路由值委托各域 Route 常量（单一事实来源，T8.1）：
+ * Service → [LaundryRoute.Service]、Divination → [DivRoute.Home]（T4.1 交接
+ * 遗留的 "DivHome" 硬编码串收敛）、UserInfo → [UserRoute.UserInfo]；
+ * Index 为壳层留守首页 tab，常量壳层自持。
+ */
 sealed class HomePageConstant(
     val text: String,
     val description: String,
@@ -48,19 +45,16 @@ sealed class HomePageConstant(
     data object Index : HomePageConstant("Index", "首页", Icons.Outlined.Home, Icons.Filled.Home)
     data object Service :
         HomePageConstant(
-            "Service",
+            LaundryRoute.Service.text,
             "服务",
             Icons.AutoMirrored.Outlined.List,
             Icons.AutoMirrored.Filled.List
         )
 
-//    data object Locker :
-//        HomePageConstant("Locker", "寄存柜", Icons.Outlined.Receipt, Icons.Filled.Receipt)
-
     // 问卜（观象台）— 罗盘线描意象
     data object Divination :
-        HomePageConstant("DivHome", "问卜", Icons.Outlined.Explore, Icons.Filled.Explore)
+        HomePageConstant(DivRoute.Home.text, "问卜", Icons.Outlined.Explore, Icons.Filled.Explore)
 
     data object UserInfo :
-        HomePageConstant("UserInfo", "主页", Icons.Outlined.Person, Icons.Filled.Person)
+        HomePageConstant(UserRoute.UserInfo.text, "主页", Icons.Outlined.Person, Icons.Filled.Person)
 }

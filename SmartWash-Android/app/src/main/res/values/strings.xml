@@ -1,41 +1,17 @@
 <resources>
     <string name="app_name">SmartWash</string>
 
-    <!-- ==================== 通用 ==================== -->
-    <string name="confirm">确认</string>
+    <!-- ==================== 通用（back/phone_number/password/invalid_* 为 common:ui 同值副本，
+         app 侧零引用随 T8.2 删除；no_data/login 同为零引用删除） ==================== -->
     <string name="cancel">取消</string>
-    <string name="back">返回</string>
     <string name="currency_format">¥%s</string>
-    <string name="no_data">暂无数据</string>
     <string name="loading">加载中…</string>
 
-    <!-- ==================== 认证 ==================== -->
-    <string name="brand_name">智能洗衣</string>
-    <string name="brand_subtitle">智慧校园 · 轻松洗衣</string>
-    <string name="login">登录</string>
-    <string name="login_button">登 录</string>
-    <string name="login_success">登录成功</string>
-    <string name="register">注 册</string>
-    <string name="register_success">注册成功</string>
-    <string name="create_account">创建账号</string>
-    <string name="start_laundry_journey">开启智能洗衣之旅</string>
-    <string name="has_account">已有账号？</string>
-    <string name="login_now">立即登录</string>
-    <string name="phone_number">手机号</string>
-    <string name="password">密码</string>
-    <string name="verification_code">验证码</string>
-    <string name="invalid_phone">请输入正确的手机号</string>
-    <string name="invalid_password">密码必须为6-16位</string>
-    <string name="invalid_verification_code">请输入正确的验证码</string>
+    <!-- ==================== 认证（用户域文案已随 :feature:user:impl 迁入模块内 strings.xml，T5.2） ==================== -->
     <string name="please_login">请登录</string>
     <string name="please_re_login">请重新登录</string>
-    <string name="no_account">没有账号？</string>
-    <string name="register_now">立即注册</string>
-    <string name="get_verification_code">获取验证码</string>
-    <string name="countdown_format">%ds</string>
 
     <!-- ==================== 首页 ==================== -->
-    <string name="smart_laundry">智慧洗衣</string>
     <string name="home_greeting_morning">早上好</string>
     <string name="home_greeting_afternoon">下午好</string>
     <string name="home_greeting_evening">晚上好</string>
@@ -48,24 +24,13 @@
     <string name="in_progress_orders">进行中订单</string>
     <string name="view_all">查看全部</string>
     <string name="no_ongoing_orders">暂无进行中的订单</string>
-    <string name="factory_washing">清洗中</string>
     <string name="order_no_format">订单号: %s</string>
     <string name="service_tips">所有服务含免费取送 · 标准24h完成 · 支持在线支付</string>
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
 
-    <!-- ==================== 订单 ==================== -->
-    <string name="my_orders">我的订单</string>
-    <string name="no_orders">暂无订单</string>
-    <string name="confirm_cancel_order">确定要取消订单？</string>
-    <string name="cancel_order">取消订单</string>
-    <string name="go_pay">去支付</string>
-    <string name="go_ship">去寄件</string>
-    <string name="washing">清洗中</string>
-    <string name="go_pickup">去取件</string>
+    <!-- ==================== 订单（订单页文案已随 :feature:order:impl 迁出 T6.1；
+         completed 为订单详情页共享文案保留，订单页独占文案见模块 strings.xml） ==================== -->
     <string name="completed">已完成</string>
-    <string name="order_no_label">订单号：%s</string>
-    <string name="order_time_label">下单时间：%s</string>
-    <string name="cancel_success">取消成功</string>
 
     <!-- ==================== 订单详情 ==================== -->
     <string name="order_detail">订单详情</string>
@@ -86,100 +51,26 @@
     <string name="completion_time">完成时间</string>
     <string name="pending_payment">待支付</string>
     <string name="please_pay_soon">请尽快支付</string>
-    <string name="estimated_completion">预计完成时间：%s</string>
     <string name="pending_shipment">待寄件</string>
     <string name="please_ship_soon">请尽快去寄件</string>
     <string name="pending_pickup">待取件</string>
     <string name="clothes_in_locker">衣物已到寄存柜</string>
-    <string name="completion_time_format">完成时间：%s</string>
     <string name="cancelled">已取消</string>
-    <string name="cancel_time_format">取消时间：%s</string>
     <string name="dash">-</string>
-    <string name="order_time_display">下单时间</string>
     <string name="school_name_label">学校名称</string>
 
-    <!-- ==================== 洗衣服务 ==================== -->
+    <!-- ==================== 洗衣服务（文案已随 :feature:laundry:impl 迁出 T7.1；
+         laundry_service 为首页服务网格共享文案保留） ==================== -->
     <string name="laundry_service">洗衣服务</string>
-    <string name="service_page_subtitle">选择您需要的洗护服务</string>
 
-    <!-- ==================== 预约寄存 ==================== -->
-    <string name="book_locker">预约寄存</string>
-    <string name="delivery_locker">投递柜</string>
-    <string name="change">更换</string>
-    <string name="laundry_package">洗护套餐</string>
-    <string name="estimated_cost">预估费用</string>
-    <string name="confirm_booking">确认预约</string>
-    <string name="please_select_package">请选择套餐</string>
-
-    <!-- ==================== 支付 ==================== -->
-    <string name="payment">支付</string>
-    <string name="order_information">订单信息</string>
-    <string name="service_type">服务类型</string>
-    <string name="estimated_completion_time">预计完成</string>
-    <string name="within_24_hours">24小时内</string>
-    <string name="amount_due">应付金额</string>
-    <string name="payment_method">支付方式</string>
-    <string name="balance_payment">余额支付</string>
-    <string name="current_balance_format">当前余额：¥%s</string>
-    <string name="coupon">优惠券</string>
-    <string name="do_not_use">不使用</string>
-    <string name="confirm_pay_format">确认支付 ¥%s</string>
-    <string name="select_coupon">选择优惠券</string>
-    <string name="go_claim">去领取</string>
-    <string name="no_coupons">暂无优惠券</string>
-    <string name="confirm_pay_question">确定要支付？</string>
-    <string name="insufficient_balance">余额不足</string>
-    <string name="insufficient_balance_tip">当前余额不足，请先充值</string>
+    <!-- ==================== 支付（支付/充值页文案已随 :feature:payment:impl 迁出 T6.2；
+         go_recharge 为首页共享文案保留） ==================== -->
     <string name="go_recharge">去充值</string>
-    <string name="pay_success">支付成功</string>
-    <string name="thanks_for_using">感谢使用智慧洗衣</string>
-    <string name="payment_amount">支付金额</string>
-    <string name="locker_info_title">寄存柜信息</string>
-    <string name="go_to_locker_format">请前往寄存柜 %s柜存放衣物</string>
-    <string name="locker_process_tip">寄存柜将在24小时内处理您的订单</string>
-    <string name="go_ship_now">立即寄件</string>
-
-    <!-- ==================== 充值 ==================== -->
-    <string name="recharge">充值</string>
-    <string name="recharge_amount">充值金额</string>
-    <string name="select_or_input_amount">请选择或输入充值金额</string>
-    <string name="select_payment_method">请选择充值方式</string>
-    <string name="confirm_recharge_question">是否确认充值？</string>
-    <string name="custom">自定义</string>
-    <string name="custom_amount">自定义金额</string>
-    <string name="recharge_success">充值成功</string>
-    <string name="recharge_record">充值记录</string>
-    <string name="no_recharge_records">暂无充值记录</string>
-    <string name="recharge_record_amount_format">+%s</string>
-    <string name="error_get_recharge_records_failed">获取充值记录失败</string>
-    <string name="tip">提示</string>
-
-    <!-- ==================== 优惠券 ==================== -->
-    <string name="coupons">优惠券</string>
-    <string name="coupon_amount_format">%s元优惠券</string>
-    <string name="coupon_discount_format">满%s减%s</string>
-    <string name="coupon_min_amount_format">满%s元可用</string>
-    <string name="no_threshold">无门槛</string>
-    <string name="valid_until">有效期至：%s</string>
-    <string name="used">已使用</string>
-    <string name="expired">已过期</string>
-    <string name="available">可使用</string>
-    <string name="claim_success">领取成功</string>
-    <string name="available_coupons">可领取</string>
-    <string name="claimed_coupons">已领取</string>
-    <string name="historical_coupons">已使用</string>
-    <string name="claimed">已领取</string>
-    <string name="claim_now">立即领取</string>
-    <string name="no_coupons_available">暂无优惠券</string>
-    <string name="no_claimed_coupons">暂无优惠券</string>
-    <string name="no_historical_coupons">暂无使用优惠券</string>
-    <string name="discount_amount_format">%s元</string>
 
     <!-- ==================== 取件 ==================== -->
     <string name="pickup">取件</string>
     <string name="no_pickup_orders">暂无可取订单</string>
     <string name="locker_label_format">寄存柜: %s</string>
-    <string name="pickup_delivery">取件/寄件</string>
     <string name="notes">注意事项</string>
     <string name="notes_content">• 请确保在30分钟内完成操作\n• 如遇问题请联系客服\n• 请勿将贵重物品放入寄存柜</string>
     <string name="qr_code">二维码</string>
@@ -199,165 +90,31 @@
     <string name="confirm_put_clothes">确认已将衣服放入寄存柜</string>
     <string name="confirm_taken_clothes">确认已取出衣服</string>
 
-    <!-- ==================== 用户信息 ==================== -->
-    <string name="my_profile">我的</string>
-    <string name="settings">设置</string>
-    <string name="avatar">头像</string>
-    <string name="change_avatar">更换头像</string>
-    <string name="avatar_upload_success">头像更新成功</string>
-    <string name="avatar_upload_failed">头像上传失败</string>
-    <string name="username">用户名</string>
-    <string name="student_id_format">学号：%s</string>
-    <string name="account">账户</string>
-    <string name="account_balance">账户余额</string>
-    <string name="campus_card">校园卡</string>
-    <string name="not_bound">未绑定</string>
-    <string name="unbind">解绑</string>
-    <string name="bind">绑定</string>
-    <string name="claimable_coupons">可领取优惠券</string>
-    <string name="claim">领取</string>
-    <string name="orders">订单</string>
-    <string name="all">全部</string>
-    <string name="other">其他</string>
-    <string name="contact_service">联系客服</string>
-    <string name="online_consulting">在线咨询</string>
-    <string name="faq">常见问题</string>
-    <string name="user_guide">使用指南</string>
-    <string name="bind_campus_card">绑定校园卡</string>
-    <string name="input_campus_card">请输入校园卡号</string>
-    <string name="campus_card_empty">校园卡号不能为空</string>
-    <string name="confirm_bind">确认绑定</string>
-    <string name="unbind_campus_card">解绑校园卡</string>
-    <string name="confirm_unbind_question">确定要解绑当前绑定的校园卡吗？</string>
-    <string name="confirm_unbind">确认解绑</string>
-    <string name="bind_success">绑定成功</string>
-    <string name="unbind_success">解绑成功</string>
-    <string name="order_count_format">%d单</string>
-    <string name="change_school_info">更换学校信息请联系客服</string>
-
-    <!-- ==================== 完善信息 ==================== -->
-    <string name="complete_info">完善信息</string>
-    <string name="fill_school_info">请填写您的学校信息</string>
-    <string name="student_id">学号</string>
-    <string name="invalid_student_id">请输入正确的学号</string>
-    <string name="search_school">搜索学校</string>
-    <string name="please_select_school">请选择学校</string>
-    <string name="clear">清除</string>
-    <string name="modify_success">修改成功</string>
-
-    <!-- ==================== 设置 ==================== -->
-    <string name="notification">通知</string>
-    <string name="push_notification">消息通知</string>
-    <string name="push_notification_desc">订单状态、活动提醒等</string>
-    <string name="email_notification">邮件通知</string>
-    <string name="email_notification_desc">账单、优惠信息等</string>
-    <string name="privacy_security">隐私与安全</string>
-    <string name="privacy_settings">隐私设置</string>
-    <string name="privacy_settings_desc">个人信息、数据收集等</string>
-    <string name="account_security">账号安全</string>
-    <string name="account_security_desc">密码、登录设备等</string>
-    <string name="about_us">关于我们</string>
-    <string name="about_us_desc">版本信息、用户协议等</string>
-    <string name="help_feedback">帮助与反馈</string>
-    <string name="help_feedback_desc">常见问题、意见反馈</string>
-    <string name="logout">退出登录</string>
-    <string name="confirm_logout">是否要退出登录？</string>
-
-    <!-- ==================== 功能开发中 ==================== -->
-    <string name="feature_in_development">功能开发中，敬请期待</string>
-    <string name="service_phone">客服电话：400-888-8888</string>
-    <string name="service_hours">服务时间：9:00-21:00</string>
-    <string name="app_version">版本号：%s</string>
-    <string name="faq_content">暂无常见问题</string>
-
-    <!-- ==================== 通用 UI 组件 ==================== -->
-
     <!-- ==================== 枚举显示文本 ==================== -->
-    <!-- 订单状态 -->
-    <string name="order_status_cancelled">已取消</string>
-    <string name="order_status_refunded">已退款</string>
-    <string name="order_status_pending_payment">待支付</string>
-    <string name="order_status_pending_shipment">待寄件</string>
-    <string name="order_status_received">已收取</string>
-    <string name="order_status_washing">清洗中</string>
-    <string name="order_status_dried">已烘干</string>
-    <string name="order_status_in_delivery">配送中</string>
-    <string name="order_status_ready_for_pickup">待取件</string>
-    <string name="order_status_completed">已完成</string>
-    <string name="order_status_all">全部订单</string>
+    <!-- 订单状态文案已随 OrderStatus/ShowOrderStatus 枚举迁 :feature:order:api（T6.1） -->
 
-    <!-- 优惠券状态 -->
-    <string name="coupon_status_expired">已失效</string>
-    <string name="coupon_status_active">生效中</string>
-    <string name="coupon_status_receive">已领取</string>
+    <!-- 优惠券状态文案已随 CouponStatus 枚举迁 :feature:coupon:impl（T7.2）；
+         UserCouponStatus 枚举为零引用死代码随 T7.2 删除（文案同删） -->
 
-    <!-- 用户优惠券状态 -->
-    <string name="user_coupon_status_overdue">已过期</string>
-    <string name="user_coupon_status_active">生效中</string>
+    <!-- 支付方式文案已随 PaymentType 枚举/支付页迁 :feature:payment:impl（T6.2） -->
 
-    <!-- 支付方式 -->
-    <string name="payment_type_purse">钱包支付</string>
-    <string name="payment_type_ali_pay">支付宝</string>
-    <string name="payment_type_wechat">微信</string>
-    <string name="weixin_pay">微信支付</string>
-    <string name="alipay">支付宝</string>
-
-    <!-- 取件/寄件类型 -->
-    <string name="pickup_type">取件</string>
+    <!-- 取件/寄件类型（pickup_type 随 PickupDeliveryType.descriptionRes 死字段删除，T8.2） -->
     <string name="delivery_type">寄件</string>
 
-    <!-- HTTP 状态码 -->
-    <string name="http_success">请求成功</string>
-    <string name="http_fail">请求失败</string>
-    <string name="http_unauthorized">登录异常</string>
-    <string name="http_not_found">未找到资源</string>
-    <string name="http_server_error">服务器内部错误</string>
+    <!-- HTTP 状态码文案已随 HttpStatusCode 迁入 :common:model（T2.1），经资源合并仍可 R.string.http_* 引用 -->
 
     <!-- ==================== 网络错误 ==================== -->
+    <!-- error_login_expired/error_timeout/error_connection/error_unknown 已随拦截器迁入 :common:network（T2.3）；
+         error_network_fail 在 :common:network 同名定义（拦截器用），此处保留供 app 业务代码引用 -->
     <string name="error_network_fail">请求失败</string>
-    <string name="error_login_expired">登录失效，请重新登录</string>
-    <string name="error_timeout">请求超时，请检查网络</string>
-    <string name="error_connection">网络连接失败，请检查网络</string>
-    <string name="error_unknown">未知错误</string>
 
-    <!-- ==================== ViewModel 错误 ==================== -->
-    <string name="error_login_failed">登录失败</string>
-    <string name="error_register_failed">注册失败</string>
-    <string name="error_get_captcha_failed">验证码获取失败</string>
-    <string name="captcha_sent">验证码已发送，请查看短信</string>
-    <string name="error_get_school_failed">获取学校信息失败</string>
-    <string name="error_cancel_order_failed">取消订单失败</string>
-    <string name="error_get_laundry_items_failed">获取洗衣项目失败</string>
-    <string name="error_booking_failed">预约失败</string>
-    <string name="error_get_order_info_failed">获取订单信息失败</string>
-    <string name="error_get_coupons_failed">获取优惠券失败</string>
-    <string name="error_calculate_price_failed">计算价格失败</string>
-    <string name="error_payment_failed">支付失败</string>
-    <string name="error_recharge_failed">充值失败</string>
-    <string name="error_get_user_info_failed">获取用户信息失败</string>
-    <string name="error_bind_campus_card_failed">绑定校园卡失败</string>
-    <string name="error_unbind_campus_card_failed">解绑校园卡失败</string>
-    <string name="error_get_order_list_failed">获取订单列表失败</string>
-    <string name="error_get_user_coupons_failed">获取用户优惠券失败</string>
-    <string name="error_get_order_detail_failed">获取订单详情失败</string>
+    <!-- ==================== ViewModel 错误（各域条目已随页面迁出；
+         error_operation_failed 为壳层通用操作失败文案保留） ==================== -->
     <string name="error_operation_failed">操作失败</string>
-    <string name="error_get_data_failed">获取数据失败</string>
-    <string name="error_update_user_info_failed">更新用户信息失败</string>
-    <string name="error_student_id_registered">该学号已注册</string>
-    <string name="error_get_coupon_list_failed">获取优惠券列表失败</string>
-    <string name="error_claim_coupon_failed">领取优惠券失败</string>
 
-    <!-- ==================== 表单验证 ==================== -->
-    <string name="error_invalid_captcha">验证码错误</string>
-    <string name="error_invalid_phone">手机号格式不正确</string>
-    <string name="error_invalid_password">密码长度应为6-16位</string>
-    <string name="error_invalid_student_id">学号格式不正确</string>
-    <string name="error_campus_card_empty">校园卡号不能为空</string>
-
-    <!-- ==================== 应用更新 ==================== -->
+    <!-- ==================== 应用更新（弹窗 UI 留壳层，T3.1） ==================== -->
     <string name="check_update">检查更新</string>
     <string name="check_update_desc">当前版本 %s</string>
-    <string name="checking_update">正在检查更新…</string>
     <string name="already_latest">当前已是最新版本</string>
     <string name="new_version_available">发现新版本</string>
     <string name="update_version_format" formatted="false">v%s (%s)</string>
@@ -372,123 +129,11 @@
     <string name="download_complete_message">更新包已下载完成，是否立即安装？安装期间应用将短暂关闭</string>
     <string name="install_later">稍后安装</string>
     <string name="install_now">立即安装</string>
-    <string name="update_check_failed">检查更新失败</string>
     <string name="download_failed">下载失败，请重试</string>
-    <string name="download_url_empty">获取下载地址失败，请重试</string>
-    <string name="install_permission_required">需要授予安装权限才能更新</string>
-    <string name="storage_permission_required">存储空间不足，请清理后重试</string>
     <string name="update_title_icon">🎉</string>
     <string name="force_update_icon">⚠️</string>
     <string name="download_complete_icon">✅</string>
     <string name="download_icon">📥</string>
 
-    <!-- ==================== 观象台（占卜模块） ==================== -->
-    <string name="div_title">观象台</string>
-    <string name="div_home_xunkong_format">旬空 %1$s</string>
-    <string name="div_disclaimer_footer">内容基于玄学体系生成，仅供文化参考 · 不构成决策建议</string>
-    <string name="div_disclaimer_reading">本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。</string>
-
-    <!-- 四术玉牌 -->
-    <string name="div_method_liuyao_name">六爻</string>
-    <string name="div_method_liuyao_desc">摇铜钱问一事\n装卦最全 · 应期可推</string>
-    <string name="div_method_liuyao_tag">推 荐</string>
-    <string name="div_method_meihua_name">梅花</string>
-    <string name="div_method_meihua_desc">时间数字起卦\n体用生克 · 快占一事</string>
-    <string name="div_method_qimen_name">奇门</string>
-    <string name="div_method_qimen_desc">九宫排局\n择时择方 · 趋避有道</string>
-    <string name="div_method_liuren_name">六壬</string>
-    <string name="div_method_liuren_desc">月将加时 · 三传定机\n人事占验最精</string>
-
-    <!-- 今日一签 -->
-    <string name="div_sign_seal">签</string>
-    <string name="div_sign_card_title">今日一签 · %1$s</string>
-    <string name="div_sign_card_source">梅花时间卦</string>
-
-    <!-- 案卷 / 卦历 -->
-    <string name="div_home_ledger">案 卷</string>
-    <string name="div_home_ledger_more">卦历 ›</string>
-    <string name="div_history_title">卦历 · 案卷</string>
-    <string name="div_history_empty">案卷尚空，且去起一卦</string>
-    <string name="div_history_note">复盘沿用原盘原时刻 · 不因当前日期重算</string>
-    <string name="div_filter_all">全部</string>
-
-    <!-- 问事页 -->
-    <string name="div_ask_title">心中所问</string>
-    <string name="div_ask_hint">默念所问之事，一事一占</string>
-    <string name="div_question_example">例：未来三个月能否找到合适工作？</string>
-    <string name="div_ask_category_label">所问领域</string>
-    <string name="div_ask_category_auto">自动识别，可修改</string>
-    <string name="div_ask_category_manual">已手动选择</string>
-    <string name="div_category_career">事业</string>
-    <string name="div_category_wealth">财运</string>
-    <string name="div_category_love">感情</string>
-    <string name="div_category_study">学业</string>
-    <string name="div_category_travel">出行</string>
-    <string name="div_category_other">其他</string>
-    <string name="div_ask_cast_method_label">起卦方式</string>
-    <string name="div_cast_method_shake">静心摇卦</string>
-    <string name="div_cast_method_shake_sub">三枚铜钱 · 六掷成卦</string>
-    <string name="div_cast_method_lines">直接输入爻值</string>
-    <string name="div_cast_method_lines_sub">逐爻录入单拆重交</string>
-    <string name="div_cast_method_time">梅花时间卦</string>
-    <string name="div_cast_method_time_sub">以此时此刻起卦</string>
-    <string name="div_cast_method_number">随口报数</string>
-    <string name="div_cast_method_number_sub">心中默念两数</string>
-    <string name="div_cast_method_now_ju">立即起局</string>
-    <string name="div_cast_method_now_ju_sub">按当前时辰拆补转盘</string>
-    <string name="div_cast_method_now_ke">立即起课</string>
-    <string name="div_cast_method_now_ke_sub">月将加时 · 四课三传</string>
-    <string name="div_ask_go">静 心 · 起 卦</string>
-    <string name="div_ask_safety_hint">涉及医疗 / 安全等问题请寻求现实帮助</string>
-    <string name="div_manual_title">直接输入爻值</string>
-    <string name="div_manual_confirm">装 卦</string>
-    <string name="div_numbers_title">随口报数</string>
-    <string name="div_numbers_hint">心中默念两个 1–999 的数</string>
-
-    <!-- 高风险分流 -->
-    <string name="div_safety_seal">止</string>
-    <string name="div_safety_title">这个问题，请寻求现实帮助</string>
-    <string name="div_safety_body">医疗与身心健康请咨询医生或专业机构；涉及人身安全请立即联系警方（110）或校园保卫处；寻找失踪亲友请报警处理。占卜不适用于这些问题。</string>
-    <string name="div_safety_back">我知道了 · 返回</string>
-
-    <!-- 摇卦页 -->
-    <string name="div_cast_title">静 心 · 问 事</string>
-    <string name="div_cast_progress">第 %1$d 掷 · 共 6 掷</string>
-    <string name="div_cast_toss">掷 爻</string>
-    <string name="div_cast_done">成 卦 · 进入卦盘</string>
-    <string name="div_cast_quit_title">丢弃本次摇卦？</string>
-    <string name="div_cast_quit_body">爻盘未满六掷，离开将丢弃本次摇卦结果。</string>
-
-    <!-- 卦盘页 -->
-    <string name="div_chart_title">卦盘</string>
-    <string name="div_chart_loading">正在起盘…</string>
-    <string name="div_chart_missing">未找到卦盘记录</string>
-    <string name="div_chart_interpret">求 解 读</string>
-    <string name="div_chart_save">存入卦历</string>
-    <string name="div_chart_saved">已存入卦历</string>
-    <string name="div_liuyao_yongshen">用神</string>
-    <string name="div_liuyao_facts">规则事实</string>
-    <string name="div_meihua_tiyong">体用生克（规则层）</string>
-    <string name="div_meihua_tiyong_line">动爻在%1$d爻 → 下卦%2$s%3$s为用，上卦%4$s%5$s为体：%6$s，%7$s。</string>
-    <string name="div_qimen_yongshen">用神宫</string>
-    <string name="div_qimen_facts">宫位事实</string>
-    <string name="div_liuren_keti">课体 · %1$s · 九宗门 %2$s</string>
-
-    <!-- 解读页 -->
-    <string name="div_reading_title">解 读</string>
-    <string name="div_reading_summary">盘面摘要</string>
-    <string name="div_reading_action">总结与行动</string>
-    <string name="div_reading_followup">继 续 追 问</string>
-    <string name="div_reading_share">分 享</string>
-    <string name="div_reading_loading">正在推演解读…</string>
-    <string name="div_reading_error">解读暂不可用，请稍后重试</string>
-    <string name="div_reading_endseal">观</string>
-
-    <!-- 追问页 -->
-    <string name="div_followup_title">继续追问</string>
-    <string name="div_followup_subtitle">沿用原盘 · 不重算</string>
-    <string name="div_followup_input_hint">基于本卦继续追问…</string>
-    <string name="div_followup_send">发 送</string>
-    <string name="div_followup_empty">还没有追问，输入你的问题吧</string>
-    <string name="div_followup_thinking">正在推演…</string>
+    <!-- 观象台（占卜模块）文案已随 :feature:divination 迁入模块内 strings.xml（T4.1） -->
 </resources>
