@@ -129,4 +129,7 @@ dependencies {
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.hilt.work
     ksp libs.androidx.hilt.compiler
+
+    //启动任务引擎（core:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
+    implementation project(":core:init")
 }

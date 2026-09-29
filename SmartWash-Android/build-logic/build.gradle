@@ -1,0 +1,37 @@
+// 模块化基建（T0.1）：产出三个 convention plugin，供 :core / :common / :feature 各模块
+// 收编构建配置，模块 build.gradle 只声明差异（namespace、依赖等）。
+// 插件 id 约定：smartwash.android.library / smartwash.compose / smartwash.hilt，
+// 模块内按此顺序声明（compose/hilt 依赖 android 扩展已存在）。
+plugins {
+    id 'groovy'
+    id 'java-gradle-plugin'
+}
+
+dependencies {
+    // compileOnly：本模块经 settings.gradle 的 pluginManagement { includeBuild('build-logic') }
+    // 作为插件进入主项目 plugin classpath（与根 build.gradle apply false 的 AGP/KGP 同层），
+    // LibraryExtension / CommonExtension / KotlinCompile 等类型运行期可见。
+    // 注意：若改回 buildSrc 方案，此处必须换成 implementation（buildSrc 类加载器独立，看不到主 classpath）。
+    compileOnly libs.android.gradle.plugin
+    compileOnly libs.kotlin.gradle.plugin
+}
+
+gradlePlugin {
+    plugins {
+        // android library 模块通用配置：compileSdk 35 / minSdk 30 / Java 17 / Kotlin jvmTarget 17
+        smartWashAndroidLibrary {
+            id = 'smartwash.android.library'
+            implementationClass = 'com.smartwash.buildlogic.SmartWashAndroidLibraryPlugin'
+        }
+        // Compose 模块配置：kotlin compose 编译器插件 + Compose BOM + 基础依赖
+        smartWashCompose {
+            id = 'smartwash.compose'
+            implementationClass = 'com.smartwash.buildlogic.SmartWashComposePlugin'
+        }
+        // Hilt + KSP：dagger.hilt 插件 + ksp + 注解处理器依赖
+        smartWashHilt {
+            id = 'smartwash.hilt'
+            implementationClass = 'com.smartwash.buildlogic.SmartWashHiltPlugin'
+        }
+    }
+}
