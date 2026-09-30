@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.utils.AppConstant
+import com.smartwash.common.utils.AppConstant
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.R

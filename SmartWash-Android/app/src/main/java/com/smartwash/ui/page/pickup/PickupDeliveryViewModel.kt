@@ -4,10 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.utils.AppConstant
+import com.smartwash.common.utils.AppConstant
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
-import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.R
 import com.smartwash.common.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel

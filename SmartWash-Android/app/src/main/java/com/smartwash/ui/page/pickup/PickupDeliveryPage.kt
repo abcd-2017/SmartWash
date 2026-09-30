@@ -55,7 +55,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.IconBox
-import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.generateQrCodeBitmap
 import kotlinx.coroutines.Dispatchers

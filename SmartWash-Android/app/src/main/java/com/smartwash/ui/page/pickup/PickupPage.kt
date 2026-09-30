@@ -46,7 +46,7 @@ import com.smartwash.common.ui.theme.Divider
 import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.ui.theme.PrimaryLight
 import com.smartwash.common.ui.theme.TextSecondary
-import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.feature.order.api.PickupDeliveryType
 
 @Composable
 fun PickupPage(
