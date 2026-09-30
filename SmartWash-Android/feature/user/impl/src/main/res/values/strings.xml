@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 用户域字符串（T5.2 随页面自 app 迁入）。
+     注意：coupon/currency_format/error_network_fail/go_recharge/order_status_*/tip 为
+     app 壳与其他域仍在使用的共享文案，app 侧保留同名定义，本模块持同值副本
+     （模块资源经 manifest merger 各自独立，无冲突）；其余为用户域独占，已从 app 移除。 -->
+<resources>
+    <!-- 通用 -->
+    <string name="confirm">确认</string>
+    <string name="tip">提示</string>
+    <string name="all">全部</string>
+    <string name="other">其他</string>
+    <string name="clear">清除</string>
+    <string name="feature_in_development">功能开发中，敬请期待</string>
+    <string name="currency_format">¥%s</string>
+
+    <!-- 登录 -->
+    <string name="brand_name">智能洗衣</string>
+    <string name="brand_subtitle">智慧校园 · 轻松洗衣</string>
+    <string name="login_button">登 录</string>
+    <string name="login_success">登录成功</string>
+    <string name="no_account">没有账号？</string>
+    <string name="register_now">立即注册</string>
+    <string name="error_login_failed">登录失败</string>
+
+    <!-- 注册 -->
+    <string name="register">注 册</string>
+    <string name="register_success">注册成功</string>
+    <string name="create_account">创建账号</string>
+    <string name="start_laundry_journey">开启智能洗衣之旅</string>
+    <string name="has_account">已有账号？</string>
+    <string name="login_now">立即登录</string>
+    <string name="verification_code">验证码</string>
+    <string name="invalid_verification_code">请输入正确的验证码</string>
+    <string name="get_verification_code">获取验证码</string>
+    <string name="countdown_format">%ds</string>
+    <string name="error_get_captcha_failed">验证码获取失败</string>
+    <string name="captcha_sent">验证码已发送，请查看短信</string>
+
+    <!-- 用户中心 -->
+    <string name="my_profile">我的</string>
+    <string name="settings">设置</string>
+    <string name="avatar">头像</string>
+    <string name="change_avatar">更换头像</string>
+    <string name="avatar_upload_success">头像更新成功</string>
+    <string name="avatar_upload_failed">头像上传失败</string>
+    <string name="username">用户名</string>
+    <string name="student_id_format">学号：%s</string>
+    <string name="account_balance">账户余额</string>
+    <string name="campus_card">校园卡</string>
+    <string name="not_bound">未绑定</string>
+    <string name="bind">绑定</string>
+    <string name="go_recharge">去充值</string>
+    <string name="coupon">优惠券</string>
+    <string name="claimable_coupons">可领取优惠券</string>
+    <string name="claim">领取</string>
+    <string name="orders">订单</string>
+    <string name="order_count_format">%d单</string>
+    <string name="order_status_pending_payment">待支付</string>
+    <string name="order_status_washing">清洗中</string>
+    <string name="order_status_ready_for_pickup">待取件</string>
+    <string name="contact_service">联系客服</string>
+    <string name="online_consulting">在线咨询</string>
+    <string name="faq">常见问题</string>
+    <string name="user_guide">使用指南</string>
+    <string name="bind_campus_card">绑定校园卡</string>
+    <string name="input_campus_card">请输入校园卡号</string>
+    <string name="campus_card_empty">校园卡号不能为空</string>
+    <string name="unbind_campus_card">解绑校园卡</string>
+    <string name="confirm_unbind_question">确定要解绑当前绑定的校园卡吗？</string>
+    <string name="confirm_unbind">确认解绑</string>
+    <string name="bind_success">绑定成功</string>
+    <string name="unbind_success">解绑成功</string>
+    <string name="service_phone">客服电话：400-888-8888</string>
+    <string name="service_hours">服务时间：9:00-21:00</string>
+
+    <!-- 学校信息完善 -->
+    <string name="complete_info">完善信息</string>
+    <string name="fill_school_info">请填写您的学校信息</string>
+    <string name="student_id">学号</string>
+    <string name="invalid_student_id">请输入正确的学号</string>
+    <string name="search_school">搜索学校</string>
+    <string name="please_select_school">请选择学校</string>
+    <string name="modify_success">修改成功</string>
+    <string name="error_student_id_registered">该学号已注册</string>
+
+    <!-- 设置 -->
+    <string name="notification">通知</string>
+    <string name="push_notification">消息通知</string>
+    <string name="push_notification_desc">订单状态、活动提醒等</string>
+    <string name="email_notification">邮件通知</string>
+    <string name="email_notification_desc">账单、优惠信息等</string>
+    <string name="privacy_security">隐私与安全</string>
+    <string name="privacy_settings">隐私设置</string>
+    <string name="privacy_settings_desc">个人信息、数据收集等</string>
+    <string name="account_security">账号安全</string>
+    <string name="account_security_desc">密码、登录设备等</string>
+    <string name="about_us">关于我们</string>
+    <string name="about_us_desc">版本信息、用户协议等</string>
+    <string name="help_feedback">帮助与反馈</string>
+    <string name="help_feedback_desc">常见问题、意见反馈</string>
+    <string name="logout">退出登录</string>
+    <string name="confirm_logout">是否要退出登录？</string>
+    <!-- 检查更新行经 checkUpdateContent 插槽由宿主注入（feature:update 归 app 壳聚合），
+         check_update/check_update_desc/already_latest 三条文案随行留 app 侧 -->
+    <string name="app_version">版本号：%s</string>
+
+    <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
+    <string name="error_network_fail">请求失败</string>
+</resources>

@@ -1,0 +1,36 @@
+// :feature:update —— 应用热更新链路（版本检查 / APK 后台下载 / 安装）。
+// 弹窗 UI 留壳层 app（T3.2 改事件驱动）；本模块经 app 的 Hilt 聚合对外提供
+// UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller 等（app → feature 依赖方向）。
+// 调研结论：链路内无 Compose/公共 UI 组件消费，不引 smartwash.compose 与 common:ui；
+// core:init 供 UpdateInitTask（启动静默检查，T3.2 经 @IntoSet 注册进 InitTaskRegistry）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.update'
+}
+
+dependencies {
+    // 响应信封 ApiResult
+    implementation project(':common:model')
+    // NetworkException 与 Retrofit（经 common:network 的 api 传递，AppUpdateApi/UpdateModule 消费）
+    implementation project(':common:network')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+
+    // 启动任务基类（UpdateInitTask 注册进 InitTaskRegistry，App.onCreate 经 InitEngine 调度）
+    implementation project(':core:init')
+
+    // APK 后台下载（WorkManager + @HiltWorker）
+    implementation libs.androidx.work.runtime.ktx
+    implementation libs.androidx.hilt.work
+    // HiltWorker 的 androidx 注解处理器（smartwash.hilt convention plugin 只带 dagger 的）
+    ksp libs.androidx.hilt.compiler
+
+    // ApkDownloadWorker 直接消费 OkHttp（下载执行）
+    implementation libs.okhttp
+}

@@ -1,0 +1,23 @@
+// :common:ui —— 清氧设计系统（theme）+ 跨页面共享 Compose 组件 + 壳层路由契约
+// （ShellRoute.HOME：无域归属、注册在 app 壳且被多域 feature 跳转的路由常量，T8.1）。
+// 仅依赖 Compose/theme/common:utils，禁止引用业务模型（VO）、PageConstant、ViewModel；
+// 业务组件随各自 feature 模块走（阶段 5-7）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 core/init/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+}
+
+android {
+    namespace 'com.smartwash.common.ui'
+}
+
+dependencies {
+    // 触感反馈（AppTabBar）与按压反馈（AppCard/AppButton/SettingRow 的 pressScale/pressAlpha）
+    implementation project(":common:utils")
+    // 组件图标（ArrowBack/Lock/Visibility/Phone 等）
+    implementation libs.androidx.material.icons.extended
+    // Theme.kt 的 WindowCompat（edge-to-edge 适配）；app 的 core-ktx 是 implementation 不传递，
+    // 本模块须自持（release variant 编译曾因此失败，debug 因传递差异侥幸通过）
+    implementation libs.androidx.core.ktx
+}

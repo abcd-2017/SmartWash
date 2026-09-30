@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 订单域对外契约模块（T6.1）：纯接口 + 模型，无组件声明，manifest merger 合入宿主。 -->
+<manifest />

@@ -43,14 +43,11 @@ android {
     buildTypes {
         debug {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
-            // 观象台解读网关（LLM 走后端，密钥不出服务端）：endpoint 统一此处注入，禁止硬编码
-            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
         }
         release {
             // 签名：CI 环境注入 release 签名；本地未配置时回退 debug keystore（仅测试用）
             signingConfig signingConfigs.release
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
-            buildConfigField "String", "DIVINATION_BASE_URL", SMART_WASH_BASE_URL
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -88,13 +85,10 @@ dependencies {
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
 
-    //网络请求框架
+    //网络请求框架（OkHttp/Retrofit 基础设施在 :common:network，此处仅 app 直接消费的部分：
+    //Retrofit 供 di/ 各业务 API @Provides，okhttp 供上传/下载）
     implementation libs.retrofit
-    implementation libs.converter.gson
-    implementation libs.okhttp.logging
-
-    //辅助工具库,权限申请
-    implementation libs.accompanist.permissions
+    implementation libs.okhttp
 
     //自动注入
     implementation(libs.hilt.android)
@@ -102,9 +96,6 @@ dependencies {
     // Hilt 注解处理统一走 KSP（与 Room 一致），Hilt 2.51 起官方支持
     ksp(libs.hilt.compiler)
 
-    //datastore
-    implementation libs.androidx.datastore.preferences
-    implementation libs.androidx.datastore.preferences.core
     implementation libs.androidx.navigation.compose
     implementation libs.androidx.material.icons.extended
 
@@ -112,21 +103,82 @@ dependencies {
     implementation libs.androidx.paging.compose
     implementation libs.androidx.paging.runtime.ktx
 
-    //Room
-    implementation libs.androidx.room.runtime
-    implementation libs.androidx.room.ktx
-    ksp libs.androidx.room.compiler
-
-    implementation libs.core
-
+    //Room（基础设施在 :common:database，runtime/ktx 经其 api 传递；
+    //ksp 处理器已随 DivinationDatabase 迁入 :feature:divination，app 无 Room 注解类）
     //图片加载
     implementation libs.coil.compose
 
-    //历法底座（观象台）：四柱/节气/中气/农历/旬空，纯 Java 可单测
-    implementation libs.lunar
-
-    // APK 后台下载（WorkManager + Hilt Worker）
+    // APK 后台下载（WorkManager：MainActivity 调度/监听进度用；@HiltWorker 与
+    // androidx hilt-compiler 已随 ApkDownloadWorker 迁入 :feature:update）。
+    // hilt-work 供 App 注入 HiltWorkerFactory（feature 的 implementation 依赖不传递，app 需自行声明）
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.hilt.work
-    ksp libs.androidx.hilt.compiler
+
+    //启动任务引擎（core:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
+    implementation project(":core:init")
+
+    //跨模块共享数据契约（T2.1）：响应信封 ApiResult/PageData、HttpStatusCode、RequestState
+    implementation project(":common:model")
+
+    //跨模块通用工具（T2.2）：DataStore 封装、动效/触感、二维码、参数校验、按压反馈
+    implementation project(":common:utils")
+
+    //网络基础设施（T2.3）：OkHttp/Retrofit 供给、鉴权与错误转译拦截器、@RequireAuthorization、NetworkException
+    implementation project(":common:network")
+
+    //Room 缓存库（T2.4）：AppDatabase + Laundry/School/Coupon 三表 DAO 供给
+    implementation project(":common:database")
+
+    //清氧设计系统 + 共享 UI 组件（T2.5）：theme（AppDesign/Color/Theme/Type）+ ui/common 组件
+    implementation project(":common:ui")
+
+    //应用热更新链路（T3.1）：版本检查/下载/安装；弹窗 UI 留壳层，MainActivity/SettingPage
+    //消费 UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller（app → feature 依赖方向）
+    implementation project(":feature:update")
+
+    //观象台占卜子系统（T4.1）：四套算法内核+卦历库+解读网关+7 页面整模块迁入；
+    //MainActivity NavHost / HomePage 问卜页签消费页面 composable，PageConstant.Div* 委托 DivRoute
+    implementation project(":feature:divination")
+
+    //用户域对外契约（T5.3）：app 壳（MainActivity 会话事件/登录页注册）与 home/index/
+    //laundry 消费方一律注入 UserApi（isLogin/getUserInfo 缓存/loginEvents），不触碰 impl
+    implementation project(":feature:user:api")
+
+    //用户域实现（T5.2）：会话+用户网络链路+登录/注册/用户中心/资料编辑/设置页面迁入；
+    //app 壳仅剩 NavHost 页面注册（LoginPage/RegisterPage/SettingPage/UpdateUserInfoPage，
+    //T8.1 拆 NavGraphBuilder 聚合后摘除）
+    implementation project(":feature:user:impl")
+
+    //订单域对外契约（T6.1）：app 壳留守页面（detail/index/laundry/pickup/payment）与
+    //UserImplSeamModule 一律注入 OrderApi（详情/试算/下单/计数/寄件取件/分页源），
+    //不触碰 impl；OrderVo→OrderBrief、OrderStatus/ShowOrderStatus 枚举同随本模块
+    implementation project(":feature:order:api")
+
+    //订单域实现（T6.1）：订单网络链路（OrderServiceApi/OrderRepository）+ 订单页迁入；
+    //app 壳仅剩 NavHost 页面注册（OrderPage，T8.1 拆 NavGraphBuilder 聚合后摘除）
+    implementation project(":feature:order:impl")
+
+    //支付域对外契约（T6.2，含充值）：仅 PaymentRoute 路由常量（零跨模块数据消费）；
+    //PageConstant 支付/充值四路由委托本模块，order-impl/user-impl 跨域跳转同源取值
+    implementation project(":feature:payment:api")
+
+    //支付域实现（T6.2）：支付+充值网络链路与页面迁入；app 壳仅剩 NavHost 页面注册
+    //（PaymentPage/PaySuccessPage/RechargePage/RechargeRecordPage，T8.1 拆聚合后摘除）
+    implementation project(":feature:payment:impl")
+
+    //洗衣域对外契约（T7.1，含 School 域）：LaundryRoute 路由常量（PageConstant 洗衣/服务
+    //两路由委托本模块）+ SchoolSearchSource 学校搜索契约（user-impl 资料编辑页消费）
+    implementation project(":feature:laundry:api")
+
+    //洗衣域实现（T7.1）：洗衣+学校网络链路与页面（服务 tab 页/洗衣预约页）迁入；
+    //app 壳仅剩 NavHost 页面注册与 HomePage 服务 tab 内嵌（T8.1 拆聚合后摘除）
+    implementation project(":feature:laundry:impl")
+
+    //优惠券域对外契约（T7.2，按域嵌套 feature/coupon/{api,impl}）：CouponRoute 路由常量
+    //（PageConstant 优惠券路由委托本模块）+ CouponApi 服务契约（payment-impl 支付页选券消费）
+    implementation project(":feature:coupon:api")
+
+    //优惠券域实现（T7.2）：优惠券网络链路与优惠券页迁入；app 壳仅剩 NavHost 页面注册
+    //（CouponPage，T8.1 拆聚合后摘除）；CouponSource seam 与 PaymentImplSeamModule 已删
+    implementation project(":feature:coupon:impl")
 }

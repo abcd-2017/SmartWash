@@ -1,0 +1,61 @@
+// :feature:laundry:impl —— 洗衣域实现（T7.1，含 School 域并入，同属校园洗衣基础数据）。
+// 洗衣+学校网络链路（LaundryItemsApi/SchoolApi/LaundryRepository/SchoolRepository）
+// + 服务 tab 页 / 洗衣预约页；对外经 :feature:laundry:api 的 LaundryRoute 路由常量
+// 与 SchoolSearchSource 学校搜索契约暴露（di @Binds），跨模块消费方不得触碰本模块
+// 实现细节。 LaundryItem/SchoolName 缓存表仍在 :common:database（三表共库，
+// 拆表与 CouponVo 表归属 T8.2 统一评估，本任务不扩面）。
+// 消费 user-api / order-api 经接口（LaundryViewModel 注入 UserApi/OrderApi）。
+// 依赖方向：laundry-api / user-api / order-api / payment-api / common
+// （禁止依赖 app 壳与其他 feature-impl）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.laundry'
+}
+
+dependencies {
+    // 本域路由常量与学校搜索契约（LaundryRoute/SchoolSearchSource/SchoolOption）
+    implementation project(':feature:laundry:api')
+
+    // 用户域服务契约（LaundryViewModel 注入 UserApi：预约页展示用户学校）
+    implementation project(':feature:user:api')
+
+    // 订单域服务契约（LaundryViewModel 注入 OrderApi：选套餐下单）
+    implementation project(':feature:order:api')
+
+    // 支付域路由常量（PaymentRoute；洗衣预约成功跳支付页，T7.1 起替换 PageConstant 引用）
+    implementation project(':feature:payment:api')
+
+    // 响应信封 ApiResult / HttpStatusCode / RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ NetworkException
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens 主题 + AppButton/AppInfoDialog/PageHeader 等组件）
+    implementation project(':common:ui')
+    // 按压反馈/动效（common:ui 对 common:utils 是 implementation，不传递，直接消费须显式声明）
+    implementation project(':common:utils')
+    // Room 缓存库（LaundryItemDao/SchoolNameDao/AppDatabase；runtime/ktx 经其 api 传递）
+    implementation project(':common:database')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（洗衣预约页跳支付页）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/verticalScroll；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // animateColorAsState（洗衣预约页套餐选中态颜色过渡）
+    implementation libs.androidx.compose.animation
+    // 图标（LocalLaundryService/CleaningServices/DryCleaning/Checkroom/LocationOn）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（网络 VO；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+    // SchoolRepository 的 Mutex / ViewModel 协程 launch
+    implementation libs.kotlinx.coroutines.android
+}

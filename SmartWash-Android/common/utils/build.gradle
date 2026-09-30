@@ -1,0 +1,26 @@
+// :common:utils —— 跨模块通用工具（DataStore 封装、动效/触感、二维码、参数校验、Compose 按压反馈）。
+// 业务存储 key（AppConstant）与业务域枚举不进本模块（跟各自 feature 走）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 core/init/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.common.utils'
+}
+
+dependencies {
+    // SharePreferenceUtils：DataStore Preferences 封装
+    implementation libs.androidx.datastore.preferences
+    // BitmapUtil：zxing 二维码生成
+    implementation libs.core
+    // PagingUtils：pagingFlow 分页流组装（T8.2 自 app/payment-impl 双副本收敛）
+    implementation libs.androidx.paging.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel
+    // AnimationUtils / PressFeedbackModifier：直接 import 的 Compose 动画与交互库
+    // （版本由 SmartWashComposePlugin 引入的 BOM 统一管理）
+    implementation libs.androidx.compose.animation
+    implementation libs.androidx.compose.foundation
+}

@@ -33,19 +33,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
-import com.smartwash.network.vo.order.OrderInfo
-import com.smartwash.ui.common.AppCard
-import com.smartwash.ui.common.EmptyState
-import com.smartwash.ui.common.PageHeader
+import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.common.ui.components.AppCard
+import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.ui.page.PageConstant
-import com.smartwash.ui.theme.AppColors
-import com.smartwash.ui.theme.AppDimens
-import com.smartwash.ui.theme.Background
-import com.smartwash.ui.theme.Divider
-import com.smartwash.ui.theme.Primary
-import com.smartwash.ui.theme.PrimaryLight
-import com.smartwash.ui.theme.TextSecondary
-import com.smartwash.utils.PickupDeliveryType
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.Background
+import com.smartwash.common.ui.theme.Divider
+import com.smartwash.common.ui.theme.Primary
+import com.smartwash.common.ui.theme.PrimaryLight
+import com.smartwash.common.ui.theme.TextSecondary
+import com.smartwash.feature.order.api.PickupDeliveryType
 
 @Composable
 fun PickupPage(
@@ -92,7 +93,7 @@ fun PickupPage(
                         orderList[i]?.let {
                             PickupOrderCard(
                                 order = it,
-                                onClick = { navController.navigate("${PageConstant.PickupDelivery.text}/${orderList[i]?.orderId ?: -1}/${PickupDeliveryType.PICKUP.type}") }
+                                onClick = { navController.navigate("${OrderRoute.PickupDelivery.text}/${orderList[i]?.orderId ?: -1}/${PickupDeliveryType.PICKUP.type}") }
                             )
                         }
                     }

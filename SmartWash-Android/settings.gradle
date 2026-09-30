@@ -1,4 +1,6 @@
 pluginManagement {
+    // convention plugin 经 included build 提供（smartwash.android.library / smartwash.compose / smartwash.hilt）
+    includeBuild('build-logic')
     repositories {
 //        maven { url 'https://maven.aliyun.com/repository/google/' }
 //        maven { url 'https://maven.aliyun.com/repository/public/' }
@@ -20,3 +22,21 @@ dependencyResolutionManagement {
 
 rootProject.name = "SmartWash-Android"
 include ':app'
+include ':common:database'
+include ':common:model'
+include ':common:network'
+include ':common:utils'
+include ':common:ui'
+include ':core:init'
+include ':feature:coupon:api'
+include ':feature:coupon:impl'
+include ':feature:divination'
+include ':feature:laundry:api'
+include ':feature:laundry:impl'
+include ':feature:order:api'
+include ':feature:order:impl'
+include ':feature:payment:api'
+include ':feature:payment:impl'
+include ':feature:update'
+include ':feature:user:api'
+include ':feature:user:impl'

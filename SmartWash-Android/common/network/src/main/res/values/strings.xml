@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 拦截器错误文案（T2.3 随拦截器自 app 迁入；error_network_fail 在 app 侧保留同名定义供业务消费） -->
+    <string name="error_network_fail">请求失败</string>
+    <string name="error_login_expired">登录失效，请重新登录</string>
+    <string name="error_timeout">请求超时，请检查网络</string>
+    <string name="error_connection">网络连接失败，请检查网络</string>
+    <string name="error_unknown">未知错误</string>
+</resources>

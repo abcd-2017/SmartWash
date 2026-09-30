@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 优惠券域文案（T7.2 随页面自 app 迁入）。
+     20 条为优惠券页/枚举专有（app 侧同名定义已删）；2 条同值副本（currency_format、
+     error_network_fail）仍被 app 壳页面使用，模块资源经 manifest merger 各自独立，
+     值保持一致（同 laundry/payment-impl 先例）。 -->
+<resources>
+    <!-- 优惠券页 -->
+    <string name="coupons">优惠券</string>
+    <string name="available_coupons">可领取</string>
+    <string name="claimed_coupons">已领取</string>
+    <string name="historical_coupons">已使用</string>
+    <string name="claim_success">领取成功</string>
+    <string name="claim_now">立即领取</string>
+    <string name="claimed">已领取</string>
+    <string name="no_coupons_available">暂无优惠券</string>
+    <string name="no_claimed_coupons">暂无优惠券</string>
+    <string name="no_historical_coupons">暂无使用优惠券</string>
+    <string name="discount_amount_format">%s元</string>
+    <string name="coupon_min_amount_format">满%s元可用</string>
+    <string name="no_threshold">无门槛</string>
+    <string name="valid_until">有效期至：%s</string>
+    <string name="currency_format">¥%s</string>
+    <string name="used">已使用</string>
+    <string name="expired">已过期</string>
+    <string name="available">可使用</string>
+
+    <!-- 优惠券状态（CouponStatus 枚举显示文本） -->
+    <string name="coupon_status_expired">已失效</string>
+    <string name="coupon_status_active">生效中</string>
+    <string name="coupon_status_receive">已领取</string>
+
+    <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
+    <string name="error_network_fail">请求失败</string>
+</resources>

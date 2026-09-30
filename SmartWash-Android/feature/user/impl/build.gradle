@@ -1,0 +1,70 @@
+// :feature:user:impl —— 用户域实现（api/impl 服务化样板的 impl 侧，T5.2）。
+// 会话（SessionManager/SessionEventBus）+ 用户网络链路（UserAccountApi/UserRepository）
+// + 登录/注册/用户中心/资料编辑/设置 5 组页面；对外仅经 :feature:user:api 的 UserApi
+// 契约暴露（di @Binds），跨模块消费方不得触碰本模块实现细节。
+// 依赖方向：user-api / common / core:init（禁止依赖 app 壳与其他 feature-impl）。
+plugins {
+    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
+    id 'smartwash.android.library'
+    id 'smartwash.compose'
+    id 'smartwash.hilt'
+}
+
+android {
+    namespace 'com.smartwash.feature.user.impl'
+}
+
+dependencies {
+    // 对外服务契约（UserApi/UserRoute/LoginEvent/UserInfo）
+    implementation project(':feature:user:api')
+
+    // 支付域路由常量（PaymentRoute；用户中心「去充值」跨域跳转，T6.2 起替换 HostRoutes 过渡字面量）
+    implementation project(':feature:payment:api')
+
+    // 订单域服务契约（OrderApi/OrderRoute/ShowOrderStatus；用户中心订单计数与跳订单页，
+    // T6.3 起替换 UserCenterOrderCounts seam 与 HostRoutes.ORDER 过渡字面量）
+    implementation project(':feature:order:api')
+
+    // 洗衣域学校搜索契约（SchoolSearchSource/SchoolOption；资料编辑页按关键字搜学校，
+    // T7.1 起替换本模块内的 SchoolSearchSource 过渡 seam 与 app 壳 UserImplSeamModule 实现）
+    implementation project(':feature:laundry:api')
+
+    // 优惠券域路由常量（CouponRoute；用户中心「优惠券」入口跨域跳转，
+    // T7.2 起替换 HostRoutes.COUPON 过渡字面量）
+    implementation project(':feature:coupon:api')
+
+    // 响应信封 ApiResult / HttpStatusCode / RequestState
+    implementation project(':common:model')
+    // Retrofit（api 传递）+ @RequireAuthorization + NetworkException + TokenProvider/SessionEventNotifier 契约
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens/Glass* 主题 + AppCard/SettingRow 等组件）
+    implementation project(':common:ui')
+    // DataStore 封装（SharePreferenceUtils）+ 触感/按压反馈/手机号校验
+    //（common:ui 对 common:utils 是 implementation，不传递，本模块直接消费须显式声明）
+    implementation project(':common:utils')
+
+    // 启动任务基类（SessionInitTask 注册进 InitTaskRegistry，App.onCreate 经 InitEngine 调度）
+    implementation project(':core:init')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面间跳转）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/verticalScroll/rememberScrollState；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // rememberLauncherForActivityResult（用户中心更换头像的照片选择器）
+    implementation libs.androidx.activity.compose
+    // 图标（LocalLaundryService/SystemUpdate/School 等）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（UserAccountApi 的请求/返回体；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+    // 头像 AsyncImage 加载
+    implementation libs.coil.compose
+    // MultipartBody/RequestBody（头像上传；okhttp 虽经 common:network 的 retrofit api 传递，
+    // 本模块直接消费 okhttp3 类型，按项目惯例显式声明）
+    implementation libs.okhttp
+    // SessionManager/UserApiImpl 的协程作用域与 Flow
+    implementation libs.kotlinx.coroutines.android
+}
