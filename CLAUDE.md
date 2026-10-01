@@ -23,10 +23,10 @@
 
 | 改动内容 | 需要同步的位置 |
 |---------|--------------|
-| 新增/修改用户端接口 | 后端 `controller/web/` + Android `network/api/` + 鸿蒙 `network/api/` |
+| 新增/修改用户端接口 | 后端 `controller/web/` + Android 各域 `feature:<域>:api/` + 鸿蒙 `network/api/` |
 | 新增/修改管理端接口 | 后端 `controller/background/` + Web `src/api/` |
-| 修改响应结构/错误码 | 三端各自的响应包装解析：Android `ResponseInterceptor`、鸿蒙 `Axios.ets`、Web `utils/http.js` |
-| 修改枚举/状态码 | 三端各自的枚举映射：Android `utils/OrderStatus.kt`、鸿蒙 `constant/`、Web 页面内映射函数 |
+| 修改响应结构/错误码 | 三端各自的响应包装解析：Android `:common:network` 模块 `ResponseInterceptor`、鸿蒙 `Axios.ets`、Web `utils/http.js` |
+| 修改枚举/状态码 | 三端各自的枚举映射：Android 各域 `feature:<域>:api/`（如 `OrderStatus` 在 `:feature:order:api`）、鸿蒙 `constant/`、Web 页面内映射函数 |
 
 ## 统一 API 契约
 
