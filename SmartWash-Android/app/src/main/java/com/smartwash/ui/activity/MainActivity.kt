@@ -11,7 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             val reduceMotion = isReduceMotionEnabled(context)
 
             // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）
-            val updateViewModel: UpdateViewModel = viewModel()
+            val updateViewModel: UpdateViewModel = hiltViewModel()
             UpdateFlow(context, workManager, updateViewModel, updateEventBus)
 
             // 收集用户域登录态事件（UserApi.loginEvents，T5.3 自 SessionEventBus 切换）：
