@@ -24,8 +24,7 @@ fun InfoRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp)
-            .padding(vertical = 0.dp),
+            .height(40.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

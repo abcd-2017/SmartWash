@@ -103,18 +103,39 @@ object AppColors {
 }
 
 // ========== 清氧设计系统 — 设计 Token ==========
+// 容器层级：Canvas(暖白底) → Group(浅灰分组) → ListRow(分隔线) → HeroCard(主焦点) → InlineAction(行内)
 
 object AppDimens {
+    // 页面边距
     val pagePadding = 20.dp
+    // 旧卡片 token（保留向后兼容，新代码避免使用）
+    @Deprecated("使用 radiusMd / radiusLg 替代", ReplaceWith("AppDimens.radiusLg"))
+    val cardRadius = 20.dp
+    @Deprecated("使用 radiusMd 替代", ReplaceWith("AppDimens.radiusMd"))
+    val smallCardRadius = 16.dp
     val cardPadding = 16.dp
     val cardSpacing = 12.dp
     val sectionSpacing = 24.dp
-    val cardRadius = 20.dp
-    val smallCardRadius = 16.dp
-    val buttonRadius = 14.dp
-    val inputRadius = 14.dp
+    // 新圆角 token
+    val radiusXs = 4.dp     // 标签、小角标
+    val radiusSm = 8.dp     // 输入框、小按钮
+    val radiusMd = 12.dp    // 分组背景、图标容器
+    val radiusLg = 16.dp    // Hero Card、对话框
+    val radiusXl = 20.dp    // 旧大圆角，仅兼容
+    val radiusFull = 999.dp // 头像、胶囊
+    // 按钮 / 输入
+    val buttonRadius = 12.dp
+    val inputRadius = 12.dp
     val iconContainerRadius = 12.dp
     val bottomBarHeight = 56.dp
+    // 间距 token（8pt 网格）
+    val spaceXxs = 4.dp
+    val spaceXs = 8.dp
+    val spaceSm = 12.dp
+    val spaceMd = 16.dp
+    val spaceLg = 20.dp
+    val spaceXl = 24.dp
+    val spaceXxl = 32.dp
 }
 
 // ========== 海拔层级 (Elevation Levels) ==========

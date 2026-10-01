@@ -6,12 +6,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 val AppTypography = Typography(
-    // 页面大标题 — 28sp Bold
+    // 页面大标题 — 32sp Bold（仅首页问候、个人中心）
     displayLarge = TextStyle(
         fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.5).sp // 大标题收紧
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+        letterSpacing = (-0.5).sp
     ),
     displayMedium = TextStyle(
         fontWeight = FontWeight.Bold,
@@ -26,12 +26,12 @@ val AppTypography = Typography(
         letterSpacing = (-0.25).sp // 大标题收紧
     ),
 
-    // 区块标题 — 18sp SemiBold
+    // 区块标题 — 22sp SemiBold（页面主区块）
     headlineLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.15).sp // 中大标题微收
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.15).sp
     ),
     headlineMedium = TextStyle(
         fontWeight = FontWeight.SemiBold,
@@ -46,12 +46,12 @@ val AppTypography = Typography(
         letterSpacing = 0.sp // 中间值不变
     ),
 
-    // 卡片/列表项标题 — 16sp Medium
+    // 卡片/列表项标题 — 17sp Medium
     titleLarge = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
+        fontSize = 17.sp,
         lineHeight = 22.sp,
-        letterSpacing = 0.sp // 中间值不变
+        letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
         fontWeight = FontWeight.Medium,
