@@ -21,6 +21,7 @@
     <string name="service_booking">预约洗衣</string>
     <string name="service_pickup">取件</string>
     <string name="service_coupon">优惠券</string>
+    <string name="service_toolbox">工具箱</string>
     <string name="in_progress_orders">进行中订单</string>
     <string name="view_all">查看全部</string>
     <string name="no_ongoing_orders">暂无进行中的订单</string>
@@ -136,4 +137,16 @@
     <string name="download_icon">📥</string>
 
     <!-- 观象台（占卜模块）文案已随 :feature:divination 迁入模块内 strings.xml（T4.1） -->
+
+    <!-- ==================== AI 工具工作台 ==================== -->
+    <string name="ai_workbench_title">智能助手</string>
+    <string name="ai_quick_tasks">快捷任务</string>
+    <string name="ai_task_choose_package">选套餐</string>
+    <string name="ai_task_check_order">查订单</string>
+    <string name="ai_task_use_coupon">用优惠券</string>
+    <string name="ai_task_recharge">充值</string>
+    <string name="ai_recent_work">最近工作</string>
+    <string name="ai_empty_recent">暂无最近对话</string>
+    <string name="ai_input_placeholder">有什么可以帮你的？</string>
+    <string name="ai_send">发送</string>
 </resources>

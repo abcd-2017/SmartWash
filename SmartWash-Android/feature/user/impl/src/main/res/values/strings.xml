@@ -47,6 +47,8 @@
     <string name="student_id_format">学号：%s</string>
     <string name="account_balance">账户余额</string>
     <string name="campus_card">校园卡</string>
+    <string name="recharge">充值</string>
+    <string name="manage">管理</string>
     <string name="not_bound">未绑定</string>
     <string name="bind">绑定</string>
     <string name="go_recharge">去充值</string>
