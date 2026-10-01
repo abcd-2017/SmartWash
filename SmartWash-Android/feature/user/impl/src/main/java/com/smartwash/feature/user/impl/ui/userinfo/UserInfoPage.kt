@@ -5,11 +5,8 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,19 +15,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
@@ -39,11 +35,12 @@ import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,34 +52,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.AppInputDialog
+import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
-import com.smartwash.feature.user.api.UserRoute
-import com.smartwash.feature.user.impl.R
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
-import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.model.RequestState
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.pressable
+import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
-import com.smartwash.feature.coupon.api.CouponRoute
+import com.smartwash.feature.user.api.UserRoute
+import com.smartwash.feature.user.impl.R
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -178,52 +171,43 @@ fun UserInfoPage(
         if (userInfoStatus is RequestState.Loading) {
             LoadingState(modifier = Modifier.fillMaxSize())
         } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // 标题行
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = stringResource(R.string.my_profile),
-                    style = MaterialTheme.typography.displayLarge,
-                    color = AppColors.colorScheme.onBackground
-                )
-                IconButton(onClick = { navController.navigate(UserRoute.Setting.text) }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(R.string.settings),
-                        tint = AppColors.colorScheme.textSecondary
+                // 标题行
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.my_profile),
+                        style = MaterialTheme.typography.displayLarge,
+                        color = AppColors.colorScheme.onBackground
                     )
-                }
-            }
-
-            // 用户信息区（居中大头像）— 添加背景渐变
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                AppColors.colorScheme.primary.copy(alpha = 0.06f),
-                                Color.Transparent
-                            )
+                    IconButton(onClick = { navController.navigate(UserRoute.Setting.text) }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings),
+                            tint = AppColors.colorScheme.textSecondary
                         )
-                    )
-                    .padding(vertical = 28.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    }
+                }
+
+                // 身份横排（头像 48dp + 手机号 + 校区）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(48.dp)
                             .clickable {
                                 imagePickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -234,21 +218,21 @@ fun UserInfoPage(
                         if (avatarUploadState is RequestState.Loading) {
                             Box(
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape)
                                     .background(AppColors.colorScheme.primaryLight),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(20.dp),
                                     color = AppColors.colorScheme.primary,
-                                    strokeWidth = 2.5.dp
+                                    strokeWidth = 2.dp
                                 )
                             }
                         } else if (userInfo?.avatar.isNullOrBlank()) {
                             Box(
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape)
                                     .background(AppColors.colorScheme.primaryLight),
                                 contentAlignment = Alignment.Center
@@ -256,7 +240,7 @@ fun UserInfoPage(
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = stringResource(R.string.avatar),
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier.size(24.dp),
                                     tint = AppColors.colorScheme.primary
                                 )
                             }
@@ -265,7 +249,7 @@ fun UserInfoPage(
                                 model = userInfo?.avatar,
                                 contentDescription = stringResource(R.string.avatar),
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(48.dp)
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
@@ -274,8 +258,7 @@ fun UserInfoPage(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .offset(x = 2.dp, y = 2.dp)
-                                .size(22.dp)
+                                .size(16.dp)
                                 .clip(CircleShape)
                                 .background(AppColors.colorScheme.primary),
                             contentAlignment = Alignment.Center
@@ -283,89 +266,228 @@ fun UserInfoPage(
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,
                                 contentDescription = stringResource(R.string.change_avatar),
-                                modifier = Modifier.size(13.dp),
+                                modifier = Modifier.size(10.dp),
                                 tint = Color.White
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = userInfo?.phoneNumber ?: stringResource(R.string.username),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.student_id_format, userInfo?.studentId ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary
-                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = userInfo?.phoneNumber ?: stringResource(R.string.username),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Text(
+                            text = userInfo?.schoolVo?.schoolName ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
                 }
-            }
 
-            // 余额信息卡（渐变绿底）
-            BalanceCard(
-                balance = userInfo?.balance ?: 0f,
-                campusCard = userInfo?.campusCard,
-                onRechargeClick = { navController.navigate(PaymentRoute.Recharge.text) },
-                onCampusCardClick = {
-                    if (userInfo?.campusCard != null) showUnbindDialog = true
-                    else showBindDialog = true
-                }
-            )
-
-            // 订单快捷入口
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-            Text(
-                text = stringResource(R.string.orders),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            OrderQuickGrid(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                pendingPaymentCount = orderItemCount?.pendingPaymentCount ?: 0,
-                processingCount = orderItemCount?.processingCount ?: 0,
-                pendingPickupCount = orderItemCount?.pendingPickupCount ?: 0,
-                onPendingPaymentClick = { navController.navigate("${OrderRoute.Order.text}/1") },
-                onProcessingClick = { navController.navigate("${OrderRoute.Order.text}/3") },
-                onPendingPickupClick = { navController.navigate("${OrderRoute.Order.text}/4") },
-                onAllClick = { navController.navigate("${OrderRoute.Order.text}/0") }
-            )
-
-            // 功能列表
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-            Column(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-            ) {
-                FunctionItem(
-                    icon = Icons.Default.LocalOffer,
-                    title = stringResource(R.string.coupon),
-                    subtitle = stringResource(R.string.claimable_coupons),
-                    trailing = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.claim), style = MaterialTheme.typography.bodySmall, color = AppColors.colorScheme.primary)
-                            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+                // 账户分组
+                GroupCard(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                ) {
+                    SettingRow(
+                        icon = Icons.Default.Wallet,
+                        label = stringResource(R.string.account_balance),
+                        trailing = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.colorScheme.textPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.recharge),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = AppColors.colorScheme.textSecondary
+                                )
+                            }
+                        },
+                        onClick = { navController.navigate(PaymentRoute.Recharge.text) }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.LocalOffer,
+                        label = stringResource(R.string.coupon),
+                        trailing = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(R.string.claim),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = AppColors.colorScheme.textSecondary
+                                )
+                            }
+                        },
+                        onClick = { navController.navigate(CouponRoute.Coupon.text) }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.CreditCard,
+                        label = stringResource(R.string.campus_card),
+                        trailing = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (userInfo?.campusCard != null) stringResource(R.string.manage) else stringResource(R.string.bind),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.primary
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = AppColors.colorScheme.textSecondary
+                                )
+                            }
+                        },
+                        onClick = {
+                            if (userInfo?.campusCard != null) showUnbindDialog = true
+                            else showBindDialog = true
                         }
-                    },
-                    onClick = { navController.navigate(CouponRoute.Coupon.text) }
-                )
-                FunctionItem(
-                    icon = Icons.Default.Headset,
-                    title = stringResource(R.string.contact_service),
-                    subtitle = stringResource(R.string.online_consulting),
-                    onClick = { showServiceDialog = true }
-                )
-                FunctionItem(
-                    icon = Icons.AutoMirrored.Filled.Help,
-                    title = stringResource(R.string.faq),
-                    subtitle = stringResource(R.string.user_guide),
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
-                )
-            }
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+                // 订单分组
+                GroupCard(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                ) {
+                    SettingRow(
+                        icon = Icons.Default.Schedule,
+                        label = stringResource(R.string.order_status_pending_payment),
+                        trailing = {
+                            val count = orderItemCount?.pendingPaymentCount ?: 0
+                            if (count > 0) {
+                                Text(
+                                    text = count.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = AppColors.colorScheme.primary
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { navController.navigate("${OrderRoute.Order.text}/1") }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.LocalLaundryService,
+                        label = stringResource(R.string.order_status_washing),
+                        trailing = {
+                            val count = orderItemCount?.processingCount ?: 0
+                            if (count > 0) {
+                                Text(
+                                    text = count.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = AppColors.colorScheme.primary
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { navController.navigate("${OrderRoute.Order.text}/3") }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.Inventory,
+                        label = stringResource(R.string.order_status_ready_for_pickup),
+                        trailing = {
+                            val count = orderItemCount?.pendingPickupCount ?: 0
+                            if (count > 0) {
+                                Text(
+                                    text = count.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = AppColors.colorScheme.primary
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { navController.navigate("${OrderRoute.Order.text}/4") }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.History,
+                        label = stringResource(R.string.all),
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+                // 其他分组
+                GroupCard(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                ) {
+                    SettingRow(
+                        icon = Icons.Default.Headset,
+                        label = stringResource(R.string.contact_service),
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { showServiceDialog = true }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.AutoMirrored.Filled.Help,
+                        label = stringResource(R.string.faq),
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        },
+                        onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 
@@ -409,263 +531,39 @@ fun UserInfoPage(
 }
 
 @Composable
-private fun BalanceCard(
-    balance: Float,
-    campusCard: String?,
-    onRechargeClick: () -> Unit,
-    onCampusCardClick: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
-        shadowElevation = AppElevation.level2,
-        color = Color.Transparent,
-    ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    Brush.linearGradient(listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)),
-                    shape = RoundedCornerShape(AppDimens.cardRadius)
-                )
-                .padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.account_balance),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 28.sp
-                        ),
-                        color = Color.White
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = stringResource(R.string.campus_card) + "：" +
-                            if (campusCard != null) stringResource(R.string.bind) else stringResource(R.string.not_bound),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.clickable(onClick = onCampusCardClick)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.clickable(onClick = onRechargeClick),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.go_recharge),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderQuickGrid(
-    modifier: Modifier = Modifier,
-    pendingPaymentCount: Int,
-    processingCount: Int,
-    pendingPickupCount: Int,
-    onPendingPaymentClick: () -> Unit,
-    onProcessingClick: () -> Unit,
-    onPendingPickupClick: () -> Unit,
-    onAllClick: () -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OrderQuickEntry(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Schedule,
-                label = stringResource(R.string.order_status_pending_payment),
-                count = pendingPaymentCount,
-                onClick = onPendingPaymentClick
-            )
-            Box(
-                modifier = Modifier
-                    .width(0.5.dp)
-                    .height(72.dp)
-                    .align(Alignment.CenterVertically)
-                    .background(AppColors.colorScheme.divider)
-            )
-            OrderQuickEntry(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.LocalLaundryService,
-                label = stringResource(R.string.order_status_washing),
-                count = processingCount,
-                onClick = onProcessingClick
-            )
-            Box(
-                modifier = Modifier
-                    .width(0.5.dp)
-                    .height(72.dp)
-                    .align(Alignment.CenterVertically)
-                    .background(AppColors.colorScheme.divider)
-            )
-            OrderQuickEntry(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.Inventory,
-                label = stringResource(R.string.order_status_ready_for_pickup),
-                count = pendingPickupCount,
-                onClick = onPendingPickupClick
-            )
-            Box(
-                modifier = Modifier
-                    .width(0.5.dp)
-                    .height(72.dp)
-                    .align(Alignment.CenterVertically)
-                    .background(AppColors.colorScheme.divider)
-            )
-            OrderQuickEntry(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.History,
-                label = stringResource(R.string.all),
-                count = null,
-                onClick = onAllClick
-            )
-        }
-    }
-}
-
-@Composable
-private fun OrderQuickEntry(
-    modifier: Modifier = Modifier,
+private fun SettingRow(
     icon: ImageVector,
     label: String,
-    count: Int?,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Column(
-        modifier = modifier
-            .pressScale(interactionSource, 0.95f)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = onClick
-            )
-            .padding(vertical = AppDimens.cardPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
-                .background(AppColors.colorScheme.primaryLight),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                tint = AppColors.colorScheme.primary
-            )
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = AppColors.colorScheme.textPrimary
-        )
-        if (count != null && count > 0) {
-            Text(
-                text = stringResource(R.string.order_count_format, count),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.primary
-            )
-        } else {
-            Spacer(modifier = Modifier.height(14.dp))
-        }
-    }
-}
-
-@Composable
-private fun FunctionItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
     trailing: @Composable () -> Unit = {
-        Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = AppColors.colorScheme.textSecondary
+        )
     },
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pressScale(interactionSource, 0.98f)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = onClick
-            ),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+            .pressable(onClick = onClick, scaleFactor = 0.98f)
+            .padding(vertical = AppDimens.spaceSm),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
-                    .background(AppColors.colorScheme.primaryLight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = AppColors.colorScheme.primary
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.textPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
-                )
-            }
-            trailing()
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = AppColors.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = AppColors.colorScheme.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        trailing()
     }
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -119,27 +119,18 @@ fun BottomBar(navController: NavHostController) {
     val view = currentView()
 
     Column {
-        // 渐变分隔替代硬线 — Apple 滚动边缘效果
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            AppColors.colorScheme.divider.copy(alpha = 0.5f),
-                            Color.Transparent
-                        )
-                    )
-                )
+        // 顶部分隔线 — 0.5dp 细线替代渐变
+        HorizontalDivider(
+            thickness = 0.5.dp,
+            color = AppColors.colorScheme.divider
         )
-        // 半透明底部栏 — 内容在下方滚动
+        // 底部栏
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(AppColors.colorScheme.surface.copy(alpha = 0.85f))
                 .windowInsetsPadding(WindowInsets.navigationBars)
-                .height(56.dp),
+                .height(64.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -172,10 +163,15 @@ private fun BottomNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    // 选中态图标尺寸动画 — 选中时略微放大
+    // 选中态图标尺寸动画 — 选中时放大至 28dp
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 26.dp else 24.dp,
+        targetValue = if (isSelected) 28.dp else 24.dp,
         label = "iconSize"
+    )
+    // 选中态药丸背景色动画 — 选中时 primaryLight，未选中透明
+    val pillColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primaryLight else Color.Transparent,
+        label = "pillColor"
     )
     // 选中态颜色动画 — 平滑过渡
     val iconColor by animateColorAsState(
@@ -190,15 +186,24 @@ private fun BottomNavItem(
     Column(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(iconSize),
-            tint = iconColor
-        )
+        // 药丸背景容器 — 选中时显示 primaryLight 圆角背景
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(pillColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(iconSize),
+                tint = iconColor
+            )
+        }
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
@@ -207,14 +212,14 @@ private fun BottomNavItem(
         )
         Spacer(modifier = Modifier.height(2.dp))
         if (isSelected) {
+            // 选中指示条 — 3dp 高、20dp 宽
             Box(
                 modifier = Modifier
-                    .width(16.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(1.dp))
+                    .width(20.dp)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.5.dp))
                     .background(AppColors.colorScheme.primary)
             )
         }
     }
 }
-

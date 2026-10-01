@@ -50,6 +50,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** 四元组辅助类（替代 Triple，支持 4 个参数） */
+private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
 /**
  * 观象台首页（原型 DivHome）：干支天象头 + 缓转罗盘 + 四术玉牌（竖排名）+ 今日一签 + 案卷。
  */
@@ -87,7 +90,7 @@ fun DivHomePage(
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp),
+                .padding(vertical = 4.dp),
             contentAlignment = Alignment.Center,
         ) {
             CompassDial(modifier = Modifier.size(112.dp))
@@ -95,18 +98,19 @@ fun DivHomePage(
 
         // 四术玉牌
         val methods = listOf(
-            Triple(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc),
-            Triple(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc),
-            Triple(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc),
-            Triple(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc),
+            Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_use_for),
+            Quad(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, R.string.div_method_meihua_use_for),
+            Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for),
+            Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for),
         )
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
             methods.chunked(2).forEach { rowMethods ->
-                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(14.dp)) {
-                    rowMethods.forEach { (method, nameRes, descRes) ->
+                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    rowMethods.forEach { (method, nameRes, descRes, useForRes) ->
                         JadeTile(
                             name = stringResource(nameRes),
                             desc = stringResource(descRes),
+                            useFor = stringResource(useForRes),
                             tag = if (method == DivMethod.LIU_YAO) stringResource(R.string.div_method_liuyao_tag) else null,
                             onClick = {
                                 view.performHaptic(HapticEffect.LIGHT)
@@ -226,11 +230,12 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
     }
 }
 
-/** 四术玉牌：竖排术名 + 一句话定位 + 推荐标 */
+/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标 */
 @Composable
 private fun JadeTile(
     name: String,
     desc: String,
+    useFor: String?,
     tag: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -239,7 +244,7 @@ private fun JadeTile(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier
-            .height(148.dp)
+            .height(156.dp)
             .pressScale(interactionSource, 0.97f)
             .clip(RoundedCornerShape(16.dp))
             .background(c.surface)
@@ -247,6 +252,10 @@ private fun JadeTile(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(desc, fontSize = 11.5.sp, lineHeight = 18.sp, color = c.textSecondary)
+            if (useFor != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(useFor, fontSize = 10.5.sp, color = c.textTertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         // 竖排术名：writing-mode 语义用逐字换行实现
         Column(

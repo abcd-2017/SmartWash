@@ -1,10 +1,6 @@
 package com.smartwash.common.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -60,7 +56,7 @@ import com.smartwash.common.ui.theme.TextSecondary
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
-import com.smartwash.common.utils.pressAlpha
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
 
 // ========== 页面头部 ==========
@@ -102,6 +98,76 @@ fun PageHeader(
     }
 }
 
+// ========== 容器组件 ==========
+
+/**
+ * 分组容器 — surfaceVariant 浅灰底 + 12dp 圆角，无边框无阴影
+ * 用于：设置页分组、订单详情信息组、内容分区
+ */
+@Composable
+fun GroupCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppDimens.radiusMd),
+        color = AppColors.colorScheme.surfaceVariant,
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(AppDimens.cardPadding),
+            content = content
+        )
+    }
+}
+
+/**
+ * 列表行 — 无 Surface，Row + 底部分隔线
+ * 用于：服务套餐列表、订单列表、设置项
+ */
+@Composable
+fun ListRow(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    leading: @Composable (() -> Unit)? = null,
+    headline: @Composable () -> Unit,
+    supporting: @Composable (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.98f)
+                else Modifier
+            )
+            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            headline()
+            if (supporting != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                supporting()
+            }
+        }
+        if (trailing != null) {
+            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+            trailing()
+        }
+    }
+    HorizontalDivider(
+        thickness = 0.5.dp,
+        color = AppColors.colorScheme.divider,
+        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+    )
+}
+
 // ========== 统一卡片 ==========
 
 @Composable
@@ -110,19 +176,12 @@ fun AppCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(AppDimens.cardRadius)
-    val interactionSource = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(AppDimens.radiusLg)
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = LocalIndication.current,
-                        onClick = onClick
-                    )
-                    .pressAlpha(interactionSource, 0.92f)
+                if (onClick != null) Modifier.pressable(onClick = onClick, alphaFactor = 0.92f)
                 else Modifier
             ),
         shape = shape,
@@ -186,26 +245,19 @@ fun SettingRow(
     trailing: @Composable () -> Unit = {},
     onClick: (() -> Unit)? = null,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = LocalIndication.current,
-                        onClick = onClick
-                    )
-                    .pressScale(interactionSource, 0.98f)
+                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.98f)
                 else Modifier
             )
-            .height(56.dp)
+            .height(48.dp)
             .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
-        Spacer(modifier = Modifier.width(12.dp))
+        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 32.dp, iconSize = 16.dp)
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -231,39 +283,31 @@ fun EmptyState(
     icon: ImageVector,
     message: String,
     modifier: Modifier = Modifier,
+    action: @Composable (() -> Unit)? = null,
 ) {
-    AnimatedVisibility(
-        visible = true,
-        enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300))
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(vertical = 64.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // 图标 — 浅色圆形背景
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(44.dp),
-                    tint = AppColors.colorScheme.textSecondary
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.colorScheme.textSecondary
-            )
+        // 图标 — 直接着色，无圆形背景
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = AppColors.colorScheme.textTertiary
+        )
+        Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = AppColors.colorScheme.textSecondary
+        )
+        if (action != null) {
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            action()
         }
     }
 }
@@ -277,19 +321,14 @@ fun LoadingState(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 64.dp),
+            .padding(vertical = 32.dp),
         contentAlignment = Alignment.Center
     ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn(animationSpec = tween(300))
-        ) {
-            CircularProgressIndicator(
-                color = AppColors.colorScheme.primary,
-                strokeWidth = 3.dp,
-                modifier = Modifier.size(36.dp)
-            )
-        }
+        CircularProgressIndicator(
+            color = AppColors.colorScheme.primary,
+            strokeWidth = 3.dp,
+            modifier = Modifier.size(32.dp)
+        )
     }
 }
 

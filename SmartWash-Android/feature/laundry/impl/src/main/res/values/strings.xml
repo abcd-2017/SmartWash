@@ -7,6 +7,7 @@
     <!-- 服务 tab 页 -->
     <string name="laundry_service">洗衣服务</string>
     <string name="service_page_subtitle">选择您需要的洗护服务</string>
+    <string name="service_reserve">预约</string>
     <string name="currency_format">¥%s</string>
 
     <!-- 洗衣预约页 -->

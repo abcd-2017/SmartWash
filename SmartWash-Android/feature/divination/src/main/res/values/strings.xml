@@ -10,13 +10,17 @@
     <!-- 四术玉牌 -->
     <string name="div_method_liuyao_name">六爻</string>
     <string name="div_method_liuyao_desc">摇铜钱问一事\n装卦最全 · 应期可推</string>
+    <string name="div_method_liuyao_use_for">日常决疑 · 具体事件</string>
     <string name="div_method_liuyao_tag">推 荐</string>
     <string name="div_method_meihua_name">梅花</string>
     <string name="div_method_meihua_desc">时间数字起卦\n体用生克 · 快占一事</string>
+    <string name="div_method_meihua_use_for">见物占数 · 随机应变</string>
     <string name="div_method_qimen_name">奇门</string>
     <string name="div_method_qimen_desc">九宫排局\n择时择方 · 趋避有道</string>
+    <string name="div_method_qimen_use_for">趋吉避凶 · 方位选择</string>
     <string name="div_method_liuren_name">六壬</string>
     <string name="div_method_liuren_desc">月将加时 · 三传定机\n人事占验最精</string>
+    <string name="div_method_liuren_use_for">精细推算 · 复杂事务</string>
 
     <!-- 今日一签 -->
     <string name="div_sign_seal">签</string>
