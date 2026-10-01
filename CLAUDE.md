@@ -18,7 +18,7 @@
 
 ## 全局规则
 
-- **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，确保一个 commit 对应一个完整功能点。commit message 中文，格式 `<type>(<scope>): <描述>`，scope 取 `Backend` / `Android` / `Harmony` / `Web` / `SQL`，跨端改动拆分提交或在描述中列明。
+- **提交代码时使用 `commit-commands:commit` skill**：提交前检查变更范围，确保一个 commit 对应一个完整功能点。commit message 遵循 [commit-conventions.md](commit-conventions.md)（Conventional Commits 中文精简版）。**描述必须写解决了什么问题，不要写怎么解决问题**（例：`fix(Android): 修复点击设置页闪退`，而非 `fix(Android): MainActivity 改用 hiltViewModel`）。跨端改动拆分提交或在描述中列明。
 - **改动任何接口必须四端联动检查**。同一个接口最多被 4 处消费，改路径/参数/返回结构时按下表核对：
 
 | 改动内容 | 需要同步的位置 |

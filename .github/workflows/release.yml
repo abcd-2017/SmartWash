@@ -263,11 +263,21 @@ jobs:
 
           mkdir -p release-assets
 
+          # 计算 APK 文件大小（字节），供 Android 端更新弹窗展示
+          APK_PATH=$(find release-assets -name "*.apk" -type f | head -1)
+          if [[ -z "$APK_PATH" ]]; then
+            echo "ERROR: APK file not found in release-assets"
+            exit 1
+          fi
+          FILE_SIZE=$(stat -c%s "$APK_PATH")
+          echo "APK file size: ${FILE_SIZE} bytes"
+
           cat > release-assets/version.json << EOF
           {
             "versionCode": ${VERSION_CODE},
             "versionName": "${VERSION}",
             "fileName": "app-${VERSION}.apk",
+            "fileSize": ${FILE_SIZE},
             "sha256": "${{ needs.android.outputs.sha256 }}",
             "forceUpdate": false,
             "minVersionCode": 1000000,

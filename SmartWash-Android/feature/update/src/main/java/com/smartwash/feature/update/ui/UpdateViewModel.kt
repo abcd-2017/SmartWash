@@ -22,6 +22,8 @@ sealed interface UpdateState {
     data object Idle : UpdateState
     data object Checking : UpdateState
     data class UpdateAvailable(val version: AppVersionVo) : UpdateState
+    /** 准备下载中（获取预签名地址阶段），UI 应展示加载指示器 */
+    data object Preparing : UpdateState
     data class Downloading(val progress: Int) : UpdateState
     data class Downloaded(val file: File) : UpdateState
     data object Installing : UpdateState
@@ -108,6 +110,14 @@ class UpdateViewModel @Inject constructor(
         ) return
         latestVersion = version
         _state.value = UpdateState.UpdateAvailable(version)
+    }
+
+    /**
+     * 准备下载：切换至 Preparing 状态（UI 展示加载指示器），由 UI 层在确认通知权限后调用。
+     * 调用方需在调用本方法前确保已获取 POST_NOTIFICATIONS 权限。
+     */
+    fun preparingDownload() {
+        _state.value = UpdateState.Preparing
     }
 
     /**

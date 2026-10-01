@@ -1,17 +1,22 @@
 package com.smartwash.ui.activity
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
@@ -55,9 +60,30 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var workManager: WorkManager
     @Inject lateinit var updateEventBus: UpdateEventBus
 
+    /**
+     * 启动时申请通知权限（Android 13+）：APK 下载进度需要在通知栏展示，
+     * 未授权则通知不显示，但下载功能仍可用。
+     */
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // 无论授权与否都不阻塞用户，仅影响通知栏是否展示下载进度
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 启动时主动申请通知权限（Android 13+ 需要运行时授权）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         setContent {
             val navController = rememberNavController()
             val context = LocalContext.current
@@ -65,7 +91,7 @@ class MainActivity : ComponentActivity() {
             val reduceMotion = isReduceMotionEnabled(context)
 
             // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）
-            val updateViewModel: UpdateViewModel = viewModel()
+            val updateViewModel: UpdateViewModel = hiltViewModel()
             UpdateFlow(context, workManager, updateViewModel, updateEventBus)
 
             // 收集用户域登录态事件（UserApi.loginEvents，T5.3 自 SessionEventBus 切换）：

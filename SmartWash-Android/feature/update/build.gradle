@@ -19,6 +19,9 @@ dependencies {
     // NetworkException 与 Retrofit（经 common:network 的 api 传递，AppUpdateApi/UpdateModule 消费）
     implementation project(':common:network')
 
+    // NotificationCompat（ApkDownloadWorker 前台服务通知栏进度）
+    implementation libs.androidx.core.ktx
+
     // ViewModel 基类 + viewModelScope
     implementation libs.androidx.lifecycle.viewmodel
 
