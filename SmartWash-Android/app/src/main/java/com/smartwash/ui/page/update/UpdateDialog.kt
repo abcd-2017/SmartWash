@@ -235,6 +235,49 @@ fun ForceUpdateRequiredDialog(
 }
 
 /**
+ * 准备下载弹窗 — 获取预签名地址阶段展示加载指示器，不允许关闭
+ */
+@Composable
+fun DownloadPreparingDialog() {
+    Dialog(
+        onDismissRequest = { /* 准备中不允许关闭 */ },
+        properties = DialogProperties(
+            dismissOnClickOutside = false,
+            dismissOnBackPress = false,
+        ),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.cardRadius),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.level4,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(40.dp),
+                    color = AppColors.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.preparing_download),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.preparing_download_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            }
+        }
+    }
+}
+
+/**
  * 下载进度弹窗
  */
 @Composable

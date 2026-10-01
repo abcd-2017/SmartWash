@@ -135,6 +135,17 @@
     <string name="force_update_icon">⚠️</string>
     <string name="download_complete_icon">✅</string>
     <string name="download_icon">📥</string>
+    <string name="preparing_download">正在准备下载</string>
+    <string name="preparing_download_desc">正在获取下载地址，请稍候...</string>
+    <!-- ==================== 下载通知（通知栏进度） ==================== -->
+    <string name="download_channel_name">应用更新下载</string>
+    <string name="download_channel_desc">显示 APK 更新包的下载进度</string>
+    <string name="download_notification_title">正在下载 SmartWash 更新</string>
+    <string name="download_notification_progress">%1$s / %2$s</string>
+    <string name="download_notification_complete">更新包下载完成</string>
+    <string name="download_notification_complete_tap">点击安装 SmartWash %s</string>
+    <string name="download_notification_failed">下载失败</string>
+    <string name="download_notification_retry">下载更新失败，点击重试</string>
 
     <!-- 观象台（占卜模块）文案已随 :feature:divination 迁入模块内 strings.xml（T4.1） -->
 

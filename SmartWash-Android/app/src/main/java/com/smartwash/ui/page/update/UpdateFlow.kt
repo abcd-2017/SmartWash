@@ -1,7 +1,12 @@
 package com.smartwash.ui.page.update
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -17,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -50,6 +56,27 @@ internal fun UpdateFlow(
     updateEventBus: UpdateEventBus,
 ) {
     val updateState by updateViewModel.state.collectAsState()
+
+    // 通知权限 launcher：用户点击「立即更新」时，若无权限则弹出系统授权请求
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // 授权通过：进入准备下载状态，开始获取预签名地址
+            updateViewModel.preparingDownload()
+            updateViewModel.startDownload(context)
+        }
+        // 未授权则什么都不做，弹窗保持 UpdateAvailable 状态（用户可再次点击）
+    }
+
+    // 检查通知权限是否已授予（Android 13+ 需要运行时权限）
+    val hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(
+            context, Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
+    }
 
     // 壳层只收集事件总线广播的「发现新版本」事件驱动弹窗状态；
     // 事件可能早于本订阅发出（总线 replay 兜底），重放已由 ViewModel 防重挡下
@@ -116,18 +143,38 @@ internal fun UpdateFlow(
             if (version.forceUpdate) {
                 ForceUpdateRequiredDialog(
                     onUpdateNow = {
-                        updateViewModel.startDownload(context)
+                        handleUpdateClick(
+                            context = context,
+                            hasPermission = hasNotificationPermission,
+                            launcher = notificationPermissionLauncher,
+                            onGranted = {
+                                updateViewModel.preparingDownload()
+                                updateViewModel.startDownload(context)
+                            }
+                        )
                     }
                 )
             } else {
                 UpdateAvailableDialog(
                     version = version,
                     onUpdateNow = {
-                        updateViewModel.startDownload(context)
+                        handleUpdateClick(
+                            context = context,
+                            hasPermission = hasNotificationPermission,
+                            launcher = notificationPermissionLauncher,
+                            onGranted = {
+                                updateViewModel.preparingDownload()
+                                updateViewModel.startDownload(context)
+                            }
+                        )
                     },
                     onUpdateLater = { updateViewModel.reset() }
                 )
             }
+        }
+        is UpdateState.Preparing -> {
+            // 准备下载中：展示加载指示器，不关闭弹窗
+            DownloadPreparingDialog()
         }
         is UpdateState.Downloading -> {
             DownloadProgressDialog(
@@ -151,6 +198,25 @@ internal fun UpdateFlow(
             )
         }
         else -> { /* Idle / Checking / LatestVersion / Error / Installing 不弹窗 */ }
+    }
+}
+
+/**
+ * 处理「立即更新」按钮点击：检查通知权限，已授权则直接开始，未授权则请求。
+ */
+private fun handleUpdateClick(
+    context: Context,
+    hasPermission: Boolean,
+    launcher: androidx.activity.result.ActivityResultLauncher<String>,
+    onGranted: () -> Unit,
+) {
+    if (hasPermission) {
+        onGranted()
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        // Android 12 及以下无需运行时权限
+        onGranted()
     }
 }
 
@@ -208,6 +274,7 @@ private fun enqueueApkDownload(
     val inputData = workDataOf(
         ApkDownloadWorker.KEY_APK_URL to downloadUrl,
         ApkDownloadWorker.KEY_SHA256 to version.sha256,
+        "versionName" to version.versionName,
     )
 
     val downloadRequest = OneTimeWorkRequestBuilder<ApkDownloadWorker>()

@@ -3,6 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
     <!--  网络权限  -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--  通知权限（APK 下载进度通知栏展示，Android 13+ 需运行时授权）  -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--  前台服务权限（APK 下载 Worker 提升为前台服务保活，Android 14+ 需声明 foregroundServiceType）  -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!--  安装未知应用权限与 APK FileProvider 已随热更新链路迁 :feature:update（T3.1，manifest merger 合入）  -->
 
     <application
