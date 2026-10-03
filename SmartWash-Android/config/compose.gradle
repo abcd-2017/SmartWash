@@ -1,0 +1,23 @@
+// Compose 模块配置：kotlin compose 编译器插件 + buildFeatures + Compose BOM + 基础依赖
+// 用法：apply from: "$rootDir/config/compose.gradle"
+// 注意：需在 android-library.gradle 之后应用
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+
+def libs = rootProject.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension).named('libs')
+def bom = libs.findLibrary('androidx-compose-bom').get()
+dependencies {
+    implementation platform(bom)
+    androidTestImplementation platform(bom)
+    implementation libs.findLibrary('androidx-ui').get()
+    implementation libs.findLibrary('androidx-ui-graphics').get()
+    implementation libs.findLibrary('androidx-ui-tooling-preview').get()
+    implementation libs.findLibrary('androidx-material3').get()
+    debugImplementation libs.findLibrary('androidx-ui-tooling').get()
+    debugImplementation libs.findLibrary('androidx-ui-test-manifest').get()
+}

@@ -3,12 +3,9 @@
 // 解读网关 DivinationApi + 观象台 7 页面；经 app 的 Hilt 聚合对外提供页面 composable
 // 与 Repository（app → feature 依赖方向）。路由常量 DivRoute 为模块内单一事实来源，
 // app 壳层 PageConstant.Div* 委托其值（T8.1 统一拆路由后由本模块直接对外暴露）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.divination'

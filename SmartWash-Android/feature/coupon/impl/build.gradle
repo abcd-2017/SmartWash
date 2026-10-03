@@ -9,12 +9,9 @@
 // app 壳的 UserCouponPagingSource 为零引用死代码，随本任务删除（不迁入），
 // pagingFlow 双份副本（app 原件/payment-impl 副本）维持现状待 T8.2 统一收敛。
 // 依赖方向：coupon:api / common（禁止依赖 app 壳与其他 feature-impl）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.coupon'

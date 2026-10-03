@@ -3,11 +3,8 @@
 // UpdateViewModel/UpdateState/AppVersionVo/ApkInstaller 等（app → feature 依赖方向）。
 // 调研结论：链路内无 Compose/公共 UI 组件消费，不引 smartwash.compose 与 common:ui；
 // core:init 供 UpdateInitTask（启动静默检查，T3.2 经 @IntoSet 注册进 InitTaskRegistry）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.update'

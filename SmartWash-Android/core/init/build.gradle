@@ -1,10 +1,7 @@
 // :core:init —— 启动任务编排模块（零业务依赖：不依赖 common 任何模块、不依赖 Compose）
 // 依赖方向：各 feature-impl 模块 → 本模块（实现 InitTask 并经 Hilt @IntoSet 注册）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 buildSrc/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.core.init'

@@ -4,10 +4,7 @@
 // PaymentRepository/RechargeRepository 仅支付/充值页面自用），跨模块诉求只有导航：
 // order-impl 订单页跳支付页、user-impl 用户中心跳充值页、app 壳 NavHost 注册。
 // 后续出现真实跨模块数据消费方时再增补接口与模型（YAGNI，避免提前固化契约）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-}
+apply from: "$rootDir/config/android-library.gradle"
 
 android {
     namespace 'com.smartwash.feature.payment.api'

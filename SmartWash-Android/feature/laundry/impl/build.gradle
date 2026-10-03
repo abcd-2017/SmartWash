@@ -7,12 +7,9 @@
 // 消费 user-api / order-api 经接口（LaundryViewModel 注入 UserApi/OrderApi）。
 // 依赖方向：laundry-api / user-api / order-api / payment-api / common
 // （禁止依赖 app 壳与其他 feature-impl）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.laundry'

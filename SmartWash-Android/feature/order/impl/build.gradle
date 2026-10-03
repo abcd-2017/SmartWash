@@ -5,12 +5,9 @@
 // 依赖方向：order-api / common（禁止依赖 app 壳与其他 feature-impl）。
 // T6.1 调研结论：订单域不调用 PaymentRepository（仅经导航跳转支付页，无数据依赖），
 // 故无需 payment seam；订单域也不直接消费用户域（无 UserApi 注入点）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.order.impl'

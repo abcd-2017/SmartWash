@@ -1,0 +1,11 @@
+// Hilt + KSP：dagger.hilt 插件 + ksp 插件 + hilt-android 依赖 + hilt-compiler 注解处理器
+// 用法：apply from: "$rootDir/config/hilt.gradle"
+// 注意：需在 android-library.gradle 之后应用
+apply plugin: 'com.google.dagger.hilt.android'
+apply plugin: 'com.google.devtools.ksp'
+
+def libs = rootProject.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension).named('libs')
+dependencies {
+    implementation libs.findLibrary('hilt-android').get()
+    ksp libs.findLibrary('hilt-compiler').get()
+}

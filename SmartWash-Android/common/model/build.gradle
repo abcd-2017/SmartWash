@@ -1,8 +1,6 @@
 // :common:model —— 跨模块共享的纯数据契约（响应信封 ApiResult/PageData、HttpStatusCode、RequestState）。
 // 依赖方向底座：feature-api → common:*，业务域模型一律不进本模块（跟各自 feature 的 api 模块走）。
-plugins {
-    id 'smartwash.android.library'
-}
+apply from: "$rootDir/config/android-library.gradle"
 
 android {
     namespace 'com.smartwash.common.model'
