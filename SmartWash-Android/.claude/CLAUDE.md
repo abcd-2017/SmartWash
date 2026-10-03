@@ -112,7 +112,7 @@ abstract class XxxInitModule {
 
 ## 已知坑（改动前先看）
 
-详见 [android-known-pitfalls.md](android-known-pitfalls.md)。
+详见 [android-known-pitfalls.md](.claude/android-known-pitfalls.md)。
 
 ## ⛔ Android 特化红线操作表（绝对禁止）
 
