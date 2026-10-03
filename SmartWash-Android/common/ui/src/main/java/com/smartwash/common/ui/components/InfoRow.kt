@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 
@@ -20,11 +22,13 @@ fun InfoRow(
     label: String,
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    valueStyle: TextStyle = MaterialTheme.typography.bodyMedium,
+    rowHeight: Dp = 40.dp,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp),
+            .height(rowHeight),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -36,7 +40,7 @@ fun InfoRow(
         Spacer(Modifier.width(24.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = valueStyle,
             color = valueColor
         )
     }

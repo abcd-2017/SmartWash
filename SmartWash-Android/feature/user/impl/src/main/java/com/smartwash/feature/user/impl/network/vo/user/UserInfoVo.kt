@@ -18,6 +18,8 @@ data class UserInfoVo(
     val balance: Float,
     val avatar: String? = null,
     val schoolVo: School,
+    val couponCount: Int = 0,
+    val orderCount: Int = 0,
 ) {
     /**
      * 用户所属学校（JSON 键 schoolVo，形态对齐 school 域 SchoolVo）。

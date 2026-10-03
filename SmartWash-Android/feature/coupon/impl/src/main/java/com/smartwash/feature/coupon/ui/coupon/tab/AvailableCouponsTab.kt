@@ -30,6 +30,8 @@ import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.coupon.CouponStatus
 
 @Composable
@@ -78,15 +80,15 @@ fun CouponCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 左侧金额
@@ -96,7 +98,7 @@ fun CouponCard(
             ) {
                 Text(
                     text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primary
                 )
             }

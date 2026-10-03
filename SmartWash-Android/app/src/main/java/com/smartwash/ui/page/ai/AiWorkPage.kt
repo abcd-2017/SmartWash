@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.ai
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,16 +41,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.R
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 
 /**
@@ -81,64 +87,105 @@ fun AiWorkPage(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = stringResource(R.string.ai_quick_tasks),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = AppTextStyles.SectionTitle,
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
+                Column(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    QuickTaskChip(
-                        icon = Icons.Default.LocalLaundryService,
-                        label = stringResource(R.string.ai_task_choose_package),
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickTaskChip(
-                        icon = Icons.Default.Inventory,
-                        label = stringResource(R.string.ai_task_check_order),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
-                ) {
-                    QuickTaskChip(
-                        icon = Icons.Default.LocalOffer,
-                        label = stringResource(R.string.ai_task_use_coupon),
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickTaskChip(
-                        icon = Icons.Default.Wallet,
-                        label = stringResource(R.string.ai_task_recharge),
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickTaskCard(
+                            icon = Icons.Default.LocalLaundryService,
+                            label = stringResource(R.string.ai_task_choose_package),
+                            gradient = Brush.linearGradient(
+                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickTaskCard(
+                            icon = Icons.Default.Inventory,
+                            label = stringResource(R.string.ai_task_check_order),
+                            gradient = Brush.linearGradient(
+                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickTaskCard(
+                            icon = Icons.Default.LocalOffer,
+                            label = stringResource(R.string.ai_task_use_coupon),
+                            gradient = Brush.linearGradient(
+                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuickTaskCard(
+                            icon = Icons.Default.Wallet,
+                            label = stringResource(R.string.ai_task_recharge),
+                            gradient = Brush.linearGradient(
+                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
             // 最近工作
             item {
+                Text(
+                    text = stringResource(R.string.ai_recent_work),
+                    style = AppTextStyles.SectionTitle,
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 GroupCard(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 ) {
-                    Text(
-                        text = stringResource(R.string.ai_recent_work),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = AppDimens.spaceSm)
-                    )
-                    Text(
-                        text = stringResource(R.string.ai_empty_recent),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textTertiary
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 30.dp, horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 滚筒圆空态插画
+                        Box(
+                            modifier = Modifier.size(60.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.foundation.Canvas(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                drawCircle(
+                                    color = Color(0xFFD6DAD4),
+                                    radius = size.minDimension / 2 - 4.dp.toPx(),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.4.dp.toPx())
+                                )
+                                drawCircle(
+                                    color = Color(0xFFE3E7E2),
+                                    radius = size.minDimension / 4,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+                        Text(
+                            text = stringResource(R.string.ai_empty_recent),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.sp,
+                                color = AppColors.colorScheme.textTertiary
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -147,46 +194,67 @@ fun AiWorkPage(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = AppColors.colorScheme.surface,
-            shadowElevation = 4.dp
+            shadowElevation = 0.dp
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = {
-                        Text(
-                            stringResource(R.string.ai_input_placeholder),
-                            color = AppColors.colorScheme.textTertiary
-                        )
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(AppDimens.radiusFull),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                IconButton(
-                    onClick = { /* TODO: 接入 AI */ },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(AppColors.colorScheme.primary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = stringResource(R.string.ai_send),
-                        tint = Color.White
+                    .border(
+                        width = 0.5.dp,
+                        color = AppColors.colorScheme.outline,
+                        shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
                     )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = {
+                            Text(
+                                stringResource(R.string.ai_input_placeholder),
+                                color = AppColors.colorScheme.textTertiary
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .border(
+                                width = 1.dp,
+                                color = AppColors.colorScheme.outline,
+                                shape = RoundedCornerShape(23.dp)
+                            ),
+                        shape = RoundedCornerShape(23.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    IconButton(
+                        onClick = { /* TODO: 接入 AI */ },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                                )
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = stringResource(R.string.ai_send),
+                            tint = Color.White,
+                            modifier = Modifier.size(17.dp)
+                        )
+                    }
                 }
             }
         }
@@ -194,35 +262,46 @@ fun AiWorkPage(
 }
 
 @Composable
-private fun QuickTaskChip(
+private fun QuickTaskCard(
     icon: ImageVector,
     label: String,
+    gradient: Brush,
     modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier
-            .height(56.dp)
+            .height(58.dp)
             .pressable(onClick = { /* TODO */ }),
-        shape = RoundedCornerShape(AppDimens.radiusMd),
-        color = AppColors.colorScheme.surfaceVariant
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = Color.Transparent
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = AppDimens.spaceSm),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textPrimary,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(19.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                )
+            }
         }
     }
 }

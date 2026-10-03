@@ -45,7 +45,7 @@ fun ClaimedCouponsTab(claimedCoupons: List<UserCouponVo>) {
             }
         } else {
             items(claimedCoupons) { coupon ->
-                UserCouponCard(coupon = coupon, isHistorical = false)
+                UserCouponCard(couponVo = coupon, isHistorical = false)
             }
         }
     }

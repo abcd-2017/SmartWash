@@ -1,6 +1,6 @@
 ---
 name: smartwash-android
-description: SmartWash Android 代理（Kotlin / Jetpack Compose / Hilt）。开发、审查、调试、测试 Android 代码时使用。执行前必读 SmartWash-Android/CLAUDE.md。
+description: SmartWash Android 代理（Kotlin / Jetpack Compose / Hilt）。开发、审查、调试、测试 Android 代码时使用。执行前必读 .claude/CLAUDE.md。
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
@@ -12,7 +12,7 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - **Bug 修复**：`/diagnosing-bugs`
 - **架构决策**：`/improve-codebase-architecture` + `/codebase-design`
 - **UI/动效专项**：参照 `find-animation-opportunities` / `improve-animations` / `animate` skill
-- **接口变更**：对照根目录 `CLAUDE.md` 四端联动检查表，交付说明中列出鸿蒙端需要对齐的文件
+- **接口变更**：对照 `.claude/CLAUDE.md` 四端联动检查表，交付说明中列出鸿蒙端需要对齐的文件
 
 ## 项目知识（CLAUDE.md 已详列，此处为速查）
 
@@ -27,4 +27,4 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - App.globalRequestBefore/AfterCallback 静态 lateinit 在 setContent 前发请求会崩
 - 测试除模板类外还有观象台四套算法内核的锚点单测
 
-完整项目规则见 `SmartWash-Android/CLAUDE.md`，通用规则见 `docs/agents/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。
+完整项目规则见 `.claude/CLAUDE.md`，通用规则见 `docs/agents/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。

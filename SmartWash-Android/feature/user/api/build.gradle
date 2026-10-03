@@ -4,10 +4,7 @@
 // 用户域实现细节（SessionManager / UserRepository / 页面）全部留在 :feature:user:impl（T5.2）。
 // 注意：与 app 内 Retrofit 接口 com.smartwash.network.api.UserApi 同名不同包，
 // T5.2 迁移 UserRepository 时两者会共存于 user-impl，import 需显式区分（或届时重命名 Retrofit 侧）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-}
+apply from: "$rootDir/config/android-library.gradle"
 
 android {
     namespace 'com.smartwash.feature.user.api'

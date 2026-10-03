@@ -1,11 +1,8 @@
 // :common:database —— Room 缓存库（AppDatabase + Laundry/School/Coupon 三表供给）。
 // 观象台卦历已拆为 app 内 divination/database 的独立 DivinationDatabase（T2.4 解耦，
 // 阶段 4 随 feature:divination 迁走）；Entity↔VO 映射随消费方留 app（本模块不依赖业务 VO）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.common.database'

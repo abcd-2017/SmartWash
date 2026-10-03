@@ -1,0 +1,19 @@
+// Android Library 通用配置：compileSdk 35 / minSdk 30 / Java 17 / Kotlin jvmTarget 17
+// 用法：apply from: "$rootDir/config/android-library.gradle"
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    compileSdk 35
+    defaultConfig {
+        minSdk 30
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.matching { it.class.name.contains('KotlinCompile') }.configureEach {
+    kotlinOptions.jvmTarget = '17'
+}

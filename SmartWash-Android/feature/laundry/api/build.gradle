@@ -6,10 +6,7 @@
 // 的 api 模块持有，模式同 user-api 的 UserApi / order-api 的 OrderApi）。
 // 原 user-impl 内的 SchoolSearchSource 过渡 seam（app 壳 UserImplSeamModule 实现）
 // 随本模块就位删除；T7.2 coupon 域的 CouponSource seam 删除时复制本模式。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-}
+apply from: "$rootDir/config/android-library.gradle"
 
 android {
     namespace 'com.smartwash.feature.laundry.api'

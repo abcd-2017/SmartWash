@@ -14,6 +14,8 @@ data class UserInfo(
     val balance: Float,
     val avatar: String? = null,
     val school: School,
+    val couponCount: Int = 0,
+    val orderCount: Int = 0,
 ) {
     /**
      * 用户所属学校（字段对齐现有 SchoolVo）。

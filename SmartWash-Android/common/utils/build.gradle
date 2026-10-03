@@ -1,11 +1,8 @@
 // :common:utils —— 跨模块通用工具（DataStore 封装、动效/触感、二维码、参数校验、Compose 按压反馈）。
 // 业务存储 key（AppConstant）与业务域枚举不进本模块（跟各自 feature 走）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 core/init/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.common.utils'

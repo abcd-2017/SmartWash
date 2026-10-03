@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -52,13 +53,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -69,6 +73,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.coupon.api.CouponRoute
@@ -180,34 +185,42 @@ fun UserInfoPage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = stringResource(R.string.my_profile),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = AppColors.colorScheme.onBackground
+                        style = AppTextStyles.PageTitle,
+                        color = AppColors.colorScheme.textPrimary
                     )
-                    IconButton(onClick = { navController.navigate(UserRoute.Setting.text) }) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(AppColors.colorScheme.iconContainerTeal)
+                            .clickable { navController.navigate(UserRoute.Setting.text) },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = stringResource(R.string.settings),
-                            tint = AppColors.colorScheme.textSecondary
+                            modifier = Modifier.size(18.dp),
+                            tint = AppColors.colorScheme.primary
                         )
                     }
                 }
 
-                // 身份横排（头像 48dp + 手机号 + 校区）
+                // 头像区域
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(58.dp)
                             .clickable {
                                 imagePickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -218,13 +231,13 @@ fun UserInfoPage(
                         if (avatarUploadState is RequestState.Loading) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(58.dp)
                                     .clip(CircleShape)
                                     .background(AppColors.colorScheme.primaryLight),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(24.dp),
                                     color = AppColors.colorScheme.primary,
                                     strokeWidth = 2.dp
                                 )
@@ -232,16 +245,23 @@ fun UserInfoPage(
                         } else if (userInfo?.avatar.isNullOrBlank()) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(58.dp)
                                     .clip(CircleShape)
-                                    .background(AppColors.colorScheme.primaryLight),
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                AppColors.colorScheme.primary,
+                                                AppColors.colorScheme.primaryDark
+                                            )
+                                        )
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = stringResource(R.string.avatar),
-                                    modifier = Modifier.size(24.dp),
-                                    tint = AppColors.colorScheme.primary
+                                Text(
+                                    text = userInfo?.phoneNumber?.firstOrNull()?.toString() ?: "U",
+                                    fontSize = 21.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
                                 )
                             }
                         } else {
@@ -249,7 +269,7 @@ fun UserInfoPage(
                                 model = userInfo?.avatar,
                                 contentDescription = stringResource(R.string.avatar),
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(58.dp)
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
@@ -258,7 +278,7 @@ fun UserInfoPage(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(16.dp)
+                                .size(18.dp)
                                 .clip(CircleShape)
                                 .background(AppColors.colorScheme.primary),
                             contentAlignment = Alignment.Center
@@ -266,223 +286,223 @@ fun UserInfoPage(
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,
                                 contentDescription = stringResource(R.string.change_avatar),
-                                modifier = Modifier.size(10.dp),
+                                modifier = Modifier.size(11.dp),
                                 tint = Color.White
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = userInfo?.phoneNumber ?: stringResource(R.string.username),
-                            style = MaterialTheme.typography.headlineMedium
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.textPrimary
                         )
                         Text(
                             text = userInfo?.schoolVo?.schoolName ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
+                            fontSize = 11.sp,
+                            color = AppColors.colorScheme.textTertiary,
+                            modifier = Modifier.padding(top = 5.dp)
                         )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = AppColors.colorScheme.textTertiary
+                    )
+                }
+
+                // 数据卡片：三列（余额 + 优惠券 + 累计订单）
+                GroupCard(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 余额
+                        Column(
+                            modifier = Modifier.weight(1.35f),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text(
+                                text = stringResource(R.string.wallet_balance),
+                                fontSize = 11.sp,
+                                color = AppColors.colorScheme.textTertiary
+                            )
+                            Text(
+                                text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
+                                style = AppTextStyles.DataLarge,
+                                color = AppColors.colorScheme.primaryDark,
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
+                        }
+                        // 分隔线
+                        Box(
+                            modifier = Modifier
+                                .width(0.5.dp)
+                                .height(42.dp)
+                                .background(AppColors.colorScheme.hairline)
+                        )
+                        // 优惠券
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "${userInfo?.couponCount ?: 0}",
+                                style = AppTextStyles.AmountMedium,
+                                color = AppColors.colorScheme.textPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.coupon),
+                                fontSize = 11.sp,
+                                color = AppColors.colorScheme.textTertiary,
+                                modifier = Modifier.padding(top = 5.dp)
+                            )
+                        }
+                        // 分隔线
+                        Box(
+                            modifier = Modifier
+                                .width(0.5.dp)
+                                .height(42.dp)
+                                .background(AppColors.colorScheme.hairline)
+                        )
+                        // 累计订单
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "${userInfo?.orderCount ?: 0}",
+                                style = AppTextStyles.AmountMedium,
+                                color = AppColors.colorScheme.textPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.total_orders),
+                                fontSize = 11.sp,
+                                color = AppColors.colorScheme.textTertiary,
+                                modifier = Modifier.padding(top = 5.dp)
+                            )
+                        }
                     }
                 }
 
-                // 账户分组
+                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+
+                // 账户卡片
                 GroupCard(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 ) {
                     SettingRow(
-                        icon = Icons.Default.Wallet,
-                        label = stringResource(R.string.account_balance),
-                        trailing = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textPrimary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.recharge),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.primary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = AppColors.colorScheme.textSecondary
-                                )
-                            }
-                        },
-                        onClick = { navController.navigate(PaymentRoute.Recharge.text) }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.Default.LocalOffer,
-                        label = stringResource(R.string.coupon),
-                        trailing = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = stringResource(R.string.claim),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.primary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = AppColors.colorScheme.textSecondary
-                                )
-                            }
-                        },
-                        onClick = { navController.navigate(CouponRoute.Coupon.text) }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
                         icon = Icons.Default.CreditCard,
+                        iconTint = AppColors.colorScheme.iconContainerBlue,
                         label = stringResource(R.string.campus_card),
                         trailing = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = if (userInfo?.campusCard != null) stringResource(R.string.manage) else stringResource(R.string.bind),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.primary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = AppColors.colorScheme.textSecondary
-                                )
-                            }
+                            Text(
+                                text = if (userInfo?.campusCard != null) stringResource(R.string.bound) else stringResource(R.string.not_bound),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (userInfo?.campusCard != null) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
+                            )
                         },
                         onClick = {
                             if (userInfo?.campusCard != null) showUnbindDialog = true
                             else showBindDialog = true
                         }
                     )
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.Person,
+                        iconTint = AppColors.colorScheme.iconContainerOrange,
+                        label = stringResource(R.string.school_dorm_info),
+                        trailing = {
+                            Text(
+                                text = userInfo?.schoolVo?.schoolName ?: "",
+                                fontSize = 12.sp,
+                                color = AppColors.colorScheme.textSecondary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
+                            )
+                        },
+                        onClick = { navController.navigate(UserRoute.UpdateUserInfo.text) }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.Inventory,
+                        iconTint = AppColors.colorScheme.iconContainerPurple,
+                        label = stringResource(R.string.shipping_address),
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
+                            )
+                        },
+                        onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 订单分组
+                // 功能卡片
                 GroupCard(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 ) {
                     SettingRow(
                         icon = Icons.Default.Schedule,
-                        label = stringResource(R.string.order_status_pending_payment),
+                        iconTint = AppColors.colorScheme.iconContainerTeal,
+                        label = stringResource(R.string.divination_calendar),
                         trailing = {
-                            val count = orderItemCount?.pendingPaymentCount ?: 0
-                            if (count > 0) {
-                                Text(
-                                    text = count.toString(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = AppColors.colorScheme.primary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
+                            Text(
+                                text = "12 条",
+                                fontSize = 12.sp,
+                                color = AppColors.colorScheme.textSecondary
                             )
-                        },
-                        onClick = { navController.navigate("${OrderRoute.Order.text}/1") }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.Default.LocalLaundryService,
-                        label = stringResource(R.string.order_status_washing),
-                        trailing = {
-                            val count = orderItemCount?.processingCount ?: 0
-                            if (count > 0) {
-                                Text(
-                                    text = count.toString(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = AppColors.colorScheme.primary
-                                )
-                            }
+                            Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                        },
-                        onClick = { navController.navigate("${OrderRoute.Order.text}/3") }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.Default.Inventory,
-                        label = stringResource(R.string.order_status_ready_for_pickup),
-                        trailing = {
-                            val count = orderItemCount?.pendingPickupCount ?: 0
-                            if (count > 0) {
-                                Text(
-                                    text = count.toString(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = AppColors.colorScheme.primary
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                        },
-                        onClick = { navController.navigate("${OrderRoute.Order.text}/4") }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.Default.History,
-                        label = stringResource(R.string.all),
-                        trailing = {
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                        },
-                        onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-
-                // 其他分组
-                GroupCard(
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                ) {
-                    SettingRow(
-                        icon = Icons.Default.Headset,
-                        label = stringResource(R.string.contact_service),
-                        trailing = {
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                        },
-                        onClick = { showServiceDialog = true }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.divider, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.AutoMirrored.Filled.Help,
-                        label = stringResource(R.string.faq),
-                        trailing = {
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = AppColors.colorScheme.textSecondary
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
                             )
                         },
                         onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.Settings,
+                        iconTint = AppColors.colorScheme.iconContainerGreen,
+                        label = stringResource(R.string.settings),
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
+                            )
+                        },
+                        onClick = { navController.navigate(UserRoute.Setting.text) }
                     )
                 }
 
@@ -533,13 +553,14 @@ fun UserInfoPage(
 @Composable
 private fun SettingRow(
     icon: ImageVector,
+    iconTint: Color,
     label: String,
     trailing: @Composable () -> Unit = {
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = AppColors.colorScheme.textSecondary
+            modifier = Modifier.size(15.dp),
+            tint = AppColors.colorScheme.textTertiary
         )
     },
     onClick: () -> Unit,
@@ -548,19 +569,29 @@ private fun SettingRow(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick, scaleFactor = 0.98f)
-            .padding(vertical = AppDimens.spaceSm),
+            .padding(vertical = 15.dp, horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = AppColors.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        // ib32 图标容器（32dp，10px圆角，彩色浅底）
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(iconTint),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp),
+                tint = AppColors.colorScheme.textPrimary
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )

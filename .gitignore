@@ -66,3 +66,4 @@ oh_modules/
 # 签名文件
 *.keystore
 *.jks
+deploy/*

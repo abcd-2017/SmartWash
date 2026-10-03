@@ -2,23 +2,28 @@ package com.smartwash.feature.user.impl.ui.setting
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,10 +34,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
@@ -41,10 +52,10 @@ import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.PageHeader
-import com.smartwash.common.ui.components.SettingRow
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 
 /**
  * 设置页（T5.2 自 app 迁入）。
@@ -79,107 +90,133 @@ fun SettingPage(
         ) {
             PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
 
-            // 通知设置
-            Spacer(modifier = Modifier.height(12.dp))
+            // 通用
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
-                text = stringResource(R.string.notification),
-                style = MaterialTheme.typography.headlineMedium,
+                text = stringResource(R.string.general),
+                style = AppTextStyles.SectionTitle,
+                color = AppColors.colorScheme.textTertiary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Notifications,
+                    iconTint = AppColors.colorScheme.iconContainerBlue,
                     title = stringResource(R.string.push_notification),
-                    subtitle = stringResource(R.string.push_notification_desc),
-                    trailing = { IconChevron() },
+                    trailing = {
+                        Text(
+                            text = stringResource(R.string.enabled),
+                            fontSize = 12.sp,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconChevron()
+                    },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
-                    icon = Icons.Default.Email,
-                    title = stringResource(R.string.email_notification),
-                    subtitle = stringResource(R.string.email_notification_desc),
-                    trailing = { IconChevron() },
+                    icon = Icons.Default.TouchApp,
+                    iconTint = AppColors.colorScheme.iconContainerPurple,
+                    title = stringResource(R.string.haptic_feedback),
+                    trailing = {
+                        Text(
+                            text = stringResource(R.string.on),
+                            fontSize = 12.sp,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconChevron()
+                    },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
-            // 隐私设置
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            // 观象台
+            Spacer(modifier = Modifier.height(26.dp))
             Text(
-                text = stringResource(R.string.privacy_security),
-                style = MaterialTheme.typography.headlineMedium,
+                text = stringResource(R.string.divination),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp,
+                color = AppColors.colorScheme.textTertiary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Security,
-                    title = stringResource(R.string.privacy_settings),
-                    subtitle = stringResource(R.string.privacy_settings_desc),
-                    trailing = { IconChevron() },
+                    iconTint = AppColors.colorScheme.iconContainerOrange,
+                    title = stringResource(R.string.interpretation_model),
+                    trailing = {
+                        Text(
+                            text = "GLM-4.7",
+                            fontSize = 12.sp,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconChevron()
+                    },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
-                    icon = Icons.Default.Lock,
-                    title = stringResource(R.string.account_security),
-                    subtitle = stringResource(R.string.account_security_desc),
+                    icon = Icons.AutoMirrored.Default.Help,
+                    iconTint = AppColors.colorScheme.iconContainerPink,
+                    title = stringResource(R.string.privacy_disclaimer),
                     trailing = { IconChevron() },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
             // 其他
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Spacer(modifier = Modifier.height(26.dp))
             Text(
                 text = stringResource(R.string.other),
-                style = MaterialTheme.typography.headlineMedium,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp,
+                color = AppColors.colorScheme.textTertiary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 检查更新（宿主注入的跨域插槽，feature:update 归 app 壳聚合）
                 checkUpdateContent?.invoke()
                 if (checkUpdateContent != null) {
-                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
+                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 }
                 SettingRow(
                     icon = Icons.Default.Info,
-                    title = stringResource(R.string.about_us),
-                    subtitle = stringResource(R.string.about_us_desc),
-                    trailing = { IconChevron() },
+                    iconTint = AppColors.colorScheme.iconContainerTeal,
+                    title = stringResource(R.string.about_smartwash),
+                    trailing = {
+                        Text(
+                            text = "v2.3.0",
+                            fontSize = 11.sp,
+                            color = AppColors.colorScheme.textTertiary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconChevron()
+                    },
                     onClick = { showAboutDialog = true }
-                )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider, modifier = Modifier.padding(horizontal = AppDimens.cardPadding))
-                SettingRow(
-                    icon = Icons.AutoMirrored.Default.Help,
-                    title = stringResource(R.string.help_feedback),
-                    subtitle = stringResource(R.string.help_feedback_desc),
-                    trailing = { IconChevron() },
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
             }
 
             // 退出登录
-            Spacer(modifier = Modifier.height(36.dp))
-            Surface(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                shape = RoundedCornerShape(AppDimens.buttonRadius),
-                color = AppColors.colorScheme.surface,
-                shadowElevation = 0.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.error)
-            ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 TextButton(
                     onClick = { showDialog = true },
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .height(52.dp)
                 ) {
                     Text(
                         stringResource(R.string.logout),
-                        style = MaterialTheme.typography.titleLarge,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = AppColors.colorScheme.error
                     )
                 }
@@ -210,10 +247,52 @@ fun SettingPage(
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
         } catch (_: Exception) { "1.0.0" }
         AppInfoDialog(
-            title = stringResource(R.string.about_us),
+            title = stringResource(R.string.about_smartwash),
             message = stringResource(R.string.app_version, versionName),
             onDismiss = { showAboutDialog = false }
         )
+    }
+}
+
+@Composable
+private fun SettingRow(
+    icon: ImageVector,
+    iconTint: Color,
+    title: String,
+    trailing: @Composable () -> Unit = { IconChevron() },
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // ib32 图标容器（32dp，10px圆角，彩色浅底）
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(iconTint),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(17.dp),
+                tint = AppColors.colorScheme.textPrimary
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(
+            text = title,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = AppColors.colorScheme.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        trailing()
     }
 }
 
@@ -222,7 +301,7 @@ private fun IconChevron() {
     androidx.compose.material3.Icon(
         imageVector = Icons.Default.ChevronRight,
         contentDescription = null,
-        modifier = Modifier.height(16.dp),
-        tint = AppColors.colorScheme.textSecondary
+        modifier = Modifier.size(15.dp),
+        tint = AppColors.colorScheme.textTertiary
     )
 }

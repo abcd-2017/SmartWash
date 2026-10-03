@@ -6,12 +6,9 @@
 // 优惠券数据经 coupon-api 的 CouponApi 契约取自 :feature:coupon:impl（T7.2 起
 // 原 CouponSource seam 与 app 壳 PaymentImplSeamModule 实现删除）。
 // 依赖方向：payment-api / order-api / coupon-api / common（禁止依赖 app 壳与其他 feature-impl）。
-plugins {
-    // 顺序约定：先 smartwash.android.library，再其他（见 build-logic/build.gradle 头部注释）
-    id 'smartwash.android.library'
-    id 'smartwash.compose'
-    id 'smartwash.hilt'
-}
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.payment.impl'
