@@ -6,6 +6,7 @@
 <resources>
     <!-- 优惠券页 -->
     <string name="coupons">优惠券</string>
+    <string name="coupon">券</string>
     <string name="available_coupons">可领取</string>
     <string name="claimed_coupons">已领取</string>
     <string name="historical_coupons">已使用</string>

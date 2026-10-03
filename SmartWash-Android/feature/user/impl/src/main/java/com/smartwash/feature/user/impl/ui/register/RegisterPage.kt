@@ -3,6 +3,7 @@ package com.smartwash.feature.user.impl.ui.register
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,8 +61,11 @@ import com.smartwash.common.ui.theme.GlassTextSecondary
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -77,6 +83,14 @@ import kotlinx.coroutines.withContext
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
+
+// 认证页白色 CTA 按钮色
+private val AuthCtaText = Color(0xFF1E8C5C)
+// 认证页底部文字色
+private val AuthBottomText = Color.White.copy(alpha = 0.55f)
+private val AuthBottomTextActive = Color.White.copy(alpha = 0.9f)
+// 进度条非激活态
+private val ProgressInactive = Color.White.copy(alpha = 0.28f)
 
 @Composable
 fun RegisterPage(
@@ -147,7 +161,7 @@ fun RegisterPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(28.dp)
+    val glassShape = RoundedCornerShape(24.dp)
 
     Box(
         modifier = Modifier
@@ -162,81 +176,92 @@ fun RegisterPage(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 品牌标识 — 外圈光环
-            Box(
-                modifier = Modifier.size(88.dp),
-                contentAlignment = Alignment.Center
+            // 顶部导航栏
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 外圈 — 淡光环
-                Box(
+                Icon(
+                    imageVector = Icons.Rounded.ArrowBack,
+                    contentDescription = null,
                     modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .background(GlassBgSubtle)
+                        .size(22.dp)
+                        .clickable { navController.popBackStack() },
+                    tint = Color.White.copy(alpha = 0.8f)
                 )
-                // 内圈 — 图标
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(GlassBg)
-                        .border(1.dp, GlassBorder, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("✨", style = MaterialTheme.typography.headlineSmall)
-                }
+                Text(
+                    text = stringResource(R.string.register),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.size(22.dp))
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 品牌标识 — 92dp 单层圆形
+            Box(
+                modifier = Modifier
+                    .size(92.dp)
+                    .clip(CircleShape)
+                    .background(GlassBgSubtle)
+                    .border(1.dp, GlassBorderSubtle, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("✨", fontSize = 36.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = stringResource(R.string.create_account),
-                style = MaterialTheme.typography.headlineLarge,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             Text(
                 text = stringResource(R.string.start_laundry_journey),
-                style = MaterialTheme.typography.bodyMedium,
-                color = GlassTextDisabled
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f)
             )
 
             // 进度条
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // 激活态 — 渐变
+                // 激活态 — 纯白
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(Color.White, Color.White.copy(alpha = 0.8f))
-                            )
-                        )
+                        .background(Color.White)
                 )
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(GlassInput)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(ProgressInactive)
                 )
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(GlassInput)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(ProgressInactive)
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // 毛玻璃输入卡片
             Column(
@@ -245,7 +270,7 @@ fun RegisterPage(
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(vertical = 12.dp)
+                    .padding(20.dp, 16.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -321,9 +346,9 @@ fun RegisterPage(
                     else it.length < 6 || it.length > 16
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 注册按钮
+                // 注册按钮 — 白色背景 + 品牌深绿文字 + 阴影
                 Button(
                     onClick = {
                         isPhoneError = !isValidPhone(phone)
@@ -337,31 +362,34 @@ fun RegisterPage(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(50.dp)
+                        .shadow(4.dp, RoundedCornerShape(14.dp)),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GlassBorder,
-                        contentColor = Color.White,
+                        containerColor = Color.White,
+                        contentColor = AuthCtaText,
                     )
                 ) {
                     when (registerState) {
                         is RequestState.Loading -> CircularProgressIndicator(
                             modifier = Modifier.size(22.dp),
-                            color = Color.White,
+                            color = AuthCtaText,
                             strokeWidth = 2.dp
                         )
 
                         else -> {
-                            Text(stringResource(R.string.register), style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                stringResource(R.string.register),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 2.sp
+                            )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 登录入口
             TextButton(
@@ -371,17 +399,18 @@ fun RegisterPage(
             ) {
                 Text(
                     stringResource(R.string.has_account),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GlassTextHint
+                    fontSize = 13.sp,
+                    color = AuthBottomText
                 )
                 Text(
                     stringResource(R.string.login_now),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AuthBottomTextActive
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -391,9 +420,9 @@ private fun GlassDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 14.dp)
             .height(0.5.dp)
-            .background(GlassBg)
+            .background(Color.White.copy(alpha = 0.12f))
     )
 }
 

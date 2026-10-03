@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,7 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.model.RequestState
@@ -126,7 +129,7 @@ fun OrderPage(
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            // 状态筛选胶囊条（替代原 AppTabBar + HorizontalPager）
+            // 状态筛选胶囊条（规范 §3.3：34dp 高度，圆角 17dp）
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -138,10 +141,10 @@ fun OrderPage(
                     val isSelected = index == selectedPillIndex
                     Surface(
                         modifier = Modifier
-                            .height(36.dp)
+                            .height(34.dp)
                             .pressable(onClick = { selectedPillIndex = index }),
-                        shape = RoundedCornerShape(AppDimens.radiusFull),
-                        color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surfaceVariant
+                        shape = RoundedCornerShape(17.dp),
+                        color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface
                     ) {
                         Box(
                             modifier = Modifier
@@ -151,8 +154,9 @@ fun OrderPage(
                         ) {
                             Text(
                                 text = stringResource(entry.descriptionRes),
-                                color = if (isSelected) Color.White else AppColors.colorScheme.textPrimary,
-                                style = MaterialTheme.typography.bodyMedium
+                                color = if (isSelected) Color.White else AppColors.colorScheme.textSecondary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
                             )
                         }
                     }
@@ -233,9 +237,10 @@ fun OrderPage(
                                         }
                                         Text(
                                             text = label,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = AppColors.colorScheme.textSecondary,
-                                            modifier = Modifier.padding(top = AppDimens.spaceMd, bottom = AppDimens.spaceXs)
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = AppColors.colorScheme.textTertiary,
+                                            modifier = Modifier.padding(top = 26.dp, bottom = 10.dp)
                                         )
                                     }
                                     is OrderListItem.Card -> {
@@ -271,7 +276,8 @@ fun OrderPage(
                     } else {
                         EmptyState(
                             icon = Icons.Default.LocalLaundryService,
-                            message = stringResource(R.string.no_orders)
+                            message = stringResource(R.string.no_orders),
+                            useDrumMark = true
                         )
                     }
                 }
@@ -314,119 +320,121 @@ private fun OrderCard(
         shadowElevation = AppElevation.level1
     ) {
         Row(
-            modifier = Modifier.padding(AppDimens.cardPadding),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // 左侧状态色点（规范 §3.5）：已完成 #2D9B6A / 进行中 #D98A26
-            val dotColor = if (order.status == OrderStatus.COMPLETED.status) {
-                AppColors.colorScheme.primary
-            } else {
-                AppColors.colorScheme.warning
-            }
-            StatusDot(
-                color = dotColor,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            // 图标（规范 §3.2）：IconBox 容器，洗护语义用绿底
+            // 左侧图标容器（规范 §3.2）：IconBox 容器，洗护语义用绿底
             IconBox(
                 icon = Icons.Default.LocalLaundryService,
                 size = 36.dp,
                 iconSize = 18.dp,
                 containerColor = AppColors.colorScheme.iconContainerGreen
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            // 主体信息 + 操作按钮
+            Spacer(modifier = Modifier.width(14.dp))
+            // 主体信息
             Column(modifier = Modifier.weight(1f)) {
+                // 状态文字 + 状态色点（规范 §3.5）
+                val dotColor = when (order.status) {
+                    OrderStatus.COMPLETED.status -> AppColors.colorScheme.success
+                    OrderStatus.WASHING.status, OrderStatus.PENDING_SHIPMENT.status -> AppColors.colorScheme.warning
+                    OrderStatus.CANCELED.status -> AppColors.colorScheme.error
+                    else -> AppColors.colorScheme.primary
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = AppColors.colorScheme.textPrimary
+                    )
+                    Spacer(modifier = Modifier.width(7.dp))
+                    StatusDot(color = dotColor)
+                }
+                Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    text = order.laundryPackageVo.itemName,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                Text(
-                    text = stringResource(R.string.order_no_label, order.orderNo),
+                    text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    color = AppColors.colorScheme.textTertiary
                 )
                 Text(
-                    text = stringResource(R.string.order_time_label, order.createdAt),
+                    text = order.createdAt,
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    color = AppColors.colorScheme.textTertiary,
+                    modifier = Modifier.padding(top = 2.dp)
                 )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                // 规范 §2.2：金额必须开 tabular numbers
+            }
+            // 右侧价格（规范 §2.2：等宽数字，19sp，ExtraBold）
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
                 Text(
                     text = stringResource(R.string.currency_format, order.payPrice.toString()),
                     color = AppColors.colorScheme.primary,
-                    style = AppTextStyles.AmountMedium
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFeatureSettings = "tnum"
+                    )
                 )
-
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-
+                Spacer(modifier = Modifier.height(10.dp))
                 // 操作按钮
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    when (order.status) {
-                        ShowOrderStatus.PENDING_PAYMENT.status -> {
-                            TextButton(onClick = { cancelClick(order.orderId) }) {
-                                Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary)
-                            }
-                            Spacer(Modifier.width(AppDimens.spaceXs))
-                            Button(
-                                onClick = {
-                                    view.performHaptic(HapticEffect.MEDIUM)
-                                    paymentClick()
-                                },
-                                shape = RoundedCornerShape(AppDimens.buttonRadius),
-                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                                modifier = Modifier.height(36.dp)
-                            ) { Text(stringResource(R.string.go_pay)) }
+                when (order.status) {
+                    ShowOrderStatus.PENDING_PAYMENT.status -> {
+                        TextButton(onClick = { cancelClick(order.orderId) }) {
+                            Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary, fontSize = 12.sp)
                         }
-                        ShowOrderStatus.PENDING_SHIPMENT.status -> {
-                            Button(
-                                onClick = {
-                                    view.performHaptic(HapticEffect.MEDIUM)
-                                    shipmentClick()
-                                },
-                                shape = RoundedCornerShape(AppDimens.buttonRadius),
-                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                                modifier = Modifier.height(36.dp)
-                            ) { Text(stringResource(R.string.go_ship)) }
-                        }
-                        ShowOrderStatus.WASHING.status -> {
-                            Text(
-                                text = stringResource(R.string.washing),
-                                color = AppColors.colorScheme.textSecondary,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        ShowOrderStatus.READY_FOR_PICKUP.status -> {
-                            Button(
-                                onClick = {
-                                    view.performHaptic(HapticEffect.MEDIUM)
-                                    pickupClick()
-                                },
-                                shape = RoundedCornerShape(AppDimens.buttonRadius),
-                                colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                                modifier = Modifier.height(36.dp)
-                            ) { Text(stringResource(R.string.go_pickup)) }
-                        }
-                        OrderStatus.COMPLETED.status -> {
-                            Text(
-                                text = stringResource(R.string.completed),
-                                color = AppColors.colorScheme.textSecondary,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        else -> {
-                            Text(
-                                text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
-                                color = AppColors.colorScheme.textSecondary,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                        Spacer(Modifier.width(AppDimens.spaceXs))
+                        Button(
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                paymentClick()
+                            },
+                            shape = RoundedCornerShape(AppDimens.buttonRadius),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_pay)) }
+                    }
+                    ShowOrderStatus.PENDING_SHIPMENT.status -> {
+                        Button(
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                shipmentClick()
+                            },
+                            shape = RoundedCornerShape(AppDimens.buttonRadius),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_ship)) }
+                    }
+                    ShowOrderStatus.WASHING.status -> {
+                        Text(
+                            text = stringResource(R.string.washing),
+                            color = AppColors.colorScheme.textSecondary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    ShowOrderStatus.READY_FOR_PICKUP.status -> {
+                        Button(
+                            onClick = {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                pickupClick()
+                            },
+                            shape = RoundedCornerShape(AppDimens.buttonRadius),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
+                            modifier = Modifier.height(36.dp)
+                        ) { Text(stringResource(R.string.go_pickup)) }
+                    }
+                    OrderStatus.COMPLETED.status -> {
+                        Text(
+                            text = stringResource(R.string.completed),
+                            color = AppColors.colorScheme.textSecondary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    else -> {
+                        Text(
+                            text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
+                            color = AppColors.colorScheme.textSecondary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }

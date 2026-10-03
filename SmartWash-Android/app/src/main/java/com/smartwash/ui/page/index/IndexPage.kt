@@ -2,6 +2,7 @@ package com.smartwash.ui.page.index
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
@@ -23,9 +25,8 @@ import androidx.compose.material.icons.filled.LocalMall
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,12 +44,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.common.ui.components.AppInfoDialog
+import androidx.compose.material3.Icon
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
@@ -58,12 +63,11 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.pressable
-import java.util.Calendar
 
 @Composable
 fun IndexPage(
@@ -104,18 +108,19 @@ fun IndexPage(
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
-                    HomeHeroCard(
-                        schoolName = userInfo?.school?.schoolName ?: "",
+                    StatusHeroCard(
+                        orderList = orderList,
+                        onOrderClick = { orderId ->
+                            navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                        }
+                    )
+                }
+
+                item {
+                    AccountDataCard(
                         balance = userInfo?.balance ?: 0f,
-                        onAvatarClick = {
-                            pageNavController.navigate(HomePageConstant.UserInfo.text) {
-                                popUpTo(pageNavController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        couponCount = userInfo?.couponCount ?: 0,
+                        orderCount = userInfo?.orderCount ?: 0,
                         onRechargeClick = {
                             navController.navigate(PaymentRoute.Recharge.text)
                         },
@@ -180,16 +185,13 @@ fun IndexPage(
                 }
 
                 if (orderList.isNotEmpty()) {
-                    items(
-                        count = orderList.size,
-                        key = { index -> orderList[index].orderId }
-                    ) { index ->
-                        OrderListItem(
-                            orderVo = orderList[index],
-                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                        ) {
-                            navController.navigate("${OrderRoute.OrderDetail.text}/${orderList[index].orderId}")
-                        }
+                    item {
+                        OrderListCard(
+                            orderList = orderList,
+                            onOrderClick = { orderId ->
+                                navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                            }
+                        )
                     }
                 } else {
                     item {
@@ -226,23 +228,16 @@ fun IndexPage(
 }
 
 /**
- * 首页 Hero 卡 — 品牌渐变底 + 白字 + 白色 CTA 胶囊（规范 §3.1 Hero 卡）。
- * 全页唯一视觉锚点：36sp 余额大字（tabular numbers）。
+ * 首页 Hero 卡 — 品牌渐变底 + 真实订单状态驱动（规范 v3 §3.1）。
+ * 显示当前订单状态、进度条，全页唯一视觉锚点。
  */
 @Composable
-private fun HomeHeroCard(
-    schoolName: String,
-    balance: Float,
-    onAvatarClick: () -> Unit,
-    onRechargeClick: () -> Unit,
-    onCouponClick: () -> Unit,
+private fun StatusHeroCard(
+    orderList: List<OrderBrief>,
+    onOrderClick: (Long) -> Unit,
 ) {
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val greeting = when {
-        hour < 12 -> stringResource(R.string.home_greeting_morning)
-        hour < 18 -> stringResource(R.string.home_greeting_afternoon)
-        else -> stringResource(R.string.home_greeting_evening)
-    }
+    val currentOrder = orderList.firstOrNull()
+    val orderStatus = currentOrder?.let { OrderStatus.fromStatus(it.status) }
 
     // 品牌渐变 135° #2D9B6A → #1E8C5C（规范 §2.1 brandGradient，仅用于 hero）
     val gradient = Brush.linearGradient(
@@ -255,103 +250,209 @@ private fun HomeHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
+            .padding(top = 8.dp)
             .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
-            .padding(AppDimens.cardPadding)
+            .padding(22.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = greeting + stringResource(R.string.home_greeting_suffix),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                // 滚筒圆：同心环 + 水波线
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .border(2.5.dp, Color.White.copy(alpha = 0.32f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, Color.White.copy(alpha = 0.45f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.LocationOn,
+                            imageVector = Icons.Default.LocalLaundryService,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = Color.White.copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = schoolName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f)
+                            modifier = Modifier.size(24.dp),
+                            tint = Color.White
                         )
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusFull))
-                        .background(Color.White.copy(alpha = 0.2f))
-                        .pressable(onClick = onAvatarClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = Color.White
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = orderStatus?.descriptionRes?.let { stringResource(it) } ?: "暂无订单",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = currentOrder?.let { "预计 15:00 完成 · 剩余约 40 分钟" } ?: "点击下方按钮开始预约",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.72f)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-            Text(
-                text = stringResource(R.string.account_balance_label),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.8f)
-            )
-            Text(
-                text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
-                style = AppTextStyles.DataLarge,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
-                WhiteCapsuleButton(
-                    text = stringResource(R.string.go_recharge),
-                    onClick = onRechargeClick
+            // 进度条
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val steps = listOf(
+                    stringResource(R.string.step_received),
+                    stringResource(R.string.step_washing),
+                    stringResource(R.string.step_dried),
+                    stringResource(R.string.step_pickup)
                 )
-                WhiteCapsuleButton(
-                    text = stringResource(R.string.home_available_coupons),
-                    onClick = onCouponClick
-                )
+                val currentStep = when (orderStatus) {
+                    OrderStatus.WASHING -> 1
+                    OrderStatus.DRIED -> 2
+                    OrderStatus.READY_FOR_PICKUP -> 3
+                    else -> 0
+                }
+                steps.forEachIndexed { index, _ ->
+                    val isActive = index <= currentStep
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(if (isActive) Color.White else Color.White.copy(alpha = 0.32f))
+                    )
+                    if (index < steps.lastIndex) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(2.dp)
+                                .background(if (index < currentStep) Color.White else Color.White.copy(alpha = 0.28f))
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(9.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf("已接单", "清洗中", "烘干中", "待取件").forEachIndexed { index, label ->
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.72f),
+                        modifier = Modifier.weight(1f),
+                        textAlign = when (index) {
+                            0 -> androidx.compose.ui.text.style.TextAlign.Start
+                            3 -> androidx.compose.ui.text.style.TextAlign.End
+                            else -> androidx.compose.ui.text.style.TextAlign.Center
+                        }
+                    )
+                }
             }
         }
     }
 }
 
-/** Hero 卡内白色 CTA 胶囊（规范 §3.1 Hero 卡 — 白色 CTA 胶囊） */
+/**
+ * 账户数据卡 — 白底 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 余额是主角（大字），优惠券和累计订单是小字。
+ */
 @Composable
-private fun WhiteCapsuleButton(
-    text: String,
-    onClick: () -> Unit,
+private fun AccountDataCard(
+    balance: Float,
+    couponCount: Int,
+    orderCount: Int,
+    onRechargeClick: () -> Unit,
+    onCouponClick: () -> Unit,
 ) {
-    Box(
+    Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(Color.White)
-            .pressable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding)
+            .padding(top = 16.dp),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = AppColors.colorScheme.primary
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 余额（主角）
+            Column(
+                modifier = Modifier
+                    .weight(1.35f)
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.account_balance_label),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textTertiary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                    style = AppTextStyles.DataLarge,
+                    color = AppColors.colorScheme.primaryDark
+                )
+            }
+            // 分隔线
+            Box(
+                modifier = Modifier
+                    .width(0.5.dp)
+                    .height(42.dp)
+                    .background(AppColors.colorScheme.hairline)
+            )
+            // 优惠券
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "$couponCount",
+                    style = AppTextStyles.AmountMedium,
+                    color = AppColors.colorScheme.textPrimary
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = stringResource(R.string.home_available_coupons),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textTertiary
+                )
+            }
+            // 分隔线
+            Box(
+                modifier = Modifier
+                    .width(0.5.dp)
+                    .height(42.dp)
+                    .background(AppColors.colorScheme.hairline)
+            )
+            // 累计订单
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(18.dp, 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "$orderCount",
+                    style = AppTextStyles.AmountMedium,
+                    color = AppColors.colorScheme.textPrimary
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = stringResource(R.string.home_total_orders),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textTertiary
+                )
+            }
+        }
     }
 }
 
@@ -366,7 +467,7 @@ private fun ServiceGrid(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ServiceEntry(
             modifier = Modifier.weight(1f),
@@ -380,15 +481,15 @@ private fun ServiceGrid(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalMall,
             label = stringResource(R.string.service_pickup),
-            containerColor = AppColors.colorScheme.iconContainerOrange,
-            iconTint = AppColors.colorScheme.onWarningContainer,
+            containerColor = AppColors.colorScheme.iconContainerBlue,
+            iconTint = AppColors.colorScheme.water,
             onClick = onPickupClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalOffer,
             label = stringResource(R.string.service_coupon),
-            containerColor = AppColors.colorScheme.iconContainerTeal,
+            containerColor = AppColors.colorScheme.iconContainerOrange,
             iconTint = AppColors.colorScheme.primaryDark,
             onClick = onCouponClick
         )
@@ -396,8 +497,8 @@ private fun ServiceGrid(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.Build,
             label = stringResource(R.string.service_toolbox),
-            containerColor = AppColors.colorScheme.iconContainerBlue,
-            iconTint = AppColors.colorScheme.water,
+            containerColor = AppColors.colorScheme.iconContainerPurple,
+            iconTint = AppColors.colorScheme.textSecondary,
             onClick = onToolboxClick
         )
     }
@@ -420,60 +521,98 @@ private fun ServiceEntry(
     ) {
         IconBox(
             icon = icon,
+            size = 44.dp,
+            iconSize = 22.dp,
             containerColor = containerColor,
             iconTint = iconTint
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = AppColors.colorScheme.textPrimary
+            color = AppColors.colorScheme.textTertiary
         )
+    }
+}
+
+/**
+ * 进行中订单列表 — 白底卡片 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 36dp 图标容器 + 等宽价格。
+ */
+@Composable
+private fun OrderListCard(
+    orderList: List<OrderBrief>,
+    onOrderClick: (Long) -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
+    ) {
+        Column {
+            orderList.forEachIndexed { index, order ->
+                OrderListItem(
+                    orderVo = order,
+                    onClick = { onOrderClick(order.orderId) }
+                )
+                if (index < orderList.lastIndex) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .height(0.5.dp)
+                            .background(AppColors.colorScheme.hairline)
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun OrderListItem(
     orderVo: OrderBrief,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val orderStatus = OrderStatus.fromStatus(orderVo.status)
     val statusText = orderStatus?.descriptionRes?.let { stringResource(it) } ?: ""
 
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .pressable(onClick = onClick)
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconBox(
-                icon = Icons.Default.LocalLaundryService,
-                size = 36.dp,
-                iconSize = 18.dp,
-                containerColor = AppColors.colorScheme.iconContainerGreen,
-                iconTint = AppColors.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = stringResource(R.string.order_no_format, orderVo.orderNo),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
-                )
-            }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconBox(
+            icon = Icons.Default.LocalLaundryService,
+            size = 36.dp,
+            iconSize = 18.dp,
+            containerColor = AppColors.colorScheme.iconContainerGreen,
+            iconTint = AppColors.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
-                style = AppTextStyles.AmountMedium,
-                color = AppColors.colorScheme.primary
+                text = statusText,
+                style = MaterialTheme.typography.titleMedium,
+                color = AppColors.colorScheme.textPrimary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.order_no_format, orderVo.orderNo),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textTertiary
             )
         }
-        HorizontalDivider(color = AppColors.colorScheme.divider)
+        Text(
+            text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
+            style = AppTextStyles.AmountMedium,
+            color = AppColors.colorScheme.primary
+        )
     }
 }
 

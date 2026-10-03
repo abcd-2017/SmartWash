@@ -106,6 +106,25 @@
          check_update/check_update_desc/already_latest 三条文案随行留 app 侧 -->
     <string name="app_version">版本号：%s</string>
 
+    <!-- 设置页 v3 新增 -->
+    <string name="general">通用</string>
+    <string name="divination">观象台</string>
+    <string name="haptic_feedback">触感反馈</string>
+    <string name="interpretation_model">解读模型</string>
+    <string name="privacy_disclaimer">隐私与免责声明</string>
+    <string name="about_smartwash">关于 SmartWash</string>
+    <string name="enabled">已开启</string>
+    <string name="on">开</string>
+    <string name="off">关</string>
+
+    <!-- 用户中心 v3 新增 -->
+    <string name="wallet_balance">钱包余额</string>
+    <string name="total_orders">累计订单</string>
+    <string name="bound">已绑定</string>
+    <string name="school_dorm_info">学校与宿舍信息</string>
+    <string name="shipping_address">收货地址</string>
+    <string name="divination_calendar">观象台 · 卦历</string>
+
     <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
     <string name="error_network_fail">请求失败</string>
 </resources>

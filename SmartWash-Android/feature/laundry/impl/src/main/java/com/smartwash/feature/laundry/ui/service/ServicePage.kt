@@ -1,6 +1,8 @@
 package com.smartwash.feature.laundry.ui.service
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,34 +10,41 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.LocalLaundryService
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.DryCleaning
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smartwash.common.model.RequestState
-import com.smartwash.common.ui.components.GroupCard
+import androidx.compose.material3.Icon
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.ServiceDry
 import com.smartwash.common.ui.theme.ServiceLuxury
@@ -57,7 +66,7 @@ fun ServicePage(
         serviceViewModel.getLaundryItem()
     }
 
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
@@ -68,45 +77,164 @@ fun ServicePage(
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 页面标题
+                // 搜索胶囊
                 item {
-                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-                    Column(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.laundry_service),
-                            style = AppTextStyles.PageTitle,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                        Text(
-                            text = stringResource(R.string.service_page_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    SearchBar()
                 }
 
-                // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 §3.4）
+                // 运营位
                 item {
-                    GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                    ) {
-                        laundryItems.forEachIndexed { index, item ->
-                            ServiceItemRow(item = item)
-                            if (index < laundryItems.lastIndex) {
-                                HorizontalDivider(
-                                    thickness = 0.5.dp,
-                                    color = AppColors.colorScheme.hairline
-                                )
-                            }
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    PromoBanner()
                 }
 
-                item { Spacer(modifier = Modifier.height(AppDimens.spaceXl)) }
+                // 洗护分类标题
+                item {
+                    Spacer(modifier = Modifier.height(28.dp))
+                    Text(
+                        text = stringResource(R.string.laundry_service),
+                        style = AppTextStyles.SectionTitle,
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 v3 §3.4）
+                item {
+                    ServiceListCard(items = laundryItems)
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = stringResource(R.string.service_tips),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.textTertiary,
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 搜索胶囊 — 44dp 高，圆角 22px，白底 + 1px 描边（规范 v3）。
+ */
+@Composable
+private fun SearchBar() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding)
+            .padding(top = 8.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .padding(horizontal = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = AppColors.colorScheme.textTertiary
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.service_search_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textTertiary
+            )
+        }
+    }
+}
+
+/**
+ * 运营位 — 浅绿渐变底，圆角 20px（规范 v3）。
+ */
+@Composable
+private fun PromoBanner() {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        shape = RoundedCornerShape(AppDimens.radiusXl),
+        color = AppColors.colorScheme.primaryLight,
+        shadowElevation = AppElevation.level1
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(AppDimens.radiusMd),
+                color = Color.White
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.LocalLaundryService,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = AppColors.colorScheme.primary
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.service_promo_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = AppColors.colorScheme.textPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.service_promo_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 服务项目列表卡片 — 白底 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 36dp 图标容器 + 等宽价格 + 行内"预约 >"动作。
+ */
+@Composable
+private fun ServiceListCard(items: List<LaundryItem>) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppDimens.pagePadding),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
+    ) {
+        Column {
+            items.forEachIndexed { index, item ->
+                ServiceItemRow(item = item)
+                if (index < items.lastIndex) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .height(0.5.dp)
+                            .background(AppColors.colorScheme.hairline)
+                    )
+                }
             }
         }
     }
@@ -120,9 +248,8 @@ private fun ServiceItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
             .pressable(onClick = {})
-            .padding(vertical = AppDimens.spaceSm),
+            .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconBox(
@@ -132,29 +259,30 @@ private fun ServiceItemRow(
             containerColor = containerColor,
             iconTint = iconTint
         )
-        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.itemName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = AppColors.colorScheme.textPrimary
             )
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = item.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textTertiary
             )
         }
-        Text(
-            text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
-            style = AppTextStyles.AmountMedium,
-            color = AppColors.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-        TextButton(onClick = {}) {
+        Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = stringResource(R.string.service_reserve),
-                style = MaterialTheme.typography.labelLarge,
+                text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
+                style = AppTextStyles.AmountMedium.copy(fontSize = 19.sp),
+                color = AppColors.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = stringResource(R.string.service_reserve) + " >",
+                style = MaterialTheme.typography.bodySmall,
                 color = AppColors.colorScheme.primary
             )
         }

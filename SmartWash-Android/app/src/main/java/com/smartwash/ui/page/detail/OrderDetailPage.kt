@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,8 @@ import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Toys
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,14 +37,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
@@ -55,6 +62,7 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.pressScale
 
 @Composable
 fun OrderDetailPage(
@@ -105,57 +113,29 @@ fun OrderDetailPage(
                 // 状态卡片 — 全宽背景
                 StatusCard(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
 
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 套餐信息 — 最重要的业务信息放前面
-                InfoSection(
-                    title = stringResource(R.string.package_info),
-                    icon = Icons.Rounded.LocalLaundryService
+                // 进度时间线（规范 §3.4）
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.radiusLg),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = AppElevation.level1,
+                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                 ) {
-                    InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
-                    InfoRow(
-                        stringResource(R.string.price),
-                        stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString()),
-                        valueStyle = AppTextStyles.AmountMedium
-                    )
-                    InfoRow(
-                        stringResource(R.string.actual_payment),
-                        stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
-                        valueColor = AppColors.colorScheme.primary,
-                        valueStyle = AppTextStyles.AmountMedium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-
-                // 学校信息
-                InfoSection(
-                    title = stringResource(R.string.school_info),
-                    icon = Icons.Rounded.School
-                ) {
-                    InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
-                    InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
-                }
-
-                // 寄存柜信息
-                if (orderInfo != null && (orderInfo!!.status == OrderStatus.PENDING_SHIPMENT.status || orderInfo!!.status == OrderStatus.READY_FOR_PICKUP.status)) {
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-                    InfoSection(
-                        title = stringResource(R.string.locker_info),
-                        icon = Icons.Rounded.Storage
-                    ) {
-                        InfoRow(stringResource(R.string.locker_number), "${orderInfo?.lockersVo?.lockerNumber ?: 0}")
-                        InfoRow(
-                            label = stringResource(R.string.pickup_code),
-                            value = orderInfo?.pickupCode?.split(":")?.getOrNull(2) ?: "",
-                            valueStyle = AppTextStyles.DataLarge,
-                            valueColor = AppColors.colorScheme.textPrimary,
-                            rowHeight = 48.dp
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = stringResource(R.string.progress_timeline),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.textPrimary,
+                            modifier = Modifier.padding(bottom = 18.dp)
                         )
+                        ProgressTimeline(currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // 订单信息
                 InfoSection(
@@ -163,14 +143,138 @@ fun OrderDetailPage(
                     icon = Icons.Rounded.Receipt
                 ) {
                     InfoRow(stringResource(R.string.order_number), orderInfo?.orderNo ?: "")
-                    InfoRow(stringResource(R.string.order_time), orderInfo?.createdAt ?: "")
-                    InfoRow(stringResource(R.string.current_status), stringResource(OrderStatus.getDescriptionResByStatus(orderInfo?.status ?: "001")))
-                    InfoRow(stringResource(R.string.completion_time), stringResource(R.string.dash))
+                    InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
+                    InfoRow(
+                        stringResource(R.string.actual_payment),
+                        stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                        valueColor = AppColors.colorScheme.primary,
+                        valueStyle = AppTextStyles.AmountMedium
+                    )
+                    InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
+                    InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 底部按钮（规范 §3.3）
+                val interactionSource1 = remember { MutableInteractionSource() }
+                val interactionSource2 = remember { MutableInteractionSource() }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { /* 联系客服 */ },
+                        interactionSource = interactionSource1,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .pressScale(interactionSource1, 0.97f),
+                        shape = RoundedCornerShape(AppDimens.buttonRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.colorScheme.surfaceVariant,
+                            contentColor = AppColors.colorScheme.textPrimary
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.contact_service),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Button(
+                        onClick = { /* 查看取件码 */ },
+                        interactionSource = interactionSource2,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .pressScale(interactionSource2, 0.97f),
+                        shape = RoundedCornerShape(AppDimens.buttonRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppColors.colorScheme.primary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.view_pickup_code),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+        }
+    }
+}
+
+/**
+ * 进度时间线 — 规范 §3.4 竖向时间线
+ * 当前状态节点高亮（now），已完成节点品牌色（done），未完成节点灰色
+ */
+@Composable
+fun ProgressTimeline(currentStatus: OrderStatus?) {
+    // 定义时间线节点（按订单流程顺序）
+    data class TimelineNode(
+        val status: OrderStatus,
+        val timeText: String,
+    )
+
+    val nodes = listOf(
+        TimelineNode(OrderStatus.PENDING_PAYMENT, "14:20 · 系统确认订单"),
+        TimelineNode(OrderStatus.PENDING_SHIPMENT, "14:05 · 衣物已送达"),
+        TimelineNode(OrderStatus.WASHING, "14:25 · 滚筒工作中"),
+        TimelineNode(OrderStatus.READY_FOR_PICKUP, "预计 15:00 · 3 号柜 12 格"),
+        TimelineNode(OrderStatus.COMPLETED, "预计 15:30 · 取件完成"),
+    )
+
+    // 确定当前节点索引
+    val currentIndex = nodes.indexOfFirst { it.status == currentStatus }.coerceAtLeast(0)
+
+    Column(modifier = Modifier.padding(start = 26.dp)) {
+        nodes.forEachIndexed { index, node ->
+            val isDone = index < currentIndex
+            val isCurrent = index == currentIndex
+            val isLast = index == nodes.lastIndex
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = if (isLast) 0.dp else 18.dp)
+            ) {
+                // 节点圆点
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when {
+                                isCurrent -> AppColors.colorScheme.primary
+                                isDone -> AppColors.colorScheme.primary
+                                else -> AppColors.colorScheme.outline
+                            }
+                        )
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = stringResource(node.status.descriptionRes),
+                        fontSize = 13.sp,
+                        fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isCurrent) AppColors.colorScheme.primaryDark
+                        else if (isDone) AppColors.colorScheme.textPrimary
+                        else AppColors.colorScheme.textTertiary
+                    )
+                    Text(
+                        text = node.timeText,
+                        fontSize = 11.sp,
+                        color = AppColors.colorScheme.textTertiary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -239,14 +343,15 @@ fun StatusCard(status: OrderStatus?) {
             Column {
                 Text(
                     text = stringResource(info.statusTextRes),
-                    style = MaterialTheme.typography.headlineSmall,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
                     color = info.statusColor,
-                    fontWeight = FontWeight.Bold
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(info.estimatedTimeRes),
-                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 12.sp,
                     color = AppColors.colorScheme.textSecondary
                 )
             }

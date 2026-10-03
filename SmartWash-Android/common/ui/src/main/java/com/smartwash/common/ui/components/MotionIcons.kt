@@ -2,6 +2,7 @@ package com.smartwash.common.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -109,7 +110,7 @@ fun WaveIcon(
         if (isLoading && !reduce) {
             offset.animateTo(
                 2f,
-                infiniteRepeatable(tween(1600, easing = EaseInOut))
+                infiniteRepeatable(tween(1600, easing = EaseInOut), RepeatMode.Reverse)
             )
         } else {
             offset.snapTo(0f)
@@ -218,7 +219,7 @@ fun FoamIcon(
 
     val circle3 = remember {
         Path().apply {
-            addOval(Rect(13.2f, 12.6f, 18f, 17.4f))
+            addOval(Rect(13.2f, 15f, 18f, 19.8f))
         }
     }
 

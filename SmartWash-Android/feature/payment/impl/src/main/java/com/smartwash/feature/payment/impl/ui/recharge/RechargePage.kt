@@ -5,6 +5,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -35,6 +38,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +53,10 @@ import com.smartwash.common.ui.theme.WeChatGreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.payment.impl.R
@@ -85,17 +91,19 @@ fun RechargePage(
     val rechargeState by rechargeViewModel.rechargeState.collectAsState()
     val context = LocalContext.current
 
-    when (rechargeState) {
-        is RequestState.Success -> {
-            Toast.makeText(context, context.getString(R.string.recharge_success), Toast.LENGTH_SHORT).show()
-            navController.navigateUp()
-            rechargeViewModel.setRechargeStateIdle()
+    LaunchedEffect(rechargeState) {
+        when (rechargeState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.recharge_success), Toast.LENGTH_SHORT).show()
+                navController.navigateUp()
+                rechargeViewModel.setRechargeStateIdle()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, (rechargeState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                rechargeViewModel.setRechargeStateIdle()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (rechargeState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            rechargeViewModel.setRechargeStateIdle()
-        }
-        else -> {}
     }
 
     Box(
@@ -133,11 +141,11 @@ fun RechargePage(
                 }
 
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (i in presetAmounts.indices step 3) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 for (j in 0..2) {
                                     if (i + j < presetAmounts.size) {
@@ -206,12 +214,10 @@ fun RechargePage(
                                 isSelected = selectedPaymentMethod == PaymentMethod.WECHAT,
                                 onClick = { selectedPaymentMethod = PaymentMethod.WECHAT; showPayError = false }
                             )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(0.5.dp)
-                                    .padding(horizontal = 16.dp)
-                                    .background(AppColors.colorScheme.divider)
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.hairline,
+                                modifier = Modifier.padding(horizontal = 20.dp)
                             )
                             PaymentMethodCard(
                                 method = PaymentMethod.ALIPAY,
@@ -231,11 +237,18 @@ fun RechargePage(
                 }
             }
 
-            Column(modifier = Modifier.padding(AppDimens.pagePadding)) {
+            // 底部按钮（固定在底部，有顶部分隔线）
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppColors.colorScheme.surface)
+            ) {
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                 AppButton(
                     text = if (selectedAmount != null) stringResource(R.string.confirm_pay_format, String.format("%.2f", selectedAmount)) else stringResource(R.string.payment),
                     onClick = { showDialog = true },
-                    loading = rechargeState is RequestState.Loading
+                    loading = rechargeState is RequestState.Loading,
+                    modifier = Modifier.padding(16.dp, 24.dp)
                 )
             }
         }
@@ -262,14 +275,13 @@ fun RechargePage(
 private fun AmountCard(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    // 选中态颜色过渡动画（§8 reduced motion 降级）
     val bgColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         animationSpec = motionSpec(defaultSpring()),
         label = "amountBgColor"
     )
     val textColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary,
+        targetValue = if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary,
         animationSpec = motionSpec(defaultSpring()),
         label = "amountTextColor"
     )
@@ -284,17 +296,41 @@ private fun AmountCard(
                 onClick = onClick
             )
             .pressScale(interactionSource, 0.97f),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
+        shape = RoundedCornerShape(AppDimens.buttonRadius),
         color = bgColor,
         shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
-        border = if (isSelected) BorderStroke(1.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = stringResource(R.string.currency_format, "${amount.toInt()}"),
-                style = AppTextStyles.AmountMedium,
-                color = textColor
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.currency_format, "${amount.toInt()}"),
+                    style = AppTextStyles.AmountMedium.copy(
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFeatureSettings = "tnum"
+                    ),
+                    color = textColor
+                )
+                // 赠送标签
+                val bonus = when (amount) {
+                    50f -> "送 ¥2"
+                    100f -> "送 ¥8"
+                    200f -> "送 ¥20"
+                    else -> null
+                }
+                if (bonus != null) {
+                    Text(
+                        text = bonus,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        color = Color(0xFFD98A26),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -307,10 +343,10 @@ private fun CustomAmountCard(
         modifier = modifier
             .height(72.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
+        shape = RoundedCornerShape(AppDimens.buttonRadius),
         color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
-        border = if (isSelected) BorderStroke(1.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -331,7 +367,12 @@ private fun CustomAmountCard(
                     ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     placeholder = {
-                        Text(stringResource(R.string.custom), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text(
+                            stringResource(R.string.custom),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color.Transparent,
@@ -340,7 +381,11 @@ private fun CustomAmountCard(
                     singleLine = true
                 )
             } else {
-                Text(text = stringResource(R.string.custom_amount), style = MaterialTheme.typography.bodyMedium, color = AppColors.colorScheme.textSecondary)
+                Text(
+                    text = stringResource(R.string.custom_amount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.colorScheme.textTertiary
+                )
             }
         }
     }
@@ -359,14 +404,14 @@ private fun PaymentMethodCard(
                 indication = LocalIndication.current,
                 onClick = onClick
             )
-            .pressScale(interactionSource, 0.98f)
-            .padding(horizontal = AppDimens.cardPadding, vertical = 14.dp),
+            .pressScale(interactionSource, 0.97f)
+            .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(36.dp)
-                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
+                .clip(RoundedCornerShape(AppDimens.radiusMd))
                 .background(
                     when (method) {
                         PaymentMethod.WECHAT -> WeChatGreen.copy(alpha = 0.1f)
@@ -388,22 +433,35 @@ private fun PaymentMethodCard(
                 }
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
         Text(
             text = when (method) {
                 PaymentMethod.WECHAT -> stringResource(R.string.weixin_pay)
                 PaymentMethod.ALIPAY -> stringResource(R.string.alipay)
             },
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f)
         )
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = AppColors.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
+        // 圆形选中标记（ck3 样式）
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .clip(CircleShape)
+                .border(
+                    width = 1.6.dp,
+                    color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.colorScheme.primary)
+                )
+            }
         }
     }
 }

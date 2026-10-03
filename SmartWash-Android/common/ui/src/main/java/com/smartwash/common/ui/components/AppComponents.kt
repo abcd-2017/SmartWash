@@ -309,6 +309,7 @@ fun EmptyState(
     message: String,
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
+    useDrumMark: Boolean = false,
 ) {
     // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
     val reduceMotion = LocalReduceMotion.current
@@ -330,13 +331,20 @@ fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 图标 — 直接着色，无圆形背景
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = AppColors.colorScheme.textTertiary
-            )
+            // 图标 — 规范 §3.6：滚筒圆母题（DrumMark）静止态
+            if (useDrumMark) {
+                DrumMark(
+                    size = 64.dp,
+                    tint = AppColors.colorScheme.textTertiary
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = AppColors.colorScheme.textTertiary
+                )
+            }
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
             Text(
                 text = message,

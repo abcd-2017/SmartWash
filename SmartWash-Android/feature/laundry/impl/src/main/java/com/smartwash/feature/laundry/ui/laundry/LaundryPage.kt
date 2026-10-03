@@ -303,7 +303,7 @@ private fun LaundryTypeItem(
                 indication = LocalIndication.current,
                 onClick = { cardClick() }
             )
-            .pressScale(interactionSource, 0.98f),
+            .pressScale(interactionSource, 0.97f),
         shape = RoundedCornerShape(16.dp),
         color = bgColor,
         shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,

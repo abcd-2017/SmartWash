@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -77,7 +78,7 @@ fun PickupPage(
                         icon = Icons.Default.School,
                         size = 32.dp,
                         iconSize = 16.dp,
-                        containerColor = AppColors.colorScheme.iconContainerTeal,
+                        containerColor = AppColors.colorScheme.iconContainerBlue,
                         iconTint = AppColors.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -118,7 +119,7 @@ private fun PickupOrderCard(
 ) {
     val pickupCode = order.pickupCode?.split(":")?.getOrNull(2) ?: ""
     AppCard(onClick = onClick) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -127,25 +128,31 @@ private fun PickupOrderCard(
                 Column {
                     Text(
                         text = stringResource(R.string.order_no_format, order.orderNo),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.sp,
+                            color = AppColors.colorScheme.textTertiary,
+                            fontFeatureSettings = "tnum"
+                        )
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 11.sp,
+                            color = AppColors.colorScheme.textTertiary,
+                            fontFeatureSettings = "tnum"
+                        )
                     )
                 }
                 Text(
                     text = stringResource(R.string.currency_format, "${order.totalPrice}"),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = AppColors.colorScheme.primary
+                    style = AppTextStyles.AmountMedium,
+                    color = AppColors.colorScheme.primaryDark
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
             Box(modifier = Modifier.fillMaxWidth().height(0.5.dp).background(AppColors.colorScheme.divider))
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -154,13 +161,20 @@ private fun PickupOrderCard(
             ) {
                 Text(
                     text = stringResource(R.string.pickup_code),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textSecondary
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        color = AppColors.colorScheme.textSecondary
+                    )
                 )
                 Text(
                     text = pickupCode,
-                    style = MaterialTheme.typography.displaySmall,
-                    color = AppColors.colorScheme.primary
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.colorScheme.primaryDark,
+                        fontFeatureSettings = "tnum",
+                        letterSpacing = 8.sp
+                    )
                 )
             }
         }

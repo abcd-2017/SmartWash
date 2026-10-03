@@ -23,4 +23,10 @@
     <!-- 错误 -->
     <string name="error_network_fail">请求失败</string>
     <string name="error_booking_failed">预约失败</string>
+
+    <!-- 服务页补充 -->
+    <string name="service_tips">所有服务含免费取送 · 标准24h完成 · 支持在线支付</string>
+    <string name="service_search_hint">搜索服务</string>
+    <string name="service_promo_title">新用户专享</string>
+    <string name="service_promo_subtitle">首单立减 ¥5</string>
 </resources>

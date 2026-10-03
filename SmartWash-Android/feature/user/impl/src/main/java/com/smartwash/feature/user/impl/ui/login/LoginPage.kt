@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material3.Button
@@ -48,7 +49,10 @@ import com.smartwash.common.ui.theme.GlassTextHint
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -65,6 +69,12 @@ import com.smartwash.common.utils.pressScale
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
+
+// 认证页白色 CTA 按钮色
+private val AuthCtaText = Color(0xFF1E8C5C)
+// 认证页底部文字色
+private val AuthBottomText = Color.White.copy(alpha = 0.55f)
+private val AuthBottomTextActive = Color.White.copy(alpha = 0.9f)
 
 @Composable
 fun LoginPage(
@@ -121,7 +131,7 @@ fun LoginPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(28.dp)
+    val glassShape = RoundedCornerShape(24.dp)
 
     Box(
         modifier = Modifier
@@ -138,53 +148,42 @@ fun LoginPage(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            // 品牌标识 — 外圈光环
+            // 品牌标识 — 96dp 单层圆形
             Box(
-                modifier = Modifier.size(88.dp),
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(GlassBgSubtle)
+                    .border(1.dp, GlassBorderSubtle, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                // 外圈 — 淡光环
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .background(GlassBgSubtle)
+                Icon(
+                    imageVector = Icons.Rounded.LocalLaundryService,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Color.White
                 )
-                // 内圈 — 图标
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(GlassBg)
-                        .border(1.dp, GlassBorder, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.LocalLaundryService,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp),
-                        tint = Color.White
-                    )
-                }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             Text(
                 text = stringResource(R.string.brand_name),
-                style = MaterialTheme.typography.headlineLarge,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = stringResource(R.string.brand_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = GlassTextDisabled
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(34.dp))
 
             // 毛玻璃输入卡片
             Column(
@@ -193,7 +192,7 @@ fun LoginPage(
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(vertical = 12.dp)
+                    .padding(20.dp, 16.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -212,9 +211,9 @@ fun LoginPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 14.dp)
                         .height(0.5.dp)
-                        .background(GlassBg)
+                        .background(Color.White.copy(alpha = 0.12f))
                 )
 
                 PasswordInput(
@@ -232,9 +231,9 @@ fun LoginPage(
                     } else isPasswordError
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 登录按钮
+                // 登录按钮 — 白色背景 + 品牌深绿文字 + 阴影
                 Button(
                     onClick = {
                         isPhoneError = !isValidPhone(phone)
@@ -251,20 +250,20 @@ fun LoginPage(
                     interactionSource = loginButtonInteractionSource,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
                         .height(50.dp)
-                        .pressScale(loginButtonInteractionSource, 0.98f),
-                    shape = RoundedCornerShape(16.dp),
+                        .shadow(4.dp, RoundedCornerShape(14.dp))
+                        .pressScale(loginButtonInteractionSource, 0.97f),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GlassBorder,
-                        contentColor = Color.White,
+                        containerColor = Color.White,
+                        contentColor = AuthCtaText,
                     )
                 ) {
                     when (loginState) {
                         is RequestState.Loading -> {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(22.dp),
-                                color = Color.White,
+                                color = AuthCtaText,
                                 strokeWidth = 2.dp
                             )
                         }
@@ -272,16 +271,16 @@ fun LoginPage(
                         else -> {
                             Text(
                                 stringResource(R.string.login_button),
-                                style = MaterialTheme.typography.titleMedium
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 2.sp
                             )
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 注册入口
             TextButton(
@@ -289,21 +288,22 @@ fun LoginPage(
                     navController.navigate(UserRoute.Register.text)
                 },
                 interactionSource = registerEntryInteractionSource,
-                modifier = Modifier.pressScale(registerEntryInteractionSource, 0.98f)
+                modifier = Modifier.pressScale(registerEntryInteractionSource, 0.97f)
             ) {
                 Text(
                     stringResource(R.string.no_account),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = GlassTextHint
+                    fontSize = 13.sp,
+                    color = AuthBottomText
                 )
                 Text(
                     stringResource(R.string.register_now),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AuthBottomTextActive
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

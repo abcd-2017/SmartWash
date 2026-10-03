@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -50,8 +51,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
@@ -61,7 +64,6 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.model.RequestState
 
 @Composable
@@ -136,38 +138,40 @@ fun UpdateUserInfoPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp),
+                            .padding(vertical = 28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        // 圆形图标容器（白色16%透明度）
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
-                                .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                .background(Color.White.copy(alpha = 0.18f)),
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.16f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.School,
                                 contentDescription = null,
-                                modifier = Modifier.size(32.dp),
+                                modifier = Modifier.size(30.dp),
                                 tint = Color.White
                             )
                         }
                         Text(
                             text = stringResource(R.string.complete_info),
-                            style = MaterialTheme.typography.displayLarge,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.85f)
+                            fontSize = 12.5.sp,
+                            color = Color.White.copy(alpha = 0.72f)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             item {
@@ -175,9 +179,19 @@ fun UpdateUserInfoPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(AppDimens.cardPadding),
+                            .padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        // 学校标签
+                        Text(
+                            text = stringResource(R.string.search_school),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.4.sp,
+                            color = AppColors.colorScheme.textTertiary
+                        )
+
+                        // field3 样式输入框
                         SearchSchoolInput(
                             query = query,
                             interactionSource = interactionSource,
@@ -201,11 +215,24 @@ fun UpdateUserInfoPage(
                             userInfoViewModel.updateSearchName(query)
                         }
 
+                        // 学号标签
+                        Text(
+                            text = stringResource(R.string.student_id),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.4.sp,
+                            color = AppColors.colorScheme.textTertiary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+                        // field3 样式输入框
                         OutlinedTextField(
                             value = studentId,
                             onValueChange = { studentId = it; isStudentIdError = false },
-                            label = { Text(stringResource(R.string.student_id)) },
-                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(stringResource(R.string.student_id)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             isError = isStudentIdError,
                             supportingText = if (isStudentIdError) {
@@ -214,11 +241,13 @@ fun UpdateUserInfoPage(
                             leadingIcon = {
                                 Icon(Icons.Rounded.Badge, contentDescription = null, tint = AppColors.colorScheme.primary)
                             },
-                            shape = RoundedCornerShape(AppDimens.inputRadius),
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = AppColors.colorScheme.primary,
                                 unfocusedBorderColor = AppColors.colorScheme.outline,
-                                errorBorderColor = AppColors.colorScheme.error
+                                errorBorderColor = AppColors.colorScheme.error,
+                                focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -226,7 +255,7 @@ fun UpdateUserInfoPage(
             }
 
             item {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 AppButton(
                     text = stringResource(R.string.confirm),
                     onClick = {
@@ -238,6 +267,12 @@ fun UpdateUserInfoPage(
                         }
                     },
                     loading = updateState is RequestState.Loading
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "学校信息决定可用的柜机与配送网点",
+                    fontSize = 11.sp,
+                    color = AppColors.colorScheme.textTertiary
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -260,8 +295,10 @@ fun SearchSchoolInput(
         OutlinedTextField(
             value = query,
             onValueChange = onValueChange,
-            label = { Text(stringResource(R.string.search_school)) },
-            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search_school)) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
             isError = isSchoolError,
             supportingText = if (isSchoolError) {
                 { Text(stringResource(R.string.please_select_school)) }
@@ -274,17 +311,19 @@ fun SearchSchoolInput(
                     Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.clear), tint = AppColors.colorScheme.textSecondary)
                 }
             },
-            shape = RoundedCornerShape(AppDimens.inputRadius),
+            shape = RoundedCornerShape(14.dp),
             interactionSource = interactionSource,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AppColors.colorScheme.primary,
                 unfocusedBorderColor = AppColors.colorScheme.outline,
-                errorBorderColor = AppColors.colorScheme.error
+                errorBorderColor = AppColors.colorScheme.error,
+                focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
             )
         )
 
         if (isSearchFocused && schoolList.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             SchoolItem(schoolList, itemClick)
         }
     }
@@ -308,22 +347,20 @@ fun SchoolItem(
                         .fillMaxWidth()
                         .height(56.dp)
                         .clickable { onClick(school) }
-                        .padding(horizontal = AppDimens.cardPadding),
+                        .padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconBox(icon = Icons.Rounded.School, size = 36.dp, iconSize = 18.dp)
-                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                     Text(
                         text = school.schoolName,
-                        style = MaterialTheme.typography.bodyLarge,
+                        fontSize = 13.sp,
                         color = AppColors.colorScheme.textPrimary,
                         modifier = Modifier.weight(1f)
                     )
                 }
                 HorizontalDivider(
                     thickness = 0.5.dp,
-                    color = AppColors.colorScheme.divider,
-                    modifier = Modifier.padding(horizontal = AppDimens.cardPadding)
+                    color = AppColors.colorScheme.hairline,
+                    modifier = Modifier.padding(horizontal = 14.dp)
                 )
             }
         }

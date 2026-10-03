@@ -3,6 +3,7 @@ package com.smartwash.feature.payment.impl.ui.payment
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,10 +24,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -45,10 +46,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.payment.impl.R
@@ -89,13 +94,10 @@ fun PaymentPage(
     var selectedCoupon by remember { mutableIntStateOf(-1) }
 
     if (orderId != null) {
-        // 进入页面各触发一次：以 Unit 为 key，避免依赖 currentBackStackEntry 时
-        // backstack 任何变化都重复请求（从优惠券页返回时页面重组会重新执行，刷新语义不变）
         LaunchedEffect(Unit) { paymentViewModel.initData(orderId) }
         LaunchedEffect(Unit) { paymentViewModel.getaUserCoupon(orderId) }
     }
 
-    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
     LaunchedEffect(paymentState) {
         when (paymentState) {
             is RequestState.Success -> {
@@ -130,57 +132,117 @@ fun PaymentPage(
         if (orderInfo == null) {
             LoadingState(modifier = Modifier.fillMaxSize())
         } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            PageHeader(title = stringResource(R.string.payment), onBack = { navController.navigateUp() })
+            Column(modifier = Modifier.fillMaxSize()) {
+                PageHeader(title = stringResource(R.string.payment), onBack = { navController.navigateUp() })
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = AppDimens.pagePadding),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
-            ) {
-                // 订单摘要
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
-                    color = AppColors.colorScheme.surface,
-                    shadowElevation = AppElevation.level1,
-                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = AppDimens.pagePadding),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
                 ) {
-                    Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                        Text(stringResource(R.string.order_information), style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        InfoLine(stringResource(R.string.order_number), "${orderInfo?.orderNo ?: ""}")
-                        InfoLine(stringResource(R.string.service_type), "${orderInfo?.laundryPackageVo?.itemName ?: ""}")
-                        InfoLine(stringResource(R.string.estimated_completion_time), stringResource(R.string.within_24_hours))
-                        Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(stringResource(R.string.amount_due), style = MaterialTheme.typography.titleLarge)
+                    // 应付金额卡片（独立卡片，设计稿 §10）
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = AppElevation.level1,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                    ) {
+                        Column(modifier = Modifier.padding(22.dp, 20.dp)) {
                             Text(
-                                stringResource(
+                                text = stringResource(R.string.amount_due),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.colorScheme.textTertiary
+                            )
+                            Text(
+                                text = stringResource(
                                     R.string.currency_format,
                                     "${orderInfo?.payPrice ?: ""}"
                                 ),
-                                style = AppTextStyles.DataLarge,
-                                color = AppColors.colorScheme.primary
+                                style = AppTextStyles.DataLarge.copy(
+                                    fontSize = 38.sp,
+                                    lineHeight = 44.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-0.5).sp,
+                                    fontFeatureSettings = "tnum"
+                                ),
+                                color = AppColors.colorScheme.primaryDark,
+                                modifier = Modifier.padding(top = 10.dp)
                             )
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.hairline,
+                                modifier = Modifier.padding(vertical = 18.dp)
+                            )
+                            InfoLine(stringResource(R.string.order_number), "${orderInfo?.orderNo ?: ""}")
+                            InfoLine(stringResource(R.string.service_type), "${orderInfo?.laundryPackageVo?.itemName ?: ""}")
+                            InfoLine(stringResource(R.string.estimated_completion_time), stringResource(R.string.within_24_hours))
                         }
                     }
-                }
 
-                // 支付方式
-                Column {
-                    Text(stringResource(R.string.payment_method), style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // 支付方式
+                    Column {
+                        Text(
+                            text = stringResource(R.string.payment_method),
+                            style = AppTextStyles.SectionTitle
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(AppDimens.radiusLg),
+                            color = AppColors.colorScheme.surface,
+                            shadowElevation = AppElevation.level1,
+                            border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedPaymentMethod = "balance" }
+                                    .padding(horizontal = 20.dp, vertical = 15.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                        .background(AppColors.colorScheme.iconContainerGreen),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalOffer,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(19.dp),
+                                        tint = AppColors.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.balance_payment),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        stringResource(R.string.current_balance_format, "${orderInfo?.userVo?.balance ?: 0}"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textTertiary,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                                CheckMark(
+                                    isSelected = selectedPaymentMethod == "balance",
+                                    onClick = { selectedPaymentMethod = "balance" }
+                                )
+                            }
+                        }
+                    }
+
+                    // 优惠券
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showBottomSheet = true },
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
                         shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
@@ -188,106 +250,76 @@ fun PaymentPage(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { selectedPaymentMethod = "balance" }
-                                .padding(AppDimens.cardPadding),
+                                .padding(horizontal = 20.dp, vertical = 15.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
-                                    .background(AppColors.colorScheme.primaryLight),
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                    .background(AppColors.colorScheme.iconContainerOrange),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.LocalOffer,
+                                    Icons.Default.LocalOffer,
                                     contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = AppColors.colorScheme.primary
+                                    modifier = Modifier.size(19.dp),
+                                    tint = Color(0xFFD98A26)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(stringResource(R.string.balance_payment), style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.width(14.dp))
+                            Text(
+                                stringResource(R.string.coupon),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (selectedCoupon == -1 || userCouponList.isEmpty()) {
                                 Text(
-                                    stringResource(R.string.current_balance_format, "${orderInfo?.userVo?.balance ?: 0}"),
+                                    stringResource(R.string.do_not_use),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.colorScheme.textSecondary
                                 )
+                            } else {
+                                Text(
+                                    "-￥${userCouponList[selectedCoupon].discount ?: 0}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.primary
+                                )
                             }
-                            RadioButton(
-                                selected = selectedPaymentMethod == "balance",
-                                onClick = { selectedPaymentMethod = "balance" },
-                                colors = RadioButtonDefaults.colors(selectedColor = AppColors.colorScheme.primary)
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                null,
+                                modifier = Modifier.size(15.dp),
+                                tint = AppColors.colorScheme.textTertiary
                             )
                         }
                     }
                 }
 
-                // 优惠券
-                Surface(
+                // 底部支付按钮（固定在底部，有顶部分隔线）
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showBottomSheet = true },
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
-                    color = AppColors.colorScheme.surface,
-                    shadowElevation = AppElevation.level1,
-                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                        .background(AppColors.colorScheme.surface)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(AppDimens.cardPadding),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
-                                .background(AppColors.colorScheme.primaryLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.LocalOffer,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = AppColors.colorScheme.primary
-                            )
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Text(stringResource(R.string.coupon), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                        if (selectedCoupon == -1 || userCouponList.isEmpty()) {
-                            Text(stringResource(R.string.do_not_use), style = MaterialTheme.typography.bodySmall, color = AppColors.colorScheme.textSecondary)
-                        } else {
-                            Text(
-                                "-￥${userCouponList[selectedCoupon].discount ?: 0}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.primary
-                            )
-                        }
-                        Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.textSecondary)
-                    }
+                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
+                    AppButton(
+                        text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
+                        onClick = {
+                            if (orderInfo != null) {
+                                if (orderInfo!!.userVo.balance >= orderInfo!!.payPrice) {
+                                    confirmPayShow = true
+                                } else {
+                                    showRechargeDialog = true
+                                }
+                            }
+                        },
+                        loading = paymentState is RequestState.Loading,
+                        modifier = Modifier.padding(16.dp, 24.dp)
+                    )
                 }
             }
-
-            // 底部支付按钮
-            Column(modifier = Modifier.padding(AppDimens.pagePadding)) {
-                AppButton(
-                    text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
-                    onClick = {
-                        if (orderInfo != null) {
-                            if (orderInfo!!.userVo.balance >= orderInfo!!.payPrice) {
-                                confirmPayShow = true
-                            } else {
-                                showRechargeDialog = true
-                            }
-                        }
-                    },
-                    loading = paymentState is RequestState.Loading
-                )
-            }
-        }
         }
     }
 
@@ -311,14 +343,22 @@ fun PaymentPage(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.select_coupon), style = MaterialTheme.typography.headlineSmall)
+                        Text(
+                            stringResource(R.string.select_coupon),
+                            style = MaterialTheme.typography.headlineSmall
+                        )
                         TextButton(onClick = {
                             showBottomSheet = false
                             navController.navigate(CouponRoute.Coupon.text)
                         }) {
                             Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.primary)
                             Spacer(Modifier.width(4.dp))
-                            Icon(Icons.Default.ChevronRight, null, modifier = Modifier.size(16.dp), tint = AppColors.colorScheme.primary)
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                null,
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -330,7 +370,11 @@ fun PaymentPage(
                                 .padding(vertical = 32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(stringResource(R.string.no_coupons), style = MaterialTheme.typography.bodyLarge, color = AppColors.colorScheme.textSecondary)
+                            Text(
+                                stringResource(R.string.no_coupons),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = AppColors.colorScheme.textSecondary
+                            )
                         }
                     }
                 } else {
@@ -385,11 +429,49 @@ private fun InfoLine(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = AppColors.colorScheme.textSecondary)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.colorScheme.textSecondary
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFeatureSettings = "tnum"
+            ),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+private fun CheckMark(
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .clip(CircleShape)
+            .border(
+                width = 1.6.dp,
+                color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.primary)
+            )
+        }
     }
 }
 
@@ -404,7 +486,7 @@ private fun UserCouponItem(
             .padding(vertical = 4.dp)
             .fillMaxWidth()
             .clickable(onClick = itemClick),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
