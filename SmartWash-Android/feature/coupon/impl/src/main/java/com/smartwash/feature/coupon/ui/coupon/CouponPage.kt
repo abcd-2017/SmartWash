@@ -124,10 +124,10 @@ fun UserCouponCard(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (isHistorical) 0.6f else 1f),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier

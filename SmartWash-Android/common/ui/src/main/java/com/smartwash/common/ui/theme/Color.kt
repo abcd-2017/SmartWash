@@ -27,16 +27,18 @@ val TertiaryContainer = Color(0xFFF2F2F7)
 val OnTertiaryContainer = Color(0xFF1C1C1E)
 
 // 背景 & 表面
-val Background = Color(0xFFFAFAF8)       // 微暖米白页面底色
-val OnBackground = Color(0xFF1C1C1E)     // iOS 系统黑
+val Background = Color(0xFFEFF1EE)       // 微绿调米白页面底色（规范 §2.1）
+val OnBackground = Color(0xFF1C1C1E)
 val Surface = Color(0xFFFFFFFF)          // 纯白卡片
 val OnSurface = Color(0xFF1C1C1E)
-val SurfaceVariant = Color(0xFFF2F2F7)
-val OnSurfaceVariant = Color(0xFF8E8E93)
+val SurfaceVariant = Color(0xFFF5F6F3)   // 卡内次级块（输入框底、嵌套卡）
+val OnSurfaceVariant = Color(0xFF6B6E73)
+val GroupBackground = Color(0xFFE7EAE4)  // 分组容器底（比页面底再深一档）
+val Hairline = Color(0xFFEFF1EE)        // 容器内部行分隔线底色
 
 // 边框 & 辅助
-val Outline = Color(0xFFE5E7EB)
-val OutlineVariant = Color(0xFFF2F2F7)
+val Outline = Color(0xFFE3E7E2)         // 卡片描边（1px）
+val OutlineVariant = Color(0xFFF5F6F3)
 
 // 错误
 val Error = Color(0xFFFF3B30)
@@ -58,11 +60,23 @@ val OnSuccessContainer = Color(0xFF065F46)
 
 // 文字色阶
 val TextPrimary = Color(0xFF1C1C1E)
-val TextSecondary = Color(0xFF8E8E93)
-val TextTertiary = Color(0xFFC7C7CC)
+val TextSecondary = Color(0xFF6B6E73)   // 次文本（对比度更高）
+val TextTertiary = Color(0xFF9A9DA3)    // 弱文本（对比度更高）
 
 // 分隔线
-val Divider = Color(0xFFF2F2F7)
+val Divider = Color(0xFFEFF1EE)
+
+// 水意象（次要强调、进度、水滴）
+val Water = Color(0xFF4A9FD4)
+val WaterSoft = Color(0xFFDCEFF7)       // 水色浅底容器
+
+// 图标容器六色浅底（规范 §2.1）
+val IconContainerGreen = Color(0xFFE8F6EF)   // 洗护/主
+val IconContainerBlue = Color(0xFFEEF2FB)    // 物流/寄件
+val IconContainerOrange = Color(0xFFFDF3E7)  // 取件/待办
+val IconContainerPink = Color(0xFFFDEEF0)    // 异常/取消
+val IconContainerTeal = Color(0xFFF0FBF4)    // 账户/安全
+val IconContainerPurple = Color(0xFFF4F0FB)  // 观象台/AI
 
 // ========== 清氧设计系统 — 暗色主题 ==========
 
@@ -94,10 +108,12 @@ val DarkOnBackground = Color(0xFFF2F2F7)     // 浅色文字
 val DarkSurface = Color(0xFF2C2C2E)          // 卡片底色（比背景稍亮）
 val DarkOnSurface = Color(0xFFF2F2F7)
 val DarkSurfaceVariant = Color(0xFF3A3A3C)
-val DarkOnSurfaceVariant = Color(0xFFB0B0B5)
+val DarkOnSurfaceVariant = Color(0xFFA0A4A8)
+val DarkGroupBackground = Color(0xFF262628)  // 分组容器底
+val DarkHairline = Color(0xFF2A2A2C)        // 容器内部行分隔线底色
 
 // 边框 & 辅助
-val DarkOutline = Color(0xFF48484A)
+val DarkOutline = Color(0xFF3A3A3C)
 val DarkOutlineVariant = Color(0xFF38383A)
 
 // 错误
@@ -120,11 +136,23 @@ val DarkOnSuccessContainer = Color(0xFFB2F0D0)
 
 // 文字色阶
 val DarkTextPrimary = Color(0xFFF2F2F7)
-val DarkTextSecondary = Color(0xFF8E8E93)
-val DarkTextTertiary = Color(0xFF636366)
+val DarkTextSecondary = Color(0xFFA8ABB0)
+val DarkTextTertiary = Color(0xFF82858A)
 
 // 分隔线
-val DarkDivider = Color(0xFF38383A)
+val DarkDivider = Color(0xFF2A2A2C)
+
+// 水意象（暗色下保持可读性）
+val DarkWater = Color(0xFF5BADDB)
+val DarkWaterSoft = Color(0xFF2A3A44)
+
+// 图标容器六色浅底（暗色版）
+val DarkIconContainerGreen = Color(0xFF1A2F22)
+val DarkIconContainerBlue = Color(0xFF1E2840)
+val DarkIconContainerOrange = Color(0xFF332A1E)
+val DarkIconContainerPink = Color(0xFF332025)
+val DarkIconContainerTeal = Color(0xFF1C2E26)
+val DarkIconContainerPurple = Color(0xFF282033)
 
 // ========== 认证页渐变色 ==========
 val AuthGradientTop = Color(0xFF1A9E6E)

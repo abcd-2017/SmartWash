@@ -8,18 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.DryCleaning
-import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,9 +31,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smartwash.common.model.RequestState
+import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.ServiceDry
 import com.smartwash.common.ui.theme.ServiceLuxury
 import com.smartwash.common.ui.theme.ServicePress
@@ -71,38 +70,43 @@ fun ServicePage(
             ) {
                 // 页面标题
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     Column(
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                     ) {
                         Text(
                             text = stringResource(R.string.laundry_service),
-                            style = MaterialTheme.typography.displayLarge,
+                            style = AppTextStyles.PageTitle,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                         Text(
                             text = stringResource(R.string.service_page_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textSecondary
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                 }
 
-                // 服务项目列表 — 紧凑分隔线列表
-                items(laundryItems, key = { it.itemId }) { item ->
-                    ServiceItemRow(
-                        item = item,
+                // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 §3.4）
+                item {
+                    GroupCard(
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-                    )
-                    HorizontalDivider(
-                        thickness = 0.5.dp,
-                        color = AppColors.colorScheme.divider
-                    )
+                    ) {
+                        laundryItems.forEachIndexed { index, item ->
+                            ServiceItemRow(item = item)
+                            if (index < laundryItems.lastIndex) {
+                                HorizontalDivider(
+                                    thickness = 0.5.dp,
+                                    color = AppColors.colorScheme.hairline
+                                )
+                            }
+                        }
+                    }
                 }
 
-                item { Spacer(modifier = Modifier.height(24.dp)) }
+                item { Spacer(modifier = Modifier.height(AppDimens.spaceXl)) }
             }
         }
     }
@@ -111,23 +115,24 @@ fun ServicePage(
 @Composable
 private fun ServiceItemRow(
     item: LaundryItem,
-    modifier: Modifier = Modifier,
 ) {
+    val (containerColor, iconTint) = serviceColors(item)
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .pressable(onClick = {})
-            .padding(vertical = 12.dp),
+            .padding(vertical = AppDimens.spaceSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = serviceIcon(item),
-            contentDescription = null,
-            modifier = Modifier.size(32.dp),
-            tint = serviceColor(item)
+        IconBox(
+            icon = serviceIcon(item),
+            size = 36.dp,
+            iconSize = 18.dp,
+            containerColor = containerColor,
+            iconTint = iconTint
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.itemName,
@@ -142,10 +147,10 @@ private fun ServiceItemRow(
         }
         Text(
             text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
-            style = MaterialTheme.typography.titleMedium,
+            style = AppTextStyles.AmountMedium,
             color = AppColors.colorScheme.primary
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         TextButton(onClick = {}) {
             Text(
                 text = stringResource(R.string.service_reserve),
@@ -174,14 +179,19 @@ private fun serviceIcon(item: LaundryItem): ImageVector {
     }
 }
 
-private fun serviceColor(item: LaundryItem): Color {
+/**
+ * 服务类型 → (图标容器浅底, 图标深色)。
+ * 容器浅底取自规范 §2.1 六色浅底（iconContainer*），图标色取自对应深色版（规范 §3.2）。
+ */
+@Composable
+private fun serviceColors(item: LaundryItem): Pair<Color, Color> {
     val name = item.itemName
     return when {
-        name.contains("干") -> ServiceDry
-        name.contains("精") || name.contains("护理") || name.contains("奢") -> ServiceLuxury
-        name.contains("熨") -> ServicePress
-        name.contains("鞋") -> ServiceShoes
-        name.contains("洗") || name.contains("标准") -> ServiceWash
-        else -> ServiceWash
+        name.contains("干") -> AppColors.colorScheme.iconContainerPurple to ServiceDry
+        name.contains("精") || name.contains("护理") || name.contains("奢") -> AppColors.colorScheme.iconContainerBlue to ServiceLuxury
+        name.contains("熨") -> AppColors.colorScheme.iconContainerOrange to ServicePress
+        name.contains("鞋") -> AppColors.colorScheme.iconContainerPink to ServiceShoes
+        name.contains("洗") || name.contains("标准") -> AppColors.colorScheme.iconContainerGreen to ServiceWash
+        else -> AppColors.colorScheme.iconContainerGreen to ServiceWash
     }
 }

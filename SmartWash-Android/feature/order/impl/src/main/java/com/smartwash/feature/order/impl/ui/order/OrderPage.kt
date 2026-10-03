@@ -2,6 +2,7 @@ package com.smartwash.feature.order.impl.ui.order
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,14 +21,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,6 +58,9 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.ui.theme.StatusDot
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
@@ -302,33 +303,37 @@ private fun OrderCard(
     itemClick: () -> Unit,
 ) {
     val view = currentView()
+    // 规范 §3.1：标准卡片画法 — 白底 + 1px 描边 + 轻阴影
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = itemClick, alphaFactor = 0.95f),
-        shape = RoundedCornerShape(AppDimens.radiusMd),
-        color = AppColors.colorScheme.surfaceVariant,
+            .pressable(onClick = itemClick),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
         shadowElevation = AppElevation.level1
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.cardPadding),
             verticalAlignment = Alignment.Top
         ) {
-            // 左侧状态色点
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.colorScheme.primary)
+            // 左侧状态色点（规范 §3.5）：已完成 #2D9B6A / 进行中 #D98A26
+            val dotColor = if (order.status == OrderStatus.COMPLETED.status) {
+                AppColors.colorScheme.primary
+            } else {
+                AppColors.colorScheme.warning
+            }
+            StatusDot(
+                color = dotColor,
+                modifier = Modifier.padding(top = 4.dp)
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-            // 图标（无背景，primary 着色）
-            Icon(
-                imageVector = Icons.Default.LocalLaundryService,
-                contentDescription = null,
-                tint = AppColors.colorScheme.primary,
-                modifier = Modifier.size(40.dp)
+            // 图标（规范 §3.2）：IconBox 容器，洗护语义用绿底
+            IconBox(
+                icon = Icons.Default.LocalLaundryService,
+                size = 36.dp,
+                iconSize = 18.dp,
+                containerColor = AppColors.colorScheme.iconContainerGreen
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             // 主体信息 + 操作按钮
@@ -349,10 +354,11 @@ private fun OrderCard(
                     color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                // 规范 §2.2：金额必须开 tabular numbers
                 Text(
                     text = stringResource(R.string.currency_format, order.payPrice.toString()),
                     color = AppColors.colorScheme.primary,
-                    style = MaterialTheme.typography.titleSmall
+                    style = AppTextStyles.AmountMedium
                 )
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -373,7 +379,7 @@ private fun OrderCard(
                                     view.performHaptic(HapticEffect.MEDIUM)
                                     paymentClick()
                                 },
-                                shape = RoundedCornerShape(AppDimens.radiusMd),
+                                shape = RoundedCornerShape(AppDimens.buttonRadius),
                                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
                                 modifier = Modifier.height(36.dp)
                             ) { Text(stringResource(R.string.go_pay)) }
@@ -384,7 +390,7 @@ private fun OrderCard(
                                     view.performHaptic(HapticEffect.MEDIUM)
                                     shipmentClick()
                                 },
-                                shape = RoundedCornerShape(AppDimens.radiusMd),
+                                shape = RoundedCornerShape(AppDimens.buttonRadius),
                                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
                                 modifier = Modifier.height(36.dp)
                             ) { Text(stringResource(R.string.go_ship)) }
@@ -402,7 +408,7 @@ private fun OrderCard(
                                     view.performHaptic(HapticEffect.MEDIUM)
                                     pickupClick()
                                 },
-                                shape = RoundedCornerShape(AppDimens.radiusMd),
+                                shape = RoundedCornerShape(AppDimens.buttonRadius),
                                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
                                 modifier = Modifier.height(36.dp)
                             ) { Text(stringResource(R.string.go_pickup)) }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,7 +26,6 @@ import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.Toys
-import androidx.compose.material.icons.rounded.Wash
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,7 +35,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +51,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.model.RequestState
@@ -105,7 +103,7 @@ fun OrderDetailPage(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 状态卡片 — 全宽背景
-                StatusCard(orderStatus = orderInfo?.status ?: "-1")
+                StatusCard(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
 
                 Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
@@ -115,8 +113,17 @@ fun OrderDetailPage(
                     icon = Icons.Rounded.LocalLaundryService
                 ) {
                     InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
-                    InfoRow(stringResource(R.string.price), "￥${orderInfo?.totalPrice ?: 0}")
-                    InfoRow(stringResource(R.string.actual_payment), "￥${orderInfo?.payPrice ?: 0}", valueColor = AppColors.colorScheme.primary)
+                    InfoRow(
+                        stringResource(R.string.price),
+                        stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString()),
+                        valueStyle = AppTextStyles.AmountMedium
+                    )
+                    InfoRow(
+                        stringResource(R.string.actual_payment),
+                        stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                        valueColor = AppColors.colorScheme.primary,
+                        valueStyle = AppTextStyles.AmountMedium
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
@@ -138,7 +145,13 @@ fun OrderDetailPage(
                         icon = Icons.Rounded.Storage
                     ) {
                         InfoRow(stringResource(R.string.locker_number), "${orderInfo?.lockersVo?.lockerNumber ?: 0}")
-                        InfoRow(stringResource(R.string.pickup_code), orderInfo?.pickupCode?.split(":")?.getOrNull(2) ?: "")
+                        InfoRow(
+                            label = stringResource(R.string.pickup_code),
+                            value = orderInfo?.pickupCode?.split(":")?.getOrNull(2) ?: "",
+                            valueStyle = AppTextStyles.DataLarge,
+                            valueColor = AppColors.colorScheme.textPrimary,
+                            rowHeight = 48.dp
+                        )
                     }
                 }
 
@@ -163,31 +176,31 @@ fun OrderDetailPage(
 }
 
 @Composable
-fun StatusCard(orderStatus: String) {
+fun StatusCard(status: OrderStatus?) {
     data class OrderStatusInfo(
         @androidx.annotation.StringRes val statusTextRes: Int,
         val statusColor: Color,
-        val icon: ImageVector,
+        val icon: ImageVector?,
         @androidx.annotation.StringRes val estimatedTimeRes: Int,
     )
 
-    val info: OrderStatusInfo = when (orderStatus) {
-        OrderStatus.PENDING_PAYMENT.status -> OrderStatusInfo(
+    val info: OrderStatusInfo = when (status) {
+        OrderStatus.PENDING_PAYMENT -> OrderStatusInfo(
             R.string.pending_payment, AppColors.colorScheme.warning, Icons.Rounded.HourglassEmpty, R.string.please_pay_soon
         )
-        OrderStatus.WASHING.status -> OrderStatusInfo(
-            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, Icons.Rounded.Wash, R.string.please_pay_soon
+        OrderStatus.WASHING -> OrderStatusInfo(
+            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, null, R.string.please_pay_soon
         )
-        OrderStatus.PENDING_SHIPMENT.status -> OrderStatusInfo(
+        OrderStatus.PENDING_SHIPMENT -> OrderStatusInfo(
             R.string.pending_shipment, AppColors.colorScheme.primary, Icons.Rounded.LocalLaundryService, R.string.please_ship_soon
         )
-        OrderStatus.READY_FOR_PICKUP.status -> OrderStatusInfo(
+        OrderStatus.READY_FOR_PICKUP -> OrderStatusInfo(
             R.string.pending_pickup, AppColors.colorScheme.primary, Icons.Rounded.Toys, R.string.clothes_in_locker
         )
-        OrderStatus.COMPLETED.status -> OrderStatusInfo(
+        OrderStatus.COMPLETED -> OrderStatusInfo(
             R.string.completed, AppColors.colorScheme.success, Icons.Rounded.CheckCircle, R.string.completion_time
         )
-        OrderStatus.CANCELED.status -> OrderStatusInfo(
+        OrderStatus.CANCELED -> OrderStatusInfo(
             R.string.cancelled, AppColors.colorScheme.error, Icons.Rounded.Cancel, R.string.cancelled
         )
         else -> OrderStatusInfo(R.string.dash, MaterialTheme.colorScheme.onBackground, Icons.Rounded.HourglassEmpty, R.string.dash)
@@ -195,10 +208,10 @@ fun StatusCard(orderStatus: String) {
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.cardRadius),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level2,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -206,13 +219,22 @@ fun StatusCard(orderStatus: String) {
                 .padding(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconBox(
-                icon = info.icon,
-                size = 52.dp,
-                iconSize = 26.dp,
-                containerColor = info.statusColor.copy(alpha = 0.15f),
-                iconTint = info.statusColor
-            )
+            if (status == OrderStatus.WASHING) {
+                // 清洗中：使用 DrumIcon 动效组件（规范 §5），动画由真实状态触发
+                DrumIcon(
+                    state = OrderStatus.WASHING,
+                    tint = info.statusColor,
+                    drumSize = 52.dp
+                )
+            } else {
+                IconBox(
+                    icon = info.icon ?: Icons.Rounded.HourglassEmpty,
+                    size = 52.dp,
+                    iconSize = 26.dp,
+                    containerColor = info.statusColor.copy(alpha = 0.15f),
+                    iconTint = info.statusColor
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(

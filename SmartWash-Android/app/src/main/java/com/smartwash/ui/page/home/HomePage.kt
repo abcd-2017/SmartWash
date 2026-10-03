@@ -1,7 +1,7 @@
 package com.smartwash.ui.page.home
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -17,10 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,14 +28,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.motionSpec
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -118,108 +119,87 @@ fun BottomBar(navController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val view = currentView()
 
-    Column {
-        // 顶部分隔线 — 0.5dp 细线替代渐变
-        HorizontalDivider(
-            thickness = 0.5.dp,
-            color = AppColors.colorScheme.divider
-        )
-        // 底部栏
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.colorScheme.surface.copy(alpha = 0.85f))
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .height(64.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            bottomNavItems.forEach { item ->
-                val isSelected = currentRoute == item.text
-                BottomNavItem(
-                    icon = if (isSelected) item.selectIcon else item.icon,
-                    label = item.description,
-                    isSelected = isSelected,
-                    onClick = {
-                        view.performHaptic(HapticEffect.SELECTION)
-                        if (!isSelected) {
-                            navController.navigate(item.text) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+    // 底部栏 — 规范 §4.5：68dp 高、无顶部分隔线、纯白底
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(AppDimens.bottomBarHeight),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        bottomNavItems.forEach { item ->
+            val isSelected = currentRoute == item.text
+            BottomNavItem(
+                iconRes = item.iconRes,
+                label = item.description,
+                isSelected = isSelected,
+                onClick = {
+                    view.performHaptic(HapticEffect.SELECTION)
+                    if (!isSelected) {
+                        navController.navigate(item.text) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
-                )
-            }
+                }
+            )
         }
     }
 }
 
 @Composable
 private fun BottomNavItem(
-    icon: ImageVector,
+    iconRes: Int,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    // 选中态图标尺寸动画 — 选中时放大至 28dp
-    val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 28.dp else 24.dp,
-        label = "iconSize"
+    val reduceMotion = LocalReduceMotion.current
+
+    // 规范 §4.5：选中 scale 1.06，未选中 1.0；reduced motion 时取消缩放
+    val scale by animateFloatAsState(
+        targetValue = if (reduceMotion) 1f else if (isSelected) 1.06f else 1f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "tabIconScale"
     )
-    // 选中态药丸背景色动画 — 选中时 primaryLight，未选中透明
-    val pillColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primaryLight else Color.Transparent,
-        label = "pillColor"
-    )
-    // 选中态颜色动画 — 平滑过渡
+
+    // 规范 §4.5：未选中 #9A9DA3 opacity .48，选中 #1E8C5C 实色
     val iconColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textTertiary,
-        label = "iconColor"
+        targetValue = if (isSelected) AppColors.colorScheme.primaryDark
+        else AppColors.colorScheme.textTertiary.copy(alpha = 0.48f),
+        animationSpec = motionSpec(defaultSpring()),
+        label = "tabIconColor"
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary,
-        label = "labelColor"
+        targetValue = if (isSelected) AppColors.colorScheme.primaryDark
+        else AppColors.colorScheme.textSecondary,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "tabLabelColor"
     )
 
     Column(
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 2.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 药丸背景容器 — 选中时显示 primaryLight 圆角背景
-        Box(
+        // 规范 §4.5：26dp 图标，无药丸底，实心版 + 颜色/重量区分选中态
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = label,
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(pillColor),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                modifier = Modifier.size(iconSize),
-                tint = iconColor
-            )
-        }
+                .size(26.dp)
+                .scale(scale),
+            tint = iconColor
+        )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = labelColor
         )
-        Spacer(modifier = Modifier.height(2.dp))
-        if (isSelected) {
-            // 选中指示条 — 3dp 高、20dp 宽
-            Box(
-                modifier = Modifier
-                    .width(20.dp)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(1.5.dp))
-                    .background(AppColors.colorScheme.primary)
-            )
-        }
     }
 }

@@ -63,6 +63,8 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.model.RequestState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,8 +144,8 @@ fun PaymentPage(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(AppDimens.cardRadius),
                     color = AppColors.colorScheme.surface,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                    shadowElevation = AppElevation.level1,
+                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
                         Text(stringResource(R.string.order_information), style = MaterialTheme.typography.titleLarge)
@@ -165,7 +167,7 @@ fun PaymentPage(
                                     R.string.currency_format,
                                     "${orderInfo?.payPrice ?: ""}"
                                 ),
-                                style = MaterialTheme.typography.displaySmall,
+                                style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primary
                             )
                         }
@@ -180,8 +182,8 @@ fun PaymentPage(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(AppDimens.cardRadius),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = 0.dp,
-                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                        shadowElevation = AppElevation.level1,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Row(
                             modifier = Modifier
@@ -229,8 +231,8 @@ fun PaymentPage(
                         .clickable { showBottomSheet = true },
                     shape = RoundedCornerShape(AppDimens.cardRadius),
                     color = AppColors.colorScheme.surface,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                    shadowElevation = AppElevation.level1,
+                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                 ) {
                     Row(
                         modifier = Modifier
@@ -404,8 +406,8 @@ private fun UserCouponItem(
             .clickable(onClick = itemClick),
         shape = RoundedCornerShape(AppDimens.cardRadius),
         color = AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
@@ -417,7 +419,7 @@ private fun UserCouponItem(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = stringResource(R.string.coupon_amount_format, "${userCouponVo.discount}"),
-                    style = MaterialTheme.typography.titleLarge
+                    style = AppTextStyles.AmountMedium
                 )
                 Text(
                     text = if (userCouponVo.threshold == 0f)

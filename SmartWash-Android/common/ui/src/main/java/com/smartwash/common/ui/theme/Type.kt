@@ -5,6 +5,46 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+/**
+ * 规范 §2.2 新增三档排版 — 数据大字 / 金额中字 / 区块标题。
+ * 使用方式：AppTextStyles.DataLarge、AppTextStyles.AmountMedium、AppTextStyles.SectionTitle
+ */
+object AppTextStyles {
+    /** 数据大字 — 余额、应付金额、取件码（36sp / Bold / tabular numbers） */
+    val DataLarge = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
+        letterSpacing = (-0.5).sp,
+        fontFeatureSettings = "tnum",
+    )
+
+    /** 金额中字 — 列表内价格、券面额（20sp / Bold / tabular numbers） */
+    val AmountMedium = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
+        letterSpacing = 0.sp,
+        fontFeatureSettings = "tnum",
+    )
+
+    /** 页面标题（28sp / Bold）— 规范 §2.2 */
+    val PageTitle = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.5).sp,
+    )
+
+    /** 区块标题 — 页面内分区标题（17sp / SemiBold / letterSpacing +0.3sp） */
+    val SectionTitle = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 17.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.3.sp,
+    )
+}
+
 val AppTypography = Typography(
     // 页面大标题 — 32sp Bold（仅首页问候、个人中心）
     displayLarge = TextStyle(

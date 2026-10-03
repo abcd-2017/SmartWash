@@ -61,8 +61,11 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressScale
 
 
@@ -125,7 +128,7 @@ fun RechargePage(
                 item {
                     Text(
                         text = stringResource(R.string.recharge_amount),
-                        style = MaterialTheme.typography.headlineMedium
+                        style = AppTextStyles.SectionTitle
                     )
                 }
 
@@ -187,15 +190,15 @@ fun RechargePage(
                 item {
                     Text(
                         text = stringResource(R.string.payment_method),
-                        style = MaterialTheme.typography.headlineMedium
+                        style = AppTextStyles.SectionTitle
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
                         shadowElevation = AppElevation.level1,
-                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Column {
                             PaymentMethodCard(
@@ -259,15 +262,15 @@ fun RechargePage(
 private fun AmountCard(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    // 选中态颜色过渡动画
+    // 选中态颜色过渡动画（§8 reduced motion 降级）
     val bgColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        animationSpec = defaultSpring(),
+        animationSpec = motionSpec(defaultSpring()),
         label = "amountBgColor"
     )
     val textColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary,
-        animationSpec = defaultSpring(),
+        animationSpec = motionSpec(defaultSpring()),
         label = "amountTextColor"
     )
 
@@ -280,16 +283,16 @@ private fun AmountCard(
                 indication = LocalIndication.current,
                 onClick = onClick
             )
-            .pressScale(interactionSource, 0.98f),
-        shape = RoundedCornerShape(16.dp),
+            .pressScale(interactionSource, 0.97f),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
         shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        border = if (isSelected) BorderStroke(1.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = stringResource(R.string.currency_format, "${amount.toInt()}"),
-                style = MaterialTheme.typography.headlineSmall,
+                style = AppTextStyles.AmountMedium,
                 color = textColor
             )
         }
@@ -304,10 +307,10 @@ private fun CustomAmountCard(
         modifier = modifier
             .height(72.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
-        shadowElevation = 0.dp,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+        shadowElevation = AppElevation.level1,
+        border = if (isSelected) BorderStroke(1.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),

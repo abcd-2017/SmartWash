@@ -69,6 +69,7 @@ import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.coupon.api.CouponRoute
@@ -186,8 +187,8 @@ fun UserInfoPage(
                 ) {
                     Text(
                         text = stringResource(R.string.my_profile),
-                        style = MaterialTheme.typography.displayLarge,
-                        color = AppColors.colorScheme.onBackground
+                        style = AppTextStyles.PageTitle,
+                        color = AppColors.colorScheme.textPrimary
                     )
                     IconButton(onClick = { navController.navigate(UserRoute.Setting.text) }) {
                         Icon(
@@ -277,7 +278,7 @@ fun UserInfoPage(
                     Column {
                         Text(
                             text = userInfo?.phoneNumber ?: stringResource(R.string.username),
-                            style = MaterialTheme.typography.headlineMedium
+                            style = AppTextStyles.SectionTitle
                         )
                         Text(
                             text = userInfo?.schoolVo?.schoolName ?: "",
@@ -298,7 +299,7 @@ fun UserInfoPage(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = AppTextStyles.AmountMedium,
                                     color = AppColors.colorScheme.textPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))

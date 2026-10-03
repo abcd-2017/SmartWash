@@ -1,7 +1,19 @@
 package com.smartwash.common.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,11 +44,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import com.smartwash.common.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -54,7 +75,10 @@ import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.ui.theme.PrimaryDark
 import com.smartwash.common.ui.theme.TextSecondary
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
@@ -101,7 +125,7 @@ fun PageHeader(
 // ========== 容器组件 ==========
 
 /**
- * 分组容器 — surfaceVariant 浅灰底 + 12dp 圆角，无边框无阴影
+ * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 1px 描边 + 轻阴影）
  * 用于：设置页分组、订单详情信息组、内容分区
  */
 @Composable
@@ -111,9 +135,10 @@ fun GroupCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.radiusMd),
-        color = AppColors.colorScheme.surfaceVariant,
-        shadowElevation = 0.dp
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding),
@@ -168,7 +193,7 @@ fun ListRow(
     )
 }
 
-// ========== 统一卡片 ==========
+// ========== 统一卡片（规范 §3.1 唯一画法） ==========
 
 @Composable
 fun AppCard(
@@ -181,12 +206,13 @@ fun AppCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier.pressable(onClick = onClick, alphaFactor = 0.92f)
+                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
             ),
         shape = shape,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
     ) {
         Column(content = content)
     }
@@ -202,7 +228,6 @@ fun AppButton(
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
-    // 按压缩放反馈：把同一个 InteractionSource 接入 Button 与 pressScale
     val interactionSource = remember { MutableInteractionSource() }
     Button(
         onClick = onClick,
@@ -210,7 +235,7 @@ fun AppButton(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .pressScale(interactionSource, 0.98f),
+            .pressScale(interactionSource, 0.97f),
         enabled = enabled && !loading,
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         colors = ButtonDefaults.buttonColors(
@@ -249,14 +274,14 @@ fun SettingRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.98f)
+                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
             )
-            .height(48.dp)
+            .height(56.dp)
             .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 32.dp, iconSize = 16.dp)
+        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -285,50 +310,140 @@ fun EmptyState(
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
 ) {
-    Column(
+    // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
+    val reduceMotion = LocalReduceMotion.current
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    AnimatedVisibility(
+        visible = entered,
+        enter = fadeIn(animationSpec = motionSpec(defaultSpring())) +
+            slideInVertically(
+                animationSpec = motionSpec(defaultSpring()),
+                initialOffsetY = { if (reduceMotion) 0 else it / 5 }
+            ),
         modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
     ) {
-        // 图标 — 直接着色，无圆形背景
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = AppColors.colorScheme.textTertiary
-        )
-        Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.colorScheme.textSecondary
-        )
-        if (action != null) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // 图标 — 直接着色，无圆形背景
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = AppColors.colorScheme.textTertiary
+            )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-            action()
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.colorScheme.textSecondary
+            )
+            if (action != null) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+                action()
+            }
         }
     }
 }
 
-// ========== 加载状态 ==========
+// ========== 加载状态（规范 §3.6：骨架屏，禁止转圈） ==========
 
 @Composable
 fun LoadingState(
     modifier: Modifier = Modifier,
 ) {
+    SkeletonList(modifier = modifier, rows = 4)
+}
+
+// ========== 骨架屏 ==========
+
+/** 微光扫过一遍的行程（px）——足够覆盖一屏内任意宽度的骨架块 */
+private const val SHIMMER_TRAVEL = 1200f
+
+/**
+ * 骨架屏微光画笔 — 用 Compose 原生线性渐变实现，不引第三方 shimmer 库。
+ * reduced motion 时退化为静态浅灰（规范 7.8：取消无限循环，但保留可读性）。
+ */
+@Composable
+fun rememberSkeletonBrush(): Brush {
+    val base = AppColors.colorScheme.surfaceVariant
+    val highlight = MaterialTheme.colorScheme.surface
+    if (LocalReduceMotion.current) return SolidColor(base)
+    val transition = rememberInfiniteTransition(label = "skeleton")
+    val sweep by transition.animateFloat(
+        initialValue = -SHIMMER_TRAVEL,
+        targetValue = SHIMMER_TRAVEL,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerSweep"
+    )
+    return Brush.linearGradient(
+        colors = listOf(base, highlight, base),
+        start = Offset(sweep, 0f),
+        end = Offset(sweep + SHIMMER_TRAVEL / 2f, 0f)
+    )
+}
+
+/** 单个骨架块 */
+@Composable
+fun SkeletonBlock(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(AppDimens.radiusSm),
+) {
     Box(
         modifier = modifier
+            .clip(shape)
+            .background(rememberSkeletonBrush())
+    )
+}
+
+/**
+ * 列表骨架 — 列表型页面（订单/券/收支记录）的加载占位，替代居中转圈：
+ * 转圈只说明"在忙"，骨架说明"马上出现什么形状"。
+ */
+@Composable
+fun SkeletonList(
+    modifier: Modifier = Modifier,
+    rows: Int = 4,
+) {
+    Column(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 32.dp),
-        contentAlignment = Alignment.Center
+            .padding(
+                horizontal = AppDimens.pagePadding,
+                vertical = AppDimens.spaceSm
+            ),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
-        CircularProgressIndicator(
-            color = AppColors.colorScheme.primary,
-            strokeWidth = 3.dp,
-            modifier = Modifier.size(32.dp)
-        )
+        repeat(rows) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SkeletonBlock(
+                    modifier = Modifier.size(40.dp),
+                    shape = RoundedCornerShape(AppDimens.radiusMd)
+                )
+                Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                Column(modifier = Modifier.weight(1f)) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.55f)
+                            .height(14.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.35f)
+                            .height(12.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -349,6 +464,19 @@ fun AppTabBar(
             .padding(horizontal = AppDimens.pagePadding),
     ) {
         tabs.forEachIndexed { index, title ->
+            val selected = selectedIndex == index
+            // 选中态过渡走全局弹簧（规范 7.1），reduced motion 时降级为 CrossfadeAlt
+            val indicatorWidth by animateDpAsState(
+                targetValue = if (selected) 20.dp else 0.dp,
+                animationSpec = motionSpec(defaultSpring()),
+                label = "tabIndicatorWidth"
+            )
+            val labelColor by animateColorAsState(
+                targetValue = if (selected) AppColors.colorScheme.primary
+                else AppColors.colorScheme.textSecondary,
+                animationSpec = motionSpec(defaultSpring()),
+                label = "tabLabelColor"
+            )
             Column(
                 modifier = Modifier
                     .clickable {
@@ -359,28 +487,23 @@ fun AppTabBar(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
+                    // 两态同为 14sp，只差字重 — 避免选中瞬间字号跳变
                     text = title,
-                    style = if (selectedIndex == index)
-                        MaterialTheme.typography.titleMedium
+                    style = if (selected)
+                        MaterialTheme.typography.labelLarge
                     else
                         MaterialTheme.typography.bodyMedium,
-                    color = if (selectedIndex == index)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        AppColors.colorScheme.textSecondary
+                    color = labelColor
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                if (selectedIndex == index) {
-                    Box(
-                        modifier = Modifier
-                            .width(20.dp)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(1.5.dp))
-                            .background(AppColors.colorScheme.primary)
-                    )
-                } else {
-                    Spacer(modifier = Modifier.height(3.dp))
-                }
+                // 指示条常驻、宽度 0→20dp 生长，切换不再硬跳
+                Box(
+                    modifier = Modifier
+                        .width(indicatorWidth)
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(1.5.dp))
+                        .background(AppColors.colorScheme.primary)
+                )
             }
         }
     }

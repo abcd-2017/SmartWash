@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -45,6 +46,7 @@ import com.smartwash.common.ui.components.SettingRow
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 
 /**
  * 设置页（T5.2 自 app 迁入）。
@@ -83,7 +85,7 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = stringResource(R.string.notification),
-                style = MaterialTheme.typography.headlineMedium,
+                style = AppTextStyles.SectionTitle,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -109,7 +111,7 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.privacy_security),
-                style = MaterialTheme.typography.headlineMedium,
+                style = AppTextStyles.SectionTitle,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -135,7 +137,7 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.other),
-                style = MaterialTheme.typography.headlineMedium,
+                style = AppTextStyles.SectionTitle,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -164,17 +166,11 @@ fun SettingPage(
 
             // 退出登录
             Spacer(modifier = Modifier.height(36.dp))
-            Surface(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                shape = RoundedCornerShape(AppDimens.buttonRadius),
-                color = AppColors.colorScheme.surface,
-                shadowElevation = 0.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.error)
-            ) {
+            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 TextButton(
                     onClick = { showDialog = true },
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .height(52.dp)
                 ) {
                     Text(

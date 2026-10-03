@@ -48,8 +48,10 @@ import com.smartwash.R
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 
 /**
@@ -81,7 +83,7 @@ fun AiWorkPage(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = stringResource(R.string.ai_quick_tasks),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = AppTextStyles.SectionTitle,
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -210,11 +212,12 @@ private fun QuickTaskChip(
             modifier = Modifier.padding(horizontal = AppDimens.spaceSm),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.primary
+            IconBox(
+                icon = icon,
+                size = 32.dp,
+                iconSize = 16.dp,
+                containerColor = AppColors.colorScheme.iconContainerTeal,
+                iconTint = AppColors.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
             Text(

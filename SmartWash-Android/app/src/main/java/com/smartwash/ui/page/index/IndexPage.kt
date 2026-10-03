@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
@@ -39,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -58,9 +58,8 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.ServiceLuxury
-import com.smartwash.common.ui.theme.ServicePress
-import com.smartwash.common.ui.theme.ServiceWash
+import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.model.RequestState
 import com.smartwash.common.utils.pressable
@@ -105,8 +104,9 @@ fun IndexPage(
                 modifier = Modifier.fillMaxSize()
             ) {
                 item {
-                    GreetingHeader(
+                    HomeHeroCard(
                         schoolName = userInfo?.school?.schoolName ?: "",
+                        balance = userInfo?.balance ?: 0f,
                         onAvatarClick = {
                             pageNavController.navigate(HomePageConstant.UserInfo.text) {
                                 popUpTo(pageNavController.graph.startDestinationId) {
@@ -115,14 +115,7 @@ fun IndexPage(
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    AccountSummaryRow(
-                        balance = userInfo?.balance ?: 0f,
+                        },
                         onRechargeClick = {
                             navController.navigate(PaymentRoute.Recharge.text)
                         },
@@ -136,7 +129,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                     Text(
                         text = stringResource(R.string.laundry_service),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = AppTextStyles.SectionTitle,
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -171,7 +164,7 @@ fun IndexPage(
                     ) {
                         Text(
                             text = stringResource(R.string.in_progress_orders),
-                            style = MaterialTheme.typography.headlineMedium
+                            style = AppTextStyles.SectionTitle
                         )
                         TextButton(onClick = {
                             navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
@@ -232,10 +225,17 @@ fun IndexPage(
     }
 }
 
+/**
+ * 首页 Hero 卡 — 品牌渐变底 + 白字 + 白色 CTA 胶囊（规范 §3.1 Hero 卡）。
+ * 全页唯一视觉锚点：36sp 余额大字（tabular numbers）。
+ */
 @Composable
-private fun GreetingHeader(
+private fun HomeHeroCard(
     schoolName: String,
+    balance: Float,
     onAvatarClick: () -> Unit,
+    onRechargeClick: () -> Unit,
+    onCouponClick: () -> Unit,
 ) {
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     val greeting = when {
@@ -244,96 +244,114 @@ private fun GreetingHeader(
         else -> stringResource(R.string.home_greeting_evening)
     }
 
-    Row(
+    // 品牌渐变 135° #2D9B6A → #1E8C5C（规范 §2.1 brandGradient，仅用于 hero）
+    val gradient = Brush.linearGradient(
+        colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = AppDimens.pagePadding)
+            .clip(RoundedCornerShape(AppDimens.radiusXl))
+            .background(gradient)
+            .padding(AppDimens.cardPadding)
     ) {
         Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = greeting + stringResource(R.string.home_greeting_suffix),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White.copy(alpha = 0.8f)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = schoolName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(AppDimens.radiusFull))
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .pressable(onClick = onAvatarClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
+
             Text(
-                text = greeting + stringResource(R.string.home_greeting_suffix),
-                style = MaterialTheme.typography.headlineMedium,
-                color = AppColors.colorScheme.textPrimary
+                text = stringResource(R.string.account_balance_label),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.8f)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = AppColors.colorScheme.textSecondary
+            Text(
+                text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                style = AppTextStyles.DataLarge,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                WhiteCapsuleButton(
+                    text = stringResource(R.string.go_recharge),
+                    onClick = onRechargeClick
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = schoolName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                WhiteCapsuleButton(
+                    text = stringResource(R.string.home_available_coupons),
+                    onClick = onCouponClick
                 )
             }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(AppColors.colorScheme.primaryLight)
-                .pressable(onClick = onAvatarClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.primary
-            )
         }
     }
 }
 
+/** Hero 卡内白色 CTA 胶囊（规范 §3.1 Hero 卡 — 白色 CTA 胶囊） */
 @Composable
-private fun AccountSummaryRow(
-    balance: Float,
-    onRechargeClick: () -> Unit,
-    onCouponClick: () -> Unit,
+private fun WhiteCapsuleButton(
+    text: String,
+    onClick: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
+            .background(Color.White)
+            .pressable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column {
-            Text(
-                text = stringResource(R.string.account_balance_label),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
-                style = MaterialTheme.typography.titleLarge,
-                color = AppColors.colorScheme.primary
-            )
-        }
-        Row(
-            modifier = Modifier.pressable(onClick = onCouponClick),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.home_available_coupons),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
-            )
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = AppColors.colorScheme.textSecondary
-            )
-        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = AppColors.colorScheme.primary
+        )
     }
 }
 
@@ -354,28 +372,32 @@ private fun ServiceGrid(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalLaundryService,
             label = stringResource(R.string.service_booking),
-            iconColor = ServiceWash,
+            containerColor = AppColors.colorScheme.iconContainerGreen,
+            iconTint = AppColors.colorScheme.primary,
             onClick = onBookingClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalMall,
             label = stringResource(R.string.service_pickup),
-            iconColor = ServiceLuxury,
+            containerColor = AppColors.colorScheme.iconContainerOrange,
+            iconTint = AppColors.colorScheme.onWarningContainer,
             onClick = onPickupClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalOffer,
             label = stringResource(R.string.service_coupon),
-            iconColor = ServicePress,
+            containerColor = AppColors.colorScheme.iconContainerTeal,
+            iconTint = AppColors.colorScheme.primaryDark,
             onClick = onCouponClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.Build,
             label = stringResource(R.string.service_toolbox),
-            iconColor = AppColors.colorScheme.primary,
+            containerColor = AppColors.colorScheme.iconContainerBlue,
+            iconTint = AppColors.colorScheme.water,
             onClick = onToolboxClick
         )
     }
@@ -386,20 +408,20 @@ private fun ServiceEntry(
     modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
-    iconColor: Color = AppColors.colorScheme.primary,
+    containerColor: Color,
+    iconTint: Color,
     onClick: () -> Unit,
 ) {
     Column(
         modifier = modifier
-            .pressable(onClick = onClick, scaleFactor = 0.95f),
+            .pressable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            tint = iconColor
+        IconBox(
+            icon = icon,
+            containerColor = containerColor,
+            iconTint = iconTint
         )
         Text(
             text = label,
@@ -422,15 +444,16 @@ private fun OrderListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .pressable(onClick = onClick, alphaFactor = 0.95f)
+                .pressable(onClick = onClick)
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.LocalLaundryService,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = AppColors.colorScheme.primary
+            IconBox(
+                icon = Icons.Default.LocalLaundryService,
+                size = 36.dp,
+                iconSize = 18.dp,
+                containerColor = AppColors.colorScheme.iconContainerGreen,
+                iconTint = AppColors.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -446,7 +469,7 @@ private fun OrderListItem(
             }
             Text(
                 text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
-                style = MaterialTheme.typography.titleMedium,
+                style = AppTextStyles.AmountMedium,
                 color = AppColors.colorScheme.primary
             )
         }
@@ -462,11 +485,12 @@ private fun ServiceTips() {
             .padding(horizontal = AppDimens.pagePadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.Info,
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = AppColors.colorScheme.textTertiary
+        IconBox(
+            icon = Icons.Default.Info,
+            size = 32.dp,
+            iconSize = 16.dp,
+            containerColor = AppColors.colorScheme.iconContainerTeal,
+            iconTint = AppColors.colorScheme.textTertiary
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(

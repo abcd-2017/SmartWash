@@ -14,6 +14,10 @@
 - **遵循 MVVM 模式** — 每个页面一个 `*Page.kt` + 一个 `*ViewModel.kt`，ViewModel 通过 Repository（或跨域经 api 接口）访问数据，Page 只负责 UI 渲染。
 - **禁止字符串硬编码** — 用户可见文本一律定义在模块内 `res/values/strings.xml`，代码经 `stringResource(R.string.xxx)` 引用；ViewModel 内经 `application.getString(...)`；非用户可见常量（存储 key、TAG）定义在对应常量类中。
 
+## UI 设计规范（强制）
+
+详见 [ui-design-spec.md](ui-design-spec.md)。**改任何 UI 前必读**，与原型图冲突时以该文档为准。
+
 ## 构建与运行
 
 ```bash
@@ -114,7 +118,14 @@ abstract class XxxInitModule {
 
 | 红线 | 说明 |
 |------|------|
-| 跳过设计系统 | 新页面必须遵循清氧设计系统（配色/圆角/排版/阴影规范） |
+| 跳过设计系统 | 新页面与改 UI 必须遵循 [ui-design-spec.md](ui-design-spec.md) 的令牌、间距、圆角、动效全部规则 |
+| 自创令牌值 | 配色 / 间距 / 圆角一律取自规范 §2 与 `common/ui/theme/`，禁止在页面内写死数值 |
+| 引入外部图标库 | 已调研否决（规范 §4.1）。自绘图标仅限规范 §4.5 的 12 个 |
+| 重绘 Material 图标 | 存量 `Icons.*` 一律保持内置，不替换、不重绘、不做与规范无关的改动 |
+| 位图图标 / AI 生图直入 | 图标一律矢量；AI 生图只能出草图，最终人工重绘为 VectorDrawable |
+| 无降级的动效 | 新增动效必须提供 reduced motion 分支（`LocalReduceMotion` / `motionSpec()`），否则不予合入 |
+| 伪造状态动画 | 支付成功 / 订单完成 / 算法结果的动画，必须由真实状态触发 |
+| 引入动画库 | 禁止 Lottie / Rive / Shimmer / Vico；规范覆盖范围内零依赖可完成 |
 | 组合期副作用 | Toast、导航、状态回写一律放 `LaunchedEffect`/`SideEffect`，禁止写在 `when(state)` 渲染分支里 |
 | 主线程阻塞 IO | 禁止 `runBlocking` 读写 DataStore，一律用 suspend/flow |
 | 字符串硬编码 | 用户可见文本一律定义在 `strings.xml`，经 `stringResource()` 引用 |

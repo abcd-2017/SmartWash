@@ -37,10 +37,12 @@ import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.Background
 import com.smartwash.common.ui.theme.Divider
 import com.smartwash.common.ui.theme.Primary
@@ -71,11 +73,12 @@ fun PickupPage(
                         .padding(horizontal = AppDimens.pagePadding, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.School,
-                        contentDescription = null,
-                        tint = AppColors.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                    IconBox(
+                        icon = Icons.Default.School,
+                        size = 32.dp,
+                        iconSize = 16.dp,
+                        containerColor = AppColors.colorScheme.iconContainerTeal,
+                        iconTint = AppColors.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

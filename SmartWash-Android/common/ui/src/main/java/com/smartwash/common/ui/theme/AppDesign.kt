@@ -35,6 +35,8 @@ data class AppColorScheme(
     val background: Color,
     val surface: Color,
     val surfaceVariant: Color,
+    val groupBackground: Color,
+    val hairline: Color,
     val onBackground: Color,
     val onSurface: Color,
     val textPrimary: Color,
@@ -48,6 +50,14 @@ data class AppColorScheme(
     val onWarningContainer: Color,
     val success: Color,
     val iconTint: Color,
+    val water: Color,
+    val waterSoft: Color,
+    val iconContainerGreen: Color,
+    val iconContainerBlue: Color,
+    val iconContainerOrange: Color,
+    val iconContainerPink: Color,
+    val iconContainerTeal: Color,
+    val iconContainerPurple: Color,
 )
 
 val LightAppColorScheme = AppColorScheme(
@@ -57,6 +67,8 @@ val LightAppColorScheme = AppColorScheme(
     background = Background,
     surface = Surface,
     surfaceVariant = SurfaceVariant,
+    groupBackground = GroupBackground,
+    hairline = Hairline,
     onBackground = OnBackground,
     onSurface = OnSurface,
     textPrimary = TextPrimary,
@@ -70,6 +82,14 @@ val LightAppColorScheme = AppColorScheme(
     onWarningContainer = OnWarningContainer,
     success = Success,
     iconTint = TextSecondary,
+    water = Water,
+    waterSoft = WaterSoft,
+    iconContainerGreen = IconContainerGreen,
+    iconContainerBlue = IconContainerBlue,
+    iconContainerOrange = IconContainerOrange,
+    iconContainerPink = IconContainerPink,
+    iconContainerTeal = IconContainerTeal,
+    iconContainerPurple = IconContainerPurple,
 )
 
 val DarkAppColorScheme = AppColorScheme(
@@ -79,6 +99,8 @@ val DarkAppColorScheme = AppColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
     surfaceVariant = DarkSurfaceVariant,
+    groupBackground = DarkGroupBackground,
+    hairline = DarkHairline,
     onBackground = DarkOnBackground,
     onSurface = DarkOnSurface,
     textPrimary = DarkTextPrimary,
@@ -92,6 +114,14 @@ val DarkAppColorScheme = AppColorScheme(
     onWarningContainer = DarkOnWarningContainer,
     success = DarkSuccess,
     iconTint = DarkTextSecondary,
+    water = DarkWater,
+    waterSoft = DarkWaterSoft,
+    iconContainerGreen = DarkIconContainerGreen,
+    iconContainerBlue = DarkIconContainerBlue,
+    iconContainerOrange = DarkIconContainerOrange,
+    iconContainerPink = DarkIconContainerPink,
+    iconContainerTeal = DarkIconContainerTeal,
+    iconContainerPurple = DarkIconContainerPurple,
 )
 
 val LocalAppColors = staticCompositionLocalOf { LightAppColorScheme }
@@ -106,28 +136,29 @@ object AppColors {
 // 容器层级：Canvas(暖白底) → Group(浅灰分组) → ListRow(分隔线) → HeroCard(主焦点) → InlineAction(行内)
 
 object AppDimens {
-    // 页面边距
-    val pagePadding = 20.dp
+    // 页面边距（规范 §2.3）
+    val pagePadding = 24.dp
     // 旧卡片 token（保留向后兼容，新代码避免使用）
     @Deprecated("使用 radiusMd / radiusLg 替代", ReplaceWith("AppDimens.radiusLg"))
     val cardRadius = 20.dp
     @Deprecated("使用 radiusMd 替代", ReplaceWith("AppDimens.radiusMd"))
     val smallCardRadius = 16.dp
-    val cardPadding = 16.dp
-    val cardSpacing = 12.dp
-    val sectionSpacing = 24.dp
-    // 新圆角 token
+    val cardPadding = 20.dp
+    val cardSpacing = 16.dp
+    val sectionSpacing = 32.dp
+    // 新圆角 token（规范 §2.3）
     val radiusXs = 4.dp     // 标签、小角标
     val radiusSm = 8.dp     // 输入框、小按钮
-    val radiusMd = 12.dp    // 分组背景、图标容器
-    val radiusLg = 16.dp    // Hero Card、对话框
-    val radiusXl = 20.dp    // 旧大圆角，仅兼容
+    val radiusSmall = 10.dp // 小图标容器、徽标
+    val radiusMd = 12.dp    // 分组背景、图标容器、内嵌套块
+    val radiusLg = 16.dp    // 卡片（唯一值）
+    val radiusXl = 20.dp    // hero、大容器
     val radiusFull = 999.dp // 头像、胶囊
     // 按钮 / 输入
-    val buttonRadius = 12.dp
+    val buttonRadius = 14.dp
     val inputRadius = 12.dp
     val iconContainerRadius = 12.dp
-    val bottomBarHeight = 56.dp
+    val bottomBarHeight = 68.dp
     // 间距 token（8pt 网格）
     val spaceXxs = 4.dp
     val spaceXs = 8.dp

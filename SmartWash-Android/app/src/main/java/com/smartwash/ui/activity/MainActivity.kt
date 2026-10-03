@@ -12,17 +12,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
 import com.smartwash.R
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.isReduceMotionEnabled
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.feature.coupon.ui.couponGraph
@@ -88,7 +93,10 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val context = LocalContext.current
             val view = LocalView.current
-            val reduceMotion = isReduceMotionEnabled(context)
+            // reduced motion 随导航刷新 — 既避免在组合期反复做 ContentResolver 查询，
+            // 又能让用户在系统设置里改完「移除动画」切回应用后立即生效。
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val reduceMotion = remember(backStackEntry) { isReduceMotionEnabled(context) }
 
             // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）
             val updateViewModel: UpdateViewModel = hiltViewModel()
@@ -139,27 +147,30 @@ class MainActivity : ComponentActivity() {
             }
 
             SmartWashAndroidTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = UserRoute.Login.text,
-                        enterTransition = { shellEnterTransition(reduceMotion) },
-                        exitTransition = { shellExitTransition(reduceMotion) },
-                        popEnterTransition = { shellEnterTransition(reduceMotion) },
-                        popExitTransition = { shellExitTransition(reduceMotion) },
-                    ) {
-                        // 壳层留守页面：主页壳 / 订单详情 / 寄件取件 / 取件
-                        shellGraph(navController)
-                        // 检查更新行插槽注入（feature:update 归壳层聚合，user-impl 不依赖它）
-                        userGraph(
-                            navController,
-                            checkUpdateContent = { CheckUpdateSettingRow(updateViewModel) }
-                        )
-                        orderGraph(navController)
-                        paymentGraph(navController, reduceMotion)
-                        laundryGraph(navController)
-                        couponGraph(navController)
-                        divinationGraph(navController)
+                // 全应用动效降级开关（规范 7.8）：叶子节点经 motionSpec()/LocalReduceMotion 消费
+                CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = UserRoute.Login.text,
+                            enterTransition = { shellEnterTransition(reduceMotion) },
+                            exitTransition = { shellExitTransition(reduceMotion) },
+                            popEnterTransition = { shellEnterTransition(reduceMotion) },
+                            popExitTransition = { shellExitTransition(reduceMotion) },
+                        ) {
+                            // 壳层留守页面：主页壳 / 订单详情 / 寄件取件 / 取件
+                            shellGraph(navController)
+                            // 检查更新行插槽注入（feature:update 归壳层聚合，user-impl 不依赖它）
+                            userGraph(
+                                navController,
+                                checkUpdateContent = { CheckUpdateSettingRow(updateViewModel) }
+                            )
+                            orderGraph(navController)
+                            paymentGraph(navController, reduceMotion)
+                            laundryGraph(navController)
+                            couponGraph(navController)
+                            divinationGraph(navController)
+                        }
                     }
                 }
             }

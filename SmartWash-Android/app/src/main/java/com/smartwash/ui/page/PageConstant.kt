@@ -1,15 +1,6 @@
 package com.smartwash.ui.page
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.ui.graphics.vector.ImageVector
+import com.smartwash.common.ui.R as CommonUiR
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.user.api.UserRoute
@@ -39,22 +30,18 @@ sealed class PageConstant(val text: String, val description: String) {
 sealed class HomePageConstant(
     val text: String,
     val description: String,
-    val icon: ImageVector,
-    val selectIcon: ImageVector,
+    val iconRes: Int,
 ) {
-    data object Index : HomePageConstant("Index", "首页", Icons.Outlined.Home, Icons.Filled.Home)
-    data object Service :
-        HomePageConstant(
-            LaundryRoute.Service.text,
-            "服务",
-            Icons.AutoMirrored.Outlined.List,
-            Icons.AutoMirrored.Filled.List
-        )
+    data object Index :
+        HomePageConstant("Index", "首页", CommonUiR.drawable.ic_nav_home_solid)
 
-    // 问卜（观象台）— 罗盘线描意象
+    data object Service :
+        HomePageConstant(LaundryRoute.Service.text, "服务", CommonUiR.drawable.ic_nav_service_solid)
+
+    // 工作台（规范决策 7：替换问卜）— 三方块 + 一圆
     data object Divination :
-        HomePageConstant(DivRoute.Home.text, "问卜", Icons.Outlined.Explore, Icons.Filled.Explore)
+        HomePageConstant(DivRoute.Home.text, "工作台", CommonUiR.drawable.ic_nav_workbench_solid)
 
     data object UserInfo :
-        HomePageConstant(UserRoute.UserInfo.text, "主页", Icons.Outlined.Person, Icons.Filled.Person)
+        HomePageConstant(UserRoute.UserInfo.text, "我的", CommonUiR.drawable.ic_nav_mine_solid)
 }
