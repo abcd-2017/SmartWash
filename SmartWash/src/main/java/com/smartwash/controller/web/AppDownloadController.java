@@ -88,7 +88,7 @@ public class AppDownloadController {
 
             String downloadUrl = presignClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
-                            .bucket(minioConfig.getBucketName())
+                            .bucket(minioConfig.getApkBucketName())
                             .object(objectName)
                             .method(io.minio.http.Method.GET)
                             .expiry(3600)
