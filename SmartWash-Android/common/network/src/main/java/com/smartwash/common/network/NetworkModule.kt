@@ -46,6 +46,20 @@ class NetworkModule {
         return builder.build()
     }
 
+    /**
+     * 专用于文件下载的 OkHttpClient（不配置 ResponseInterceptor，避免二进制响应体被当作 JSON 解析）
+     */
+    @Provides
+    @Singleton
+    @Named("download")
+    fun provideDownloadOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
+
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, @Named("baseUrl") baseUrl: String): Retrofit {
