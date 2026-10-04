@@ -75,7 +75,18 @@ public class AppDownloadController {
 
             // 拼接完整的 MinIO 对象路径（前缀 + 文件名），生成 1 小时有效期的预签名下载 URL
             String objectName = apkObjectPrefix + fileName;
-            String downloadUrl = minioClient.getPresignedObjectUrl(
+
+            // 配置了 external-endpoint 则用外部地址创建 MinioClient 生成预签名 URL（签名 Host 一致），否则兜底用内部 MinioClient
+            String externalEndpoint = minioConfig.getExternalEndpoint();
+            MinioClient presignClient = minioClient;
+            if (externalEndpoint != null && !externalEndpoint.isBlank()) {
+                presignClient = MinioClient.builder()
+                        .endpoint(externalEndpoint)
+                        .credentials(minioConfig.getAccessKey(), minioConfig.getSecretKey())
+                        .build();
+            }
+
+            String downloadUrl = presignClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .bucket(minioConfig.getBucketName())
                             .object(objectName)
@@ -83,12 +94,6 @@ public class AppDownloadController {
                             .expiry(3600)
                             .build()
             );
-
-            // 配置了 external-endpoint 则替换为外部地址，否则兜底不处理
-            String externalEndpoint = minioConfig.getExternalEndpoint();
-            if (externalEndpoint != null && !externalEndpoint.isBlank()) {
-                downloadUrl = downloadUrl.replace(minioConfig.getEndpoint(), externalEndpoint);
-            }
 
             log.debug("生成预签名下载 URL 成功：fileName={}", fileName);
             return Result.ok(downloadUrl);
