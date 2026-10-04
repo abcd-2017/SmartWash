@@ -1,6 +1,6 @@
 package com.smartwash.feature.laundry.network.api
 
-import com.smartwash.common.model.ApiResult
+import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.feature.laundry.network.vo.SchoolName
 import retrofit2.http.GET
 import retrofit2.http.Query

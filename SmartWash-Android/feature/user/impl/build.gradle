@@ -31,7 +31,7 @@ dependencies {
     implementation project(':feature:coupon:api')
 
     // 响应信封 ApiResult / HttpStatusCode / RequestState
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException + TokenProvider/SessionEventNotifier 契约
     implementation project(':common:network')
     // 清氧设计系统（AppColors/AppDimens/Glass* 主题 + AppCard/SettingRow 等组件）
@@ -41,7 +41,7 @@ dependencies {
     implementation project(':common:utils')
 
     // 启动任务基类（SessionInitTask 注册进 InitTaskRegistry，App.onCreate 经 InitEngine 调度）
-    implementation project(':core:init')
+    implementation project(':common:init')
 
     // ViewModel 基类 + viewModelScope
     implementation libs.androidx.lifecycle.viewmodel

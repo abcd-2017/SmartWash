@@ -3,8 +3,8 @@ package com.smartwash
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.smartwash.core.init.InitEngine
-import com.smartwash.core.init.InitTaskRegistry
+import com.smartwash.common.init.InitEngine
+import com.smartwash.common.init.InitTaskRegistry
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

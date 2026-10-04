@@ -68,11 +68,11 @@ com.smartwash.feature.user.impl
 - `:feature:order:api`（OrderApi/OrderRoute/ShowOrderStatus — 用户中心订单计数与跳订单页）
 - `:feature:laundry:api`（SchoolSearchSource/SchoolOption — 资料编辑页搜学校）
 - `:feature:coupon:api`（CouponRoute — 用户中心「优惠券」入口）
-- `:common:model`（ApiResult / RequestState）
+- `:common:utils`（ApiResult / RequestState）
 - `:common:network`（Retrofit / @RequireAuthorization / NetworkException / TokenProvider / SessionEventNotifier）
 - `:common:ui`（清氧设计系统）
 - `:common:utils`（SharePreferenceUtils / 触感反馈）
-- `:core:init`（InitTask 基类）
+- `:common:init`（InitTask 基类）
 
 ### 谁依赖本模块
 - **无**——impl 模块禁止被其他 feature-impl 依赖（依赖铁律）。仅 app 壳聚合 `userGraph`。

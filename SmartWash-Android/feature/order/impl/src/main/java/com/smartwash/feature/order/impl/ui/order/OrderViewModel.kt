@@ -3,7 +3,7 @@ package com.smartwash.feature.order.impl.ui.order
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.ShowOrderStatus
 import com.smartwash.feature.order.impl.OrderImplConstant

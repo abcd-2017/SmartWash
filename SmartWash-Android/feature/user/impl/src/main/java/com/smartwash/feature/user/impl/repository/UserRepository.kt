@@ -1,6 +1,6 @@
 package com.smartwash.feature.user.impl.repository
 
-import com.smartwash.common.model.ApiResult
+import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.network.api.UserAccountApi

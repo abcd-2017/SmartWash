@@ -49,7 +49,7 @@ src/main/java/com/smartwash/feature/laundry/
   - `:feature:user:api` — `UserApi`（预约页展示用户学校）
   - `:feature:order:api` — `OrderApi`（选套餐下单）
   - `:feature:payment:api` — `PaymentRoute`（预约成功跳支付页）
-  - `:common:model` / `:common:network` / `:common:ui` / `:common:utils` / `:common:database`
+  - `:common:utils` / `:common:network` / `:common:ui` / `:common:utils` / `:common:database`
 - **谁依赖此模块**: 无（外部经 api 接口 `SchoolSearchSource` 消费，不触碰本模块实现）
 
 ## 内部约定

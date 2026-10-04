@@ -9,7 +9,7 @@ import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.R
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -14,8 +14,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "minio")
 public class MinioConfig {
-    /** MinIO 服务端点 */
+    /** MinIO 服务端点（内部通信，如 Docker 服务名） */
     private String endpoint;
+    /** MinIO 外部访问端点（用于生成预签名 URL，可选） */
+    private String externalEndpoint;
     /** 访问密钥 */
     private String accessKey;
     /** 秘密密钥 */

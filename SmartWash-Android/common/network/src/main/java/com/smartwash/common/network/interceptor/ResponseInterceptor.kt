@@ -2,8 +2,8 @@ package com.smartwash.common.network.interceptor
 
 import android.util.Log
 import com.google.gson.Gson
-import com.smartwash.common.model.ApiResult
-import com.smartwash.common.model.HttpStatusCode
+import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.network.R
 import com.smartwash.common.network.SessionEventNotifier
 import com.smartwash.common.network.TokenProvider

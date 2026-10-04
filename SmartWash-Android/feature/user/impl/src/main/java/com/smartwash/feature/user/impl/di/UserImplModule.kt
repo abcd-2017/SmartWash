@@ -2,7 +2,7 @@ package com.smartwash.feature.user.impl.di
 
 import com.smartwash.common.network.SessionEventNotifier
 import com.smartwash.common.network.TokenProvider
-import com.smartwash.core.init.InitTask
+import com.smartwash.common.init.InitTask
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.UserApiImpl
 import com.smartwash.feature.user.impl.init.SessionInitTask

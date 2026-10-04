@@ -37,9 +37,8 @@
 
 ```
 :app                             壳：Application + MainActivity(NavHost 聚合) + 更新弹窗 UI + 取件留守页
-:core:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
-:common:model                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState
-:common:utils                   DataStore 封装(SharePreferenceUtils) / RequestState / 动效触感 / 二维码 / pagingFlow
+:common:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
+:common:utils                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装 / 动效触感 / 二维码 / pagingFlow
 :common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
 :common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
@@ -65,8 +64,7 @@ build-logic                     convention plugin（smartwash.android.library / 
 | 模块 | 文档 |
 |------|------|
 | `:app` | [app/AGENTS.md](app/AGENTS.md) |
-| `:core:init` | [core/init/AGENTS.md](core/init/AGENTS.md) |
-| `:common:model` | [common/model/AGENTS.md](common/model/AGENTS.md) |
+| `:common:init` | [common/init/AGENTS.md](common/init/AGENTS.md) |
 | `:common:utils` | [common/utils/AGENTS.md](common/utils/AGENTS.md) |
 | `:common:network` | [common/network/AGENTS.md](common/network/AGENTS.md) |
 | `:common:database` | [common/database/AGENTS.md](common/database/AGENTS.md) |
@@ -108,29 +106,24 @@ com.smartwash/
     │   └── update/                 # 更新弹窗 UI（UpdateDialog/UpdateFlow/CheckUpdateSettingRow）
 ```
 
-#### `:core:init`
+#### `:common:init`
 
 ```
-com.smartwash.core.init/
+com.smartwash.common.init/
 ├── InitTask.kt                    # 启动任务抽象（taskId/priority/dependencies/blocking/timeoutMs/execute）
 ├── InitEngine.kt                  # 拓扑排序 + 阻塞串行/非阻塞 launch + 超时保护 + 进度 StateFlow
 └── InitTaskRegistry.kt            # 任务注册表（Hilt @IntoSet 多绑定收集）
-```
-
-#### `:common:model`
-
-```
-com.smartwash.common.model/
-├── ApiResult.kt                   # 统一响应包装 {code, message, data}
-├── PageData.kt                    # 分页响应 {records, total, size, current}
-├── HttpStatusCode.kt              # HTTP 业务状态码枚举
-└── RequestState.kt                # 异步状态密封类（Idle/Loading/Success/Error）
 ```
 
 #### `:common:utils`
 
 ```
 com.smartwash.common.utils/
+├── model/                         # 原 common:model 的数据契约
+│   ├── ApiResult.kt               # 统一响应包装 {code, message, data}
+│   ├── PageData.kt                # 分页响应 {records, total, size, current}
+│   ├── HttpStatusCode.kt          # HTTP 业务状态码枚举
+│   └── RequestState.kt            # 异步状态密封类（Idle/Loading/Success/Error）
 ├── SharePreferenceUtils.kt        # DataStore 封装（suspend + 阻塞双模式）
 ├── AppConstant.kt                 # 应用常量（APP_NAME, TOKEN key 等）
 ├── AnimationUtils.kt              # 动效工具（含 defaultSpring）
@@ -527,7 +520,7 @@ api 模块                          impl 模块
 
 ### 4.3 状态管理
 
-所有 ViewModel 使用 `RequestState` 密封类管理异步状态（位于 `:common:model`）：
+所有 ViewModel 使用 `RequestState` 密封类管理异步状态（位于 `:common:utils`）：
 
 ```kotlin
 sealed class RequestState {
@@ -602,7 +595,7 @@ NavHost(navController, startDestination = UserRoute.Login.text, ...) {
 
 ### 4.8 启动任务（InitTask）
 
-`InitEngine`（`:core:init`）统一调度启动任务：
+`InitEngine`（`:common:init`）统一调度启动任务：
 
 ```kotlin
 // 任务定义（各 impl 模块）
@@ -810,7 +803,7 @@ object XxxInitModule {
 2. 在对应域的 `*Graph.kt`（impl 模块）中注册 composable
 3. 创建 `*Page.kt` + `*ViewModel.kt`（impl 模块内）
 4. ViewModel 使用 `@HiltViewModel` + `@Inject constructor`
-5. 异步状态使用 `RequestState`（`:common:model`）
+5. 异步状态使用 `RequestState`（`:common:utils`）
 6. 所有用户可见文本定义在模块内 `strings.xml`，通过 `stringResource()` 引用
 7. 遵循清氧设计系统规范（`:common:ui`）
 
@@ -818,7 +811,7 @@ object XxxInitModule {
 
 1. 在对应域的 `network/api/` 目录下创建/编辑 `*Api.kt`
 2. 需要认证的接口加 `@RequireAuthorization`（`:common:network`）
-3. 返回值统一使用 `ApiResult<T>`（`:common:model`）包装
+3. 返回值统一使用 `ApiResult<T>`（`:common:utils`）包装
 4. 请求体放在 `network/entity/` 对应子目录
 5. 响应 VO 放在 `network/vo/` 对应子目录
 6. 如需跨域暴露服务，在 api 模块定义契约接口，impl 模块 `@Binds` 实现
@@ -893,10 +886,10 @@ object XxxInitModule {
 | `PickupDeliveryType` | `:feature:order:api` | PICKUP(0), DELIVERY(1) | 取件/寄件类型 |
 | `CouponStatus` | `:feature:coupon` | ACTIVE(0), EXPIRED(1), RECEIVE(2) | 优惠券状态 |
 | `PaymentType` | `:feature:payment:impl` | PURSE(1), ALI_PAY(2), WECHAT_PAY(3) | 支付方式 |
-| `HttpStatusCode` | `:common:model` | 200, 201, 401, 404, 500 | HTTP 业务状态码 |
-| `RequestState` | `:common:model` | Idle/Loading/Success/Error | 异步状态密封类 |
+| `HttpStatusCode` | `:common:utils` | 200, 201, 401, 404, 500 | HTTP 业务状态码 |
+| `RequestState` | `:common:utils` | Idle/Loading/Success/Error | 异步状态密封类 |
 
-### 统一响应格式（`:common:model`）
+### 统一响应格式（`:common:utils`）
 
 ```kotlin
 data class ApiResult<out T>(
@@ -906,7 +899,7 @@ data class ApiResult<out T>(
 )
 ```
 
-### 分页响应格式（`:common:model`）
+### 分页响应格式（`:common:utils`）
 
 ```kotlin
 data class PageData<T>(

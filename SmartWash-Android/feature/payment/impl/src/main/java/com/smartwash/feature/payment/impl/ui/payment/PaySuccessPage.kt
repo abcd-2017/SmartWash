@@ -49,7 +49,7 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.IconBox
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 
 @Composable
 fun PaySuccessPage(

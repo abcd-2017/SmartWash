@@ -12,7 +12,7 @@ import com.smartwash.feature.divination.data.DivLlmRepository
 import com.smartwash.feature.divination.data.DivReading
 import com.smartwash.feature.divination.database.DivRecordEntity
 import com.smartwash.feature.divination.data.DivRecordRepository
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

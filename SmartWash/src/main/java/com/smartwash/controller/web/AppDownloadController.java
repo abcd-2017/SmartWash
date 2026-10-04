@@ -84,6 +84,12 @@ public class AppDownloadController {
                             .build()
             );
 
+            // 配置了 external-endpoint 则替换为外部地址，否则兜底不处理
+            String externalEndpoint = minioConfig.getExternalEndpoint();
+            if (externalEndpoint != null && !externalEndpoint.isBlank()) {
+                downloadUrl = downloadUrl.replace(minioConfig.getEndpoint(), externalEndpoint);
+            }
+
             log.debug("生成预签名下载 URL 成功：fileName={}", fileName);
             return Result.ok(downloadUrl);
         } catch (MinioException e) {

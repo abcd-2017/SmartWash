@@ -21,11 +21,10 @@ dependencyResolutionManagement {
 rootProject.name = "SmartWash-Android"
 include ':app'
 include ':common:database'
-include ':common:model'
 include ':common:network'
 include ':common:utils'
 include ':common:ui'
-include ':core:init'
+include ':common:init'
 include ':feature:coupon:api'
 include ':feature:coupon:impl'
 include ':feature:divination'

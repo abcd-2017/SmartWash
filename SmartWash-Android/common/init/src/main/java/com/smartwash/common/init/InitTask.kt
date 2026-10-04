@@ -1,4 +1,4 @@
-package com.smartwash.core.init
+package com.smartwash.common.init
 
 /**
  * 初始化任务基类

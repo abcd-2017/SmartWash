@@ -10,7 +10,7 @@ import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.api.model.UserInfo
 import com.smartwash.R
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -51,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.LoadingState

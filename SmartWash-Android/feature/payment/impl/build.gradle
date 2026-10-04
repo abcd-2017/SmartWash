@@ -28,7 +28,7 @@ dependencies {
     implementation project(':feature:coupon:api')
 
     // 响应信封 ApiResult/PageData/RequestState
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
     implementation project(':common:network')
     // 清氧设计系统（AppColors/AppDimens 主题 + AppButton/AppConfirmDialog/PageHeader 等组件）

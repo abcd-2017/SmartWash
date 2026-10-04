@@ -13,7 +13,7 @@ android {
 
 dependencies {
     // 响应信封 ApiResult / 异步状态 RequestState
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization（DivinationApi 消费，
     // 鉴权/错误转译拦截器经 common:network 的 NetworkModule 自动生效）
     implementation project(':common:network')

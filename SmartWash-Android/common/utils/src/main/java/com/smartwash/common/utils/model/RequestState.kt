@@ -1,4 +1,4 @@
-package com.smartwash.common.model
+package com.smartwash.common.utils.model
 
 import android.content.Context
 import androidx.annotation.StringRes

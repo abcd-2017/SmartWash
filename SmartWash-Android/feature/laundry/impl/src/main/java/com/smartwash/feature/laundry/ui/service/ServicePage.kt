@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import androidx.compose.material3.Icon
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState

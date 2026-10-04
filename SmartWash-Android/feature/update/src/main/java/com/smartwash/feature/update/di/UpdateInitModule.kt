@@ -1,6 +1,6 @@
 package com.smartwash.feature.update.di
 
-import com.smartwash.core.init.InitTask
+import com.smartwash.common.init.InitTask
 import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.init.UpdateInitTask
 import com.smartwash.feature.update.repository.AppUpdateRepository

@@ -114,11 +114,11 @@ dependencies {
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.hilt.work
 
-    //启动任务引擎（core:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
-    implementation project(":core:init")
+    //启动任务引擎（common:init 模块化基建）：App.onCreate 经 InitEngine 统一调度，业务任务后续逐个接入
+    implementation project(":common:init")
 
     //跨模块共享数据契约（T2.1）：响应信封 ApiResult/PageData、HttpStatusCode、RequestState
-    implementation project(":common:model")
+    implementation project(":common:utils")
 
     //跨模块通用工具（T2.2）：DataStore 封装、动效/触感、二维码、参数校验、按压反馈
     implementation project(":common:utils")

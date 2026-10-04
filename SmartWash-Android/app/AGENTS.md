@@ -62,7 +62,7 @@ com.smartwash
   - `:feature:coupon:api` + `:feature:coupon:impl`（优惠券域）
   - `:feature:divination`（观象台）
   - `:feature:update`（热更新）
-- **公共基建**：`:core:init`、`:common:model`、`:common:utils`、`:common:network`、`:common:database`、`:common:ui`
+- **公共基建**：`:common:init`、`:common:utils`、`:common:utils`、`:common:network`、`:common:database`、`:common:ui`
 - **无 Room 注解类**：app 不编译 Room 实体，ksp 处理器随 DivinationDatabase 迁入 `:feature:divination`；本模块仅声明 `libs.androidx.work.runtime.ktx` + `libs.androidx.hilt.work`（feature 的 implementation 不传递）
 
 ## 5. 内部约定

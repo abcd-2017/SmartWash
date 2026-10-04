@@ -43,7 +43,7 @@ com.smartwash.feature.update
 
 ## 4. 依赖关系
 
-- **本模块依赖**：`:common:model`（ApiResult）、`:common:network`（Retrofit + NetworkException）、`:core:init`（InitTask 基类）、`libs.androidx.work.runtime.ktx` + `libs.androidx.hilt.work`（WorkManager + @HiltWorker）、`libs.okhttp`（ApkDownloadWorker 直接消费）
+- **本模块依赖**：`:common:utils`（ApiResult）、`:common:network`（Retrofit + NetworkException）、`:common:init`（InitTask 基类）、`libs.androidx.work.runtime.ktx` + `libs.androidx.hilt.work`（WorkManager + @HiltWorker）、`libs.okhttp`（ApkDownloadWorker 直接消费）
 - **谁依赖本模块**：`:app`（壳层聚合 UpdateFlow + 消费 UpdateViewModel/UpdateEventBus）
 - **HiltWorker 处理器自持**：`libs.androidx.hilt.compiler` 走 ksp（smartwash.hilt convention plugin 只带 dagger 的，不传递 androidx 的）
 - **不引 smartwash.compose / common:ui**：调研结论——链路内无 Compose/公共 UI 组件消费

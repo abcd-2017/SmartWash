@@ -47,7 +47,7 @@ src/main/java/com/smartwash/feature/coupon/
 
 - **此模块依赖**:
   - `:feature:coupon:api` — 本域路由常量 + 服务契约
-  - `:common:model` / `:common:network` / `:common:ui` / `:common:database`
+  - `:common:utils` / `:common:network` / `:common:ui` / `:common:database`
 - **谁依赖此模块**: `:feature:payment:impl` — 支付页注入 `CouponApi` 取订单可用优惠券
 
 ## 内部约定

@@ -1,8 +1,8 @@
 package com.smartwash.feature.payment.impl.network.api
 
 import com.smartwash.common.network.annotation.RequireAuthorization
-import com.smartwash.common.model.ApiResult
-import com.smartwash.common.model.PageData
+import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.payment.impl.network.entity.recharge.UserRecharge
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import retrofit2.http.Body

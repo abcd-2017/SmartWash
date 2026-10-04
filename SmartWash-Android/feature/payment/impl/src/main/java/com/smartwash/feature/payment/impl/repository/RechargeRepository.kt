@@ -1,7 +1,7 @@
 package com.smartwash.feature.payment.impl.repository
 
 import com.smartwash.feature.payment.impl.network.api.RechargeApi
-import com.smartwash.common.model.PageData
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.payment.impl.network.entity.recharge.UserRecharge
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import javax.inject.Inject

@@ -1,7 +1,7 @@
 package com.smartwash.feature.user.impl.init
 
 import android.util.Log
-import com.smartwash.core.init.InitTask
+import com.smartwash.common.init.InitTask
 import com.smartwash.feature.user.impl.session.SessionManager
 import kotlinx.coroutines.CancellationException
 

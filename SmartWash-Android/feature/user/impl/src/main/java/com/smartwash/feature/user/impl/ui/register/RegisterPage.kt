@@ -73,7 +73,7 @@ import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.isValidPhone
 import com.smartwash.common.ui.navigation.ShellRoute
 import kotlinx.coroutines.Dispatchers

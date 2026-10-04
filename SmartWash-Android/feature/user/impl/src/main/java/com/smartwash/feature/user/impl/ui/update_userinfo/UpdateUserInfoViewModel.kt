@@ -3,7 +3,7 @@ package com.smartwash.feature.user.impl.ui.update_userinfo
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.laundry.api.SchoolSearchSource
 import com.smartwash.feature.laundry.api.model.SchoolOption

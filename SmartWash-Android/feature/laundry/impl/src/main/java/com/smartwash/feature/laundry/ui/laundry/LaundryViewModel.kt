@@ -3,7 +3,7 @@ package com.smartwash.feature.laundry.ui.laundry
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.laundry.LaundryImplConstant
 import com.smartwash.feature.laundry.R

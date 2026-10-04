@@ -21,7 +21,7 @@ dependencies {
     implementation project(':feature:payment:api')
 
     // 响应信封 ApiResult / HttpStatusCode / RequestState
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
     implementation project(':common:network')
     // 清氧设计系统（AppColors/AppDimens 主题 + AppTabBar/EmptyState 等组件）

@@ -1,7 +1,7 @@
 package com.smartwash.feature.update.init
 
 import android.util.Log
-import com.smartwash.core.init.InitTask
+import com.smartwash.common.init.InitTask
 import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.repository.AppUpdateRepository
 import kotlinx.coroutines.CancellationException

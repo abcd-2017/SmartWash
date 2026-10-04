@@ -9,6 +9,8 @@ android {
 }
 
 dependencies {
+    // 原 common:model 的依赖（ApiResult/PageData/HttpStatusCode/RequestState）
+    implementation libs.androidx.annotation
     // SharePreferenceUtils：DataStore Preferences 封装
     implementation libs.androidx.datastore.preferences
     // BitmapUtil：zxing 二维码生成

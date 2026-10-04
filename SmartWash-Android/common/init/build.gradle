@@ -1,10 +1,10 @@
-// :core:init —— 启动任务编排模块（零业务依赖：不依赖 common 任何模块、不依赖 Compose）
+// :common:init —— 启动任务编排模块（零业务依赖：不依赖 common 其他模块、不依赖 Compose）
 // 依赖方向：各 feature-impl 模块 → 本模块（实现 InitTask 并经 Hilt @IntoSet 注册）。
 apply from: "$rootDir/config/android-library.gradle"
 apply from: "$rootDir/config/hilt.gradle"
 
 android {
-    namespace 'com.smartwash.core.init'
+    namespace 'com.smartwash.common.init'
 
     testOptions {
         unitTests {

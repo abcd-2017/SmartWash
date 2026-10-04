@@ -38,7 +38,7 @@ import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
