@@ -22,8 +22,10 @@ public class MinioConfig {
     private String accessKey;
     /** 秘密密钥 */
     private String secretKey;
-    /** 存储桶名称 */
+    /** 存储桶名称（上传用） */
     private String bucketName;
+    /** APK 下载专用的 MinIO 桶名称（与上传用的 bucket 分开） */
+    private String apkBucketName;
 
     @Bean
     public MinioClient minioClient() {
