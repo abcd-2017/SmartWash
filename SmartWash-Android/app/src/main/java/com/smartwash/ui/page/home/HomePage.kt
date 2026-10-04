@@ -60,7 +60,7 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.laundry.ui.service.ServicePage
 import com.smartwash.feature.user.impl.ui.userinfo.UserInfoPage
 import com.smartwash.common.ui.theme.AppColors
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 
 @Composable
 fun HomePage(

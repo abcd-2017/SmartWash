@@ -40,8 +40,8 @@
 
 ```
 :app                             壳：Application + MainActivity(NavHost 聚合) + 更新弹窗 UI + 取件留守页
-:core:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
-:common:model                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState
+:common:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
+:common:utils                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState
 :common:utils                   DataStore 封装(SharePreferenceUtils) / RequestState / 动效触感 / 二维码 / pagingFlow
 :common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
@@ -63,16 +63,16 @@ build-logic                     convention plugin（smartwash.android.library / 
 
 ### 六条依赖铁律（强制，`scripts/check-deps.sh` 静态校验前四条）
 
-1. **方向单向**：`app → feature:impl → feature:api → common → core:init`，禁止反向。
+1. **方向单向**：`app → feature:impl → feature:api → common → common:init`，禁止反向。
 2. **feature 间仅 impl → 他人 api**：禁止 `impl→impl`、禁止 `api→api`、禁止 `api→任何 feature`。
-3. **core:init 零项目依赖**：不依赖 common 任何模块、不依赖 Compose。
+3. **common:init 零项目依赖**：不依赖 common 任何模块、不依赖 Compose。
 4. **common 不依赖 feature**。
-5. **业务模型跟各自 api 模块走**；`common:model` 只放 `ApiResult`/`PageData`/`HttpStatusCode`/`RequestState` 等真共享物。
+5. **业务模型跟各自 api 模块走**；`common:utils` 只放 `ApiResult`/`PageData`/`HttpStatusCode`/`RequestState` 等真共享物。
 6. **构建配置统一 convention plugin**（build-logic），模块 `build.gradle` 只声明差异依赖。
 
 ### 核心机制
 
-**InitTask（core:init）** — 启动任务抽象（taskId/priority/dependencies/blocking/timeoutMs/suspend execute），`InitEngine` 拓扑排序 + 阻塞串行/非阻塞 launch 即返回 + 超时保护 + 进度 StateFlow。收集用 Hilt `@IntoSet` 多绑定：
+**InitTask（common:init）** — 启动任务抽象（taskId/priority/dependencies/blocking/timeoutMs/suspend execute），`InitEngine` 拓扑排序 + 阻塞串行/非阻塞 launch 即返回 + 超时保护 + 进度 StateFlow。收集用 Hilt `@IntoSet` 多绑定：
 
 ```kotlin
 // 在各 impl 模块的 Hilt Module 里提供

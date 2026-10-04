@@ -22,7 +22,7 @@ dependencies {
     implementation project(':feature:coupon:api')
 
     // 响应信封 ApiResult / HttpStatusCode / RequestState
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException
     implementation project(':common:network')
     // 清氧设计系统（AppColors/AppDimens/AppElevation 主题 + AppTabBar/LoadingState/PageHeader 组件）

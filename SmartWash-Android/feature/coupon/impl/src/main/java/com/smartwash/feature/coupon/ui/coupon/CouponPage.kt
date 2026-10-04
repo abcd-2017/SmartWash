@@ -65,7 +65,7 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 
 @Composable
 fun CouponPage(

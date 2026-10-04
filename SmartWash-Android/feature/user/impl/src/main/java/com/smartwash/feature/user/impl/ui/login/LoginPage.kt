@@ -61,7 +61,7 @@ import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.HapticEffect
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
 import com.smartwash.common.utils.performHaptic

@@ -1,7 +1,7 @@
 package com.smartwash.feature.coupon.network.api
 
 import com.smartwash.common.network.annotation.RequireAuthorization
-import com.smartwash.common.model.ApiResult
+import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.feature.coupon.network.vo.coupon.AllCouponsVo
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo

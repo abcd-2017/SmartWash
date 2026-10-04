@@ -1,12 +1,12 @@
-# core:init 模块
+# common:init 模块
 
 ## 模块身份
-- **Gradle 坐标**: `core:init`
+- **Gradle 坐标**: `common:init`
 - **职责**: 应用启动任务调度引擎，提供声明式任务注册、拓扑排序、超时保护
 
 ## 包结构
 ```
-com.smartwash.core.init
+com.smartwash.common.init
 ├── InitTask.kt            — 启动任务契约
 ├── InitEngine.kt          — 拓扑排序 + 调度引擎
 └── InitTaskRegistry.kt    — Hilt @IntoSet 注册表
@@ -22,7 +22,7 @@ com.smartwash.core.init
 - **被依赖**: 所有 feature 模块通过实现 InitTask 注册启动任务
 
 ## 内部约定
-- ⚠️ **零项目依赖**：禁止引入任何业务模块（common:*、feature:*），保持纯基础设施层
+- ⚠️ **零项目依赖**：禁止引入任何业务模块（common:* 其他子模块、feature:*），保持纯基础设施层
 - 任务按 `priority` 升序排列，同 priority 按依赖拓扑排序
 - `blocking = true` 的任务串行执行，`false` 的任务 launch 并发
 - 超时任务记录日志但不阻塞后续流程（fail-open）

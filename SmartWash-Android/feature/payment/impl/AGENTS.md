@@ -55,7 +55,7 @@ src/main/java/com/smartwash/feature/payment/impl/
   - `:feature:payment:api` — 本域路由常量
   - `:feature:order:api` — `OrderApi`（订单详情/优惠券试算）
   - `:feature:coupon:api` — `CouponApi` + `UsableCoupon`（支付页选券）+ `CouponRoute`
-  - `:common:model` / `:common:network` / `:common:ui` / `:common:utils`
+  - `:common:utils` / `:common:network` / `:common:ui` / `:common:utils`
 - **谁依赖此模块**: 无（支付域实现无外部消费方，仅经 api 暴露路由）
 
 ## 内部约定

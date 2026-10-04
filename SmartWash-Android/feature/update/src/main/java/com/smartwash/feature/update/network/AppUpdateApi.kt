@@ -1,6 +1,6 @@
 package com.smartwash.feature.update.network
 
-import com.smartwash.common.model.ApiResult
+import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.feature.update.model.AppVersionVo
 import retrofit2.http.GET
 

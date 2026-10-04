@@ -7,7 +7,7 @@ import com.smartwash.feature.payment.impl.PaymentImplConstant
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.entity.recharge.UserRecharge
 import com.smartwash.feature.payment.impl.repository.RechargeRepository
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow

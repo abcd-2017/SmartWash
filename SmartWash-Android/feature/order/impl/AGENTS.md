@@ -50,7 +50,7 @@ com.smartwash.feature.order.impl
 ### 本模块依赖
 - `:feature:order:api`（OrderApi / OrderRoute / OrderInfo / OrderStatus 等）
 - `:feature:payment:api`（PaymentRoute — 订单页「去支付」跨域跳转）
-- `:common:model`（ApiResult / RequestState）
+- `:common:utils`（ApiResult / RequestState）
 - `:common:network`（Retrofit / @RequireAuthorization / NetworkException）
 - `:common:ui`（清氧设计系统）
 - `:common:utils`（触感反馈）

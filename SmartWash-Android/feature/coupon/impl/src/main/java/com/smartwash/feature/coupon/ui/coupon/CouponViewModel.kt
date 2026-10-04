@@ -7,7 +7,7 @@ import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.feature.coupon.CouponImplConstant
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.coupon.repository.CouponRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

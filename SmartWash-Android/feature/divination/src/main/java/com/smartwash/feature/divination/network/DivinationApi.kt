@@ -2,7 +2,7 @@ package com.smartwash.feature.divination.network
 
 import androidx.annotation.Keep
 import com.smartwash.common.network.annotation.RequireAuthorization
-import com.smartwash.common.model.ApiResult
+import com.smartwash.common.utils.model.ApiResult
 import retrofit2.http.Body
 import retrofit2.http.POST
 

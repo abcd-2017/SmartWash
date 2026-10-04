@@ -61,7 +61,7 @@ com.smartwash.feature.divination
 
 ## 4. 依赖关系
 
-- **本模块依赖**：`:common:model`（ApiResult/RequestState）、`:common:network`（Retrofit + 拦截器）、`:common:ui`（DivinationColors + AppConfirmDialog）、`:common:utils`（触感/按压，implementation 不传递须显式声明）、`:common:database`（Room runtime/ktx 经 api 传递）、`libs.lunar`（历法底座）、`libs.gson`（卦盘编解码）
+- **本模块依赖**：`:common:utils`（ApiResult/RequestState）、`:common:network`（Retrofit + 拦截器）、`:common:ui`（DivinationColors + AppConfirmDialog）、`:common:utils`（触感/按压，implementation 不传递须显式声明）、`:common:database`（Room runtime/ktx 经 api 传递）、`libs.lunar`（历法底座）、`libs.gson`（卦盘编解码）
 - **谁依赖本模块**：`:app`（壳层聚合页面 composable + 消费 DivRecordRepository）
 - **独立数据库**：DivinationDatabase 自持 ksp 处理器（与 common:database 编译 AppDatabase 同模式），不反向依赖 common:database 模块代码
 

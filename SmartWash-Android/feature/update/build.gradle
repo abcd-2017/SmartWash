@@ -12,7 +12,7 @@ android {
 
 dependencies {
     // 响应信封 ApiResult
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // NetworkException 与 Retrofit（经 common:network 的 api 传递，AppUpdateApi/UpdateModule 消费）
     implementation project(':common:network')
 
@@ -23,7 +23,7 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel
 
     // 启动任务基类（UpdateInitTask 注册进 InitTaskRegistry，App.onCreate 经 InitEngine 调度）
-    implementation project(':core:init')
+    implementation project(':common:init')
 
     // APK 后台下载（WorkManager + @HiltWorker）
     implementation libs.androidx.work.runtime.ktx

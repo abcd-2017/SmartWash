@@ -19,7 +19,7 @@ dependencies {
     implementation libs.converter.gson
     implementation libs.okhttp.logging
     // ResponseInterceptor 解析响应信封（ApiResult/HttpStatusCode）
-    implementation project(':common:model')
+    implementation project(':common:utils')
     // NetworkException 的 @StringRes 注解
     implementation libs.androidx.annotation
 }

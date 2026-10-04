@@ -25,7 +25,7 @@ com.smartwash.common.network
 - `@RequireAuthorization` — 标记需要鉴权的 API 接口方法
 
 ## 依赖关系
-- **依赖**: Retrofit、OkHttp、Hilt、common:model
+- **依赖**: Retrofit、OkHttp、Hilt、common:utils
 - **被依赖**: 所有 feature:api 模块（通过 Retrofit Api 接口）
 
 ## 内部约定

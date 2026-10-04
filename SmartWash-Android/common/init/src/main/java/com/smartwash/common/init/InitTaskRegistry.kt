@@ -1,4 +1,4 @@
-package com.smartwash.core.init
+package com.smartwash.common.init
 
 import dagger.Binds
 import dagger.Module

@@ -74,7 +74,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
-import com.smartwash.common.model.RequestState
+import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.order.api.OrderRoute
