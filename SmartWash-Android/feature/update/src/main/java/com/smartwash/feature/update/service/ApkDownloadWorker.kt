@@ -21,6 +21,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.util.concurrent.CancellationException
+import javax.inject.Named
 
 /**
  * APK 后台下载 Worker
@@ -32,7 +33,7 @@ import java.util.concurrent.CancellationException
 class ApkDownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val okHttpClient: OkHttpClient,
+    @Named("download") private val okHttpClient: OkHttpClient,
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
