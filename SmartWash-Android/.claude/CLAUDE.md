@@ -30,35 +30,34 @@
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
 - Manifest 中 `usesCleartextTraffic=true` 为 demo 项目全局放行明文 HTTP，并声明 `REQUEST_INSTALL_PACKAGES`（APK 热更新）与 FileProvider（APK 安装）。**发版前须按生产地址改为 HTTPS 并移除该开关**。
-- Maven 仓库用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `build-logic` 两处注释）；海外构建需改回 `google()` / `mavenCentral()`。
+- Maven 仓库用阿里云镜像（当前注释，启用需同时取消 `settings.gradle` 与 `config/` 两处注释）；海外构建需改回 `google()` / `mavenCentral()`。
 
 ## 项目架构
 
-智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。已完成模块化重构（阶段 0–8，提交 3276513 起），从单模块拆为 16 个 Gradle 模块。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。已完成模块化重构（阶段 0–8，提交 3276513 起），从单模块拆为 18 个 Gradle 模块。
 
 ### 模块地图
 
 ```
-:app                             壳：Application + MainActivity(NavHost 聚合) + 更新弹窗 UI + 取件留守页
-:common:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
-:common:utils                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState
-:common:utils                   DataStore 封装(SharePreferenceUtils) / RequestState / 动效触感 / 二维码 / pagingFlow
-:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
+:app                             壳：Application + MainActivity(NavHost 聚合) + 首页(HomePage/IndexPage) + 订单详情页(OrderDetailPage) + 取件页(PickupPage/PickupDeliveryPage) + 更新弹窗(UpdateDialog/UpdateFlow) + AI 工作台页(AiWorkPage)
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
+:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
+:common:utils                    跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装(SharePreferenceUtils) / 动效触感 / 二维码 / pagingFlow
 :common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
-:feature:update                 热更新全链路 + UpdateInitTask（InitTask 首业务案例）
-:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + 解读网关 + 7 页面 + 独立库）
-:feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
-:feature:user:impl              SessionManager + UserRepository + 登录/注册/用户中心/资料编辑/设置页
-:feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
-:feature:order:impl             OrderRepository + 订单页
-:feature:payment:api            PaymentRoute 路由常量（零跨模块数据消费）
-:feature:payment:impl           支付 + 充值网络链路与页面
-:feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
-:feature:laundry:impl           Laundry/School Repository + 洗衣预约/服务页（内存→Room→网络 缓存降级）
+:common:init                      InitTask 契约 + InitEngine + InitTaskRegistry（零业务依赖：仅 Android SDK + Hilt + coroutines）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
-:feature:coupon:impl            CouponRepository + 优惠券页
-build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
+:feature:coupon:impl            CouponRepository + CouponStatus + CouponApiImpl + EntityMappers + 三 Tab 页(AvailableCouponsTab/HistoricalCouponsTab/ClaimedCouponsTab)
+:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + 解读网关 + 7 页面(ask/cast/chart/followup/history/home/reading) + 独立库）
+:feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
+:feature:laundry:impl           Laundry/School Repository + EntityMappers + SchoolSearchSourceImpl + SchoolApi/LaundryItemsApi + 洗衣预约/服务页（内存→Room→网络 缓存降级）
+:feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
+:feature:order:impl             OrderRepository + OrderGroup + OrderPagingSource + OrderServiceApi + 订单 VO 实体 + 订单页
+:feature:payment:api            PaymentRoute 路由常量（零跨模块数据消费）
+:feature:payment:impl            PaymentRepository + RechargeRepository + RechargeRecordPagingSource + PaymentType + PaySuccessPage + 支付/充值网络链路与页面
+:feature:update                 热更新全链路 + UpdateInitTask + ApkDownloadWorker + ApkInstaller + UpdateEventBus
+:feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
+:feature:user:impl              SessionManager + SessionEventBus + UserAccountApi + UserRepository + 登录/注册/用户中心/资料编辑/设置页
+config/                          convention 脚本目录（android-library.gradle / compose.gradle / hilt.gradle，传统 apply from 方式）
 ```
 
 ### 六条依赖铁律（强制，`scripts/check-deps.sh` 静态校验前四条）
@@ -68,7 +67,7 @@ build-logic                     convention plugin（smartwash.android.library / 
 3. **common:init 零项目依赖**：不依赖 common 任何模块、不依赖 Compose。
 4. **common 不依赖 feature**。
 5. **业务模型跟各自 api 模块走**；`common:utils` 只放 `ApiResult`/`PageData`/`HttpStatusCode`/`RequestState` 等真共享物。
-6. **构建配置统一 convention plugin**（build-logic），模块 `build.gradle` 只声明差异依赖。
+6. **构建配置统一 convention 脚本**（config/），模块 `build.gradle` 只声明差异依赖。
 
 ### 核心机制
 
