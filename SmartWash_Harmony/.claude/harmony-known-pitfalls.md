@@ -1,6 +1,6 @@
 # 鸿蒙端已知坑
 
-完整清单见 [docs/code-review-2026-08-28.md](../docs/code-review-2026-08-28.md) 第四章，重点关注：
+完整清单见 [.claude/docs/code-review-2026-08-28.md](../../.claude/docs/code-review-2026-08-28.md) 第四章，重点关注：
 
 - `network/Axios.ets:22` 硬编码演示服务器明文 HTTP 地址（与 Android 分环境不一致）——改网络层时一并环境化（参照 Android 端 Gradle 属性注入或 DevEco 多 target/profile）。
 - `view/IndexPage.ets` 轮询已改用 `@Monitor('isActive')` 启停（已修复）。

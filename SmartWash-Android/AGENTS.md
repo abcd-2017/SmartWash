@@ -914,7 +914,7 @@ data class PageData<T>(
 
 ## 十、已知问题与待办
 
-完整四端评审清单（含行号与修复方向）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第二章。Android 端 P0/P1 级：
+完整四端评审清单（含行号与修复方向）见 `.claude/docs/code-review-2026-08-28.md` 第二章。Android 端 P0/P1 级：
 
 - **按压反馈全量失效**：`:common:utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处调用无效——修复前不要模仿该写法
 - **组合期副作用**：6 个页面（PaymentPage、PaySuccessPage、OrderDetailPage、IndexPage、RegisterPage、OrderPage）在 `when(state)` 渲染分支里直接 Toast/回写状态，需迁 `LaunchedEffect`

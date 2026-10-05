@@ -576,6 +576,6 @@ fun DrumIcon(state: OrderStatus, tint: Color) {
 | `common/ui/theme/Color.kt` · `AppDesign.kt` · `Type.kt` | 令牌实现 |
 | `common/utils/AnimationUtils.kt` | 动效 vocabulary 实现 |
 
-> ⚠️ 仓库 `.gitignore` 有 `**/docs/`（第 63 行），**整个 docs 目录不进版本控制**。
-> 本文档、原型、登记表都只在本地。换机器或他人 clone 后**拿不到这些约束文件**。
-> 需要让协作者也看到的话，得在 `.gitignore` 加例外（已有 `!docs/agents/shared-rules.md` 先例）。
+> ⚠️ 仓库 `.gitignore` 有 `**/docs/`，**整个 docs 目录不进版本控制**。
+> 原型、登记表都只在本地，换机器或他人 clone 后**拿不到这些文件**；需要让协作者也看到的话，得在 `.gitignore` 加例外。
+> 本文档已移入 `.claude/`，不受 `**/docs/` 影响，会随仓库分发。

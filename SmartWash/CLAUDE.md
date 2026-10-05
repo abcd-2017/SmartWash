@@ -4,7 +4,7 @@
 
 **必须使用中文回答。**
 
-**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。提交规范见根目录 CLAUDE.md。
+**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。提交规范见根目录 CLAUDE.md。
 
 ---
 
@@ -78,7 +78,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 已知坑（改动前先看）
 
-详见 [backend-known-pitfalls.md](backend-known-pitfalls.md)。
+详见 [.claude/backend-known-pitfalls.md](.claude/backend-known-pitfalls.md)。
 
 ## 子代理
 
@@ -93,6 +93,6 @@ mvn clean package -DskipTests  # 打包
 | 新增删除资金记录入口 | payments/recharge_records 禁止新增删除接口 |
 | 跳过根因分析 | 没有根因调查不允许修复 |
 
-通用红线（直接 push 到 main、修改 CLAUDE.md 需团队共识、声称完成 without 验证）见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。
+通用红线（直接 push 到 main、修改 CLAUDE.md 需团队共识、声称完成 without 验证）见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。
 
-完整项目规则见本子目录 `CLAUDE.md`，评审报告见 `docs/code-review-2026-08-28.md`。
+完整项目规则见本子目录 `CLAUDE.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。

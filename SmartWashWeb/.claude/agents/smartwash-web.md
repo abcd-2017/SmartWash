@@ -28,4 +28,4 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - 高德 securityJsCode 已泄露待轮换
 - 下拉 size:1000 拉全量
 
-完整项目规则见 `SmartWashWeb/CLAUDE.md`，通用规则见 `docs/agents/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。
+完整项目规则见 `SmartWashWeb/CLAUDE.md`，通用规则见 `.claude/docs/shared-rules.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。
