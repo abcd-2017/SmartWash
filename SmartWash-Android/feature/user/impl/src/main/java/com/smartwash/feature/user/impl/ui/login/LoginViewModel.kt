@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.feature.user.impl.network.entity.user.LoginUser
@@ -12,6 +13,7 @@ import com.smartwash.feature.user.impl.repository.UserRepository
 import com.smartwash.feature.user.impl.session.SessionEventBus
 import com.smartwash.feature.user.impl.session.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -22,6 +24,7 @@ class LoginViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val sessionManager: SessionManager,
     private val sessionEventBus: SessionEventBus,
+    private val userApi: UserApi,
 ) : ViewModel() {
     private val _loginState = MutableStateFlow<RequestState>(RequestState.Idle)
     val loginState = _loginState.asStateFlow()
@@ -60,4 +63,22 @@ class LoginViewModel @Inject constructor(
      * 切入移入）：suspend 读取优先命中内存缓存，未命中读 DataStore。
      */
     suspend fun hasSavedToken(): Boolean = sessionManager.getToken().isNotBlank()
+
+    /**
+     * 检查当前用户学校信息是否缺失。
+     * true = 确认未填写（需强制补填）；false = 已填写；null = 无法确认（未登录或网络失败）。
+     * 网络失败不误判为未填写——避免已填写用户在网络波动时被错误带到填写页。
+     */
+    suspend fun schoolInfoMissing(): Boolean? {
+        return try {
+            userApi.getUserInfo()?.let {
+                it.school.schoolId <= 0L || it.studentId.isBlank()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(UserImplConstant.APP_NAME, "LoginViewModel.schoolInfoMissing: ${e.message}", e)
+            null
+        }
+    }
 }

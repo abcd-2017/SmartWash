@@ -85,16 +85,19 @@ fun UpdateUserInfoPage(
     var isSearchFocused by remember { mutableStateOf(false) }
     val updateState by userInfoViewModel.updateState.collectAsState()
 
-    // 信息锁定：一旦填写并提交后，学校/学号信息不可随意更改（只能由管理员修改）
+    // 信息锁定：已填写学校/学号的用户进入本页即为只读态（只能由管理员修改）
     var isInfoLocked by remember { mutableStateOf(false) }
+    val currentInfo by userInfoViewModel.currentInfo.collectAsState()
 
     when (updateState) {
         is RequestState.Success -> {
             LaunchedEffect(Unit) {
                 Toast.makeText(context, context.getString(R.string.modify_success), Toast.LENGTH_SHORT).show()
                 userInfoViewModel.setStateIdle()
-                // 信息提交成功后锁定，不可随意更改
-                isInfoLocked = true
+                // 提交成功回主页并清栈——不能停留在本页：锁定态下输入与按钮均禁用，停留即被困
+                navController.navigate(ShellRoute.HOME) {
+                    popUpTo(0) { inclusive = true }
+                }
             }
         }
         is RequestState.Error -> {
@@ -102,6 +105,20 @@ fun UpdateUserInfoPage(
             userInfoViewModel.setStateIdle()
         }
         else -> {}
+    }
+
+    // 已填写用户进入本页：回填学校/学号并进入只读态，防止反复变更
+    LaunchedEffect(currentInfo) {
+        val info = currentInfo ?: return@LaunchedEffect
+        val schoolId = info.schoolVo.schoolId
+        if (schoolId != null && schoolId > 0L) {
+            selectedSchoolId = schoolId
+            query = info.schoolVo.schoolName.orEmpty()
+            studentId = info.studentId
+            isSchoolError = false
+            isStudentIdError = false
+            isInfoLocked = true
+        }
     }
 
     LaunchedEffect(interactionSource) {

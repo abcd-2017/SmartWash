@@ -32,6 +32,15 @@ interface UserApi {
     suspend fun getUserInfo(): UserInfo?
 
     /**
+     * 使用户信息内存缓存立即失效（同步，无竞态）。
+     *
+     * 用户在本端修改了自身资料（如完善学校信息）后必须调用：否则下游消费方
+     * （首页学校绑定引导、用户中心等）读到提交前的过期缓存，会做出错误判断
+     * （如提交成功后仍被判为"未填写"而弹回填写页）。
+     */
+    fun invalidateUserInfoCache()
+
+    /**
      * 登录态变化广播（登录成功 / 登出），桥接 user-impl 的 SessionEventBus。
      *
      * - 特意选用 SharedFlow 而非 StateFlow：登录态变化是离散事件而非连续状态，

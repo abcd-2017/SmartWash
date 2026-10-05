@@ -345,9 +345,8 @@ fun RegisterPage(
                     contentColor = Color.White,
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
+                    // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
                     if (it.length <= 16) password = it
-                    isPasswordError = if (it.isEmpty()) false
-                    else it.length < 6 || it.length > 16
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

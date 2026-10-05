@@ -100,11 +100,20 @@ fun LoginPage(
     val registerEntryInteractionSource = remember { MutableInteractionSource() }
 
     // 已有 token 直接进首页（suspend 读取，不阻塞主线程；T5.3 起经 ViewModel 自取，
-    // 不再由宿主传 SessionManager——app 壳不触碰用户域实现类型）
+    // 不再由宿主传 SessionManager——app 壳不触碰用户域实现类型）。
+    // 重启时学校信息检查也在此处一并完成（startDestination 恒为登录页，本分支即
+    // 「已登录用户重启 app」的唯一入口），避免壳层并行检查造成双跳转竞态。
     LaunchedEffect(Unit) {
         if (loginViewModel.hasSavedToken()) {
-            navController.navigate(ShellRoute.HOME) {
-                popUpTo(UserRoute.Login.text) { inclusive = true }
+            // 确认未填写才强制补填；网络失败无法确认（null）时放行进首页，不误拦截
+            if (loginViewModel.schoolInfoMissing() == true) {
+                navController.navigate(UserRoute.UpdateUserInfo.text) {
+                    popUpTo(UserRoute.Login.text) { inclusive = true }
+                }
+            } else {
+                navController.navigate(ShellRoute.HOME) {
+                    popUpTo(UserRoute.Login.text) { inclusive = true }
+                }
             }
         }
     }
@@ -115,10 +124,20 @@ fun LoginPage(
             is RequestState.Success -> {
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.login_success), Toast.LENGTH_SHORT).show()
-                loginViewModel.resetLoginState()
-                navController.navigate(ShellRoute.HOME) {
-                    popUpTo(UserRoute.Login.text) { inclusive = true }
+                // 顺序不能颠倒：先在本协程完成去向检查（此刻 key 仍为 Success，协程存活，
+                // 网络挂起安全），完成导航后才 resetLoginState。若先 reset，key 变化会取消
+                // 本协程，挂起中的 getUserInfo 被 Canceled，导航永不执行（表现为点击登录无反应）。
+                val schoolMissing = loginViewModel.schoolInfoMissing() == true
+                if (schoolMissing) {
+                    navController.navigate(UserRoute.UpdateUserInfo.text) {
+                        popUpTo(UserRoute.Login.text) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(ShellRoute.HOME) {
+                        popUpTo(UserRoute.Login.text) { inclusive = true }
+                    }
                 }
+                loginViewModel.resetLoginState()
             }
 
             is RequestState.Error -> {
@@ -227,11 +246,8 @@ fun LoginPage(
                     contentColor = Color.White,
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
+                    // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
                     if (it.length <= 16) password = it
-                    // 实时校验：只在已显示错误后实时更新
-                    isPasswordError = if (it.length >= 6) {
-                        it.length < 6 || it.length > 16
-                    } else isPasswordError
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
