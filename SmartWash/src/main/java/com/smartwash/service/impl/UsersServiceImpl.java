@@ -182,6 +182,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         if (user == null) {
             throw new CustomExceptions("用户不存在");
         }
+        // 学校/学号一经填写完整即锁定：用户端不可再自行修改，只能由管理员在管理后台
+        // （/admin/users/update）变更。schoolId 与 studentId 均非空才视为已填写，
+        // 半填写状态（历史数据或管理员部分修改）允许用户端补全。
+        if (user.getSchoolId() != null
+                && user.getStudentId() != null
+                && !user.getStudentId().isBlank()) {
+            throw new CustomExceptions("学校信息已提交，如需修改请联系管理员");
+        }
         user.setSchoolId(updateUserInfo.getSchoolId());
         user.setStudentId(updateUserInfo.getStudentId());
         return updateById(user);
