@@ -27,7 +27,11 @@ fun PhoneNumberInput(
 ) {
     TextField(
         value = phone,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            // 只允许输入数字，过滤非数字字符
+            val filtered = newValue.filter { it.isDigit() }
+            onValueChange(filtered)
+        },
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         isError = isPhoneError,

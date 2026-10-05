@@ -35,7 +35,11 @@ fun PasswordInput(
 ) {
     TextField(
         value = password,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            // 超过16位直接截断，不显示报错
+            val filtered = if (newValue.length > 16) newValue.take(16) else newValue
+            onValueChange(filtered)
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         modifier = modifier.fillMaxWidth(),
         isError = isPasswordError,

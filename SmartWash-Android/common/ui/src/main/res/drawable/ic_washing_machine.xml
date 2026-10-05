@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 品牌洗衣机图标 — 滚筒圆 + 水波线，与设计稿同源 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="72"
+    android:viewportHeight="72">
+
+    <!-- 外框圆角矩形（圆角半径 16，与设计稿一致） -->
+    <path
+        android:pathData="M24,8 L56,8 Q64,8 64,16 L64,56 Q64,64 56,64 L16,64 Q8,64 8,56 L8,16 Q8,8 16,8 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.9"
+        android:strokeWidth="2.6"
+        android:fillColor="#00000000" />
+
+    <!-- 顶部横线 -->
+    <path
+        android:pathData="M8,25 L64,25"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.45" />
+
+    <!-- 左指示灯 -->
+    <path
+        android:pathData="M19,16.5 m-2.4,0 a2.4,2.4 0 1,1 4.8,0 a2.4,2.4 0 1,1 -4.8,0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9" />
+
+    <!-- 右指示灯 -->
+    <path
+        android:pathData="M28,16.5 m-2.4,0 a2.4,2.4 0 1,1 4.8,0 a2.4,2.4 0 1,1 -4.8,0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.5" />
+
+    <!-- 滚筒外圆 -->
+    <path
+        android:pathData="M36,45 m-14,0 a14,14 0 1,1 28,0 a14,14 0 1,1 -28,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.85"
+        android:strokeWidth="2.6"
+        android:fillColor="#00000000" />
+
+    <!-- 滚筒内圆 -->
+    <path
+        android:pathData="M36,45 m-8.5,0 a8.5,8.5 0 1,1 17,0 a8.5,8.5 0 1,1 -17,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.42"
+        android:fillColor="#00000000" />
+
+    <!-- 水波线 -->
+    <path
+        android:pathData="M30,45 c2,-2.6 4,1.6 6,-0.4 s4,1 6,-1"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>

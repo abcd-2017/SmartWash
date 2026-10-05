@@ -85,13 +85,16 @@ fun UpdateUserInfoPage(
     var isSearchFocused by remember { mutableStateOf(false) }
     val updateState by userInfoViewModel.updateState.collectAsState()
 
+    // 信息锁定：一旦填写并提交后，学校/学号信息不可随意更改（只能由管理员修改）
+    var isInfoLocked by remember { mutableStateOf(false) }
+
     when (updateState) {
         is RequestState.Success -> {
             LaunchedEffect(Unit) {
                 Toast.makeText(context, context.getString(R.string.modify_success), Toast.LENGTH_SHORT).show()
                 userInfoViewModel.setStateIdle()
-                navController.popBackStack()
-                navController.navigate(ShellRoute.HOME)
+                // 信息提交成功后锁定，不可随意更改
+                isInfoLocked = true
             }
         }
         is RequestState.Error -> {
@@ -191,13 +194,14 @@ fun UpdateUserInfoPage(
                             color = AppColors.colorScheme.textTertiary
                         )
 
-                        // field3 样式输入框
+                        // field3 样式输入框 — 信息锁定后禁用编辑
                         SearchSchoolInput(
                             query = query,
                             interactionSource = interactionSource,
                             isSchoolError = isSchoolError,
                             isSearchFocused = isSearchFocused,
                             schoolList = schoolList,
+                            enabled = !isInfoLocked,
                             itemClick = { school ->
                                 selectedSchoolId = school.schoolId
                                 query = school.schoolName
@@ -225,7 +229,7 @@ fun UpdateUserInfoPage(
                             modifier = Modifier.padding(top = 4.dp)
                         )
 
-                        // field3 样式输入框
+                        // field3 样式输入框 — 信息锁定后禁用编辑
                         OutlinedTextField(
                             value = studentId,
                             onValueChange = { studentId = it; isStudentIdError = false },
@@ -234,6 +238,7 @@ fun UpdateUserInfoPage(
                                 .fillMaxWidth()
                                 .height(50.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = !isInfoLocked,
                             isError = isStudentIdError,
                             supportingText = if (isStudentIdError) {
                                 { Text(stringResource(R.string.invalid_student_id)) }
@@ -247,7 +252,9 @@ fun UpdateUserInfoPage(
                                 unfocusedBorderColor = AppColors.colorScheme.outline,
                                 errorBorderColor = AppColors.colorScheme.error,
                                 focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
+                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                                disabledBorderColor = AppColors.colorScheme.outline,
+                                disabledContainerColor = AppColors.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -266,14 +273,23 @@ fun UpdateUserInfoPage(
                             userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
                         }
                     },
-                    loading = updateState is RequestState.Loading
+                    loading = updateState is RequestState.Loading,
+                    enabled = !isInfoLocked
                 )
                 Spacer(modifier = Modifier.height(14.dp))
-                Text(
-                    text = "学校信息决定可用的柜机与配送网点",
-                    fontSize = 11.sp,
-                    color = AppColors.colorScheme.textTertiary
-                )
+                if (isInfoLocked) {
+                    Text(
+                        text = "学校信息已锁定，如需修改请联系管理员",
+                        fontSize = 11.sp,
+                        color = AppColors.colorScheme.textTertiary
+                    )
+                } else {
+                    Text(
+                        text = "学校信息决定可用的柜机与配送网点",
+                        fontSize = 11.sp,
+                        color = AppColors.colorScheme.textTertiary
+                    )
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -287,6 +303,7 @@ fun SearchSchoolInput(
     isSchoolError: Boolean,
     isSearchFocused: Boolean,
     schoolList: List<SchoolOption>,
+    enabled: Boolean = true,
     itemClick: (SchoolOption) -> Unit,
     clearOnClick: () -> Unit,
     onValueChange: (String) -> Unit
@@ -299,6 +316,7 @@ fun SearchSchoolInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
+            enabled = enabled,
             isError = isSchoolError,
             supportingText = if (isSchoolError) {
                 { Text(stringResource(R.string.please_select_school)) }
@@ -307,7 +325,7 @@ fun SearchSchoolInput(
                 Icon(Icons.Rounded.School, contentDescription = null, tint = AppColors.colorScheme.primary)
             },
             trailingIcon = {
-                IconButton(onClick = clearOnClick) {
+                IconButton(onClick = clearOnClick, enabled = enabled) {
                     Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.clear), tint = AppColors.colorScheme.textSecondary)
                 }
             },
@@ -318,7 +336,9 @@ fun SearchSchoolInput(
                 unfocusedBorderColor = AppColors.colorScheme.outline,
                 errorBorderColor = AppColors.colorScheme.error,
                 focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
+                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                disabledBorderColor = AppColors.colorScheme.outline,
+                disabledContainerColor = AppColors.colorScheme.surfaceVariant
             )
         )
 

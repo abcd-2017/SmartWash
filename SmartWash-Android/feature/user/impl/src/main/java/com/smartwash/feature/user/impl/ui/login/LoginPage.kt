@@ -3,9 +3,12 @@ package com.smartwash.feature.user.impl.ui.login
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.LocalLaundryService
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +50,7 @@ import com.smartwash.common.ui.theme.GlassTextDisabled
 import com.smartwash.common.ui.theme.GlassTextHint
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -148,7 +151,7 @@ fun LoginPage(
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
-            // 品牌标识 — 96dp 单层圆形
+            // 品牌标识 — 96dp 单层圆形 + 自绘洗衣机 SVG
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -158,9 +161,9 @@ fun LoginPage(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.LocalLaundryService,
+                    painter = painterResource(com.smartwash.common.ui.R.drawable.ic_washing_machine),
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(56.dp),
                     tint = Color.White
                 )
             }
@@ -282,13 +285,11 @@ fun LoginPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 注册入口
-            TextButton(
-                onClick = {
-                    navController.navigate(UserRoute.Register.text)
-                },
-                interactionSource = registerEntryInteractionSource,
-                modifier = Modifier.pressScale(registerEntryInteractionSource, 0.97f)
+            // 注册入口 — 只有点击"立即注册"才跳转
+            Row(
+                modifier = Modifier.padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.no_account),
@@ -296,10 +297,19 @@ fun LoginPage(
                     color = AuthBottomText
                 )
                 Text(
-                    stringResource(R.string.register_now),
+                    text = stringResource(R.string.register_now),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
-                    color = AuthBottomTextActive
+                    color = AuthBottomTextActive,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = registerEntryInteractionSource,
+                            indication = null
+                        ) {
+                            navController.navigate(UserRoute.Register.text)
+                        }
+                        .pressScale(registerEntryInteractionSource, 0.97f)
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
 

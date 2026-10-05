@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,7 +76,6 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.isValidPhone
-import com.smartwash.common.ui.navigation.ShellRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -143,7 +143,8 @@ fun RegisterPage(
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
-                navController.navigate(ShellRoute.HOME) {
+                // 注册成功后跳转填写学校学号信息
+                navController.navigate(UserRoute.UpdateUserInfo.text) {
                     popUpTo(UserRoute.Login.text) { inclusive = true }
                 }
             }
@@ -176,10 +177,11 @@ fun RegisterPage(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 顶部导航栏
+            // 顶部导航栏 — 添加 statusBarsPadding 防止与状态栏重叠
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -299,13 +301,15 @@ fun RegisterPage(
                     countDown = countDown,
                     captchaState = captchaState,
                     focusRequester = verificationCodeFocusRequester,
-                    onValueChange = {
-                        if (it.length <= 6) {
-                            verificationCode = it
+                    onValueChange = { newValue ->
+                        // 只允许输入数字，过滤非数字字符
+                        val filtered = newValue.filter { it.isDigit() }
+                        if (filtered.length <= 6) {
+                            verificationCode = filtered
                             isVerificationCodeError = false
                         }
                         // 输入完成自动跳转到密码框
-                        if (it.length == 6) {
+                        if (filtered.length == 6) {
                             passwordFocusRequester.requestFocus()
                         }
                     },
@@ -391,11 +395,11 @@ fun RegisterPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 登录入口
-            TextButton(
-                onClick = {
-                    navController.popBackStack()
-                }
+            // 登录入口 — 只有点击"去登录"才跳转
+            Row(
+                modifier = Modifier.padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.has_account),
@@ -403,10 +407,13 @@ fun RegisterPage(
                     color = AuthBottomText
                 )
                 Text(
-                    stringResource(R.string.login_now),
+                    text = stringResource(R.string.login_now),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
-                    color = AuthBottomTextActive
+                    color = AuthBottomTextActive,
+                    modifier = Modifier
+                        .clickable { navController.popBackStack() }
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
 
@@ -483,17 +490,21 @@ private fun VerificationCodeRow(
 
         TextButton(
             onClick = onSendCaptcha,
-            enabled = captchaState !is RequestState.Loading,
+            enabled = captchaState !is RequestState.Loading && countDown == 0,
             modifier = Modifier
-                .border(1.dp, GlassInput, RoundedCornerShape(12.dp))
+                .border(
+                    width = if (countDown > 0) 0.dp else 1.dp,
+                    color = GlassInput,
+                    shape = RoundedCornerShape(12.dp)
+                )
                 .height(40.dp),
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
-                text = if (captchaState is RequestState.Loading) stringResource(R.string.countdown_format, countDown)
+                text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
                 else stringResource(R.string.get_verification_code),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (captchaState is RequestState.Loading)
+                color = if (countDown > 0)
                     GlassTextSecondary
                 else GlassTextActive
             )

@@ -9,14 +9,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,6 +29,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.work.WorkManager
 import com.smartwash.R
+import com.smartwash.common.ui.theme.AuthGradientBottom
+import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
@@ -150,6 +156,12 @@ class MainActivity : ComponentActivity() {
                 // 全应用动效降级开关（规范 7.8）：叶子节点经 motionSpec()/LocalReduceMotion 消费
                 CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
                     Surface(modifier = Modifier.fillMaxSize()) {
+                        // 转场露底色跟随当前目的地：导航命令执行时 currentBackStackEntry 即更新，
+                        // 动画在其上播放——认证页透认证渐变（修复登录↔注册白闪），
+                        // 其余页面透主题底色，避免全局纯绿背景在非认证转场中透色。
+                        val currentRoute = backStackEntry?.destination?.route
+                        val isAuthRoute = currentRoute == UserRoute.Login.text ||
+                            currentRoute == UserRoute.Register.text
                         NavHost(
                             navController = navController,
                             startDestination = UserRoute.Login.text,
@@ -157,6 +169,13 @@ class MainActivity : ComponentActivity() {
                             exitTransition = { shellExitTransition(reduceMotion) },
                             popEnterTransition = { shellEnterTransition(reduceMotion) },
                             popExitTransition = { shellExitTransition(reduceMotion) },
+                            modifier = Modifier.background(
+                                if (isAuthRoute) {
+                                    Brush.verticalGradient(listOf(AuthGradientTop, AuthGradientBottom))
+                                } else {
+                                    SolidColor(MaterialTheme.colorScheme.background)
+                                }
+                            )
                         ) {
                             // 壳层留守页面：主页壳 / 订单详情 / 寄件取件 / 取件
                             shellGraph(navController)
