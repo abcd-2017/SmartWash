@@ -14,9 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
@@ -35,8 +34,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -84,7 +81,6 @@ import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
 
 // ========== 页面头部 ==========
@@ -243,8 +239,19 @@ fun AppCard(
     }
 }
 
-// ========== 统一主按钮 ==========
+// ========== 统一按钮（自绘，规范 §3.3 三态） ==========
 
+/** AppButton 形态 — 主（品牌渐变底）/ 次（浅灰底）/ 文字（无底无框） */
+enum class AppButtonVariant { PRIMARY, SECONDARY, TEXT }
+
+/**
+ * 统一按钮 — 自绘实现，不使用 Material Button（其 state layer 颜色与形状不受
+ * 令牌控制，规范 §7 禁止）。业务层一律经本组件消费，禁止直接使用 M3 交互组件。
+ *
+ * 规格（§3.3）：主 = 52dp 高 / 14dp 圆角 / 品牌渐变底 / 白字 15sp·600·ls 1sp；
+ * 次 = 同尺寸 surfaceVariant 底 + 主文本色；文字 = 主色 13sp·600 无底无框。
+ * 按压反馈 scale 0.97（pressable 内置 indication=null）。
+ */
 @Composable
 fun AppButton(
     text: String,
@@ -252,61 +259,89 @@ fun AppButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
+    variant: AppButtonVariant = AppButtonVariant.PRIMARY,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    // btn3-p 规格：135° primary→primaryDark 渐变底；禁用/加载态渐变降透明度（disabledContainerColor
-    // 为 Transparent，禁用视觉完全由 brush 承担，避免双层叠加变淡）
-    val buttonBrush = if (enabled && !loading) {
-        Brush.linearGradient(
-            colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark),
+    // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
+    val debouncedOnClick = rememberDebouncedClick { onClick() }
+    val active = enabled && !loading
+    val shape = RoundedCornerShape(AppDimens.buttonRadius)
+
+    if (variant == AppButtonVariant.TEXT) {
+        Box(
+            modifier = modifier
+                .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
+                .heightIn(min = 44.dp)
+                .padding(horizontal = AppDimens.spaceSm),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(14.dp),
+                    color = AppColors.colorScheme.primary,
+                    strokeWidth = 1.5.dp,
+                )
+            } else {
+                Text(
+                    text = text,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+                )
+            }
+        }
+        return
+    }
+
+    // 主/次按钮共用容器：高 52dp；主 = 135° primary→primaryDark 渐变，
+    // 次 = surfaceVariant（§3.3 的 #F5F6F3 即浅色 surfaceVariant 令牌）
+    val isPrimary = variant == AppButtonVariant.PRIMARY
+    val containerModifier = if (isPrimary) {
+        // 禁用/加载态渐变降透明度（视觉完全由 brush 承担，避免双层叠加变淡）
+        val buttonBrush = Brush.linearGradient(
+            colors = if (active) {
+                listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)
+            } else {
+                listOf(
+                    AppColors.colorScheme.primary.copy(alpha = 0.5f),
+                    AppColors.colorScheme.primaryDark.copy(alpha = 0.5f),
+                )
+            },
             start = Offset.Zero,
-            end = Offset.Infinite
+            end = Offset.Infinite,
         )
+        Modifier.background(buttonBrush, shape)
     } else {
-        Brush.linearGradient(
-            colors = listOf(
-                AppColors.colorScheme.primary.copy(alpha = 0.5f),
-                AppColors.colorScheme.primaryDark.copy(alpha = 0.5f)
-            ),
-            start = Offset.Zero,
-            end = Offset.Infinite
+        Modifier.background(
+            AppColors.colorScheme.surfaceVariant.copy(alpha = if (active) 1f else 0.5f),
+            shape,
         )
     }
-    Button(
-        // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
-        onClick = rememberDebouncedClick { onClick() },
-        interactionSource = interactionSource,
+    val contentColor = if (isPrimary) {
+        if (active) Color.White else GlassTextDisabled
+    } else {
+        AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
+    }
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                brush = buttonBrush,
-                shape = RoundedCornerShape(AppDimens.buttonRadius)
-            )
+            .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
             .height(52.dp)
-            .pressScale(interactionSource, 0.97f),
-        enabled = enabled && !loading,
-        shape = RoundedCornerShape(AppDimens.buttonRadius),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color.White,
-            disabledContainerColor = Color.Transparent,
-            disabledContentColor = GlassTextDisabled
-        )
+            .then(containerModifier),
+        contentAlignment = Alignment.Center,
     ) {
         if (loading) {
-            androidx.compose.material3.CircularProgressIndicator(
+            CircularProgressIndicator(
                 modifier = Modifier.size(22.dp),
-                color = Color.White,
-                strokeWidth = 2.dp
+                color = contentColor,
+                strokeWidth = 2.dp,
             )
         } else {
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.sp
-                )
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp,
+                color = contentColor,
             )
         }
     }
@@ -539,10 +574,14 @@ fun AppTabBar(
             )
             Column(
                 modifier = Modifier
-                    .clickable {
-                        view.performHaptic(HapticEffect.SELECTION)
-                        onTabSelected(index)
-                    }
+                    // Tab 快速连切是合法操作，关闭防抖；pressable 内置 indication=null（禁 ripple）
+                    .pressable(
+                        onClick = {
+                            view.performHaptic(HapticEffect.SELECTION)
+                            onTabSelected(index)
+                        },
+                        debounce = false,
+                    )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

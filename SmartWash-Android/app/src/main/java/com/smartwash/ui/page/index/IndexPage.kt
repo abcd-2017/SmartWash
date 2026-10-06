@@ -172,12 +172,11 @@ fun IndexPage(
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = AppColors.colorScheme.primary,
                             modifier = Modifier
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
+                                .pressable(
                                     onClick = rememberDebouncedClick {
                                         navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
-                                    }
+                                    },
+                                    debounce = false,
                                 )
                                 .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 16.dp)
                         )
@@ -397,7 +396,7 @@ private fun AccountDataCard(
             Column(
                 modifier = Modifier
                     .weight(1.35f)
-                    .clickable(onClick = rememberDebouncedClick(onClick = onRechargeClick))
+                    .pressable(onClick = rememberDebouncedClick(onClick = onRechargeClick), debounce = false)
                     .padding(top = 18.dp, bottom = 18.dp, start = 20.dp, end = 20.dp)
             ) {
                 Text(

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +24,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -66,7 +64,7 @@ import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun OrderDetailPage(
@@ -471,8 +469,6 @@ private fun OrderDetailActionBar(
     onContactServiceClick: () -> Unit = {},
     onPickupCodeClick: () -> Unit = {},
 ) {
-    val interactionSource1 = remember { MutableInteractionSource() }
-    val interactionSource2 = remember { MutableInteractionSource() }
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = AppColors.colorScheme.surface
@@ -490,24 +486,24 @@ private fun OrderDetailActionBar(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
-                    onClick = onContactServiceClick,
-                    interactionSource = interactionSource1,
+                // 次按钮 — surfaceVariant 底 + 主文本色（§3.3），自绘无 state layer
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
-                        .pressScale(interactionSource1, 0.97f),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.colorScheme.surfaceVariant,
-                        contentColor = AppColors.colorScheme.textPrimary
-                    )
+                        .pressable(onClick = onContactServiceClick, debounce = false)
+                        .background(
+                            AppColors.colorScheme.surfaceVariant,
+                            RoundedCornerShape(AppDimens.buttonRadius)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.contact_service),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp
+                        letterSpacing = 1.sp,
+                        color = AppColors.colorScheme.textPrimary
                     )
                 }
                 // 主按钮 btn3-p：135° 对角绿渐变（primary → primaryDark），白字
@@ -516,25 +512,20 @@ private fun OrderDetailActionBar(
                     start = Offset.Zero,
                     end = Offset.Infinite
                 )
-                Button(
-                    onClick = onPickupCodeClick,
-                    interactionSource = interactionSource2,
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
-                        .background(pickupGradient, RoundedCornerShape(AppDimens.buttonRadius))
-                        .pressScale(interactionSource2, 0.97f),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = Color.White
-                    )
+                        .pressable(onClick = onPickupCodeClick, debounce = false)
+                        .background(pickupGradient, RoundedCornerShape(AppDimens.buttonRadius)),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.view_pickup_code),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp
+                        letterSpacing = 1.sp,
+                        color = Color.White
                     )
                 }
             }

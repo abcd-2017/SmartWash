@@ -58,6 +58,7 @@ import com.smartwash.feature.laundry.ui.service.ServicePage
 import com.smartwash.feature.user.impl.ui.userinfo.UserInfoPage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun HomePage(
@@ -183,7 +184,7 @@ private fun BottomNavItem(
 
     Column(
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .pressable(onClick = onClick, debounce = false)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

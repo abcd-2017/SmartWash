@@ -188,11 +188,14 @@ fun UserInfoPage(
                         style = AppTextStyles.RootTitle,
                         color = AppColors.colorScheme.textPrimary
                     )
-                    // ib36 视觉 + 48dp 热区
+                    // ib36 视觉 + 48dp 热区（防抖已注入，关闭叠加）
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clickable(onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) }),
+                            .pressable(
+                                onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) },
+                                debounce = false,
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -222,11 +225,11 @@ fun UserInfoPage(
                     Box(
                         modifier = Modifier
                             .size(58.dp)
-                            .clickable {
+                            .pressable(onClick = {
                                 imagePickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
-                            },
+                            }),
                         contentAlignment = Alignment.Center
                     ) {
                         if (avatarUploadState is RequestState.Loading) {
@@ -315,11 +318,14 @@ fun UserInfoPage(
                             .padding(vertical = 18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 余额（点击去充值）
+                        // 余额（点击去充值；防抖已注入，关闭叠加）
                         Column(
                             modifier = Modifier
                                 .weight(1.35f)
-                                .clickable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) }),
+                                .pressable(
+                                    onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) },
+                                    debounce = false,
+                                ),
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
@@ -341,11 +347,14 @@ fun UserInfoPage(
                                 .height(42.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
-                        // 优惠券（点击进优惠券页）
+                        // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable(onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) }),
+                                .pressable(
+                                    onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) },
+                                    debounce = false,
+                                ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(

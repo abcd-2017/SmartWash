@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
+import com.smartwash.common.ui.theme.AppDimens
 
 private val ErrorLight = com.smartwash.common.ui.theme.ErrorLight
 
@@ -52,7 +53,7 @@ fun PhoneNumberInput(
                 tint = if (isPhoneError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = phone,
                 onValueChange = { newValue ->
@@ -63,14 +64,14 @@ fun PhoneNumberInput(
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = contentColor),
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = contentColor),
                 cursorBrush = SolidColor(if (isPhoneError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
                         if (phone.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.phone_number),
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }

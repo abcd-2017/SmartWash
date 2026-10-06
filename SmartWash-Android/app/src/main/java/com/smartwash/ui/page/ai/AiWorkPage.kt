@@ -194,7 +194,7 @@ fun AiWorkPage(
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.clickable { focusRequester.requestFocus() }
+                            modifier = Modifier.pressable(onClick = { focusRequester.requestFocus() }, debounce = false)
                         ) {
                             Text(
                                 text = stringResource(R.string.ai_start_asking),

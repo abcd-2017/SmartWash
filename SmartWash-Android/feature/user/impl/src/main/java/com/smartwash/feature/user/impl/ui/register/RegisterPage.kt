@@ -4,14 +4,12 @@ import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,9 +24,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Key
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -58,6 +53,7 @@ import com.smartwash.common.ui.theme.GlassBg
 import com.smartwash.common.ui.theme.GlassBgSubtle
 import com.smartwash.common.ui.theme.GlassBorder
 import com.smartwash.common.ui.theme.GlassBorderSubtle
+import com.smartwash.common.ui.theme.GlassInput
 import com.smartwash.common.ui.theme.GlassTextDisabled
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -72,6 +68,7 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
@@ -80,6 +77,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -89,8 +87,6 @@ import kotlinx.coroutines.withContext
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
 
-// 认证页白色 CTA 按钮色
-private val AuthCtaText = Color(0xFF1E8C5C)
 // 认证页底部文字色
 private val AuthBottomText = Color.White.copy(alpha = 0.78f)
 private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
@@ -210,11 +206,11 @@ fun RegisterPage(
                     .padding(vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // D-R9 返回箭头包进 48dp 热区，右侧占位同宽保持标题视觉居中
+                // D-R9 返回箭头包进 48dp 热区，右侧占位同宽保持标题视觉居中（防抖已注入，关闭叠加）
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clickable(onClick = debouncedBackClick),
+                        .pressable(onClick = debouncedBackClick, debounce = false),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -304,14 +300,14 @@ fun RegisterPage(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // 毛玻璃输入卡片
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(20.dp, 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -390,8 +386,10 @@ fun RegisterPage(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 注册按钮 — 白色背景 + 品牌深绿文字 + 阴影
-                Button(
+                // 注册按钮 — 玻璃卡白色 CTA（自绘无 state layer，防抖经 800ms 动作档注入）
+                AuthCtaButton(
+                    text = stringResource(R.string.register),
+                    loading = registerState is RequestState.Loading,
                     onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         isPhoneError = !isValidPhone(phone)
                         isVerificationCodeError = verificationCode.length != 6
@@ -402,32 +400,7 @@ fun RegisterPage(
                             registerViewModel.userRegister(phone, password, verificationCode)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = AuthCtaText,
-                    )
-                ) {
-                    when (registerState) {
-                        is RequestState.Loading -> CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = AuthCtaText,
-                            strokeWidth = 2.dp
-                        )
-
-                        else -> {
-                            Text(
-                                stringResource(R.string.register),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    }
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -448,7 +421,7 @@ fun RegisterPage(
                     fontWeight = FontWeight.Medium,
                     color = AuthBottomTextActive,
                     modifier = Modifier
-                        .clickable(onClick = debouncedLoginClick)
+                        .pressable(onClick = debouncedLoginClick, debounce = false)
                         .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
@@ -493,7 +466,7 @@ private fun VerificationCodeRow(
                 tint = if (isVerificationCodeError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = verificationCode,
                 onValueChange = onValueChange,
@@ -502,14 +475,14 @@ private fun VerificationCodeRow(
                     .focusRequester(focusRequester),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = contentColor),
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = contentColor),
                 cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
                         if (verificationCode.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.verification_code),
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }
@@ -517,15 +490,23 @@ private fun VerificationCodeRow(
                     }
                 }
             )
-            // D-R3 尾缀行内发送按钮：去掉 TextButton 边框块，行高 48dp 保证垂直热区、水平 padding 补热区
+            // 尾缀发送按钮：1dp 玻璃描边 + 12dp 圆角 + 40dp 高 + 横向 14dp（§3.7 定稿）。
+            // 倒计时/加载禁用态描边与文字透明度降至 .55；倒计时本身已防重复发送，不再叠加防抖
+            val sendEnabled = countDown == 0 && captchaState !is RequestState.Loading
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .clickable(
-                        enabled = countDown == 0 && captchaState !is RequestState.Loading,
-                        onClick = onSendCaptcha
+                    .height(40.dp)
+                    .then(
+                        if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
+                        else Modifier
                     )
-                    .padding(horizontal = 12.dp),
+                    .border(
+                        width = 1.dp,
+                        color = if (sendEnabled) GlassInput
+                        else GlassInput.copy(alpha = GlassInput.alpha * 0.55f),
+                        shape = RoundedCornerShape(AppDimens.radiusMd)
+                    )
+                    .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -533,7 +514,7 @@ private fun VerificationCodeRow(
                     else stringResource(R.string.get_verification_code),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = contentColor.copy(alpha = 0.92f)
+                    color = contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
                 )
             }
         }

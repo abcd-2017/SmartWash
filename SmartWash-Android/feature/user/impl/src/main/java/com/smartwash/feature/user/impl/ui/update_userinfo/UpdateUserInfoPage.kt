@@ -66,6 +66,7 @@ import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun UpdateUserInfoPage(
@@ -386,7 +387,7 @@ fun SchoolItem(
                             if (isSelected) Modifier.background(MaterialTheme.colorScheme.primaryContainer)
                             else Modifier
                         )
-                        .clickable { onClick(school) }
+                        .pressable(onClick = { onClick(school) })
                         .padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

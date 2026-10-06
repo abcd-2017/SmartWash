@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.smartwash.common.utils.pressable
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
@@ -185,10 +186,12 @@ private fun PickupOrderCard(
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = AppColors.colorScheme.surfaceVariant,
-                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
-                            clipboardManager.setText(AnnotatedString(pickupCode))
-                            Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
-                        }
+                        modifier = Modifier
+                            .pressable(onClick = {
+                                clipboardManager.setText(AnnotatedString(pickupCode))
+                                Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
+                            })
+                            .clip(RoundedCornerShape(12.dp))
                     ) {
                         Text(
                             text = stringResource(R.string.copy_pickup_code),

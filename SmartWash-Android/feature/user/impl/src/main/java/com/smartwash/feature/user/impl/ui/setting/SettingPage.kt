@@ -2,7 +2,6 @@ package com.smartwash.feature.user.impl.ui.setting
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,7 +27,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +53,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.pressable
 
 /**
  * 设置页（T5.2 自 app 迁入）。
@@ -218,14 +217,15 @@ fun SettingPage(
                 )
             }
 
-            // 退出登录
+            // 退出登录 — 自绘文字按钮（danger 语义色不在 AppButton 三态内，规范 §7 禁 M3 交互组件）
             Spacer(modifier = Modifier.height(16.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                TextButton(
-                    onClick = { showDialog = true },
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
+                        .pressable(onClick = { showDialog = true }),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         stringResource(R.string.logout),
@@ -277,7 +277,7 @@ private fun SettingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .pressable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

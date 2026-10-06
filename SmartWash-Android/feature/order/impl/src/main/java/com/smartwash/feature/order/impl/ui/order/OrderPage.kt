@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,14 +25,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -427,30 +425,41 @@ private fun OrderRow(
             // 操作按钮（功能保留，逻辑与路由不动）
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
-                    TextButton(onClick = { cancelClick(order.orderId) }) {
+                    // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）
+                    Box(
+                        modifier = Modifier
+                            .heightIn(min = 40.dp)
+                            .pressable(onClick = { cancelClick(order.orderId) })
+                            .padding(horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary, fontSize = 12.sp)
                     }
                     Spacer(Modifier.width(AppDimens.spaceXs))
-                    Button(
-                        onClick = rememberDebouncedClick {
-                            view.performHaptic(HapticEffect.MEDIUM)
-                            paymentClick()
-                        },
-                        shape = RoundedCornerShape(AppDimens.buttonRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                        modifier = Modifier.height(36.dp)
-                    ) { Text(stringResource(R.string.go_pay)) }
+                    Box(
+                        modifier = Modifier
+                            .height(36.dp)
+                            .pressable(onClick = rememberDebouncedClick {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                paymentClick()
+                            })
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { Text(stringResource(R.string.go_pay), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
                 }
                 ShowOrderStatus.PENDING_SHIPMENT.status -> {
-                    Button(
-                        onClick = rememberDebouncedClick {
-                            view.performHaptic(HapticEffect.MEDIUM)
-                            shipmentClick()
-                        },
-                        shape = RoundedCornerShape(AppDimens.buttonRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                        modifier = Modifier.height(36.dp)
-                    ) { Text(stringResource(R.string.go_ship)) }
+                    Box(
+                        modifier = Modifier
+                            .height(36.dp)
+                            .pressable(onClick = rememberDebouncedClick {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                shipmentClick()
+                            })
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { Text(stringResource(R.string.go_ship), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
                 }
                 ShowOrderStatus.WASHING.status -> {
                     Text(
@@ -460,15 +469,17 @@ private fun OrderRow(
                     )
                 }
                 ShowOrderStatus.READY_FOR_PICKUP.status -> {
-                    Button(
-                        onClick = rememberDebouncedClick {
-                            view.performHaptic(HapticEffect.MEDIUM)
-                            pickupClick()
-                        },
-                        shape = RoundedCornerShape(AppDimens.buttonRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary, contentColor = Color.White),
-                        modifier = Modifier.height(36.dp)
-                    ) { Text(stringResource(R.string.go_pickup)) }
+                    Box(
+                        modifier = Modifier
+                            .height(36.dp)
+                            .pressable(onClick = rememberDebouncedClick {
+                                view.performHaptic(HapticEffect.MEDIUM)
+                                pickupClick()
+                            })
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { Text(stringResource(R.string.go_pickup), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
                 }
                 OrderStatus.COMPLETED.status -> {
                     Text(

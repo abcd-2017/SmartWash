@@ -26,6 +26,8 @@
 ./gradlew test             # JVM 单元测试
 ./gradlew lint             # 代码检查
 ./gradlew feature:divination:test  # 观象台算法锚点单测（亦含于全量 test）
+./scripts/check-deps.sh    # 依赖铁律静态门禁（六条铁律前四条）
+./scripts/check-ui.sh      # UI 规范静态门禁（M3 交互组件业务层清零，规范 §7/§3.7）
 ```
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。

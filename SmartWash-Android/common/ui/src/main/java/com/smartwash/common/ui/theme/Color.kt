@@ -201,6 +201,9 @@ val GlassTextActive = Color.White.copy(alpha = 0.8f)     // 激活文字
 // ========== 错误色变体 ==========
 val ErrorLight = Color(0xFFFFB4AB)   // 输入框错误态
 
+// ========== 认证页 CTA（玻璃卡白色按钮的品牌深绿文字，两页共用） ==========
+val AuthCtaText = Color(0xFF1E8C5C)
+
 // ========== 第三方品牌色 ==========
 val WeChatGreen = Color(0xFF07C160)
 val AlipayBlue = Color(0xFF1677FF)

@@ -20,13 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +59,7 @@ import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
@@ -80,8 +76,6 @@ import com.smartwash.common.utils.rememberDebouncedClick
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
 
-// 认证页白色 CTA 按钮色
-private val AuthCtaText = Color(0xFF1E8C5C)
 // 认证页底部文字色（设计稿 .gt=.78 / .gtb=.92）
 private val AuthBottomText = Color.White.copy(alpha = 0.78f)
 private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
@@ -113,7 +107,6 @@ fun LoginPage(
     val passwordFocusRequester = remember { FocusRequester() }
 
     val loginState by loginViewModel.loginState.collectAsState()
-    val loginButtonInteractionSource = remember { MutableInteractionSource() }
     val registerEntryInteractionSource = remember { MutableInteractionSource() }
     // 连点防抖：转场残影期重复 navigate 会把 Register 压栈多次（黑屏触发点之一）
     val debouncedRegisterClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
@@ -229,14 +222,14 @@ fun LoginPage(
 
             Spacer(modifier = Modifier.height(34.dp))
 
-            // 毛玻璃输入卡片
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(20.dp, 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -274,8 +267,10 @@ fun LoginPage(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 登录按钮 — 白色背景 + 品牌深绿文字 + 阴影
-                Button(
+                // 登录按钮 — 玻璃卡白色 CTA（自绘无 state layer，防抖经 800ms 动作档注入）
+                AuthCtaButton(
+                    text = stringResource(R.string.login_button),
+                    loading = loginState is RequestState.Loading,
                     onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         isPhoneError = !isValidPhone(phone)
                         isPasswordError = password.isEmpty() || password.length < 6 || password.length > 16
@@ -288,36 +283,7 @@ fun LoginPage(
                             view.performHaptic(HapticEffect.ERROR)
                         }
                     },
-                    interactionSource = loginButtonInteractionSource,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .pressScale(loginButtonInteractionSource, 0.97f),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = AuthCtaText,
-                    )
-                ) {
-                    when (loginState) {
-                        is RequestState.Loading -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
-                                color = AuthCtaText,
-                                strokeWidth = 2.dp
-                            )
-                        }
-
-                        else -> {
-                            Text(
-                                stringResource(R.string.login_button),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
-                            )
-                        }
-                    }
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

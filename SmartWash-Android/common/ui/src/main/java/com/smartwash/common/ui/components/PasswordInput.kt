@@ -1,6 +1,5 @@
 package com.smartwash.common.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +14,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -25,13 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.pressable
 
 private val ErrorLight = com.smartwash.common.ui.theme.ErrorLight
 
@@ -60,7 +62,7 @@ fun PasswordInput(
                 tint = if (isPasswordError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = password,
                 onValueChange = { newValue ->
@@ -71,7 +73,7 @@ fun PasswordInput(
                 modifier = modifier.weight(1f),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = contentColor),
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = contentColor),
                 cursorBrush = SolidColor(if (isPasswordError) ErrorLight else contentColor),
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 decorationBox = { innerTextField ->
@@ -79,7 +81,7 @@ fun PasswordInput(
                         if (password.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.password),
-                                fontSize = 14.sp,
+                                fontSize = 16.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }
@@ -87,21 +89,22 @@ fun PasswordInput(
                     }
                 }
             )
-            // 尾缀文字按钮（设计稿 D3：12px/600/白.92），行高 48dp + padding 补足热区
+            // 尾缀可见性切换：图标化 + 48dp 方形热区（§3.7 定稿，禁止文字替代）。
+            // 纯视觉切换，关闭连击防抖——快速连点切换是合法操作
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .clickable(onClick = showVisibility),
+                    .width(48.dp)
+                    .pressable(onClick = showVisibility, debounce = false),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(
-                        if (showPassword) R.string.hide_password_text else R.string.show_password_text
+                Icon(
+                    imageVector = if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                    contentDescription = stringResource(
+                        if (showPassword) R.string.hide_password else R.string.show_password
                     ),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor.copy(alpha = 0.92f),
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    modifier = Modifier.size(18.dp),
+                    tint = contentColor.copy(alpha = 0.92f)
                 )
             }
         }

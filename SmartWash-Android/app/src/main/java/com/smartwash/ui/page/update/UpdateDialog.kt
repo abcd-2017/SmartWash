@@ -1,6 +1,9 @@
 package com.smartwash.ui.page.update
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,16 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +35,7 @@ import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.utils.pressable
 import java.io.File
 
 /**
@@ -126,17 +126,18 @@ fun UpdateAvailableDialog(
                 // 按钮区
                 if (isForce) {
                     // 强制更新：仅「立即更新」按钮，不可取消
-                    Button(
-                        onClick = onUpdateNow,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(AppDimens.buttonRadius),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.colorScheme.primary,
-                        ),
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .pressable(onClick = onUpdateNow)
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius)),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = stringResource(R.string.update_now),
                             style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
                         )
                     }
                 } else {
@@ -144,27 +145,31 @@ fun UpdateAvailableDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        OutlinedButton(
-                            onClick = onUpdateLater,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.buttonRadius),
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .pressable(onClick = onUpdateLater)
+                                .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.buttonRadius)),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = stringResource(R.string.update_later),
                                 color = AppColors.colorScheme.textSecondary,
                             )
                         }
-                        Button(
-                            onClick = onUpdateNow,
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.buttonRadius),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.colorScheme.primary,
-                            ),
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .pressable(onClick = onUpdateNow)
+                                .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius)),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = stringResource(R.string.update_now),
                                 style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
                             )
                         }
                     }
@@ -214,17 +219,18 @@ fun ForceUpdateRequiredDialog(
                     color = AppColors.colorScheme.textSecondary,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onUpdateNow,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.colorScheme.error,
-                    ),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .pressable(onClick = onUpdateNow)
+                        .background(AppColors.colorScheme.error, RoundedCornerShape(AppDimens.buttonRadius)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(R.string.update_now),
                         style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
                     )
                 }
             }
@@ -337,10 +343,13 @@ fun DownloadProgressDialog(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
-                OutlinedButton(
-                    onClick = onCancel,
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    shape = RoundedCornerShape(AppDimens.buttonRadius),
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .pressable(onClick = onCancel)
+                        .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.buttonRadius)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(R.string.cancel),
@@ -391,18 +400,24 @@ fun DownloadCompleteDialog(
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    TextButton(
-                        onClick = onInstallLater,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(onClick = onInstallLater),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = stringResource(R.string.install_later),
                             color = AppColors.colorScheme.textSecondary,
                         )
                     }
-                    TextButton(
-                        onClick = onInstallNow,
-                        modifier = Modifier.weight(1f).height(48.dp),
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(onClick = onInstallNow),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = stringResource(R.string.install_now),

@@ -69,6 +69,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
 
@@ -335,7 +336,7 @@ private fun CustomAmountCard(
     Surface(
         modifier = modifier
             .height(72.dp)
-            .clickable(onClick = onClick),
+            .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

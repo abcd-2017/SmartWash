@@ -64,6 +64,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun CouponPage(
@@ -129,8 +130,7 @@ fun CouponPage(
                     Surface(
                         modifier = Modifier
                             .height(34.dp)
-                            .clip(RoundedCornerShape(AppDimens.radiusFull))
-                            .clickable { selectedTabIndex = index },
+                            .pressable(onClick = { selectedTabIndex = index }, debounce = false),
                         color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
                         border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
                         shape = RoundedCornerShape(AppDimens.radiusFull)
