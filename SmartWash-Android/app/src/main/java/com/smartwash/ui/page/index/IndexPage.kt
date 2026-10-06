@@ -408,7 +408,9 @@ private fun AccountDataCard(
                 Text(
                     text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
                     style = AppTextStyles.DataLarge,
-                    color = AppColors.colorScheme.primaryDark
+                    color = AppColors.colorScheme.primaryDark,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             // 分隔线
@@ -421,20 +423,23 @@ private fun AccountDataCard(
             // 优惠券
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(18.dp, 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "$couponCount",
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = stringResource(R.string.home_available_coupons),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary
+                    color = AppColors.colorScheme.textSecondary,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             // 分隔线
@@ -447,20 +452,23 @@ private fun AccountDataCard(
             // 累计订单
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(18.dp, 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "$orderCount",
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = stringResource(R.string.home_total_orders),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary
+                    color = AppColors.colorScheme.textSecondary,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
