@@ -46,8 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -152,21 +150,17 @@ fun PaymentPage(
                         Column(modifier = Modifier.padding(22.dp, 20.dp)) {
                             Text(
                                 text = stringResource(R.string.amount_due),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textTertiary
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.4.sp,
+                                color = AppColors.colorScheme.textSecondary
                             )
                             Text(
                                 text = stringResource(
                                     R.string.currency_format,
                                     "${orderInfo?.payPrice ?: ""}"
                                 ),
-                                style = AppTextStyles.DataLarge.copy(
-                                    fontSize = 38.sp,
-                                    lineHeight = 44.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = (-0.5).sp,
-                                    fontFeatureSettings = "tnum"
-                                ),
+                                style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primaryDark,
                                 modifier = Modifier.padding(top = 10.dp)
                             )
@@ -264,7 +258,7 @@ fun PaymentPage(
                                     Icons.Default.LocalOffer,
                                     contentDescription = null,
                                     modifier = Modifier.size(19.dp),
-                                    tint = Color(0xFFD98A26)
+                                    tint = AppColors.colorScheme.iconForegroundOrange
                                 )
                             }
                             Spacer(Modifier.width(14.dp))
@@ -276,13 +270,13 @@ fun PaymentPage(
                             if (selectedCoupon == -1 || userCouponList.isEmpty()) {
                                 Text(
                                     stringResource(R.string.do_not_use),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = AppColors.colorScheme.textSecondary
                                 )
                             } else {
                                 Text(
                                     "-￥${userCouponList[selectedCoupon].discount ?: 0}",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = AppColors.colorScheme.primary
                                 )
                             }
@@ -434,12 +428,12 @@ private fun InfoLine(label: String, value: String) {
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelMedium,
             color = AppColors.colorScheme.textSecondary
         )
         Text(
             value,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = MaterialTheme.typography.labelMedium.copy(
                 fontFeatureSettings = "tnum"
             ),
             fontWeight = FontWeight.Medium

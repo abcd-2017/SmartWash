@@ -1,14 +1,17 @@
 package com.smartwash.feature.user.impl.ui.register
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
@@ -26,12 +30,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,26 +48,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
+import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.ui.theme.GlassBg
 import com.smartwash.common.ui.theme.GlassBgSubtle
 import com.smartwash.common.ui.theme.GlassBorder
 import com.smartwash.common.ui.theme.GlassBorderSubtle
-import com.smartwash.common.ui.theme.GlassInput
-import com.smartwash.common.ui.theme.GlassTextActive
 import com.smartwash.common.ui.theme.GlassTextDisabled
-import com.smartwash.common.ui.theme.GlassTextHint
-import com.smartwash.common.ui.theme.GlassTextSecondary
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -74,6 +77,7 @@ import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -86,8 +90,8 @@ private val GradientBottom = AuthGradientBottom
 // 认证页白色 CTA 按钮色
 private val AuthCtaText = Color(0xFF1E8C5C)
 // 认证页底部文字色
-private val AuthBottomText = Color.White.copy(alpha = 0.55f)
-private val AuthBottomTextActive = Color.White.copy(alpha = 0.9f)
+private val AuthBottomText = Color.White.copy(alpha = 0.78f)
+private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
 // 进度条非激活态
 private val ProgressInactive = Color.White.copy(alpha = 0.28f)
 
@@ -113,6 +117,17 @@ fun RegisterPage(
     val registerState by registerViewModel.registerState.collectAsState()
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val view = currentView()
+
+    // D-R5 品牌渐变页深浅色同款：状态栏图标强制白色；离页恢复主题默认（与 LoginPage 对齐）
+    val darkTheme = isSystemInDarkTheme()
+    DisposableEffect(darkTheme) {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        onDispose {
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
 
     // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
     LaunchedEffect(captchaState) {
@@ -161,13 +176,13 @@ fun RegisterPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(AppDimens.radiusXl)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(listOf(GradientTop, GradientBottom))
+                Brush.verticalGradient(0f to GradientTop, 0.5f to AuthGradientMid, 1f to GradientBottom)
             )
     ) {
         Column(
@@ -184,14 +199,20 @@ fun RegisterPage(
                     .padding(vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBack,
-                    contentDescription = null,
+                // D-R9 返回箭头包进 48dp 热区，右侧占位同宽保持标题视觉居中
+                Box(
                     modifier = Modifier
-                        .size(22.dp)
+                        .size(48.dp)
                         .clickable { navController.popBackStack() },
-                    tint = Color.White.copy(alpha = 0.8f)
-                )
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBack,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = Color.White.copy(alpha = 0.8f)
+                    )
+                }
                 Text(
                     text = stringResource(R.string.register),
                     modifier = Modifier.weight(1f),
@@ -200,10 +221,11 @@ fun RegisterPage(
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.size(48.dp))
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // D-R2 布局顶部流式：brand 距 nav 行 16px
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 品牌标识 — 92dp 单层圆形
             Box(
@@ -214,10 +236,17 @@ fun RegisterPage(
                     .border(1.dp, GlassBorderSubtle, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✨", fontSize = 36.sp)
+                // D-R1 品牌图标：设计稿屏 2「水滴+加号」，替代 emoji
+                Icon(
+                    painter = painterResource(com.smartwash.common.ui.R.drawable.ic_water_add),
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp),
+                    tint = Color.White
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // D-R2 brand margin-bottom 14px
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = stringResource(R.string.create_account),
@@ -232,7 +261,7 @@ fun RegisterPage(
             Text(
                 text = stringResource(R.string.start_laundry_journey),
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f)
+                color = Color.White.copy(alpha = 0.78f)
             )
 
             // 进度条
@@ -364,8 +393,8 @@ fun RegisterPage(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(14.dp),
+                        .height(52.dp),
+                    shape = RoundedCornerShape(AppDimens.buttonRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = AuthCtaText,
@@ -383,7 +412,7 @@ fun RegisterPage(
                                 stringResource(R.string.register),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 2.sp
+                                letterSpacing = 1.sp
                             )
                         }
                     }
@@ -394,7 +423,6 @@ fun RegisterPage(
 
             // 登录入口 — 只有点击"去登录"才跳转
             Row(
-                modifier = Modifier.padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -413,8 +441,6 @@ fun RegisterPage(
                         .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -438,72 +464,75 @@ private fun VerificationCodeRow(
     captchaState: RequestState,
     focusRequester: FocusRequester = FocusRequester(),
     onValueChange: (String) -> Unit,
-    onSendCaptcha: () -> Unit
+    onSendCaptcha: () -> Unit,
+    contentColor: Color = Color.White
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextField(
-            value = verificationCode,
-            onValueChange = onValueChange,
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = isVerificationCodeError,
-            supportingText = if (isVerificationCodeError) {
-                { Text(stringResource(R.string.invalid_verification_code), color = ErrorLight) }
-            } else null,
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Key,
-                    contentDescription = null,
-                    tint = if (isVerificationCodeError) ErrorLight
-                    else GlassTextHint
-                )
-            },
-            singleLine = true,
-            placeholder = {
-                Text(stringResource(R.string.verification_code), color = GlassTextSecondary)
-            },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                cursorColor = Color.White,
-                errorCursorColor = ErrorLight,
-                errorLeadingIconColor = ErrorLight,
-                errorSupportingTextColor = ErrorLight,
-            )
-        )
-
-        TextButton(
-            onClick = onSendCaptcha,
-            enabled = captchaState !is RequestState.Loading && countDown == 0,
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 紧凑输入行：总高 48dp、垂直居中（对齐 PhoneNumberInput，D-R4）
+        Row(
             modifier = Modifier
-                .border(
-                    width = if (countDown > 0) 0.dp else 1.dp,
-                    color = GlassInput,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .height(40.dp),
-            shape = RoundedCornerShape(12.dp),
+                .fillMaxWidth()
+                .height(48.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                Icons.Rounded.Key,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isVerificationCodeError) ErrorLight
+                else contentColor.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            BasicTextField(
+                value = verificationCode,
+                onValueChange = onValueChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = LocalTextStyle.current.copy(fontSize = 14.sp, color = contentColor),
+                cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
+                decorationBox = { innerTextField ->
+                    Box {
+                        if (verificationCode.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.verification_code),
+                                fontSize = 14.sp,
+                                color = contentColor.copy(alpha = 0.45f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            // D-R3 尾缀行内发送按钮：去掉 TextButton 边框块，行高 48dp 保证垂直热区、水平 padding 补热区
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .clickable(
+                        enabled = countDown == 0 && captchaState !is RequestState.Loading,
+                        onClick = onSendCaptcha
+                    )
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
+                    else stringResource(R.string.get_verification_code),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor.copy(alpha = 0.92f)
+                )
+            }
+        }
+        if (isVerificationCodeError) {
+            // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
-                text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
-                else stringResource(R.string.get_verification_code),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (countDown > 0)
-                    GlassTextSecondary
-                else GlassTextActive
+                text = stringResource(R.string.invalid_verification_code),
+                fontSize = 13.sp,
+                color = ErrorLight,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }

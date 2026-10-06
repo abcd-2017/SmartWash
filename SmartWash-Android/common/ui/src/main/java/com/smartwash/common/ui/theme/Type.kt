@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.sp
 /**
  * 规范 §2.2 字阶令牌（2026-10-05 版）。
  * 页面标题三档：RootTitle（根页大标题）/ PageHeader（二级页页头）/ CardTitle（卡片标题），
- * 另有数据大字 DataLarge / 金额中字 AmountMedium / 区块标题 SectionTitle。
+ * 另有数据大字 DataLarge / 状态大字 StatusLarge / 金额中字 AmountMedium / 区块标题 SectionTitle。
  * 使用方式：AppTextStyles.RootTitle、AppTextStyles.PageHeader、AppTextStyles.CardTitle 等。
  */
 object AppTextStyles {
@@ -19,6 +19,14 @@ object AppTextStyles {
         lineHeight = 44.sp,
         letterSpacing = (-0.5).sp,
         fontFeatureSettings = "tnum",
+    )
+
+    /** 状态大字 — hero 订单状态锚点字（21sp / Bold / ls 0.5），每屏唯一锚点 */
+    val StatusLarge = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 21.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.5.sp
     )
 
     /** 金额中字 — 列表内价格、券面额（20sp / Bold / tabular numbers） */

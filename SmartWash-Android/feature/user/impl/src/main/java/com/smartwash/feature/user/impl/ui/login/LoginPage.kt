@@ -1,8 +1,10 @@
 package com.smartwash.feature.user.impl.ui.login
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,7 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
+import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.GlassBg
 import com.smartwash.common.ui.theme.GlassBgSubtle
@@ -55,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -74,9 +80,9 @@ private val GradientBottom = AuthGradientBottom
 
 // 认证页白色 CTA 按钮色
 private val AuthCtaText = Color(0xFF1E8C5C)
-// 认证页底部文字色
-private val AuthBottomText = Color.White.copy(alpha = 0.55f)
-private val AuthBottomTextActive = Color.White.copy(alpha = 0.9f)
+// 认证页底部文字色（设计稿 .gt=.78 / .gtb=.92）
+private val AuthBottomText = Color.White.copy(alpha = 0.78f)
+private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
 
 @Composable
 fun LoginPage(
@@ -86,6 +92,16 @@ fun LoginPage(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val view = currentView()
+
+    // D1 品牌渐变页深浅色同款：状态栏图标强制白色；离页恢复主题默认（对齐 Theme.kt 行为）
+    val darkTheme = isSystemInDarkTheme()
+    DisposableEffect(darkTheme) {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        onDispose {
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
 
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -152,13 +168,13 @@ fun LoginPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(AppDimens.radiusXl)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(listOf(GradientTop, GradientBottom))
+                Brush.verticalGradient(0f to GradientTop, 0.5f to AuthGradientMid, 1f to GradientBottom)
             )
     ) {
         Column(
@@ -201,7 +217,8 @@ fun LoginPage(
             Text(
                 text = stringResource(R.string.brand_subtitle),
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f)
+                color = Color.White.copy(alpha = 0.78f),
+                letterSpacing = 0.5.sp
             )
 
             Spacer(modifier = Modifier.height(34.dp))
@@ -268,9 +285,9 @@ fun LoginPage(
                     interactionSource = loginButtonInteractionSource,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .height(52.dp)
                         .pressScale(loginButtonInteractionSource, 0.97f),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(AppDimens.buttonRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = AuthCtaText,
@@ -290,7 +307,7 @@ fun LoginPage(
                                 stringResource(R.string.login_button),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 2.sp
+                                letterSpacing = 1.sp
                             )
                         }
                     }

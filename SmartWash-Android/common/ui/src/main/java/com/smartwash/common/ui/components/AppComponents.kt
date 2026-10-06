@@ -60,7 +60,9 @@ import androidx.compose.ui.graphics.SolidColor
 import com.smartwash.common.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -230,19 +232,41 @@ fun AppButton(
     loading: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    // btn3-p 规格：135° primary→primaryDark 渐变底；禁用/加载态渐变降透明度（disabledContainerColor
+    // 为 Transparent，禁用视觉完全由 brush 承担，避免双层叠加变淡）
+    val buttonBrush = if (enabled && !loading) {
+        Brush.linearGradient(
+            colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark),
+            start = Offset.Zero,
+            end = Offset.Infinite
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(
+                AppColors.colorScheme.primary.copy(alpha = 0.5f),
+                AppColors.colorScheme.primaryDark.copy(alpha = 0.5f)
+            ),
+            start = Offset.Zero,
+            end = Offset.Infinite
+        )
+    }
     Button(
         onClick = onClick,
         interactionSource = interactionSource,
         modifier = modifier
             .fillMaxWidth()
+            .background(
+                brush = buttonBrush,
+                shape = RoundedCornerShape(AppDimens.buttonRadius)
+            )
             .height(52.dp)
             .pressScale(interactionSource, 0.97f),
         enabled = enabled && !loading,
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.colorScheme.primary,
+            containerColor = Color.Transparent,
             contentColor = Color.White,
-            disabledContainerColor = AppColors.colorScheme.primary.copy(alpha = 0.5f),
+            disabledContainerColor = Color.Transparent,
             disabledContentColor = GlassTextDisabled
         )
     ) {
@@ -255,7 +279,11 @@ fun AppButton(
         } else {
             Text(
                 text = text,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp
+                )
             )
         }
     }

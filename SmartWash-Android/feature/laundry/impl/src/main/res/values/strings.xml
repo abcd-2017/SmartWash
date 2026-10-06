@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 洗衣域文案（T7.1 随页面自 app 迁入）。
-     9 条为洗衣/服务页专有（app 侧同名定义已删）；4 条同值副本（laundry_service、
+     9 条为洗衣/服务页专有（app 侧同名定义已删）；3 条同值副本（
      change_school_contact_service、currency_format、error_network_fail）仍被 app 壳
-     页面使用，模块资源经 manifest merger 各自独立，值保持一致（同 payment-impl 先例）。 -->
+     页面使用，模块资源经 manifest merger 各自独立，值保持一致（同 payment-impl 先例）。
+     laundry_service 与 app 侧同名资源值不同（本模块服务页=洗护分类，app 首页=洗衣服务），
+     各自独立互不影响。service_promo_title/subtitle 为已删运营位遗留，零引用留存。 -->
 <resources>
     <!-- 服务 tab 页 -->
-    <string name="laundry_service">洗衣服务</string>
+    <string name="laundry_service">洗护分类</string>
     <string name="service_page_subtitle">选择您需要的洗护服务</string>
-    <string name="service_reserve">预约</string>
+    <string name="service_reserve">预约 ›</string>
     <string name="currency_format">¥%s</string>
 
     <!-- 洗衣预约页 -->
@@ -25,8 +27,8 @@
     <string name="error_booking_failed">预约失败</string>
 
     <!-- 服务页补充 -->
-    <string name="service_tips">所有服务含免费取送 · 标准24h完成 · 支持在线支付</string>
-    <string name="service_search_hint">搜索服务</string>
+    <string name="service_tips">服务时间 07:00 – 22:00 · 节假日正常营业</string>
+    <string name="service_search_hint">搜索洗护套餐…</string>
     <string name="service_promo_title">新用户专享</string>
     <string name="service_promo_subtitle">首单立减 ¥5</string>
 </resources>

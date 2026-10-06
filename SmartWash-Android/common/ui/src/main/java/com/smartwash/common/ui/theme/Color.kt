@@ -182,12 +182,13 @@ val DarkIconForegroundPink = Color(0xFFE58A9A)
 val DarkIconForegroundTeal = Color(0xFF57C9A4)
 val DarkIconForegroundPurple = Color(0xFFB49CE8)
 
-// ========== 认证页渐变色 ==========
+// ========== 认证页渐变色（设计稿 .onauth：160deg 三段 #1A9E6E → #0D7A4A@50% → #0B5C3A） ==========
 val AuthGradientTop = Color(0xFF1A9E6E)
+val AuthGradientMid = Color(0xFF0D7A4A)
 val AuthGradientBottom = Color(0xFF0B5C3A)
 
 // ========== 毛玻璃效果色 ==========
-val GlassBgSubtle = Color.White.copy(alpha = 0.12f)     // 极淡底色
+val GlassBgSubtle = Color.White.copy(alpha = 0.10f)     // 极淡底色（设计稿 .glass 与品牌圆 bg 均为 rgba(255,255,255,.10)）
 val GlassBg = Color.White.copy(alpha = 0.15f)           // 标准底色
 val GlassBorderSubtle = Color.White.copy(alpha = 0.18f) // 淡边框
 val GlassBorder = Color.White.copy(alpha = 0.2f)        // 标准边框

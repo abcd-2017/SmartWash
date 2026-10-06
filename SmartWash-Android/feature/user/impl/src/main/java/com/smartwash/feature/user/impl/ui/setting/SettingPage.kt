@@ -55,7 +55,6 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppTextStyles
 
 /**
  * 设置页（T5.2 自 app 迁入）。
@@ -77,6 +76,14 @@ fun SettingPage(
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    // 版本号：关于行尾注与关于弹窗同源（D-ST5）
+    val versionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
+        } catch (_: Exception) {
+            "1.0.0"
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -94,15 +101,18 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.general),
-                style = AppTextStyles.SectionTitle,
-                color = AppColors.colorScheme.textTertiary,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.6.sp,
+                color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(10.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Notifications,
-                    iconTint = AppColors.colorScheme.iconContainerBlue,
+                    containerColor = AppColors.colorScheme.iconContainerOrange,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
                     title = stringResource(R.string.push_notification),
                     trailing = {
                         Text(
@@ -118,7 +128,8 @@ fun SettingPage(
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
                     icon = Icons.Default.TouchApp,
-                    iconTint = AppColors.colorScheme.iconContainerPurple,
+                    containerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.haptic_feedback),
                     trailing = {
                         Text(
@@ -134,20 +145,21 @@ fun SettingPage(
             }
 
             // 观象台
-            Spacer(modifier = Modifier.height(26.dp))
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.divination),
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.6.sp,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(10.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Security,
-                    iconTint = AppColors.colorScheme.iconContainerOrange,
+                    containerColor = AppColors.colorScheme.iconContainerPurple,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
                     title = stringResource(R.string.interpretation_model),
                     trailing = {
                         Text(
@@ -163,7 +175,8 @@ fun SettingPage(
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
-                    iconTint = AppColors.colorScheme.iconContainerPink,
+                    containerColor = AppColors.colorScheme.iconContainerPurple,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
                     title = stringResource(R.string.privacy_disclaimer),
                     trailing = { IconChevron() },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
@@ -171,13 +184,13 @@ fun SettingPage(
             }
 
             // 其他
-            Spacer(modifier = Modifier.height(26.dp))
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.other),
-                fontSize = 11.sp,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.6.sp,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -189,12 +202,13 @@ fun SettingPage(
                 }
                 SettingRow(
                     icon = Icons.Default.Info,
-                    iconTint = AppColors.colorScheme.iconContainerTeal,
+                    containerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.about_smartwash),
                     trailing = {
                         Text(
-                            text = "v2.3.0",
-                            fontSize = 11.sp,
+                            text = stringResource(R.string.version_format, versionName),
+                            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                             color = AppColors.colorScheme.textTertiary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -217,7 +231,7 @@ fun SettingPage(
                         stringResource(R.string.logout),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.colorScheme.error
+                        color = AppColors.colorScheme.dangerInk
                     )
                 }
             }
@@ -243,9 +257,6 @@ fun SettingPage(
     }
 
     if (showAboutDialog) {
-        val versionName = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
-        } catch (_: Exception) { "1.0.0" }
         AppInfoDialog(
             title = stringResource(R.string.about_smartwash),
             message = stringResource(R.string.app_version, versionName),
@@ -257,7 +268,8 @@ fun SettingPage(
 @Composable
 private fun SettingRow(
     icon: ImageVector,
-    iconTint: Color,
+    containerColor: Color,
+    iconForegroundColor: Color,
     title: String,
     trailing: @Composable () -> Unit = { IconChevron() },
     onClick: () -> Unit,
@@ -269,19 +281,19 @@ private fun SettingRow(
             .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ib32 图标容器（32dp，10px圆角，彩色浅底）
+        // ib32 图标容器（32dp，10px圆角，彩色浅底 + 语义色前景图标）
         Box(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(iconTint),
+                .background(containerColor),
             contentAlignment = Alignment.Center
         ) {
             androidx.compose.material3.Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(17.dp),
-                tint = AppColors.colorScheme.textPrimary
+                modifier = Modifier.size(16.dp),
+                tint = iconForegroundColor
             )
         }
         Spacer(modifier = Modifier.width(14.dp))

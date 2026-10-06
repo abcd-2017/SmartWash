@@ -1,7 +1,10 @@
 package com.smartwash.ui.page.ai
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -67,6 +72,7 @@ fun AiWorkPage(
     onBack: () -> Unit = {},
 ) {
     var inputText by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
     Column(
         modifier = Modifier
@@ -93,47 +99,43 @@ fun AiWorkPage(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Column(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         QuickTaskCard(
                             icon = Icons.Default.LocalLaundryService,
                             label = stringResource(R.string.ai_task_choose_package),
-                            gradient = Brush.linearGradient(
-                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
-                            ),
+                            containerColor = AppColors.colorScheme.iconContainerGreen,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                             modifier = Modifier.weight(1f)
                         )
                         QuickTaskCard(
                             icon = Icons.Default.Inventory,
                             label = stringResource(R.string.ai_task_check_order),
-                            gradient = Brush.linearGradient(
-                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
-                            ),
+                            containerColor = AppColors.colorScheme.iconContainerBlue,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundBlue,
                             modifier = Modifier.weight(1f)
                         )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         QuickTaskCard(
                             icon = Icons.Default.LocalOffer,
                             label = stringResource(R.string.ai_task_use_coupon),
-                            gradient = Brush.linearGradient(
-                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
-                            ),
+                            containerColor = AppColors.colorScheme.iconContainerOrange,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
                             modifier = Modifier.weight(1f)
                         )
                         QuickTaskCard(
                             icon = Icons.Default.Wallet,
                             label = stringResource(R.string.ai_task_recharge),
-                            gradient = Brush.linearGradient(
-                                listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
-                            ),
+                            containerColor = AppColors.colorScheme.iconContainerPurple,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -157,7 +159,10 @@ fun AiWorkPage(
                             .padding(vertical = 30.dp, horizontal = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 滚筒圆空态插画
+                        // 滚筒圆空态插画（灰线色：浅色取自设计稿，深色 remap：#D6DAD4→#3A403B、#E3E7E2→#2C312D）
+                        val isDarkTheme = isSystemInDarkTheme()
+                        val drumOuterColor = if (isDarkTheme) Color(0xFF3A403B) else Color(0xFFD6DAD4)
+                        val drumInnerColor = if (isDarkTheme) Color(0xFF2C312D) else Color(0xFFE3E7E2)
                         Box(
                             modifier = Modifier.size(60.dp),
                             contentAlignment = Alignment.Center
@@ -166,12 +171,12 @@ fun AiWorkPage(
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 drawCircle(
-                                    color = Color(0xFFD6DAD4),
+                                    color = drumOuterColor,
                                     radius = size.minDimension / 2 - 4.dp.toPx(),
                                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.4.dp.toPx())
                                 )
                                 drawCircle(
-                                    color = Color(0xFFE3E7E2),
+                                    color = drumInnerColor,
                                     radius = size.minDimension / 4,
                                     style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
                                 )
@@ -185,6 +190,22 @@ fun AiWorkPage(
                                 color = AppColors.colorScheme.textTertiary
                             )
                         )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.clickable { focusRequester.requestFocus() }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ai_start_asking),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppColors.colorScheme.primaryDark
+                                ),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -222,12 +243,13 @@ fun AiWorkPage(
                         },
                         modifier = Modifier
                             .weight(1f)
+                            .focusRequester(focusRequester)
                             .border(
                                 width = 1.dp,
                                 color = AppColors.colorScheme.outline,
-                                shape = RoundedCornerShape(23.dp)
+                                shape = RoundedCornerShape(AppDimens.radiusFull)
                             ),
-                        shape = RoundedCornerShape(23.dp),
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = AppColors.colorScheme.surfaceVariant,
                             unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
@@ -244,7 +266,10 @@ fun AiWorkPage(
                             .clip(CircleShape)
                             .background(
                                 Brush.linearGradient(
-                                    listOf(Color(0xFF2D9B6A), Color(0xFF1E8C5C))
+                                    listOf(
+                                        AppColors.colorScheme.primary,
+                                        AppColors.colorScheme.primaryDark
+                                    )
                                 )
                             )
                     ) {
@@ -265,43 +290,45 @@ fun AiWorkPage(
 private fun QuickTaskCard(
     icon: ImageVector,
     label: String,
-    gradient: Brush,
+    containerColor: Color,
+    iconForegroundColor: Color,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier
-            .height(58.dp)
-            .pressable(onClick = { /* TODO */ }),
+        modifier = modifier.pressable(onClick = { /* TODO */ }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = Color.Transparent
+        color = AppColors.colorScheme.surface,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(AppDimens.radiusMd))
+                    .background(containerColor),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(19.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
+                    tint = iconForegroundColor,
+                    modifier = Modifier.size(18.dp)
                 )
             }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.textPrimary
+                )
+            )
         }
     }
 }

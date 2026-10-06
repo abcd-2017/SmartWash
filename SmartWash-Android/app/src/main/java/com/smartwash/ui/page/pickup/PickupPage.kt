@@ -1,6 +1,8 @@
 package com.smartwash.ui.page.pickup
 
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,7 +84,7 @@ fun PickupPage(
                         size = 32.dp,
                         iconSize = 16.dp,
                         containerColor = AppColors.colorScheme.iconContainerBlue,
-                        iconTint = AppColors.colorScheme.primary
+                        iconTint = AppColors.colorScheme.iconForegroundBlue
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -118,6 +123,8 @@ private fun PickupOrderCard(
     onClick: () -> Unit,
 ) {
     val pickupCode = order.pickupCode?.split(":")?.getOrNull(2) ?: ""
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     AppCard(onClick = onClick) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -128,19 +135,13 @@ private fun PickupOrderCard(
                 Column {
                     Text(
                         text = stringResource(R.string.order_no_format, order.orderNo),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            color = AppColors.colorScheme.textTertiary,
-                            fontFeatureSettings = "tnum"
-                        )
+                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        color = AppColors.colorScheme.textSecondary
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            color = AppColors.colorScheme.textTertiary,
-                            fontFeatureSettings = "tnum"
-                        )
+                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        color = AppColors.colorScheme.textSecondary
                     )
                 }
                 Text(
@@ -176,6 +177,27 @@ private fun PickupOrderCard(
                         letterSpacing = 8.sp
                     )
                 )
+            }
+
+            if (pickupCode.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = AppColors.colorScheme.surfaceVariant,
+                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
+                            clipboardManager.setText(AnnotatedString(pickupCode))
+                            Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.copy_pickup_code),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = AppColors.colorScheme.textPrimary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
             }
         }
     }

@@ -14,6 +14,6 @@ import com.smartwash.feature.laundry.ui.service.ServicePage
  * 壳层 HomePageConstant.Service 委托其值）。
  */
 fun NavGraphBuilder.laundryGraph(navController: NavHostController) {
-    composable(LaundryRoute.Service.text) { ServicePage() }
+    composable(LaundryRoute.Service.text) { ServicePage(navController) }
     composable(LaundryRoute.Laundry.text) { LaundryPage(navController) }
 }

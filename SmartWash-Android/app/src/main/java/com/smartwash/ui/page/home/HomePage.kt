@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
@@ -103,7 +103,9 @@ fun HomePage(
             composable(HomePageConstant.Index.text) {
                 IndexPage(homePageNavController, navController)
             }
-            composable(HomePageConstant.Service.text) { ServicePage() }
+            composable(HomePageConstant.Service.text) {
+                ServicePage(navController = navController)
+            }
             composable(HomePageConstant.Divination.text) {
                 DivHomePage(navController)
             }
@@ -126,33 +128,46 @@ fun BottomBar(navController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val view = currentView()
 
-    // 底部栏 — 规范 §4.5：68dp 高、无顶部分隔线、纯白底
-    Row(
+    // 底部栏 — 规范 §4.5：68dp 高、0.5dp 顶部分隔线、纯白底（D-I10）
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .height(AppDimens.bottomBarHeight),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        bottomNavItems.forEach { item ->
-            val isSelected = currentRoute == item.text
-            BottomNavItem(
-                iconPath = item.iconPath,
-                label = item.description,
-                isSelected = isSelected,
-                onClick = {
-                    view.performHaptic(HapticEffect.SELECTION)
-                    if (!isSelected) {
-                        navController.navigate(item.text) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+        // 顶部分隔线 — 设计 nav3 border-top .5px line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(AppColors.colorScheme.outline)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppColors.colorScheme.surface)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .height(AppDimens.bottomBarHeight),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            bottomNavItems.forEach { item ->
+                val isSelected = currentRoute == item.text
+                BottomNavItem(
+                    iconPath = item.iconPath,
+                    label = item.description,
+                    isSelected = isSelected,
+                    onClick = {
+                        view.performHaptic(HapticEffect.SELECTION)
+                        if (!isSelected) {
+                            navController.navigate(item.text) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
@@ -232,11 +247,13 @@ private fun AnimatedBottomNavIcon(
     }
 
     val density = LocalDensity.current
-    val strokeWidth = with(density) { 1.5.dp.toPx() }
+    // 规范 §4.5 关键线：勾边 2px（D-I10）
+    val strokeWidth = with(density) { 2.dp.toPx() }
 
     // 提前解析颜色（AppColors.colorScheme 是 @Composable，不能在 Canvas 中使用）
     val primaryDarkColor = AppColors.colorScheme.primaryDark
-    val grayColor = Color(0xFF9A9DA3)
+    // D-I10：未选中实色 textSecondary #6B6E73（废弃 9A9DA3@.48，对比度仅 1.5:1）
+    val grayColor = AppColors.colorScheme.textSecondary
 
     Canvas(modifier = modifier) {
         // 计算各阶段进度
@@ -266,11 +283,11 @@ private fun AnimatedBottomNavIcon(
             else -> 1f
         }
 
-        // 1. 灰色实心（带镂空）- 淡出
+        // 1. 灰色实心（带镂空）- 淡出（实色不叠静态 alpha，仅动画淡出系数）
         if (grayAlpha > 0f) {
             drawPath(
                 path = path,
-                color = grayColor.copy(alpha = 0.48f * grayAlpha),
+                color = grayColor.copy(alpha = grayAlpha),
                 style = Fill
             )
         }
