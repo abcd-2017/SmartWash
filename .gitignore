@@ -67,3 +67,6 @@ oh_modules/
 *.keystore
 *.jks
 deploy/*
+
+# === SmartWash-Android 对齐工作文档（agent 进度/审计，本地保留不提交） ===
+SmartWash-Android/.claude/alignment/
