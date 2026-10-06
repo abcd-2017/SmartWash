@@ -1,8 +1,11 @@
 package com.smartwash.ui.page.home
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +28,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.core.graphics.PathParser
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
@@ -151,7 +158,8 @@ fun BottomBar(navController: NavHostController) {
             bottomNavItems.forEach { item ->
                 val isSelected = currentRoute == item.text
                 BottomNavItem(
-                    iconRes = item.iconRes,
+                    solidPath = item.solidPath,
+                    outlinePath = item.outlinePath,
                     label = item.description,
                     isSelected = isSelected,
                     onClick = {
@@ -172,7 +180,8 @@ fun BottomBar(navController: NavHostController) {
 
 @Composable
 private fun BottomNavItem(
-    iconRes: Int,
+    solidPath: String,
+    outlinePath: String,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -189,13 +198,11 @@ private fun BottomNavItem(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 规范 §4.5：26dp 图标，Canvas 绘制带动画
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = label,
-            colorFilter = ColorFilter.tint(
-                if (isSelected) AppColors.colorScheme.primaryDark
-                else AppColors.colorScheme.textSecondary
-            ),
+        AnimatedBottomNavIcon(
+            solidPath = solidPath,
+            outlinePath = outlinePath,
+            isSelected = isSelected,
+            reduceMotion = reduceMotion,
             modifier = Modifier
                 .size(26.dp)
                 .scale(scale)
@@ -211,3 +218,81 @@ private fun BottomNavItem(
 }
 
 
+
+/**
+ * 规范 §4.5 底栏图标选中动效（600ms）：0ms 外轮廓勾边 → 140ms 灰实心淡出 →
+ * 170ms 品牌色淡入 → 400ms 描边退场 → 600ms 终态。灰实心与品牌填充共用同一条
+ * 带镂空路径（evenOdd），交叉淡变期间镂空始终是底色；勾边只沿外轮廓。
+ * 路径解析用官方 androidx.core.graphics.PathParser（完整 SVG 语法）。
+ * reduced motion：不勾边不动画，直接终态。
+ */
+@Composable
+private fun AnimatedBottomNavIcon(
+    solidPath: String,
+    outlinePath: String,
+    isSelected: Boolean,
+    reduceMotion: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val solid = remember(solidPath) {
+        PathParser.createPathFromPathData(solidPath).apply {
+            fillType = android.graphics.Path.FillType.EVEN_ODD
+        }.asComposePath()
+    }
+    val outline = remember(outlinePath) {
+        PathParser.createPathFromPathData(outlinePath).asComposePath()
+    }
+    val pathMeasure = remember(outline) { PathMeasure().apply { setPath(outline, false) } }
+    val pathLength = remember(pathMeasure) { pathMeasure.length }
+
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(isSelected, reduceMotion) {
+        if (reduceMotion) {
+            progress.snapTo(if (isSelected) 1f else 0f)
+        } else {
+            progress.animateTo(
+                targetValue = if (isSelected) 1f else 0f,
+                animationSpec = tween(durationMillis = 600, easing = LinearEasing)
+            )
+        }
+    }
+
+    val strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+    val brandColor = AppColors.colorScheme.primaryDark
+    val grayColor = AppColors.colorScheme.textSecondary
+
+    Canvas(modifier = modifier) {
+        val totalProgress = progress.value * 600f
+        val drawOnProgress = (totalProgress / 400f).coerceIn(0f, 1f)
+        val strokeAlpha = when {
+            totalProgress < 400f -> 1f
+            totalProgress < 600f -> 1f - (totalProgress - 400f) / 200f
+            else -> 0f
+        }
+        val grayAlpha = when {
+            totalProgress < 140f -> 1f
+            totalProgress < 170f -> 1f - (totalProgress - 140f) / 30f
+            else -> 0f
+        }
+        val brandAlpha = when {
+            totalProgress < 170f -> 0f
+            totalProgress < 200f -> (totalProgress - 170f) / 30f
+            else -> 1f
+        }
+        if (grayAlpha > 0f) {
+            drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
+        }
+        if (brandAlpha > 0f) {
+            drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
+        }
+        if (drawOnProgress > 0f && strokeAlpha > 0f) {
+            val segment = Path()
+            pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
+            drawPath(
+                path = segment,
+                color = brandColor.copy(alpha = strokeAlpha),
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+        }
+    }
+}
