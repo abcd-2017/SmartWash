@@ -42,7 +42,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -167,7 +166,7 @@ fun ListRow(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.98f)
+                if (onClick != null) Modifier.pressable(onClick = onClick)
                 else Modifier
             )
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
@@ -552,6 +551,33 @@ fun AppTabBar(
  * 确认/取消操作弹窗
  * 用于：取消订单、确认支付、解绑校园卡、退出登录等
  */
+/**
+ * 弹窗底部分区按钮——左右贴合弹窗边缘，按压反馈为整区透明度变化（iOS 惯例）。
+ * 不使用 Material 按钮：其胶囊形 state layer 会浮在弹窗白底上，与贴边的
+ * 矩形分区不重叠。
+ */
+@Composable
+private fun DialogAction(
+    text: String,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .pressable(onClick = onClick, alphaFactor = 0.5f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = color,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
 @Composable
 fun AppConfirmDialog(
     message: String,
@@ -591,30 +617,24 @@ fun AppConfirmDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TextButton(
+                    DialogAction(
+                        text = cancelText,
+                        color = AppColors.colorScheme.textSecondary,
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = cancelText,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                     Box(
                         modifier = Modifier
                             .width(0.5.dp)
                             .height(48.dp)
                             .background(AppColors.colorScheme.divider)
                     )
-                    TextButton(
+                    DialogAction(
+                        text = confirmText,
+                        color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary,
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = confirmText,
-                            color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -658,15 +678,12 @@ fun AppInfoDialog(
                     )
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
-                TextButton(
+                DialogAction(
+                    text = buttonText,
+                    color = AppColors.colorScheme.primary,
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) {
-                    Text(
-                        text = buttonText,
-                        color = AppColors.colorScheme.primary
-                    )
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }
@@ -730,30 +747,24 @@ fun AppInputDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TextButton(
+                    DialogAction(
+                        text = stringResource(R.string.cancel),
+                        color = AppColors.colorScheme.textSecondary,
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cancel),
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                     Box(
                         modifier = Modifier
                             .width(0.5.dp)
                             .height(48.dp)
                             .background(AppColors.colorScheme.divider)
                     )
-                    TextButton(
+                    DialogAction(
+                        text = stringResource(R.string.confirm),
+                        color = AppColors.colorScheme.primary,
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.confirm),
-                            color = AppColors.colorScheme.primary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }

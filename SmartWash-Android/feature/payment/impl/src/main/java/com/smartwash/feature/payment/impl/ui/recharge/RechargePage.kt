@@ -3,7 +3,6 @@ package com.smartwash.feature.payment.impl.ui.recharge
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -290,7 +289,7 @@ private fun AmountCard(
             .height(72.dp)
             .clickable(
                 interactionSource = interactionSource,
-                indication = LocalIndication.current,
+                indication = null,
                 onClick = onClick
             )
             .pressScale(interactionSource, 0.97f),
@@ -392,7 +391,7 @@ private fun PaymentMethodCard(
             .fillMaxWidth()
             .clickable(
                 interactionSource = interactionSource,
-                indication = LocalIndication.current,
+                indication = null,
                 onClick = onClick
             )
             .pressScale(interactionSource, 0.97f)

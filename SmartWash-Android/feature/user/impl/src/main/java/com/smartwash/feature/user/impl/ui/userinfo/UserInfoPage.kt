@@ -543,7 +543,7 @@ private fun SettingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = onClick, scaleFactor = 0.98f)
+            .pressable(onClick = onClick)
             .padding(vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
