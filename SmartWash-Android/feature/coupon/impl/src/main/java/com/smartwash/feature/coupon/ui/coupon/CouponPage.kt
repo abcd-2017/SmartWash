@@ -129,11 +129,11 @@ fun CouponPage(
                     Surface(
                         modifier = Modifier
                             .height(34.dp)
-                            .clip(RoundedCornerShape(17.dp))
+                            .clip(RoundedCornerShape(AppDimens.radiusFull))
                             .clickable { selectedTabIndex = index },
                         color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
                         border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
-                        shape = RoundedCornerShape(17.dp)
+                        shape = RoundedCornerShape(AppDimens.radiusFull)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(

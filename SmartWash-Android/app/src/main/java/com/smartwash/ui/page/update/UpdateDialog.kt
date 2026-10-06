@@ -56,10 +56,9 @@ fun UpdateAvailableDialog(
         ),
     ) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp,
+            shadowElevation = AppElevation.floatLayer,
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -190,10 +189,9 @@ fun ForceUpdateRequiredDialog(
         ),
     ) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp,
+            shadowElevation = AppElevation.floatLayer,
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -247,10 +245,9 @@ fun DownloadPreparingDialog() {
         ),
     ) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp,
+            shadowElevation = AppElevation.floatLayer,
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -295,10 +292,9 @@ fun DownloadProgressDialog(
         ),
     ) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp,
+            shadowElevation = AppElevation.floatLayer,
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -368,10 +364,9 @@ fun DownloadCompleteDialog(
         onDismissRequest = onInstallLater,
     ) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp,
+            shadowElevation = AppElevation.floatLayer,
         ) {
             Column {
                 Column(modifier = Modifier.padding(24.dp)) {

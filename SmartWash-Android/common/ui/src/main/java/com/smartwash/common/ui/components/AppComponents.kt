@@ -610,10 +610,9 @@ fun AppConfirmDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(
@@ -674,10 +673,9 @@ fun AppInfoDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(
@@ -727,10 +725,9 @@ fun AppInputDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(

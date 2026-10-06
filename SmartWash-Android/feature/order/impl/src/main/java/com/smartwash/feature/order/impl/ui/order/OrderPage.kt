@@ -146,7 +146,7 @@ fun OrderPage(
                         modifier = Modifier
                             .height(34.dp)
                             .pressable(onClick = { selectedPillIndex = index }),
-                        shape = RoundedCornerShape(17.dp),
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
                         color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
                         border = if (isSelected) null else BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {

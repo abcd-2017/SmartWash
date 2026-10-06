@@ -206,6 +206,7 @@ object AppElevation {
     val level2 = 3.dp   // 中度浮起（重要卡片）
     val level3 = 6.dp   // 高度浮起（交互卡片）
     val level4 = 12.dp  // 最高（弹窗/Sheet）
+    val floatLayer = 10.dp  // 浮层（弹窗/对话框）— 规范 §2.4 浮层档 0 10px 24px rgba(20,40,30,.10)；Compose shadow 无法精确还原 CSS，取最近似档位
 }
 
 // ========== 可复用组件 ==========
