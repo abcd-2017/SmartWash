@@ -104,10 +104,6 @@ class MainActivity : ComponentActivity() {
             val backStackEntry by navController.currentBackStackEntryAsState()
             val reduceMotion = remember(backStackEntry) { isReduceMotionEnabled(context) }
 
-            // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）
-            val updateViewModel: UpdateViewModel = hiltViewModel()
-            UpdateFlow(context, workManager, updateViewModel, updateEventBus)
-
             // 收集用户域登录态事件（UserApi.loginEvents，T5.3 自 SessionEventBus 切换）：
             // 未登录拦截 / 401 登录失效 → 统一跳登录页，reason 保留文案与触感差异。
             // 事件源（user-impl 内 SessionEventBus）已去重 + navigate 加 launchSingleTop，
@@ -155,6 +151,12 @@ class MainActivity : ComponentActivity() {
             SmartWashAndroidTheme {
                 // 全应用动效降级开关（规范 7.8）：叶子节点经 motionSpec()/LocalReduceMotion 消费
                 CompositionLocalProvider(LocalReduceMotion provides reduceMotion) {
+                    // 更新流程（事件收集 → 下载调度 → 弹窗展示；T8.1 自本文件抽至壳层 UpdateFlow）：
+                    // 必须在主题包装内组合——否则更新弹窗位于 SmartWashAndroidTheme 之外，
+                    // MaterialTheme/AppColors 均回落浅色默认值，深色模式下弹窗仍显示浅色样式
+                    val updateViewModel: UpdateViewModel = hiltViewModel()
+                    UpdateFlow(context, workManager, updateViewModel, updateEventBus)
+
                     Surface(modifier = Modifier.fillMaxSize()) {
                         // 转场露底色跟随当前目的地：导航命令执行时 currentBackStackEntry 即更新，
                         // 动画在其上播放——认证页透认证渐变（修复登录↔注册白闪），
