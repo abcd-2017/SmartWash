@@ -63,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.R
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppTextStyles
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -114,7 +115,7 @@ fun PageHeader(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineLarge,
+            style = AppTextStyles.PageHeader,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.weight(1f))

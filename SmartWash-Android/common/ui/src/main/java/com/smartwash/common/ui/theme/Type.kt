@@ -6,8 +6,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * 规范 §2.2 新增三档排版 — 数据大字 / 金额中字 / 区块标题。
- * 使用方式：AppTextStyles.DataLarge、AppTextStyles.AmountMedium、AppTextStyles.SectionTitle
+ * 规范 §2.2 字阶令牌（2026-10-05 版）。
+ * 页面标题三档：RootTitle（根页大标题）/ PageHeader（二级页页头）/ CardTitle（卡片标题），
+ * 另有数据大字 DataLarge / 金额中字 AmountMedium / 区块标题 SectionTitle。
+ * 使用方式：AppTextStyles.RootTitle、AppTextStyles.PageHeader、AppTextStyles.CardTitle 等。
  */
 object AppTextStyles {
     /** 数据大字 — 余额、应付金额、取件码（36sp / Bold / tabular numbers） */
@@ -28,12 +30,28 @@ object AppTextStyles {
         fontFeatureSettings = "tnum",
     )
 
-    /** 页面标题（28sp / Bold）— 规范 §2.2 */
-    val PageTitle = TextStyle(
+    /** 根页大标题 — 首页/服务/工作台/我的（24sp / Bold / lineHeight 32sp） */
+    val RootTitle = TextStyle(
         fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.5).sp,
+        fontSize = 24.sp,
+        lineHeight = 32.sp,
+        letterSpacing = (-0.25).sp,
+    )
+
+    /** 二级页页头（20sp / SemiBold / lineHeight 28sp） */
+    val PageHeader = TextStyle(
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp,
+    )
+
+    /** 卡片标题（16sp / Medium / lineHeight 22sp） */
+    val CardTitle = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.sp,
     )
 
     /** 区块标题 — 页面内分区标题（17sp / SemiBold / letterSpacing +0.3sp） */

@@ -47,10 +47,16 @@ val ErrorContainer = Color(0xFFFFF1F0)
 val OnErrorContainer = Color(0xFF991B1B)
 
 // 警告
-val Warning = Color(0xFFFF9500)
+val Warning = Color(0xFFD98A26)          // 规范语义橙（iOS 系统橙 on 白对比度不足，已废弃）
 val OnWarning = Color(0xFFFFFFFF)
 val WarningContainer = Color(0xFFFFF7ED)
 val OnWarningContainer = Color(0xFF92400E)
+
+// 状态语义（进行中 / 危险，规范 §6.5）
+val Ongoing = Color(0xFFD98A26)
+val OngoingInk = Color(0xFF8F5B0C)
+val Danger = Color(0xFFC9526B)
+val DangerInk = Color(0xFFA8435A)
 
 // 成功
 val Success = Color(0xFF34C759)
@@ -78,81 +84,103 @@ val IconContainerPink = Color(0xFFFDEEF0)    // 异常/取消
 val IconContainerTeal = Color(0xFFF0FBF4)    // 账户/安全
 val IconContainerPurple = Color(0xFFF4F0FB)  // 观象台/AI
 
+// 图标前景六色（规范 §2.1 六色深色版）
+val IconForegroundGreen = Color(0xFF2D9B6A)
+val IconForegroundBlue = Color(0xFF4A67C9)
+val IconForegroundOrange = Color(0xFFD98A26)
+val IconForegroundPink = Color(0xFFC9526B)
+val IconForegroundTeal = Color(0xFF3F9D78)
+val IconForegroundPurple = Color(0xFF7C3AED)
+
 // ========== 清氧设计系统 — 暗色主题 ==========
 
-// 主色 — 自然绿（暗色模式下稍亮，确保深色背景可读性）
-val DarkPrimary = Color(0xFF4DD6A2)
-val DarkOnPrimary = Color(0xFF003822)
-val DarkPrimaryContainer = Color(0xFF0B3625)
-val DarkOnPrimaryContainer = Color(0xFFC5F0DC)
+// 主色 — 自然绿（规范 §10 红线：品牌绿深浅色一致）
+val DarkPrimary = Color(0xFF2D9B6A)
+val DarkOnPrimary = Color(0xFFFFFFFF)
+val DarkPrimaryContainer = Color(0xFF1D3229)
+val DarkOnPrimaryContainer = Color(0xFFB9E8CF)
 
 // 主色变体
-val DarkPrimaryLight = Color(0xFF1A3A2D)     // 浅绿背景 → 深色模式用深绿底
-val DarkPrimaryDark = Color(0xFF6AE4B8)      // 按下态稍亮
+val DarkPrimaryLight = Color(0xFF1D3229)     // 浅绿背景 → 深色模式用深绿底
+val DarkPrimaryDark = Color(0xFF5BC894)      // 按下态稍亮（primaryDeep 深色值）
 
 // 次要色
-val DarkSecondary = Color(0xFFB0B0B5)
-val DarkOnSecondary = Color(0xFF1C1C1E)
-val DarkSecondaryContainer = Color(0xFF3A3A3C)
-val DarkOnSecondaryContainer = Color(0xFFE5E5EA)
+val DarkSecondary = Color(0xFFA9AEA9)
+val DarkOnSecondary = Color(0xFF141614)
+val DarkSecondaryContainer = Color(0xFF262A27)
+val DarkOnSecondaryContainer = Color(0xFFE6E9E6)
 
 // 第三色
-val DarkTertiary = Color(0xFF8E8E93)
-val DarkOnTertiary = Color(0xFF1C1C1E)
-val DarkTertiaryContainer = Color(0xFF3A3A3C)
-val DarkOnTertiaryContainer = Color(0xFFE5E5EA)
+val DarkTertiary = Color(0xFFA9AEA9)
+val DarkOnTertiary = Color(0xFF141614)
+val DarkTertiaryContainer = Color(0xFF262A27)
+val DarkOnTertiaryContainer = Color(0xFFE6E9E6)
 
-// 背景 & 表面
-val DarkBackground = Color(0xFF1C1C1E)       // iOS 系统深黑
-val DarkOnBackground = Color(0xFFF2F2F7)     // 浅色文字
-val DarkSurface = Color(0xFF2C2C2E)          // 卡片底色（比背景稍亮）
-val DarkOnSurface = Color(0xFFF2F2F7)
-val DarkSurfaceVariant = Color(0xFF3A3A3C)
-val DarkOnSurfaceVariant = Color(0xFFA0A4A8)
-val DarkGroupBackground = Color(0xFF262628)  // 分组容器底
-val DarkHairline = Color(0xFF2A2A2C)        // 容器内部行分隔线底色
+// 背景 & 表面（绿灰系，规范 §6.5 / 设计稿 .v3.dark）
+val DarkBackground = Color(0xFF141614)       // 页面底色
+val DarkOnBackground = Color(0xFFE6E9E6)     // 浅色文字
+val DarkSurface = Color(0xFF1D201E)          // 卡片底色（比背景亮一档）
+val DarkOnSurface = Color(0xFFE6E9E6)
+val DarkSurfaceVariant = Color(0xFF262A27)
+val DarkOnSurfaceVariant = Color(0xFFA9AEA9)
+val DarkGroupBackground = Color(0xFF1A1E1B)  // 分组容器底（bg 与 surface 之间的绿灰中间档）
+val DarkHairline = Color(0xFF262A27)         // 容器内部行分隔线底色
 
 // 边框 & 辅助
-val DarkOutline = Color(0xFF3A3A3C)
-val DarkOutlineVariant = Color(0xFF38383A)
+val DarkOutline = Color(0xFF2C312D)
+val DarkOutlineVariant = Color(0xFF262A27)
 
 // 错误
-val DarkError = Color(0xFFFF6B6B)
-val DarkOnError = Color(0xFF2D0000)
-val DarkErrorContainer = Color(0xFF5C1A1A)
-val DarkOnErrorContainer = Color(0xFFFFDADA)
+val DarkError = Color(0xFFDB7186)
+val DarkOnError = Color(0xFF141614)
+val DarkErrorContainer = Color(0xFF341E24)
+val DarkOnErrorContainer = Color(0xFFE795A5)
 
 // 警告
-val DarkWarning = Color(0xFFFFB84D)
-val DarkOnWarning = Color(0xFF2D1A00)
-val DarkWarningContainer = Color(0xFF3A2A10)
-val DarkOnWarningContainer = Color(0xFFFFE0B2)
+val DarkWarning = Color(0xFFE2A44E)
+val DarkOnWarning = Color(0xFF141614)
+val DarkWarningContainer = Color(0xFF332917)
+val DarkOnWarningContainer = Color(0xFFECB36A)
 
 // 成功
-val DarkSuccess = Color(0xFF5AC98A)
-val DarkOnSuccess = Color(0xFF003318)
-val DarkSuccessContainer = Color(0xFF0B3625)
-val DarkOnSuccessContainer = Color(0xFFB2F0D0)
+val DarkSuccess = Color(0xFF4ADE6E)
+val DarkOnSuccess = Color(0xFF141614)
+val DarkSuccessContainer = Color(0xFF1D3229)
+val DarkOnSuccessContainer = Color(0xFFB9E8CF)
 
 // 文字色阶
-val DarkTextPrimary = Color(0xFFF2F2F7)
-val DarkTextSecondary = Color(0xFFA8ABB0)
-val DarkTextTertiary = Color(0xFF82858A)
+val DarkTextPrimary = Color(0xFFE6E9E6)
+val DarkTextSecondary = Color(0xFFA9AEA9)
+val DarkTextTertiary = Color(0xFF7E837D)
 
 // 分隔线
-val DarkDivider = Color(0xFF2A2A2C)
+val DarkDivider = Color(0xFF262A27)
 
 // 水意象（暗色下保持可读性）
-val DarkWater = Color(0xFF5BADDB)
-val DarkWaterSoft = Color(0xFF2A3A44)
+val DarkWater = Color(0xFF5FAEE0)
+val DarkWaterSoft = Color(0xFF1C2F3B)
+
+// 状态语义（进行中 / 危险，深色版）
+val DarkOngoing = Color(0xFFE2A44E)
+val DarkOngoingInk = Color(0xFFECB36A)
+val DarkDanger = Color(0xFFDB7186)
+val DarkDangerInk = Color(0xFFE795A5)
 
 // 图标容器六色浅底（暗色版）
-val DarkIconContainerGreen = Color(0xFF1A2F22)
-val DarkIconContainerBlue = Color(0xFF1E2840)
-val DarkIconContainerOrange = Color(0xFF332A1E)
-val DarkIconContainerPink = Color(0xFF332025)
-val DarkIconContainerTeal = Color(0xFF1C2E26)
-val DarkIconContainerPurple = Color(0xFF282033)
+val DarkIconContainerGreen = Color(0xFF1D3229)
+val DarkIconContainerBlue = Color(0xFF1F2637)
+val DarkIconContainerOrange = Color(0xFF332917)
+val DarkIconContainerPink = Color(0xFF341E24)
+val DarkIconContainerTeal = Color(0xFF17322B)
+val DarkIconContainerPurple = Color(0xFF272038)
+
+// 图标前景六色（暗色版，对应 .v3.dark --icon-*）
+val DarkIconForegroundGreen = Color(0xFF5BC894)
+val DarkIconForegroundBlue = Color(0xFF85A3E8)
+val DarkIconForegroundOrange = Color(0xFFE5AC5C)
+val DarkIconForegroundPink = Color(0xFFE58A9A)
+val DarkIconForegroundTeal = Color(0xFF57C9A4)
+val DarkIconForegroundPurple = Color(0xFFB49CE8)
 
 // ========== 认证页渐变色 ==========
 val AuthGradientTop = Color(0xFF1A9E6E)

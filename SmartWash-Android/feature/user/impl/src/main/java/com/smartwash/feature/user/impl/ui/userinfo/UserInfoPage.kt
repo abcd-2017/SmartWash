@@ -191,7 +191,7 @@ fun UserInfoPage(
                 ) {
                     Text(
                         text = stringResource(R.string.my_profile),
-                        style = AppTextStyles.PageTitle,
+                        style = AppTextStyles.RootTitle,
                         color = AppColors.colorScheme.textPrimary
                     )
                     Box(

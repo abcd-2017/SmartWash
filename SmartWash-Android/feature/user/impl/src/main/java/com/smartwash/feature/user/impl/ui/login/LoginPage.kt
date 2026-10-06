@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -270,7 +269,6 @@ fun LoginPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
-                        .shadow(4.dp, RoundedCornerShape(14.dp))
                         .pressScale(loginButtonInteractionSource, 0.97f),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
