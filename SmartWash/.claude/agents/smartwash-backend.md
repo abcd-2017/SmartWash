@@ -28,4 +28,4 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - 验证码注册与重置密码共用 Redis key
 - 测试仅 3 个类且无 test profile
 
-完整项目规则见 `SmartWash/CLAUDE.md`，通用规则见 `docs/agents/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。
+完整项目规则见 `SmartWash/CLAUDE.md`，通用规则见 `.claude/docs/shared-rules.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。

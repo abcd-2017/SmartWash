@@ -22,8 +22,8 @@ fun InfoRow(
     label: String,
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
-    valueStyle: TextStyle = MaterialTheme.typography.bodyMedium,
-    rowHeight: Dp = 40.dp,
+    valueStyle: TextStyle = MaterialTheme.typography.bodySmall,
+    rowHeight: Dp = 34.dp,
 ) {
     Row(
         modifier = Modifier
@@ -34,7 +34,7 @@ fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = AppColors.colorScheme.textSecondary
         )
         Spacer(Modifier.width(24.dp))

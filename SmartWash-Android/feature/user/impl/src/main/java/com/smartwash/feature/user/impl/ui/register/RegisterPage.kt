@@ -1,9 +1,10 @@
 package com.smartwash.feature.user.impl.ui.register
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,24 +15,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Key
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,7 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
+import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.ErrorLight
 import com.smartwash.common.ui.theme.GlassBg
@@ -54,28 +54,31 @@ import com.smartwash.common.ui.theme.GlassBgSubtle
 import com.smartwash.common.ui.theme.GlassBorder
 import com.smartwash.common.ui.theme.GlassBorderSubtle
 import com.smartwash.common.ui.theme.GlassInput
-import com.smartwash.common.ui.theme.GlassTextActive
 import com.smartwash.common.ui.theme.GlassTextDisabled
-import com.smartwash.common.ui.theme.GlassTextHint
-import com.smartwash.common.ui.theme.GlassTextSecondary
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.components.PasswordInput
 import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
-import com.smartwash.common.ui.navigation.ShellRoute
+import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -84,11 +87,9 @@ import kotlinx.coroutines.withContext
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
 
-// 认证页白色 CTA 按钮色
-private val AuthCtaText = Color(0xFF1E8C5C)
 // 认证页底部文字色
-private val AuthBottomText = Color.White.copy(alpha = 0.55f)
-private val AuthBottomTextActive = Color.White.copy(alpha = 0.9f)
+private val AuthBottomText = Color.White.copy(alpha = 0.78f)
+private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
 // 进度条非激活态
 private val ProgressInactive = Color.White.copy(alpha = 0.28f)
 
@@ -110,10 +111,30 @@ fun RegisterPage(
     var countDown by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
+    // 连点防抖：本页返回箭头/去登录均为 popBackStack 出栈，转场残影期被重复触发会连 Login 一起弹掉，
+    // 弹空导航栈导致黑屏（已确认 bug 本体），故用比转场更长的 800ms 窗口
+    val debouncedBackClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+        navController.popBackStack()
+    }
+    val debouncedLoginClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+        navController.popBackStack()
+    }
+
     val captchaState by registerViewModel.captchaState.collectAsState()
     val registerState by registerViewModel.registerState.collectAsState()
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val view = currentView()
+
+    // D-R5 品牌渐变页深浅色同款：状态栏图标强制白色；离页恢复主题默认（与 LoginPage 对齐）
+    val darkTheme = isSystemInDarkTheme()
+    DisposableEffect(darkTheme) {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        onDispose {
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
 
     // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
     LaunchedEffect(captchaState) {
@@ -143,7 +164,8 @@ fun RegisterPage(
                 showPassword = false
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
-                navController.navigate(ShellRoute.HOME) {
+                // 注册成功后跳转填写学校学号信息
+                navController.navigate(UserRoute.UpdateUserInfo.text) {
                     popUpTo(UserRoute.Login.text) { inclusive = true }
                 }
             }
@@ -161,13 +183,13 @@ fun RegisterPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(24.dp)
+    val glassShape = RoundedCornerShape(AppDimens.radiusXl)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(listOf(GradientTop, GradientBottom))
+                Brush.verticalGradient(0f to GradientTop, 0.5f to AuthGradientMid, 1f to GradientBottom)
             )
     ) {
         Column(
@@ -176,21 +198,28 @@ fun RegisterPage(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 顶部导航栏
+            // 顶部导航栏 — 添加 statusBarsPadding 防止与状态栏重叠
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBack,
-                    contentDescription = null,
+                // D-R9 返回箭头包进 48dp 热区，右侧占位同宽保持标题视觉居中（防抖已注入，关闭叠加）
+                Box(
                     modifier = Modifier
-                        .size(22.dp)
-                        .clickable { navController.popBackStack() },
-                    tint = Color.White.copy(alpha = 0.8f)
-                )
+                        .size(48.dp)
+                        .pressable(onClick = debouncedBackClick, debounce = false),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBack,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = Color.White.copy(alpha = 0.8f)
+                    )
+                }
                 Text(
                     text = stringResource(R.string.register),
                     modifier = Modifier.weight(1f),
@@ -199,10 +228,11 @@ fun RegisterPage(
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.size(22.dp))
+                Spacer(modifier = Modifier.size(48.dp))
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            // D-R2 布局顶部流式：brand 距 nav 行 16px
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 品牌标识 — 92dp 单层圆形
             Box(
@@ -213,10 +243,17 @@ fun RegisterPage(
                     .border(1.dp, GlassBorderSubtle, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✨", fontSize = 36.sp)
+                // D-R1 品牌图标：设计稿屏 2「水滴+加号」，替代 emoji
+                Icon(
+                    painter = painterResource(com.smartwash.common.ui.R.drawable.ic_water_add),
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp),
+                    tint = Color.White
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // D-R2 brand margin-bottom 14px
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = stringResource(R.string.create_account),
@@ -231,7 +268,7 @@ fun RegisterPage(
             Text(
                 text = stringResource(R.string.start_laundry_journey),
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.6f)
+                color = Color.White.copy(alpha = 0.78f)
             )
 
             // 进度条
@@ -263,14 +300,14 @@ fun RegisterPage(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // 毛玻璃输入卡片
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgSubtle)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(20.dp, 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -299,13 +336,15 @@ fun RegisterPage(
                     countDown = countDown,
                     captchaState = captchaState,
                     focusRequester = verificationCodeFocusRequester,
-                    onValueChange = {
-                        if (it.length <= 6) {
-                            verificationCode = it
+                    onValueChange = { newValue ->
+                        // 只允许输入数字，过滤非数字字符
+                        val filtered = newValue.filter { it.isDigit() }
+                        if (filtered.length <= 6) {
+                            verificationCode = filtered
                             isVerificationCodeError = false
                         }
                         // 输入完成自动跳转到密码框
-                        if (it.length == 6) {
+                        if (filtered.length == 6) {
                             passwordFocusRequester.requestFocus()
                         }
                     },
@@ -341,16 +380,17 @@ fun RegisterPage(
                     contentColor = Color.White,
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
+                    // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
                     if (it.length <= 16) password = it
-                    isPasswordError = if (it.isEmpty()) false
-                    else it.length < 6 || it.length > 16
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 注册按钮 — 白色背景 + 品牌深绿文字 + 阴影
-                Button(
-                    onClick = {
+                // 注册按钮 — 玻璃卡白色 CTA（自绘无 state layer，防抖经 800ms 动作档注入）
+                AuthCtaButton(
+                    text = stringResource(R.string.register),
+                    loading = registerState is RequestState.Loading,
+                    onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         isPhoneError = !isValidPhone(phone)
                         isVerificationCodeError = verificationCode.length != 6
                         isPasswordError = password.length < 6 || password.length > 16
@@ -360,42 +400,15 @@ fun RegisterPage(
                             registerViewModel.userRegister(phone, password, verificationCode)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .shadow(4.dp, RoundedCornerShape(14.dp)),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = AuthCtaText,
-                    )
-                ) {
-                    when (registerState) {
-                        is RequestState.Loading -> CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            color = AuthCtaText,
-                            strokeWidth = 2.dp
-                        )
-
-                        else -> {
-                            Text(
-                                stringResource(R.string.register),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 2.sp
-                            )
-                        }
-                    }
-                }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 登录入口
-            TextButton(
-                onClick = {
-                    navController.popBackStack()
-                }
+            // 登录入口 — 只有点击"去登录"才跳转
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.has_account),
@@ -403,14 +416,15 @@ fun RegisterPage(
                     color = AuthBottomText
                 )
                 Text(
-                    stringResource(R.string.login_now),
+                    text = stringResource(R.string.login_now),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
-                    color = AuthBottomTextActive
+                    color = AuthBottomTextActive,
+                    modifier = Modifier
+                        .pressable(onClick = debouncedLoginClick, debounce = false)
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -434,68 +448,83 @@ private fun VerificationCodeRow(
     captchaState: RequestState,
     focusRequester: FocusRequester = FocusRequester(),
     onValueChange: (String) -> Unit,
-    onSendCaptcha: () -> Unit
+    onSendCaptcha: () -> Unit,
+    contentColor: Color = Color.White
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextField(
-            value = verificationCode,
-            onValueChange = onValueChange,
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = isVerificationCodeError,
-            supportingText = if (isVerificationCodeError) {
-                { Text(stringResource(R.string.invalid_verification_code), color = ErrorLight) }
-            } else null,
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Key,
-                    contentDescription = null,
-                    tint = if (isVerificationCodeError) ErrorLight
-                    else GlassTextHint
-                )
-            },
-            singleLine = true,
-            placeholder = {
-                Text(stringResource(R.string.verification_code), color = GlassTextSecondary)
-            },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                cursorColor = Color.White,
-                errorCursorColor = ErrorLight,
-                errorLeadingIconColor = ErrorLight,
-                errorSupportingTextColor = ErrorLight,
-            )
-        )
-
-        TextButton(
-            onClick = onSendCaptcha,
-            enabled = captchaState !is RequestState.Loading,
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 紧凑输入行：总高 48dp、垂直居中（对齐 PhoneNumberInput，D-R4）
+        Row(
             modifier = Modifier
-                .border(1.dp, GlassInput, RoundedCornerShape(12.dp))
-                .height(40.dp),
-            shape = RoundedCornerShape(12.dp),
+                .fillMaxWidth()
+                .height(48.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                Icons.Rounded.Key,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isVerificationCodeError) ErrorLight
+                else contentColor.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            BasicTextField(
+                value = verificationCode,
+                onValueChange = onValueChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = contentColor),
+                cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
+                decorationBox = { innerTextField ->
+                    Box {
+                        if (verificationCode.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.verification_code),
+                                fontSize = 16.sp,
+                                color = contentColor.copy(alpha = 0.45f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            // 尾缀发送按钮：1dp 玻璃描边 + 12dp 圆角 + 40dp 高 + 横向 14dp（§3.7 定稿）。
+            // 倒计时/加载禁用态描边与文字透明度降至 .55；倒计时本身已防重复发送，不再叠加防抖
+            val sendEnabled = countDown == 0 && captchaState !is RequestState.Loading
+            Box(
+                modifier = Modifier
+                    .height(40.dp)
+                    .then(
+                        if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
+                        else Modifier
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (sendEnabled) GlassInput
+                        else GlassInput.copy(alpha = GlassInput.alpha * 0.55f),
+                        shape = RoundedCornerShape(AppDimens.radiusMd)
+                    )
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
+                    else stringResource(R.string.get_verification_code),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
+                )
+            }
+        }
+        if (isVerificationCodeError) {
+            // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
-                text = if (captchaState is RequestState.Loading) stringResource(R.string.countdown_format, countDown)
-                else stringResource(R.string.get_verification_code),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (captchaState is RequestState.Loading)
-                    GlassTextSecondary
-                else GlassTextActive
+                text = stringResource(R.string.invalid_verification_code),
+                fontSize = 13.sp,
+                color = ErrorLight,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }

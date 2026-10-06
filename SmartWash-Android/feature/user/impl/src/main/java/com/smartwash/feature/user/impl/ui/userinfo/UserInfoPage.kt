@@ -24,19 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.LocalLaundryService
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -67,7 +60,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.smartwash.common.ui.components.AppConfirmDialog
-import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.AppInputDialog
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
@@ -76,6 +68,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
@@ -91,7 +84,6 @@ fun UserInfoPage(
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
     val userInfo by userInfoViewModel.userInfo.collectAsState()
-    val orderItemCount by userInfoViewModel.orderItemCount.collectAsState()
     val bindCampusState by userInfoViewModel.bindCampusState.collectAsState()
     val unBindCampusState by userInfoViewModel.unBindCampusState.collectAsState()
     val avatarUploadState by userInfoViewModel.avatarUploadState.collectAsState()
@@ -105,67 +97,69 @@ fun UserInfoPage(
 
     var showBindDialog by remember { mutableStateOf(false) }
     var showUnbindDialog by remember { mutableStateOf(false) }
-    var showServiceDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
     var cardNumberError by remember { mutableStateOf(false) }
 
     LaunchedEffect(homePageNavController.currentBackStackEntry) {
         userInfoViewModel.getUserInfo()
     }
-    when (userInfoStatus) {
-        is RequestState.Error -> {
-            Toast.makeText(
-                context,
-                (userInfoStatus as RequestState.Error).getMessage(context),
-                Toast.LENGTH_SHORT
-            ).show()
-            userInfoViewModel.resetState()
+    // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
+    LaunchedEffect(userInfoStatus) {
+        when (userInfoStatus) {
+            is RequestState.Error -> {
+                Toast.makeText(
+                    context,
+                    (userInfoStatus as RequestState.Error).getMessage(context),
+                    Toast.LENGTH_SHORT
+                ).show()
+                userInfoViewModel.resetState()
+            }
+            is RequestState.Success -> { userInfoViewModel.resetState() }
+            else -> {}
         }
-        is RequestState.Success -> { userInfoViewModel.resetState() }
-        else -> {}
     }
-    when (bindCampusState) {
-        is RequestState.Success -> {
-            showBindDialog = false
-            cardNumber = ""
-            cardNumberError = false
-            LaunchedEffect(bindCampusState) {
+    LaunchedEffect(bindCampusState) {
+        when (bindCampusState) {
+            is RequestState.Success -> {
+                showBindDialog = false
+                cardNumber = ""
+                cardNumberError = false
                 Toast.makeText(context, context.getString(R.string.bind_success), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetBindCampusState()
             }
-            userInfoViewModel.resetBindCampusState()
+            is RequestState.Error -> {
+                Toast.makeText(context, (bindCampusState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetBindCampusState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (bindCampusState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            userInfoViewModel.resetBindCampusState()
-        }
-        else -> {}
     }
-    when (unBindCampusState) {
-        is RequestState.Success -> {
-            showUnbindDialog = false
-            LaunchedEffect(unBindCampusState) {
+    LaunchedEffect(unBindCampusState) {
+        when (unBindCampusState) {
+            is RequestState.Success -> {
+                showUnbindDialog = false
                 Toast.makeText(context, context.getString(R.string.unbind_success), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetUnBindCampusState()
             }
-            userInfoViewModel.resetUnBindCampusState()
+            is RequestState.Error -> {
+                Toast.makeText(context, (unBindCampusState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetUnBindCampusState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (unBindCampusState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            userInfoViewModel.resetUnBindCampusState()
-        }
-        else -> {}
     }
-    when (avatarUploadState) {
-        is RequestState.Success -> {
-            LaunchedEffect(avatarUploadState) {
+    LaunchedEffect(avatarUploadState) {
+        when (avatarUploadState) {
+            is RequestState.Success -> {
                 Toast.makeText(context, context.getString(R.string.avatar_upload_success), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetAvatarUploadState()
             }
-            userInfoViewModel.resetAvatarUploadState()
+            is RequestState.Error -> {
+                Toast.makeText(context, (avatarUploadState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.resetAvatarUploadState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, context.getString(R.string.avatar_upload_failed), Toast.LENGTH_SHORT).show()
-            userInfoViewModel.resetAvatarUploadState()
-        }
-        else -> {}
     }
 
     Box(
@@ -191,23 +185,33 @@ fun UserInfoPage(
                 ) {
                     Text(
                         text = stringResource(R.string.my_profile),
-                        style = AppTextStyles.PageTitle,
+                        style = AppTextStyles.RootTitle,
                         color = AppColors.colorScheme.textPrimary
                     )
+                    // ib36 视觉 + 48dp 热区（防抖已注入，关闭叠加）
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(AppColors.colorScheme.iconContainerTeal)
-                            .clickable { navController.navigate(UserRoute.Setting.text) },
+                            .size(48.dp)
+                            .pressable(
+                                onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) },
+                                debounce = false,
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings),
-                            modifier = Modifier.size(18.dp),
-                            tint = AppColors.colorScheme.primary
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AppColors.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = stringResource(R.string.settings),
+                                modifier = Modifier.size(18.dp),
+                                tint = AppColors.colorScheme.textSecondary
+                            )
+                        }
                     }
                 }
 
@@ -221,11 +225,11 @@ fun UserInfoPage(
                     Box(
                         modifier = Modifier
                             .size(58.dp)
-                            .clickable {
+                            .pressable(onClick = {
                                 imagePickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
-                            },
+                            }),
                         contentAlignment = Alignment.Center
                     ) {
                         if (avatarUploadState is RequestState.Loading) {
@@ -274,29 +278,16 @@ fun UserInfoPage(
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        // 相机角标
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(AppColors.colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = stringResource(R.string.change_avatar),
-                                modifier = Modifier.size(11.dp),
-                                tint = Color.White
-                            )
-                        }
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = userInfo?.phoneNumber ?: stringResource(R.string.username),
+                            text = userInfo?.phoneNumber
+                                ?.takeIf { it.isNotEmpty() }
+                                ?.let { maskPhone(it) }
+                                ?: stringResource(R.string.username),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = AppColors.colorScheme.textPrimary
@@ -327,15 +318,20 @@ fun UserInfoPage(
                             .padding(vertical = 18.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 余额
+                        // 余额（点击去充值；防抖已注入，关闭叠加）
                         Column(
-                            modifier = Modifier.weight(1.35f),
+                            modifier = Modifier
+                                .weight(1.35f)
+                                .pressable(
+                                    onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) },
+                                    debounce = false,
+                                ),
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
                                 text = stringResource(R.string.wallet_balance),
-                                fontSize = 11.sp,
-                                color = AppColors.colorScheme.textTertiary
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.colorScheme.textSecondary
                             )
                             Text(
                                 text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
@@ -351,9 +347,14 @@ fun UserInfoPage(
                                 .height(42.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
-                        // 优惠券
+                        // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
                         Column(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .pressable(
+                                    onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) },
+                                    debounce = false,
+                                ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -363,8 +364,8 @@ fun UserInfoPage(
                             )
                             Text(
                                 text = stringResource(R.string.coupon),
-                                fontSize = 11.sp,
-                                color = AppColors.colorScheme.textTertiary,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(top = 5.dp)
                             )
                         }
@@ -387,8 +388,8 @@ fun UserInfoPage(
                             )
                             Text(
                                 text = stringResource(R.string.total_orders),
-                                fontSize = 11.sp,
-                                color = AppColors.colorScheme.textTertiary,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(top = 5.dp)
                             )
                         }
@@ -403,7 +404,8 @@ fun UserInfoPage(
                 ) {
                     SettingRow(
                         icon = Icons.Default.CreditCard,
-                        iconTint = AppColors.colorScheme.iconContainerBlue,
+                        containerColor = AppColors.colorScheme.iconContainerTeal,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                         label = stringResource(R.string.campus_card),
                         trailing = {
                             Text(
@@ -427,29 +429,9 @@ fun UserInfoPage(
                     )
                     HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                     SettingRow(
-                        icon = Icons.Default.Person,
-                        iconTint = AppColors.colorScheme.iconContainerOrange,
-                        label = stringResource(R.string.school_dorm_info),
-                        trailing = {
-                            Text(
-                                text = userInfo?.schoolVo?.schoolName ?: "",
-                                fontSize = 12.sp,
-                                color = AppColors.colorScheme.textSecondary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = AppColors.colorScheme.textTertiary
-                            )
-                        },
-                        onClick = { navController.navigate(UserRoute.UpdateUserInfo.text) }
-                    )
-                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                    SettingRow(
-                        icon = Icons.Default.Inventory,
-                        iconTint = AppColors.colorScheme.iconContainerPurple,
+                        icon = Icons.Default.LocationOn,
+                        containerColor = AppColors.colorScheme.iconContainerOrange,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
                         label = stringResource(R.string.shipping_address),
                         trailing = {
                             Icon(
@@ -470,12 +452,13 @@ fun UserInfoPage(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 ) {
                     SettingRow(
-                        icon = Icons.Default.Schedule,
-                        iconTint = AppColors.colorScheme.iconContainerTeal,
-                        label = stringResource(R.string.divination_calendar),
+                        icon = Icons.Default.Inventory,
+                        containerColor = AppColors.colorScheme.iconContainerBlue,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundBlue,
+                        label = stringResource(R.string.my_orders),
                         trailing = {
                             Text(
-                                text = "12 条",
+                                text = stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0),
                                 fontSize = 12.sp,
                                 color = AppColors.colorScheme.textSecondary
                             )
@@ -487,12 +470,21 @@ fun UserInfoPage(
                                 tint = AppColors.colorScheme.textTertiary
                             )
                         },
+                        onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
+                    )
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    SettingRow(
+                        icon = Icons.Default.Schedule,
+                        containerColor = AppColors.colorScheme.iconContainerPurple,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
+                        label = stringResource(R.string.divination_calendar),
                         onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                     )
                     HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                     SettingRow(
                         icon = Icons.Default.Settings,
-                        iconTint = AppColors.colorScheme.iconContainerGreen,
+                        containerColor = AppColors.colorScheme.iconContainerTeal,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                         label = stringResource(R.string.settings),
                         trailing = {
                             Icon(
@@ -539,21 +531,13 @@ fun UserInfoPage(
             onDismiss = { showUnbindDialog = false }
         )
     }
-
-    // 联系客服弹窗
-    if (showServiceDialog) {
-        AppInfoDialog(
-            title = stringResource(R.string.contact_service),
-            message = stringResource(R.string.service_phone) + "\n" + stringResource(R.string.service_hours),
-            onDismiss = { showServiceDialog = false }
-        )
-    }
 }
 
 @Composable
 private fun SettingRow(
     icon: ImageVector,
-    iconTint: Color,
+    containerColor: Color,
+    iconForegroundColor: Color,
     label: String,
     trailing: @Composable () -> Unit = {
         Icon(
@@ -565,26 +549,27 @@ private fun SettingRow(
     },
     onClick: () -> Unit,
 ) {
+    // 水平内边距由 GroupCard cardPadding 承载，避免双重内缩（对齐设计 row3 卡内 20px）
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = onClick, scaleFactor = 0.98f)
-            .padding(vertical = 15.dp, horizontal = 20.dp),
+            .pressable(onClick = onClick)
+            .padding(vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ib32 图标容器（32dp，10px圆角，彩色浅底）
+        // ib32 图标容器（32dp，10px圆角，彩色浅底 + 语义色图标）
         Box(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(iconTint),
+                .background(containerColor),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(17.dp),
-                tint = AppColors.colorScheme.textPrimary
+                modifier = Modifier.size(16.dp),
+                tint = iconForegroundColor
             )
         }
         Spacer(modifier = Modifier.width(14.dp))
@@ -598,3 +583,6 @@ private fun SettingRow(
         trailing()
     }
 }
+
+private fun maskPhone(phone: String): String =
+    if (phone.length == 11) phone.take(3) + "****" + phone.takeLast(4) else phone

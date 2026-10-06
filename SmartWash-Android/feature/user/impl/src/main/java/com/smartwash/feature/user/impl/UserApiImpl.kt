@@ -90,19 +90,27 @@ class UserApiImpl @Inject constructor(
         }
     }
 
+    override fun invalidateUserInfoCache() {
+        // 同步失效：本端修改资料（完善学校信息等）后，下游（首页绑定引导等）
+        // 下一拍 getUserInfo 即走网络拿新数据，不会读到提交前的过期判断
+        cachedUserInfo = null
+    }
+
     /**
      * 网络层 VO → 对外领域模型（user-api 的 UserInfo）。
      *
-     * school 字段逐项容错：后端对未绑定学校的用户返回 schoolVo 空对象（字段全 null，
-     * Gson 经 Unsafe 绕过非空检查置 null），直接映射会触发构造参数非空检查 NPE，
-     * 使 getUserInfo() 对这类用户恒返回 null——调用方（首页绑定引导）将无法区分
-     * 「无学校」与「获取失败」。schoolId 落 -1 对齐原 getUserSchoolId 接口的空值语义。
+     * 字段逐项容错：后端对未填写学校/学号的新用户返回 studentId=null、schoolVo 空对象
+     * （campusCard/balance 同理可能为 null），VO 的非空声明只是 Kotlin 侧谎言——Gson 经
+     * Unsafe 绕过构造器反序列化，字段实际为 null。直接映射会触发构造参数非空检查 NPE，
+     * 被 getUserInfo() 的 catch 吃掉后恒返回 null——登录/重启时的学校信息强制检查、
+     * 首页绑定引导等全部失效。空值统一落安全默认值：studentId 空、schoolId 落 -1
+     * （对齐 getUserSchoolId 接口的空值语义）。
      */
     private fun UserInfoVo.toUserInfo(): UserInfo = UserInfo(
-        phoneNumber = phoneNumber,
-        studentId = studentId,
-        campusCard = campusCard,
-        balance = balance,
+        phoneNumber = phoneNumber ?: "",
+        studentId = studentId ?: "",
+        campusCard = campusCard ?: "",
+        balance = balance ?: 0f,
         avatar = avatar,
         school = UserInfo.School(
             schoolId = schoolVo.schoolId ?: -1L,

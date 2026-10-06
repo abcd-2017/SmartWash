@@ -58,6 +58,16 @@ data class AppColorScheme(
     val iconContainerPink: Color,
     val iconContainerTeal: Color,
     val iconContainerPurple: Color,
+    val ongoing: Color,
+    val ongoingInk: Color,
+    val danger: Color,
+    val dangerInk: Color,
+    val iconForegroundGreen: Color,
+    val iconForegroundBlue: Color,
+    val iconForegroundOrange: Color,
+    val iconForegroundPink: Color,
+    val iconForegroundTeal: Color,
+    val iconForegroundPurple: Color,
 )
 
 val LightAppColorScheme = AppColorScheme(
@@ -90,6 +100,16 @@ val LightAppColorScheme = AppColorScheme(
     iconContainerPink = IconContainerPink,
     iconContainerTeal = IconContainerTeal,
     iconContainerPurple = IconContainerPurple,
+    ongoing = Ongoing,
+    ongoingInk = OngoingInk,
+    danger = Danger,
+    dangerInk = DangerInk,
+    iconForegroundGreen = IconForegroundGreen,
+    iconForegroundBlue = IconForegroundBlue,
+    iconForegroundOrange = IconForegroundOrange,
+    iconForegroundPink = IconForegroundPink,
+    iconForegroundTeal = IconForegroundTeal,
+    iconForegroundPurple = IconForegroundPurple,
 )
 
 val DarkAppColorScheme = AppColorScheme(
@@ -122,6 +142,16 @@ val DarkAppColorScheme = AppColorScheme(
     iconContainerPink = DarkIconContainerPink,
     iconContainerTeal = DarkIconContainerTeal,
     iconContainerPurple = DarkIconContainerPurple,
+    ongoing = DarkOngoing,
+    ongoingInk = DarkOngoingInk,
+    danger = DarkDanger,
+    dangerInk = DarkDangerInk,
+    iconForegroundGreen = DarkIconForegroundGreen,
+    iconForegroundBlue = DarkIconForegroundBlue,
+    iconForegroundOrange = DarkIconForegroundOrange,
+    iconForegroundPink = DarkIconForegroundPink,
+    iconForegroundTeal = DarkIconForegroundTeal,
+    iconForegroundPurple = DarkIconForegroundPurple,
 )
 
 val LocalAppColors = staticCompositionLocalOf { LightAppColorScheme }
@@ -156,7 +186,7 @@ object AppDimens {
     val radiusFull = 999.dp // 头像、胶囊
     // 按钮 / 输入
     val buttonRadius = 14.dp
-    val inputRadius = 12.dp
+    val inputRadius = 14.dp
     val iconContainerRadius = 12.dp
     val bottomBarHeight = 68.dp
     // 间距 token（8pt 网格）
@@ -176,31 +206,10 @@ object AppElevation {
     val level2 = 3.dp   // 中度浮起（重要卡片）
     val level3 = 6.dp   // 高度浮起（交互卡片）
     val level4 = 12.dp  // 最高（弹窗/Sheet）
-}
-
-// ========== 卡片圆角变体 ==========
-object AppCardRadius {
-    val small = 12.dp
-    val medium = 16.dp
-    val large = 20.dp
-    val xl = 24.dp
-    val circle = 999.dp
+    val floatLayer = 10.dp  // 浮层（弹窗/对话框）— 规范 §2.4 浮层档 0 10px 24px rgba(20,40,30,.10)；Compose shadow 无法精确还原 CSS，取最近似档位
 }
 
 // ========== 可复用组件 ==========
-
-@Composable
-fun PageTitle(
-    title: String,
-    modifier: Modifier = Modifier,
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.displayLarge,
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.padding(horizontal = AppDimens.pagePadding)
-    )
-}
 
 @Composable
 fun SectionTitle(

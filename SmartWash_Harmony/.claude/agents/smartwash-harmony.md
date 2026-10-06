@@ -27,4 +27,4 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - StorageUtil 非空断言 + 初始化未 await，时序隐患
 - 待清理无引用组件：CouponCard.ets、UserCouponCard.ets、OrderStatusCard.ets
 
-完整项目规则见 `SmartWash_Harmony/CLAUDE.md`，通用规则见 `docs/agents/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。
+完整项目规则见 `SmartWash_Harmony/CLAUDE.md`，通用规则见 `.claude/docs/shared-rules.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。

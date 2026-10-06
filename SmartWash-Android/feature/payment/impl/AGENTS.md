@@ -68,4 +68,4 @@ src/main/java/com/smartwash/feature/payment/impl/
 ## 已知坑
 
 - **RechargePage 组合期副作用**: `RechargePage.kt` 的金额选择/支付状态分支存在写在 `when(state)` 渲染分支里的副作用，违反 Compose 硬规则，待独立任务修复——新增逻辑时不要模仿该写法。
-- **资金链路并发**: 支付/充值涉及资金，改动前必看 `docs/code-review-2026-08-28.md` 第一章 P0 项（后端资金链路已知并发竞态与幂等缺失）。
+- **资金链路并发**: 支付/充值涉及资金，改动前必看 `.claude/docs/code-review-2026-08-28.md` 第一章 P0 项（后端资金链路已知并发竞态与幂等缺失）。

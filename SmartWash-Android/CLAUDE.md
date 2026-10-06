@@ -2,7 +2,7 @@
 
 本文件为编码 agent 在 SmartWash Android 端工作时提供指导。仓库总纲见根目录 [CLAUDE.md](../CLAUDE.md)。
 
-**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。提交规范见根目录 CLAUDE.md。
+**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。提交规范见根目录 CLAUDE.md。
 
 **必须使用中文回答。**
 
@@ -16,7 +16,7 @@
 
 ## UI 设计规范（强制）
 
-详见 [ui-design-spec.md](ui-design-spec.md)。**改任何 UI 前必读**，与原型图冲突时以该文档为准。
+详见 [.claude/ui-design-spec.md](.claude/ui-design-spec.md)。**改任何 UI 前必读**，与原型图冲突时以该文档为准。
 
 ## 构建与运行
 
@@ -26,6 +26,8 @@
 ./gradlew test             # JVM 单元测试
 ./gradlew lint             # 代码检查
 ./gradlew feature:divination:test  # 观象台算法锚点单测（亦含于全量 test）
+./scripts/check-deps.sh    # 依赖铁律静态门禁（六条铁律前四条）
+./scripts/check-ui.sh      # UI 规范静态门禁（M3 交互组件业务层清零，规范 §7/§3.7）
 ```
 
 - **环境配置**：BASE_URL 由 `app/build.gradle` 通过 Gradle 属性 `baseUrl` 注入（兜底为演示服务器 `http://8.148.70.81:9000/`），生产通过 `-PbaseUrl=https://your-domain.com/` 注入。代码读 `BuildConfig.BASE_URL`，禁止硬编码 URL。另有 `DIVINATION_BASE_URL`（观象台 LLM 网关，当前与 BASE_URL 一致）。
@@ -117,7 +119,7 @@ abstract class XxxInitModule {
 
 | 红线 | 说明 |
 |------|------|
-| 跳过设计系统 | 新页面与改 UI 必须遵循 [ui-design-spec.md](ui-design-spec.md) 的令牌、间距、圆角、动效全部规则 |
+| 跳过设计系统 | 新页面与改 UI 必须遵循 [.claude/ui-design-spec.md](.claude/ui-design-spec.md) 的令牌、间距、圆角、动效全部规则 |
 | 自创令牌值 | 配色 / 间距 / 圆角一律取自规范 §2 与 `common/ui/theme/`，禁止在页面内写死数值 |
 | 引入外部图标库 | 已调研否决（规范 §4.1）。自绘图标仅限规范 §4.5 的 12 个 |
 | 重绘 Material 图标 | 存量 `Icons.*` 一律保持内置，不替换、不重绘、不做与规范无关的改动 |

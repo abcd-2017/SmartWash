@@ -32,7 +32,7 @@
     <string name="verification_code">验证码</string>
     <string name="invalid_verification_code">请输入正确的验证码</string>
     <string name="get_verification_code">获取验证码</string>
-    <string name="countdown_format">%ds</string>
+    <string name="countdown_format">重新发送(%1$ds)</string>
     <string name="error_get_captcha_failed">验证码获取失败</string>
     <string name="captcha_sent">验证码已发送，请查看短信</string>
 
@@ -84,6 +84,7 @@
     <string name="please_select_school">请选择学校</string>
     <string name="modify_success">修改成功</string>
     <string name="error_student_id_registered">该学号已注册</string>
+    <string name="school_info_locked_hint">学校信息提交后不可自行修改，如需变更请联系管理员</string>
 
     <!-- 设置 -->
     <string name="notification">通知</string>
@@ -105,6 +106,7 @@
     <!-- 检查更新行经 checkUpdateContent 插槽由宿主注入（feature:update 归 app 壳聚合），
          check_update/check_update_desc/already_latest 三条文案随行留 app 侧 -->
     <string name="app_version">版本号：%s</string>
+    <string name="version_format" formatted="false">v%s</string>
 
     <!-- 设置页 v3 新增 -->
     <string name="general">通用</string>
@@ -124,6 +126,8 @@
     <string name="school_dorm_info">学校与宿舍信息</string>
     <string name="shipping_address">收货地址</string>
     <string name="divination_calendar">观象台 · 卦历</string>
+    <string name="my_orders">我的订单</string>
+    <string name="my_orders_count_format">%d 单</string>
 
     <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
     <string name="error_network_fail">请求失败</string>

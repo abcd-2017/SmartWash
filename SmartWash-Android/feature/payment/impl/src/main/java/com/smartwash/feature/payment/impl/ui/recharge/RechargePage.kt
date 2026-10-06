@@ -3,7 +3,6 @@ package com.smartwash.feature.payment.impl.ui.recharge
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,10 +52,8 @@ import com.smartwash.common.ui.theme.WeChatGreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.payment.impl.R
@@ -72,7 +69,9 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 
 @Composable
@@ -116,7 +115,9 @@ fun RechargePage(
                 title = stringResource(R.string.recharge),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    IconButton(onClick = { navController.navigate(PaymentRoute.RechargeRecord.text) }) {
+                    IconButton(
+                        onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord.text) }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = stringResource(R.string.recharge_record),
@@ -245,7 +246,7 @@ fun RechargePage(
             ) {
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                 AppButton(
-                    text = if (selectedAmount != null) stringResource(R.string.confirm_pay_format, String.format("%.2f", selectedAmount)) else stringResource(R.string.payment),
+                    text = if (selectedAmount != null) stringResource(R.string.recharge_now_format, String.format("%.2f", selectedAmount)) else stringResource(R.string.recharge_now),
                     onClick = { showDialog = true },
                     loading = rechargeState is RequestState.Loading,
                     modifier = Modifier.padding(16.dp, 24.dp)
@@ -276,7 +277,7 @@ private fun AmountCard(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else AppColors.colorScheme.surface,
         animationSpec = motionSpec(defaultSpring()),
         label = "amountBgColor"
     )
@@ -292,7 +293,7 @@ private fun AmountCard(
             .height(72.dp)
             .clickable(
                 interactionSource = interactionSource,
-                indication = LocalIndication.current,
+                indication = null,
                 onClick = onClick
             )
             .pressScale(interactionSource, 0.97f),
@@ -305,11 +306,7 @@ private fun AmountCard(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(R.string.currency_format, "${amount.toInt()}"),
-                    style = AppTextStyles.AmountMedium.copy(
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFeatureSettings = "tnum"
-                    ),
+                    style = AppTextStyles.AmountMedium,
                     color = textColor
                 )
                 // 赠送标签
@@ -322,11 +319,8 @@ private fun AmountCard(
                 if (bonus != null) {
                     Text(
                         text = bonus,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = Color(0xFFD98A26),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.ongoingInk,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -342,9 +336,9 @@ private fun CustomAmountCard(
     Surface(
         modifier = modifier
             .height(72.dp)
-            .clickable(onClick = onClick),
+            .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
-        color = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
         border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
@@ -401,7 +395,7 @@ private fun PaymentMethodCard(
             .fillMaxWidth()
             .clickable(
                 interactionSource = interactionSource,
-                indication = LocalIndication.current,
+                indication = null,
                 onClick = onClick
             )
             .pressScale(interactionSource, 0.97f)

@@ -52,6 +52,8 @@
     <string name="select_or_input_amount">请选择或输入充值金额</string>
     <string name="select_payment_method">请选择充值方式</string>
     <string name="confirm_recharge_question">是否确认充值？</string>
+    <string name="recharge_now_format" formatted="false">立即充值 ¥%s</string>
+    <string name="recharge_now">立即充值</string>
     <string name="recharge_success">充值成功</string>
     <string name="error_recharge_failed">充值失败</string>
     <string name="tip">提示</string>

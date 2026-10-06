@@ -110,7 +110,7 @@ mvn clean package -DskipTests  # 打包
 
 ## 八、已知问题
 
-完整评审清单（含行号与修复方向）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第一章。P0 级：
+完整评审清单（含行号与修复方向）见 `.claude/docs/code-review-2026-08-28.md` 第一章。P0 级：
 
 - 订单取消/超时与支付的竞态（`task/OrderTimeoutManager.java`、`OrdersServiceImpl.java`）
 - 优惠券并发核销/重复领取（`PaymentsServiceImpl.java`、`UserCouponServiceImpl.java`）

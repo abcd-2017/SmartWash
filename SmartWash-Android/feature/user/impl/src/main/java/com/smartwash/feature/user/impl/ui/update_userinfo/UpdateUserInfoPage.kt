@@ -2,6 +2,7 @@ package com.smartwash.feature.user.impl.ui.update_userinfo
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -65,6 +66,7 @@ import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun UpdateUserInfoPage(
@@ -85,20 +87,40 @@ fun UpdateUserInfoPage(
     var isSearchFocused by remember { mutableStateOf(false) }
     val updateState by userInfoViewModel.updateState.collectAsState()
 
-    when (updateState) {
-        is RequestState.Success -> {
-            LaunchedEffect(Unit) {
+    // 信息锁定：已填写学校/学号的用户进入本页即为只读态（只能由管理员修改）
+    var isInfoLocked by remember { mutableStateOf(false) }
+    val currentInfo by userInfoViewModel.currentInfo.collectAsState()
+
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is RequestState.Success -> {
                 Toast.makeText(context, context.getString(R.string.modify_success), Toast.LENGTH_SHORT).show()
                 userInfoViewModel.setStateIdle()
-                navController.popBackStack()
-                navController.navigate(ShellRoute.HOME)
+                // 提交成功回主页并清栈——不能停留在本页：锁定态下输入与按钮均禁用，停留即被困
+                navController.navigate(ShellRoute.HOME) {
+                    popUpTo(0) { inclusive = true }
+                }
             }
+            is RequestState.Error -> {
+                Toast.makeText(context, (updateState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                userInfoViewModel.setStateIdle()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (updateState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            userInfoViewModel.setStateIdle()
+    }
+
+    // 已填写用户进入本页：回填学校/学号并进入只读态，防止反复变更
+    LaunchedEffect(currentInfo) {
+        val info = currentInfo ?: return@LaunchedEffect
+        val schoolId = info.schoolVo.schoolId
+        if (schoolId != null && schoolId > 0L) {
+            selectedSchoolId = schoolId
+            query = info.schoolVo.schoolName.orEmpty()
+            studentId = info.studentId
+            isSchoolError = false
+            isStudentIdError = false
+            isInfoLocked = true
         }
-        else -> {}
     }
 
     LaunchedEffect(interactionSource) {
@@ -142,12 +164,13 @@ fun UpdateUserInfoPage(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // 圆形图标容器（白色16%透明度）
+                        // 圆形图标容器（白色16%透明度 + 1px 白.22 描边）
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.16f)),
+                                .background(Color.White.copy(alpha = 0.16f))
+                                .border(1.dp, Color.White.copy(alpha = 0.22f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -161,12 +184,13 @@ fun UpdateUserInfoPage(
                             text = stringResource(R.string.complete_info),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp,
                             color = Color.White
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
-                            fontSize = 12.5.sp,
-                            color = Color.White.copy(alpha = 0.72f)
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.88f)
                         )
                     }
                 }
@@ -185,19 +209,21 @@ fun UpdateUserInfoPage(
                         // 学校标签
                         Text(
                             text = stringResource(R.string.search_school),
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.4.sp,
-                            color = AppColors.colorScheme.textTertiary
+                            color = AppColors.colorScheme.textSecondary
                         )
 
-                        // field3 样式输入框
+                        // field3 样式输入框 — 信息锁定后禁用编辑
                         SearchSchoolInput(
                             query = query,
                             interactionSource = interactionSource,
                             isSchoolError = isSchoolError,
                             isSearchFocused = isSearchFocused,
                             schoolList = schoolList,
+                            selectedSchoolId = selectedSchoolId,
+                            enabled = !isInfoLocked,
                             itemClick = { school ->
                                 selectedSchoolId = school.schoolId
                                 query = school.schoolName
@@ -218,14 +244,14 @@ fun UpdateUserInfoPage(
                         // 学号标签
                         Text(
                             text = stringResource(R.string.student_id),
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.4.sp,
-                            color = AppColors.colorScheme.textTertiary,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(top = 4.dp)
                         )
 
-                        // field3 样式输入框
+                        // field3 样式输入框 — 信息锁定后禁用编辑
                         OutlinedTextField(
                             value = studentId,
                             onValueChange = { studentId = it; isStudentIdError = false },
@@ -234,6 +260,7 @@ fun UpdateUserInfoPage(
                                 .fillMaxWidth()
                                 .height(50.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = !isInfoLocked,
                             isError = isStudentIdError,
                             supportingText = if (isStudentIdError) {
                                 { Text(stringResource(R.string.invalid_student_id)) }
@@ -247,7 +274,9 @@ fun UpdateUserInfoPage(
                                 unfocusedBorderColor = AppColors.colorScheme.outline,
                                 errorBorderColor = AppColors.colorScheme.error,
                                 focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
+                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                                disabledBorderColor = AppColors.colorScheme.outline,
+                                disabledContainerColor = AppColors.colorScheme.surfaceVariant
                             )
                         )
                     }
@@ -266,11 +295,12 @@ fun UpdateUserInfoPage(
                             userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
                         }
                     },
-                    loading = updateState is RequestState.Loading
+                    loading = updateState is RequestState.Loading,
+                    enabled = !isInfoLocked
                 )
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "学校信息决定可用的柜机与配送网点",
+                    text = stringResource(R.string.school_info_locked_hint),
                     fontSize = 11.sp,
                     color = AppColors.colorScheme.textTertiary
                 )
@@ -287,6 +317,8 @@ fun SearchSchoolInput(
     isSchoolError: Boolean,
     isSearchFocused: Boolean,
     schoolList: List<SchoolOption>,
+    selectedSchoolId: Long,
+    enabled: Boolean = true,
     itemClick: (SchoolOption) -> Unit,
     clearOnClick: () -> Unit,
     onValueChange: (String) -> Unit
@@ -299,6 +331,7 @@ fun SearchSchoolInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
+            enabled = enabled,
             isError = isSchoolError,
             supportingText = if (isSchoolError) {
                 { Text(stringResource(R.string.please_select_school)) }
@@ -307,7 +340,7 @@ fun SearchSchoolInput(
                 Icon(Icons.Rounded.School, contentDescription = null, tint = AppColors.colorScheme.primary)
             },
             trailingIcon = {
-                IconButton(onClick = clearOnClick) {
+                IconButton(onClick = clearOnClick, enabled = enabled) {
                     Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.clear), tint = AppColors.colorScheme.textSecondary)
                 }
             },
@@ -318,13 +351,15 @@ fun SearchSchoolInput(
                 unfocusedBorderColor = AppColors.colorScheme.outline,
                 errorBorderColor = AppColors.colorScheme.error,
                 focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant
+                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                disabledBorderColor = AppColors.colorScheme.outline,
+                disabledContainerColor = AppColors.colorScheme.surfaceVariant
             )
         )
 
         if (isSearchFocused && schoolList.isNotEmpty()) {
             Spacer(modifier = Modifier.height(10.dp))
-            SchoolItem(schoolList, itemClick)
+            SchoolItem(schoolList, selectedSchoolId, itemClick)
         }
     }
 }
@@ -332,9 +367,10 @@ fun SearchSchoolInput(
 @Composable
 fun SchoolItem(
     schoolList: List<SchoolOption>,
+    selectedSchoolId: Long,
     onClick: (SchoolOption) -> Unit
 ) {
-    // 规范 §3.1 标准卡片 + §3.4 列表行（56dp 行高、图标容器、发丝线）
+    // 规范 §3.1 标准卡片 + §3.4 列表行（56dp 行高、图标容器、发丝线）；选中项 brand-soft 高亮
     AppCard {
         LazyColumn(
             modifier = Modifier
@@ -342,18 +378,24 @@ fun SchoolItem(
                 .heightIn(max = 200.dp)
         ) {
             items(schoolList, key = { it.schoolId }) { school ->
+                val isSelected = school.schoolId == selectedSchoolId
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .clickable { onClick(school) }
+                        .then(
+                            if (isSelected) Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                            else Modifier
+                        )
+                        .pressable(onClick = { onClick(school) })
                         .padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = school.schoolName,
                         fontSize = 13.sp,
-                        color = AppColors.colorScheme.textPrimary,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else null,
+                        color = if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary,
                         modifier = Modifier.weight(1f)
                     )
                 }

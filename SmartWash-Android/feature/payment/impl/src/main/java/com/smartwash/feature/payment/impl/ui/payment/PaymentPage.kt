@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,8 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +67,8 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,21 +150,17 @@ fun PaymentPage(
                         Column(modifier = Modifier.padding(22.dp, 20.dp)) {
                             Text(
                                 text = stringResource(R.string.amount_due),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textTertiary
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.4.sp,
+                                color = AppColors.colorScheme.textSecondary
                             )
                             Text(
                                 text = stringResource(
                                     R.string.currency_format,
                                     "${orderInfo?.payPrice ?: ""}"
                                 ),
-                                style = AppTextStyles.DataLarge.copy(
-                                    fontSize = 38.sp,
-                                    lineHeight = 44.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = (-0.5).sp,
-                                    fontFeatureSettings = "tnum"
-                                ),
+                                style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primaryDark,
                                 modifier = Modifier.padding(top = 10.dp)
                             )
@@ -198,7 +192,10 @@ fun PaymentPage(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedPaymentMethod = "balance" }
+                                    .pressable(
+                                        onClick = { selectedPaymentMethod = "balance" },
+                                        debounce = false,
+                                    )
                                     .padding(horizontal = 20.dp, vertical = 15.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -241,7 +238,7 @@ fun PaymentPage(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showBottomSheet = true },
+                            .pressable(onClick = { showBottomSheet = true }, debounce = false),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
                         shadowElevation = AppElevation.level1,
@@ -264,7 +261,7 @@ fun PaymentPage(
                                     Icons.Default.LocalOffer,
                                     contentDescription = null,
                                     modifier = Modifier.size(19.dp),
-                                    tint = Color(0xFFD98A26)
+                                    tint = AppColors.colorScheme.iconForegroundOrange
                                 )
                             }
                             Spacer(Modifier.width(14.dp))
@@ -276,13 +273,13 @@ fun PaymentPage(
                             if (selectedCoupon == -1 || userCouponList.isEmpty()) {
                                 Text(
                                     stringResource(R.string.do_not_use),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = AppColors.colorScheme.textSecondary
                                 )
                             } else {
                                 Text(
                                     "-￥${userCouponList[selectedCoupon].discount ?: 0}",
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = AppColors.colorScheme.primary
                                 )
                             }
@@ -347,10 +344,19 @@ fun PaymentPage(
                             stringResource(R.string.select_coupon),
                             style = MaterialTheme.typography.headlineSmall
                         )
-                        TextButton(onClick = {
-                            showBottomSheet = false
-                            navController.navigate(CouponRoute.Coupon.text)
-                        }) {
+                        // 去领取 — 自绘文字动作（规范 §7 禁 M3 交互组件；防抖已注入，关闭叠加）
+                        Row(
+                            modifier = Modifier
+                                .pressable(
+                                    onClick = rememberDebouncedClick {
+                                        showBottomSheet = false
+                                        navController.navigate(CouponRoute.Coupon.text)
+                                    },
+                                    debounce = false,
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.primary)
                             Spacer(Modifier.width(4.dp))
                             Icon(
@@ -382,13 +388,15 @@ fun PaymentPage(
                         count = userCouponList.size,
                         key = { i -> userCouponList[i].userCouponId }
                     ) { i ->
-                        UserCouponItem(userCouponList[i], selectedCoupon == i) {
+                        // 选券点击防抖：calculationOrder 无防重，连点重复发起重算请求
+                        val couponClick = rememberDebouncedClick {
                             selectedCoupon = i
                             showBottomSheet = false
                             if (orderId != null) {
                                 paymentViewModel.calculationOrder(orderId, userCouponList[i].userCouponId)
                             }
                         }
+                        UserCouponItem(userCouponList[i], selectedCoupon == i, itemClick = couponClick)
                     }
                 }
             }
@@ -399,6 +407,9 @@ fun PaymentPage(
         AppConfirmDialog(
             message = stringResource(R.string.confirm_pay_question),
             onConfirm = {
+                // 资金关键：立即关弹窗。原实现等 Success 回调才关窗，期间确认键持续可点，
+                // 配合后端无幂等 = 连点重复扣款入口；防抖窗口过期后的二次点击也由此阻断
+                confirmPayShow = false
                 paymentViewModel.paymentOrder(
                     orderId!!,
                     PaymentType.PURSE.type,
@@ -434,12 +445,12 @@ private fun InfoLine(label: String, value: String) {
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelMedium,
             color = AppColors.colorScheme.textSecondary
         )
         Text(
             value,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = MaterialTheme.typography.labelMedium.copy(
                 fontFeatureSettings = "tnum"
             ),
             fontWeight = FontWeight.Medium
@@ -461,7 +472,7 @@ private fun CheckMark(
                 color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
                 shape = CircleShape
             )
-            .clickable(onClick = onClick),
+            .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
@@ -485,7 +496,7 @@ private fun UserCouponItem(
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxWidth()
-            .clickable(onClick = itemClick),
+            .pressable(onClick = itemClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,

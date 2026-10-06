@@ -14,9 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +23,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
@@ -35,14 +34,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,15 +50,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import com.smartwash.common.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppTextStyles
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
@@ -81,7 +81,7 @@ import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 // ========== 页面头部 ==========
 
@@ -91,6 +91,8 @@ fun PageHeader(
     onBack: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
+    // 返回键内置连击防抖：PageHeader 是多数页面唯一返回入口，连点双 pop 会弹空导航栈（黑屏）
+    val debouncedBack = rememberDebouncedClick(enabled = onBack != null) { onBack?.invoke() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -100,7 +102,7 @@ fun PageHeader(
     ) {
         if (onBack != null) {
             IconButton(
-                onClick = onBack,
+                onClick = debouncedBack,
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -114,7 +116,7 @@ fun PageHeader(
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineLarge,
+            style = AppTextStyles.PageHeader,
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -124,8 +126,15 @@ fun PageHeader(
 
 // ========== 容器组件 ==========
 
+// 规范 §2.4 卡片阴影的 Compose 等价实现。CSS「0 2px 12px rgba(20,40,30,.05)」
+// 是模糊扩散模型；Compose 的 elevation 阴影是海拔投影模型且不可控模糊半径——
+// 用「3dp 海拔 + 低透明绿灰投影色」近似大扩散柔光（ambient/spot 颜色需 API 28+，minSdk 30）。
+// 1dp 描边在无阴影衬托时会读成生硬灰圈，故减半为 0.5dp 退居辅助防溢出。
+private val CardShadowAmbient = Color(0x0D14281E)  // 5% 绿黑
+private val CardShadowSpot = Color(0x1A14281E)     // 10% 绿黑
+
 /**
- * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 1px 描边 + 轻阴影）
+ * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 0.5dp 描边 + 柔和投影）
  * 用于：设置页分组、订单详情信息组、内容分区
  */
 @Composable
@@ -133,12 +142,19 @@ fun GroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+    val shape = RoundedCornerShape(AppDimens.radiusLg)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 3.dp,
+                shape = shape,
+                ambientColor = CardShadowAmbient,
+                spotColor = CardShadowSpot,
+                clip = false,
+            )
+            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding),
@@ -164,7 +180,7 @@ fun ListRow(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.98f)
+                if (onClick != null) Modifier.pressable(onClick = onClick)
                 else Modifier
             )
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceSm),
@@ -202,24 +218,40 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
-            ),
-        shape = shape,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+            )
+            .shadow(
+                elevation = 3.dp,
+                shape = shape,
+                ambientColor = CardShadowAmbient,
+                spotColor = CardShadowSpot,
+                clip = false,
+            )
+            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(content = content)
     }
 }
 
-// ========== 统一主按钮 ==========
+// ========== 统一按钮（自绘，规范 §3.3 三态） ==========
 
+/** AppButton 形态 — 主（品牌渐变底）/ 次（浅灰底）/ 文字（无底无框） */
+enum class AppButtonVariant { PRIMARY, SECONDARY, TEXT }
+
+/**
+ * 统一按钮 — 自绘实现，不使用 Material Button（其 state layer 颜色与形状不受
+ * 令牌控制，规范 §7 禁止）。业务层一律经本组件消费，禁止直接使用 M3 交互组件。
+ *
+ * 规格（§3.3）：主 = 52dp 高 / 14dp 圆角 / 品牌渐变底 / 白字 15sp·600·ls 1sp；
+ * 次 = 同尺寸 surfaceVariant 底 + 主文本色；文字 = 主色 13sp·600 无底无框。
+ * 按压反馈 scale 0.97（pressable 内置 indication=null）。
+ */
 @Composable
 fun AppButton(
     text: String,
@@ -227,34 +259,89 @@ fun AppButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
+    variant: AppButtonVariant = AppButtonVariant.PRIMARY,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Button(
-        onClick = onClick,
-        interactionSource = interactionSource,
+    // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
+    val debouncedOnClick = rememberDebouncedClick { onClick() }
+    val active = enabled && !loading
+    val shape = RoundedCornerShape(AppDimens.buttonRadius)
+
+    if (variant == AppButtonVariant.TEXT) {
+        Box(
+            modifier = modifier
+                .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
+                .heightIn(min = 44.dp)
+                .padding(horizontal = AppDimens.spaceSm),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(14.dp),
+                    color = AppColors.colorScheme.primary,
+                    strokeWidth = 1.5.dp,
+                )
+            } else {
+                Text(
+                    text = text,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+                )
+            }
+        }
+        return
+    }
+
+    // 主/次按钮共用容器：高 52dp；主 = 135° primary→primaryDark 渐变，
+    // 次 = surfaceVariant（§3.3 的 #F5F6F3 即浅色 surfaceVariant 令牌）
+    val isPrimary = variant == AppButtonVariant.PRIMARY
+    val containerModifier = if (isPrimary) {
+        // 禁用/加载态渐变降透明度（视觉完全由 brush 承担，避免双层叠加变淡）
+        val buttonBrush = Brush.linearGradient(
+            colors = if (active) {
+                listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)
+            } else {
+                listOf(
+                    AppColors.colorScheme.primary.copy(alpha = 0.5f),
+                    AppColors.colorScheme.primaryDark.copy(alpha = 0.5f),
+                )
+            },
+            start = Offset.Zero,
+            end = Offset.Infinite,
+        )
+        Modifier.background(buttonBrush, shape)
+    } else {
+        Modifier.background(
+            AppColors.colorScheme.surfaceVariant.copy(alpha = if (active) 1f else 0.5f),
+            shape,
+        )
+    }
+    val contentColor = if (isPrimary) {
+        if (active) Color.White else GlassTextDisabled
+    } else {
+        AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
+    }
+    Box(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
             .height(52.dp)
-            .pressScale(interactionSource, 0.97f),
-        enabled = enabled && !loading,
-        shape = RoundedCornerShape(AppDimens.buttonRadius),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.colorScheme.primary,
-            contentColor = Color.White,
-            disabledContainerColor = AppColors.colorScheme.primary.copy(alpha = 0.5f),
-            disabledContentColor = GlassTextDisabled
-        )
+            .then(containerModifier),
+        contentAlignment = Alignment.Center,
     ) {
         if (loading) {
-            androidx.compose.material3.CircularProgressIndicator(
+            CircularProgressIndicator(
                 modifier = Modifier.size(22.dp),
-                color = Color.White,
-                strokeWidth = 2.dp
+                color = contentColor,
+                strokeWidth = 2.dp,
             )
         } else {
             Text(
                 text = text,
-                style = MaterialTheme.typography.titleLarge
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp,
+                color = contentColor,
             )
         }
     }
@@ -487,10 +574,14 @@ fun AppTabBar(
             )
             Column(
                 modifier = Modifier
-                    .clickable {
-                        view.performHaptic(HapticEffect.SELECTION)
-                        onTabSelected(index)
-                    }
+                    // Tab 快速连切是合法操作，关闭防抖；pressable 内置 indication=null（禁 ripple）
+                    .pressable(
+                        onClick = {
+                            view.performHaptic(HapticEffect.SELECTION)
+                            onTabSelected(index)
+                        },
+                        debounce = false,
+                    )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -523,6 +614,33 @@ fun AppTabBar(
  * 确认/取消操作弹窗
  * 用于：取消订单、确认支付、解绑校园卡、退出登录等
  */
+/**
+ * 弹窗底部分区按钮——左右贴合弹窗边缘，按压反馈为整区透明度变化（iOS 惯例）。
+ * 不使用 Material 按钮：其胶囊形 state layer 会浮在弹窗白底上，与贴边的
+ * 矩形分区不重叠。
+ */
+@Composable
+private fun DialogAction(
+    text: String,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .pressable(onClick = onClick, alphaFactor = 0.5f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = color,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
 @Composable
 fun AppConfirmDialog(
     message: String,
@@ -535,10 +653,9 @@ fun AppConfirmDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(
@@ -562,30 +679,24 @@ fun AppConfirmDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TextButton(
+                    DialogAction(
+                        text = cancelText,
+                        color = AppColors.colorScheme.textSecondary,
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = cancelText,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                     Box(
                         modifier = Modifier
                             .width(0.5.dp)
                             .height(48.dp)
                             .background(AppColors.colorScheme.divider)
                     )
-                    TextButton(
+                    DialogAction(
+                        text = confirmText,
+                        color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary,
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = confirmText,
-                            color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -605,10 +716,9 @@ fun AppInfoDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(
@@ -629,15 +739,12 @@ fun AppInfoDialog(
                     )
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
-                TextButton(
+                DialogAction(
+                    text = buttonText,
+                    color = AppColors.colorScheme.primary,
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) {
-                    Text(
-                        text = buttonText,
-                        color = AppColors.colorScheme.primary
-                    )
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }
@@ -661,10 +768,9 @@ fun AppInputDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(AppDimens.cardRadius),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = AppElevation.level4,
-            tonalElevation = 6.dp
+            shadowElevation = AppElevation.floatLayer
         ) {
             Column {
                 Column(
@@ -701,30 +807,24 @@ fun AppInputDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    TextButton(
+                    DialogAction(
+                        text = stringResource(R.string.cancel),
+                        color = AppColors.colorScheme.textSecondary,
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cancel),
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                     Box(
                         modifier = Modifier
                             .width(0.5.dp)
                             .height(48.dp)
                             .background(AppColors.colorScheme.divider)
                     )
-                    TextButton(
+                    DialogAction(
+                        text = stringResource(R.string.confirm),
+                        color = AppColors.colorScheme.primary,
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f).height(48.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.confirm),
-                            color = AppColors.colorScheme.primary
-                        )
-                    }
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }

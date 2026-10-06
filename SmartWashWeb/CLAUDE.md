@@ -2,7 +2,7 @@
 
 本文件为编码 agent 在 SmartWash Web 管理后台工作时提供指导。仓库总纲见根目录 [CLAUDE.md](../CLAUDE.md)。
 
-**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。提交规范见根目录 CLAUDE.md。
+**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。提交规范见根目录 CLAUDE.md。
 
 **必须使用中文回答。**
 
@@ -69,7 +69,7 @@ npm run preview    # 预览生产构建
 
 ## 已知坑（改动前先看）
 
-详见 [web-known-pitfalls.md](web-known-pitfalls.md)。
+详见 [.claude/web-known-pitfalls.md](.claude/web-known-pitfalls.md)。
 
 ---
 

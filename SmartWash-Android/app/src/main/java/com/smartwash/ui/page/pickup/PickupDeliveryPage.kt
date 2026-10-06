@@ -54,6 +54,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.common.utils.model.RequestState
@@ -170,7 +171,7 @@ fun PickupDeliveryPage(
                 // 二维码卡
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
+                    shape = RoundedCornerShape(AppDimens.radiusLg),
                     color = AppColors.colorScheme.surface,
                     shadowElevation = 0.dp,
                     border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
@@ -209,8 +210,8 @@ fun PickupDeliveryPage(
                         )
                         Text(
                             text = pickupCode,
-                            style = MaterialTheme.typography.displaySmall,
-                            color = AppColors.colorScheme.primary
+                            style = AppTextStyles.DataLarge,
+                            color = AppColors.colorScheme.primaryDark
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                         AppButton(

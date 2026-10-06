@@ -33,6 +33,8 @@ import androidx.work.workDataOf
 import com.smartwash.R
 import com.smartwash.common.ui.components.SettingRow
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.update.event.UpdateEvent
 import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.model.AppVersionVo
@@ -142,7 +144,8 @@ internal fun UpdateFlow(
             val version = currentState.version
             if (version.forceUpdate) {
                 ForceUpdateRequiredDialog(
-                    onUpdateNow = {
+                    // 连点防抖：阻断重复拉起权限弹窗/重复调度下载
+                    onUpdateNow = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         handleUpdateClick(
                             context = context,
                             hasPermission = hasNotificationPermission,
@@ -157,7 +160,7 @@ internal fun UpdateFlow(
             } else {
                 UpdateAvailableDialog(
                     version = version,
-                    onUpdateNow = {
+                    onUpdateNow = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         handleUpdateClick(
                             context = context,
                             hasPermission = hasNotificationPermission,
@@ -191,7 +194,8 @@ internal fun UpdateFlow(
         }
         is UpdateState.Downloaded -> {
             DownloadCompleteDialog(
-                onInstallNow = {
+                // 连点防抖：阻断双击拉起两个系统安装 Intent 与删包竞态
+                onInstallNow = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                     handleApkInstall(context, updateViewModel, currentState.file)
                 },
                 onInstallLater = { updateViewModel.reset() },

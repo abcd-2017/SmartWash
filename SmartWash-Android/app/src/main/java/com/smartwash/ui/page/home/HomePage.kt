@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,12 +28,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.core.graphics.PathParser
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -61,6 +65,7 @@ import com.smartwash.feature.laundry.ui.service.ServicePage
 import com.smartwash.feature.user.impl.ui.userinfo.UserInfoPage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun HomePage(
@@ -103,7 +108,9 @@ fun HomePage(
             composable(HomePageConstant.Index.text) {
                 IndexPage(homePageNavController, navController)
             }
-            composable(HomePageConstant.Service.text) { ServicePage() }
+            composable(HomePageConstant.Service.text) {
+                ServicePage(navController = navController)
+            }
             composable(HomePageConstant.Divination.text) {
                 DivHomePage(navController)
             }
@@ -126,40 +133,55 @@ fun BottomBar(navController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val view = currentView()
 
-    // 底部栏 — 规范 §4.5：68dp 高、无顶部分隔线、纯白底
-    Row(
+    // 底部栏 — 规范 §4.5：68dp 高、0.5dp 顶部分隔线、纯白底（D-I10）
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(AppColors.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.navigationBars)
-            .height(AppDimens.bottomBarHeight),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        bottomNavItems.forEach { item ->
-            val isSelected = currentRoute == item.text
-            BottomNavItem(
-                iconPath = item.iconPath,
-                label = item.description,
-                isSelected = isSelected,
-                onClick = {
-                    view.performHaptic(HapticEffect.SELECTION)
-                    if (!isSelected) {
-                        navController.navigate(item.text) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+        // 顶部分隔线 — 设计 nav3 border-top .5px line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.5.dp)
+                .background(AppColors.colorScheme.outline)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppColors.colorScheme.surface)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .height(AppDimens.bottomBarHeight),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            bottomNavItems.forEach { item ->
+                val isSelected = currentRoute == item.text
+                BottomNavItem(
+                    solidPath = item.solidPath,
+                    outlinePath = item.outlinePath,
+                    label = item.description,
+                    isSelected = isSelected,
+                    onClick = {
+                        view.performHaptic(HapticEffect.SELECTION)
+                        if (!isSelected) {
+                            navController.navigate(item.text) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun BottomNavItem(
-    iconPath: String,
+    solidPath: String,
+    outlinePath: String,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -171,13 +193,14 @@ private fun BottomNavItem(
 
     Column(
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .pressable(onClick = onClick, debounce = false)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 规范 §4.5：26dp 图标，Canvas 绘制带动画
         AnimatedBottomNavIcon(
-            iconPath = iconPath,
+            solidPath = solidPath,
+            outlinePath = outlinePath,
             isSelected = isSelected,
             reduceMotion = reduceMotion,
             modifier = Modifier
@@ -194,185 +217,82 @@ private fun BottomNavItem(
     }
 }
 
+
+
+/**
+ * 规范 §4.5 底栏图标选中动效（600ms）：0ms 外轮廓勾边 → 140ms 灰实心淡出 →
+ * 170ms 品牌色淡入 → 400ms 描边退场 → 600ms 终态。灰实心与品牌填充共用同一条
+ * 带镂空路径（evenOdd），交叉淡变期间镂空始终是底色；勾边只沿外轮廓。
+ * 路径解析用官方 androidx.core.graphics.PathParser（完整 SVG 语法）。
+ * reduced motion：不勾边不动画，直接终态。
+ */
 @Composable
 private fun AnimatedBottomNavIcon(
-    iconPath: String,
+    solidPath: String,
+    outlinePath: String,
     isSelected: Boolean,
     reduceMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val path = remember(iconPath) { parseSvgPath(iconPath) }
-    val pathMeasure = remember(path) { PathMeasure().apply { setPath(path, false) } }
-    // Note: PathMeasure.setPath(path, forceClose) - path is the Path to measure
+    val solid = remember(solidPath) {
+        PathParser.createPathFromPathData(solidPath).apply {
+            fillType = android.graphics.Path.FillType.EVEN_ODD
+        }.asComposePath()
+    }
+    val outline = remember(outlinePath) {
+        PathParser.createPathFromPathData(outlinePath).asComposePath()
+    }
+    val pathMeasure = remember(outline) { PathMeasure().apply { setPath(outline, false) } }
     val pathLength = remember(pathMeasure) { pathMeasure.length }
 
-    // 动画进度：0 = 未选中，1 = 选中
     val progress = remember { Animatable(0f) }
-
     LaunchedEffect(isSelected, reduceMotion) {
         if (reduceMotion) {
-            // reduced motion：直接跳到终态，不做任何动画
             progress.snapTo(if (isSelected) 1f else 0f)
         } else {
-            // 规范 §4.5 时序：
-            // t = 0ms      外轮廓开始勾边
-            // t = 140ms    灰色实心开始淡出
-            // t = 170ms    品牌色开始淡入
-            // t = 400ms    描边开始退场
-            // t = 600ms    终态：纯实心 + 镂空
-            val target = if (isSelected) 1f else 0f
             progress.animateTo(
-                targetValue = target,
-                animationSpec = tween(
-                    durationMillis = 600,
-                    easing = LinearEasing
-                )
+                targetValue = if (isSelected) 1f else 0f,
+                animationSpec = tween(durationMillis = 600, easing = LinearEasing)
             )
         }
     }
 
-    val density = LocalDensity.current
-    val strokeWidth = with(density) { 1.5.dp.toPx() }
-
-    // 提前解析颜色（AppColors.colorScheme 是 @Composable，不能在 Canvas 中使用）
-    val primaryDarkColor = AppColors.colorScheme.primaryDark
-    val grayColor = Color(0xFF9A9DA3)
+    val strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
+    val brandColor = AppColors.colorScheme.primaryDark
+    val grayColor = AppColors.colorScheme.textSecondary
 
     Canvas(modifier = modifier) {
-        // 计算各阶段进度
         val totalProgress = progress.value * 600f
-
-        // 勾边进度：0-400ms
         val drawOnProgress = (totalProgress / 400f).coerceIn(0f, 1f)
-
-        // 描边退场：400-600ms
         val strokeAlpha = when {
             totalProgress < 400f -> 1f
             totalProgress < 600f -> 1f - (totalProgress - 400f) / 200f
             else -> 0f
         }
-
-        // 灰色淡出：140-170ms
         val grayAlpha = when {
             totalProgress < 140f -> 1f
             totalProgress < 170f -> 1f - (totalProgress - 140f) / 30f
             else -> 0f
         }
-
-        // 品牌色淡入：170-200ms
         val brandAlpha = when {
             totalProgress < 170f -> 0f
             totalProgress < 200f -> (totalProgress - 170f) / 30f
             else -> 1f
         }
-
-        // 1. 灰色实心（带镂空）- 淡出
         if (grayAlpha > 0f) {
-            drawPath(
-                path = path,
-                color = grayColor.copy(alpha = 0.48f * grayAlpha),
-                style = Fill
-            )
+            drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
         }
-
-        // 2. 品牌色实心（带镂空）- 淡入
         if (brandAlpha > 0f) {
-            drawPath(
-                path = path,
-                color = primaryDarkColor.copy(alpha = brandAlpha),
-                style = Fill
-            )
+            drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
         }
-
-        // 3. 外轮廓描边 - 勾边 + 退场
         if (drawOnProgress > 0f && strokeAlpha > 0f) {
             val segment = Path()
-            pathMeasure.getSegment(
-                startDistance = 0f,
-                stopDistance = pathLength * drawOnProgress,
-                destination = segment
-            )
+            pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
             drawPath(
                 path = segment,
-                color = primaryDarkColor.copy(alpha = strokeAlpha),
-                style = Stroke(
-                    width = strokeWidth,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                )
+                color = brandColor.copy(alpha = strokeAlpha),
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
             )
         }
     }
-}
-
-// 简化的 SVG 路径解析（仅支持 M/L/H/V/C/A/Z 命令）
-private fun parseSvgPath(pathData: String): Path {
-    val path = Path()
-    val tokens = pathData.split("(?=[MLHVCSQTAZ])".toRegex()).filter { it.isNotBlank() }
-
-    var currentX = 0f
-    var currentY = 0f
-    var startX = 0f
-    var startY = 0f
-
-    for (token in tokens) {
-        val command = token[0]
-        val args = token.substring(1).trim().split("[,\\s]+".toRegex()).mapNotNull { it.toFloatOrNull() }
-
-        when (command) {
-            'M' -> {
-                if (args.size >= 2) {
-                    currentX = args[0]
-                    currentY = args[1]
-                    startX = currentX
-                    startY = currentY
-                    path.moveTo(currentX, currentY)
-                }
-            }
-            'L' -> {
-                if (args.size >= 2) {
-                    currentX = args[0]
-                    currentY = args[1]
-                    path.lineTo(currentX, currentY)
-                }
-            }
-            'H' -> {
-                if (args.isNotEmpty()) {
-                    currentX = args[0]
-                    path.lineTo(currentX, currentY)
-                }
-            }
-            'V' -> {
-                if (args.isNotEmpty()) {
-                    currentY = args[0]
-                    path.lineTo(currentX, currentY)
-                }
-            }
-            'C' -> {
-                if (args.size >= 6) {
-                    path.cubicTo(
-                        args[0], args[1],
-                        args[2], args[3],
-                        args[4], args[5]
-                    )
-                    currentX = args[4]
-                    currentY = args[5]
-                }
-            }
-            'A' -> {
-                if (args.size >= 7) {
-                    // 简化为直线（圆弧用直线近似）
-                    currentX = args[5]
-                    currentY = args[6]
-                    path.lineTo(currentX, currentY)
-                }
-            }
-            'Z' -> {
-                path.close()
-                currentX = startX
-                currentY = startY
-            }
-        }
-    }
-    return path
 }

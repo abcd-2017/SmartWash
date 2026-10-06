@@ -1,7 +1,6 @@
 package com.smartwash.common.utils
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -17,26 +16,35 @@ import androidx.compose.ui.graphics.graphicsLayer
  * 使用方式：
  * ```
  * Modifier.pressable(onClick = onClick)
- * Modifier.pressable(onClick = onClick, scaleFactor = 0.95f)
  * Modifier.pressable(onClick = onClick, alphaFactor = 0.92f)
  * ```
  *
  * 规格：规范 7.2「按压即反馈」——按下瞬间 scale 0.97 + [PRESS_DURATION_MS]，
  * 所有可点元素强制生效。reduced motion 下缩放降级为透明度（见 [pressScale]）。
+ *
+ * 防抖：内置 [ClickDebouncer.DEFAULT_CLICK_INTERVAL_MS] 连击防抖（首击立即响应，
+ * 窗口期内重复点击静默丢弃），阻断快速连点导致的重复导航/重复提交。
+ * 纯本地状态切换等需要连续快触的入口传 `debounce = false` 关闭。
+ *
+ * 注意：indication 固定为 null——本设计系统的按压反馈只由 scale/alpha 表达，
+ * 不使用 Material ripple（涟漪的颜色与形状不受令牌控制，按下时会浮出
+ * 与容器不贴合的胶囊/矩形色块）。
  */
 fun Modifier.pressable(
     onClick: () -> Unit,
     scaleFactor: Float = 0.97f,
     alphaFactor: Float = 1.0f,
+    debounce: Boolean = true,
 ): Modifier = composed {
     val interactionSource = remember { MutableInteractionSource() }
+    val debouncedOnClick = rememberDebouncedClick { onClick() }
     this
         .pressScale(interactionSource, scaleFactor)
         .then(if (alphaFactor != 1f) Modifier.pressAlpha(interactionSource, alphaFactor) else Modifier)
         .clickable(
             interactionSource = interactionSource,
-            indication = LocalIndication.current,
-            onClick = onClick
+            indication = null,
+            onClick = if (debounce) debouncedOnClick else onClick
         )
 }
 

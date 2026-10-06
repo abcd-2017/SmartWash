@@ -113,7 +113,7 @@ npm run preview # 预览生产构建
 
 ## 九、已知问题
 
-完整评审清单（含行号）见 `/Users/admin/code/Android/SmartWash/docs/code-review-2026-08-28.md` 第三章。P0 级：
+完整评审清单（含行号）见 `.claude/docs/code-review-2026-08-28.md` 第三章。P0 级：
 
 - 高德 securityJsCode 已迁移至 `.env.*`（旧值已泄露待轮换）；`VITE_AMAP_KEY` 已声明但未配置（地图功能暂不可用）
 - 登录态统一由 `useAuthStore` 管理（`stores/auth.js`），角色由后端登录接口返回；权限以后端 `/admin/**` ROLE_ADMIN 强校验兜底（`router/index.js`）

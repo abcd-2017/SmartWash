@@ -15,23 +15,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.CouponStatus
 
 @Composable
@@ -137,18 +140,29 @@ fun CouponCard(
                 if (isAvailable) {
                     Spacer(modifier = Modifier.height(8.dp))
                     if (coupon.status == CouponStatus.RECEIVE.status) {
-                        Button(
-                            onClick = {},
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.textSecondary)
-                        ) { Text(stringResource(R.string.claimed)) }
-                    } else {
-                        Button(
-                            onClick = onClaimClick,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary)
+                        // 已领取 — 纯展示态（无动作、无按压反馈）
+                        Box(
+                            modifier = Modifier
+                                .height(40.dp)
+                                .background(AppColors.colorScheme.textSecondary, RoundedCornerShape(AppDimens.radiusMd))
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(stringResource(R.string.claim_now))
+                            Text(stringResource(R.string.claimed), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        }
+                    } else {
+                        // 立即领取 — 自绘（领券点击防抖：receiveCoupon 无 Loading 守卫，响应期间按钮始终可点）
+                        Box(
+                            modifier = Modifier
+                                .height(40.dp)
+                                .pressable(
+                                    onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) { onClaimClick() }
+                                )
+                                .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusMd))
+                                .padding(horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(stringResource(R.string.claim_now), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }

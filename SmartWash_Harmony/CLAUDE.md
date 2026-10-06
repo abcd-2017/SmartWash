@@ -4,7 +4,7 @@
 
 **必须使用中文回答。**
 
-**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [docs/agents/shared-rules.md](../../docs/agents/shared-rules.md)。提交规范见根目录 CLAUDE.md。
+**遵守共享规则**：STOP规则、派发红线、协作流程、Git工作流、冲突协议等见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。提交规范见根目录 CLAUDE.md。
 
 ---
 
@@ -96,7 +96,7 @@ toast 提示统一封装兜底（`message` 为 undefined 时不要弹 "undefined
 
 ## 已知坑（改动前先看）
 
-详见 [harmony-known-pitfalls.md](harmony-known-pitfalls.md)。
+详见 [.claude/harmony-known-pitfalls.md](.claude/harmony-known-pitfalls.md)。
 
 ## 依赖说明
 

@@ -38,7 +38,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
@@ -51,7 +50,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.coupon.R
@@ -66,6 +64,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
 
 @Composable
 fun CouponPage(
@@ -73,15 +72,16 @@ fun CouponPage(
     couponViewModel: CouponViewModel = hiltViewModel(),
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf(
-        stringResource(R.string.available_coupons),
-        stringResource(R.string.claimed_coupons),
-        stringResource(R.string.historical_coupons)
-    )
     val loadState by couponViewModel.loadState.collectAsState()
     val availableCoupons by couponViewModel.availableCoupons.collectAsState()
     val claimedCoupons by couponViewModel.claimedCoupons.collectAsState()
     val historicalCoupons by couponViewModel.historicalCoupons.collectAsState()
+    // D-C1：可用 tab 文案带真实计数
+    val tabs = listOf(
+        stringResource(R.string.available_coupons_with_count, availableCoupons.size),
+        stringResource(R.string.claimed_coupons),
+        stringResource(R.string.historical_coupons)
+    )
     val context = LocalContext.current
     val receiveCouponState by couponViewModel.receiveCouponState.collectAsState()
 
@@ -129,20 +129,22 @@ fun CouponPage(
                     val selected = selectedTabIndex == index
                     Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { selectedTabIndex = index },
+                            .height(34.dp)
+                            .pressable(onClick = { selectedTabIndex = index }, debounce = false),
                         color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
                         border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(AppDimens.radiusFull)
                     ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                            ),
-                            color = if (selected) Color.White else AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                                ),
+                                color = if (selected) Color.White else AppColors.colorScheme.textSecondary,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -166,7 +168,7 @@ fun CouponPage(
 
 /**
  * 票券卡片（ticket3 样式）— 左右半圆打孔 + 中间虚线
- * 设计稿 §12：左侧金额区渐变绿底，右侧内容区白色
+ * 设计稿 §12：左侧金额区 brand-soft 纯色底，右侧内容区白色
  */
 @Composable
 fun UserCouponCard(
@@ -218,27 +220,15 @@ fun UserCouponCard(
                 .height(88.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额区 — 渐变绿底
+            // 左侧金额区 — brand-soft 纯色底（历史态 surface-2 纯色）
             Box(
                 modifier = Modifier
                     .width(88.dp)
                     .height(88.dp)
                     .background(
-                        brush = if (isHistorical) {
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFFF0F1EE),
-                                    Color(0xFFF0F1EE)
-                                )
-                            )
-                        } else {
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFFE8F6EF),
-                                    Color(0xFFD3EDDF)
-                                )
-                            )
-                        }
+                        // brand-soft 等价令牌经 M3 原生 ColorScheme（AppColorScheme 无 primaryContainer 字段）
+                        color = if (isHistorical) AppColors.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primaryContainer
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -250,10 +240,7 @@ fun UserCouponCard(
                     )
                     Text(
                         text = stringResource(com.smartwash.feature.coupon.R.string.coupon),
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
+                        style = MaterialTheme.typography.labelSmall,
                         color = unitColor,
                         modifier = Modifier.padding(top = 5.dp)
                     )
@@ -279,24 +266,21 @@ fun UserCouponCard(
                         stringResource(R.string.no_threshold)
                     else
                         stringResource(R.string.coupon_min_amount_format, "${couponVo.couponVo.threshold}"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.valid_until, "${couponVo.expiredAt}"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary
                 )
             }
 
             // 状态标签
             Text(
                 text = if (isHistorical) statusText else stringResource(R.string.available),
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold
-                ),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = statusColor,
                 modifier = Modifier.padding(end = 16.dp)
             )

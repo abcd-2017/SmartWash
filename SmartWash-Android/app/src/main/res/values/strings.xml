@@ -18,20 +18,24 @@
     <string name="home_greeting_suffix">，同学</string>
     <string name="account_balance_label">账户余额</string>
     <string name="home_available_coupons">可用优惠券</string>
-    <string name="home_total_orders">共 %d 单</string>
+    <string name="home_total_orders">累计订单</string>
+    <string name="home_hero_no_order">暂无订单</string>
+    <string name="home_hero_no_order_hint">从下方快捷服务开始预约</string>
+    <string name="home_hero_order_no">订单号 %s</string>
     <string name="service_booking">预约洗衣</string>
     <string name="service_pickup">取件</string>
+    <string name="service_recharge">充值</string>
     <string name="service_coupon">优惠券</string>
     <string name="service_toolbox">工具箱</string>
     <string name="in_progress_orders">进行中订单</string>
-    <string name="view_all">查看全部</string>
+    <string name="view_all">查看全部 ›</string>
     <string name="no_ongoing_orders">暂无进行中的订单</string>
     <string name="step_received">已接单</string>
     <string name="step_washing">清洗中</string>
     <string name="step_dried">烘干中</string>
     <string name="step_pickup">待取件</string>
     <string name="order_no_format">订单号: %s</string>
-    <string name="service_tips">所有服务含免费取送 · 标准24h完成 · 支持在线支付</string>
+    <string name="service_tips">服务时间 07:00 – 22:00 · 节假日正常营业</string>
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
 
     <!-- ==================== 订单（订单页文案已随 :feature:order:impl 迁出 T6.1；
@@ -43,6 +47,9 @@
     <string name="progress_timeline">进度时间线</string>
     <string name="contact_service">联系客服</string>
     <string name="view_pickup_code">查看取件码</string>
+    <string name="pickup_code_info">取件码 %1$s · %2$d 号柜</string>
+    <string name="no_pickup_code">暂无取件码，请稍后再试</string>
+    <string name="contact_service_unavailable">客服暂未开通，请稍后再试</string>
     <string name="school_info">学校信息</string>
     <string name="school_name">学校名称</string>
     <string name="address">地址</string>
@@ -98,6 +105,8 @@
     <string name="wait_and_put_clothes">等待柜门打开，放入衣物</string>
     <string name="confirm_put_clothes">确认已将衣服放入寄存柜</string>
     <string name="confirm_taken_clothes">确认已取出衣服</string>
+    <string name="copy_pickup_code">复制取件码</string>
+    <string name="copy_success">取件码已复制</string>
 
     <!-- ==================== 枚举显示文本 ==================== -->
     <!-- 订单状态文案已随 OrderStatus/ShowOrderStatus 枚举迁 :feature:order:api（T6.1） -->
@@ -166,6 +175,7 @@
     <string name="ai_task_recharge">费用估算</string>
     <string name="ai_recent_work">最近工作</string>
     <string name="ai_empty_recent">还没有对话记录，从上面选一个任务开始</string>
+    <string name="ai_start_asking">开始提问</string>
     <string name="ai_input_placeholder">有什么可以帮你的？</string>
     <string name="ai_send">发送</string>
 </resources>

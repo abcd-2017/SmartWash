@@ -28,8 +28,8 @@ SmartWash/
 ├── SmartWash_Harmony/      # 鸿蒙 NEXT 用户端（ArkTS / ArkUI）
 ├── SmartWashWeb/           # Vue 3 Web 管理后台
 ├── smart_wash.sql          # MySQL 数据库初始化脚本（基准结构）
-└── docs/                   # 项目文档
-    ├── code-review-2026-08-28.md        # 四端深度评审报告（P0/P1/P2 问题清单）
+├── .claude/docs/           # agent 工作流文档（提交规范、共享规则、四端评审报告等）
+└── docs/                   # 本地设计资料（gitignore，不入库）
     └── 占卜模块后端与数据库架构设计.md
 ```
 
@@ -382,7 +382,7 @@ npm run dev
 
 ## 已知风险与待办
 
-详细问题清单与优先级路线图见 **[docs/code-review-2026-08-28.md](docs/code-review-2026-08-28.md)**。
+详细问题清单与优先级路线图见 **[.claude/docs/code-review-2026-08-28.md](.claude/docs/code-review-2026-08-28.md)**。
 
 ### P0（必须修复）
 

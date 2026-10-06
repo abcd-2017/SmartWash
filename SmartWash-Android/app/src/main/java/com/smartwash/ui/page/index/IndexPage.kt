@@ -2,7 +2,8 @@ package com.smartwash.ui.page.index
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,17 +19,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,10 +49,9 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.common.ui.components.AppInfoDialog
-import androidx.compose.material3.Icon
+import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState
-import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.PageConstant
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.laundry.api.LaundryRoute
@@ -68,6 +64,8 @@ import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun IndexPage(
@@ -123,9 +121,6 @@ fun IndexPage(
                         orderCount = userInfo?.orderCount ?: 0,
                         onRechargeClick = {
                             navController.navigate(PaymentRoute.Recharge.text)
-                        },
-                        onCouponClick = {
-                            navController.navigate(CouponRoute.Coupon.text)
                         }
                     )
                 }
@@ -149,11 +144,11 @@ fun IndexPage(
                         onPickupClick = {
                             navController.navigate(PageConstant.Pickup.text)
                         },
+                        onRechargeClick = {
+                            navController.navigate(PaymentRoute.Recharge.text)
+                        },
                         onCouponClick = {
                             navController.navigate(CouponRoute.Coupon.text)
-                        },
-                        onToolboxClick = {
-                            pageNavController.navigate(HomePageConstant.Service.text)
                         }
                     )
                 }
@@ -171,17 +166,22 @@ fun IndexPage(
                             text = stringResource(R.string.in_progress_orders),
                             style = AppTextStyles.SectionTitle
                         )
-                        TextButton(onClick = {
-                            navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
-                        }) {
-                            Text(
-                                stringResource(R.string.view_all),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.primary
-                            )
-                        }
+                        // 行内「查看全部」— 12sp SemiBold primary，无 ripple，48dp 热区（D-I7）
+                        Text(
+                            text = stringResource(R.string.view_all),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = AppColors.colorScheme.primary,
+                            modifier = Modifier
+                                .pressable(
+                                    onClick = rememberDebouncedClick {
+                                        navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
+                                    },
+                                    debounce = false,
+                                )
+                                .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 16.dp)
+                        )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 if (orderList.isNotEmpty()) {
@@ -228,6 +228,21 @@ fun IndexPage(
 }
 
 /**
+ * 订单状态 → hero 滚筒进度（0..1），8 态映射自旧版恢复。
+ */
+private fun orderProgress(status: String): Float = when (status) {
+    "0" -> 0.10f
+    "1" -> 0.25f
+    "2" -> 0.35f
+    "3" -> 0.55f
+    "4" -> 0.70f
+    "5" -> 0.85f
+    "6" -> 0.95f
+    "7" -> 1.00f
+    else -> 0f
+}
+
+/**
  * 首页 Hero 卡 — 品牌渐变底 + 真实订单状态驱动（规范 v3 §3.1）。
  * 显示当前订单状态、进度条，全页唯一视觉锚点。
  */
@@ -260,58 +275,54 @@ private fun StatusHeroCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 滚筒圆：同心环 + 水波线
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .border(2.5.dp, Color.White.copy(alpha = 0.32f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color.White.copy(alpha = 0.45f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocalLaundryService,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
+                // 滚筒圆 — 规范 §5 母题：同心环 + 进度弧 + 单条水波（D-I1）
+                DrumMark(
+                    size = 64.dp,
+                    progress = currentOrder?.let { orderProgress(it.status) },
+                    tint = Color.White,
+                    trackTint = Color.White.copy(alpha = 0.32f),
+                    innerRingTint = Color.White.copy(alpha = 0.45f)
+                )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = orderStatus?.descriptionRes?.let { stringResource(it) } ?: "暂无订单",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = orderStatus?.descriptionRes?.let { stringResource(it) }
+                            ?: stringResource(R.string.home_hero_no_order),
+                        style = AppTextStyles.StatusLarge,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(5.dp))
-                    Text(
-                        text = currentOrder?.let { "预计 15:00 完成 · 剩余约 40 分钟" } ?: "点击下方按钮开始预约",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.72f)
-                    )
+                    if (currentOrder != null) {
+                        Text(
+                            text = stringResource(R.string.home_hero_order_no, currentOrder.orderNo),
+                            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                            color = Color.White.copy(alpha = 0.88f)
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.home_hero_no_order_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.88f)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+
+            // 步骤标签 — stringResource 资源化，进度点行与标签行共用（D-I2 硬编码清理）
+            val steps = listOf(
+                stringResource(R.string.step_received),
+                stringResource(R.string.step_washing),
+                stringResource(R.string.step_dried),
+                stringResource(R.string.step_pickup)
+            )
 
             // 进度条
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val steps = listOf(
-                    stringResource(R.string.step_received),
-                    stringResource(R.string.step_washing),
-                    stringResource(R.string.step_dried),
-                    stringResource(R.string.step_pickup)
-                )
                 val currentStep = when (orderStatus) {
                     OrderStatus.WASHING -> 1
                     OrderStatus.DRIED -> 2
@@ -338,11 +349,11 @@ private fun StatusHeroCard(
             }
             Spacer(modifier = Modifier.height(9.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
-                listOf("已接单", "清洗中", "烘干中", "待取件").forEachIndexed { index, label ->
+                steps.forEachIndexed { index, label ->
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.72f),
+                        color = Color.White.copy(alpha = 0.78f),
                         modifier = Modifier.weight(1f),
                         textAlign = when (index) {
                             0 -> androidx.compose.ui.text.style.TextAlign.Start
@@ -366,7 +377,6 @@ private fun AccountDataCard(
     couponCount: Int,
     orderCount: Int,
     onRechargeClick: () -> Unit,
-    onCouponClick: () -> Unit,
 ) {
     Surface(
         modifier = Modifier
@@ -386,18 +396,21 @@ private fun AccountDataCard(
             Column(
                 modifier = Modifier
                     .weight(1.35f)
-                    .padding(20.dp)
+                    .pressable(onClick = rememberDebouncedClick(onClick = onRechargeClick), debounce = false)
+                    .padding(top = 18.dp, bottom = 18.dp, start = 20.dp, end = 20.dp)
             ) {
                 Text(
                     text = stringResource(R.string.account_balance_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
                     style = AppTextStyles.DataLarge,
-                    color = AppColors.colorScheme.primaryDark
+                    color = AppColors.colorScheme.primaryDark,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             // 分隔线
@@ -410,20 +423,23 @@ private fun AccountDataCard(
             // 优惠券
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(20.dp),
+                    .padding(horizontal = 12.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "$couponCount",
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = stringResource(R.string.home_available_coupons),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
             // 分隔线
@@ -436,20 +452,23 @@ private fun AccountDataCard(
             // 累计订单
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(18.dp, 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "$orderCount",
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = stringResource(R.string.home_total_orders),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.colorScheme.textSecondary,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
@@ -460,8 +479,8 @@ private fun AccountDataCard(
 private fun ServiceGrid(
     onBookingClick: () -> Unit,
     onPickupClick: () -> Unit,
+    onRechargeClick: () -> Unit,
     onCouponClick: () -> Unit,
-    onToolboxClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -474,32 +493,32 @@ private fun ServiceGrid(
             icon = Icons.Default.LocalLaundryService,
             label = stringResource(R.string.service_booking),
             containerColor = AppColors.colorScheme.iconContainerGreen,
-            iconTint = AppColors.colorScheme.primary,
+            iconTint = AppColors.colorScheme.iconForegroundGreen,
             onClick = onBookingClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalMall,
             label = stringResource(R.string.service_pickup),
-            containerColor = AppColors.colorScheme.iconContainerBlue,
-            iconTint = AppColors.colorScheme.water,
+            containerColor = AppColors.colorScheme.iconContainerOrange,
+            iconTint = AppColors.colorScheme.iconForegroundOrange,
             onClick = onPickupClick
+        )
+        ServiceEntry(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.AccountBalanceWallet,
+            label = stringResource(R.string.service_recharge),
+            containerColor = AppColors.colorScheme.iconContainerTeal,
+            iconTint = AppColors.colorScheme.iconForegroundTeal,
+            onClick = onRechargeClick
         )
         ServiceEntry(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.LocalOffer,
             label = stringResource(R.string.service_coupon),
-            containerColor = AppColors.colorScheme.iconContainerOrange,
-            iconTint = AppColors.colorScheme.primaryDark,
+            containerColor = AppColors.colorScheme.iconContainerBlue,
+            iconTint = AppColors.colorScheme.iconForegroundBlue,
             onClick = onCouponClick
-        )
-        ServiceEntry(
-            modifier = Modifier.weight(1f),
-            icon = Icons.Default.Build,
-            label = stringResource(R.string.service_toolbox),
-            containerColor = AppColors.colorScheme.iconContainerPurple,
-            iconTint = AppColors.colorScheme.textSecondary,
-            onClick = onToolboxClick
         )
     }
 }
@@ -528,8 +547,8 @@ private fun ServiceEntry(
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.colorScheme.textTertiary
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.colorScheme.textSecondary
         )
     }
 }
@@ -587,12 +606,21 @@ private fun OrderListItem(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 图标容器色按状态语义（D-I8）：清洗中→绿，其余→橙（进行中待办语义）
         IconBox(
             icon = Icons.Default.LocalLaundryService,
             size = 36.dp,
             iconSize = 18.dp,
-            containerColor = AppColors.colorScheme.iconContainerGreen,
-            iconTint = AppColors.colorScheme.primary
+            containerColor = if (orderStatus == OrderStatus.WASHING) {
+                AppColors.colorScheme.iconContainerGreen
+            } else {
+                AppColors.colorScheme.iconContainerOrange
+            },
+            iconTint = if (orderStatus == OrderStatus.WASHING) {
+                AppColors.colorScheme.iconForegroundGreen
+            } else {
+                AppColors.colorScheme.iconForegroundOrange
+            }
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -604,8 +632,8 @@ private fun OrderListItem(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.order_no_format, orderVo.orderNo),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textTertiary
+                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                color = AppColors.colorScheme.textSecondary
             )
         }
         Text(
@@ -618,24 +646,14 @@ private fun OrderListItem(
 
 @Composable
 private fun ServiceTips() {
-    Row(
+    // 服务须知 — 居中纯文字（D-I9）
+    Text(
+        text = stringResource(R.string.service_tips),
+        style = MaterialTheme.typography.labelSmall,
+        color = AppColors.colorScheme.textSecondary,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconBox(
-            icon = Icons.Default.Info,
-            size = 32.dp,
-            iconSize = 16.dp,
-            containerColor = AppColors.colorScheme.iconContainerTeal,
-            iconTint = AppColors.colorScheme.textTertiary
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = stringResource(R.string.service_tips),
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.colorScheme.textTertiary
-        )
-    }
+        textAlign = TextAlign.Center
+    )
 }

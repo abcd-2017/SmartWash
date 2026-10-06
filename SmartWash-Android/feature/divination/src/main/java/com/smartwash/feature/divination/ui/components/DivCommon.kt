@@ -43,6 +43,7 @@ import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 /**
  * 观象台公共组件：衬线样式 / 印章 / 天象头 / 页头 / 鎏金按钮 / 发丝线卡片 / 领域 chips / 脚注。
@@ -125,6 +126,8 @@ fun DivPageHeader(
     tail: String? = null,
 ) {
     val c = DivColors.current
+    // 返回箭头内置连击防抖：本模块 navigate 均无 launchSingleTop，连点会连弹/双推导航栈
+    val debouncedBack = rememberDebouncedClick(enabled = onBack != null) { onBack?.invoke() }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -140,7 +143,7 @@ fun DivPageHeader(
                 modifier = Modifier
                     .size(40.dp)
                     .padding(8.dp)
-                    .clickable(onClick = onBack),
+                    .clickable(onClick = debouncedBack),
             )
             Spacer(Modifier.width(8.dp))
         }
@@ -169,6 +172,7 @@ fun DivSectionTitle(
     onTailClick: (() -> Unit)? = null,
 ) {
     val c = DivColors.current
+    val debouncedTailClick = rememberDebouncedClick(enabled = onTailClick != null) { onTailClick?.invoke() }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -187,7 +191,7 @@ fun DivSectionTitle(
                 fontSize = 11.sp,
                 color = c.textTertiary,
                 modifier = if (onTailClick != null) {
-                    Modifier.clickable(onClick = onTailClick)
+                    Modifier.clickable(onClick = debouncedTailClick)
                 } else {
                     Modifier
                 },
@@ -209,6 +213,11 @@ fun DivGoldButton(
     val c = DivColors.current
     val interactionSource = remember { MutableInteractionSource() }
     val view = currentView()
+    // 主按钮多承载入库/导航等有副作用动作，内置连击防抖（禁用态点击不消耗防抖窗口）
+    val debouncedOnClick = rememberDebouncedClick(enabled = enabled) {
+        view.performHaptic(HapticEffect.LIGHT)
+        onClick()
+    }
     Box(
         modifier = modifier
             .height(height)
@@ -223,10 +232,8 @@ fun DivGoldButton(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 enabled = enabled,
-            ) {
-                view.performHaptic(HapticEffect.LIGHT)
-                onClick()
-            },
+                onClick = debouncedOnClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -250,6 +257,7 @@ fun DivCard(
     val c = DivColors.current
     val interactionSource = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(16.dp)
+    val debouncedCardClick = rememberDebouncedClick(enabled = onClick != null) { onClick?.invoke() }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -267,7 +275,7 @@ fun DivCard(
                     Modifier.clickable(
                         interactionSource = interactionSource,
                         indication = LocalIndication.current,
-                        onClick = onClick,
+                        onClick = debouncedCardClick,
                     )
                 } else {
                     Modifier

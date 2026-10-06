@@ -68,13 +68,13 @@ com.smartwash.feature.order.impl
 4. **PagingSource 静默结束**: `OrderPagingSource` 的 `data` 为 null 按空页处理（不抛错），与 Repository 的"null 抛 NetworkException"语义不同——故直调 `OrderServiceApi` 而非走 Repository
 5. **PAGE_SIZE 对齐服务端**: `OrderImplConstant.PAGE_SIZE = 10` 与 Paging 3 默认一致，返回条数不足一页说明已是最后一页
 6. **OrderGroup 内部模型**: `OrderGroup`（items/hasMore/total）仅 order-impl 内部使用（订单页 tab 分组加载），不进 order-api
-7. **资金链路零改动**: 预约/支付/优惠券试算等资金操作行为对齐原实现（资金链路并发竞态与幂等缺失见 `docs/code-review-2026-08-28.md` P0 项，改动前必读）
+7. **资金链路零改动**: 预约/支付/优惠券试算等资金操作行为对齐原实现（资金链路并发竞态与幂等缺失见 `.claude/docs/code-review-2026-08-28.md` P0 项，改动前必读）
 
 ## 已知坑
 
 - **PagingSource 直调 ServiceApi**: `OrderPagingSource` 直接调用 `OrderServiceApi.getOrderList` 而非走 Repository，目的是保持"null 按空页静默结束"语义——不要改为走 Repository（否则语义变为抛 NetworkException）
 - **OrderGroup 不进 api**: `OrderGroup` 是 impl 内部模型（订单页分组加载），无跨模块消费者，禁止迁入 order-api
-- **资金链路竞态**: 预约下单 / 优惠券试算 / 支付存在已知并发竞态与幂等缺失（见 `docs/code-review-2026-08-28.md` 第一章 P0），改动前必读
+- **资金链路竞态**: 预约下单 / 优惠券试算 / 支付存在已知并发竞态与幂等缺失（见 `.claude/docs/code-review-2026-08-28.md` 第一章 P0），改动前必读
 - **@Keep 注解**: 网络 VO/请求体需 `@Keep`（ProGuard 混淆），按惯例显式声明 `implementation libs.androidx.annotation`
 - **T6.2 后支付依赖**: 当前订单域不依赖 payment-impl（仅经导航跳转），T6.2 payment-impl 迁移后支付页消费 `OrderApi.getOrderInfo` / `calculationOrder`——仍为 api 层消费，本模块不变
 - **OrderServiceApi 命名**: 故意与 order-api 的 `OrderApi` 区分（避免同名冲突），模式同 user-impl 的 `UserAccountApi`

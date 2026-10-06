@@ -1,6 +1,6 @@
 # Android 端已知坑
 
-完整清单见 [code-review-2026-08-28.md](code-review-2026-08-28.md) 第二章，重点关注：
+完整清单见 [.claude/docs/code-review-2026-08-28.md](../../.claude/docs/code-review-2026-08-28.md) 第二章，重点关注：
 
 - `utils/PressFeedbackModifier.kt` 的 `pressScale/pressAlpha` 自建 InteractionSource 未接入 clickable，全项目 31 处按压反馈实际无效——修复前不要模仿该写法。
 - Room 无 migration 配置；缓存写入是 deleteAll + insertAll 无事务，改动 database/ 时需补 `@Transaction`。
