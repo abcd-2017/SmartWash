@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -126,8 +127,15 @@ fun PageHeader(
 
 // ========== 容器组件 ==========
 
+// 规范 §2.4 卡片阴影的 Compose 等价实现。CSS「0 2px 12px rgba(20,40,30,.05)」
+// 是模糊扩散模型；Compose 的 elevation 阴影是海拔投影模型且不可控模糊半径——
+// 用「3dp 海拔 + 低透明绿灰投影色」近似大扩散柔光（ambient/spot 颜色需 API 28+，minSdk 30）。
+// 1dp 描边在无阴影衬托时会读成生硬灰圈，故减半为 0.5dp 退居辅助防溢出。
+private val CardShadowAmbient = Color(0x0D14281E)  // 5% 绿黑
+private val CardShadowSpot = Color(0x1A14281E)     // 10% 绿黑
+
 /**
- * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 1px 描边 + 轻阴影）
+ * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 0.5dp 描边 + 柔和投影）
  * 用于：设置页分组、订单详情信息组、内容分区
  */
 @Composable
@@ -135,12 +143,19 @@ fun GroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+    val shape = RoundedCornerShape(AppDimens.radiusLg)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 3.dp,
+                shape = shape,
+                ambientColor = CardShadowAmbient,
+                spotColor = CardShadowSpot,
+                clip = false,
+            )
+            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding),
@@ -204,17 +219,22 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .then(
                 if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
-            ),
-        shape = shape,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+            )
+            .shadow(
+                elevation = 3.dp,
+                shape = shape,
+                ambientColor = CardShadowAmbient,
+                spotColor = CardShadowSpot,
+                clip = false,
+            )
+            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(content = content)
     }
