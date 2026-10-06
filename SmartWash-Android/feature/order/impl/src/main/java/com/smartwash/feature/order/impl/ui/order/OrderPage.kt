@@ -68,6 +68,7 @@ import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
@@ -145,7 +146,7 @@ fun OrderPage(
                     Surface(
                         modifier = Modifier
                             .height(34.dp)
-                            .pressable(onClick = { selectedPillIndex = index }),
+                            .pressable(onClick = { selectedPillIndex = index }, debounce = false),
                         shape = RoundedCornerShape(AppDimens.radiusFull),
                         color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
                         border = if (isSelected) null else BorderStroke(1.dp, AppColors.colorScheme.outline)
@@ -431,7 +432,7 @@ private fun OrderRow(
                     }
                     Spacer(Modifier.width(AppDimens.spaceXs))
                     Button(
-                        onClick = {
+                        onClick = rememberDebouncedClick {
                             view.performHaptic(HapticEffect.MEDIUM)
                             paymentClick()
                         },
@@ -442,7 +443,7 @@ private fun OrderRow(
                 }
                 ShowOrderStatus.PENDING_SHIPMENT.status -> {
                     Button(
-                        onClick = {
+                        onClick = rememberDebouncedClick {
                             view.performHaptic(HapticEffect.MEDIUM)
                             shipmentClick()
                         },
@@ -460,7 +461,7 @@ private fun OrderRow(
                 }
                 ShowOrderStatus.READY_FOR_PICKUP.status -> {
                     Button(
-                        onClick = {
+                        onClick = rememberDebouncedClick {
                             view.performHaptic(HapticEffect.MEDIUM)
                             pickupClick()
                         },

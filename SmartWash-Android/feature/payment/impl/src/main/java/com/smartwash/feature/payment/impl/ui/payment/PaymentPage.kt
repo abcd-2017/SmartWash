@@ -69,6 +69,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.rememberDebouncedClick
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -341,10 +342,12 @@ fun PaymentPage(
                             stringResource(R.string.select_coupon),
                             style = MaterialTheme.typography.headlineSmall
                         )
-                        TextButton(onClick = {
-                            showBottomSheet = false
-                            navController.navigate(CouponRoute.Coupon.text)
-                        }) {
+                        TextButton(
+                            onClick = rememberDebouncedClick {
+                                showBottomSheet = false
+                                navController.navigate(CouponRoute.Coupon.text)
+                            }
+                        ) {
                             Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.primary)
                             Spacer(Modifier.width(4.dp))
                             Icon(
@@ -376,13 +379,15 @@ fun PaymentPage(
                         count = userCouponList.size,
                         key = { i -> userCouponList[i].userCouponId }
                     ) { i ->
-                        UserCouponItem(userCouponList[i], selectedCoupon == i) {
+                        // 选券点击防抖：calculationOrder 无防重，连点重复发起重算请求
+                        val couponClick = rememberDebouncedClick {
                             selectedCoupon = i
                             showBottomSheet = false
                             if (orderId != null) {
                                 paymentViewModel.calculationOrder(orderId, userCouponList[i].userCouponId)
                             }
                         }
+                        UserCouponItem(userCouponList[i], selectedCoupon == i, itemClick = couponClick)
                     }
                 }
             }
@@ -393,6 +398,9 @@ fun PaymentPage(
         AppConfirmDialog(
             message = stringResource(R.string.confirm_pay_question),
             onConfirm = {
+                // 资金关键：立即关弹窗。原实现等 Success 回调才关窗，期间确认键持续可点，
+                // 配合后端无幂等 = 连点重复扣款入口；防抖窗口过期后的二次点击也由此阻断
+                confirmPayShow = false
                 paymentViewModel.paymentOrder(
                     orderId!!,
                     PaymentType.PURSE.type,

@@ -70,6 +70,7 @@ import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 
 @Composable
@@ -113,7 +114,9 @@ fun RechargePage(
                 title = stringResource(R.string.recharge),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    IconButton(onClick = { navController.navigate(PaymentRoute.RechargeRecord.text) }) {
+                    IconButton(
+                        onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord.text) }
+                    ) {
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = stringResource(R.string.recharge_record),

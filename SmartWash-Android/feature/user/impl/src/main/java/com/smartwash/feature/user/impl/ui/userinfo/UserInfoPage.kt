@@ -68,6 +68,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
@@ -191,7 +192,7 @@ fun UserInfoPage(
                     Box(
                         modifier = Modifier
                             .size(48.dp)
-                            .clickable { navController.navigate(UserRoute.Setting.text) },
+                            .clickable(onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) }),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -318,7 +319,7 @@ fun UserInfoPage(
                         Column(
                             modifier = Modifier
                                 .weight(1.35f)
-                                .clickable { navController.navigate(PaymentRoute.Recharge.text) },
+                                .clickable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) }),
                             horizontalAlignment = Alignment.Start
                         ) {
                             Text(
@@ -344,7 +345,7 @@ fun UserInfoPage(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { navController.navigate(CouponRoute.Coupon.text) },
+                                .clickable(onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) }),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(

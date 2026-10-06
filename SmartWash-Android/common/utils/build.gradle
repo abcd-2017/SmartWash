@@ -22,4 +22,6 @@ dependencies {
     // （版本由 SmartWashComposePlugin 引入的 BOM 统一管理）
     implementation libs.androidx.compose.animation
     implementation libs.androidx.compose.foundation
+    // ClickDebouncer 单元测试
+    testImplementation libs.junit
 }

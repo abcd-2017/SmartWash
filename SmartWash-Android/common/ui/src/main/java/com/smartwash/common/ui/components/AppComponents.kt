@@ -85,6 +85,7 @@ import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 // ========== 页面头部 ==========
 
@@ -94,6 +95,8 @@ fun PageHeader(
     onBack: (() -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
+    // 返回键内置连击防抖：PageHeader 是多数页面唯一返回入口，连点双 pop 会弹空导航栈（黑屏）
+    val debouncedBack = rememberDebouncedClick(enabled = onBack != null) { onBack?.invoke() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -103,7 +106,7 @@ fun PageHeader(
     ) {
         if (onBack != null) {
             IconButton(
-                onClick = onBack,
+                onClick = debouncedBack,
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
@@ -270,7 +273,8 @@ fun AppButton(
         )
     }
     Button(
-        onClick = onClick,
+        // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
+        onClick = rememberDebouncedClick { onClick() },
         interactionSource = interactionSource,
         modifier = modifier
             .fillMaxWidth()

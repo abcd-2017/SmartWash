@@ -32,6 +32,8 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.CouponStatus
 
 @Composable
@@ -144,7 +146,8 @@ fun CouponCard(
                         ) { Text(stringResource(R.string.claimed)) }
                     } else {
                         Button(
-                            onClick = onClaimClick,
+                            // 领券点击防抖：receiveCoupon 无 Loading 守卫，响应期间按钮始终可点
+                            onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) { onClaimClick() },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AppColors.colorScheme.primary)
                         ) {

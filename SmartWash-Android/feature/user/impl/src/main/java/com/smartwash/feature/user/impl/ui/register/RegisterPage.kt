@@ -77,8 +77,10 @@ import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.rememberDebouncedClick
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -112,6 +114,15 @@ fun RegisterPage(
 
     var countDown by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
+
+    // 连点防抖：本页返回箭头/去登录均为 popBackStack 出栈，转场残影期被重复触发会连 Login 一起弹掉，
+    // 弹空导航栈导致黑屏（已确认 bug 本体），故用比转场更长的 800ms 窗口
+    val debouncedBackClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+        navController.popBackStack()
+    }
+    val debouncedLoginClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+        navController.popBackStack()
+    }
 
     val captchaState by registerViewModel.captchaState.collectAsState()
     val registerState by registerViewModel.registerState.collectAsState()
@@ -203,7 +214,7 @@ fun RegisterPage(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clickable { navController.popBackStack() },
+                        .clickable(onClick = debouncedBackClick),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -381,7 +392,7 @@ fun RegisterPage(
 
                 // 注册按钮 — 白色背景 + 品牌深绿文字 + 阴影
                 Button(
-                    onClick = {
+                    onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         isPhoneError = !isValidPhone(phone)
                         isVerificationCodeError = verificationCode.length != 6
                         isPasswordError = password.length < 6 || password.length > 16
@@ -437,7 +448,7 @@ fun RegisterPage(
                     fontWeight = FontWeight.Medium,
                     color = AuthBottomTextActive,
                     modifier = Modifier
-                        .clickable { navController.popBackStack() }
+                        .clickable(onClick = debouncedLoginClick)
                         .padding(horizontal = 4.dp, vertical = 8.dp)
                 )
             }

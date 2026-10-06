@@ -69,11 +69,13 @@ import com.smartwash.common.ui.components.PhoneNumberInput
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.ClickDebouncer
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.rememberDebouncedClick
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
@@ -113,6 +115,10 @@ fun LoginPage(
     val loginState by loginViewModel.loginState.collectAsState()
     val loginButtonInteractionSource = remember { MutableInteractionSource() }
     val registerEntryInteractionSource = remember { MutableInteractionSource() }
+    // 连点防抖：转场残影期重复 navigate 会把 Register 压栈多次（黑屏触发点之一）
+    val debouncedRegisterClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+        navController.navigate(UserRoute.Register.text)
+    }
 
     // 已有 token 直接进首页（suspend 读取，不阻塞主线程；T5.3 起经 ViewModel 自取，
     // 不再由宿主传 SessionManager——app 壳不触碰用户域实现类型）。
@@ -270,7 +276,7 @@ fun LoginPage(
 
                 // 登录按钮 — 白色背景 + 品牌深绿文字 + 阴影
                 Button(
-                    onClick = {
+                    onClick = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
                         isPhoneError = !isValidPhone(phone)
                         isPasswordError = password.isEmpty() || password.length < 6 || password.length > 16
 
@@ -337,7 +343,8 @@ fun LoginPage(
                             interactionSource = registerEntryInteractionSource,
                             indication = null
                         ) {
-                            navController.navigate(UserRoute.Register.text)
+                            // 连点防抖：转场残影期重复 navigate 会把 Register 压栈多次（黑屏触发点之一）
+                            debouncedRegisterClick()
                         }
                         .pressScale(registerEntryInteractionSource, 0.97f)
                         .padding(horizontal = 4.dp, vertical = 8.dp)

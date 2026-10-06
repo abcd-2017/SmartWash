@@ -36,6 +36,7 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.ui.components.CompassDial
 import com.smartwash.feature.divination.ui.components.DivCard
+import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
@@ -242,13 +243,15 @@ private fun JadeTile(
 ) {
     val c = DivColors.current
     val interactionSource = remember { MutableInteractionSource() }
+    // 玉牌点击防抖：四牌并排且 navigate 无 launchSingleTop，连点会双推 Ask 页
+    val debouncedClick = rememberDebouncedClick { onClick() }
     Box(
         modifier
             .height(156.dp)
             .pressScale(interactionSource, 0.97f)
             .clip(RoundedCornerShape(16.dp))
             .background(c.surface)
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = onClick),
+            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = debouncedClick),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(desc, fontSize = 11.5.sp, lineHeight = 18.sp, color = c.textSecondary)

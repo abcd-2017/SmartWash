@@ -64,6 +64,7 @@ import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.rememberDebouncedClick
 import androidx.compose.ui.text.style.TextAlign
 
 @Composable
@@ -173,10 +174,11 @@ fun IndexPage(
                             modifier = Modifier
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
-                                }
+                                    indication = null,
+                                    onClick = rememberDebouncedClick {
+                                        navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
+                                    }
+                                )
                                 .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 16.dp)
                         )
                     }
@@ -395,7 +397,7 @@ private fun AccountDataCard(
             Column(
                 modifier = Modifier
                     .weight(1.35f)
-                    .clickable(onClick = onRechargeClick)
+                    .clickable(onClick = rememberDebouncedClick(onClick = onRechargeClick))
                     .padding(top = 18.dp, bottom = 18.dp, start = 20.dp, end = 20.dp)
             ) {
                 Text(
