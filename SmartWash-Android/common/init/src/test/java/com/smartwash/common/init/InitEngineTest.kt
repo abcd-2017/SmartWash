@@ -1,4 +1,4 @@
-package com.smartwash.core.init
+package com.smartwash.common.init
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
