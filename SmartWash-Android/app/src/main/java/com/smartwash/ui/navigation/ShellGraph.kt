@@ -16,17 +16,18 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.ui.page.PageConstant
+import com.smartwash.ui.page.ai.AiWorkPage
 import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
 
 /**
- * 壳层留守页面路由聚合（T8.1）：主页壳（HomePage）+ 订单详情/寄件取件/取件三页面
- * （T6.1/T7.1 调研结论：页面留 app 壳）的 composable 注册，自 MainActivity NavHost
+ * 壳层留守页面路由聚合（T8.1）：主页壳（HomePage）+ 订单详情/寄件取件/取件/AI 工具台
+ * 四页面（T6.1/T7.1 调研结论：页面留 app 壳）的 composable 注册，自 MainActivity NavHost
  * 迁入。路由取值：主页壳走 common:ui 的 [ShellRoute] 壳层契约；订单详情/寄件取件
- * 语义归订单域，走 order-api 的 [OrderRoute]；取件页为壳层自有常量
- * （[PageConstant.Pickup]）。
+ * 语义归订单域，走 order-api 的 [OrderRoute]；取件页/AI 工具台为壳层自有常量
+ * （[PageConstant.Pickup] / [PageConstant.AiWork]）。
  */
 fun NavGraphBuilder.shellGraph(navController: NavHostController) {
     composable(ShellRoute.HOME) {
@@ -66,6 +67,9 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
     }
     composable(PageConstant.Pickup.text) {
         PickupPage(navController)
+    }
+    composable(PageConstant.AiWork.text) {
+        AiWorkPage(onBack = { navController.popBackStack() })
     }
 }
 

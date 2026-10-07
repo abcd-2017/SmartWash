@@ -17,8 +17,8 @@ import com.smartwash.feature.divination.ui.page.reading.DivReadingPage
 /**
  * 观象台路由聚合（T8.1）：7 页面的 composable 注册自 app 壳 MainActivity
  * NavHost 迁入，宿主侧一行 [divinationGraph] 完成聚合。路由常量取模块内
- * [DivRoute]（单一事实来源；DivHome 同为主页底部问卜 tab 路由，壳层
- * HomePageConstant.Divination 委托其值）。
+ * [DivRoute]（单一事实来源）。底栏工作台 tab 落地壳层 WorkbenchPage
+ * （设计稿屏 15）后，DivHome 由工作台特色卡/卦历等入口 navigate 进入。
  */
 fun NavGraphBuilder.divinationGraph(navController: NavHostController) {
     composable(DivRoute.Home.text) {
