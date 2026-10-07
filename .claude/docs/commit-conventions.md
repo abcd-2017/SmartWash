@@ -4,12 +4,10 @@
 
 ## 格式
 
+**只写一行标题，默认不写 body。** 根因分析、修复方式、改动清单等细节写在代码注释或 PR 描述里，不进 commit message。
+
 ```
 <type>(<scope>): <描述>
-
-[可选 body]
-
-[可选 footer]
 ```
 
 ## type 取值
@@ -30,13 +28,14 @@
 
 ## scope
 
-受影响端：`Backend` / `Android` / `Harmony` / `Web` / `SQL`。跨端改动拆分提交或在描述中列明。
+受影响端：`Backend` / `Android` / `Harmony` / `Web` / `SQL`；跨仓库级改动（如本规范文档）可省略。跨端改动拆分提交或在描述中列明。
 
 ## 描述规则
 
 - **必须写解决了什么问题，不要写怎么解决问题**
   - ✅ `fix(Android): 修复点击设置页闪退`
   - ❌ `fix(Android): MainActivity 改用 hiltViewModel`
+- **单行成文**：一句话讲清主要重点，禁止多行 body、禁止 bullet 清单
 - 现在时祈使语气，<72 字符
 
 ## 破坏性变更
