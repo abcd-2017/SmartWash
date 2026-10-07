@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -392,26 +393,37 @@ private fun AccountDataCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 余额（主角）
-            Column(
+            // 余额（主角）——按可用宽度分档缩字号，窄屏不折行不溢出
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1.35f)
                     .pressable(onClick = rememberDebouncedClick(onClick = onRechargeClick), debounce = false)
                     .padding(top = 18.dp, bottom = 18.dp, start = 20.dp, end = 20.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.account_balance_label),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textSecondary
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
-                    style = AppTextStyles.DataLarge,
-                    color = AppColors.colorScheme.primaryDark,
-                    maxLines = 1,
-                    softWrap = false
-                )
+                val availableWidth = maxWidth
+                Column {
+                    Text(
+                        text = stringResource(R.string.account_balance_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                        style = when {
+                            availableWidth >= 160.dp -> AppTextStyles.DataLarge
+                            availableWidth >= 130.dp -> AppTextStyles.DataLarge.copy(
+                                fontSize = 30.sp, lineHeight = 38.sp
+                            )
+                            else -> AppTextStyles.DataLarge.copy(
+                                fontSize = 24.sp, lineHeight = 32.sp
+                            )
+                        },
+                        color = AppColors.colorScheme.primaryDark,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
             // 分隔线
             Box(

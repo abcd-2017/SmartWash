@@ -67,6 +67,7 @@
     <string name="completion_time">完成时间</string>
     <string name="pending_payment">待支付</string>
     <string name="please_pay_soon">请尽快支付</string>
+    <string name="washing_in_progress_hint">衣物正在清洗，完成后将通知您取件</string>
     <string name="pending_shipment">待寄件</string>
     <string name="please_ship_soon">请尽快去寄件</string>
     <string name="pending_pickup">待取件</string>
