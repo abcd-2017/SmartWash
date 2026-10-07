@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -130,8 +132,16 @@ fun PageHeader(
 // 是模糊扩散模型；Compose 的 elevation 阴影是海拔投影模型且不可控模糊半径——
 // 用「3dp 海拔 + 低透明绿灰投影色」近似大扩散柔光（ambient/spot 颜色需 API 28+，minSdk 30）。
 // 1dp 描边在无阴影衬托时会读成生硬灰圈，故减半为 0.5dp 退居辅助防溢出。
-private val CardShadowAmbient = Color(0x0D14281E)  // 5% 绿黑
-private val CardShadowSpot = Color(0x1A14281E)     // 10% 绿黑
+// 深色按 §6.5 换纯黑系 rgba(0,0,0,.28)——绿黑投影在深色底上会染出脏灰。
+private val CardShadowAmbientLight = Color(0x0D14281E)  // 5% 绿黑
+private val CardShadowSpotLight = Color(0x1A14281E)     // 10% 绿黑
+private val CardShadowAmbientDark = Color(0x24000000)   // 14% 黑（ambient 仍为 spot 的一半）
+private val CardShadowSpotDark = Color(0x47000000)      // 28% 黑
+
+@Composable
+private fun cardShadowColors(): Pair<Color, Color> =
+    if (isSystemInDarkTheme()) CardShadowAmbientDark to CardShadowSpotDark
+    else CardShadowAmbientLight to CardShadowSpotLight
 
 /**
  * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 0.5dp 描边 + 柔和投影）
@@ -143,14 +153,15 @@ fun GroupCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
+    val (shadowAmbient, shadowSpot) = cardShadowColors()
     Box(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 3.dp,
                 shape = shape,
-                ambientColor = CardShadowAmbient,
-                spotColor = CardShadowSpot,
+                ambientColor = shadowAmbient,
+                spotColor = shadowSpot,
                 clip = false,
             )
             .border(0.5.dp, AppColors.colorScheme.outline, shape)
@@ -218,6 +229,7 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
+    val (shadowAmbient, shadowSpot) = cardShadowColors()
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -228,8 +240,8 @@ fun AppCard(
             .shadow(
                 elevation = 3.dp,
                 shape = shape,
-                ambientColor = CardShadowAmbient,
-                spotColor = CardShadowSpot,
+                ambientColor = shadowAmbient,
+                spotColor = shadowSpot,
                 clip = false,
             )
             .border(0.5.dp, AppColors.colorScheme.outline, shape)
@@ -396,7 +408,7 @@ fun EmptyState(
     message: String,
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
-    useDrumMark: Boolean = false,
+    useDrumMark: Boolean = true,
 ) {
     // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
     val reduceMotion = LocalReduceMotion.current
@@ -791,6 +803,8 @@ fun AppInputDialog(
                                 Text(errorMessage)
                             }
                         },
+                        // §3.7：输入正文禁用 14sp 及以下，覆盖 M3 默认
+                        textStyle = LocalTextStyle.current.copy(fontSize = 16.sp),
                         singleLine = true,
                         isError = isError,
                         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

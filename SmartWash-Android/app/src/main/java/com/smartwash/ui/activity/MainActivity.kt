@@ -41,6 +41,7 @@ import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
+import com.smartwash.feature.toolbox.ui.toolboxGraph
 import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.ui.UpdateViewModel
 import com.smartwash.feature.user.api.UserApi
@@ -191,6 +192,8 @@ class MainActivity : ComponentActivity() {
                             laundryGraph(navController)
                             couponGraph(navController)
                             divinationGraph(navController)
+                            // 工具箱短链（独立路由，暂无工作台入口；接入点见对接文档 TODO）
+                            toolboxGraph(navController)
                         }
                     }
                 }

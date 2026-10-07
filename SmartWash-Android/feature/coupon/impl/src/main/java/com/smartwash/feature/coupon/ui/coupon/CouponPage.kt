@@ -300,8 +300,9 @@ private val TicketShape = object : Shape {
         density: Density
     ): Outline {
         val path = Path().apply {
-            val notchRadius = 7f
-            val rightNotchX = 88f
+            // 打孔坐标与面额区 88dp 同源换算（裸像素在 density>1 时会偏离面额区右缘与虚线）
+            val notchRadius = with(density) { 7.dp.toPx() }
+            val rightNotchX = with(density) { 88.dp.toPx() }
             val centerY = size.height / 2
 
             // 从左上角开始

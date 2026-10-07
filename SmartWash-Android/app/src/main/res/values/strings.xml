@@ -67,6 +67,7 @@
     <string name="completion_time">完成时间</string>
     <string name="pending_payment">待支付</string>
     <string name="please_pay_soon">请尽快支付</string>
+    <string name="washing_in_progress_hint">衣物正在清洗，完成后将通知您取件</string>
     <string name="pending_shipment">待寄件</string>
     <string name="please_ship_soon">请尽快去寄件</string>
     <string name="pending_pickup">待取件</string>
@@ -178,4 +179,25 @@
     <string name="ai_start_asking">开始提问</string>
     <string name="ai_input_placeholder">有什么可以帮你的？</string>
     <string name="ai_send">发送</string>
+
+    <!-- ==================== 工作台（底栏 tab 根页，设计稿屏 15） ==================== -->
+    <string name="workbench_title">工作台</string>
+    <string name="workbench_subtitle">小工具，慢慢加</string>
+    <string name="workbench_divination_name">观象台</string>
+    <string name="workbench_divination_subtitle">六爻 · 梅花 · 奇门 · 大六壬</string>
+    <string name="workbench_all_tools">全部工具</string>
+    <string name="workbench_tool_calendar">洗衣黄历</string>
+    <string name="workbench_tool_calendar_desc">今天宜洗什么颜色</string>
+    <string name="workbench_tool_stain">渍迹识别</string>
+    <string name="workbench_tool_stain_desc">拍照认污渍类型</string>
+    <string name="workbench_tool_fabric">面料百科</string>
+    <string name="workbench_tool_fabric_desc">什么面料怎么洗</string>
+    <string name="workbench_tool_estimate">费用估算</string>
+    <string name="workbench_tool_estimate_desc">洗之前先算个账</string>
+    <string name="workbench_tool_history">我的卦历</string>
+    <string name="workbench_tool_history_desc">起过的卦都在这里</string>
+    <string name="workbench_tool_ai">AI 助手</string>
+    <string name="workbench_tool_ai_desc">洗护问题随口问</string>
+    <string name="workbench_footer">工具会陆续加进来</string>
+    <string name="workbench_coming_soon">功能建设中，敬请期待</string>
 </resources>

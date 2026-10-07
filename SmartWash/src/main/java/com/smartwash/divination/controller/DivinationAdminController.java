@@ -8,10 +8,12 @@ import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivModelConfig;
 import com.smartwash.divination.entity.DivPlatformSetting;
 import com.smartwash.divination.entity.DivPromptVersion;
+import com.smartwash.divination.entity.DivRagDocument;
 import com.smartwash.divination.entity.DivUsageDaily;
 import com.smartwash.divination.from.RagUploadFrom;
 import com.smartwash.divination.mapper.DivBlockedQuestionMapper;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
+import com.smartwash.divination.mapper.DivRagDocumentMapper;
 import com.smartwash.divination.mapper.DivUsageDailyMapper;
 import com.smartwash.divination.service.DivModelConfigService;
 import com.smartwash.divination.service.DivPlatformSettingService;
@@ -21,6 +23,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -45,6 +48,7 @@ public class DivinationAdminController {
     private final DivModelConfigService modelConfigService;
     private final DivPlatformSettingService platformSettingService;
     private final DivBlockedQuestionMapper blockedQuestionMapper;
+    private final DivRagDocumentMapper ragDocumentMapper;
 
     @Operation(summary = "用量看板", description = "按日期范围查询每日用量统计")
     @GetMapping("/usage")
@@ -100,6 +104,23 @@ public class DivinationAdminController {
     }
 
     // ==================== RAG 语料管理 ====================
+
+    @Operation(summary = "古籍文档列表", description = "分页查询已上传的古籍语料")
+    @GetMapping("/rag/documents")
+    public Result<Page<DivRagDocument>> listRagDocuments(
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "method", required = false) String method,
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "20") Integer size) {
+        Page<DivRagDocument> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<DivRagDocument> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(title)) wrapper.like(DivRagDocument::getTitle, title);
+        if (StringUtils.hasText(method)) wrapper.eq(DivRagDocument::getMethod, method);
+        if (status != null) wrapper.eq(DivRagDocument::getStatus, status);
+        wrapper.orderByDesc(DivRagDocument::getCreatedAt);
+        return Result.ok(ragDocumentMapper.selectPage(pageObj, wrapper));
+    }
 
     @Operation(summary = "上传古籍文档", description = "上传并切片（触发异步 Embedding）")
     @PostMapping("/rag/documents")

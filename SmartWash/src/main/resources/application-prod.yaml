@@ -44,3 +44,7 @@ minio:
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   bucket-name: ${MINIO_BUCKET}
+
+# 工作台工具箱：短码对外跳转域名必须显式注入（拼 {base}/web/t/{code}），禁止 127.0.0.1 兜底上生产
+toolbox:
+  public-base-url: ${TOOLBOX_PUBLIC_BASE_URL}

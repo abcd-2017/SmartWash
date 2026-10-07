@@ -27,6 +27,8 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.es2021,
+        // vite.config.js define 编译期注入的后端地址全局（http.js 使用）
+        __SMART_WASH_BASE_URL__: 'readonly',
       },
     },
     rules: {

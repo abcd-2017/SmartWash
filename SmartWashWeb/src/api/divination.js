@@ -1,6 +1,7 @@
 // src/api/divination.js
 // 观象台（占卜模块）管理端 API 层
-// 接口路径与后端 DivinationAdminController 完全匹配（/admin/div/**，ROLE_ADMIN）
+// 接口路径与后端 DivinationAdminController 对齐（/admin/div/**，ROLE_ADMIN）。
+// 注意：Prompt/模型的保存接口是 POST 增改合一（body 带 id 即更新），后端没有 PUT /{id} 端点。
 import request from '@/utils/http';
 
 // ---------- Prompt 管理 ----------
@@ -22,9 +23,9 @@ export function createPrompt(data) {
 
 export function updatePrompt(id, data) {
   return request({
-    url: `/admin/div/prompts/${id}`,
-    method: 'put',
-    data,
+    url: '/admin/div/prompts',
+    method: 'post',
+    data: { ...data, id },
   });
 }
 
@@ -98,9 +99,9 @@ export function createModel(data) {
 
 export function updateModel(id, data) {
   return request({
-    url: `/admin/div/models/${id}`,
-    method: 'put',
-    data,
+    url: '/admin/div/models',
+    method: 'post',
+    data: { ...data, id },
   });
 }
 

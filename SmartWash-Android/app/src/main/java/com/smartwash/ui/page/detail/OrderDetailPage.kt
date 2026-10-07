@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -105,12 +106,15 @@ fun OrderDetailPage(
         if (getOrderDetailState is RequestState.Loading) {
             LoadingState(modifier = Modifier.fillMaxSize())
         } else {
+        // 内容列 weight(1f) + 操作条顺序排布：内容不被固定条遮挡，让位高度动态（D-OD5）
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                // 底部固定操作条让位 88dp（D-OD5），防止内容被遮挡
-                .padding(bottom = 88.dp)
         ) {
             PageHeader(title = stringResource(R.string.order_detail), onBack = { navController.navigateUp() })
 
@@ -182,9 +186,8 @@ fun OrderDetailPage(
             }
         }
 
-        // 底部固定操作条（设计稿屏 6：border-top + surface 底 + padding 16/24，D-OD5/6/7）
+        // 底部操作条（设计稿屏 6：border-top + surface 底 + padding 16/24，D-OD5/6/7）
         OrderDetailActionBar(
-            modifier = Modifier.align(Alignment.BottomCenter),
             onContactServiceClick = {
                 // 待客服功能立项后接入（D-OD12，用户已确认：先以 Toast 兜底）
                 Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
@@ -202,6 +205,7 @@ fun OrderDetailPage(
                 }
             }
         )
+        }
         }
 
         // 取件码弹窗（D-OD1）：柜号 + 取件码，承载旧版寄存柜信息卡的全部信息
@@ -343,7 +347,7 @@ private fun OrderStatusHeader(status: OrderStatus?) {
             R.string.pending_payment, AppColors.colorScheme.warning, R.string.please_pay_soon
         )
         OrderStatus.WASHING -> OrderStatusInfo(
-            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, R.string.please_pay_soon
+            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, R.string.washing_in_progress_hint
         )
         OrderStatus.PENDING_SHIPMENT -> OrderStatusInfo(
             R.string.pending_shipment, AppColors.colorScheme.primary, R.string.please_ship_soon
@@ -483,6 +487,7 @@ private fun OrderDetailActionBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {

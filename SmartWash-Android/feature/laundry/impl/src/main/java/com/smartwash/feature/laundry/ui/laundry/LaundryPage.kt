@@ -57,6 +57,7 @@ import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.defaultSpring
@@ -253,7 +254,7 @@ fun LaundryPage(
                             )
                             Text(
                                 text = stringResource(R.string.currency_format, totalPrice.toString()),
-                                style = MaterialTheme.typography.headlineLarge,
+                                style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primary
                             )
                         }
@@ -364,7 +365,7 @@ private fun LaundryTypeItem(
             Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.End) {
                 Text(
                     text = price,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primary
                 )
             }

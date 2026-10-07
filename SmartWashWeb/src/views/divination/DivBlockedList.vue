@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { getBlockedList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';

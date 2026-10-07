@@ -280,8 +280,7 @@ fun OrderPage(
                     } else {
                         EmptyState(
                             icon = Icons.Default.LocalLaundryService,
-                            message = stringResource(R.string.no_orders),
-                            useDrumMark = true
+                            message = stringResource(R.string.no_orders)
                         )
                     }
                 }

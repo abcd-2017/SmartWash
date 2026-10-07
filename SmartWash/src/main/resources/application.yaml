@@ -90,3 +90,8 @@ security:
   # 仅当请求的 TCP 直连地址落在该网段内，登录 IP 解析才采信 X-Forwarded-For / X-Real-IP；
   # 直连部署（当前 demo 形态）保持为空，否则客户端可伪造头部绕过 IP 登录锁定或定向锁定他人出口 IP
   trusted-proxy-cidrs:
+
+# 工作台工具箱配置
+toolbox:
+  # 短码对外完整跳转 URL 的域名前缀（拼 {base}/web/t/{code}），生产必须通过 TOOLBOX_PUBLIC_BASE_URL 注入真实域名
+  public-base-url: ${TOOLBOX_PUBLIC_BASE_URL:http://127.0.0.1:8080}
