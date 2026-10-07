@@ -29,20 +29,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.graphics.PathParser
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.asComposePath
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.HapticEffect
@@ -257,42 +257,46 @@ private fun AnimatedBottomNavIcon(
         }
     }
 
-    val strokeWidth = with(LocalDensity.current) { 2.dp.toPx() }
     val brandColor = AppColors.colorScheme.primaryDark
     val grayColor = AppColors.colorScheme.textSecondary
 
     Canvas(modifier = modifier) {
-        val totalProgress = progress.value * 600f
-        val drawOnProgress = (totalProgress / 400f).coerceIn(0f, 1f)
-        val strokeAlpha = when {
-            totalProgress < 400f -> 1f
-            totalProgress < 600f -> 1f - (totalProgress - 400f) / 200f
-            else -> 0f
-        }
-        val grayAlpha = when {
-            totalProgress < 140f -> 1f
-            totalProgress < 170f -> 1f - (totalProgress - 140f) / 30f
-            else -> 0f
-        }
-        val brandAlpha = when {
-            totalProgress < 170f -> 0f
-            totalProgress < 200f -> (totalProgress - 170f) / 30f
-            else -> 1f
-        }
-        if (grayAlpha > 0f) {
-            drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
-        }
-        if (brandAlpha > 0f) {
-            drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
-        }
-        if (drawOnProgress > 0f && strokeAlpha > 0f) {
-            val segment = Path()
-            pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
-            drawPath(
-                path = segment,
-                color = brandColor.copy(alpha = strokeAlpha),
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
+        // 路径坐标是 24 网格（§4.5），按画布尺寸换算密度缩放，否则 density>1 时图标缩小且左上偏移
+        val scaleFactor = size.minDimension / 24f
+        scale(scaleFactor, scaleFactor, pivot = Offset.Zero) {
+            val totalProgress = progress.value * 600f
+            val drawOnProgress = (totalProgress / 400f).coerceIn(0f, 1f)
+            val strokeAlpha = when {
+                totalProgress < 400f -> 1f
+                totalProgress < 600f -> 1f - (totalProgress - 400f) / 200f
+                else -> 0f
+            }
+            val grayAlpha = when {
+                totalProgress < 140f -> 1f
+                totalProgress < 170f -> 1f - (totalProgress - 140f) / 30f
+                else -> 0f
+            }
+            val brandAlpha = when {
+                totalProgress < 170f -> 0f
+                totalProgress < 200f -> (totalProgress - 170f) / 30f
+                else -> 1f
+            }
+            if (grayAlpha > 0f) {
+                drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
+            }
+            if (brandAlpha > 0f) {
+                drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
+            }
+            if (drawOnProgress > 0f && strokeAlpha > 0f) {
+                val segment = Path()
+                pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
+                drawPath(
+                    path = segment,
+                    color = brandColor.copy(alpha = strokeAlpha),
+                    // 描边宽同为 24 网格单位，随 scale 变换缩放到物理像素
+                    style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
         }
     }
 }
