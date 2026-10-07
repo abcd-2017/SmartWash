@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
@@ -26,8 +27,9 @@ import javax.inject.Named
 /**
  * APK 后台下载 Worker
  * 通过 WorkManager 调度，下载更新包到 cacheDir，每 5% 回调进度。
- * 前台服务通知：Android 12+ 通过 setForegroundAsync 提升为前台服务，
- * 在通知栏展示下载进度，防止下载被系统杀死。
+ * 前台服务通知：经 setForeground 提升为前台服务在通知栏展示下载进度，防止下载被系统杀死；
+ * targetSdk 34+ 前台服务必须带类型启动，类型统一由 buildForegroundInfo 注入
+ * （清单侧 SystemForegroundService 的 foregroundServiceType=dataSync 声明见 :feature:update Manifest）。
  */
 @HiltWorker
 class ApkDownloadWorker @AssistedInject constructor(
@@ -53,7 +55,17 @@ class ApkDownloadWorker @AssistedInject constructor(
 
         // 通知 ID（固定，保证进度更新是同一通知）
         private const val NOTIFICATION_ID = 0x1001
+
+        // 前台服务类型（minSdk 30，常量可直接引用；须与 Manifest 声明一致）
+        private const val FGS_TYPE = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
     }
+
+    /**
+     * WorkManager 在系统恢复/提升前台（如 expedited 调度、进程死亡重投递）时，
+     * 经本方法获取前台信息；未覆写时基类抛 IllegalStateException。
+     */
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        buildForegroundInfo(buildProgressNotification(0, 0L, 0L))
 
     override suspend fun doWork(): Result {
         val apkUrl = inputData.getString(KEY_APK_URL)
@@ -67,22 +79,22 @@ class ApkDownloadWorker @AssistedInject constructor(
             // 清理旧文件
             if (apkFile.exists()) apkFile.delete()
 
-            // 创建通知渠道 + 启动前台服务（Android 12+ 必须调用 setForegroundAsync）
+            // 创建通知渠道 + 提升为前台服务
             createNotificationChannel()
-            setForeground(ForegroundInfo(NOTIFICATION_ID, buildProgressNotification(0, 0L, 0L)))
+            setForeground(buildForegroundInfo(buildProgressNotification(0, 0L, 0L)))
 
             val request = Request.Builder().url(apkUrl).build()
             val response = okHttpClient.newCall(request).execute()
 
             if (!response.isSuccessful) {
                 val errorMsg = "下载失败: HTTP ${response.code}"
-                setForeground(ForegroundInfo(NOTIFICATION_ID, buildFailedNotification(errorMsg)))
+                setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
             }
 
             val body = response.body ?: run {
                 val errorMsg = "下载失败: 空响应体"
-                setForeground(ForegroundInfo(NOTIFICATION_ID, buildFailedNotification(errorMsg)))
+                setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
             }
 
@@ -105,8 +117,7 @@ class ApkDownloadWorker @AssistedInject constructor(
                                 lastReportedProgress = progress
                                 setProgress(workDataOf(KEY_PROGRESS to progress))
                                 // 更新通知栏进度
-                                setForeground(ForegroundInfo(
-                                    NOTIFICATION_ID,
+                                setForeground(buildForegroundInfo(
                                     buildProgressNotification(progress, downloadedBytes, totalBytes)
                                 ))
                             }
@@ -122,16 +133,13 @@ class ApkDownloadWorker @AssistedInject constructor(
                 if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
                     apkFile.delete()
                     val errorMsg = "文件校验失败，SHA256 不匹配"
-                    setForeground(ForegroundInfo(NOTIFICATION_ID, buildFailedNotification(errorMsg)))
+                    setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                     return Result.failure(workDataOf(KEY_ERROR to errorMsg))
                 }
             }
 
             // 下载完成：展示完成通知（点击可触发安装，由 UpdateFlow 监听 SUCCEEDED 状态处理）
-            setForeground(ForegroundInfo(
-                NOTIFICATION_ID,
-                buildCompleteNotification(versionName)
-            ))
+            setForeground(buildForegroundInfo(buildCompleteNotification(versionName)))
 
             // 下载完成，返回文件路径
             return Result.success(
@@ -148,10 +156,19 @@ class ApkDownloadWorker @AssistedInject constructor(
             // 失败时删除残件
             if (apkFile.exists()) apkFile.delete()
             val errorMsg = e.message ?: "下载失败"
-            setForeground(ForegroundInfo(NOTIFICATION_ID, buildFailedNotification(errorMsg)))
+            setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
             return Result.failure(workDataOf(KEY_ERROR to errorMsg))
         }
     }
+
+    /**
+     * 构建携带 dataSync 类型的 ForegroundInfo。
+     * targetSdk 34+ 启动前台服务必须显式携带类型，且类型须为清单
+     * SystemForegroundService foregroundServiceType 声明的子集，二者缺一即抛
+     * InvalidForegroundServiceTypeException；所有 setForeground 调用点必须经此构造。
+     */
+    private fun buildForegroundInfo(notification: Notification): ForegroundInfo =
+        ForegroundInfo(NOTIFICATION_ID, notification, FGS_TYPE)
 
     /**
      * 创建通知渠道（Android 8.0+ 必需；已存在则幂等）

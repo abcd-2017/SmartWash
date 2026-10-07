@@ -66,3 +66,4 @@ com.smartwash.feature.update
 4. **OkHttp 直传**：`ApkDownloadWorker` 直接消费 OkHttp（非 Retrofit），`libs.okhttp` 须显式声明；下载大文件注意 `kotlinx.coroutines.yield()` 让出线程。
 5. **FileProvider 配置**：`ApkInstaller` 走 `${packageName}.fileprovider`，壳层 Manifest 须声明对应 `<provider>` + `file_paths.xml` 包含 `cache-path`；缺失则安装 Intent 抛 FileUriExposedException。
 6. **forceUpdate 分流**：`UpdateAvailable.version.forceUpdate = true` 为强制更新，壳层沿用 4 态弹窗分流；本期逻辑在壳层 `UpdateFlow`，本模块不处理 UI 分支。
+7. **前台服务类型双声明缺一即崩（targetSdk 34+）**：`setForeground` 的 `ForegroundInfo` 必须携带 `FOREGROUND_SERVICE_TYPE_DATA_SYNC`（所有调用点统一走 `buildForegroundInfo`），且本模块 Manifest 须覆盖声明 `SystemForegroundService` 的 `foregroundServiceType="dataSync"`——WorkManager 自带清单未声明任何类型，两处缺一即抛 `InvalidForegroundServiceTypeException`；且 `SystemForegroundService` 以 `START_REDELIVER_INTENT` 运行，残留的下载任务会让 App 每次冷启动即崩（崩溃循环），修复时勿漏改任何一处 `setForeground` 调用点。
