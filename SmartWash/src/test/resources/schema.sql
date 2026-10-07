@@ -169,3 +169,35 @@ CREATE TABLE IF NOT EXISTS order_reviews (
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (review_id)
 );
+
+-- 短码内核主表（工作台工具箱，字段全集对齐 smart_wash.sql 的 toolbox_short_code，去 MySQL 方言）
+CREATE TABLE IF NOT EXISTS toolbox_short_code (
+    id              bigint NOT NULL AUTO_INCREMENT,
+    code            varchar(16) NOT NULL,
+    content_type    tinyint DEFAULT 1,
+    target          varchar(2048) DEFAULT NULL,
+    content         text DEFAULT NULL,
+    owner_user_id   bigint NOT NULL,
+    is_public       tinyint DEFAULT 1,
+    password_hash   varchar(64) DEFAULT NULL,
+    burn_after_read tinyint DEFAULT 0,
+    unlock_at       datetime DEFAULT NULL,
+    expire_at       datetime DEFAULT NULL,
+    max_visits      bigint DEFAULT NULL,
+    click_count     bigint DEFAULT 0,
+    created_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_code UNIQUE (code)
+);
+
+-- 短码访问明细表（与主表解耦，无外键）
+CREATE TABLE IF NOT EXISTS toolbox_short_visit (
+    id         bigint NOT NULL AUTO_INCREMENT,
+    code       varchar(16) NOT NULL,
+    ip_hash    varchar(8) DEFAULT NULL,
+    user_agent varchar(512) DEFAULT NULL,
+    referer    varchar(512) DEFAULT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);

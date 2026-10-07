@@ -1156,4 +1156,48 @@ CREATE TABLE `div_user_api_config` (
   UNIQUE KEY `uk_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户自带API(BYOK)';
 
+-- =====================================================================
+-- 工作台工具箱（短链内核）—— 2 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for toolbox_short_code（短码内核主表）
+-- ----------------------------
+DROP TABLE IF EXISTS `toolbox_short_code`;
+CREATE TABLE `toolbox_short_code` (
+  `id`              BIGINT        NOT NULL AUTO_INCREMENT,
+  `code`            VARCHAR(16)   NOT NULL COMMENT '短码:7位随机或4-16位自定义别名',
+  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊',
+  `target`          VARCHAR(2048) NULL COMMENT '类型1/2:目标长链;类型4:MinIO对象名',
+  `content`         MEDIUMTEXT    NULL COMMENT '类型3/5:文本正文(交付箱密文/胶囊内容)',
+  `owner_user_id`   BIGINT        NOT NULL COMMENT 'users.id',
+  `is_public`       TINYINT       NOT NULL DEFAULT 1 COMMENT '1公开 2私有;私有仅owner可解析,匿名一律404',
+  `password_hash`   VARCHAR(64)   NULL COMMENT '类型3访问密码(BCrypt),其余NULL',
+  `burn_after_read` TINYINT       NOT NULL DEFAULT 0 COMMENT '类型3:阅后即焚(读取后内容即毁)',
+  `unlock_at`       DATETIME      NULL COMMENT '类型5解锁时刻,NULL不锁,读路径判断',
+  `expire_at`       DATETIME      NULL COMMENT '过期时刻,NULL永不过期,读路径判断',
+  `max_visits`      BIGINT        NULL COMMENT '访问上限,NULL不限(shlink maxVisits)',
+  `click_count`     BIGINT        NOT NULL DEFAULT 0 COMMENT '累计跳转点击',
+  `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`),
+  KEY `idx_owner_time` (`owner_user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-短码内核';
+
+-- ----------------------------
+-- Table structure for toolbox_short_visit（访问明细,与主表解耦）
+-- ----------------------------
+DROP TABLE IF EXISTS `toolbox_short_visit`;
+CREATE TABLE `toolbox_short_visit` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+  `code`        VARCHAR(16)  NOT NULL COMMENT '短码(冗余,不随主表删除级联)',
+  `ip_hash`     CHAR(8)      NULL COMMENT 'IP摘要前8位,不存明文',
+  `user_agent`  VARCHAR(512) NULL,
+  `referer`     VARCHAR(512) NULL,
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code_time` (`code`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-短码访问明细';
+
 SET FOREIGN_KEY_CHECKS = 1;
