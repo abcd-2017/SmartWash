@@ -46,6 +46,14 @@
 ### 编码阶段：分步提交
 每完成一个逻辑步骤 commit 一次，使用 `commit-commands:commit` skill。
 
+### 测试文件禁止提交（所有端，无需用户重复强调）
+测试代码与测试资源（各端 `src/test/`、`src/androidTest/`、`__tests__/` 等目录下的新增文件）仅在本地编写与运行作验证用，**一律不纳入 commit**：`git add` 时逐文件排除并经 `git status` 自查；不得为此改动 `.gitignore`（仓库存在存量测试目录）。仅当用户明确要求测试入库时才例外。
+
+### 提交范围纪律（禁止扫盘式提交）
+- **禁止** `git add -A` / `git add .` / `git commit -a` / 不带 pathspec 直接 `git commit`——暂存区可能含有用户主动暂存、暂不提交的内容，扫盘式操作会把它们一并提交；
+- 必须按本次任务文件清单**逐文件** `git add <path>`，提交前 `git status` 核对暂存区只含清单内文件；发现任务无关的已暂存/已修改内容，保持原样、不得提交、不得擅自 unstage；
+- **`.gitignore` 对已被跟踪的文件无效**：发现「应忽略却被跟踪」的文件，先 `git rm --cached <path>` 取消跟踪并单独提交（注意：`git commit -- <path>` 取工作树状态，不能用来提交删除跟踪，须以暂存内容提交）。
+
 ### 任务完成后：squash 压缩（必须执行）
 全部完成后执行 `git rebase -i main`，每个独立功能/修复最终保留 1 个 commit。
 

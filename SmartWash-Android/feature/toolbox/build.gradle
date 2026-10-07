@@ -1,0 +1,44 @@
+// :feature:toolbox —— 工具箱子系统（单模块，照 :feature:divination 先例）。
+// 首批交付短链管理独立页面（列表/创建/详情），暂不接入工作台入口：
+// 路由常量 ToolboxRoute 为模块内单一事实来源，经 app 壳 NavHost 聚合注册
+// （MainActivity NavHost 一行 toolboxGraph，工作台改造时由 Hub 跳转 ToolboxRoute.List）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.toolbox'
+}
+
+dependencies {
+    // 响应信封 ApiResult/PageData、RequestState、pagingFlow、二维码生成、
+    // 动效降级 LocalReduceMotion/motionSpec、按压反馈 pressable
+    implementation project(':common:utils')
+    // Retrofit（api 传递）+ @RequireAuthorization（ToolboxApi 消费，
+    // 鉴权/错误转译拦截器经 common:network 的 NetworkModule 自动生效）
+    implementation project(':common:network')
+    // 清氧设计系统 theme + 共享组件（PageHeader/AppCard/AppButton/EmptyState/InfoRow/SkeletonList）
+    implementation project(':common:ui')
+
+    // ViewModel 基类 + viewModelScope + SavedStateHandle
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（传递 lifecycle-viewmodel-savedstate）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面间跳转）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（Column/LazyColumn/PullToRefresh 等；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 动效（页面不自写动效，共享组件内部消费；保留与 divination 同基线）
+    implementation libs.androidx.compose.animation
+    // 分页（ShortCodePagingSource/ShortCodeStatsPagingSource + collectAsLazyPagingItems）
+    implementation libs.androidx.paging.runtime.ktx
+    implementation libs.androidx.paging.compose
+    // 图标（Icons.Rounded.Link 等，Material 内置；规范 §4.1 禁外部图标库）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（ToolboxApi 的请求/返回体；common:model 的 annotation 不传递）
+    implementation libs.androidx.annotation
+
+    // JVM 单测（短码校验/过期计算/分页源/ViewModel RequestState 流转）
+    testImplementation libs.junit
+    testImplementation libs.kotlinx.coroutines.test
+}

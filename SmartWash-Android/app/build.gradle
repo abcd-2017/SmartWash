@@ -181,4 +181,8 @@ dependencies {
     //优惠券域实现（T7.2）：优惠券网络链路与优惠券页迁入；app 壳仅剩 NavHost 页面注册
     //（CouponPage，T8.1 拆聚合后摘除）；CouponSource seam 与 PaymentImplSeamModule 已删
     implementation project(":feature:coupon:impl")
+
+    //工具箱子系统（短链首批）：列表/创建/详情独立路由，经 MainActivity NavHost 一行
+    //toolboxGraph 聚合；暂无工作台入口，接入点见 SmartWash-Android/docs/短链工具箱对接文档.md
+    implementation project(":feature:toolbox")
 }
