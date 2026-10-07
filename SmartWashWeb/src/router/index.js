@@ -161,6 +161,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 工具箱管理 =====
+      {
+        path: '/toolbox/short-codes',
+        name: 'ShortCodeList',
+        component: () => import('@/views/toolbox/ShortCodeList.vue'),
+        meta: {
+          title: '短链管理',
+          showInMenu: true,
+          icon: 'Link',
+          requiresAuth: true,
+        },
+      },
       // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',

@@ -74,7 +74,6 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
-import { ElMessage } from 'element-plus';
 import { queryCaptcha } from '@/api/captcha';
 
 const PHONE_REGEX = /^(\+86)?1[3-9]\d{9}$/;
@@ -105,9 +104,9 @@ async function handleQuery() {
   try {
     const data = await queryCaptcha(phone);
     result.value = data;
-  } catch (err) {
-    // 后端返回的错误（code !== 200）已由 http.js 拦截器 ElMessage.error 提示，
-    // 此处无需重复提示，仅清空结果保持 UI 一致
+  } catch {
+    // 查询失败静默处理：HTTP 层错误已由 http.js 拦截器统一 ElMessage 提示；
+    // 业务失败（code !== 200）拦截器仅 reject 不提示，这里仅清空结果保持 UI 一致
   } finally {
     loading.value = false;
   }

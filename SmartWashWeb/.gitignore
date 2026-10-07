@@ -5,6 +5,9 @@ node_modules/
 dist/
 coverage/
 
+# 测试用例仅本地运行，不入库
+src/__tests__/
+
 # 本地环境文件
 *.local
 
