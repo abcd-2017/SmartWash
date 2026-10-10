@@ -62,6 +62,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
@@ -135,10 +136,9 @@ fun OrderDetailPage(
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = stringResource(R.string.progress_timeline),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = AppTextStyles.SectionTitle,
                             color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(bottom = 18.dp)
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
                         ProgressTimeline(
                             currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1"),
@@ -248,7 +248,7 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
     // 确定当前节点索引
     val currentIndex = nodes.indexOfFirst { it == currentStatus }.coerceAtLeast(0)
 
-    Column(modifier = Modifier.padding(start = 26.dp)) {
+    Column(modifier = Modifier.padding(start = 24.dp)) {
         nodes.forEachIndexed { index, node ->
             val isDone = index < currentIndex
             val isCurrent = index == currentIndex
@@ -303,13 +303,13 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(
-                    modifier = Modifier.padding(bottom = if (isLast) 0.dp else 18.dp)
+                    modifier = Modifier.padding(bottom = if (isLast) 0.dp else 16.dp)
                 ) {
                     Text(
                         text = stringResource(node.descriptionRes),
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isCurrent) AppColors.colorScheme.primaryDark
                         else if (isDone) AppColors.colorScheme.textPrimary
@@ -319,7 +319,7 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
                     if (index == 0 && !firstNodeTime.isNullOrEmpty()) {
                         Text(
                             text = firstNodeTime,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = AppColors.colorScheme.textTertiary,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -375,15 +375,13 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(info.statusTextRes),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
+            style = AppTextStyles.DataLarge,
             color = if (status == OrderStatus.WASHING) {
                 // 清洗中 → brand-deep（primaryDark），余态保留语义色
                 AppColors.colorScheme.primaryDark
             } else {
                 info.statusColor
-            },
-            letterSpacing = 0.5.sp
+            }
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
@@ -507,7 +505,6 @@ private fun OrderDetailActionBar(
                         text = stringResource(R.string.contact_service),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp,
                         color = AppColors.colorScheme.textPrimary
                     )
                 }
@@ -529,7 +526,6 @@ private fun OrderDetailActionBar(
                         text = stringResource(R.string.view_pickup_code),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp,
                         color = Color.White
                     )
                 }

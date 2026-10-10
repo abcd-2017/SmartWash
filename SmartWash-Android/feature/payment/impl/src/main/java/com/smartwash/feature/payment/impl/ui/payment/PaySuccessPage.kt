@@ -48,6 +48,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.model.RequestState
 
@@ -106,12 +107,12 @@ fun PaySuccessPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 36.dp),
+                            .padding(vertical = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(AppColors.colorScheme.primary),
                             contentAlignment = Alignment.Center
@@ -119,7 +120,7 @@ fun PaySuccessPage(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = stringResource(R.string.pay_success),
-                                modifier = Modifier.size(40.dp),
+                                modifier = Modifier.size(36.dp),
                                 tint = Color.White
                             )
                         }
@@ -144,7 +145,7 @@ fun PaySuccessPage(
                 // 订单信息卡
                 Text(
                     text = stringResource(R.string.order_info),
-                    style = MaterialTheme.typography.headlineMedium
+                    style = AppTextStyles.SectionTitle
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
@@ -182,20 +183,20 @@ fun PaySuccessPage(
                     ) {
                         IconBox(
                             icon = Icons.Default.LocalShipping,
-                            size = 40.dp,
+                            size = 36.dp,
                             iconSize = 20.dp
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(stringResource(R.string.locker_info_title), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.locker_info_title), style = MaterialTheme.typography.bodyLarge)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 stringResource(R.string.go_to_locker_format, "${orderInfo?.lockersVo?.lockerNumber ?: -1}"),
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
                                 stringResource(R.string.locker_process_tip),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelSmall,
                                 color = AppColors.colorScheme.textSecondary
                             )
                         }

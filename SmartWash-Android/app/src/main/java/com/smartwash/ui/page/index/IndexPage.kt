@@ -269,7 +269,7 @@ private fun StatusHeroCard(
             .padding(top = 8.dp)
             .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
-            .padding(22.dp)
+            .padding(20.dp)
     ) {
         Column {
             Row(
@@ -292,7 +292,7 @@ private fun StatusHeroCard(
                         style = AppTextStyles.StatusLarge,
                         color = Color.White
                     )
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     if (currentOrder != null) {
                         Text(
                             text = stringResource(R.string.home_hero_order_no, currentOrder.orderNo),
@@ -334,7 +334,7 @@ private fun StatusHeroCard(
                     val isActive = index <= currentStep
                     Box(
                         modifier = Modifier
-                            .size(9.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
                             .background(if (isActive) Color.White else Color.White.copy(alpha = 0.32f))
                     )
@@ -348,7 +348,7 @@ private fun StatusHeroCard(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(9.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 steps.forEachIndexed { index, label ->
                     Text(
@@ -386,7 +386,7 @@ private fun AccountDataCard(
             .padding(top = 16.dp),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, AppColors.colorScheme.outline),
         shadowElevation = AppElevation.level1
     ) {
         Row(
@@ -398,7 +398,7 @@ private fun AccountDataCard(
                 modifier = Modifier
                     .weight(1.35f)
                     .pressable(onClick = rememberDebouncedClick(onClick = onRechargeClick), debounce = false)
-                    .padding(top = 18.dp, bottom = 18.dp, start = 20.dp, end = 20.dp)
+                    .padding(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
             ) {
                 val availableWidth = maxWidth
                 Column {
@@ -429,7 +429,7 @@ private fun AccountDataCard(
             Box(
                 modifier = Modifier
                     .width(0.5.dp)
-                    .height(42.dp)
+                    .height(40.dp)
                     .background(AppColors.colorScheme.hairline)
             )
             // 优惠券
@@ -445,7 +445,7 @@ private fun AccountDataCard(
                     maxLines = 1,
                     softWrap = false
                 )
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.home_available_coupons),
                     style = MaterialTheme.typography.labelSmall,
@@ -458,7 +458,7 @@ private fun AccountDataCard(
             Box(
                 modifier = Modifier
                     .width(0.5.dp)
-                    .height(42.dp)
+                    .height(40.dp)
                     .background(AppColors.colorScheme.hairline)
             )
             // 累计订单
@@ -474,7 +474,7 @@ private fun AccountDataCard(
                     maxLines = 1,
                     softWrap = false
                 )
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.home_total_orders),
                     style = MaterialTheme.typography.labelSmall,
@@ -580,7 +580,7 @@ private fun OrderListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, AppColors.colorScheme.outline),
         shadowElevation = AppElevation.level1
     ) {
         Column {
@@ -634,7 +634,7 @@ private fun OrderListItem(
                 AppColors.colorScheme.iconForegroundOrange
             }
         )
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = statusText,

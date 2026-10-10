@@ -65,6 +65,7 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 
@@ -145,7 +146,7 @@ fun UpdateUserInfoPage(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 // 品牌区域 — Hero 卡（规范 §3.1 变体：品牌渐变底 + 白字）
                 val brandGradient = Brush.linearGradient(
@@ -160,7 +161,7 @@ fun UpdateUserInfoPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 28.dp),
+                            .padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
@@ -176,7 +177,7 @@ fun UpdateUserInfoPage(
                             Icon(
                                 imageVector = Icons.Rounded.School,
                                 contentDescription = null,
-                                modifier = Modifier.size(30.dp),
+                                modifier = Modifier.size(32.dp),
                                 tint = Color.White
                             )
                         }
@@ -184,12 +185,11 @@ fun UpdateUserInfoPage(
                             text = stringResource(R.string.complete_info),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp,
                             color = Color.White
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             color = Color.White.copy(alpha = 0.88f)
                         )
                     }
@@ -209,9 +209,7 @@ fun UpdateUserInfoPage(
                         // 学校标签
                         Text(
                             text = stringResource(R.string.search_school),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.4.sp,
+                            style = AppTextStyles.SectionTitle,
                             color = AppColors.colorScheme.textSecondary
                         )
 
@@ -258,7 +256,7 @@ fun UpdateUserInfoPage(
                             placeholder = { Text(stringResource(R.string.student_id)) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
+                                .height(48.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             enabled = !isInfoLocked,
                             isError = isStudentIdError,
@@ -298,10 +296,10 @@ fun UpdateUserInfoPage(
                     loading = updateState is RequestState.Loading,
                     enabled = !isInfoLocked
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.school_info_locked_hint),
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = AppColors.colorScheme.textTertiary
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -358,7 +356,7 @@ fun SearchSchoolInput(
         )
 
         if (isSearchFocused && schoolList.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             SchoolItem(schoolList, selectedSchoolId, itemClick)
         }
     }
@@ -388,12 +386,12 @@ fun SchoolItem(
                             else Modifier
                         )
                         .pressable(onClick = { onClick(school) })
-                        .padding(horizontal = 14.dp),
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = school.schoolName,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else null,
                         color = if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary,
                         modifier = Modifier.weight(1f)

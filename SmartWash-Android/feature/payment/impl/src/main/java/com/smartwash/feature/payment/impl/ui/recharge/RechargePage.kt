@@ -142,11 +142,11 @@ fun RechargePage(
                 }
 
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         for (i in presetAmounts.indices step 3) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 for (j in 0..2) {
                                     if (i + j < presetAmounts.size) {
@@ -299,8 +299,8 @@ private fun AmountCard(
             .pressScale(interactionSource, 0.97f),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         color = bgColor,
-        shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
-        border = if (isSelected) BorderStroke(1.5.dp, AppColors.colorScheme.primary) else BorderStroke(1.dp, AppColors.colorScheme.outline)
+        shadowElevation = AppElevation.level1,
+        border = if (isSelected) BorderStroke(0.5.dp, AppColors.colorScheme.primary) else BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -321,7 +321,7 @@ private fun AmountCard(
                         text = bonus,
                         style = MaterialTheme.typography.labelSmall,
                         color = AppColors.colorScheme.ongoingInk,
-                        modifier = Modifier.padding(top = 2.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
@@ -427,7 +427,7 @@ private fun PaymentMethodCard(
                 }
             )
         }
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = when (method) {
                 PaymentMethod.WECHAT -> stringResource(R.string.weixin_pay)
@@ -442,7 +442,7 @@ private fun PaymentMethodCard(
                 .size(20.dp)
                 .clip(CircleShape)
                 .border(
-                    width = 1.6.dp,
+                    width = 1.dp,
                     color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
                     shape = CircleShape
                 ),

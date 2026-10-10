@@ -53,6 +53,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 
 /**
@@ -100,13 +101,11 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.general),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Notifications,
@@ -147,13 +146,11 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.divination),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Security,
@@ -186,13 +183,11 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.other),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.6.sp,
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 检查更新（宿主注入的跨域插槽，feature:update 归 app 壳聚合）
                 checkUpdateContent?.invoke()
@@ -229,7 +224,7 @@ fun SettingPage(
                 ) {
                     Text(
                         stringResource(R.string.logout),
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = AppColors.colorScheme.dangerInk
                     )
@@ -296,11 +291,10 @@ private fun SettingRow(
                 tint = iconForegroundColor
             )
         }
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodyLarge,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )

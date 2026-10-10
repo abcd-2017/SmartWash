@@ -164,7 +164,7 @@ private fun PickupOrderCard(
                 Text(
                     text = stringResource(R.string.pickup_code),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         color = AppColors.colorScheme.textSecondary
                     )
                 )
@@ -175,7 +175,7 @@ private fun PickupOrderCard(
                         fontWeight = FontWeight.Bold,
                         color = AppColors.colorScheme.primaryDark,
                         fontFeatureSettings = "tnum",
-                        letterSpacing = 8.sp
+                        letterSpacing = 0.sp
                     )
                 )
             }
@@ -195,7 +195,7 @@ private fun PickupOrderCard(
                     ) {
                         Text(
                             text = stringResource(R.string.copy_pickup_code),
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.labelSmall,
                             color = AppColors.colorScheme.textPrimary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )

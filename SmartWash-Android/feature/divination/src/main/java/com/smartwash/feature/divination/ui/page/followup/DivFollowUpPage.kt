@@ -186,7 +186,7 @@ private fun FollowUpSummary(record: com.smartwash.feature.divination.database.Di
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DivSeal(sealText, size = 24.dp, fontSize = 12.sp)
+        DivSeal(sealText, size = 32.dp, fontSize = 12.sp)
         Spacer(Modifier.width(10.dp))
         Text(
             text = chartName,
@@ -214,7 +214,7 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
                     .widthIn(max = 260.dp)
                     .clip(RoundedCornerShape(14.dp, 14.dp, 4.dp, 14.dp))
                     .background(c.goldSoft)
-                    .border(BorderStroke(1.dp, c.goldHair), RoundedCornerShape(14.dp, 14.dp, 4.dp, 14.dp))
+                    .border(BorderStroke(0.5.dp, c.goldHair), RoundedCornerShape(14.dp, 14.dp, 4.dp, 14.dp))
                     .padding(horizontal = 13.dp, vertical = 9.dp),
             ) {
                 Text(
@@ -232,7 +232,7 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
                     .widthIn(max = 280.dp)
                     .clip(RoundedCornerShape(14.dp, 14.dp, 14.dp, 4.dp))
                     .background(c.surface)
-                    .border(BorderStroke(1.dp, c.goldHair), RoundedCornerShape(14.dp, 14.dp, 14.dp, 4.dp))
+                    .border(BorderStroke(0.5.dp, c.goldHair), RoundedCornerShape(14.dp, 14.dp, 14.dp, 4.dp))
                     .padding(horizontal = 13.dp, vertical = 11.dp),
             ) {
                 Text(

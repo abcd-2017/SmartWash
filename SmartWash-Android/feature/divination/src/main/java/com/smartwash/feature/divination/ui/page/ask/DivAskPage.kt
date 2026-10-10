@@ -273,7 +273,7 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(48.dp))
-        DivSeal(stringResource(R.string.div_safety_seal), size = 56.dp, fontSize = 26.sp)
+        DivSeal(stringResource(R.string.div_safety_seal), size = 44.dp, fontSize = 26.sp)
         Spacer(Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.div_safety_title),
@@ -342,7 +342,7 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (selected) c.gold14 else Color.Transparent)
                                         .border(
-                                            1.dp,
+                                            0.5.dp,
                                             if (selected) c.goldLine else c.hair,
                                             RoundedCornerShape(10.dp),
                                         )

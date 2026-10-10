@@ -213,7 +213,7 @@ private fun DivinationEntryCard(
                 text = stringResource(R.string.workbench_divination_name),
                 style = AppTextStyles.SectionTitle.copy(
                     fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 1.5.sp
+                    letterSpacing = 0.3.sp
                 ),
                 color = DivTextPrimaryDark
             )
@@ -227,7 +227,7 @@ private fun DivinationEntryCard(
         // 30dp 圆形描边箭头（设计稿 30px + rgba(gold,.4) → 金线令牌 30%）
         Box(
             modifier = Modifier
-                .size(30.dp)
+                .size(32.dp)
                 .border(1.dp, div.goldLine, CircleShape),
             contentAlignment = Alignment.Center
         ) {
@@ -235,7 +235,7 @@ private fun DivinationEntryCard(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = div.gold,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }
@@ -328,7 +328,7 @@ private fun ToolTile(
         modifier = modifier.pressable(onClick = onClick),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = scheme.surface,
-        border = BorderStroke(1.dp, scheme.outline),
+        border = BorderStroke(0.5.dp, scheme.outline),
         shadowElevation = AppElevation.level1
     ) {
         Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
@@ -340,7 +340,7 @@ private fun ToolTile(
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             Text(
                 text = stringResource(tool.titleRes),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.bodyLarge,
                 color = scheme.textPrimary
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXxs))

@@ -134,7 +134,7 @@ private fun SearchBar() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(44.dp)
-                .padding(horizontal = 18.dp),
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -143,7 +143,7 @@ private fun SearchBar() {
                 modifier = Modifier.size(16.dp),
                 tint = AppColors.colorScheme.textTertiary
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.service_search_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -207,14 +207,14 @@ private fun ServiceItemRow(
             containerColor = AppColors.colorScheme.iconContainerGreen,
             iconTint = AppColors.colorScheme.iconForegroundGreen
         )
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.itemName,
                 style = MaterialTheme.typography.titleMedium,
                 color = AppColors.colorScheme.textPrimary
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = item.description,
                 style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
@@ -227,10 +227,10 @@ private fun ServiceItemRow(
                 style = AppTextStyles.AmountMedium,
                 color = AppColors.colorScheme.primary
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.service_reserve),
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.labelSmall,
                 color = AppColors.colorScheme.primary
             )
         }

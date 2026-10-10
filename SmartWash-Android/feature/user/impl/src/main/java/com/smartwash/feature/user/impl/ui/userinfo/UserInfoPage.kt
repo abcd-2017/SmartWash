@@ -179,7 +179,7 @@ fun UserInfoPage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 14.dp),
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -201,7 +201,7 @@ fun UserInfoPage(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(AppColors.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
@@ -219,12 +219,12 @@ fun UserInfoPage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 14.dp),
+                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(58.dp)
+                            .size(56.dp)
                             .pressable(onClick = {
                                 imagePickerLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -235,7 +235,7 @@ fun UserInfoPage(
                         if (avatarUploadState is RequestState.Loading) {
                             Box(
                                 modifier = Modifier
-                                    .size(58.dp)
+                                    .size(56.dp)
                                     .clip(CircleShape)
                                     .background(AppColors.colorScheme.primaryLight),
                                 contentAlignment = Alignment.Center
@@ -249,7 +249,7 @@ fun UserInfoPage(
                         } else if (userInfo?.avatar.isNullOrBlank()) {
                             Box(
                                 modifier = Modifier
-                                    .size(58.dp)
+                                    .size(56.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.linearGradient(
@@ -263,7 +263,7 @@ fun UserInfoPage(
                             ) {
                                 Text(
                                     text = userInfo?.phoneNumber?.firstOrNull()?.toString() ?: "U",
-                                    fontSize = 21.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
@@ -273,7 +273,7 @@ fun UserInfoPage(
                                 model = userInfo?.avatar,
                                 contentDescription = stringResource(R.string.avatar),
                                 modifier = Modifier
-                                    .size(58.dp)
+                                    .size(56.dp)
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
@@ -294,9 +294,9 @@ fun UserInfoPage(
                         )
                         Text(
                             text = userInfo?.schoolVo?.schoolName ?: "",
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = AppColors.colorScheme.textTertiary,
-                            modifier = Modifier.padding(top = 5.dp)
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
 
@@ -315,7 +315,7 @@ fun UserInfoPage(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 18.dp),
+                            .padding(vertical = 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // 余额（点击去充值；防抖已注入，关闭叠加）
@@ -337,14 +337,14 @@ fun UserInfoPage(
                                 text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
                                 style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primaryDark,
-                                modifier = Modifier.padding(top = 6.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                         // 分隔线
                         Box(
                             modifier = Modifier
                                 .width(0.5.dp)
-                                .height(42.dp)
+                                .height(40.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
                         // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
@@ -366,14 +366,14 @@ fun UserInfoPage(
                                 text = stringResource(R.string.coupon),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AppColors.colorScheme.textSecondary,
-                                modifier = Modifier.padding(top = 5.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                         // 分隔线
                         Box(
                             modifier = Modifier
                                 .width(0.5.dp)
-                                .height(42.dp)
+                                .height(40.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
                         // 累计订单
@@ -390,7 +390,7 @@ fun UserInfoPage(
                                 text = stringResource(R.string.total_orders),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = AppColors.colorScheme.textSecondary,
-                                modifier = Modifier.padding(top = 5.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
@@ -561,7 +561,7 @@ private fun SettingRow(
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(containerColor),
             contentAlignment = Alignment.Center
         ) {
@@ -572,11 +572,10 @@ private fun SettingRow(
                 tint = iconForegroundColor
             )
         }
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodyLarge,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )

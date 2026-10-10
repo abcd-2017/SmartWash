@@ -60,6 +60,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 
@@ -156,7 +157,7 @@ fun AiWorkPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 30.dp, horizontal = 20.dp),
+                            .padding(vertical = 32.dp, horizontal = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // 滚筒圆空态插画（灰线色：浅色取自设计稿，深色 remap：#D6DAD4→#3A403B、#E3E7E2→#2C312D）
@@ -186,11 +187,11 @@ fun AiWorkPage(
                         Text(
                             text = stringResource(R.string.ai_empty_recent),
                             style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 color = AppColors.colorScheme.textTertiary
                             )
                         )
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
@@ -277,7 +278,7 @@ fun AiWorkPage(
                             imageVector = Icons.Default.Send,
                             contentDescription = stringResource(R.string.ai_send),
                             tint = Color.White,
-                            modifier = Modifier.size(17.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -298,7 +299,8 @@ private fun QuickTaskCard(
         modifier = modifier.pressable(onClick = { /* TODO */ }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline),
+        shadowElevation = AppElevation.level1
     ) {
         Row(
             modifier = Modifier
@@ -320,14 +322,10 @@ private fun QuickTaskCard(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.colorScheme.textPrimary
-                )
+                style = MaterialTheme.typography.bodyLarge,
             )
         }
     }

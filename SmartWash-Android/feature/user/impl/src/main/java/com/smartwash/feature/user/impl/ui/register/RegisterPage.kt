@@ -203,7 +203,7 @@ fun RegisterPage(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(vertical = 14.dp),
+                    .padding(vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // D-R9 返回箭头包进 48dp 热区，右侧占位同宽保持标题视觉居中（防抖已注入，关闭叠加）
@@ -252,18 +252,17 @@ fun RegisterPage(
                 )
             }
 
-            // D-R2 brand margin-bottom 14px
-            Spacer(modifier = Modifier.height(14.dp))
+            // D-R2 brand margin-bottom 12px
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = stringResource(R.string.create_account),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = stringResource(R.string.start_laundry_journey),
@@ -272,33 +271,33 @@ fun RegisterPage(
             )
 
             // 进度条
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // 激活态 — 纯白
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(Color.White)
                 )
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(ProgressInactive)
                 )
                 Box(
                     modifier = Modifier
                         .width(32.dp)
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(ProgressInactive)
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
             Column(
@@ -412,12 +411,12 @@ fun RegisterPage(
             ) {
                 Text(
                     stringResource(R.string.has_account),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = AuthBottomText
                 )
                 Text(
                     text = stringResource(R.string.login_now),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = AuthBottomTextActive,
                     modifier = Modifier
@@ -434,7 +433,7 @@ private fun GlassDivider() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp)
+            .padding(horizontal = 12.dp)
             .height(0.5.dp)
             .background(Color.White.copy(alpha = 0.12f))
     )
@@ -506,7 +505,7 @@ private fun VerificationCodeRow(
                         else GlassInput.copy(alpha = GlassInput.alpha * 0.55f),
                         shape = RoundedCornerShape(AppDimens.radiusMd)
                     )
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -522,7 +521,7 @@ private fun VerificationCodeRow(
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_verification_code),
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 color = ErrorLight,
                 modifier = Modifier.padding(top = 4.dp)
             )

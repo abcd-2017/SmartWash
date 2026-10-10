@@ -35,7 +35,7 @@ fun InfoSection(
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding)

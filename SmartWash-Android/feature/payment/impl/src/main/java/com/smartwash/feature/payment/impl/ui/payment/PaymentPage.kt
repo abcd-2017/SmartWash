@@ -147,12 +147,12 @@ fun PaymentPage(
                         shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
-                        Column(modifier = Modifier.padding(22.dp, 20.dp)) {
+                        Column(modifier = Modifier.padding(20.dp)) {
                             Text(
                                 text = stringResource(R.string.amount_due),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 0.4.sp,
+                                letterSpacing = 0.3.sp,
                                 color = AppColors.colorScheme.textSecondary
                             )
                             Text(
@@ -162,12 +162,12 @@ fun PaymentPage(
                                 ),
                                 style = AppTextStyles.DataLarge,
                                 color = AppColors.colorScheme.primaryDark,
-                                modifier = Modifier.padding(top = 10.dp)
+                                modifier = Modifier.padding(top = 8.dp)
                             )
                             HorizontalDivider(
                                 thickness = 0.5.dp,
                                 color = AppColors.colorScheme.hairline,
-                                modifier = Modifier.padding(vertical = 18.dp)
+                                modifier = Modifier.padding(vertical = 16.dp)
                             )
                             InfoLine(stringResource(R.string.order_number), "${orderInfo?.orderNo ?: ""}")
                             InfoLine(stringResource(R.string.service_type), "${orderInfo?.laundryPackageVo?.itemName ?: ""}")
@@ -209,11 +209,11 @@ fun PaymentPage(
                                     Icon(
                                         imageVector = Icons.Default.LocalOffer,
                                         contentDescription = null,
-                                        modifier = Modifier.size(19.dp),
+                                        modifier = Modifier.size(18.dp),
                                         tint = AppColors.colorScheme.primary
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(14.dp))
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         stringResource(R.string.balance_payment),
@@ -440,20 +440,19 @@ private fun InfoLine(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = AppColors.colorScheme.textSecondary
         )
         Text(
             value,
-            style = MaterialTheme.typography.labelMedium.copy(
+            style = MaterialTheme.typography.bodyLarge.copy(
                 fontFeatureSettings = "tnum"
             ),
-            fontWeight = FontWeight.Medium
         )
     }
 }

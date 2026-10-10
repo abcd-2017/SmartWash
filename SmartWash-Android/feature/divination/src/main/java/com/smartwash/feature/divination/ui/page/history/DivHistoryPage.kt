@@ -122,7 +122,7 @@ private fun HistoryCard(record: com.smartwash.feature.divination.database.DivRec
             Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DivSeal(methodSeal(record.method), size = 30.dp, fontSize = 15.sp)
+            DivSeal(methodSeal(record.method), size = 32.dp, fontSize = 15.sp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(

@@ -42,6 +42,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AlipayBlue
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.WeChatGreen
 
 @Composable
@@ -125,7 +126,7 @@ fun RechargeRecordPage(
 @Composable
 private fun RechargeRecordCard(record: RechargeRecordVo) {
     AppCard {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -166,9 +167,9 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                             "2" -> stringResource(R.string.alipay)
                             else -> stringResource(R.string.recharge)
                         },
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.bodyLarge
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = record.rechargeTime,
                         style = MaterialTheme.typography.bodySmall,
@@ -177,7 +178,7 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                 }
                 Text(
                     text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primary
                 )
             }
