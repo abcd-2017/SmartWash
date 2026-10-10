@@ -86,7 +86,7 @@ fun CouponCard(
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier

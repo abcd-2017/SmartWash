@@ -207,7 +207,6 @@ fun LoginPage(
                 text = stringResource(R.string.brand_name),
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
                 color = Color.White
             )
 
@@ -220,7 +219,7 @@ fun LoginPage(
                 letterSpacing = 0.5.sp
             )
 
-            Spacer(modifier = Modifier.height(34.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
             Column(
@@ -248,7 +247,7 @@ fun LoginPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp)
+                        .padding(horizontal = 12.dp)
                         .height(0.5.dp)
                         .background(Color.White.copy(alpha = 0.12f))
                 )
@@ -296,12 +295,12 @@ fun LoginPage(
             ) {
                 Text(
                     stringResource(R.string.no_account),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = AuthBottomText
                 )
                 Text(
                     text = stringResource(R.string.register_now),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = AuthBottomTextActive,
                     modifier = Modifier

@@ -141,7 +141,7 @@ fun LaundryPage(
             ) {
                 // 投递柜选择
                 item {
-                    Text(text = stringResource(R.string.delivery_locker), style = MaterialTheme.typography.headlineMedium)
+                    Text(text = stringResource(R.string.delivery_locker), style = AppTextStyles.SectionTitle)
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -198,7 +198,7 @@ fun LaundryPage(
                 // 套餐选择
                 item {
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-                    Text(text = stringResource(R.string.laundry_package), style = MaterialTheme.typography.headlineMedium)
+                    Text(text = stringResource(R.string.laundry_package), style = AppTextStyles.SectionTitle)
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
@@ -220,7 +220,6 @@ fun LaundryPage(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = AppColors.colorScheme.surface.copy(alpha = 0.9f),
-                shadowElevation = AppElevation.level3,
                 tonalElevation = 0.dp
             ) {
                 Column {
@@ -337,7 +336,7 @@ private fun LaundryTypeItem(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = AppColors.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     } else {
                         Box(

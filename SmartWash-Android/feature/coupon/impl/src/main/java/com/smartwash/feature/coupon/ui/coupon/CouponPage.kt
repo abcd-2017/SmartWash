@@ -255,12 +255,12 @@ fun UserCouponCard(
             ) {
                 Text(
                     text = couponVo.couponVo.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
                     color = titleColor
                 )
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (couponVo.couponVo.threshold == 0f)
                         stringResource(R.string.no_threshold)
@@ -269,7 +269,7 @@ fun UserCouponCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = AppColors.colorScheme.textSecondary
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.valid_until, "${couponVo.expiredAt}"),
                     style = MaterialTheme.typography.labelSmall,

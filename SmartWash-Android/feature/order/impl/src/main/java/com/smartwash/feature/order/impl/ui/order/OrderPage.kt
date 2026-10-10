@@ -152,7 +152,7 @@ fun OrderPage(
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 14.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -242,10 +242,10 @@ fun OrderPage(
                                         Text(
                                             text = label,
                                             style = MaterialTheme.typography.labelSmall,
-                                            letterSpacing = 0.4.sp,
+                                            letterSpacing = 0.3.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = AppColors.colorScheme.textSecondary,
-                                            modifier = Modifier.padding(top = 32.dp, bottom = 10.dp)
+                                            modifier = Modifier.padding(top = 32.dp, bottom = 8.dp)
                                         )
                                     }
                                     is OrderListItem.Group -> {
@@ -320,7 +320,7 @@ private fun MonthGroupCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline),
         shadowElevation = AppElevation.level1
     ) {
         Column {
@@ -359,7 +359,7 @@ private fun OrderRow(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = itemClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.Top
     ) {
         // 左侧图标容器（规范 §3.2 + 设计稿屏 5）：IconBox 按订单状态映射语义色
@@ -376,7 +376,7 @@ private fun OrderRow(
             containerColor = container,
             iconTint = foreground
         )
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         // 主体信息
         Column(modifier = Modifier.weight(1f)) {
             // 状态文字 + 状态色点（规范 §3.5：ongoing=warning / done=success / 已取消 danger）
@@ -391,7 +391,7 @@ private fun OrderRow(
                     style = MaterialTheme.typography.titleSmall,
                     color = AppColors.colorScheme.textPrimary
                 )
-                Spacer(modifier = Modifier.width(7.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 StatusDot(color = dotColor)
             }
             Spacer(modifier = Modifier.height(5.dp))
@@ -420,7 +420,7 @@ private fun OrderRow(
                 },
                 style = AppTextStyles.AmountMedium
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             // 操作按钮（功能保留，逻辑与路由不动）
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
@@ -445,7 +445,7 @@ private fun OrderRow(
                             .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_pay), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                    ) { Text(stringResource(R.string.go_pay), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
                 }
                 ShowOrderStatus.PENDING_SHIPMENT.status -> {
                     Box(
@@ -458,13 +458,13 @@ private fun OrderRow(
                             .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_ship), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                    ) { Text(stringResource(R.string.go_ship), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
                 }
                 ShowOrderStatus.WASHING.status -> {
                     Text(
                         text = stringResource(R.string.washing),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
                 ShowOrderStatus.READY_FOR_PICKUP.status -> {
@@ -478,20 +478,20 @@ private fun OrderRow(
                             .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_pickup), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                    ) { Text(stringResource(R.string.go_pickup), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
                 }
                 OrderStatus.COMPLETED.status -> {
                     Text(
                         text = stringResource(R.string.completed),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
                 else -> {
                     Text(
                         text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
             }

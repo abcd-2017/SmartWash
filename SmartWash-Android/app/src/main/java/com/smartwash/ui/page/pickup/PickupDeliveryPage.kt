@@ -152,7 +152,7 @@ fun PickupDeliveryPage(
                                 imageVector = Icons.Rounded.Warning,
                                 contentDescription = null,
                                 tint = AppColors.colorScheme.warning,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
@@ -206,7 +206,7 @@ fun PickupDeliveryPage(
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
                             text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
-                            style = MaterialTheme.typography.titleLarge
+                            style = AppTextStyles.SectionTitle
                         )
                         Text(
                             text = pickupCode,
@@ -278,13 +278,13 @@ private fun StepRow(number: String, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(28.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .size(32.dp)
+                .clip(RoundedCornerShape(10.dp))
                 .background(AppColors.colorScheme.primaryLight),
             contentAlignment = Alignment.Center
         ) {

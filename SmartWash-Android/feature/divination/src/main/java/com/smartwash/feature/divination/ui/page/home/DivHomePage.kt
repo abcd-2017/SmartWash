@@ -181,7 +181,7 @@ fun DivHomePage(
                             Box(
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(1.dp)
+                                    .height(0.5.dp)
                                     .background(c.goldHair)
                             )
                         }

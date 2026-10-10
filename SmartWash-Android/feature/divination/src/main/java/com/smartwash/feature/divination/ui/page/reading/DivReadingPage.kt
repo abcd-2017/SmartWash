@@ -196,7 +196,7 @@ private fun ReadingSummaryCard(record: com.smartwash.feature.divination.database
             Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DivSeal(sealText, size = 30.dp, fontSize = 15.sp)
+            DivSeal(sealText, size = 32.dp, fontSize = 15.sp)
             Spacer(Modifier.width(12.dp))
             Text(
                 text = chartName,
