@@ -6,15 +6,15 @@
         <el-form-item label="短码">
           <el-input
             v-model="listQuery.code"
-            placeholder="输入短码精确查询"
+            placeholder="请输入短码"
             clearable
             style="width: 180px"
           />
         </el-form-item>
-        <el-form-item label="Owner 手机号">
+        <el-form-item label="归属人手机号">
           <el-input
             v-model="listQuery.ownerPhone"
-            placeholder="输入 owner 手机号精确查询"
+            placeholder="请输入归属人手机号"
             clearable
             style="width: 200px"
           />
@@ -53,7 +53,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="target" label="目标链接" min-width="240" show-overflow-tooltip />
-        <el-table-column label="Owner 手机号" min-width="130">
+        <el-table-column label="归属人手机号" min-width="130">
           <template #default="{ row }">{{ row.ownerPhone || '-' }}</template>
         </el-table-column>
         <el-table-column label="可见性" min-width="90">
@@ -69,7 +69,7 @@
             <span v-else>{{ formatTime(row.expireAt) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="点击数" min-width="90">
+        <el-table-column label="点击数" min-width="90" align="right">
           <template #default="{ row }">{{ row.clickCount ?? '-' }}</template>
         </el-table-column>
         <el-table-column label="创建时间" min-width="170">
@@ -78,7 +78,14 @@
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleDetail(row)">详情</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              size="small"
+              type="danger"
+              :loading="deletingId === row.id"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -110,10 +117,10 @@
             <el-descriptions-item label="目标链接">
               <span class="break-all">{{ detail.target }}</span>
             </el-descriptions-item>
-            <el-descriptions-item label="Owner 用户ID">
+            <el-descriptions-item label="归属人ID">
               {{ detail.ownerUserId ?? '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="Owner 手机号">
+            <el-descriptions-item label="归属人手机号">
               {{ detail.ownerPhone || '-' }}
             </el-descriptions-item>
             <el-descriptions-item label="可见性">
@@ -212,6 +219,9 @@ const {
   errorMsg: '获取短码列表失败',
 });
 
+// 行内「删除」按钮 loading，防连点
+const deletingId = ref(null);
+
 // 详情抽屉
 const detailVisible = ref(false);
 const detailLoading = ref(false);
@@ -236,12 +246,15 @@ const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除短码「${row.code}」吗？删除后立即失效且不可恢复。`);
   if (!confirmed) return;
+  deletingId.value = row.id;
   try {
     await deleteShortCode(row.id);
     ElMessage.success('删除成功');
     fetchData(); // 刷新当前页
   } catch (error) {
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 
@@ -251,8 +264,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .visit-title {
   margin: 20px 0 12px;
   font-size: 14px;

@@ -14,7 +14,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">学校总数</span>
-          <span class="stat-card__value">{{ stats.schoolCount }}</span>
+          <span class="stat-card__value">{{ schoolCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--blue">
@@ -23,7 +23,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">用户总数</span>
-          <span class="stat-card__value">{{ stats.userCount }}</span>
+          <span class="stat-card__value">{{ userCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--emerald">
@@ -32,7 +32,7 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">今日订单</span>
-          <span class="stat-card__value">{{ stats.todayOrderCount }}</span>
+          <span class="stat-card__value">{{ todayOrderCount }}</span>
         </div>
       </div>
       <div class="stat-card stat-card--amber">
@@ -41,7 +41,8 @@
         </div>
         <div class="stat-card__info">
           <span class="stat-card__label">今日收入</span>
-          <span class="stat-card__value">¥{{ Number(stats.todayIncome).toFixed(2) }}</span>
+          <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
+          <span class="stat-card__value">¥{{ incomeDisplay }}</span>
         </div>
       </div>
     </div>
@@ -72,15 +73,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
 import { getDashboardStats } from '@/api/dashboard';
+import { useAnimatedNumber } from '@/composables/useAnimatedNumber';
 
 const stats = ref({
   schoolCount: 0,
   userCount: 0,
   todayOrderCount: 0,
   todayIncome: 0,
+});
+
+// 统计卡数值滚动：数据来自 getDashboardStats（真实数据触发），reduced-motion 下直接落定
+const { value: schoolCount } = useAnimatedNumber(() => stats.value.schoolCount);
+const { value: userCount } = useAnimatedNumber(() => stats.value.userCount);
+const { value: todayOrderCount } = useAnimatedNumber(() => stats.value.todayOrderCount);
+const { value: todayIncome } = useAnimatedNumber(() => stats.value.todayIncome);
+
+// 金额展示：整数元滚动 + 固定 .00，保证视觉效果连贯
+const incomeDisplay = computed(() => {
+  const v = Number(todayIncome.value) || 0;
+  return `${v.toFixed(2)}`;
 });
 
 onMounted(async () => {
@@ -94,18 +108,28 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .dashboard {
   padding: 0;
 }
 
-/* 统计卡片网格 */
+/* 统计卡片网格：进场淡入上移（首挂载一次；数值滚动由 useAnimatedNumber 处理） */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 24px;
+  animation: home-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
+}
+
+@keyframes home-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 900px) {
@@ -171,12 +195,13 @@ onMounted(async () => {
   color: #0f172a;
 }
 
-/* 快捷操作区 */
+/* 快捷操作区：与统计卡同一进场节奏，略延迟形成微交错 */
 .quick-actions {
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  animation: home-fade-in-up var(--motion-slow) var(--ease-decelerate) 80ms both;
 }
 
 .quick-actions__title {

@@ -9,6 +9,25 @@
   gap: 16px;
 }
 
+/* 页面内容进场（仅首次挂载播放一次，翻页/搜索不重放）：
+   CSS animation 只在元素插入时触发，.filter-container/.table-card 是稳定 DOM 节点，
+   数据池换（翻页/搜索）不重放进度条；路由每次进入该页重新挂载时自然播放 */
+.filter-container,
+.table-card {
+  animation: page-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
+}
+
+@keyframes page-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* 筛选区 — 白底卡片 + 12px 圆角 + 微阴影 */
 .filter-container {
   padding: 20px 24px;
@@ -86,7 +105,7 @@
   align-items: center;
   padding: 12px 20px;
   border-top: 1px solid #f1f5f9;
-  background: #fafbfc;
+  background: #f8fafc;
   flex-shrink: 0;
 }
 

@@ -6,7 +6,7 @@
         <el-form-item label="关键词">
           <el-input
             v-model="listQuery.keyword"
-            placeholder="搜索问题内容"
+            placeholder="请输入问题内容"
             clearable
             style="width: 240px"
           />
@@ -92,7 +92,3 @@ onMounted(() => {
   fetchData();
 });
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

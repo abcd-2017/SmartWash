@@ -15,12 +15,7 @@
           />
         </el-form-item>
         <el-form-item label="术数方法">
-          <el-select
-            v-model="methodFilter"
-            placeholder="全部"
-            clearable
-            style="width: 140px"
-          >
+          <el-select v-model="methodFilter" placeholder="全部" clearable style="width: 140px">
             <el-option
               v-for="m in methodOptions"
               :key="m.value"
@@ -30,7 +25,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="fetchStats">查询</el-button>
+          <el-button type="primary" :loading="loading" @click="fetchStats">查询</el-button>
           <el-button @click="resetFilter">重置</el-button>
         </el-form-item>
       </el-form>
@@ -60,32 +55,43 @@
       </div>
     </div>
 
-    <!-- 图表区域 -->
     <div class="charts-row" v-loading="loading">
       <div class="chart-card">
         <h4 class="chart-title">每日用量趋势</h4>
-        <div ref="trendChartRef" class="chart-container"></div>
+        <div class="chart-wrap">
+          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div ref="trendChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+        </div>
       </div>
       <div class="chart-card">
         <h4 class="chart-title">术数方法分布</h4>
-        <div ref="methodChartRef" class="chart-container"></div>
+        <div class="chart-wrap">
+          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div ref="methodChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+        </div>
       </div>
     </div>
     <div class="charts-row" v-loading="loading">
       <div class="chart-card">
         <h4 class="chart-title">Token 消耗</h4>
-        <div ref="tokenChartRef" class="chart-container"></div>
+        <div class="chart-wrap">
+          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div ref="tokenChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+        </div>
       </div>
       <div class="chart-card">
         <h4 class="chart-title">缓存命中率</h4>
-        <div ref="cacheChartRef" class="chart-container"></div>
+        <div class="chart-wrap">
+          <div v-if="!hasData" class="chart-empty">暂无数据</div>
+          <div ref="cacheChartRef" class="chart-container" :class="{ 'is-empty': !hasData }"></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { ElMessage } from 'element-plus';
 import { getUsageStats } from '@/api/divination';
@@ -118,6 +124,18 @@ let trendChart = null;
 let methodChart = null;
 let tokenChart = null;
 let cacheChart = null;
+
+// 是否有可渲染数据：决定图表是否挂空状态占位（评审遗留：图表空状态补齐）
+const hasData = computed(() => recordsCount.value > 0);
+const recordsCount = ref(0);
+
+// 图表入场/更新动画：数据登场与过滤变化有节奏，值取自 --motion-slow/--motion-base 档
+const CHART_ANIMATION = {
+  animation: true,
+  animationDuration: 360, // 首次渲染（进场）
+  animationDurationUpdate: 300, // 数据更新重绘
+  animationEasing: 'cubicOut',
+};
 
 onMounted(() => {
   initCharts();
@@ -185,9 +203,12 @@ const resetFilter = () => {
 
 const renderCharts = (records) => {
   const dates = records.map((r) => r.statDate).sort();
+  recordsCount.value = records.length;
 
   // 每日用量趋势
   trendChart.setOption({
+    ...CHART_ANIMATION,
+    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
     tooltip: { trigger: 'axis' },
     legend: { data: ['卦例数', '解读数', '拦截数'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -195,7 +216,12 @@ const renderCharts = (records) => {
     yAxis: { type: 'value' },
     series: [
       { name: '卦例数', type: 'line', smooth: true, data: records.map((r) => r.recordCount || 0) },
-      { name: '解读数', type: 'line', smooth: true, data: records.map((r) => r.interpretCount || 0) },
+      {
+        name: '解读数',
+        type: 'line',
+        smooth: true,
+        data: records.map((r) => r.interpretCount || 0),
+      },
       { name: '拦截数', type: 'line', smooth: true, data: records.map((r) => r.blockedCount || 0) },
     ],
   });
@@ -211,6 +237,8 @@ const renderCharts = (records) => {
     value,
   }));
   methodChart.setOption({
+    ...CHART_ANIMATION,
+    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
     series: [
@@ -228,6 +256,8 @@ const renderCharts = (records) => {
 
   // Token 消耗
   tokenChart.setOption({
+    ...CHART_ANIMATION,
+    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
     tooltip: { trigger: 'axis' },
     legend: { data: ['输入 Token', '输出 Token'] },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -245,6 +275,8 @@ const renderCharts = (records) => {
     return ((r.cacheHitCount / r.interpretCount) * 100).toFixed(1);
   });
   cacheChart.setOption({
+    ...CHART_ANIMATION,
+    color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#818cf8'],
     tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: { type: 'category', data: dates },
@@ -263,13 +295,31 @@ const renderCharts = (records) => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
+/* 统计卡与图表卡进场：淡入上移（首挂载一次；数值/图表内容动画已分别处理） */
+.stats-row,
+.charts-row {
+  animation: usage-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
+}
+
+.charts-row:nth-of-type(2) {
+  animation-delay: 60ms;
+}
+
+@keyframes usage-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
-  margin-bottom: 16px;
 }
 
 .stat-card {
@@ -296,7 +346,6 @@ const renderCharts = (records) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  margin-bottom: 16px;
 }
 
 .chart-card {
@@ -308,7 +357,7 @@ const renderCharts = (records) => {
 
 .chart-title {
   margin: 0 0 12px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #0f172a;
 }
@@ -316,6 +365,24 @@ const renderCharts = (records) => {
 .chart-container {
   width: 100%;
   height: 300px;
+}
+
+/* 图表空状态占位：无数据时覆盖在图表容器上，保证高度稳定（避免布局跳动） */
+.chart-wrap {
+  position: relative;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  z-index: 1;
 }
 
 @media (max-width: 1200px) {

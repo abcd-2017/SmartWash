@@ -12,7 +12,7 @@ function dictValue(map, key, fallback = 'info') {
 export const ORDER_STATUS_TAG_TYPES = {
   '-2': 'info', // 已取消
   '-1': 'warning', // 已退款
-  0: 'danger', // 待支付
+  0: 'warning', // 待支付（与支付状态配色一致，不再用 danger 红）
   1: '', // 待寄件（默认）
   2: 'success', // 已收取
   3: 'primary', // 清洗中
@@ -123,3 +123,25 @@ export const shortCodeVisibilityText = (type) => SHORT_CODE_VISIBILITY_TEXT[type
 /** 短码可见性标签配色 */
 export const shortCodeVisibilityTagType = (type) =>
   dictValue(SHORT_CODE_VISIBILITY_TAG_TYPES, type);
+
+// ---------- 优惠券 ----------
+
+/** 优惠券状态 → 文案（与后端 CouponStatus 对齐：ACTIVE 可用，其余视为已失效） */
+export const COUPON_STATUS_TEXT = {
+  ACTIVE: '可用',
+  INACTIVE: '已失效',
+  EXPIRED: '已失效',
+};
+
+/** 优惠券状态 → el-tag 类型 */
+export const COUPON_STATUS_TAG_TYPES = {
+  ACTIVE: 'success',
+  INACTIVE: 'info',
+  EXPIRED: 'info',
+};
+
+/** 优惠券状态文案（未知值兜底） */
+export const couponStatusText = (status) => COUPON_STATUS_TEXT[status] || '已失效';
+
+/** 优惠券状态标签配色 */
+export const couponStatusTagType = (status) => dictValue(COUPON_STATUS_TAG_TYPES, status);

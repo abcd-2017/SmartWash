@@ -6,7 +6,7 @@
         <el-form-item label="书名">
           <el-input
             v-model="listQuery.title"
-            placeholder="输入书名"
+            placeholder="请输入书名"
             clearable
             style="width: 200px"
           />
@@ -14,7 +14,7 @@
         <el-form-item label="术数方法">
           <el-select
             v-model="listQuery.method"
-            placeholder="全部"
+            placeholder="全部方法"
             clearable
             style="width: 140px"
           >
@@ -27,12 +27,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select
-            v-model="listQuery.status"
-            placeholder="全部"
-            clearable
-            style="width: 120px"
-          >
+          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
             <el-option label="导入中" :value="0" />
             <el-option label="可用" :value="1" />
           </el-select>
@@ -40,7 +35,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleUpload">上传古籍</el-button>
+          <el-button type="primary" @click="handleUpload">上传古籍</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -49,8 +44,8 @@
     <div class="table-card">
       <el-table v-loading="listLoading" :data="documentList" fit highlight-current-row>
         <el-table-column prop="id" label="ID" min-width="80" />
-        <el-table-column prop="title" label="书名" min-width="180" />
-        <el-table-column prop="book" label="所属典籍" min-width="160" />
+        <el-table-column prop="title" label="书名" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="book" label="所属典籍" min-width="160" show-overflow-tooltip />
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
         </el-table-column>
@@ -80,12 +75,7 @@
     </div>
 
     <!-- 上传弹窗 -->
-    <el-dialog
-      title="上传古籍"
-      v-model="dialogVisible"
-      width="500px"
-      @closed="handleDialogClosed"
-    >
+    <el-dialog title="上传古籍" v-model="dialogVisible" width="500px" @closed="handleDialogClosed">
       <el-form ref="formRef" :model="uploadForm" label-width="100px" :rules="rules">
         <el-form-item label="书名" prop="title">
           <el-input v-model="uploadForm.title" placeholder="如 增删卜易" />
@@ -94,7 +84,7 @@
           <el-input v-model="uploadForm.book" placeholder="如 卜易典籍" />
         </el-form-item>
         <el-form-item label="术数方法" prop="method">
-          <el-select v-model="uploadForm.method" placeholder="选择术数方法" style="width: 100%">
+          <el-select v-model="uploadForm.method" placeholder="请选择术数方法" style="width: 100%">
             <el-option
               v-for="m in methodOptions"
               :key="m.value"
@@ -114,7 +104,9 @@
           >
             <el-button type="primary">选择文件</el-button>
             <template #tip>
-              <div class="upload-tip">支持 .txt / .md / .pdf / .docx，上传后自动触发切片与 Embedding</div>
+              <div class="upload-tip">
+                支持 .txt / .md / .pdf / .docx，上传后自动触发切片与 Embedding
+              </div>
             </template>
           </el-upload>
         </el-form-item>
@@ -213,8 +205,10 @@ const handleFileChange = (file) => {
   selectedFile.value = file.raw;
 };
 
-const handleExceed = () => {
-  ElMessage.warning('仅支持上传一个文件，已替换当前选择');
+const handleExceed = (files) => {
+  // limit=1 时用新文件替换已选文件，与提示文案「已替换当前选择」保持一致
+  uploadRef.value?.clearFiles();
+  uploadRef.value?.handleStart(files[0]);
 };
 
 const submitUpload = async () => {
@@ -243,11 +237,9 @@ const submitUpload = async () => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .upload-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
   margin-top: 4px;
 }
 </style>

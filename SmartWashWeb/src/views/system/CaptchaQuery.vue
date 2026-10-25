@@ -1,13 +1,7 @@
 <template>
   <div class="page-container">
     <!-- 说明卡片 -->
-    <el-alert
-      title="演示工具"
-      type="info"
-      :closable="false"
-      show-icon
-      style="margin-bottom: 20px"
-    >
+    <el-alert title="演示工具" type="info" :closable="false" show-icon>
       <template #default>
         查询指定手机号当前有效的短信验证码。验证码有效期 10 分钟，一次性使用（校验成功后立即销毁）。
       </template>
@@ -19,7 +13,7 @@
         <el-form-item label="手机号" :error="phoneError">
           <el-input
             v-model="form.phoneNumber"
-            placeholder="请输入手机号，如 13800138000"
+            placeholder="请输入手机号"
             clearable
             maxlength="13"
             style="width: 240px"
@@ -27,9 +21,7 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="loading" @click="handleQuery">
-            查询验证码
-          </el-button>
+          <el-button type="primary" :loading="loading" @click="handleQuery"> 查询验证码 </el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -43,7 +35,6 @@
       <el-table
         v-if="result.captchas && result.captchas.length"
         :data="result.captchas"
-        style="margin-top: 16px"
         fit
         highlight-current-row
       >
@@ -64,10 +55,11 @@
             <span v-if="row.remainSeconds > 0">
               {{ formatRemainTime(row.remainSeconds) }}
             </span>
-            <span v-else style="color: #f56c6c">已过期</span>
+            <span v-else style="color: #ef4444">已过期</span>
           </template>
         </el-table-column>
       </el-table>
+      <el-empty v-else description="该手机号暂无有效验证码" :image-size="80" />
     </div>
   </div>
 </template>
@@ -124,28 +116,11 @@ function formatRemainTime(seconds) {
 </script>
 
 <style scoped>
-.page-container {
-  padding: 20px;
-}
-
-.filter-container {
-  background: #fff;
-  padding: 20px 20px 4px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.table-card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-}
-
 .captcha-code {
   font-family: 'Courier New', monospace;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 4px;
-  color: #67c23a;
+  color: #6366f1;
 }
 </style>

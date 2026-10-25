@@ -87,13 +87,13 @@
     <div class="table-card">
       <el-table v-loading="listLoading" :data="paymentList" fit highlight-current-row>
         <el-table-column prop="paymentId" label="支付ID" min-width="90" />
-        <el-table-column prop="orderNo" label="订单号" min-width="200" />
+        <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户" min-width="150">
           <template #default="{ row }">
             {{ row.user?.phoneNumber || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="金额" min-width="120">
+        <el-table-column label="金额" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
         <el-table-column label="支付方式" min-width="120">
@@ -212,7 +212,3 @@ const validatePhone = () => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

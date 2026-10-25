@@ -6,7 +6,7 @@
         <el-form-item label="手机号">
           <el-input
             v-model="listQuery.phoneNumber"
-            placeholder="输入用户手机号"
+            placeholder="请输入手机号"
             clearable
             style="width: 160px"
           />
@@ -15,7 +15,7 @@
         <el-form-item label="学校">
           <el-select
             v-model="listQuery.schoolName"
-            placeholder="选择学校"
+            placeholder="全部学校"
             filterable
             clearable
             style="width: 180px"
@@ -32,7 +32,7 @@
         <el-form-item label="订单号">
           <el-input
             v-model="listQuery.orderNo"
-            placeholder="输入订单号"
+            placeholder="请输入订单号"
             clearable
             style="width: 200px"
           />
@@ -41,7 +41,7 @@
         <el-form-item label="洗护套餐">
           <el-select
             v-model="listQuery.laundryItemsId"
-            placeholder="选择套餐"
+            placeholder="全部套餐"
             filterable
             clearable
             style="width: 180px"
@@ -93,7 +93,7 @@
     <!-- 数据表格 -->
     <div class="table-card">
       <el-table v-loading="listLoading" :data="orderList" fit highlight-current-row>
-        <el-table-column prop="orderNo" label="订单号" min-width="200" />
+        <el-table-column prop="orderNo" label="订单号" min-width="200" show-overflow-tooltip />
         <el-table-column label="用户信息" min-width="150">
           <template #default="{ row }">
             {{ row.userVo?.phoneNumber || '-' }}
@@ -109,7 +109,7 @@
             {{ row.laundryPackageVo?.itemName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="总价" min-width="120">
+        <el-table-column label="总价" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.totalPrice?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
         <el-table-column label="状态" min-width="120">
@@ -171,7 +171,9 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="statusDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmUpdateStatus"> 确认 </el-button>
+          <el-button type="primary" :loading="submitting" @click="confirmUpdateStatus">
+            确认
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -230,6 +232,7 @@ const timeRange = useTimeRange(listQuery);
 
 // 状态更新相关
 const statusDialogVisible = ref(false);
+const submitting = ref(false); // 确认按钮 loading，防连点
 const statusForm = reactive({
   orderId: null,
   orderNo: '',
@@ -302,6 +305,7 @@ const confirmUpdateStatus = async () => {
     return;
   }
 
+  submitting.value = true;
   try {
     await updateOrderStatus({
       orderId: statusForm.orderId,
@@ -312,6 +316,8 @@ const confirmUpdateStatus = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '状态更新失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -320,7 +326,3 @@ const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

@@ -202,8 +202,6 @@ const handleRotateKey = async () => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .settings-card {
   padding: 24px;
 }
@@ -232,7 +230,7 @@ const handleRotateKey = async () => {
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
 }
 
 .rotate-key-section {

@@ -6,7 +6,7 @@
         <el-form-item label="角色名称">
           <el-input
             v-model="listQuery.roleName"
-            placeholder="输入角色名称"
+            placeholder="请输入角色名称"
             clearable
             style="width: 200px"
           />
@@ -15,7 +15,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增角色</el-button>
+          <el-button type="primary" @click="handleCreate">新增角色</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -25,7 +25,12 @@
       <el-table v-loading="listLoading" :data="roleList" fit highlight-current-row>
         <el-table-column prop="roleId" label="ID" min-width="80" />
         <el-table-column prop="roleName" label="角色名称" min-width="150" />
-        <el-table-column prop="description" label="角色描述" min-width="200" />
+        <el-table-column
+          prop="description"
+          label="角色描述"
+          min-width="200"
+          show-overflow-tooltip
+        />
         <el-table-column label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
@@ -57,11 +62,11 @@
       width="600px"
     >
       <el-form ref="formRef" :model="tempRole" label-width="100px" :rules="rules">
-        <el-form-item label="角色名称" prop="roleName" style="margin: 20px">
+        <el-form-item label="角色名称" prop="roleName">
           <el-input v-model="tempRole.roleName" placeholder="请输入角色名称" />
         </el-form-item>
 
-        <el-form-item label="角色描述" style="margin: 20px">
+        <el-form-item label="角色描述">
           <el-input
             v-model="tempRole.description"
             type="textarea"
@@ -73,7 +78,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -91,6 +96,7 @@ import { useConfirm } from '@/composables/useConfirm';
 const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -152,6 +158,7 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -168,6 +175,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -187,7 +196,3 @@ const handleDelete = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

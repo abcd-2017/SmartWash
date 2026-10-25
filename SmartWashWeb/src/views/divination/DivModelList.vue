@@ -12,12 +12,7 @@
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select
-            v-model="listQuery.enabled"
-            placeholder="全部"
-            clearable
-            style="width: 120px"
-          >
+          <el-select v-model="listQuery.enabled" placeholder="全部" clearable style="width: 120px">
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
@@ -25,7 +20,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增模型</el-button>
+          <el-button type="primary" @click="handleCreate">新增模型</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -36,12 +31,12 @@
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="name" label="显示名" min-width="160" />
         <el-table-column prop="provider" label="供应商" min-width="120" />
-        <el-table-column prop="baseUrl" label="Base URL" min-width="220" />
+        <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip />
         <el-table-column prop="modelId" label="模型标识" min-width="160" />
         <el-table-column label="API Key" min-width="160">
           <template #default="{ row }">{{ row.apiKeyMask || '***' }}</template>
         </el-table-column>
-        <el-table-column label="优先级" min-width="100">
+        <el-table-column label="优先级" min-width="100" align="right">
           <template #default="{ row }">{{ row.priority }}</template>
         </el-table-column>
         <el-table-column label="状态" min-width="100">
@@ -55,7 +50,7 @@
           <template #default="{ row }">
             <el-tag v-if="row.lastTestOk === 1" type="success">通过</el-tag>
             <el-tag v-else-if="row.lastTestOk === 0" type="danger">失败</el-tag>
-            <span v-else style="color: #94a3b8">未测试</span>
+            <el-tag v-else type="info">未测试</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
@@ -64,17 +59,30 @@
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="primary" @click="handleTest(row)" :loading="testingId === row.id">
+            <el-button
+              size="small"
+              type="primary"
+              @click="handleTest(row)"
+              :loading="testingId === row.id"
+            >
               测试
             </el-button>
             <el-button
               size="small"
               :type="row.enabled === 1 ? 'warning' : 'success'"
+              :loading="togglingId === row.id"
               @click="handleToggle(row)"
             >
               {{ row.enabled === 1 ? '停用' : '启用' }}
             </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              size="small"
+              type="danger"
+              :loading="deletingId === row.id"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -116,12 +124,17 @@
           <el-input
             v-model="tempModel.apiKey"
             type="password"
-            placeholder="粘贴 API Key（列表仅显示掩码，永不回显明文）"
+            :placeholder="dialogType === 'edit' ? '留空则不更换 API Key' : '粘贴 API Key'"
             show-password
           />
         </el-form-item>
         <el-form-item label="优先级" prop="priority">
-          <el-input-number v-model="tempModel.priority" :min="1" :max="999" controls-position="right" />
+          <el-input-number
+            v-model="tempModel.priority"
+            :min="1"
+            :max="999"
+            controls-position="right"
+          />
           <span class="form-tip">越小越优先</span>
         </el-form-item>
         <el-form-item label="启用" prop="enabled">
@@ -130,7 +143,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -154,6 +167,9 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const testingId = ref(null);
+const submitting = ref(false); // 弹窗确认按钮 loading，防连点
+const togglingId = ref(null); // 行内「停用/启用」按钮 loading
+const deletingId = ref(null); // 行内「删除」按钮 loading
 
 const {
   list: modelList,
@@ -202,12 +218,21 @@ const rules = reactive({
   apiKey: [{ required: true, message: '请输入 API Key', trigger: 'blur' }],
 });
 
+// 编辑态 API Key 留空表示不更换（提交时已跳过该字段），不能强制必填
+const setApiKeyRuleForDialog = () => {
+  rules.apiKey =
+    dialogType.value === 'edit'
+      ? []
+      : [{ required: true, message: '请输入 API Key', trigger: 'blur' }];
+};
+
 onMounted(() => {
   fetchData();
 });
 
 const handleCreate = () => {
   dialogType.value = 'create';
+  setApiKeyRuleForDialog();
   dialogVisible.value = true;
   Object.assign(tempModel, {
     id: null,
@@ -223,6 +248,7 @@ const handleCreate = () => {
 
 const handleEdit = (row) => {
   dialogType.value = 'edit';
+  setApiKeyRuleForDialog();
   dialogVisible.value = true;
   // 编辑时 API Key 不回显明文，留空表示不更换
   Object.assign(tempModel, {
@@ -243,6 +269,7 @@ const handleDialogClosed = () => {
 };
 
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
     // 编辑时若未填写 apiKey，则不传该字段（后端不更新密钥）
@@ -261,18 +288,23 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
 const handleDelete = async (row) => {
   const confirmed = await useConfirm(`确认删除模型「${row.name}」吗？`, '警告');
   if (!confirmed) return;
+  deletingId.value = row.id;
   try {
     await deleteModel(row.id);
     ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 
@@ -293,22 +325,23 @@ const handleToggle = async (row) => {
   const action = row.enabled === 1 ? '停用' : '启用';
   const confirmed = await useConfirm(`确认${action}模型「${row.name}」吗？`, '提示');
   if (!confirmed) return;
+  togglingId.value = row.id;
   try {
     await updateModel(row.id, { enabled: row.enabled === 1 ? 0 : 1 });
     ElMessage.success(`${action}成功`);
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || `${action}失败`);
+  } finally {
+    togglingId.value = null;
   }
 };
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
 }
 </style>

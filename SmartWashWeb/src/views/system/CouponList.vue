@@ -6,7 +6,7 @@
         <el-form-item label="优惠券ID">
           <el-input
             v-model.number="listQuery.couponId"
-            placeholder="输入ID"
+            placeholder="请输入ID"
             clearable
             style="width: 120px"
           />
@@ -15,7 +15,7 @@
         <el-form-item label="标题">
           <el-input
             v-model="listQuery.title"
-            placeholder="输入标题"
+            placeholder="请输入标题"
             clearable
             style="width: 200px"
           />
@@ -36,7 +36,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增优惠券</el-button>
+          <el-button type="primary" @click="handleCreate">新增优惠券</el-button>
           <el-button
             type="danger"
             :disabled="multipleSelection.length === 0"
@@ -59,11 +59,11 @@
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="couponId" label="ID" min-width="80" />
-        <el-table-column prop="title" label="标题" min-width="150" />
-        <el-table-column label="折扣金额" min-width="120">
+        <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
+        <el-table-column label="折扣金额" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.discount?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
-        <el-table-column label="使用门槛" min-width="120">
+        <el-table-column label="使用门槛" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.threshold?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
         <el-table-column label="有效期" min-width="220">
@@ -74,8 +74,8 @@
         </el-table-column>
         <el-table-column label="状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'">
-              {{ row.status === 'ACTIVE' ? '可用' : '已失效' }}
+            <el-tag :type="couponStatusTagType(row.status)">
+              {{ couponStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -107,11 +107,11 @@
       width="800px"
     >
       <el-form ref="formRef" :model="tempCoupon" label-width="120px" :rules="rules">
-        <el-form-item label="优惠券标题" prop="title" style="margin: 20px">
+        <el-form-item label="优惠券标题" prop="title">
           <el-input v-model="tempCoupon.title" placeholder="请输入标题" />
         </el-form-item>
 
-        <el-form-item label="优惠券描述" style="margin: 20px">
+        <el-form-item label="优惠券描述">
           <el-input
             v-model="tempCoupon.description"
             type="textarea"
@@ -120,7 +120,7 @@
           />
         </el-form-item>
 
-        <el-row :gutter="20" style="margin: 20px">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="折扣金额" prop="discount">
               <el-input-number
@@ -145,7 +145,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="margin: 20px">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="有效期开始" prop="startTime">
               <el-date-picker
@@ -170,7 +170,7 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="margin: 20px">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="有效天数" prop="validDays">
               <el-input-number
@@ -188,7 +188,7 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="状态" prop="status" style="margin: 20px">
+        <el-form-item label="状态" prop="status">
           <el-select v-model="tempCoupon.status" placeholder="请选择状态" style="width: 100%">
             <el-option label="可用" value="ACTIVE" />
             <el-option label="已失效" value="INACTIVE" />
@@ -198,7 +198,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -210,6 +210,7 @@ import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
 import { getCouponList, addCoupon, updateCoupon, deleteCoupon } from '@/api/coupon';
 import { formatTime } from '@/utils/format';
+import { couponStatusTagType, couponStatusText } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 
@@ -218,6 +219,7 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -331,6 +333,7 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -353,6 +356,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -370,7 +375,3 @@ const handleDelete = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

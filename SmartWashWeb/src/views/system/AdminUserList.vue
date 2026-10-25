@@ -6,7 +6,7 @@
         <el-form-item label="管理员ID">
           <el-input
             v-model.number="listQuery.adminId"
-            placeholder="输入管理员ID"
+            placeholder="请输入管理员ID"
             clearable
             style="width: 120px"
           />
@@ -15,7 +15,7 @@
         <el-form-item label="用户名">
           <el-input
             v-model="listQuery.username"
-            placeholder="输入用户名"
+            placeholder="请输入用户名"
             clearable
             style="width: 150px"
           />
@@ -42,7 +42,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增管理员</el-button>
+          <el-button type="primary" @click="handleCreate">新增管理员</el-button>
           <el-button
             type="danger"
             :disabled="multipleSelection.length === 0"
@@ -98,16 +98,11 @@
       width="600px"
     >
       <el-form ref="formRef" :model="tempAdmin" label-width="100px" :rules="rules">
-        <el-form-item label="用户名" prop="username" style="margin: 20px">
+        <el-form-item label="用户名" prop="username">
           <el-input v-model="tempAdmin.username" placeholder="请输入用户名" />
         </el-form-item>
 
-        <el-form-item
-          style="margin: 20px"
-          label="密码"
-          prop="password"
-          v-if="dialogType === 'create'"
-        >
+        <el-form-item label="密码" prop="password" v-if="dialogType === 'create'">
           <el-input
             v-model="tempAdmin.password"
             type="password"
@@ -116,7 +111,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'" style="margin: 20px">
+        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
           <el-input
             v-model="tempAdmin.password"
             type="password"
@@ -125,7 +120,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="角色" prop="roleId" style="margin: 20px">
+        <el-form-item label="角色" prop="roleId">
           <el-select
             v-model="tempAdmin.roleId"
             placeholder="请选择角色"
@@ -145,7 +140,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -165,6 +160,7 @@ const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
 const multipleSelection = ref([]);
+const submitting = ref(false); // 确认按钮 loading，防连点
 const roleOptions = ref([]); // 角色选项列表
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
@@ -291,6 +287,7 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -316,6 +313,8 @@ const submitForm = async () => {
     } else {
       ElMessage.error('操作失败，请检查输入');
     }
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -333,7 +332,3 @@ const handleDelete = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

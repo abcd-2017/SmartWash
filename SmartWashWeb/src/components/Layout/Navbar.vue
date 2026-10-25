@@ -96,8 +96,13 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   cursor: pointer;
-  padding: 0 8px;
-  outline: none;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.user-info:focus-visible {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
 }
 
 .user-info:hover {

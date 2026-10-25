@@ -4,12 +4,7 @@
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery">
         <el-form-item label="术数方法">
-          <el-select
-            v-model="listQuery.method"
-            placeholder="全部"
-            clearable
-            style="width: 140px"
-          >
+          <el-select v-model="listQuery.method" placeholder="全部" clearable style="width: 140px">
             <el-option
               v-for="m in methodOptions"
               :key="m.value"
@@ -21,18 +16,13 @@
         <el-form-item label="版本号">
           <el-input
             v-model="listQuery.version"
-            placeholder="输入版本号"
+            placeholder="请输入版本号"
             clearable
             style="width: 140px"
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select
-            v-model="listQuery.status"
-            placeholder="全部"
-            clearable
-            style="width: 120px"
-          >
+          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
             <el-option label="草稿" :value="0" />
             <el-option label="激活" :value="1" />
             <el-option label="退役" :value="2" />
@@ -41,7 +31,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增 Prompt</el-button>
+          <el-button type="primary" @click="handleCreate">新增 Prompt</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -61,9 +51,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.remark || '-' }}</template>
+        </el-table-column>
         <el-table-column label="System Prompt" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.systemPrompt }}</template>
+          <template #default="{ row }">{{ row.systemPrompt || '-' }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
@@ -78,11 +70,14 @@
               v-if="row.status !== 1"
               size="small"
               type="success"
+              :loading="activatingId === row.id"
               @click="handleActivate(row)"
             >
               激活
             </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button size="small" :loading="deletingId === row.id" @click="handleDelete(row)">
+              退役
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -126,7 +121,7 @@
             v-model="tempPrompt.systemPrompt"
             type="textarea"
             :rows="6"
-            placeholder="系统提示词"
+            placeholder="请输入系统提示词"
           />
         </el-form-item>
         <el-form-item label="领域方法文本" prop="methodText">
@@ -134,7 +129,7 @@
             v-model="tempPrompt.methodText"
             type="textarea"
             :rows="4"
-            placeholder="领域分析方法文本"
+            placeholder="请输入领域分析方法"
           />
         </el-form-item>
         <el-form-item label="输出配置" prop="outputConfig">
@@ -151,7 +146,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -160,12 +155,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import {
-  getPromptList,
-  createPrompt,
-  updatePrompt,
-  activatePrompt,
-} from '@/api/divination';
+import { getPromptList, createPrompt, updatePrompt, activatePrompt } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
@@ -173,6 +163,9 @@ import { useConfirm } from '@/composables/useConfirm';
 const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
+const submitting = ref(false); // 弹窗确认按钮 loading，防连点
+const activatingId = ref(null); // 行内「激活」按钮 loading
+const deletingId = ref(null); // 行内「删除」按钮 loading
 
 // 术数方法选项（与后端 method 枚举对齐）
 const methodOptions = [
@@ -277,6 +270,7 @@ const handleDialogClosed = () => {
 };
 
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
     const submitData = { ...tempPrompt };
@@ -300,6 +294,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -309,32 +305,34 @@ const handleActivate = async (row) => {
     '提示'
   );
   if (!confirmed) return;
+  activatingId.value = row.id;
   try {
     await activatePrompt(row.id);
     ElMessage.success('激活成功');
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '激活失败');
+  } finally {
+    activatingId.value = null;
   }
 };
 
 const handleDelete = async (row) => {
   const confirmed = await useConfirm(
-    `确认删除 Prompt「${methodText(row.method)} ${row.version}」吗？`,
-    '警告'
+    `确认将 Prompt「${methodText(row.method)} ${row.version}」退役吗？退役后不再参与调用，可重新编辑激活。`,
+    '提示'
   );
   if (!confirmed) return;
+  deletingId.value = row.id;
   try {
     // 后端未提供删除接口，此处通过标记退役实现（或扩展 delete 接口）
     await updatePrompt(row.id, { status: 2 });
-    ElMessage.success('已标记为退役');
+    ElMessage.success('Prompt 已退役');
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

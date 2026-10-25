@@ -36,6 +36,11 @@
   padding: 10px 0;
 }
 
+/* 金额/数量等数字列（align="right"）使用等宽数字，避免数值变化时抖动 */
+.el-table .cell {
+  font-variant-numeric: tabular-nums;
+}
+
 .el-table--border .el-table__inner-wrapper::after,
 .el-table--border::after,
 .el-table--border::before,
@@ -114,11 +119,57 @@
   border-top: 1px solid #e2e8f0;
 }
 
+/* 弹窗动效：微缩放 + 淡入（来自绑定触发器，方向性因果）；离场更快（sub-60% 时长）。
+   覆盖 Element Plus 默认过渡，复用全局 motion/ease Token */
+.el-dialog {
+  /* 弹窗节点本身负责 fade；内容由 transform 缩放 */
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-decelerate);
+}
+
+.dialog-fade-enter-from {
+  opacity: 0;
+}
+
+.dialog-fade-enter-from .el-dialog {
+  transform: scale(0.96);
+}
+
+.dialog-fade-enter-active .el-dialog {
+  transition:
+    opacity var(--motion-base) var(--ease-decelerate),
+    transform var(--motion-base) var(--ease-decelerate);
+}
+
+.dialog-fade-leave-to .el-dialog {
+  opacity: 0;
+}
+
+.dialog-fade-leave-active .el-dialog {
+  transition:
+    opacity var(--motion-fast) var(--ease-accelerate),
+    transform var(--motion-fast) var(--ease-accelerate);
+}
+
+.dialog-fade-leave-to {
+  opacity: 0;
+}
+
 /* --- el-tag --- */
 .el-tag {
   border: none !important;
   border-radius: 6px;
   font-weight: 500;
+}
+
+/* 状态标签变色过渡：修改状态 → 弹窗确认 → 表格标签平滑过渡到新语义色，
+   让"数据已变更"的因果可见；duration 取 --motion-fast（即时反馈档） */
+.el-tag {
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
 }
 
 .el-tag--success {
@@ -212,6 +263,26 @@
   border-color: #dc2626 !important;
 }
 
+/* --- el-button 警告 (Amber) --- */
+.el-button--warning,
+.el-button--warning:focus,
+.el-button--warning:hover {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #fff !important;
+}
+
+.el-button--warning:hover,
+.el-button--warning:focus {
+  background-color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+}
+
+.el-button--warning:active {
+  background-color: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
 /* --- el-button 默认 (Slate) --- */
 .el-button--default,
 .el-button--default:focus,
@@ -249,7 +320,7 @@
 
 .el-input__wrapper:focus-within,
 .el-input.is-focus .el-input__wrapper {
-  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
 .el-input__inner {
@@ -267,7 +338,7 @@
 }
 
 .el-select .el-input__wrapper:focus-within {
-  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
 .el-select-dropdown {
@@ -307,7 +378,7 @@
 
 .el-textarea__inner:focus {
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .el-textarea__inner::placeholder {
@@ -325,7 +396,7 @@
 }
 
 .el-date-editor .el-input__wrapper:focus-within {
-  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+  box-shadow: 0 0 0 1px #6366f1 inset, 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
 
 .el-picker-panel {
@@ -390,6 +461,30 @@
 
 .el-message-box__btns {
   padding: 12px 24px 20px;
+}
+
+/* 确认框动效：与 el-dialog 同风格微缩放 + 淡入，保持一致的方向性一致 */
+.el-message-box {
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-decelerate);
+}
+
+.message-box-fade-enter-from .el-message-box {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.message-box-fade-enter-active .el-message-box {
+  transition:
+    opacity var(--motion-base) var(--ease-decelerate),
+    transform var(--motion-base) var(--ease-decelerate);
+}
+
+.message-box-fade-leave-active .el-message-box {
+  transition:
+    opacity var(--motion-fast) var(--ease-accelerate),
+    transform var(--motion-fast) var(--ease-accelerate);
 }
 
 /* --- el-loading 加载遮罩 --- */

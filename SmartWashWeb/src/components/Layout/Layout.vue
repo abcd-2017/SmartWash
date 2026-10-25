@@ -8,24 +8,32 @@
       <!-- 顶部导航栏 -->
       <Navbar />
 
-      <!-- 子页面 -->
+      <!-- 子页面：路由切换淡入滑动（进出场方向性一致，mode=out-in 先离后进避免重叠） -->
       <div class="app-main">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" :key="route.fullPath" />
+          </transition>
+        </router-view>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useRoute } from 'vue-router';
 import Sidebar from './Sidebar.vue';
 import Navbar from './Navbar.vue';
+
+// 用 fullPath 作为转换 key：查询参数/路径变化均触发过渡，保证同页内跳转不“硬切”
+const route = useRoute();
 </script>
 
 <style scoped>
 .layout-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -41,5 +49,28 @@ import Navbar from './Navbar.vue';
   padding: 20px;
   overflow-y: auto; /* 垂直滚动 */
   background-color: #f1f5f9;
+}
+
+/* 路由切换过渡：进场减速（轻微上移 + 淡入）、离场快速淡出（退出快于进入，sub-60% 时长） */
+.fade-slide-enter-active {
+  transition:
+    opacity var(--motion-base) var(--ease-decelerate),
+    transform var(--motion-base) var(--ease-decelerate);
+}
+
+.fade-slide-leave-active {
+  transition:
+    opacity var(--motion-fast) var(--ease-accelerate),
+    transform var(--motion-fast) var(--ease-accelerate);
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>
