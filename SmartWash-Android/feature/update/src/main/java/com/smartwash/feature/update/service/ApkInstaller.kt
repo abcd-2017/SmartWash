@@ -9,10 +9,35 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 /**
+ * requestInstall 结果：已发起系统安装 / 需先授予「安装未知应用」权限
+ */
+sealed interface InstallRequestResult {
+    data object Installed : InstallRequestResult
+    data object NeedPermission : InstallRequestResult
+}
+
+/**
  * APK 安装器
  * 封装 FileProvider URI 获取、安装 Intent 跳转、权限检查等逻辑
  */
 object ApkInstaller {
+
+    /**
+     * 安装点击的完整序列（自壳层 UpdateFlow 下沉）：有安装权限则拉起系统安装器；
+     * 无权限跳「允许安装未知应用」设置页。
+     *
+     * startActivity 返回后系统安装器才经 FileProvider 异步读取 APK，
+     * 本序列内禁止删除文件——清理由下次下载开始时（ApkDownloadWorker 入口）兜底。
+     */
+    fun requestInstall(context: Context, apkFile: File): InstallRequestResult {
+        return if (canInstallApk(context)) {
+            installViaIntent(context, apkFile)
+            InstallRequestResult.Installed
+        } else {
+            openInstallPermissionSettings(context)
+            InstallRequestResult.NeedPermission
+        }
+    }
 
     /**
      * 通过系统安装器 Intent 安装 APK

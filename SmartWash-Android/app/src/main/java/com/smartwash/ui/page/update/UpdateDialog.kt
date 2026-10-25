@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -421,6 +422,81 @@ fun DownloadCompleteDialog(
                     ) {
                         Text(
                             text = stringResource(R.string.install_now),
+                            color = AppColors.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 下载失败弹窗 — 展示失败原因并提供重试入口（下载链路错误的唯一 App 内反馈，
+ * 避免进度弹窗静默消失让用户不知发生了什么）
+ */
+@Composable
+fun DownloadErrorDialog(
+    message: String,
+    onRetry: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onClose,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.radiusLg),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.floatLayer,
+        ) {
+            Column {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.download_failed_icon),
+                            modifier = Modifier.size(32.dp),
+                        )
+                        Spacer(modifier = Modifier.size(8.dp))
+                        Text(
+                            text = stringResource(R.string.download_failed),
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(onClick = onClose),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.cancel),
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(onClick = onRetry),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.retry),
                             color = AppColors.colorScheme.primary,
                         )
                     }

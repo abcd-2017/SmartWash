@@ -16,6 +16,12 @@ import java.io.File
 import javax.inject.Inject
 
 /**
+ * Error 来源：决定失败提示的呈现位置——手动检查失败由设置页 Toast 反馈，
+ * 下载失败由壳层错误弹窗反馈（含重试入口），互不抢占。
+ */
+enum class ErrorSource { Check, Download }
+
+/**
  * 应用更新状态密封类，覆盖检查→下载→安装全链路异步状态
  */
 sealed interface UpdateState {
@@ -24,11 +30,18 @@ sealed interface UpdateState {
     data class UpdateAvailable(val version: AppVersionVo) : UpdateState
     /** 准备下载中（获取预签名地址阶段），UI 应展示加载指示器 */
     data object Preparing : UpdateState
-    data class Downloading(val progress: Int) : UpdateState
+    data class Downloading(
+        val progress: Int,
+        val downloadedBytes: Long = 0L,
+        val totalBytes: Long = 0L,
+    ) : UpdateState
     data class Downloaded(val file: File) : UpdateState
     data object Installing : UpdateState
     data object LatestVersion : UpdateState
-    data class Error(val message: String) : UpdateState
+    data class Error(
+        val message: String,
+        val source: ErrorSource = ErrorSource.Check,
+    ) : UpdateState
 }
 
 /**
@@ -130,9 +143,15 @@ class UpdateViewModel @Inject constructor(
                 val url = repository.getPresignedDownloadUrl()
                 _downloadUrl.value = url
             } catch (e: NetworkException) {
-                _state.value = UpdateState.Error(e.message ?: context.getString(R.string.download_url_empty))
+                _state.value = UpdateState.Error(
+                    e.message ?: context.getString(R.string.download_url_empty),
+                    ErrorSource.Download,
+                )
             } catch (e: Exception) {
-                _state.value = UpdateState.Error(e.message ?: context.getString(R.string.download_url_empty))
+                _state.value = UpdateState.Error(
+                    e.message ?: context.getString(R.string.download_url_empty),
+                    ErrorSource.Download,
+                )
             }
         }
     }
@@ -147,8 +166,8 @@ class UpdateViewModel @Inject constructor(
     /**
      * 下载进度回调
      */
-    fun onDownloadProgress(progress: Int) {
-        _state.value = UpdateState.Downloading(progress)
+    fun onDownloadProgress(progress: Int, downloadedBytes: Long, totalBytes: Long) {
+        _state.value = UpdateState.Downloading(progress, downloadedBytes, totalBytes)
     }
 
     /**
@@ -162,7 +181,7 @@ class UpdateViewModel @Inject constructor(
      * 下载失败回调
      */
     fun onDownloadFailed(message: String) {
-        _state.value = UpdateState.Error(message)
+        _state.value = UpdateState.Error(message, ErrorSource.Download)
     }
 
     /**

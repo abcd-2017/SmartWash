@@ -3,7 +3,9 @@ package com.smartwash.feature.update.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -43,6 +45,8 @@ class ApkDownloadWorker @AssistedInject constructor(
         const val KEY_APK_URL = "apk_url"
         const val KEY_SHA256 = "sha256"
         const val KEY_PROGRESS = "progress"
+        const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
+        const val KEY_TOTAL_BYTES = "total_bytes"
         const val KEY_APK_PATH = "apk_path"
         const val KEY_ERROR = "error"
 
@@ -58,6 +62,42 @@ class ApkDownloadWorker @AssistedInject constructor(
 
         // 前台服务类型（minSdk 30，常量可直接引用；须与 Manifest 声明一致）
         private const val FGS_TYPE = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+
+        /**
+         * 构建下载完成通知（companion 暴露供回归测试直接构建）。
+         * 必须携带指向系统安装器的 contentIntent：下载期间用户可能已划掉 App，
+         * 完成通知的「点击安装」是那时唯一的安装入口。
+         */
+        fun buildCompleteNotification(context: Context, versionName: String, apkFile: File): Notification {
+            val title = "更新包下载完成"
+            val text = if (versionName.isNotBlank()) {
+                "点击安装 SmartWash $versionName"
+            } else {
+                "点击安装 SmartWash 更新"
+            }
+
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(ApkInstaller.getFileUri(context, apkFile), "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val contentIntent = PendingIntent.getActivity(
+                context,
+                0,
+                installIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+
+            return NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true) // 点击后自动消失
+                .setSilent(false) // 完成时允许提示音
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build()
+        }
     }
 
     /**
@@ -115,7 +155,11 @@ class ApkDownloadWorker @AssistedInject constructor(
                             val progress = (downloadedBytes * 100 / totalBytes).toInt()
                             if (progress - lastReportedProgress >= PROGRESS_INTERVAL) {
                                 lastReportedProgress = progress
-                                setProgress(workDataOf(KEY_PROGRESS to progress))
+                                setProgress(workDataOf(
+                                    KEY_PROGRESS to progress,
+                                    KEY_DOWNLOADED_BYTES to downloadedBytes,
+                                    KEY_TOTAL_BYTES to totalBytes,
+                                ))
                                 // 更新通知栏进度
                                 setForeground(buildForegroundInfo(
                                     buildProgressNotification(progress, downloadedBytes, totalBytes)
@@ -138,8 +182,8 @@ class ApkDownloadWorker @AssistedInject constructor(
                 }
             }
 
-            // 下载完成：展示完成通知（点击可触发安装，由 UpdateFlow 监听 SUCCEEDED 状态处理）
-            setForeground(buildForegroundInfo(buildCompleteNotification(versionName)))
+            // 下载完成：展示完成通知（点击拉起系统安装器；App 进程不在前台时这是唯一安装入口）
+            setForeground(buildForegroundInfo(buildCompleteNotification(applicationContext, versionName, apkFile)))
 
             // 下载完成，返回文件路径
             return Result.success(
@@ -207,27 +251,6 @@ class ApkDownloadWorker @AssistedInject constructor(
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setProgress(100, progress.coerceIn(0, 100), total <= 0) // total 未知时显示不确定进度条
             .setOnlyAlertOnce(true) // 仅首次弹出提醒，后续更新不打扰
-            .build()
-    }
-
-    /**
-     * 构建下载完成通知
-     */
-    private fun buildCompleteNotification(versionName: String): Notification {
-        val title = "更新包下载完成"
-        val text = if (versionName.isNotBlank()) {
-            "点击安装 SmartWash $versionName"
-        } else {
-            "点击安装 SmartWash 更新"
-        }
-
-        return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setAutoCancel(true) // 点击后自动消失
-            .setSilent(false) // 完成时允许提示音
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
     }
 

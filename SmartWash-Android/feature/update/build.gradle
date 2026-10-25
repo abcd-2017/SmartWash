@@ -8,6 +8,12 @@ apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.feature.update'
+    // Robolectric 单测需读取模块 Manifest/资源（FileProvider 的 @xml/file_paths 解析依赖）
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -33,4 +39,9 @@ dependencies {
 
     // ApkDownloadWorker 直接消费 OkHttp（下载执行）
     implementation libs.okhttp
+
+    // 安装链路回归测试（ApkInstaller 的 FileProvider/安装 Intent 竞态固化）
+    testImplementation libs.junit
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
 }

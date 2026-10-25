@@ -149,6 +149,8 @@
     <string name="install_later">稍后安装</string>
     <string name="install_now">立即安装</string>
     <string name="download_failed">下载失败，请重试</string>
+    <string name="download_failed_icon">❌</string>
+    <string name="retry">重试</string>
     <string name="update_title_icon">🎉</string>
     <string name="force_update_icon">⚠️</string>
     <string name="download_complete_icon">✅</string>
