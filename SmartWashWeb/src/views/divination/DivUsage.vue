@@ -126,8 +126,9 @@ const recordsCount = ref(0);
 // 图表入场/更新动画：数据登场与过滤变化有节奏，值取自 --motion-slow/--motion-base 档
 const CHART_ANIMATION = {
   animation: true,
-  animationDuration: 360, // 首次渲染（进场）
-  animationDurationUpdate: 300, // 数据更新重绘
+  // 与样式 Token 对齐：首帧进场取 --motion-slow(320)，数据更新取 --motion-base(220)
+  animationDuration: 320,
+  animationDurationUpdate: 220,
   animationEasing: 'cubicOut',
 };
 
@@ -289,27 +290,6 @@ const renderCharts = (records) => {
 </script>
 
 <style scoped>
-/* 统计卡与图表卡进场：淡入上移（首挂载一次；数值/图表内容动画已分别处理） */
-.stats-row,
-.charts-row {
-  animation: usage-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
-}
-
-.charts-row:nth-of-type(2) {
-  animation-delay: 60ms;
-}
-
-@keyframes usage-fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .stats-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

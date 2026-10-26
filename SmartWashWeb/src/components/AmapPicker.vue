@@ -337,7 +337,7 @@ function handleDialogClosed() {
   padding: 10px 14px;
   cursor: pointer;
   border-bottom: 1px solid #f1f5f9;
-  transition: background 0.2s;
+  transition: background-color var(--motion-fast) var(--ease-standard);
 }
 
 .amap-search-item:hover {

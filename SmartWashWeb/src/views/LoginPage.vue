@@ -130,19 +130,6 @@ const handleLogin = async () => {
   box-shadow:
     0 4px 32px rgba(99, 102, 241, 0.08),
     0 1px 2px rgba(0, 0, 0, 0.04);
-  /* 舞台进场：整体淡入 + 轻微放大，控制在 1 个关键元素内 */
-  animation: login-panel-in var(--motion-base) var(--ease-decelerate) both;
-}
-
-@keyframes login-panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 /* --- 左侧品牌区 --- */
@@ -222,8 +209,8 @@ const handleLogin = async () => {
   font-weight: 500;
   border-radius: 8px;
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+    transform var(--motion-base) var(--ease-decelerate),
+    box-shadow var(--motion-base) var(--ease-decelerate);
 }
 
 .login-btn:not(.is-disabled):hover {
@@ -244,8 +231,8 @@ const handleLogin = async () => {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   border: 1.5px solid #e2e8f0;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 :deep(.el-input__wrapper:hover) {

@@ -37,19 +37,6 @@ const goHome = () => {
   box-shadow:
     0 4px 32px rgba(99, 102, 241, 0.08),
     0 1px 2px rgba(0, 0, 0, 0.04);
-  /* 舞台进场：与登录页一致的淡入 + 轻微放大 */
-  animation: notfound-in var(--motion-base) var(--ease-decelerate) both;
-}
-
-@keyframes notfound-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .not-found-code {
