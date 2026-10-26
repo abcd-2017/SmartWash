@@ -230,6 +230,21 @@ const rules = reactive({
   version: [{ required: true, message: '请输入版本号', trigger: 'blur' }],
   systemPrompt: [{ required: true, message: '请输入 System Prompt', trigger: 'blur' }],
   methodText: [{ required: true, message: '请输入领域方法文本', trigger: 'blur' }],
+  // 非法 JSON 直接阻止提交，避免用户填写的配置被静默丢弃
+  outputConfig: [
+    {
+      validator: (rule, value, callback) => {
+        if (!value) return callback();
+        try {
+          JSON.parse(value);
+          callback();
+        } catch {
+          callback(new Error('输出配置需为合法 JSON'));
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
 });
 
 onMounted(() => {
@@ -274,14 +289,9 @@ const submitForm = async () => {
   try {
     await formRef.value.validate();
     const submitData = { ...tempPrompt };
-    // outputConfig 从字符串解析为 JSON
+    // outputConfig 从字符串解析为 JSON（合法性已由表单规则前置校验）
     if (submitData.outputConfig) {
-      try {
-        submitData.outputConfig = JSON.parse(submitData.outputConfig);
-      } catch {
-        ElMessage.warning('输出配置 JSON 格式不正确，已忽略');
-        delete submitData.outputConfig;
-      }
+      submitData.outputConfig = JSON.parse(submitData.outputConfig);
     }
     if (dialogType.value === 'create') {
       await createPrompt(submitData);

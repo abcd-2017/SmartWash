@@ -81,6 +81,8 @@ const loading = ref(false);
 
 const handleLogin = async () => {
   if (!formRef.value) return;
+  // 请求在途时拦截 Enter 重复触发（按钮 :loading 只拦点击，拦不住表单回车）
+  if (loading.value) return;
 
   try {
     await formRef.value.validate();
