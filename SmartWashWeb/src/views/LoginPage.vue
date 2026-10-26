@@ -57,11 +57,12 @@
 <script setup>
 import { ref, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { login } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 const formRef = ref(null);
 const loginForm = reactive({
@@ -97,7 +98,9 @@ const handleLogin = async () => {
     authStore.login(data.token, data.role);
 
     ElMessage.success('登录成功');
-    router.push('/');
+    // 原路返回：仅接受站内路径（/ 开头），防止 redirect 参数被外链利用
+    const redirect = route.query.redirect;
+    router.push(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/');
   } catch (error) {
     ElMessage.error(error.message || '登录失败');
   } finally {
