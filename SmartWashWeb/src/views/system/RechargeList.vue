@@ -35,7 +35,7 @@
         <el-form-item label="充值类型">
           <el-select
             v-model="listQuery.rechargeType"
-            placeholder="请选择"
+            placeholder="全部类型"
             clearable
             style="width: 120px"
           >
@@ -74,7 +74,7 @@
         <el-table-column label="手机号" min-width="120">
           <template #default="{ row }">{{ row.users?.phoneNumber || '-' }}</template>
         </el-table-column>
-        <el-table-column label="充值金额" min-width="150">
+        <el-table-column label="充值金额" min-width="150" align="right">
           <template #default="{ row }">￥{{ row.amount?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
         <el-table-column label="充值类型" min-width="120">
@@ -153,7 +153,3 @@ onMounted(() => {
   fetchData();
 });
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

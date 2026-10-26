@@ -6,7 +6,7 @@
         <el-form-item label="寄存柜ID">
           <el-input
             v-model.number="listQuery.lockerId"
-            placeholder="输入ID"
+            placeholder="请输入ID"
             clearable
             style="width: 120px"
           />
@@ -15,7 +15,7 @@
         <el-form-item label="学校">
           <el-select
             v-model="listQuery.schoolId"
-            placeholder="选择学校"
+            placeholder="全部学校"
             filterable
             clearable
             style="width: 150px"
@@ -69,7 +69,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增寄存柜</el-button>
+          <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -122,10 +122,10 @@
       width="600px"
     >
       <el-form ref="formRef" :model="tempLocker" label-width="100px" :rules="rules">
-        <el-form-item label="学校" prop="schoolId" style="margin: 20px">
+        <el-form-item label="学校" prop="schoolId">
           <el-select
             v-model="tempLocker.schoolId"
-            placeholder="选择学校"
+            placeholder="请选择学校"
             filterable
             clearable
             style="width: 100%"
@@ -139,7 +139,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="柜号" prop="lockerNumber" style="margin: 20px">
+        <el-form-item label="柜号" prop="lockerNumber">
           <el-input-number
             :disabled="dialogType !== 'create'"
             v-model="tempLocker.lockerNumber"
@@ -149,8 +149,8 @@
           />
         </el-form-item>
 
-        <el-form-item label="状态" prop="status" style="margin: 20px">
-          <el-select v-model="tempLocker.status" placeholder="选择状态" style="width: 100%">
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="tempLocker.status" placeholder="请选择状态" style="width: 100%">
             <el-option
               v-for="(desc, code) in statusOptions"
               :key="code"
@@ -163,7 +163,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -193,6 +193,7 @@ const schoolMap = ref({}); // 学校ID到名称的映射
 const dialogVisible = ref(false); // 弹窗显示状态
 const dialogType = ref('create'); // 弹窗类型（新增/编辑）
 const formRef = ref(null); // 引用表单组件
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -302,6 +303,7 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -323,6 +325,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -345,7 +349,3 @@ const formatStatus = (status) => {
   return statusOptions.value[status] || '未知状态';
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

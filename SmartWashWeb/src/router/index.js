@@ -288,4 +288,10 @@ router.beforeEach((to, from, next) => {
   }
 });
 
+// 各路由 meta.title 此前无任何消费方，浏览器标签恒显示 index.html 的静态标题；
+// 路由切换时同步标签标题，让多标签页管理后台可按页面区分
+router.afterEach((to) => {
+  document.title = to.meta.title ? `${to.meta.title} · SmartWash 管理系统` : 'SmartWash 管理系统';
+});
+
 export default router;

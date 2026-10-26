@@ -40,6 +40,8 @@ import com.smartwash.feature.update.event.UpdateEventBus
 import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.feature.update.service.ApkDownloadWorker
 import com.smartwash.feature.update.service.ApkInstaller
+import com.smartwash.feature.update.service.InstallRequestResult
+import com.smartwash.feature.update.ui.ErrorSource
 import com.smartwash.feature.update.ui.UpdateState
 import com.smartwash.feature.update.ui.UpdateViewModel
 import java.io.File
@@ -112,7 +114,9 @@ internal fun UpdateFlow(
             when (workInfo?.state) {
                 WorkInfo.State.RUNNING -> {
                     val progress = workInfo.progress.getInt(ApkDownloadWorker.KEY_PROGRESS, 0)
-                    updateViewModel.onDownloadProgress(progress)
+                    val downloaded = workInfo.progress.getLong(ApkDownloadWorker.KEY_DOWNLOADED_BYTES, 0L)
+                    val total = workInfo.progress.getLong(ApkDownloadWorker.KEY_TOTAL_BYTES, 0L)
+                    updateViewModel.onDownloadProgress(progress, downloaded, total)
                 }
                 WorkInfo.State.SUCCEEDED -> {
                     val apkPath = workInfo.outputData.getString(ApkDownloadWorker.KEY_APK_PATH)
@@ -182,8 +186,9 @@ internal fun UpdateFlow(
         is UpdateState.Downloading -> {
             DownloadProgressDialog(
                 progress = currentState.progress,
-                downloadedBytes = 0L,
-                totalBytes = (updateViewModel.getLatestVersion()?.fileSize ?: 0L),
+                downloadedBytes = currentState.downloadedBytes,
+                totalBytes = currentState.totalBytes.takeIf { it > 0 }
+                    ?: (updateViewModel.getLatestVersion()?.fileSize ?: 0L),
                 onCancel = {
                     currentDownloadWorkId.value?.let { id ->
                         try { workManager.cancelWorkById(UUID.fromString(id)) } catch (_: Exception) {}
@@ -201,7 +206,20 @@ internal fun UpdateFlow(
                 onInstallLater = { updateViewModel.reset() },
             )
         }
-        else -> { /* Idle / Checking / LatestVersion / Error / Installing 不弹窗 */ }
+        is UpdateState.Error -> {
+            // 下载失败必须给用户明确反馈与重试入口；检查失败的 Toast 由设置页 CheckUpdateSettingRow 负责
+            if (currentState.source == ErrorSource.Download) {
+                DownloadErrorDialog(
+                    message = currentState.message,
+                    onRetry = rememberDebouncedClick(ClickDebouncer.ACTION_CLICK_INTERVAL_MS) {
+                        updateViewModel.preparingDownload()
+                        updateViewModel.startDownload(context)
+                    },
+                    onClose = { updateViewModel.reset() },
+                )
+            }
+        }
+        else -> { /* Idle / Checking / LatestVersion / Installing 不弹窗 */ }
     }
 }
 
@@ -240,9 +258,12 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
                 updateViewModel.reset()
             }
             is UpdateState.Error -> {
-                val msg = (manualCheckState as UpdateState.Error).message
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                updateViewModel.reset()
+                // 下载类错误由壳层 UpdateFlow 弹窗反馈，此处只消费手动检查失败，避免双响应
+                if ((manualCheckState as UpdateState.Error).source == ErrorSource.Check) {
+                    val msg = (manualCheckState as UpdateState.Error).message
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    updateViewModel.reset()
+                }
             }
             else -> {}
         }
@@ -301,20 +322,21 @@ private fun enqueueApkDownload(
 }
 
 /**
- * 处理 APK 安装：检查权限后调起系统安装器
+ * 处理 APK 安装：安装序列（权限检查 → 拉起安装器/跳设置页）在 ApkInstaller.requestInstall，
+ * 此处只做 ViewModel 状态联动
  */
 private fun handleApkInstall(
     context: Context,
     updateViewModel: UpdateViewModel,
     apkFile: File,
 ) {
-    if (ApkInstaller.canInstallApk(context)) {
-        updateViewModel.onInstallStarted()
-        ApkInstaller.installViaIntent(context, apkFile)
-        ApkInstaller.deleteLocalApk(context)
-        updateViewModel.reset()
-    } else {
-        // 无安装权限，跳转系统设置
-        ApkInstaller.openInstallPermissionSettings(context)
+    when (ApkInstaller.requestInstall(context, apkFile)) {
+        InstallRequestResult.Installed -> {
+            updateViewModel.onInstallStarted()
+            updateViewModel.reset()
+        }
+        InstallRequestResult.NeedPermission -> {
+            // 已跳转系统「允许安装未知应用」设置页；弹窗保持 Downloaded 状态，授权返回后可重点安装
+        }
     }
 }

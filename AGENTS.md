@@ -68,12 +68,12 @@
 
 ### Issue tracker
 
-Issues 存放在本仓库 GitHub Issues，使用 `gh` CLI 操作。详见 `.claude/docs/issue-tracker.md`。
+Issues 存放在本仓库 GitHub Issues，使用 `gh` CLI 操作。详见 `docs/agents/issue-tracker.md`。
 
 ### Triage labels
 
-使用五个标准分诊角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。详见 `.claude/docs/triage-labels.md`。
+使用五个标准分诊角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。详见 `docs/agents/triage-labels.md`。
 
 ### Domain docs
 
-Single-context 布局：根目录一个 `CONTEXT.md` + `docs/adr/`。详见 `.claude/docs/domain.md`。
+Single-context 布局：根目录一个 `GLOSSARY.md` + `docs/adr/`。详见 `docs/agents/domain.md`。

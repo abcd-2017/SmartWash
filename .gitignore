@@ -63,6 +63,9 @@ oh_modules/
 # === 文档（本地资料不提交；agent 工作流文档除外） ===
 **/docs/
 !/.claude/docs/
+!/docs/
+/docs/*
+!/docs/agents/
 # 签名文件
 *.keystore
 *.jks

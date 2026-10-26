@@ -6,7 +6,7 @@
         <el-form-item label="套餐ID">
           <el-input
             v-model.number="listQuery.itemId"
-            placeholder="输入套餐ID"
+            placeholder="请输入套餐ID"
             clearable
             style="width: 120px"
           />
@@ -15,7 +15,7 @@
         <el-form-item label="套餐名称">
           <el-input
             v-model="listQuery.itemName"
-            placeholder="输入套餐名称"
+            placeholder="请输入套餐名称"
             clearable
             style="width: 200px"
           />
@@ -24,7 +24,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增套餐</el-button>
+          <el-button type="primary" @click="handleCreate">新增套餐</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -34,10 +34,15 @@
       <el-table v-loading="listLoading" :data="laundryList" fit highlight-current-row>
         <el-table-column prop="itemId" label="ID" min-width="80" />
         <el-table-column prop="itemName" label="套餐名称" min-width="180" />
-        <el-table-column prop="basePrice" label="基础价格" min-width="120">
+        <el-table-column prop="basePrice" label="基础价格" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.basePrice?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
-        <el-table-column prop="description" label="套餐描述" min-width="240" />
+        <el-table-column
+          prop="description"
+          label="套餐描述"
+          min-width="240"
+          show-overflow-tooltip
+        />
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
@@ -69,22 +74,22 @@
       width="600px"
     >
       <el-form ref="formRef" :model="tempLaundry" label-width="100px" :rules="rules">
-        <el-form-item label="套餐名称" prop="itemName" style="margin: 20px">
+        <el-form-item label="套餐名称" prop="itemName">
           <el-input v-model="tempLaundry.itemName" placeholder="请输入套餐名称" />
         </el-form-item>
 
-        <el-form-item label="基础价格" prop="basePrice" style="margin: 20px">
+        <el-form-item label="基础价格" prop="basePrice">
           <el-input-number
             v-model="tempLaundry.basePrice"
             :precision="2"
             :min="0"
             :step="10"
             controls-position="right"
-            style="width: 200px"
+            style="width: 100%"
           />
         </el-form-item>
 
-        <el-form-item label="套餐描述" style="margin: 20px">
+        <el-form-item label="套餐描述">
           <el-input
             v-model="tempLaundry.description"
             type="textarea"
@@ -96,7 +101,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -114,6 +119,7 @@ import { useConfirm } from '@/composables/useConfirm';
 const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -186,6 +192,7 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -202,6 +209,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -221,7 +230,3 @@ const handleDelete = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

@@ -49,7 +49,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增用户</el-button>
+          <el-button type="primary" @click="handleCreate">新增用户</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -71,9 +71,13 @@
             {{ row.schools?.schoolName || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="studentId" label="学号" min-width="120" />
-        <el-table-column prop="campusCard" label="校园卡号" min-width="150" />
-        <el-table-column prop="balance" label="余额" min-width="120">
+        <el-table-column prop="studentId" label="学号" min-width="120">
+          <template #default="{ row }">{{ row.studentId || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="campusCard" label="校园卡号" min-width="150">
+          <template #default="{ row }">{{ row.campusCard || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="balance" label="余额" min-width="120" align="right">
           <template #default="{ row }">￥{{ row.balance?.toFixed(2) || '0.00' }}</template>
         </el-table-column>
         <el-table-column prop="createdAt" label="注册时间" min-width="180">
@@ -107,7 +111,7 @@
       width="600px"
     >
       <el-form ref="formRef" :model="tempUser" label-width="100px" :rules="rules">
-        <el-form-item label="学校" prop="schoolId" style="margin: 20px">
+        <el-form-item label="学校" prop="schoolId">
           <el-select v-model="tempUser.schoolId" placeholder="请选择学校" filterable>
             <el-option
               v-for="school in schoolOptions"
@@ -118,7 +122,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="手机号" prop="phoneNumber" style="margin: 20px">
+        <el-form-item label="手机号" prop="phoneNumber">
           <el-input
             v-model="tempUser.phoneNumber"
             placeholder="请输入手机号"
@@ -126,20 +130,15 @@
           />
         </el-form-item>
 
-        <el-form-item label="学号" prop="studentId" style="margin: 20px">
+        <el-form-item label="学号" prop="studentId">
           <el-input v-model="tempUser.studentId" placeholder="请输入学号" />
         </el-form-item>
 
-        <el-form-item label="校园卡号" style="margin: 20px">
+        <el-form-item label="校园卡号">
           <el-input v-model="tempUser.campusCard" placeholder="请输入校园卡号" />
         </el-form-item>
 
-        <el-form-item
-          label="密码"
-          style="margin: 20px"
-          prop="password"
-          v-if="dialogType === 'create'"
-        >
+        <el-form-item label="密码" prop="password" v-if="dialogType === 'create'">
           <el-input
             v-model="tempUser.password"
             type="password"
@@ -148,7 +147,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="修改密码" v-if="dialogType === 'edit'" style="margin: 20px">
+        <el-form-item label="修改密码" v-if="dialogType === 'edit'">
           <el-input
             v-model="tempUser.password"
             type="password"
@@ -160,7 +159,7 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -178,6 +177,7 @@ import { useConfirm } from '@/composables/useConfirm';
 const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -284,8 +284,10 @@ const handleEdit = (row) => {
 
 // 提交表单
 const submitForm = async () => {
-  await formRef.value.validate();
+  const valid = await formRef.value.validate().catch(() => false);
+  if (!valid) return;
 
+  submitting.value = true;
   try {
     if (dialogType.value === 'create') {
       await addUser(tempUser);
@@ -298,6 +300,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -317,8 +321,6 @@ const handleDelete = async (row) => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .user-table-avatar {
   background: #6366f1;
   color: #fff;

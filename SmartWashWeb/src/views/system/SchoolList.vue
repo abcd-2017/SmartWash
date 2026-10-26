@@ -6,7 +6,7 @@
         <el-form-item label="学校ID">
           <el-input
             v-model.number="listQuery.schoolId"
-            placeholder="输入学校ID"
+            placeholder="请输入学校ID"
             clearable
             style="width: 120px"
           />
@@ -67,7 +67,7 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
-          <el-button type="success" @click="handleCreate">新增学校</el-button>
+          <el-button type="primary" @click="handleCreate">新增学校</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -76,20 +76,30 @@
     <div class="table-card">
       <el-table v-loading="listLoading" :data="schoolList" fit highlight-current-row>
         <el-table-column prop="schoolId" label="ID" min-width="80" />
-        <el-table-column prop="schoolName" label="学校名称" min-width="180" />
+        <el-table-column prop="schoolName" label="学校名称" min-width="180" show-overflow-tooltip />
         <el-table-column prop="schoolCode" label="学校编码" min-width="120" />
-        <el-table-column prop="province" label="省份" min-width="100" />
-        <el-table-column prop="city" label="城市" min-width="100" />
-        <el-table-column prop="district" label="区县" min-width="100" />
-        <el-table-column prop="contactName" label="联系人" min-width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" min-width="130" />
-        <el-table-column prop="location" label="位置" min-width="150" />
+        <el-table-column prop="province" label="省份" min-width="100">
+          <template #default="{ row }">{{ row.province || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="city" label="城市" min-width="100">
+          <template #default="{ row }">{{ row.city || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="district" label="区县" min-width="100">
+          <template #default="{ row }">{{ row.district || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="contactName" label="联系人" min-width="100">
+          <template #default="{ row }">{{ row.contactName || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="contactPhone" label="联系电话" min-width="130">
+          <template #default="{ row }">{{ row.contactPhone || '-' }}</template>
+        </el-table-column>
+        <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
         <el-table-column label="经纬度" min-width="160">
           <template #default="{ row }">
             <span v-if="row.longitude && row.latitude">
               {{ row.longitude }}, {{ row.latitude }}
             </span>
-            <span v-else style="color: #94a3b8">未定位</span>
+            <span v-else style="color: #64748b">未定位</span>
           </template>
         </el-table-column>
         <el-table-column prop="lockerCount" label="储物柜数量" min-width="120">
@@ -98,7 +108,7 @@
         <el-table-column prop="createdAt" label="创建时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
@@ -130,15 +140,15 @@
         <!-- 基本信息 -->
         <el-divider content-position="left">基本信息</el-divider>
 
-        <el-form-item label="学校名称" prop="schoolName" style="margin: 20px">
+        <el-form-item label="学校名称" prop="schoolName">
           <el-input v-model="tempSchool.schoolName" placeholder="请输入学校名称" />
         </el-form-item>
 
-        <el-form-item label="学校编码" prop="schoolCode" style="margin: 20px">
+        <el-form-item label="学校编码" prop="schoolCode">
           <el-input v-model="tempSchool.schoolCode" placeholder="请输入学校编码" />
         </el-form-item>
 
-        <el-form-item label="储物柜数量" prop="lockerCount" style="margin: 20px">
+        <el-form-item label="储物柜数量" prop="lockerCount">
           <el-select v-model="tempSchool.lockerCount" placeholder="请选择" style="width: 100%">
             <el-option
               v-for="count in lockerCountOptions"
@@ -152,15 +162,15 @@
         <!-- 地理位置 -->
         <el-divider content-position="left">地理位置</el-divider>
 
-        <el-form-item label="省/市/区" style="margin: 20px">
+        <el-form-item label="省/市/区">
           <RegionCascader v-model="regionValue" @change="handleRegionChange" />
         </el-form-item>
 
-        <el-form-item label="详细地址" prop="location" style="margin: 20px">
+        <el-form-item label="详细地址" prop="location">
           <el-input v-model="tempSchool.location" placeholder="请输入详细地址" />
         </el-form-item>
 
-        <el-form-item label="地图定位" style="margin: 20px">
+        <el-form-item label="地图定位">
           <AmapPicker
             :model-value="
               tempSchool.longitude
@@ -174,7 +184,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="经度" style="margin: 20px">
+        <el-form-item label="经度">
           <el-input-number
             v-model="tempSchool.longitude"
             :precision="6"
@@ -184,7 +194,7 @@
           />
         </el-form-item>
 
-        <el-form-item label="纬度" style="margin: 20px">
+        <el-form-item label="纬度">
           <el-input-number
             v-model="tempSchool.latitude"
             :precision="6"
@@ -197,22 +207,22 @@
         <!-- 联系信息 -->
         <el-divider content-position="left">联系信息</el-divider>
 
-        <el-form-item label="联系人" style="margin: 20px">
+        <el-form-item label="联系人">
           <el-input v-model="tempSchool.contactName" placeholder="请输入联系人姓名" />
         </el-form-item>
 
-        <el-form-item label="联系电话" style="margin: 20px">
+        <el-form-item label="联系电话">
           <el-input v-model="tempSchool.contactPhone" placeholder="请输入联系电话" />
         </el-form-item>
 
-        <el-form-item label="Logo URL" style="margin: 20px">
+        <el-form-item label="Logo URL">
           <el-input v-model="tempSchool.logoUrl" placeholder="请输入 Logo 图片地址" />
         </el-form-item>
       </el-form>
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm">确认</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -232,6 +242,7 @@ import AmapPicker from '@/components/AmapPicker.vue';
 const formRef = ref(null);
 const dialogVisible = ref(false);
 const dialogType = ref('create');
+const submitting = ref(false); // 确认按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -360,6 +371,7 @@ const handleDialogClosed = () => {
 
 // 提交表单
 const submitForm = async () => {
+  submitting.value = true;
   try {
     await formRef.value.validate();
 
@@ -376,6 +388,8 @@ const submitForm = async () => {
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '操作失败');
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -395,7 +409,3 @@ const handleDelete = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

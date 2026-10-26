@@ -45,7 +45,7 @@
         </el-table-column>
         <el-table-column label="使用状态" min-width="100">
           <template #default="{ row }">
-            <el-tag :type="row.isUsed ? 'success' : 'info'">
+            <el-tag :type="row.isUsed ? 'info' : 'success'">
               {{ row.isUsed ? '已使用' : '未使用' }}
             </el-tag>
           </template>
@@ -59,10 +59,19 @@
         <el-table-column label="使用时间" min-width="160">
           <template #default="{ row }">{{ formatTime(row.usedAt) }}</template>
         </el-table-column>
-        <el-table-column prop="orderNo" label="订单号" min-width="200" />
+        <el-table-column prop="orderNo" label="订单号" min-width="200">
+          <template #default="{ row }">{{ row.orderNo || '-' }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              size="small"
+              type="danger"
+              :loading="deletingId === row.userCouponId"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -92,6 +101,7 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 
 const couponOptions = ref([]); // 优惠券选项
+const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
 
 // 列表查询与分页：统一由 useTableList 承载（含每页条数切换）
 const {
@@ -139,16 +149,15 @@ const handleDelete = async (row) => {
   // 确认弹窗：取消/关闭静默返回 false，统一走 useConfirm（评审 #23）
   const confirmed = await useConfirm(`确认删除该领取记录吗？`);
   if (!confirmed) return;
+  deletingId.value = row.userCouponId;
   try {
     await deleteUserCoupon(row.userCouponId);
     ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
     ElMessage.error(error.message || '删除失败');
+  } finally {
+    deletingId.value = null;
   }
 };
 </script>
-
-<style scoped>
-@import '@/assets/pages.css';
-</style>

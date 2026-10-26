@@ -1,4 +1,5 @@
 import './assets/main.css';
+import './assets/pages.css';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 

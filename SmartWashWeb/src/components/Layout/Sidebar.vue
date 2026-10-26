@@ -8,7 +8,7 @@
       ref="menuRef"
       :default-active="activeMenu"
       :default-openeds="defaultOpeneds"
-      background-color="#1e293b"
+      background-color="#0f172a"
       text-color="#cbd5e1"
       active-text-color="#a5b4fc"
       router
@@ -185,9 +185,10 @@ watch(activeGroupIndex, (title) => {
 <style scoped>
 .sidebar {
   width: 220px;
-  background-color: #1e293b;
+  background-color: #0f172a;
   height: 100vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
 }
 
@@ -203,14 +204,16 @@ watch(activeGroupIndex, (title) => {
 }
 
 .brand-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: #94a3b8;
   margin-top: 4px;
 }
 
 .el-menu {
   border-right: none;
-  height: calc(100% - 80px);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 0 12px;
 }
 

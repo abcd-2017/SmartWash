@@ -4,12 +4,7 @@
     <div class="filter-container">
       <el-form :inline="true" :model="listQuery">
         <el-form-item label="审计状态">
-          <el-select
-            v-model="listQuery.status"
-            placeholder="失败"
-            clearable
-            style="width: 120px"
-          >
+          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
             <el-option label="待审" :value="0" />
             <el-option label="通过" :value="1" />
             <el-option label="不一致" :value="2" />
@@ -59,27 +54,29 @@
     </div>
 
     <!-- 审计详情弹窗 -->
-    <el-dialog
-      title="审计详情"
-      v-model="detailDialogVisible"
-      width="700px"
-    >
+    <el-dialog title="审计详情" v-model="detailDialogVisible" width="700px">
       <div v-if="currentAudit" class="audit-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="解读ID">{{ currentAudit.interpretationId }}</el-descriptions-item>
-          <el-descriptions-item label="卦例ID">{{ currentChartId }}</el-descriptions-item>
+          <el-descriptions-item label="解读ID">{{
+            currentAudit.interpretationId
+          }}</el-descriptions-item>
+          <el-descriptions-item label="卦例ID">{{
+            currentAudit.recordId || '-'
+          }}</el-descriptions-item>
           <el-descriptions-item label="审计状态">
             <el-tag :type="auditStatusTagType(currentAudit.auditStatus)">
               {{ auditStatusText(currentAudit.auditStatus) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="审计时间">{{ formatTime(currentAudit.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="审计时间">{{
+            formatTime(currentAudit.createdAt)
+          }}</el-descriptions-item>
         </el-descriptions>
 
-        <h4 class="diff-title">审计明细（audit_json）</h4>
+        <h4 class="diff-title">审计明细</h4>
         <div class="diff-content">
           <pre v-if="currentAudit.auditJson">{{ formatJson(currentAudit.auditJson) }}</pre>
-          <span v-else style="color: #94a3b8">无审计明细数据</span>
+          <span v-else style="color: #64748b">无审计明细数据</span>
         </div>
       </div>
       <template #footer>
@@ -133,11 +130,6 @@ onMounted(() => {
   fetchData();
 });
 
-const currentChartId = (() => {
-  // 占位：实际应从 auditJson 或关联数据中取
-  return '-';
-})();
-
 const formatJson = (json) => {
   try {
     if (typeof json === 'string') return JSON.stringify(JSON.parse(json), null, 2);
@@ -154,8 +146,6 @@ const handleViewDetail = (row) => {
 </script>
 
 <style scoped>
-@import '@/assets/pages.css';
-
 .audit-detail {
   padding: 0 8px;
 }
