@@ -94,18 +94,13 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { ElMessage } from 'element-plus';
+import { DIV_METHOD_OPTIONS as methodOptions } from '@/constants/dict';
 import { getUsageStats } from '@/api/divination';
 
 const loading = ref(false);
 const dateRange = ref(null);
 const methodFilter = ref('');
 
-const methodOptions = [
-  { value: 'liuyao', label: '六爻' },
-  { value: 'meihua', label: '梅花易数' },
-  { value: 'qimen', label: '奇门遁甲' },
-  { value: 'liuren', label: '大六壬' },
-];
 
 const summary = reactive({
   recordCount: 0,

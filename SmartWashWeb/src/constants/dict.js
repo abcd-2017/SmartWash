@@ -166,3 +166,17 @@ export const couponStatusText = (status) => COUPON_STATUS_TEXT[status] || '已�
 
 /** 优惠券状态标签配色 */
 export const couponStatusTagType = (status) => dictValue(COUPON_STATUS_TAG_TYPES, status);
+
+// ---------- 观象台·术数方法（与后端占卜模块 method 枚举对齐） ----------
+
+/** 术数方法选项（筛选下拉/表单下拉用） */
+export const DIV_METHOD_OPTIONS = [
+  { value: 'liuyao', label: '六爻' },
+  { value: 'meihua', label: '梅花易数' },
+  { value: 'qimen', label: '奇门遁甲' },
+  { value: 'liuren', label: '大六壬' },
+];
+
+/** 术数方法 → 文案（未知值回显原值） */
+export const divinationMethodText = (method) =>
+  DIV_METHOD_OPTIONS.find((m) => m.value === method)?.label || method;

@@ -50,20 +50,13 @@
 
 <script setup>
 import { onMounted } from 'vue';
+import { DIV_METHOD_OPTIONS as methodOptions, divinationMethodText } from '@/constants/dict';
 import { getBlockedList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 
-const methodOptions = [
-  { value: 'liuyao', label: '六爻' },
-  { value: 'meihua', label: '梅花易数' },
-  { value: 'qimen', label: '奇门遁甲' },
-  { value: 'liuren', label: '大六壬' },
-];
-
-const methodText = (method) => {
-  return methodOptions.find((m) => m.value === method)?.label || method || '-';
-};
+// 未知值兜底 '-'（列表展示语义）
+const methodText = (method) => divinationMethodText(method) || '-';
 
 const {
   list: blockedList,
