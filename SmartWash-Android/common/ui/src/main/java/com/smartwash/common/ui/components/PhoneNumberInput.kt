@@ -1,5 +1,10 @@
 package com.smartwash.common.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 
 private val ErrorLight = com.smartwash.common.ui.theme.ErrorLight
 
@@ -96,7 +104,14 @@ fun PhoneNumberInput(
                 }
             )
         }
-        if (isPhoneError) {
+        // 错误文案 0ms 硬切 → 展开/收起 + 淡入淡出（规范 7.8）
+        AnimatedVisibility(
+            visible = isPhoneError,
+            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                expandVertically(enterTween(DURATION_MICRO_MS)),
+            exit = fadeOut(exitTween(140)) +
+                shrinkVertically(exitTween(140)),
+        ) {
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_phone),

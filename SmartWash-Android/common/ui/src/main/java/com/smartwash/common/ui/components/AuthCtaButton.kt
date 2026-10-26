@@ -1,12 +1,12 @@
 package com.smartwash.common.ui.components
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.pressable
 
 /**
@@ -43,18 +44,25 @@ fun AuthCtaButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(22.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp,
-            )
-        } else {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-            )
+        // 文字 ↔ spinner 硬切 → 交叉淡变；spinner 复用 AppButton 的 reduced motion 降级（静态 270° 圆环）
+        Crossfade(
+            targetState = loading,
+            animationSpec = tween(CROSSFADE_ALT_MS),
+            label = "authCtaContent"
+        ) { isLoading ->
+            if (isLoading) {
+                ButtonSpinner(
+                    size = 22.dp,
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
         }
     }
 }

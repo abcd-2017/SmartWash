@@ -1,5 +1,12 @@
 package com.smartwash.common.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.pressable
 
 private val ErrorLight = com.smartwash.common.ui.theme.ErrorLight
@@ -113,17 +124,31 @@ fun PasswordInput(
                     .pressable(onClick = showVisibility, debounce = false),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (showPassword) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = stringResource(
-                        if (showPassword) R.string.hide_password else R.string.show_password
-                    ),
-                    modifier = Modifier.size(20.dp),
-                    tint = contentColor.copy(alpha = 0.92f)
-                )
+                // 可见性图标 0ms 硬切 → 交叉淡变（180ms 档，reduced motion 下同样成立）
+                Crossfade(
+                    targetState = showPassword,
+                    animationSpec = tween(CROSSFADE_ALT_MS),
+                    label = "passwordVisibilityIcon"
+                ) { visible ->
+                    Icon(
+                        imageVector = if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                        contentDescription = stringResource(
+                            if (visible) R.string.hide_password else R.string.show_password
+                        ),
+                        modifier = Modifier.size(20.dp),
+                        tint = contentColor.copy(alpha = 0.92f)
+                    )
+                }
             }
         }
-        if (isPasswordError) {
+        // 错误文案 0ms 硬切 → 展开/收起 + 淡入淡出（规范 7.8）
+        AnimatedVisibility(
+            visible = isPasswordError,
+            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                expandVertically(enterTween(DURATION_MICRO_MS)),
+            exit = fadeOut(exitTween(140)) +
+                shrinkVertically(exitTween(140)),
+        ) {
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_password),
