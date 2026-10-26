@@ -9,7 +9,7 @@
       <Navbar />
 
       <!-- 子页面：路由切换淡入滑动（进出场方向性一致，mode=out-in 先离后进避免重叠） -->
-      <div class="app-main">
+      <div ref="mainRef" class="app-main">
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
             <component :is="Component" :key="route.fullPath" />
@@ -21,12 +21,24 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Sidebar from './Sidebar.vue';
 import Navbar from './Navbar.vue';
 
 // 用 fullPath 作为转换 key：查询参数/路径变化均触发过渡，保证同页内跳转不“硬切”
 const route = useRoute();
+
+// 滚动容器是常驻节点，跨页面切换时新页面会继承上一个页面的滚动位置，这里显式回到顶部；
+// 按 path 判断，同页 query 变化（筛选预填/跳转联动）不打断当前浏览位置
+const mainRef = ref(null);
+watch(
+  () => route.path,
+  () => {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    mainRef.value?.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  }
+);
 </script>
 
 <style scoped>

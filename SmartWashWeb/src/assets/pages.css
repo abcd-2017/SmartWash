@@ -17,6 +17,11 @@
   animation: page-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
 }
 
+/* 进场错峰（stagger 40ms）：筛选区先落定、表格卡随后，视线动线自上而下 */
+.table-card {
+  animation-delay: 40ms;
+}
+
 @keyframes page-fade-in-up {
   from {
     opacity: 0;
@@ -103,6 +108,8 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 12px 20px;
   border-top: 1px solid #f1f5f9;
   background: #f8fafc;

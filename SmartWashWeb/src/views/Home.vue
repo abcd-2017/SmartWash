@@ -235,11 +235,18 @@ onMounted(async () => {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 .quick-action-item:hover {
   background: rgba(99, 102, 241, 0.08);
   color: #6366f1;
+  /* hover 上浮表达「可进入」，与统计卡层级语言一致 */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 </style>

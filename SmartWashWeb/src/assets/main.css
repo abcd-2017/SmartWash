@@ -263,6 +263,21 @@
   border-color: #dc2626 !important;
 }
 
+/* 按压反馈：轻微缩放表达「按下」因果（motion-meaning），时长走全局 token；
+   reduced-motion 由 base.css 全局兜底 */
+.el-button {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.el-button:not(.is-disabled):active {
+  transform: scale(0.97);
+}
+
 /* --- el-button 警告 (Amber) --- */
 .el-button--warning,
 .el-button--warning:focus,
