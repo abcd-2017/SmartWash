@@ -78,7 +78,7 @@ import com.smartwash.feature.user.impl.R
 @Composable
 fun UserInfoPage(
     navController: NavHostController,
-    homePageNavController: NavHostController,
+    isActive: Boolean,
     userInfoViewModel: UserInfoViewModel = hiltViewModel(),
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
@@ -99,8 +99,9 @@ fun UserInfoPage(
     var cardNumber by remember { mutableStateOf("") }
     var cardNumberError by remember { mutableStateOf(false) }
 
-    LaunchedEffect(homePageNavController.currentBackStackEntry) {
-        userInfoViewModel.getUserInfo()
+    // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
+    LaunchedEffect(isActive) {
+        if (isActive) userInfoViewModel.getUserInfo()
     }
     // 状态驱动的副作用统一放 LaunchedEffect，禁止在组合期直接弹 Toast/回写状态
     LaunchedEffect(userInfoStatus) {

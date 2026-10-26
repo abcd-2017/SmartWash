@@ -69,7 +69,7 @@ import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun IndexPage(
-    pageNavController: NavHostController,
+    isActive: Boolean,
     navController: NavHostController,
     indexViewModel: IndexViewModel = hiltViewModel(),
 ) {
@@ -78,8 +78,9 @@ fun IndexPage(
     val userInfo by indexViewModel.userInfo.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
 
-    LaunchedEffect(pageNavController.currentBackStackEntry) {
-        indexViewModel.getInfoData()
+    // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
+    LaunchedEffect(isActive) {
+        if (isActive) indexViewModel.getInfoData()
     }
 
     val errorContext = LocalContext.current
@@ -136,9 +137,7 @@ fun IndexPage(
                     ServiceGrid(
                         onBookingClick = {
                             navController.navigate(LaundryRoute.Laundry.text) {
-                                popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         },
                         onPickupClick = {

@@ -67,6 +67,14 @@ const val PRESS_DURATION_MS = 100
 /** reduced motion 降级时长 — CrossfadeAlt */
 const val CROSSFADE_ALT_MS = 180
 
+// ========== 时长层级（动效语言 v0.4：退出时长 ≈ 进入的 60–70%） ==========
+
+/** 小组件级 — 选中态、tint、微反馈时长上限 */
+const val DURATION_MICRO_MS = 200
+
+/** 卡片与展开级 — 首页 tab 转场等 */
+const val DURATION_CARD_MS = 300
+
 /** TweenPress — 按压反馈规格（注意是 tween 而非 spring：按压要"立刻"而不是"弹一下"） */
 fun <T> pressTween(): TweenSpec<T> = tween(
     durationMillis = PRESS_DURATION_MS,
