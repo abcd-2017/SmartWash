@@ -122,7 +122,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { DIV_METHOD_OPTIONS as methodOptions, divinationMethodText as methodText } from '@/constants/dict';
+import {
+  DIV_METHOD_OPTIONS as methodOptions,
+  divinationMethodText as methodText,
+} from '@/constants/dict';
 import { getRagDocumentList, uploadRagDocument } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
@@ -132,7 +135,6 @@ const uploadRef = ref(null);
 const dialogVisible = ref(false);
 const uploading = ref(false);
 const selectedFile = ref(null);
-
 
 const {
   list: documentList,

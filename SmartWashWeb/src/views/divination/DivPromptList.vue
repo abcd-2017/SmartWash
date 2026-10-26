@@ -155,7 +155,10 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { DIV_METHOD_OPTIONS as methodOptions, divinationMethodText as methodText } from '@/constants/dict';
+import {
+  DIV_METHOD_OPTIONS as methodOptions,
+  divinationMethodText as methodText,
+} from '@/constants/dict';
 import { getPromptList, createPrompt, updatePrompt, activatePrompt } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';

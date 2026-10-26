@@ -101,7 +101,6 @@ const loading = ref(false);
 const dateRange = ref(null);
 const methodFilter = ref('');
 
-
 const summary = reactive({
   recordCount: 0,
   interpretCount: 0,
