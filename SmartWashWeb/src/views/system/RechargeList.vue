@@ -84,6 +84,13 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="状态" min-width="100">
+          <template #default="{ row }">
+            <el-tag :type="rechargeStatusTagType(row.status)">
+              {{ rechargeStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="充值时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.rechargeTime) }}</template>
         </el-table-column>
@@ -108,7 +115,13 @@
 import { onMounted } from 'vue';
 import { getRechargeList } from '@/api/recharge';
 import { formatTime } from '@/utils/format';
-import { RECHARGE_TYPE_OPTIONS, rechargeTypeText, rechargeTypeTagType } from '@/constants/dict';
+import {
+  RECHARGE_TYPE_OPTIONS,
+  rechargeTypeText,
+  rechargeTypeTagType,
+  rechargeStatusText,
+  rechargeStatusTagType,
+} from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 

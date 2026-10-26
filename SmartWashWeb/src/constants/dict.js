@@ -27,6 +27,7 @@ export const PAY_STATUS_TAG_TYPES = {
   0: 'warning', // 待支付
   1: 'success', // 已支付
   2: 'danger', // 失败
+  3: 'primary', // 处理中
 };
 
 /** 储物柜状态 → el-tag 类型 */
@@ -53,6 +54,26 @@ export const RECHARGE_TYPE_TAG_TYPES = {
   1: 'success', // 微信支付
   2: 'primary', // 支付宝支付
 };
+
+/** 充值状态 → 文案（与后端充值记录 status 对齐：1 成功 2 失败 3 处理中） */
+export const RECHARGE_STATUS_TEXT = {
+  1: '成功',
+  2: '失败',
+  3: '处理中',
+};
+
+/** 充值状态 → el-tag 类型 */
+export const RECHARGE_STATUS_TAG_TYPES = {
+  1: 'success',
+  2: 'danger',
+  3: 'warning',
+};
+
+/** 充值状态文案（未知值兜底） */
+export const rechargeStatusText = (status) => RECHARGE_STATUS_TEXT[status] || '未知';
+
+/** 充值状态标签配色 */
+export const rechargeStatusTagType = (status) => dictValue(RECHARGE_STATUS_TAG_TYPES, status);
 
 /** 订单状态标签配色 */
 export const orderStatusTagType = (status) => dictValue(ORDER_STATUS_TAG_TYPES, status);
