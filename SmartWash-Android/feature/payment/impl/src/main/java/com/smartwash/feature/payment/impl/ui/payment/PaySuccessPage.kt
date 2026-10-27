@@ -273,20 +273,17 @@ fun PaySuccessPage(
                                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                                 ) {
                                     Text(
-                                        stringResource(
-                                            R.string.locker_deposited_format,
-                                            "${orderInfo?.lockersVo?.lockerNumber ?: -1}"
-                                        ),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = AppColors.colorScheme.textPrimary
+                                        stringResource(R.string.locker_info_title),
+                                        style = MaterialTheme.typography.bodyLarge
                                     )
                                     Text(
-                                        stringResource(
-                                            R.string.go_to_locker_format,
-                                            "${orderInfo?.lockersVo?.lockerNumber ?: -1}"
-                                        ),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = AppColors.colorScheme.textPrimary
+                                        stringResource(R.string.locker_deposited_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        // 柜号空值兜底显示 "-"，不再误显示 "-1柜"（对齐鸿蒙 PaymentSuccess.ets 的空值语义）
+                                        stringResource(R.string.go_to_locker_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
+                                        style = MaterialTheme.typography.bodyLarge
                                     )
                                     Text(
                                         stringResource(R.string.locker_process_tip),

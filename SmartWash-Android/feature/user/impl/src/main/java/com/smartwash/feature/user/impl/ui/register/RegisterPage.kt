@@ -95,10 +95,9 @@ import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
 import com.smartwash.common.utils.HapticEffect
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
@@ -124,6 +123,8 @@ fun RegisterPage(
     val passwordFocusRequester = remember { FocusRequester() }
 
     var countDown by remember { mutableStateOf(0) }
+    // 倒计时任务句柄：发送失败时取消，使按钮立刻恢复可点（对齐鸿蒙 Register.ets:211-215）
+    var countDownJob by remember { mutableStateOf<Job?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     // 连点防抖：本页返回箭头/去登录均为 popBackStack 出栈，转场残影期被重复触发会连 Login 一起弹掉，
@@ -165,8 +166,11 @@ fun RegisterPage(
                     (captchaState as RequestState.Error).getMessage(context),
                     Toast.LENGTH_SHORT
                 ).show()
+                // 发送失败立即可重发：取消倒计时而不是重置为 60s 继续锁按钮
+                countDownJob?.cancel()
+                countDownJob = null
+                countDown = 0
                 registerViewModel.setCaptchaIdle()
-                countDown = UserImplConstant.SEND_CAPTCHA
             }
 
             else -> {}
@@ -372,17 +376,17 @@ fun RegisterPage(
                         // 先校验手机号格式，通过后再请求验证码，避免无效手机号也发起请求
                         if (isValidPhone(phone)) {
                             registerViewModel.getCaptcha(phone)
+                            // 同步置倒计时（立即禁用按钮防连点），倒计时任务句柄留存以便失败时取消
+                            countDownJob?.cancel()
                             countDown = UserImplConstant.SEND_CAPTCHA
-                            coroutineScope.launch {
+                            countDownJob = coroutineScope.launch {
                                 while (countDown > 0) {
                                     delay(1000)
                                     countDown--
                                 }
                                 // 倒计时结束归零，允许重新发送
                                 countDown = 0
-                                withContext(Dispatchers.Main) {
-                                    registerViewModel.setCaptchaIdle()
-                                }
+                                registerViewModel.setCaptchaIdle()
                             }
                         } else {
                             isPhoneError = true

@@ -433,6 +433,18 @@ fun PaymentPage(
                         }
                     }
                 } else {
+                    item(key = "no_coupon") {
+                        // 「不使用优惠券」显式选项：从已选券切回无券（对齐鸿蒙 Payment.ets:144-177）
+                        val noCouponClick = rememberDebouncedClick {
+                            selectedCoupon = -1
+                            showBottomSheet = false
+                            if (orderId != null) {
+                                // 后端 calculation 以 0 表示不使用优惠券（-1 会落到 selectById(-1) → 优惠券异常）
+                                paymentViewModel.calculationOrder(orderId, NO_COUPON_USER_COUPON_ID)
+                            }
+                        }
+                        NoCouponItem(isSelected = selectedCoupon == -1, itemClick = noCouponClick)
+                    }
                     items(
                         count = userCouponList.size,
                         key = { i -> userCouponList[i].userCouponId }
@@ -573,3 +585,51 @@ private fun UserCouponItem(
         }
     }
 }
+
+/** 「不使用优惠券」选项行（形态与 [UserCouponItem] 对齐） */
+@Composable
+private fun NoCouponItem(
+    isSelected: Boolean,
+    itemClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth()
+            .pressable(onClick = itemClick, debounce = false),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppDimens.cardPadding),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(R.string.do_not_use_coupon),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = stringResource(R.string.do_not_use_coupon_tip),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textSecondary
+                )
+            }
+            // 自绘选中行（公共 SelectionDot），与优惠券卡保持一致（Material RadioButton 自带 ripple）
+            SelectionDot(selected = isSelected)
+        }
+    }
+}
+
+/**
+ * 「不使用优惠券」传给试算接口的 userCouponId。
+ *
+ * 后端 `OrdersServiceImpl.calculationOrder` 以 `null || 0` 判定不使用优惠券；
+ * 传 -1 会走到 `userCouponMapper.selectById(-1)` 并抛「优惠券异常」。
+ */
+private const val NO_COUPON_USER_COUPON_ID = 0L

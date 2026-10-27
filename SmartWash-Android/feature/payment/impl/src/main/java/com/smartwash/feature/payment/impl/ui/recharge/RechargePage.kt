@@ -81,7 +81,8 @@ fun RechargePage(
     var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
     var isCustomAmountSelected by remember { mutableStateOf(false) }
     var showPayError by remember { mutableStateOf(false) }
-    var showError by remember { mutableStateOf(false) }
+    // 金额校验失败原因（null 为通过）：文案随原因细分，见 RechargeAmountError
+    var amountError by remember { mutableStateOf<RechargeAmountError?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
     val presetAmounts = listOf(10f, 20f, 50f, 100f, 200f)
@@ -154,71 +155,102 @@ fun RechargePage(
 
                 // 充值金额：一行档位胶囊 + 赠额说明 + 带可见标签的自定义金额输入框
                 item {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.recharge_amount),
-                            style = AppTextStyles.SectionTitle
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        // 档位胶囊行（画板实测：一行 5 个等分、间距 4、高 48、圆角 999、无描边无阴影）
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            presetAmounts.forEach { amount ->
-                                AmountPill(
-                                    amount = amount,
-                                    isSelected = selectedAmount == amount && !isCustomAmountSelected,
-                                    onClick = {
-                                        selectedAmount = amount
-                                        isCustomAmountSelected = false
-                                        showError = false
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (i in presetAmounts.indices step 3) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                for (j in 0..2) {
+                                    if (i + j < presetAmounts.size) {
+                                        val amount = presetAmounts[i + j]
+                                        AmountCard(
+                                            amount = amount,
+                                            isSelected = selectedAmount == amount && !isCustomAmountSelected,
+                                            onClick = {
+                                                selectedAmount = amount
+                                                isCustomAmountSelected = false
+                                                amountError = null
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else if (i + j == presetAmounts.size) {
+                                        CustomAmountCard(
+                                            value = customAmount,
+                                            isSelected = isCustomAmountSelected,
+                                            onValueChange = { value ->
+                                                if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                                                    customAmount = value
+                                                    if (value.isNotEmpty()) {
+                                                        selectedAmount = value.toFloatOrNull()
+                                                        isCustomAmountSelected = true
+                                                    }
+                                                    amountError = null
+                                                }
+                                            },
+                                            onClick = { isCustomAmountSelected = true },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
                             }
                         }
                         // 赠额说明行（画板实测：胶囊行下 12，caption 档；赠额映射与档位一致）
                         Text(
                             text = stringResource(R.string.recharge_bonus_hint),
                             style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.padding(top = 12.dp)
+                            color = AppColors.colorScheme.textSecondary
                         )
-                        // 输入框可见标签（画板实测：body 档，占位符只做示例不做标签）
-                        Text(
-                            text = stringResource(R.string.custom_amount),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                        CustomAmountField(
-                            value = customAmount,
-                            onValueChange = { value ->
-                                if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
-                                    customAmount = value
-                                    if (value.isNotEmpty()) {
-                                        selectedAmount = value.toFloatOrNull()
-                                        isCustomAmountSelected = true
-                                    }
-                                    showError = false
-                                }
-                            },
-                            onFocus = { isCustomAmountSelected = true },
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                        // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
-                        AnimatedVisibility(
-                            visible = showError,
-                            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
-                                expandVertically(enterTween(DURATION_MICRO_MS)),
-                            exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
-                        ) {
+                    }
+                    // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
+                    AnimatedVisibility(
+                        visible = amountError != null,
+                        enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                            expandVertically(enterTween(DURATION_MICRO_MS)),
+                        exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
+                    ) {
+                        amountError?.let { error ->
                             Text(
-                                text = stringResource(R.string.select_or_input_amount),
+                                text = resolveAmountErrorText(error),
                                 color = AppColors.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 支付方式
+                item {
+                    Text(
+                        text = stringResource(R.string.payment_method),
+                        style = AppTextStyles.SectionTitle
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = AppElevation.level1,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                    ) {
+                        Column {
+                            PaymentMethodCard(
+                                method = PaymentMethod.WECHAT,
+                                isSelected = selectedPaymentMethod == PaymentMethod.WECHAT,
+                                onClick = { selectedPaymentMethod = PaymentMethod.WECHAT; showPayError = false }
+                            )
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.hairline,
+                                modifier = Modifier.padding(horizontal = 20.dp)
+                            )
+                            PaymentMethodCard(
+                                method = PaymentMethod.ALIPAY,
+                                isSelected = selectedPaymentMethod == PaymentMethod.ALIPAY,
+                                onClick = { selectedPaymentMethod = PaymentMethod.ALIPAY; showPayError = false }
                             )
                         }
                     }
@@ -301,10 +333,16 @@ fun RechargePage(
             message = stringResource(R.string.confirm_recharge_question),
             onConfirm = {
                 showDialog = false
-                if (selectedPaymentMethod == null) showPayError = true
-                if (selectedAmount == null || selectedAmount!! <= 0) showError = true
-                if (selectedAmount != null && selectedAmount!! > 0 && selectedPaymentMethod != null) {
-                    rechargeViewModel.userRecharge(selectedAmount!!, selectedPaymentMethod!!.payType)
+                // 金额与支付方式都在弹窗关闭后校验：任一不通过则不提交，错误文案显示在对应区块
+                val amountResult = RechargeAmountValidator.resolve(
+                    isCustomAmountSelected = isCustomAmountSelected,
+                    presetAmount = selectedAmount,
+                    customAmountRaw = customAmount
+                )
+                showPayError = selectedPaymentMethod == null
+                amountError = amountResult.error
+                if (amountResult.error == null && selectedPaymentMethod != null) {
+                    rechargeViewModel.userRecharge(amountResult.amount!!, selectedPaymentMethod!!.payType)
                 }
             },
             onDismiss = { showDialog = false }
@@ -468,4 +506,17 @@ private fun PaymentMethodCard(
 
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)
+}
+
+/** 金额校验失败原因 → 文案（校验规则见 [RechargeAmountValidator]） */
+@Composable
+private fun resolveAmountErrorText(error: RechargeAmountError): String = when (error) {
+    RechargeAmountError.NOT_SELECTED -> stringResource(R.string.select_or_input_amount)
+    RechargeAmountError.EMPTY -> stringResource(R.string.recharge_amount_empty)
+    RechargeAmountError.INVALID_FORMAT -> stringResource(R.string.recharge_amount_invalid_format)
+    RechargeAmountError.NOT_POSITIVE -> stringResource(R.string.recharge_amount_not_positive)
+    RechargeAmountError.EXCEED_MAX -> stringResource(
+        R.string.recharge_amount_exceed_max_format,
+        RechargeAmountValidator.MAX_RECHARGE_AMOUNT.toInt().toString()
+    )
 }
