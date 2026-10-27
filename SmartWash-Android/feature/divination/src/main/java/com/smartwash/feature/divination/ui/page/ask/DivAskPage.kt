@@ -96,13 +96,18 @@ fun DivAskPage(
         // 问题卡
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(14.dp)) {
-                Text(stringResource(R.string.div_ask_hint), fontSize = 11.sp, color = c.textTertiary)
+                Text(
+                    stringResource(R.string.div_ask_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = c.textSecondary,
+                )
                 Spacer(Modifier.height(8.dp))
                 TextField(
                     value = state.question,
                     onValueChange = viewModel::onQuestionChange,
                     placeholder = {
-                        Text(stringResource(R.string.div_question_example), fontSize = 14.sp, color = c.textTertiary)
+                        Text(stringResource(R.string.div_question_example), fontSize = 14.sp, color = c.textSecondary)
                     },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -114,13 +119,14 @@ fun DivAskPage(
                         unfocusedTextColor = c.textPrimary,
                     ),
                     minLines = 2,
-                    textStyle = divSerif(14.sp, FontWeight.Normal, 0.sp).copy(lineHeight = 24.sp),
+                    textStyle = divSerif(14.sp, FontWeight.Normal, 0.sp).copy(lineHeight = 20.sp),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
 
-        // 所问领域
+        // 所问领域（画板：卡到标题 16，标题自带 8 下距）
+        Spacer(Modifier.height(8.dp))
         DivSectionTitle(
             title = stringResource(R.string.div_ask_category_label),
             tail = if (state.categoryAuto) {
@@ -131,7 +137,7 @@ fun DivAskPage(
         )
         Row(
             Modifier
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -152,7 +158,7 @@ fun DivAskPage(
             }
         }
 
-        // 起卦方式
+        // 起卦方式（画板：chips 到标题 8，由标题自带内距承担）
         DivSectionTitle(title = stringResource(R.string.div_ask_cast_method_label))
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column {
@@ -164,6 +170,7 @@ fun DivAskPage(
                             selected = state.liuYaoMode == LiuYaoCastMode.SHAKE,
                             onClick = { viewModel.onLiuYaoMode(LiuYaoCastMode.SHAKE) },
                         )
+                        MethodRowDivider()
                         DivRadioRow(
                             title = stringResource(R.string.div_cast_method_lines),
                             subtitle = stringResource(R.string.div_cast_method_lines_sub),
@@ -179,6 +186,7 @@ fun DivAskPage(
                             selected = state.meiHuaMode == MeiHuaCastMode.TIME,
                             onClick = { viewModel.onMeiHuaMode(MeiHuaCastMode.TIME) },
                         )
+                        MethodRowDivider()
                         DivRadioRow(
                             title = stringResource(R.string.div_cast_method_number),
                             subtitle = stringResource(R.string.div_cast_method_number_sub),
@@ -204,7 +212,8 @@ fun DivAskPage(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        // 主行动（画板：方式卡到按钮 24，按钮到脚注 16）
+        Spacer(Modifier.height(24.dp))
         DivGoldButton(
             text = stringResource(R.string.div_ask_go),
             enabled = state.question.isNotBlank(),
@@ -230,6 +239,7 @@ fun DivAskPage(
             },
         )
 
+        Spacer(Modifier.height(12.dp))
         DivFooterNote(text = stringResource(R.string.div_ask_safety_hint))
 
         // 手动输入爻值弹窗（单拆重交，自初爻到上爻）
@@ -260,6 +270,19 @@ private fun divMethodTail(method: DivMethod): String = when (method) {
     DivMethod.MEI_HUA -> "梅花 · 心易"
     DivMethod.QI_MEN -> "奇门 · 起局"
     DivMethod.LIU_REN -> "六壬 · 起课"
+}
+
+/** 方式卡行分隔（画板：1px 12% 金发丝线，左右缩进 16） */
+@Composable
+private fun MethodRowDivider() {
+    val c = DivColors.current
+    Box(
+        Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(c.hair),
+    )
 }
 
 /** 高风险分流页：整页替换，不排盘，引导现实求助 */

@@ -43,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,10 +57,8 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
-import com.smartwash.common.ui.theme.StatusDot
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
@@ -131,7 +128,8 @@ fun OrderPage(
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            // 状态筛选胶囊条（规范 §3.3：34dp 高度，圆角 17dp；未选中 surface 底 + 1px outline 描边，选中 brand 底无边框）
+            // 状态筛选胶囊条（设计稿实测：34dp 高、胶囊形；未选中 surface 底 + 1px outline 描边，
+            // 选中 primary 底无边框；文字 labelSmall 12/500，选中 onPrimary / 未选中 textSecondary 双主题成对）
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,21 +150,24 @@ fun OrderPage(
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .padding(horizontal = 14.dp),
+                                .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = stringResource(entry.descriptionRes),
-                                color = if (isSelected) Color.White else AppColors.colorScheme.textSecondary,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    AppColors.colorScheme.textSecondary
+                                },
+                                style = MaterialTheme.typography.labelSmall
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
             when (loadState) {
                 is RequestState.Loading -> {
@@ -212,7 +213,7 @@ fun OrderPage(
 
                         LazyColumn(
                             state = listState,
-                            verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = AppDimens.pagePadding)
@@ -238,14 +239,13 @@ fun OrderPage(
                                         } else {
                                             item.monthKey
                                         }
-                                        // 月份标题（D-O3）：12sp labelSmall / SemiBold / textSecondary / 字距 +0.4sp，上距 32 下距 10
+                                        // 月份标题（设计稿实测）：12sp labelSmall / Medium / textSecondary / 字距 +0.3sp，
+                                        // 与上下卡片的间距由 LazyColumn spacedBy(12) 统一提供
                                         Text(
                                             text = label,
                                             style = MaterialTheme.typography.labelSmall,
                                             letterSpacing = 0.3.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = AppColors.colorScheme.textSecondary,
-                                            modifier = Modifier.padding(top = 32.dp, bottom = 8.dp)
+                                            color = AppColors.colorScheme.textSecondary
                                         )
                                     }
                                     is OrderListItem.Group -> {
@@ -315,13 +315,12 @@ private fun MonthGroupCard(
     cancelClick: (Long) -> Unit,
     itemClick: (OrderInfo) -> Unit,
 ) {
-    // 规范 §3.1：标准卡片画法 — 白底 + 1px 描边 + 轻阴影
+    // 设计稿实测：白底 + radiusLg 16 + 1px outline 描边 + 无阴影（对齐同页组「洗衣服务」画板取值）
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
             group.orders.forEachIndexed { index, order ->
@@ -336,7 +335,7 @@ private fun MonthGroupCard(
                 if (index < group.orders.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 20.dp),
-                        thickness = 0.5.dp,
+                        thickness = 1.dp,
                         color = AppColors.colorScheme.hairline
                     )
                 }
@@ -354,148 +353,154 @@ private fun OrderRow(
     cancelClick: (Long) -> Unit,
     itemClick: () -> Unit,
 ) {
-    val view = currentView()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = itemClick)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // 左侧图标容器（规范 §3.2 + 设计稿屏 5）：IconBox 按订单状态映射语义色
+        // 左侧图标容器（设计稿实测：36dp 盒 / 图标 20，按订单状态映射语义色；顶部 +4 与角标文字对齐）
         val (container, foreground) = when (order.status) {
-            OrderStatus.PENDING_SHIPMENT.status -> AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
-            OrderStatus.COMPLETED.status -> AppColors.colorScheme.iconContainerTeal to AppColors.colorScheme.iconForegroundTeal
-            OrderStatus.CANCELED.status -> AppColors.colorScheme.iconContainerPink to AppColors.colorScheme.iconForegroundPink
-            else -> AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.iconForegroundOrange
+            OrderStatus.PENDING_SHIPMENT.status, OrderStatus.WASHING.status ->
+                AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
+            OrderStatus.COMPLETED.status ->
+                AppColors.colorScheme.primaryLight to AppColors.colorScheme.primary
+            OrderStatus.CANCELED.status ->
+                MaterialTheme.colorScheme.errorContainer to AppColors.colorScheme.error
+            else -> AppColors.colorScheme.warningContainer to AppColors.colorScheme.warning
         }
         IconBox(
             icon = Icons.Default.LocalLaundryService,
+            modifier = Modifier.padding(top = 4.dp),
             size = 36.dp,
-            iconSize = 18.dp,
+            iconSize = 20.dp,
             containerColor = container,
             iconTint = foreground
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(4.dp))
         // 主体信息
         Column(modifier = Modifier.weight(1f)) {
-            // 状态文字 + 状态色点（规范 §3.5：ongoing=warning / done=success / 已取消 danger）
-            val dotColor = when (order.status) {
-                OrderStatus.COMPLETED.status -> AppColors.colorScheme.success
-                OrderStatus.CANCELED.status -> AppColors.colorScheme.danger
-                else -> AppColors.colorScheme.warning
+            // 状态角标胶囊（设计稿 badge：24dp 高、radiusFull、底色/文字成对取语义色）
+            val (badgeContainer, badgeContent) = when (order.status) {
+                OrderStatus.PENDING_SHIPMENT.status, OrderStatus.WASHING.status ->
+                    AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
+                OrderStatus.COMPLETED.status ->
+                    AppColors.colorScheme.primaryLight to AppColors.colorScheme.primaryDark
+                OrderStatus.CANCELED.status ->
+                    MaterialTheme.colorScheme.errorContainer to AppColors.colorScheme.error
+                else -> AppColors.colorScheme.warningContainer to AppColors.colorScheme.warning
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .height(24.dp)
+                    .background(badgeContainer, RoundedCornerShape(AppDimens.radiusFull))
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = AppColors.colorScheme.textPrimary
+                    style = MaterialTheme.typography.labelSmall,
+                    color = badgeContent
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusDot(color = dotColor)
             }
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
-                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = formatOrderTime(order.createdAt),
-                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textSecondary,
-                modifier = Modifier.padding(top = 2.dp)
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                color = AppColors.colorScheme.textSecondary
             )
         }
-        // 右侧价格（金额中字 AmountMedium：20sp/Bold/tnum）；已取消置灰 textTertiary
+        // 右侧：金额顶部与角标对齐，下距 20 后接操作区 / 状态回显（设计稿实测间距）
+        // 价格用 primaryDark（green.700 浅色 / #5BC894 深色成对）；已取消置灰 textSecondary
         Column(
             horizontalAlignment = Alignment.End
         ) {
             Text(
                 text = stringResource(R.string.currency_format, order.payPrice.toString()),
                 color = if (order.status == OrderStatus.CANCELED.status) {
-                    AppColors.colorScheme.textTertiary
+                    AppColors.colorScheme.textSecondary
                 } else {
-                    AppColors.colorScheme.primary
+                    AppColors.colorScheme.primaryDark
                 },
-                style = AppTextStyles.AmountMedium
+                style = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             // 操作按钮（功能保留，逻辑与路由不动）
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
-                    // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）
-                    Box(
-                        modifier = Modifier
-                            .heightIn(min = 40.dp)
-                            .pressable(onClick = { cancelClick(order.orderId) })
-                            .padding(horizontal = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary, fontSize = 12.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）
+                        Box(
+                            modifier = Modifier
+                                .heightIn(min = 40.dp)
+                                .pressable(onClick = { cancelClick(order.orderId) })
+                                .padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary, fontSize = 12.sp)
+                        }
+                        Spacer(Modifier.width(AppDimens.spaceXs))
+                        OrderActionPill(label = stringResource(R.string.go_pay), onClick = paymentClick)
                     }
-                    Spacer(Modifier.width(AppDimens.spaceXs))
-                    Box(
-                        modifier = Modifier
-                            .height(36.dp)
-                            .pressable(onClick = rememberDebouncedClick {
-                                view.performHaptic(HapticEffect.MEDIUM)
-                                paymentClick()
-                            })
-                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_pay), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
                 }
                 ShowOrderStatus.PENDING_SHIPMENT.status -> {
-                    Box(
-                        modifier = Modifier
-                            .height(36.dp)
-                            .pressable(onClick = rememberDebouncedClick {
-                                view.performHaptic(HapticEffect.MEDIUM)
-                                shipmentClick()
-                            })
-                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_ship), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
+                    OrderActionPill(label = stringResource(R.string.go_ship), onClick = shipmentClick)
                 }
                 ShowOrderStatus.WASHING.status -> {
                     Text(
                         text = stringResource(R.string.washing),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 ShowOrderStatus.READY_FOR_PICKUP.status -> {
-                    Box(
-                        modifier = Modifier
-                            .height(36.dp)
-                            .pressable(onClick = rememberDebouncedClick {
-                                view.performHaptic(HapticEffect.MEDIUM)
-                                pickupClick()
-                            })
-                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.buttonRadius))
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { Text(stringResource(R.string.go_pickup), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium) }
+                    OrderActionPill(label = stringResource(R.string.go_pickup), onClick = pickupClick)
                 }
                 OrderStatus.COMPLETED.status -> {
                     Text(
                         text = stringResource(R.string.completed),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 else -> {
                     Text(
                         text = stringResource(OrderStatus.getDescriptionResByStatus(order.status)),
                         color = AppColors.colorScheme.textSecondary,
-                        style = MaterialTheme.typography.labelSmall
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * 行内胶囊主按钮（设计稿实测：34dp 高、radiusFull、primary 底，文字 titleMedium 18/600 onPrimary 双主题成对）。
+ * 点击统一走防抖 + 中触感。
+ */
+@Composable
+private fun OrderActionPill(label: String, onClick: () -> Unit) {
+    val view = currentView()
+    Box(
+        modifier = Modifier
+            .height(34.dp)
+            .pressable(onClick = rememberDebouncedClick {
+                view.performHaptic(HapticEffect.MEDIUM)
+                onClick()
+            })
+            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull))
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
     }
 }
 

@@ -32,6 +32,8 @@ fun DivinationScreen(
 ) {
     val dark = isSystemInDarkTheme()
     val scheme = if (dark) DarkDivinationColors else LightDivinationColors
+    // 规范 §1.5：玄墨背景中段停靠 55%、宣纸 50%
+    val midStop = if (scheme.isDark) 0.55f else 0.50f
     CompositionLocalProvider(LocalDivinationColors provides scheme) {
         Box(
             modifier
@@ -40,7 +42,7 @@ fun DivinationScreen(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
                             0f to scheme.bgColors[0],
-                            0.46f to scheme.bgColors[1],
+                            midStop to scheme.bgColors[1],
                             1f to scheme.bgColors[2],
                         ),
                     ),

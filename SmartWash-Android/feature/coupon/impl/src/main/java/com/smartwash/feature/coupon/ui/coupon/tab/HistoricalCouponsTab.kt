@@ -44,7 +44,7 @@ fun HistoricalCouponsTab(historicalCoupons: List<UserCouponVo>) {
                 }
             }
         } else {
-            items(historicalCoupons) { coupon ->
+            items(historicalCoupons, key = { it.userCouponId }) { coupon ->
                 UserCouponCard(couponVo = coupon, isHistorical = true)
             }
         }

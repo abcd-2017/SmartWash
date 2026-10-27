@@ -1,6 +1,5 @@
 package com.smartwash.feature.divination.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,10 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,59 +36,56 @@ import com.smartwash.common.ui.theme.DivColors
  * 支持自初爻向上 draw-on 入场（阳爻自中心向两端展开、阴爻两条同展）。
  */
 
-/** 爻线：阳爻整条、阴爻两段；progress 0..1 控制展开 */
+/** 爻线：阳爻六段、阴爻两组四段（画板 ▅▅ 口径）；progress 0..1 控制展开；
+ *  动爻在玄墨侧整段鎏金（画板 #D4B878），宣纸侧与静爻同为墨 */
 @Composable
 private fun YaoBar(
     yang: Boolean,
+    moving: Boolean,
     progress: Float,
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
-    if (yang) {
-        Box(
-            modifier
-                .fillMaxWidth()
-                .height(9.dp)
-                .clip(RoundedCornerShape(4.5.dp)),
-        ) {
+    val brush = if (moving && c.isDark) {
+        Brush.horizontalGradient(listOf(c.goldHi, c.goldHi))
+    } else {
+        Brush.horizontalGradient(listOf(c.yaoTop, c.yaoBottom))
+    }
+    @Composable
+    fun Segment(segmentModifier: Modifier) {
+        Box(segmentModifier.height(9.dp)) {
             Box(
                 Modifier
                     .fillMaxWidth(progress)
                     .height(9.dp)
-                    .background(
-                        Brush.horizontalGradient(listOf(c.yaoTop, c.yaoBottom)),
-                        RoundedCornerShape(4.5.dp),
-                    )
+                    .background(brush, RoundedCornerShape(2.dp))
             )
+        }
+    }
+    if (yang) {
+        Row(
+            modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            repeat(6) { Segment(Modifier.weight(1f)) }
         }
     } else {
         Row(
             modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            repeat(2) {
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(9.dp)
-                        .clip(RoundedCornerShape(4.5.dp))
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(progress)
-                            .height(9.dp)
-                            .background(
-                                Brush.horizontalGradient(listOf(c.yaoTop, c.yaoBottom)),
-                                RoundedCornerShape(4.5.dp),
-                            )
-                    )
-                }
-            }
+            Segment(Modifier.width(15.dp))
+            Segment(Modifier.width(15.dp))
+            Spacer(Modifier.width(6.dp))
+            Segment(Modifier.width(15.dp))
+            Segment(Modifier.width(15.dp))
         }
     }
 }
 
-/** 六爻装卦一行；[revealed] 控制本爻 draw-on 进度（1 = 完整） */
+/** 六爻装卦一行（画板：神煞 12 弱化灰无色点 / 爻线 100 槽 / 六亲纳甲 12 / 世应 12·600 右对齐 24 槽）；
+ *  动爻标记 ○/⨯ 并入纳甲串尾，[revealed] 控制本爻 draw-on 进度（1 = 完整） */
 @Composable
 fun LiuYaoRow(
     row: com.smartwash.feature.divination.core.liuyao.LiuYaoLine,
@@ -102,64 +93,56 @@ fun LiuYaoRow(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
-    val spiritIndex = listOf("青龙", "朱雀", "勾陈", "螣蛇", "白虎", "玄武").indexOf(row.liuShen)
-    val spiritColor = if (spiritIndex >= 0) c.spirits[spiritIndex] else c.textTertiary
+    val moving = row.yao.isMoving
 
     Row(
         modifier
             .fillMaxWidth()
-            .padding(vertical = 7.dp),
+            .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 六神
-        Row(Modifier.width(52.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(6.dp)
-                    .background(spiritColor, CircleShape)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(text = row.liuShen, fontSize = 10.5.sp, color = c.textSecondary, maxLines = 1)
+        // 六神（画板：无色点，弱化灰）
+        Text(
+            text = row.liuShen,
+            fontSize = 12.sp,
+            color = c.textSecondary,
+            maxLines = 1,
+            modifier = Modifier.width(44.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+        // 爻象（阳爻六段 / 阴爻两组）
+        Box(Modifier.width(100.dp)) {
+            YaoBar(yang = row.yao.isYang, moving = moving, progress = revealed)
         }
-        // 爻象（阳爻整条 / 阴爻两段 + 动爻标记）
-        Box(Modifier.weight(1f).padding(end = 10.dp)) {
-            YaoBar(yang = row.yao.isYang, progress = revealed)
-            if (row.yao.isMoving && revealed >= 1f) {
-                Text(
-                    text = if (row.yao.code == 3) "○" else "×",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
-                    color = if (row.yao.code == 3) c.gold else c.sealHi,
-                    modifier = Modifier.align(Alignment.CenterEnd).padding(start = 4.dp),
-                )
-            }
-        }
-        // 六亲 · 干支
-        Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-            Text(text = row.liuQin, style = divSerif(12.5.sp, FontWeight.Medium, 1.sp), color = c.textPrimary)
-            Text(
-                text = row.ganZhi + row.zhiWuXing.label,
-                style = divSerif(10.5.sp, FontWeight.Normal, 0.sp),
-                color = c.gold.copy(alpha = 0.75f),
-                modifier = Modifier.padding(start = 4.dp),
-            )
-        }
-        // 世应徽标：世鎏金 / 应青玉
+        Spacer(Modifier.width(6.dp))
+        // 六亲 · 纳甲（动爻整串鎏金·玄墨侧）
+        Text(
+            text = buildString {
+                append(row.liuQin).append(row.ganZhi).append(row.zhiWuXing.label)
+                if (moving && revealed >= 1f) append(if (row.yao.code == 3) " ○" else " ⨯")
+            },
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = if (moving && c.isDark) c.goldHi else c.textPrimary,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        // 世应徽标（画板：玄墨鎏金 / 宣纸墨，右对齐）
         Text(
             text = row.shiYing ?: "",
-            fontSize = 9.5.sp,
-            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
-            color = if (row.shiYing == "世") c.gold else c.jade,
-            modifier = Modifier.width(20.dp).padding(start = 6.dp),
-            textAlign = TextAlign.Center,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = c.goldText,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(24.dp),
         )
     }
 }
 
 /**
- * 六爻装卦表：自上爻到初爻渲染；[animateEntry] 时按"自初爻向上 draw-on"逐条展开（间隔 60ms）。
- * 任意点按"求解读"等交互可跳过（进度直接置满）。
+ * 六爻装卦表（画板口径）：无卡片容器直接置于背景，轨道左 28 / 右 20，
+ * 行间 1px 12% 金发丝分隔（分隔线右缩 8 与卡片轨对齐）；自上爻到初爻渲染。
+ * [animateEntry] 时按"自初爻向上 draw-on"逐条展开（间隔 60ms）；任意点按交互可跳过（进度直接置满）。
  */
 @Composable
 fun LiuYaoPan(
@@ -183,52 +166,30 @@ fun LiuYaoPan(
         }
     }
 
-    DivCard(modifier.clickable { skipped = true }) {
-        Column(Modifier.padding(14.dp)) {
-            // 表头
-            Row(Modifier.padding(bottom = 4.dp)) {
-                Text("六神", fontSize = 9.5.sp, letterSpacing = 2.sp, color = c.textTertiary, modifier = Modifier.width(52.dp))
-                Text("爻象", fontSize = 9.5.sp, letterSpacing = 2.sp, color = c.textTertiary, modifier = Modifier.weight(1f))
-                Text("六亲 · 干支", fontSize = 9.5.sp, letterSpacing = 2.sp, color = c.textTertiary)
-                Text("世应", fontSize = 9.5.sp, letterSpacing = 2.sp, color = c.textTertiary, modifier = Modifier.width(20.dp))
-            }
-            // 自上爻到初爻显示（rows index 5 → 0）
-            (5 downTo 0).forEach { index ->
-                val row = chart.rows[index]
-                val revealed by progress[index].asState()
-                LiuYaoRow(row = row, revealed = revealed)
-            }
-            // 类型脚注：六冲卦 → 之 六合 · 四爻动化子孙
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .background(Color.Transparent),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = buildString {
-                        if (chart.type.isNotEmpty()) append(chart.type).append("卦")
-                        chart.bianName?.let { append(" 之 ").append(it) }
-                        if (chart.movingPositions.isNotEmpty()) {
-                            append(" · ").append(chart.movingPositions.joinToString("、") { "${it}爻动" })
-                        }
-                    },
-                    fontSize = 11.sp,
-                    color = c.textSecondary,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = chart.bianType?.let { "变卦$it" } ?: "",
-                    style = divSerif(11.sp, FontWeight.SemiBold, 1.sp),
-                    color = c.textPrimary,
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(start = 28.dp, end = 20.dp)
+            .clickable { skipped = true },
+    ) {
+        (5 downTo 0).forEach { index ->
+            if (index < 5) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(end = 8.dp)
+                        .height(1.dp)
+                        .background(c.hair)
                 )
             }
+            val row = chart.rows[index]
+            val revealed by progress[index].asState()
+            LiuYaoRow(row = row, revealed = revealed)
         }
     }
 }
 
-/** 事实小卡（用神 / 规则事实） */
+/** 事实小卡（用神 / 规则事实；画板：surface 底 + 12% 金发丝描边、内边距 14/12、标签 12 弱化灰） */
 @Composable
 fun DivMiniCard(
     label: String,
@@ -236,9 +197,9 @@ fun DivMiniCard(
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val c = DivColors.current
-    DivCard(modifier, borderColor = c.goldHair) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text(label, fontSize = 9.5.sp, letterSpacing = 2.sp, color = c.textTertiary)
+    DivCard(modifier) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(label, fontSize = 12.sp, letterSpacing = 2.sp, color = c.textSecondary)
             content()
         }
     }

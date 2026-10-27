@@ -7,12 +7,16 @@ import androidx.compose.ui.graphics.Color
 // 主色 — 自然绿
 val Primary = Color(0xFF2D9B6A)
 val OnPrimary = Color(0xFFFFFFFF)
-val PrimaryContainer = Color(0xFFE8F6EF)
-val OnPrimaryContainer = Color(0xFF0B3625)
+val PrimaryContainer = Color(0xFFF0FBF4)
+val OnPrimaryContainer = Color(0xFF17322B)
 
 // 主色变体
-val PrimaryLight = Color(0xFFF0FAF5)    // 超浅绿，选中态背景
+val PrimaryLight = Color(0xFFF0FBF4)    // 超浅绿，选中态背景（= primaryContainer，规范 §1.4 收敛 #F0FAF5→#F0FBF4）
 val PrimaryDark = Color(0xFF1E8C5C)     // 深绿，按下态
+
+// Hero 状态卡渐变起点（设计稿首页画板实测，规范 §1.3 gradient.hero：
+// 浅色 #2D9B6A→#1E8C5C、深色 #2D9B6A→#5BC894——起点两主题均为品牌绿原色）
+val HeroGradientStart = Color(0xFF2D9B6A)
 
 // 次要色
 val Secondary = Color(0xFF8E8E93)
@@ -27,47 +31,47 @@ val TertiaryContainer = Color(0xFFF2F2F7)
 val OnTertiaryContainer = Color(0xFF1C1C1E)
 
 // 背景 & 表面
-val Background = Color(0xFFEFF1EE)       // 微绿调米白页面底色（规范 §2.1）
+val Background = Color(0xFFF5F6F3)       // 微绿调米白页面底色（规范 §1.2，与 surfaceVariant 互换回规范值）
 val OnBackground = Color(0xFF1C1C1E)
 val Surface = Color(0xFFFFFFFF)          // 纯白卡片
 val OnSurface = Color(0xFF1C1C1E)
-val SurfaceVariant = Color(0xFFF5F6F3)   // 卡内次级块（输入框底、嵌套卡）
+val SurfaceVariant = Color(0xFFEFF1EE)   // 卡内次级块（输入框底、嵌套卡）
 val OnSurfaceVariant = Color(0xFF6B6E73)
 val GroupBackground = Color(0xFFE7EAE4)  // 分组容器底（比页面底再深一档）
 val Hairline = Color(0xFFEFF1EE)        // 容器内部行分隔线底色
 
 // 边框 & 辅助
-val Outline = Color(0xFFE3E7E2)         // 卡片描边（1px）
-val OutlineVariant = Color(0xFFF5F6F3)
+val Outline = Color(0xFFE6E9E6)         // 卡片描边（1px，规范 §1.4 收敛 #E3E7E2→#E6E9E6）
+val OutlineVariant = Color(0xFFEFF1EE)
 
 // 错误
-val Error = Color(0xFFFF3B30)
+val Error = Color(0xFFA8435A)            // 规范 §1.4 收敛单一 error 角色（弃 iOS 红 #FF3B30）
 val OnError = Color(0xFFFFFFFF)
-val ErrorContainer = Color(0xFFFFF1F0)
-val OnErrorContainer = Color(0xFF991B1B)
+val ErrorContainer = Color(0xFFF7E9EC)
+val OnErrorContainer = Color(0xFFA8435A)
 
 // 警告
 val Warning = Color(0xFFD98A26)          // 规范语义橙（iOS 系统橙 on 白对比度不足，已废弃）
 val OnWarning = Color(0xFFFFFFFF)
-val WarningContainer = Color(0xFFFFF7ED)
+val WarningContainer = Color(0xFFFDF3E7)
 val OnWarningContainer = Color(0xFF92400E)
 
 // 状态语义（进行中 / 危险，规范 §6.5）
 val Ongoing = Color(0xFFD98A26)
-val OngoingInk = Color(0xFF8F5B0C)
-val Danger = Color(0xFFC9526B)
+val OngoingInk = Color(0xFFD98A26)
+val Danger = Color(0xFFA8435A)
 val DangerInk = Color(0xFFA8435A)
 
 // 成功
-val Success = Color(0xFF34C759)
+val Success = Color(0xFF2D9B6A)
 val OnSuccess = Color(0xFFFFFFFF)
-val SuccessContainer = Color(0xFFF0FAF5)
-val OnSuccessContainer = Color(0xFF065F46)
+val SuccessContainer = Color(0xFFF0FBF4)
+val OnSuccessContainer = Color(0xFF17322B)
 
 // 文字色阶
 val TextPrimary = Color(0xFF1C1C1E)
 val TextSecondary = Color(0xFF6B6E73)   // 次文本（对比度更高）
-val TextTertiary = Color(0xFF9A9DA3)    // 弱文本（对比度更高）
+val TextTertiary = Color(0xFFA9AEA9)    // 弱文本（规范 §1.4 收敛 #9A9DA3→#A9AEA9）
 
 // 分隔线
 val Divider = Color(0xFFEFF1EE)
@@ -77,7 +81,7 @@ val Water = Color(0xFF4A9FD4)
 val WaterSoft = Color(0xFFDCEFF7)       // 水色浅底容器
 
 // 图标容器六色浅底（规范 §2.1）
-val IconContainerGreen = Color(0xFFE8F6EF)   // 洗护/主
+val IconContainerGreen = Color(0xFFF0FBF4)   // 洗护/主
 val IconContainerBlue = Color(0xFFEEF2FB)    // 物流/寄件
 val IconContainerOrange = Color(0xFFFDF3E7)  // 取件/待办
 val IconContainerPink = Color(0xFFFDEEF0)    // 异常/取消
@@ -94,14 +98,14 @@ val IconForegroundPurple = Color(0xFF7C3AED)
 
 // ========== 清氧设计系统 — 暗色主题 ==========
 
-// 主色 — 自然绿（规范 §10 红线：品牌绿深浅色一致）
-val DarkPrimary = Color(0xFF2D9B6A)
-val DarkOnPrimary = Color(0xFFFFFFFF)
-val DarkPrimaryContainer = Color(0xFF1D3229)
-val DarkOnPrimaryContainer = Color(0xFFB9E8CF)
+// 主色 — 自然绿（规范 §1.4：深色模式主色提亮 #5BC894）
+val DarkPrimary = Color(0xFF5BC894)
+val DarkOnPrimary = Color(0xFF17322B)
+val DarkPrimaryContainer = Color(0xFF17322B)
+val DarkOnPrimaryContainer = Color(0xFFF0FBF4)
 
 // 主色变体
-val DarkPrimaryLight = Color(0xFF1D3229)     // 浅绿背景 → 深色模式用深绿底
+val DarkPrimaryLight = Color(0xFF17322B)     // 浅绿背景 → 深色模式用深绿底
 val DarkPrimaryDark = Color(0xFF5BC894)      // 按下态稍亮（primaryDeep 深色值）
 
 // 次要色
@@ -131,22 +135,22 @@ val DarkOutline = Color(0xFF2C312D)
 val DarkOutlineVariant = Color(0xFF262A27)
 
 // 错误
-val DarkError = Color(0xFFDB7186)
+val DarkError = Color(0xFFE795A5)
 val DarkOnError = Color(0xFF141614)
-val DarkErrorContainer = Color(0xFF341E24)
+val DarkErrorContainer = Color(0xFF3A1F28)
 val DarkOnErrorContainer = Color(0xFFE795A5)
 
 // 警告
-val DarkWarning = Color(0xFFE2A44E)
+val DarkWarning = Color(0xFFE5AC5C)
 val DarkOnWarning = Color(0xFF141614)
 val DarkWarningContainer = Color(0xFF332917)
 val DarkOnWarningContainer = Color(0xFFECB36A)
 
 // 成功
-val DarkSuccess = Color(0xFF4ADE6E)
+val DarkSuccess = Color(0xFF5BC894)
 val DarkOnSuccess = Color(0xFF141614)
-val DarkSuccessContainer = Color(0xFF1D3229)
-val DarkOnSuccessContainer = Color(0xFFB9E8CF)
+val DarkSuccessContainer = Color(0xFF17322B)
+val DarkOnSuccessContainer = Color(0xFFF0FBF4)
 
 // 文字色阶
 val DarkTextPrimary = Color(0xFFE6E9E6)
@@ -161,9 +165,9 @@ val DarkWater = Color(0xFF5FAEE0)
 val DarkWaterSoft = Color(0xFF1C2F3B)
 
 // 状态语义（进行中 / 危险，深色版）
-val DarkOngoing = Color(0xFFE2A44E)
+val DarkOngoing = Color(0xFFE5AC5C)
 val DarkOngoingInk = Color(0xFFECB36A)
-val DarkDanger = Color(0xFFDB7186)
+val DarkDanger = Color(0xFFE795A5)
 val DarkDangerInk = Color(0xFFE795A5)
 
 // 图标容器六色浅底（暗色版）
@@ -188,7 +192,8 @@ val AuthGradientMid = Color(0xFF0D7A4A)
 val AuthGradientBottom = Color(0xFF0B5C3A)
 
 // ========== 毛玻璃效果色 ==========
-val GlassBgSubtle = Color.White.copy(alpha = 0.10f)     // 极淡底色（设计稿 .glass 与品牌圆 bg 均为 rgba(255,255,255,.10)）
+val GlassBgCard = Color.White.copy(alpha = 0.08f)       // 玻璃卡底色（设计稿登录/注册画板 .glass 卡 rgba(255,255,255,.08)）
+val GlassBgSubtle = Color.White.copy(alpha = 0.10f)     // 极淡底色（设计稿品牌圆 bg 为 rgba(255,255,255,.10)）
 val GlassBg = Color.White.copy(alpha = 0.15f)           // 标准底色
 val GlassBorderSubtle = Color.White.copy(alpha = 0.18f) // 淡边框
 val GlassBorder = Color.White.copy(alpha = 0.2f)        // 标准边框
@@ -210,7 +215,7 @@ val AlipayBlue = Color(0xFF1677FF)
 
 // ========== 服务类型色彩 ==========
 val ServiceWash = Color(0xFF2D9B6A)       // 标准洗 — 自然绿
-val ServiceWashLight = Color(0xFFE8F6EF)
+val ServiceWashLight = Color(0xFFF0FBF4)
 val ServiceDry = Color(0xFF7C3AED)        // 干洗 — 优雅紫
 val ServiceDryLight = Color(0xFFF3EFFE)
 val ServicePress = Color(0xFFE07B00)      // 熨烫 — 暖橙
@@ -227,13 +232,14 @@ val ServiceShoesLight = Color(0xFFFEF2F2)
 val DivBgTopDark = Color(0xFF201D18)
 val DivBgMidDark = Color(0xFF1A1917)
 val DivBgBottomDark = Color(0xFF151412)
-val DivSurfaceDark = Color(0xFF1E1D1B)
+val DivSurfaceDark = Color(0xFF1A1917)       // 卡面与玄墨背景中段同色，仅靠 12% 金发丝线区隔（画板）
 val DivSurface2Dark = Color(0xFF26241F)
 val DivTextPrimaryDark = Color(0xFFEFE9DA)   // 宣纸主文本（暖调去塑料感）
-val DivTextSecondaryDark = Color(0xFFB9B2A2)
-val DivTextTertiaryDark = Color(0xFF847E6F)
+val DivTextSecondaryDark = Color(0xFFA9AEA9)  // 次要说明（画板玄墨侧唯一弱化色）
+val DivTextTertiaryDark = Color(0xFFA9AEA9)   // 元信息（日期/尾链/脚注，画板玄墨侧同弱化色）
 val DivGoldDark = Color(0xFFC9A961)
 val DivGoldHiDark = Color(0xFFD4B878)
+val DivOnGold = Color(0xFF151412)            // 金底墨字（金按钮文字，问卦双板一致）
 val DivSealDark = Color(0xFFC8504A)
 val DivSealHiDark = Color(0xFFD06054)
 val DivJadeDark = Color(0xFF6FA593)
@@ -244,15 +250,16 @@ val DivYaoBottomDark = Color(0xFFC9C2B0)
 val DivBgTopLight = Color(0xFFF8F3E7)
 val DivBgMidLight = Color(0xFFF5F1E8)
 val DivBgBottomLight = Color(0xFFEBE3D1)
-val DivSurfaceLight = Color(0xFFFBF9F3)
+val DivSurfaceLight = Color(0xFFF8F3E7)      // 卡面与宣纸背景顶端同色，仅靠 12% 金发丝线区隔（画板）
 val DivSurface2Light = Color(0xFFF1ECDD)
-val DivTextPrimaryLight = Color(0xFF2A251C)  // 暖墨
-val DivTextSecondaryLight = Color(0xFF6B6353)
-val DivTextTertiaryLight = Color(0xFF98907C)
-val DivGoldLight = Color(0xFF8F7233)         // 文字级暗金
+val DivTextPrimaryLight = Color(0xFF1C1C1E)  // 墨（画板宣纸侧主文本）
+val DivTextSecondaryLight = Color(0xFF6B6E73) // 次要说明（画板宣纸侧弱化色）
+val DivTextTertiaryLight = Color(0xFF1C1C1E)  // 元信息（日期/尾链/脚注，画板宣纸侧保持全墨保证对比 §10）
+val DivGoldLight = Color(0xFF8F7233)         // 图形级金（gold.700，画板宣纸侧线/点用）
 val DivGoldHiLight = Color(0xFF6E5626)
-val DivSealLight = Color(0xFFB8433A)         // 朱砂印两主题通用
+val DivSealLight = Color(0xFFC8504A)         // 朱砂印两主题通用（画板宣纸侧签印渐变深端）
 val DivSealHiLight = Color(0xFFA63A30)
+val DivSealDeep = Color(0xFFA63A30)          // 平涂印（卦历/卦盘画板双板一致，seal.700）
 val DivJadeLight = Color(0xFF3F7261)
 val DivYaoTopLight = Color(0xFF3A342A)       // 白纸墨爻
 val DivYaoBottomLight = Color(0xFF26231C)

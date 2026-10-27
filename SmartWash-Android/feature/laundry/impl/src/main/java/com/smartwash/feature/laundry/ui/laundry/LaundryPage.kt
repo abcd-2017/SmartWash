@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,7 +60,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.pressScale
 import com.smartwash.feature.laundry.R
@@ -141,14 +142,19 @@ fun LaundryPage(
             ) {
                 // 投递柜选择
                 item {
-                    Text(text = stringResource(R.string.delivery_locker), style = AppTextStyles.SectionTitle)
+                    Text(
+                        text = stringResource(R.string.delivery_locker),
+                        style = AppTextStyles.SectionTitle,
+                        color = AppColors.colorScheme.textPrimary
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
+                    // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.cardRadius),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
                         shadowElevation = 0.dp,
-                        border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Row(
                             modifier = Modifier
@@ -158,20 +164,15 @@ fun LaundryPage(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(AppColors.colorScheme.primaryLight),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocationOn,
-                                        contentDescription = null,
-                                        tint = AppColors.colorScheme.primary,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
+                                // 绿系 iconTile：primaryLight 底 + primaryDark 前景（画板实测绿 tile 配对），
+                                // 图标 24 = icon.md 档
+                                IconBox(
+                                    icon = Icons.Default.LocationOn,
+                                    size = 44.dp,
+                                    iconSize = 24.dp,
+                                    containerColor = AppColors.colorScheme.primaryLight,
+                                    iconTint = AppColors.colorScheme.primaryDark
+                                )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
@@ -189,7 +190,13 @@ fun LaundryPage(
                                 }
                             }
                             TextButton(onClick = { showChangeSchoolDialog = true }) {
-                                Text(stringResource(R.string.change), color = AppColors.colorScheme.primary)
+                                // 绿色文字红线（§10）：green.700（primaryDark）且 ≥16sp、weight ≥600
+                                Text(
+                                    text = stringResource(R.string.change),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppColors.colorScheme.primaryDark
+                                )
                             }
                         }
                     }
@@ -198,7 +205,11 @@ fun LaundryPage(
                 // 套餐选择
                 item {
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-                    Text(text = stringResource(R.string.laundry_package), style = AppTextStyles.SectionTitle)
+                    Text(
+                        text = stringResource(R.string.laundry_package),
+                        style = AppTextStyles.SectionTitle,
+                        color = AppColors.colorScheme.textPrimary
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
@@ -212,13 +223,16 @@ fun LaundryPage(
                         selectItemId = item.itemId
                         totalPrice = item.basePrice
                     }
-                    Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                    // 规范 §3 关键常量：列表项间距 12
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
-            // 底部栏（半透明 + 顶部渐变分割线）
+            // 底部栏（半透明 + 顶部渐变分割线）；固定 CTA 栏需避开手势条（规范 §4 安全区）
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
                 color = AppColors.colorScheme.surface.copy(alpha = 0.9f),
                 tonalElevation = 0.dp
             ) {
@@ -254,7 +268,8 @@ fun LaundryPage(
                             Text(
                                 text = stringResource(R.string.currency_format, totalPrice.toString()),
                                 style = AppTextStyles.DataLarge,
-                                color = AppColors.colorScheme.primary
+                                // 金额主色对齐支付页惯例：primaryDark（green.700/#1E8C5C·浅 / #5BC894·深）
+                                color = AppColors.colorScheme.primaryDark
                             )
                         }
                         AppButton(
@@ -295,6 +310,8 @@ private fun LaundryTypeItem(
     )
 
     val interactionSource = remember { MutableInteractionSource() }
+    // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
+    // （规范 §3：卡片 elevation 0 用描边代替；选中强调由 primaryLight 底 + primary 描边承担）
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -304,10 +321,10 @@ private fun LaundryTypeItem(
                 onClick = { cardClick() }
             )
             .pressScale(interactionSource, 0.97f),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
-        shadowElevation = if (isSelected) AppElevation.level2 else AppElevation.level1,
-        border = BorderStroke(if (isSelected) 1.5.dp else 0.5.dp, borderColor)
+        shadowElevation = 0.dp,
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
@@ -320,14 +337,14 @@ private fun LaundryTypeItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(8f)
             ) {
-                // 选中指示器
+                // 选中指示器 — 36dp 盒 + radiusSmall，选中底 primaryLight（规范选中底语义色）
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(AppDimens.radiusSmall))
                         .background(
-                            if (isSelected) AppColors.colorScheme.primary.copy(alpha = 0.15f)
-                            else AppColors.colorScheme.divider
+                            if (isSelected) AppColors.colorScheme.primaryLight
+                            else AppColors.colorScheme.surfaceVariant
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -336,7 +353,7 @@ private fun LaundryTypeItem(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = AppColors.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     } else {
                         Box(
@@ -349,10 +366,10 @@ private fun LaundryTypeItem(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    // 卡片标题 = font.title 18/24/600（规范 §5），选中态不再变字重
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Text(
                         text = description,
@@ -364,8 +381,9 @@ private fun LaundryTypeItem(
             Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.End) {
                 Text(
                     text = price,
+                    // 价格色对齐服务页画板实测：green.700（浅 #1E8C5C / 深 #5BC894）
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.primary
+                    color = AppColors.colorScheme.primaryDark
                 )
             }
         }

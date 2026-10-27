@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -76,25 +77,28 @@ fun DivCastPage(
         }
     }
 
-    DivinationScreen {
+    // 画板口径：固定布局（节点区定高 + 底部弹性留白），按钮贴底
+    DivinationScreen(scrollable = false) {
         Text(
             text = stringResource(R.string.div_cast_title),
-            style = divSerif(15.sp, FontWeight.Medium, 4.sp),
+            style = divSerif(14.sp, FontWeight.Medium, 4.sp, 20.sp),
             color = c.textSecondary,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
+                .statusBarsPadding()
                 .padding(top = 10.dp),
         )
         Text(
             text = stringResource(R.string.div_cast_progress, tossCount.coerceAtMost(6)),
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             letterSpacing = 3.sp,
-            color = c.gold.copy(alpha = 0.75f),
+            lineHeight = 16.sp,
+            color = c.goldText.copy(alpha = 0.75f),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 8.dp),
+                .padding(top = 6.dp, bottom = 20.dp),
         )
 
         // 三币
@@ -112,27 +116,23 @@ fun DivCastPage(
             },
         )
 
-        Spacer(Modifier.height(6.dp))
+        // 画板：铜钱底到节点区顶间距 48
+        Spacer(Modifier.height(48.dp))
 
-        // 子午线：六节点，自上爻(顶)到初爻(底)
+        // 子午线：六节点，自上爻(顶)到初爻(底)；中列（120dp）中心即全屏中心
         val positions = listOf("上爻", "五爻", "四爻", "三爻", "二爻", "初爻")
         Box(
             Modifier
-                .weight(1f)
                 .fillMaxWidth()
                 .padding(horizontal = 48.dp)
         ) {
-            // 中线（鎏金渐隐）
+            // 中线：20% 金（画板口径）
             Box(
                 Modifier
                     .align(Alignment.Center)
                     .width(1.dp)
                     .height(300.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(c.goldHair, c.goldLine, c.goldHair)
-                        )
-                    )
+                    .background(c.gold.copy(alpha = 0.2f))
             )
             Column(
                 Modifier
@@ -164,6 +164,9 @@ fun DivCastPage(
                 }
             }
         }
+
+        // 节点区到底部按钮的弹性留白（画板 800 基准：节点区下留白，按钮贴底）
+        Spacer(Modifier.weight(1f))
 
         // 掷爻 / 成卦
         DivGoldButton(

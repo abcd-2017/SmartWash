@@ -6,19 +6,22 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -59,13 +62,13 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
-import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppCard
+import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 
@@ -143,29 +146,33 @@ fun UpdateUserInfoPage(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(horizontal = AppDimens.pagePadding),
+            // 底部预留固定 CTA 栏高度（提示 16 + 间距 16 + 按钮 48 + 底距 16 + 余量），滚动内容不被按钮遮挡
+            contentPadding = PaddingValues(bottom = 120.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            item {
-                Spacer(modifier = Modifier.height(32.dp))
+            item(key = "hero") {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxl))
 
-                // 品牌区域 — Hero 卡（规范 §3.1 变体：品牌渐变底 + 白字）
-                val brandGradient = Brush.linearGradient(
-                    colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)
-                )
+                // 品牌区域 — Hero 卡（规范 §1.3 gradient.hero：浅色 #2D9B6A→#1E8C5C / 深色 #2D9B6A→#5BC894）
+                val brandGradient = if (isSystemInDarkTheme()) {
+                    Brush.linearGradient(listOf(Primary, AppColors.colorScheme.primary))
+                } else {
+                    Brush.linearGradient(listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark))
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(AppDimens.radiusXl))
+                        .clip(RoundedCornerShape(AppDimens.radiusLg))
                         .background(brandGradient)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(top = 24.dp, bottom = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        // 圆形图标容器（白色16%透明度 + 1px 白.22 描边）
+                        // 圆形图标容器（白色16%透明度 + 1px 白.22 描边，浅深两板同值）
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
@@ -177,133 +184,152 @@ fun UpdateUserInfoPage(
                             Icon(
                                 imageVector = Icons.Rounded.School,
                                 contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = Color.White
+                                modifier = Modifier.size(28.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                         Text(
                             text = stringResource(R.string.complete_info),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.88f)
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
             }
 
-            item {
-                AppCard {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // 学校标签
-                        Text(
-                            text = stringResource(R.string.search_school),
-                            style = AppTextStyles.SectionTitle,
-                            color = AppColors.colorScheme.textSecondary
-                        )
+            item(key = "form") {
+                // 字段分组卡 — 模板 C：surfaceGroup 底 + 1px outline 描边 + 圆角 16，无阴影
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(AppDimens.radiusLg))
+                        .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.radiusLg))
+                        .background(AppColors.colorScheme.groupBackground)
+                        .padding(top = AppDimens.spaceMd, bottom = 24.dp, start = 20.dp, end = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+                ) {
+                    // 字段标签 — captionStrong（12/16/500）
+                    Text(
+                        text = stringResource(R.string.search_school),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textSecondary
+                    )
 
-                        // field3 样式输入框 — 信息锁定后禁用编辑
-                        SearchSchoolInput(
-                            query = query,
-                            interactionSource = interactionSource,
-                            isSchoolError = isSchoolError,
-                            isSearchFocused = isSearchFocused,
-                            schoolList = schoolList,
-                            selectedSchoolId = selectedSchoolId,
-                            enabled = !isInfoLocked,
-                            itemClick = { school ->
-                                selectedSchoolId = school.schoolId
-                                query = school.schoolName
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                                isSchoolError = false
-                                isSearchFocused = false
-                            },
-                            clearOnClick = {
-                                query = ""
-                                userInfoViewModel.updateSearchName(query)
-                            }
-                        ) {
-                            query = it
+                    // 学校搜索输入框 — 与标签间距 24（spacedBy 16 + 上内边距 8）— 信息锁定后禁用编辑
+                    SearchSchoolInput(
+                        query = query,
+                        interactionSource = interactionSource,
+                        isSchoolError = isSchoolError,
+                        isSearchFocused = isSearchFocused,
+                        schoolList = schoolList,
+                        selectedSchoolId = selectedSchoolId,
+                        enabled = !isInfoLocked,
+                        modifier = Modifier.padding(top = 8.dp),
+                        itemClick = { school ->
+                            selectedSchoolId = school.schoolId
+                            query = school.schoolName
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            isSchoolError = false
+                            isSearchFocused = false
+                        },
+                        clearOnClick = {
+                            query = ""
                             userInfoViewModel.updateSearchName(query)
                         }
-
-                        // 学号标签
-                        Text(
-                            text = stringResource(R.string.student_id),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.4.sp,
-                            color = AppColors.colorScheme.textSecondary,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-
-                        // field3 样式输入框 — 信息锁定后禁用编辑
-                        OutlinedTextField(
-                            value = studentId,
-                            onValueChange = { studentId = it; isStudentIdError = false },
-                            placeholder = { Text(stringResource(R.string.student_id)) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            enabled = !isInfoLocked,
-                            isError = isStudentIdError,
-                            supportingText = if (isStudentIdError) {
-                                { Text(stringResource(R.string.invalid_student_id)) }
-                            } else null,
-                            leadingIcon = {
-                                Icon(Icons.Rounded.Badge, contentDescription = null, tint = AppColors.colorScheme.primary)
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.colorScheme.primary,
-                                unfocusedBorderColor = AppColors.colorScheme.outline,
-                                errorBorderColor = AppColors.colorScheme.error,
-                                focusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                                disabledBorderColor = AppColors.colorScheme.outline,
-                                disabledContainerColor = AppColors.colorScheme.surfaceVariant
-                            )
-                        )
+                    ) {
+                        query = it
+                        userInfoViewModel.updateSearchName(query)
                     }
+
+                    // 学号标签 — 与上一输入框间距 24（spacedBy 16 + 上内边距 8）
+                    Text(
+                        text = stringResource(R.string.student_id),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    // 学号输入框 — 信息锁定后禁用编辑
+                    OutlinedTextField(
+                        value = studentId,
+                        onValueChange = { studentId = it; isStudentIdError = false },
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.student_id),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.colorScheme.textTertiary
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !isInfoLocked,
+                        isError = isStudentIdError,
+                        supportingText = if (isStudentIdError) {
+                            { Text(stringResource(R.string.invalid_student_id)) }
+                        } else null,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Rounded.Badge,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = AppColors.colorScheme.primary
+                            )
+                        },
+                        shape = RoundedCornerShape(AppDimens.radiusMd),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.colorScheme.primary,
+                            unfocusedBorderColor = AppColors.colorScheme.outline,
+                            errorBorderColor = AppColors.colorScheme.error,
+                            focusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
+                            disabledBorderColor = AppColors.colorScheme.outline,
+                            disabledContainerColor = AppColors.colorScheme.surfaceVariant
+                        )
+                    )
                 }
             }
+        }
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                AppButton(
-                    text = stringResource(R.string.confirm),
-                    onClick = {
-                        isSchoolError = selectedSchoolId == -1L
-                        isStudentIdError = studentId.isEmpty()
-                        if (!isSchoolError && !isStudentIdError) {
-                            keyboardController?.hide()
-                            userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
-                        }
-                    },
-                    loading = updateState is RequestState.Loading,
-                    enabled = !isInfoLocked
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.school_info_locked_hint),
-                    fontSize = 12.sp,
-                    color = AppColors.colorScheme.textTertiary
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+        // 底部固定 CTA 栏（模板 C：提示文案 + 主按钮；键盘弹出经 imePadding 上移，不遮挡输入框）
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(AppColors.colorScheme.background)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = AppDimens.pagePadding)
+        ) {
+            Text(
+                text = stringResource(R.string.school_info_locked_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary
+            )
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            AuthCtaButton(
+                text = stringResource(R.string.confirm),
+                onClick = {
+                    isSchoolError = selectedSchoolId == -1L
+                    isStudentIdError = studentId.isEmpty()
+                    if (!isSchoolError && !isStudentIdError) {
+                        keyboardController?.hide()
+                        userInfoViewModel.updateUserInfo(selectedSchoolId, studentId)
+                    }
+                },
+                loading = updateState is RequestState.Loading,
+                enabled = !isInfoLocked
+            )
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
         }
     }
 }
@@ -317,32 +343,49 @@ fun SearchSchoolInput(
     schoolList: List<SchoolOption>,
     selectedSchoolId: Long,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     itemClick: (SchoolOption) -> Unit,
     clearOnClick: () -> Unit,
     onValueChange: (String) -> Unit
 ) {
-    Column {
+    Column(modifier = modifier) {
         OutlinedTextField(
             value = query,
             onValueChange = onValueChange,
-            placeholder = { Text(stringResource(R.string.search_school)) },
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.search_school),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.colorScheme.textTertiary
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(48.dp),
             enabled = enabled,
             isError = isSchoolError,
             supportingText = if (isSchoolError) {
                 { Text(stringResource(R.string.please_select_school)) }
             } else null,
             leadingIcon = {
-                Icon(Icons.Rounded.School, contentDescription = null, tint = AppColors.colorScheme.primary)
+                Icon(
+                    Icons.Rounded.School,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = AppColors.colorScheme.primary
+                )
             },
             trailingIcon = {
                 IconButton(onClick = clearOnClick, enabled = enabled) {
-                    Icon(Icons.Rounded.Clear, contentDescription = stringResource(R.string.clear), tint = AppColors.colorScheme.textSecondary)
+                    Icon(
+                        Icons.Rounded.Clear,
+                        contentDescription = stringResource(R.string.clear),
+                        modifier = Modifier.size(20.dp),
+                        tint = AppColors.colorScheme.textSecondary
+                    )
                 }
             },
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(AppDimens.radiusMd),
             interactionSource = interactionSource,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AppColors.colorScheme.primary,

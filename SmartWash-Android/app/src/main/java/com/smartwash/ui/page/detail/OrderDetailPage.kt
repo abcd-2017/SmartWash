@@ -4,20 +4,21 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,7 +42,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,7 +62,6 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
@@ -120,25 +120,26 @@ fun OrderDetailPage(
             PageHeader(title = stringResource(R.string.order_detail), onBack = { navController.navigateUp() })
 
             Column(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                Spacer(modifier = Modifier.height(8.dp))
-
                 // 状态区 — 无卡片：居中滚筒插画 + 状态字（设计稿屏 6，D-OD8）
+                // 屏 6 实测 页头文字底→插画顶 14dp：PageHeader 自带内边距已占 18dp，不再追加 Spacer
                 OrderStatusHeader(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
 
-                // 进度时间线（规范 §3.4）
+                // 进度时间线（规范 §3.4）；卡片规格对齐同页组画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
+                // （规范 §3：卡片 elevation 0 用描边代替）
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(AppDimens.radiusLg),
                     color = AppColors.colorScheme.surface,
-                    shadowElevation = AppElevation.level1,
                     border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                    // 屏 6 实测卡内边距：左右 20 / 上 10 / 下 4，标题→节点带 6
+                    Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 4.dp)) {
                         Text(
                             text = stringResource(R.string.progress_timeline),
                             style = AppTextStyles.SectionTitle,
+                            letterSpacing = 0.3.sp,
                             color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 6.dp)
                         )
                         ProgressTimeline(
                             currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1"),
@@ -149,7 +150,8 @@ fun OrderDetailPage(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // 屏 6 实测：时间线卡底 → 信息卡顶 12
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 订单信息（c3：物流/订单语义蓝图标，D-OD11）
                 InfoSection(
@@ -158,31 +160,33 @@ fun OrderDetailPage(
                     iconContainerColor = AppColors.colorScheme.iconContainerBlue,
                     iconTint = AppColors.colorScheme.iconForegroundBlue
                 ) {
-                    InfoRow(
-                        stringResource(R.string.order_number),
-                        orderInfo?.orderNo ?: "",
-                        valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
-                    )
-                    InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
-                    // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据）
-                    InfoRow(
-                        stringResource(R.string.price),
-                        stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
-                    )
-                    InfoRow(
-                        stringResource(R.string.actual_payment),
-                        stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
-                        valueColor = AppColors.colorScheme.primary,
-                        valueStyle = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFeatureSettings = "tnum"
+                    // 行距节奏：屏 6 实测 48（行高 34 + 行间距 14）；值列 12/500 = labelMedium，订单号启用 tnum
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        InfoRow(
+                            stringResource(R.string.order_number),
+                            orderInfo?.orderNo ?: "",
+                            valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
                         )
-                    )
-                    InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
-                    InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                        InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
+                        // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
+                        InfoRow(
+                            stringResource(R.string.price),
+                            stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
+                        )
+                        // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
+                        InfoRow(
+                            stringResource(R.string.actual_payment),
+                            stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                            valueColor = AppColors.colorScheme.primaryDark,
+                            valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                        InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
+                        InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // 屏 6 实测：信息卡底 → 操作条顶 8
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
@@ -230,9 +234,12 @@ private fun parsePickupCode(orderInfo: OrderInfo?): String =
     orderInfo?.pickupCode?.split(":")?.getOrNull(2) ?: ""
 
 /**
- * 进度时间线 — 规范 §3.4 竖向时间线
- * 当前状态节点高亮（now），已完成节点品牌色（done），未完成节点灰色
+ * 进度时间线 — 设计稿屏 6 水平 stepper（实测：rail 2dp 节点连线、当前节点 water 蓝 20dp 光环 +
+ * 12dp 实心、节点下方 caption 标签、首节点下时间副行；卡内节点带 20 + 标签 16 + 副行 16）
+ * 当前状态节点高亮（now），已完成节点品牌色（done），未完成节点 outline/装饰灰
  * 节点标题=状态名；副行仅首节点显示真实下单时间（D-OD2：原 5 条硬编码时间文案已移除）
+ * 注：设计稿为 4 节点（已接单/清洗中/烘干中/待取件）；代码保留 5 个业务状态节点
+ * （烘干中非 OrderStatus 枚举值，待支付/已完成为真实流程端点，删减属业务语义变更，不在视觉对齐范围）
  */
 @Composable
 fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null) {
@@ -247,82 +254,106 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
 
     // 确定当前节点索引
     val currentIndex = nodes.indexOfFirst { it == currentStatus }.coerceAtLeast(0)
+    val isDark = isSystemInDarkTheme()
 
-    Column(modifier = Modifier.padding(start = 24.dp)) {
-        nodes.forEachIndexed { index, node ->
-            val isDone = index < currentIndex
-            val isCurrent = index == currentIndex
-            val isLast = index == nodes.lastIndex
-
+    Column {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val step = maxWidth / nodes.size
+            // rail 层（先绘，节点覆盖其上）：相邻节点圆心连线，2dp，完成段 primary / 未完成段 hairline
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = step / 2 - 6.dp)
+                    .offset(y = 9.dp)
             ) {
-                // 左侧竖列：节点圆点 + 竖 rail（tl3 规格，D-OD9）
-                Column(
-                    modifier = Modifier
-                        .width(20.dp)
-                        .fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (isCurrent) {
-                        // now 节点：20dp 光环底（primarySoft #E8F6EF，M3 primaryContainer 令牌对应）+ 内层 12dp primary 实心
+                for (i in 0 until nodes.size - 1) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 6.dp)
+                            .height(2.dp)
+                            .background(
+                                if (i < currentIndex) AppColors.colorScheme.primary
+                                else AppColors.colorScheme.hairline
+                            )
+                    )
+                }
+            }
+            // 节点 + 标签层
+            Row(modifier = Modifier.fillMaxWidth()) {
+                nodes.forEachIndexed { index, node ->
+                    val isDone = index < currentIndex
+                    val isCurrent = index == currentIndex
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // 20dp 节点带：当前节点 water 光环 + 12dp 实心；余态 12dp 圆点居中（屏 6 实测）
                         Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            modifier = Modifier.size(20.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clip(CircleShape)
-                                    .background(AppColors.colorScheme.primary)
+                            if (isCurrent) {
+                                // now 节点：20dp 光环 water 12%（深色 15%）+ 内层 12dp water 实心
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            AppColors.colorScheme.water.copy(
+                                                alpha = if (isDark) 0.15f else 0.12f
+                                            )
+                                        )
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(AppColors.colorScheme.water)
+                                )
+                            } else {
+                                // done → primary 实心；未完成 → outline 实心
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isDone) AppColors.colorScheme.primary
+                                            else AppColors.colorScheme.outline
+                                        )
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(node.descriptionRes),
+                            // 节点标签 = caption 档 bodySmall 12/16（屏 6 实测 12/400，当前节点 600）
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                            color = when {
+                                // 当前节点：#17322B·浅（onPrimaryContainer）/ #5BC894·深（primary）
+                                isCurrent -> if (isDark) {
+                                    AppColors.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                }
+                                isDone -> AppColors.colorScheme.textPrimary
+                                else -> AppColors.colorScheme.textTertiary
+                            },
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
+                        )
+                        // 副行仅首节点（已接单）显示真实下单时间 HH:mm（D-OD2），其余节点无副行
+                        if (index == 0 && !firstNodeTime.isNullOrEmpty()) {
+                            Text(
+                                text = firstNodeTime,
+                                // 时间戳数字启用 tnum（规范 §5 金额与数字）
+                                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                                color = AppColors.colorScheme.textSecondary,
+                                modifier = Modifier.padding(top = 2.dp)
                             )
                         }
-                    } else {
-                        // done → primary 实心；未完成 → outline 实心
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (isDone) AppColors.colorScheme.primary else AppColors.colorScheme.outline
-                                )
-                        )
-                    }
-                    if (!isLast) {
-                        // rail 2dp：已完成段 primary、未完成 hairline；fillMaxHeight 衔接下一节点保证连续
-                        Box(
-                            modifier = Modifier
-                                .width(2.dp)
-                                .fillMaxHeight()
-                                .background(
-                                    if (isDone) AppColors.colorScheme.primary else AppColors.colorScheme.hairline
-                                )
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(
-                    modifier = Modifier.padding(bottom = if (isLast) 0.dp else 16.dp)
-                ) {
-                    Text(
-                        text = stringResource(node.descriptionRes),
-                        fontSize = 12.sp,
-                        fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isCurrent) AppColors.colorScheme.primaryDark
-                        else if (isDone) AppColors.colorScheme.textPrimary
-                        else AppColors.colorScheme.textTertiary
-                    )
-                    // 副行仅首节点（已接单）显示真实下单时间 HH:mm（D-OD2），其余节点无副行
-                    if (index == 0 && !firstNodeTime.isNullOrEmpty()) {
-                        Text(
-                            text = firstNodeTime,
-                            fontSize = 12.sp,
-                            color = AppColors.colorScheme.textTertiary,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
                     }
                 }
             }
@@ -368,13 +399,14 @@ private fun OrderStatusHeader(status: OrderStatus?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 10.dp, bottom = 14.dp),
+            .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         DrumIllustration()
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(info.statusTextRes),
+            // 状态大字 = DataLarge 36/44/700（屏 6 实测 36/700/44，色 #1E8C5C·浅 / #5BC894·深 = primaryDark）
             style = AppTextStyles.DataLarge,
             color = if (status == OrderStatus.WASHING) {
                 // 清洗中 → brand-deep（primaryDark），余态保留语义色
@@ -386,7 +418,8 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = stringResource(info.estimatedTimeRes),
-            fontSize = 12.sp,
+            // 副行提示 caption 档（屏 6 实测 12/16/400；插画→状态字 12 / 状态字→副行 6）
+            style = MaterialTheme.typography.bodySmall,
             color = AppColors.colorScheme.textSecondary
         )
     }
@@ -462,8 +495,10 @@ private fun DrumIllustration() {
 }
 
 /**
- * 底部固定操作条 — 设计稿屏 6：0.5dp border-top + surface 底 + padding 16/24 + gap 12（D-OD5/6/7）
- * 按钮规格 btn3：高 52 / r14 / 15sp / 600 / letterSpacing 1；点击行为由页面回调承接（D-OD1/D-OD12）
+ * 底部固定操作条 — 设计稿屏 6 实测：1dp 顶线（outline）+ surface 底 + padding 16/24 + 按钮间距 12（D-OD5/6/7）
+ * 按钮规格（实测）：高 48 / radiusFull 胶囊 / 文字 font.title 18/600；
+ * 主按钮纯色 primary + onPrimary 白/墨绿字（ls 1）；次按钮透明底 + 1dp outline 描边 + primaryDark 字（§5 次级按钮描边样式，§10 绿字红线 green.700）
+ * 点击行为由页面回调承接（D-OD1/D-OD12）
  */
 @Composable
 private fun OrderDetailActionBar(
@@ -479,7 +514,7 @@ private fun OrderDetailActionBar(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(0.5.dp)
+                    .height(1.dp)
                     .background(AppColors.colorScheme.outline)
             )
             Row(
@@ -489,44 +524,40 @@ private fun OrderDetailActionBar(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 次按钮 — surfaceVariant 底 + 主文本色（§3.3），自绘无 state layer
+                // 次按钮 — 透明底 + 1dp outline 描边（屏 6 实测无填充，规范 §5 次级按钮描边样式）
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp)
+                        .height(48.dp)
                         .pressable(onClick = onContactServiceClick, debounce = false)
-                        .background(
-                            AppColors.colorScheme.surfaceVariant,
-                            RoundedCornerShape(AppDimens.buttonRadius)
+                        .border(
+                            1.dp,
+                            AppColors.colorScheme.outline,
+                            RoundedCornerShape(AppDimens.radiusFull)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.contact_service),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppColors.colorScheme.textPrimary
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AppColors.colorScheme.primaryDark
                     )
                 }
-                // 主按钮 btn3-p：135° 对角绿渐变（primary → primaryDark），白字
-                val pickupGradient = Brush.linearGradient(
-                    colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark),
-                    start = Offset.Zero,
-                    end = Offset.Infinite
-                )
+                // 主按钮 — 纯色 primary 胶囊（屏 6 实测无渐变），onPrimary 双主题成对
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(52.dp)
+                        .height(48.dp)
                         .pressable(onClick = onPickupCodeClick, debounce = false)
-                        .background(pickupGradient, RoundedCornerShape(AppDimens.buttonRadius)),
+                        .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.view_pickup_code),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        style = MaterialTheme.typography.titleMedium,
+                        // 屏 6 实测主按钮字距 ls=1
+                        letterSpacing = 1.sp,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }

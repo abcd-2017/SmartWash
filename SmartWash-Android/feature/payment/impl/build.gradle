@@ -1,11 +1,13 @@
 // :feature:payment:impl —— 支付域实现（T6.2，含充值 Recharge 域并入，同属资金链路）。
 // 支付+充值网络链路（PaymentApi/RechargeApi/PaymentRepository/RechargeRepository）
 // + 支付/支付成功/充值/充值记录页面；对外仅经 :feature:payment:api 的 PaymentRoute
-// 路由常量暴露（payment 域零跨模块数据消费，无 api 接口）。
+// 路由常量暴露。
 // 消费 order-api 经接口（PaymentViewModel/PaySuccessViewModel 注入 OrderApi）；
 // 优惠券数据经 coupon-api 的 CouponApi 契约取自 :feature:coupon:impl（T7.2 起
-// 原 CouponSource seam 与 app 壳 PaymentImplSeamModule 实现删除）。
-// 依赖方向：payment-api / order-api / coupon-api / common（禁止依赖 app 壳与其他 feature-impl）。
+// 原 CouponSource seam 与 app 壳 PaymentImplSeamModule 实现删除）；
+// 余额数据经 user-api 的 UserApi 契约（RechargeViewModel 注入，充值页余额展示）。
+// 依赖方向：payment-api / order-api / coupon-api / user-api / common
+// （禁止依赖 app 壳与其他 feature-impl，跨域一律经 api 接口模块）。
 apply from: "$rootDir/config/android-library.gradle"
 apply from: "$rootDir/config/compose.gradle"
 apply from: "$rootDir/config/hilt.gradle"
@@ -26,6 +28,10 @@ dependencies {
     // 优惠券；CouponRoute：选券弹层「去领取」跳优惠券页。T7.2 起替换 CouponSource seam
     // 与 HostRoutes.COUPON 过渡字面量，不触碰 coupon:impl 实现细节）
     implementation project(':feature:coupon:api')
+
+    // 用户域契约（RechargeViewModel 注入 UserApi 取账户余额，充值页余额展示；
+    // getUserInfo 走 user-impl 内存缓存，不触碰 user:impl 实现细节）
+    implementation project(':feature:user:api')
 
     // 响应信封 ApiResult/PageData/RequestState
     implementation project(':common:utils')

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,12 +42,9 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
-import com.smartwash.common.ui.theme.GlassBg
+import com.smartwash.common.ui.theme.GlassBgCard
 import com.smartwash.common.ui.theme.GlassBgSubtle
-import com.smartwash.common.ui.theme.GlassBorder
 import com.smartwash.common.ui.theme.GlassBorderSubtle
-import com.smartwash.common.ui.theme.GlassTextDisabled
-import com.smartwash.common.ui.theme.GlassTextHint
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -75,10 +73,6 @@ import com.smartwash.common.utils.rememberDebouncedClick
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
-
-// 认证页底部文字色（设计稿 .gt=.78 / .gtb=.92）
-private val AuthBottomText = Color.White.copy(alpha = 0.78f)
-private val AuthBottomTextActive = Color.White.copy(alpha = 0.92f)
 
 @Composable
 fun LoginPage(
@@ -167,7 +161,7 @@ fun LoginPage(
         }
     }
 
-    val glassShape = RoundedCornerShape(AppDimens.radiusXl)
+    val glassShape = RoundedCornerShape(AppDimens.radiusLg)
 
     Box(
         modifier = Modifier
@@ -205,8 +199,7 @@ fun LoginPage(
 
             Text(
                 text = stringResource(R.string.brand_name),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineLarge,
                 color = Color.White
             )
 
@@ -215,25 +208,27 @@ fun LoginPage(
             Text(
                 text = stringResource(R.string.brand_subtitle),
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.78f),
+                lineHeight = 16.sp,
+                color = Color.White,
                 letterSpacing = 0.5.sp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（§3.7；Compose 双参重载是 (start, top)，禁止写反）
+            // 毛玻璃输入卡片 — 内边距上 16 / 下 24 / 水平 16（登录画板 376→584：392 顶距 16、560→584 底距 24）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
-                    .background(GlassBgSubtle)
+                    .background(GlassBgCard)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .padding(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
                     isPhoneError = isPhoneError,
-                    contentColor = Color.White
+                    contentColor = Color.White,
+                    label = stringResource(com.smartwash.common.ui.R.string.phone_number)
                 ) {
                     if (it.length <= 11) phone = it
                     // 实时校验：只在已显示错误后实时更新，避免输入中就报错
@@ -244,13 +239,17 @@ fun LoginPage(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .height(0.5.dp)
+                        .padding(horizontal = 8.dp)
+                        .height(1.dp)
                         .background(Color.White.copy(alpha = 0.12f))
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 PasswordInput(
                     password = password,
@@ -258,15 +257,16 @@ fun LoginPage(
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
                     contentColor = Color.White,
+                    label = stringResource(com.smartwash.common.ui.R.string.password),
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
                     if (it.length <= 16) password = it
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // 登录按钮 — 玻璃卡白色 CTA（自绘无 state layer，防抖经 800ms 动作档注入）
+                // 登录按钮 — 玻璃卡主 CTA（主题 primary 底胶囊，自绘无 state layer，防抖经 800ms 动作档注入）
                 AuthCtaButton(
                     text = stringResource(R.string.login_button),
                     loading = loginState is RequestState.Loading,
@@ -285,24 +285,25 @@ fun LoginPage(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 注册入口 — 只有点击"立即注册"才跳转
+            // 注册入口 — 只有点击"立即注册"才跳转（登录画板：卡底 584→文案 608 间距 24）
             Row(
-                modifier = Modifier.padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     stringResource(R.string.no_account),
                     fontSize = 12.sp,
-                    color = AuthBottomText
+                    lineHeight = 16.sp,
+                    color = Color.White
                 )
                 Text(
                     text = stringResource(R.string.register_now),
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = AuthBottomTextActive,
+                    color = Color.White,
                     modifier = Modifier
                         .clickable(
                             interactionSource = registerEntryInteractionSource,
@@ -312,7 +313,7 @@ fun LoginPage(
                             debouncedRegisterClick()
                         }
                         .pressScale(registerEntryInteractionSource, 0.97f)
-                        .padding(horizontal = 4.dp, vertical = 8.dp)
+                        .padding(horizontal = 4.dp, vertical = 16.dp)
                 )
             }
 

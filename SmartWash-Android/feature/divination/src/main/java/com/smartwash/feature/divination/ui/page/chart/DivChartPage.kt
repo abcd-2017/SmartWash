@@ -71,7 +71,7 @@ fun DivChartPage(
             DivPageHeader(title = stringResource(R.string.div_chart_title), onBack = { navController.popBackStack() })
             Text(
                 text = stringResource(R.string.div_chart_missing),
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 color = c.textTertiary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
@@ -88,13 +88,16 @@ fun DivChartPage(
             title = divTitleText(method, bundle),
             onBack = { navController.popBackStack() },
             seal = sealText,
+            // 画板（卦盘双板一致）：平涂深朱印 radius 8 印文 14/700；长卦名标题字距 2
+            flatSeal = true,
+            titleSpacing = 2.sp,
         )
 
-        // 统一干支/口径声明行
+        // 统一干支/口径声明行（画板：12/16 字距 2 居中，玄墨金 75% / 宣纸墨 75%）
         Text(
             text = divDeclarationText(method, bundle),
-            style = divSerif(11.sp, FontWeight.Normal, 2.sp),
-            color = c.gold.copy(alpha = 0.75f),
+            style = divSerif(12.sp, FontWeight.Normal, 2.sp, lineHeight = 16.sp),
+            color = c.goldText.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -106,7 +109,7 @@ fun DivChartPage(
                 Text(
                     text = qimen.juDeclaration { n -> cnJuNumber(n) },
                     style = divSerif(12.sp, FontWeight.Medium, 3.sp),
-                    color = c.gold,
+                    color = c.goldText,
                     modifier = Modifier
                         .padding(vertical = 8.dp)
                         .align(Alignment.CenterHorizontally),
@@ -118,28 +121,37 @@ fun DivChartPage(
 
         when (method) {
             DivMethod.LIU_YAO -> bundle.liuyao?.let { chart ->
-                LiuYaoPan(chart = chart, facts = state.liuYaoFacts, animateEntry = animateEntry, modifier = Modifier.padding(horizontal = 20.dp))
-                Spacer(Modifier.height(12.dp))
+                // 画板：盘区无卡片直接铺底，轨道左 28 / 右 20 由盘组件自持
+                LiuYaoPan(chart = chart, facts = state.liuYaoFacts, animateEntry = animateEntry)
+                // 画板：末行到事实卡间距 24
+                Spacer(Modifier.height(24.dp))
                 Row(
-                    Modifier.padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Modifier.padding(start = 16.dp, end = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     DivMiniCard(label = stringResource(R.string.div_liuyao_yongshen), modifier = Modifier.weight(1f)) {
                         val facts = state.liuYaoFacts
                         Text(
                             text = facts?.yongShenLabel ?: "—",
-                            style = divSerif(12.5.sp, FontWeight.Medium, 1.sp),
-                            color = c.gold,
+                            style = divSerif(12.sp, FontWeight.Medium, 1.sp, lineHeight = 16.sp),
+                            color = c.goldText,
                         )
                         facts?.yongShenNote?.let {
-                            Text(text = it, fontSize = 10.sp, color = c.textSecondary, modifier = Modifier.padding(top = 4.dp))
+                            Text(
+                                text = it,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = c.textSecondary,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
                         }
                         facts?.let { f ->
                             val pos = f.yongShenPosition
                             if (pos != null) {
                                 Text(
                                     text = "${f.strength[pos]} · ${listOf("初", "二", "三", "四", "五", "上")[pos - 1]}爻",
-                                    fontSize = 10.sp,
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
                                     color = c.textSecondary,
                                     modifier = Modifier.padding(top = 4.dp),
                                 )
@@ -160,8 +172,8 @@ fun DivChartPage(
                                     if (isEmpty()) append("未见动变冲空之象")
                                 }
                             },
-                            fontSize = 11.sp,
-                            lineHeight = 18.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 20.sp,
                             color = c.textPrimary,
                         )
                     }
@@ -171,13 +183,13 @@ fun DivChartPage(
             DivMethod.MEI_HUA -> bundle.meihua?.let { chart ->
                 MeiHuaTripleCards(chart = chart, modifier = Modifier.padding(horizontal = 20.dp))
                 Spacer(Modifier.height(12.dp))
-                DivCard(Modifier.padding(horizontal = 20.dp), borderColor = c.goldHair) {
-                    Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                DivCard(Modifier.padding(horizontal = 20.dp)) {
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                         Text(
                             stringResource(R.string.div_meihua_tiyong),
-                            fontSize = 9.5.sp,
+                            fontSize = 12.sp,
                             letterSpacing = 2.sp,
-                            color = c.textTertiary,
+                            color = c.textSecondary,
                         )
                         Text(
                             text = stringResource(
@@ -187,10 +199,10 @@ fun DivChartPage(
                                 chart.upper.label, chart.upper.wuXing.label,
                                 chart.tiYongRelation.label, chart.tiYongRelation.phrase,
                             ),
-                            fontSize = 11.sp,
-                            lineHeight = 19.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 20.sp,
                             color = c.textPrimary,
-                            modifier = Modifier.padding(top = 5.dp),
+                            modifier = Modifier.padding(top = 4.dp),
                         )
                     }
                 }
@@ -200,18 +212,18 @@ fun DivChartPage(
                 QimenGrid(chart = chart, modifier = Modifier.padding(horizontal = 20.dp))
                 Spacer(Modifier.height(12.dp))
                 Row(
-                    Modifier.padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Modifier.padding(start = 16.dp, end = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     DivMiniCard(label = stringResource(R.string.div_qimen_yongshen), modifier = Modifier.weight(1f)) {
                         Text(
                             text = "日干${chart.siZhu.day.gan.label} · 时干${chart.siZhu.hour.gan.label}",
-                            style = divSerif(12.sp, FontWeight.Medium, 0.sp),
-                            color = c.gold,
+                            style = divSerif(12.sp, FontWeight.Medium, 0.sp, lineHeight = 16.sp),
+                            color = c.goldText,
                         )
                         Text(
                             text = "值符${chart.zhiFuXing}落${gongName(chart.zhiFuLuoGong)} · 值使${chart.zhiShiMen}落${gongName(chart.zhiShiGong)}",
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             lineHeight = 16.sp,
                             color = c.textSecondary,
                             modifier = Modifier.padding(top = 4.dp),
@@ -223,8 +235,8 @@ fun DivChartPage(
                                 append("空亡${chart.kongWangZhi.joinToString("")}落${chart.kongWangGong.joinToString("、") { gongName(it) }}\n")
                                 append("驿马${chart.maZhi}在${gongName(chart.maGong)}")
                             },
-                            fontSize = 11.sp,
-                            lineHeight = 18.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 20.sp,
                             color = c.textPrimary,
                         )
                     }
@@ -239,7 +251,7 @@ fun DivChartPage(
                 Text(
                     text = chart.unsupportedNote
                         ?: stringResource(R.string.div_liuren_keti, chart.keTi ?: "", chart.jiuZongMen ?: ""),
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = c.textTertiary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -249,8 +261,8 @@ fun DivChartPage(
 
         Spacer(Modifier.height(16.dp))
         Row(
-            Modifier.padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier.padding(start = 16.dp, end = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             DivGoldButton(
                 text = stringResource(R.string.div_chart_interpret),

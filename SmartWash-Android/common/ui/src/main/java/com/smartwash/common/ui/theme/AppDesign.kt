@@ -32,6 +32,8 @@ data class AppColorScheme(
     val primary: Color,
     val primaryLight: Color,
     val primaryDark: Color,
+    val heroGradientStart: Color,
+    val heroGradientEnd: Color,
     val background: Color,
     val surface: Color,
     val surfaceVariant: Color,
@@ -74,6 +76,8 @@ val LightAppColorScheme = AppColorScheme(
     primary = Primary,
     primaryLight = PrimaryLight,
     primaryDark = PrimaryDark,
+    heroGradientStart = HeroGradientStart,
+    heroGradientEnd = PrimaryDark,
     background = Background,
     surface = Surface,
     surfaceVariant = SurfaceVariant,
@@ -116,6 +120,8 @@ val DarkAppColorScheme = AppColorScheme(
     primary = DarkPrimary,
     primaryLight = DarkPrimaryLight,
     primaryDark = DarkPrimaryDark,
+    heroGradientStart = HeroGradientStart,
+    heroGradientEnd = DarkPrimary,
     background = DarkBackground,
     surface = DarkSurface,
     surfaceVariant = DarkSurfaceVariant,
@@ -313,14 +319,18 @@ data class DivinationColorScheme(
     val textPrimary: Color,
     val textSecondary: Color,
     val textTertiary: Color,
-    val gold: Color,                    // 鎏金（文字级强调）
+    val gold: Color,                    // 鎏金（图形级：色点、罗盘环）
     val goldHi: Color,                  // 鎏金高光
+    val goldText: Color,                // 文字级金强调（玄墨=金；宣纸画板反转为墨，保对比 §10）
+    val goldGradient: List<Color>,      // 鎏金按钮横向渐变（§1.5 金按钮：玄墨 500→700 / 宣纸 300→500）
+    val onGold: Color,                  // 金底上的文字（问卦双板一致墨字）
     val goldSoft: Color,                // 8% 金底
     val gold14: Color,                  // 14% 金底（选中 glow）
     val goldLine: Color,                // 30% 金线
     val goldHair: Color,                // 14% 金发丝线
     val seal: Color,                    // 朱砂印
     val sealHi: Color,
+    val sealDeep: Color,                // 平涂深朱印（卦历/卦盘画板双板一致）
     val jade: Color,                    // 青（吉/合/生标记）
     val yaoTop: Color,                  // 爻线渐变（暗=宣纸白爻，亮=白纸墨爻）
     val yaoBottom: Color,
@@ -339,12 +349,16 @@ val DarkDivinationColors = DivinationColorScheme(
     textTertiary = DivTextTertiaryDark,
     gold = DivGoldDark,
     goldHi = DivGoldHiDark,
+    goldText = DivGoldDark,
+    goldGradient = listOf(DivGoldDark, DivGoldLight),
+    onGold = DivOnGold,
     goldSoft = Color(0x14C9A961),
     gold14 = Color(0x24C9A961),
-    goldLine = Color(0x4DC9A961),
+    goldLine = Color(0x52C9A961),       // 32% 金线（画板天象线）
     goldHair = Color(0x24C9A961),
     seal = DivSealDark,
     sealHi = DivSealHiDark,
+    sealDeep = DivSealDeep,
     jade = DivJadeDark,
     yaoTop = DivYaoTopDark,
     yaoBottom = DivYaoBottomDark,
@@ -356,19 +370,23 @@ val LightDivinationColors = DivinationColorScheme(
     bgColors = listOf(DivBgTopLight, DivBgMidLight, DivBgBottomLight),
     surface = DivSurfaceLight,
     surface2 = DivSurface2Light,
-    line = Color(0x38947434),
-    hair = Color(0x1F947434),
+    line = Color(0x388F7233),
+    hair = Color(0x1F8F7233),
     textPrimary = DivTextPrimaryLight,
     textSecondary = DivTextSecondaryLight,
     textTertiary = DivTextTertiaryLight,
     gold = DivGoldLight,
     goldHi = DivGoldHiLight,
-    goldSoft = Color(0x14947434),
-    gold14 = Color(0x26947434),
-    goldLine = Color(0x52947434),
-    goldHair = Color(0x2E947434),
+    goldText = Color(0xFF1C1C1E),       // 宣纸画板：金文字强调一律为墨
+    goldGradient = listOf(DivGoldHiDark, DivGoldDark),  // 宣纸金按钮 300→500（画板取样）
+    onGold = DivOnGold,
+    goldSoft = Color(0x148F7233),
+    gold14 = Color(0x268F7233),
+    goldLine = Color(0x528F7233),
+    goldHair = Color(0x2E8F7233),
     seal = DivSealLight,
     sealHi = DivSealHiLight,
+    sealDeep = DivSealDeep,
     jade = DivJadeLight,
     yaoTop = DivYaoTopLight,
     yaoBottom = DivYaoBottomLight,

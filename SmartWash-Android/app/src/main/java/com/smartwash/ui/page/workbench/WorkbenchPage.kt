@@ -46,14 +46,13 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.DivBgBottomDark
 import com.smartwash.common.ui.theme.DivBgMidDark
+import com.smartwash.common.ui.theme.DivBgTopDark
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.common.ui.theme.DivSurface2Dark
-import com.smartwash.common.ui.theme.DivSurfaceDark
+import com.smartwash.common.ui.theme.DivGoldDark
 import com.smartwash.common.ui.theme.DivTextPrimaryDark
-import com.smartwash.common.ui.theme.DivTextSecondaryDark
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.utils.pressable
@@ -78,11 +77,13 @@ fun WorkbenchPage(
             .background(AppColors.colorScheme.background)
     ) {
         item {
-            // 标题区（设计稿顶部 16）
+            // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→特色卡 20 为设计稿实测）
             Column(
                 modifier = Modifier.padding(
-                    horizontal = AppDimens.pagePadding,
-                    vertical = 16.dp
+                    start = AppDimens.pagePadding,
+                    end = AppDimens.pagePadding,
+                    top = 16.dp,
+                    bottom = 20.dp
                 )
             ) {
                 Text(
@@ -108,11 +109,11 @@ fun WorkbenchPage(
         }
 
         item {
-            // 全部工具（设计稿 margin 32/12）
+            // 全部工具（设计稿实测：特色卡底→标题 32、标题底→网格 12；字距 0.3 与观象台卡标题同款）
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.workbench_all_tools),
-                style = AppTextStyles.SectionTitle,
+                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
                 color = AppColors.colorScheme.textPrimary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
@@ -182,7 +183,8 @@ fun WorkbenchPage(
 
 /**
  * 观象台玄墨特色卡（设计稿 darkcard3）：清氧页面里开一扇通往玄墨世界的窗。
- * 深色自带分层不加投影；皮肤取 DivColors 玄墨暗色令牌，浅深模式同款（设计稿深色副本对此卡无覆盖）。
+ * 深色自带分层不加投影；皮肤取 DivColors 玄墨暗色令牌，浅深模式同款（设计稿两板对此卡同款）。
+ * 渐变对角 135° 三段 #201D18→#1A1917@55%→#151412 = 规范 §1.5 divination.ink（画板实测）。
  */
 @Composable
 private fun DivinationEntryCard(
@@ -196,13 +198,13 @@ private fun DivinationEntryCard(
             .fillMaxWidth()
             .pressable(onClick = onClick)
             .background(
-                // 设计稿渐变 140deg #26241F→#1E1D1B 55%→#191713；末端无令牌，取最近玄墨底 DivBgMidDark
                 brush = Brush.linearGradient(
-                    listOf(DivSurface2Dark, DivSurfaceDark, DivBgMidDark)
+                    listOf(DivBgTopDark, DivBgMidDark, DivBgBottomDark)
                 ),
                 shape = shape
             )
-            .border(1.dp, div.goldLine, shape)
+            // 卡描边两板均为鎏金 #C9A961 32%（不随清氧主题换色，玄墨皮肤固定金线）
+            .border(1.dp, DivGoldDark.copy(alpha = 0.32f), shape)
             .padding(AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
@@ -218,24 +220,26 @@ private fun DivinationEntryCard(
                 color = DivTextPrimaryDark
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+            // 设计稿两板副标题同为宣纸主文本 #EFE9DA（弱层级靠字号 12）
             Text(
                 text = stringResource(R.string.workbench_divination_subtitle),
                 style = MaterialTheme.typography.labelSmall,
-                color = DivTextSecondaryDark
+                color = DivTextPrimaryDark
             )
         }
-        // 30dp 圆形描边箭头（设计稿 30px + rgba(gold,.4) → 金线令牌 30%）
+        // 32dp 圆形描边箭头：浅 #8F7233 / 深 #C9A961 均 32% = div.gold 主题感知（画板实测），
+        // 内 chevron_right 20dp 鎏金
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .border(1.dp, div.goldLine, CircleShape),
+                .border(1.dp, div.gold.copy(alpha = 0.32f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = div.gold,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -310,7 +314,7 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
     }
 }
 
-/** 工具卡（设计稿 tile3）：白卡 + 44dp 语义图标容器 + 14sp 标题 + 12sp 描述 */
+/** 工具卡（设计稿 tile3）：白卡 1px 描边无阴影 + 44dp 语义图标容器（icon.md 24）+ 14sp 标题 + 12sp 描述 */
 @Composable
 private fun ToolTile(
     tool: WorkbenchTool,
@@ -328,19 +332,20 @@ private fun ToolTile(
         modifier = modifier.pressable(onClick = onClick),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = scheme.surface,
-        border = BorderStroke(0.5.dp, scheme.outline),
-        shadowElevation = AppElevation.level1
+        // 设计稿：描边 1px（outline），无投影（规范 §3 卡片 elevation 0，用描边代替）
+        border = BorderStroke(1.dp, scheme.outline)
     ) {
         Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
             IconBox(
                 icon = tool.icon,
                 containerColor = containerColor,
-                iconTint = iconTint
+                iconTint = iconTint,
+                iconSize = 24.dp
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             Text(
                 text = stringResource(tool.titleRes),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = scheme.textPrimary
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXxs))

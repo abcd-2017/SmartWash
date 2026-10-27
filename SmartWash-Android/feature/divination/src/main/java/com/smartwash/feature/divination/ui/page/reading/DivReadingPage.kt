@@ -1,17 +1,11 @@
 package com.smartwash.feature.divination.ui.page.reading
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,19 +27,14 @@ import com.smartwash.feature.divination.ui.components.DivCard
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivGoldButton
 import com.smartwash.feature.divination.ui.components.DivPageHeader
-import com.smartwash.feature.divination.ui.components.DivSeal
-import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.model.RequestState
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
- * 解读页（原型 Reading）：盘面摘要 + 解读正文（本期 Mock 文本）+ 金边"总结与行动"卡 +
- * 落款印 + 免责声明常驻 + 「继续追问」入口。
+ * 解读页（画板「解读 · 玄墨 / 宣纸」双板口径）：页头右侧卦印 + 解读章节卡（发丝金线）+
+ * 「总结与行动」同款卡 + 单个 14% 金底主按钮 + 免责声明常驻。
  */
 @Composable
 fun DivReadingPage(
@@ -60,6 +49,8 @@ fun DivReadingPage(
         DivPageHeader(
             title = stringResource(R.string.div_reading_title),
             onBack = { navController.popBackStack() },
+            // 画板：页头右侧固定卦印（右缘 20、30 方印 r8、平涂深朱、印文 14/700）
+            sealTrailing = state.record?.let { readingSealText(it) },
         )
 
         when {
@@ -78,7 +69,7 @@ fun DivReadingPage(
                 Spacer(Modifier.height(80.dp))
                 Text(
                     text = stringResource(R.string.div_chart_missing),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     color = c.textTertiary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -87,11 +78,7 @@ fun DivReadingPage(
 
             else -> {
                 val record = state.record ?: return@DivinationScreen
-                val method = DivMethod.fromId(record.method)
                 val reading = state.reading
-
-                // 盘面摘要
-                ReadingSummaryCard(record, method)
 
                 // 解读正文（loading / error / success）
                 when (state.readingState) {
@@ -126,39 +113,28 @@ fun DivReadingPage(
                     }
 
                     else -> if (reading != null) {
-                        // 解读章节
+                        // 解读章节（画板：卡宽 320、页边距 20、卡间 12）
                         Column(Modifier.padding(horizontal = 20.dp)) {
                             reading.sections.forEach { section ->
                                 ReadingSectionCard(section)
                             }
                         }
 
-                        // 金边"总结与行动"卡
+                        // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
                         ActionCard(reading.action)
 
-                        // 落款印 + 免责声明
-                        EndSeal()
+                        // 主行动（画板：单个全宽胶囊 320×52、14% 金底 + 金/墨字）
+                        DivGoldButton(
+                            text = stringResource(R.string.div_reading_followup),
+                            soft = true,
+                            modifier = Modifier
+                                .padding(start = 20.dp, end = 20.dp, top = 20.dp)
+                                .fillMaxWidth(),
+                            onClick = {
+                                navController.navigate("${DivRoute.FollowUp.text}/$recordId")
+                            },
+                        )
                     }
-                }
-
-                // 操作按钮
-                Row(
-                    Modifier.padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    DivGoldButton(
-                        text = stringResource(R.string.div_reading_followup),
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            navController.navigate("${DivRoute.FollowUp.text}/$recordId")
-                        },
-                    )
-                    DivGoldButton(
-                        text = stringResource(R.string.div_reading_share),
-                        enabled = false,
-                        modifier = Modifier.weight(1f),
-                        onClick = {},
-                    )
                 }
 
                 DivFooterNote(text = stringResource(R.string.div_disclaimer_reading))
@@ -167,117 +143,71 @@ fun DivReadingPage(
     }
 }
 
-/** 盘面摘要卡：印章 + 卦名 + 起卦时刻 */
+/** 页头右侧卦印文字（画板「革」口径）：卦名首字，非六爻取法类首字 */
 @Composable
-private fun ReadingSummaryCard(record: com.smartwash.feature.divination.database.DivRecordEntity, method: DivMethod) {
-    val c = DivColors.current
-    val bundle = remember(record.chartJson) { com.smartwash.feature.divination.data.DivChartCodec.decode(record.chartJson) }
-    val chartName = bundle?.let {
-        when {
-            it.liuyao != null -> it.liuyao.name + (it.liuyao.bianName?.let { b -> " 之 $b" } ?: "")
-            it.meihua != null -> it.meihua.benName
-            it.qimen != null -> "奇门遁甲"
-            it.liuren != null -> "大六壬"
-            else -> null
+private fun readingSealText(record: com.smartwash.feature.divination.database.DivRecordEntity): String {
+    val method = DivMethod.fromId(record.method)
+    val chartName = remember(record.chartJson) {
+        com.smartwash.feature.divination.data.DivChartCodec.decode(record.chartJson)?.let { bundle ->
+            when {
+                bundle.liuyao != null -> bundle.liuyao.name
+                bundle.meihua != null -> bundle.meihua.benName
+                bundle.qimen != null -> "奇门遁甲"
+                bundle.liuren != null -> "大六壬"
+                else -> null
+            }
         }
     } ?: methodLabel(method)
-    val sealText = when (method) {
+    return when (method) {
         DivMethod.LIU_YAO -> chartName.take(1)
         DivMethod.MEI_HUA -> "梅"
         DivMethod.QI_MEN -> "奇"
         DivMethod.LIU_REN -> "壬"
     }
-    val timeText = remember(record.castAt) {
-        SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(record.castAt))
-    }
-
-    DivCard(Modifier.padding(horizontal = 20.dp), borderColor = c.goldLine) {
-        Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DivSeal(sealText, size = 32.dp, fontSize = 15.sp)
-            Spacer(Modifier.width(12.dp))
-            Text(
-                text = chartName,
-                style = divSerif(15.sp, FontWeight.SemiBold, 3.sp),
-                color = c.textPrimary,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "$timeText · 卜",
-                fontSize = 10.sp,
-                color = c.textTertiary,
-            )
-        }
-    }
 }
 
-/** 解读章节卡 */
+/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8） */
 @Composable
 private fun ReadingSectionCard(section: com.smartwash.feature.divination.data.DivReadingSection) {
     val c = DivColors.current
-    DivCard(
-        Modifier.padding(vertical = 6.dp),
-        borderColor = c.goldHair,
-    ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+    DivCard(Modifier.padding(vertical = 6.dp)) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
             Text(
                 text = section.title,
-                style = divSerif(13.5.sp, FontWeight.SemiBold, 3.sp),
-                color = c.gold,
+                style = divSerif(14.sp, FontWeight.SemiBold, 4.sp, lineHeight = 20.sp),
+                // 画板：玄墨侧金字 / 宣纸侧墨字，主题感知金强调
+                color = c.goldText,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = section.content,
-                fontSize = 12.5.sp,
-                lineHeight = 21.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 color = c.textPrimary,
             )
         }
     }
 }
 
-/** 金边"总结与行动"卡：金底 + 鎏金描边 */
+/** 「总结与行动」卡（画板无金底卡，与章节卡同款样式） */
 @Composable
 private fun ActionCard(action: String) {
     val c = DivColors.current
-    DivCard(
-        Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-        background = c.goldSoft,
-        borderColor = c.goldLine,
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+    DivCard(Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp)) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
             Text(
                 text = stringResource(R.string.div_reading_action),
-                style = divSerif(13.sp, FontWeight.SemiBold, 3.sp),
-                color = c.gold,
+                style = divSerif(14.sp, FontWeight.SemiBold, 4.sp, lineHeight = 20.sp),
+                color = c.goldText,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = action,
-                fontSize = 12.5.sp,
-                lineHeight = 21.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 color = c.textPrimary,
             )
         }
-    }
-}
-
-/** 落款印 + 免责声明 */
-@Composable
-private fun EndSeal() {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        DivSeal(
-            stringResource(R.string.div_reading_endseal),
-            size = 36.dp,
-            fontSize = 18.sp,
-        )
     }
 }
 

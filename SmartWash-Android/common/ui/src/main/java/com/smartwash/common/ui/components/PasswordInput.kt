@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -45,24 +45,36 @@ fun PasswordInput(
     showVisibility: () -> Unit,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier,
+    // 可见字段标签（设计稿画板「t:密码标签」12/500，§7 表单必须有可见标签；null 保持旧行为）
+    label: String? = null,
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 紧凑输入行：总高 48dp、垂直居中（设计稿输入行 48px，D7/D8 对齐）
+        if (label != null) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = contentColor.copy(alpha = 0.92f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+        // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 468→488）
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 Icons.Rounded.Lock,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
                 tint = if (isPasswordError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
             BasicTextField(
                 value = password,
                 onValueChange = { newValue ->
@@ -73,15 +85,18 @@ fun PasswordInput(
                 modifier = modifier.weight(1f),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = contentColor),
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 14.sp, lineHeight = 20.sp, color = contentColor
+                ),
                 cursorBrush = SolidColor(if (isPasswordError) ErrorLight else contentColor),
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 decorationBox = { innerTextField ->
                     Box {
                         if (password.isEmpty()) {
                             Text(
-                                text = stringResource(R.string.password),
-                                fontSize = 16.sp,
+                                text = stringResource(R.string.password_hint),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }
@@ -90,11 +105,11 @@ fun PasswordInput(
                 }
             )
             // 尾缀可见性切换：图标化 + 48dp 方形热区（§3.7 定稿，禁止文字替代）。
+            // 热区 48dp 大于行高 20dp，垂直方向对称溢出行边界补足触控红线，不参与布局占位。
             // 纯视觉切换，关闭连击防抖——快速连点切换是合法操作
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(48.dp)
+                    .size(48.dp)
                     .pressable(onClick = showVisibility, debounce = false),
                 contentAlignment = Alignment.Center
             ) {
@@ -103,7 +118,7 @@ fun PasswordInput(
                     contentDescription = stringResource(
                         if (showPassword) R.string.hide_password else R.string.show_password
                     ),
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                     tint = contentColor.copy(alpha = 0.92f)
                 )
             }
@@ -112,7 +127,8 @@ fun PasswordInput(
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_password),
-                fontSize = 13.sp,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
                 color = ErrorLight,
                 modifier = Modifier.padding(top = 4.dp)
             )

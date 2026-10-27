@@ -112,4 +112,5 @@
     <string name="div_followup_send">发 送</string>
     <string name="div_followup_empty">还没有追问，输入你的问题吧</string>
     <string name="div_followup_thinking">正在推演…</string>
+    <string name="div_followup_footer">—— 继续追问将沿用本卦盘推演 ——</string>
 </resources>

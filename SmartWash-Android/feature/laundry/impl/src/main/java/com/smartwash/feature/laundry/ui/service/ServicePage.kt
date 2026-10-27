@@ -30,9 +30,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,7 +44,6 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.laundry.R
@@ -80,10 +80,12 @@ fun ServicePage(
 
                 // 洗护分类标题
                 item {
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    // 画板实测：搜索胶囊底(80) → 标题顶(116) = 36
+                    Spacer(modifier = Modifier.height(36.dp))
                     Text(
                         text = stringResource(R.string.laundry_service),
                         style = AppTextStyles.SectionTitle,
+                        color = AppColors.colorScheme.textPrimary,
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -101,7 +103,8 @@ fun ServicePage(
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = stringResource(R.string.service_tips),
-                        style = MaterialTheme.typography.labelSmall,
+                        // 画板实测 12/16/400 —— caption 档（bodySmall），非 captionStrong
+                        style = MaterialTheme.typography.bodySmall,
                         color = AppColors.colorScheme.textSecondary,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -116,7 +119,8 @@ fun ServicePage(
 }
 
 /**
- * 搜索胶囊 — 44dp 高，胶囊圆角（radiusFull），白底 + 1px 描边（规范 v3）。
+ * 搜索胶囊 — 48dp 高（画板实测），胶囊圆角（radiusFull），
+ * 白底 + 1px 描边、无阴影（画板 shadows=[]，规范：卡片 elevation 0 用描边代替）。
  */
 @Composable
 private fun SearchBar() {
@@ -127,20 +131,19 @@ private fun SearchBar() {
             .padding(top = 8.dp),
         shape = RoundedCornerShape(AppDimens.radiusFull),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
+                .height(48.dp)
                 .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
                 tint = AppColors.colorScheme.textTertiary
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -154,8 +157,8 @@ private fun SearchBar() {
 }
 
 /**
- * 服务项目列表卡片 — 白底 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
- * 36dp 图标容器 + 等宽价格 + 行内"预约 >"动作。
+ * 服务项目列表卡片 — 白底 + 1px 描边、无阴影（画板实测 shadows=[]，规范 elevation 0）。
+ * 36dp 图标容器（四色 iconTile）+ 等宽价格 + 预约胶囊（画板实测 60×24）。
  */
 @Composable
 private fun ServiceListCard(
@@ -168,8 +171,7 @@ private fun ServiceListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
             items.forEachIndexed { index, item ->
@@ -179,7 +181,7 @@ private fun ServiceListCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .height(0.5.dp)
+                            .height(1.dp)
                             .background(AppColors.colorScheme.hairline)
                     )
                 }
@@ -197,15 +199,18 @@ private fun ServiceItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onReserve)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically
+            // 画板实测行体 74 = 上 15 + 内容 52 + 下 7（卡高 296 = 4×74）；
+            // 图标盒/名称/价格同顶（画板 y 均 167），非垂直居中
+            .padding(start = 20.dp, end = 20.dp, top = 15.dp, bottom = 7.dp),
+        verticalAlignment = Alignment.Top
     ) {
+        val (tileColor, tileTint) = serviceTileColors(item)
         IconBox(
             icon = serviceIcon(item),
             size = 36.dp,
-            iconSize = 18.dp,
-            containerColor = AppColors.colorScheme.iconContainerGreen,
-            iconTint = AppColors.colorScheme.iconForegroundGreen
+            iconSize = 24.dp,
+            containerColor = tileColor,
+            iconTint = tileTint
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -217,23 +222,43 @@ private fun ServiceItemRow(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = item.description,
-                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                // 画板实测 12/16/400 —— caption 档（bodySmall），无 tnum
+                style = MaterialTheme.typography.bodySmall,
                 color = AppColors.colorScheme.textSecondary
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
+                // 画板实测价格色 #1E8C5C（浅）/ #5BC894（深）= green.700，双主题均落 primaryDark
                 style = AppTextStyles.AmountMedium,
-                color = AppColors.colorScheme.primary
+                color = AppColors.colorScheme.primaryDark
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.service_reserve),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.primary
-            )
+            ReservePill()
         }
+    }
+}
+
+/**
+ * 预约胶囊 — 60×24（画板实测），radiusFull，
+ * primaryLight 底 + onPrimaryContainer 文字（浅 #F0FBF4/#17322B、深 #17322B/#F0FBF4）；
+ * labelMedium = captionStrong 12/16/500。触控热区由整行 pressable 承担（行体 74dp ≥ 48dp）。
+ */
+@Composable
+private fun ReservePill() {
+    Box(
+        modifier = Modifier
+            .size(width = 60.dp, height = 24.dp)
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
+            .background(AppColors.colorScheme.primaryLight),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.service_reserve),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
 
@@ -252,5 +277,32 @@ private fun serviceIcon(item: LaundryItem): ImageVector {
         name.contains("熨") -> Icons.Filled.CleaningServices
         name.contains("洗") || name.contains("标准") -> Icons.Filled.LocalLaundryService
         else -> serviceIcons[(item.itemId % serviceIcons.size).toInt()]
+    }
+}
+
+/**
+ * 图标盒四色配色（画板「洗衣服务」浅/深两板逐值实测）：
+ *  绿（标准洗）—— 底 primaryLight(#F0FBF4/#17322B) + 前景 primaryDark(#1E8C5C/#5BC894)；
+ *    不用 iconContainer/iconForegroundGreen（其浅色前景 #2D9B6A、深色底 #1D3229 与画板各差一档）
+ *  蓝（干洗）/ 橙（熨烫）/ 紫（奢护）—— iconContainerX / iconForegroundX 系列与画板逐值一致。
+ * 分支顺序与 [serviceIcon] 保持同步；fallback 序列对应 serviceIcons：
+ * Local=绿 / Dry=蓝 / Checkroom=紫 / Cleaning=橙。
+ */
+@Composable
+private fun serviceTileColors(item: LaundryItem): Pair<Color, Color> {
+    val colors = AppColors.colorScheme
+    val name = item.itemName
+    return when {
+        name.contains("干") -> colors.iconContainerBlue to colors.iconForegroundBlue
+        name.contains("精") || name.contains("护理") || name.contains("奢") ->
+            colors.iconContainerPurple to colors.iconForegroundPurple
+        name.contains("熨") -> colors.iconContainerOrange to colors.iconForegroundOrange
+        name.contains("洗") || name.contains("标准") -> colors.primaryLight to colors.primaryDark
+        else -> when ((item.itemId % serviceIcons.size).toInt()) {
+            1 -> colors.iconContainerBlue to colors.iconForegroundBlue
+            2 -> colors.iconContainerPurple to colors.iconForegroundPurple
+            3 -> colors.iconContainerOrange to colors.iconForegroundOrange
+            else -> colors.primaryLight to colors.primaryDark
+        }
     }
 }

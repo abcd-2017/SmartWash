@@ -56,7 +56,8 @@ fun DivHistoryPage(
     val records by viewModel.records.collectAsState()
 
     DivinationScreen(scrollable = false) {
-        DivPageHeader(title = stringResource(R.string.div_history_title))
+        // 画板（玄墨/宣纸双板一致）：无返回页头标题左对齐 x20，标题下 10 进筛选行
+        DivPageHeader(title = stringResource(R.string.div_history_title), alignStart = true)
 
         // 术数筛选
         Row(
@@ -69,17 +70,21 @@ fun DivHistoryPage(
                 text = stringResource(R.string.div_filter_all),
                 selected = uiState.filter == null,
                 onClick = { viewModel.onFilter(null) },
+                // 画板：卦历筛选 chip 宽 52（2 字 12 号 + 左右 14），与问卦领域 chip 48 区分
+                horizontalPadding = 14.dp,
             )
             DivMethod.entries.forEach { method ->
                 DivCategoryChip(
                     text = methodLabel(method),
                     selected = uiState.filter == method,
                     onClick = { viewModel.onFilter(method) },
+                    horizontalPadding = 14.dp,
                 )
             }
         }
 
-        Spacer(Modifier.height(12.dp))
+        // 画板：筛选行到首卡间距 20（本 Spacer 16 + 列表 contentPadding 顶 4）
+        Spacer(Modifier.height(16.dp))
 
         if (records.isEmpty()) {
             Box(Modifier.fillMaxWidth().padding(top = 80.dp), contentAlignment = Alignment.Center) {
@@ -102,7 +107,8 @@ fun DivHistoryPage(
                     HistoryCard(record) {
                         navController.navigate("${DivRoute.Chart.text}/${record.id}?animate=false")
                     }
-                    Spacer(Modifier.height(10.dp))
+                    // 画板：卡间距 8（卡高 60）
+                    Spacer(Modifier.height(8.dp))
                 }
             }
         }
@@ -118,28 +124,31 @@ private fun HistoryCard(record: com.smartwash.feature.divination.database.DivRec
         SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(record.castAt))
     }
     DivCard(onClick = onClick) {
+        // 画板：卡高 60，印章距左 14；问句 14/20 偏上 12、元信息 12/14 间隔 2；› 距右 8
         Row(
-            Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
+            Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DivSeal(methodSeal(record.method), size = 32.dp, fontSize = 15.sp)
+            DivSeal(methodSeal(record.method), size = 32.dp, fontSize = 14.sp, cornerRadius = 8.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = record.question.ifEmpty { "—" },
-                    fontSize = 13.5.sp,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
                     color = c.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "$timeText · ${methodLabel(DivMethod.fromId(record.method))} · ${record.summaryLine()}",
-                    fontSize = 10.5.sp,
-                    color = c.textTertiary,
-                    modifier = Modifier.padding(top = 4.dp),
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp,
+                    color = c.textSecondary,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            Text("›", color = c.textTertiary, fontSize = 14.sp)
+            Text("›", color = c.textSecondary, fontSize = 14.sp)
         }
     }
 }
