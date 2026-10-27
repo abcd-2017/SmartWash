@@ -1,6 +1,12 @@
 package com.smartwash.feature.order.impl.ui.order
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
@@ -22,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
@@ -43,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,11 +67,19 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.ui.theme.StatusDot
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
@@ -79,6 +95,13 @@ private sealed interface OrderListItem {
     data class Header(val monthKey: String) : OrderListItem
     data class Group(val monthKey: String, val orders: List<OrderInfo>) : OrderListItem
 }
+
+/**
+ * 内容区 AnimatedContent 的目标键 —— 胶囊下标 + 是否处于骨架态。
+ * 骨架门控放在页面侧（不改 OrderViewModel）：刷新期间若列表仍有旧数据，
+ * 走 stale-while-revalidate，不再整屏闪骨架。
+ */
+private data class OrderContentKey(val pillIndex: Int, val skeleton: Boolean)
 
 @Composable
 fun OrderPage(
@@ -139,12 +162,19 @@ fun OrderPage(
             ) {
                 ShowOrderStatus.entries.forEachIndexed { index, entry ->
                     val isSelected = index == selectedPillIndex
+                    // 选中底色 / 文字色走公共 selectedColor（200ms 档弹簧；reduced motion 自动降级 180ms 纯颜色过渡）
+                    val pillColor = selectedColor(
+                        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface
+                    )
+                    val labelColor = selectedColor(
+                        if (isSelected) MaterialTheme.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
+                    )
                     Surface(
                         modifier = Modifier
                             .height(34.dp)
                             .pressable(onClick = { selectedPillIndex = index }, debounce = false),
                         shape = RoundedCornerShape(AppDimens.radiusFull),
-                        color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
+                        color = pillColor,
                         border = if (isSelected) null else BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Box(
@@ -155,11 +185,7 @@ fun OrderPage(
                         ) {
                             Text(
                                 text = stringResource(entry.descriptionRes),
-                                color = if (isSelected) {
-                                    MaterialTheme.colorScheme.onPrimary
-                                } else {
-                                    AppColors.colorScheme.textSecondary
-                                },
+                                color = labelColor,
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
@@ -169,47 +195,71 @@ fun OrderPage(
 
             Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-            when (loadState) {
-                is RequestState.Loading -> {
+            // 骨架门控（页面侧实现，不改 OrderViewModel）：仅「当前筛选下无数据且正在加载」才出骨架。
+            // 取消订单成功后 VM 会整表 loadAllOrders()（loadState=Loading），此时 paging 仍保留旧列表，
+            // 走 stale-while-revalidate，不再把有数据的列表整屏换成骨架。
+            val showSkeleton = loadState is RequestState.Loading && orderList.isEmpty()
+
+            // 内容区进出场（动效语言 v0.4）：进 300ms 减速淡入 / 出 200ms 加速淡出；
+            // reduced motion 统一降级为 180ms 纯淡入（规范 §8：取消位移/缩放/旋转，保留可读性）
+            // 注意：transitionSpec 是 suspend 非 composable 上下文，reduced motion 判定必须在组合期取
+            val reduceMotion = LocalReduceMotion.current
+            val contentEnterSpec = if (reduceMotion) {
+                tween<Float>(CROSSFADE_ALT_MS)
+            } else {
+                enterTween<Float>(DURATION_CARD_MS)
+            }
+            val contentExitSpec = if (reduceMotion) {
+                tween<Float>(CROSSFADE_ALT_MS)
+            } else {
+                exitTween<Float>(DURATION_MICRO_MS)
+            }
+            AnimatedContent(
+                targetState = OrderContentKey(selectedPillIndex, showSkeleton),
+                modifier = Modifier.fillMaxSize(),
+                transitionSpec = {
+                    fadeIn(contentEnterSpec) togetherWith fadeOut(contentExitSpec)
+                },
+                label = "orderContent"
+            ) { contentKey ->
+                if (contentKey.skeleton) {
                     LoadingState(modifier = Modifier.fillMaxSize())
-                }
-                else -> {
-                    if (orderList.isNotEmpty()) {
-                        // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
-                        val listItems = remember(orderList) {
-                            val sorted = orderList.sortedByDescending { it.createdAt }
-                            val grouped = sorted.groupBy { it.createdAt.take(7) }
-                            val sortedKeys = grouped.keys.sortedDescending()
-                            buildList {
-                                for (key in sortedKeys) {
-                                    add(OrderListItem.Header(key))
-                                    grouped[key]?.let { add(OrderListItem.Group(key, it)) }
-                                }
+                } else if (orderList.isNotEmpty()) {
+                    // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
+                    val listItems = remember(orderList) {
+                        val sorted = orderList.sortedByDescending { it.createdAt }
+                        val grouped = sorted.groupBy { it.createdAt.take(7) }
+                        val sortedKeys = grouped.keys.sortedDescending()
+                        buildList {
+                            for (key in sortedKeys) {
+                                add(OrderListItem.Header(key))
+                                grouped[key]?.let { add(OrderListItem.Group(key, it)) }
                             }
                         }
+                    }
 
-                        val listState = rememberLazyListState()
+                    val listState = rememberLazyListState()
 
-                        // 加载更多触发：derivedStateOf 派生"滚动接近末尾"，snapshotFlow 监听触发 loadMore
-                        val nearListEnd by remember {
-                            derivedStateOf {
-                                val layoutInfo = listState.layoutInfo
-                                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                                layoutInfo.totalItemsCount > 0 &&
-                                    lastVisibleIndex >= layoutInfo.totalItemsCount - 2
+                    // 加载更多触发：derivedStateOf 派生"滚动接近末尾"，snapshotFlow 监听触发 loadMore
+                    val nearListEnd by remember {
+                        derivedStateOf {
+                            val layoutInfo = listState.layoutInfo
+                            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                            layoutInfo.totalItemsCount > 0 &&
+                                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
+                        }
+                    }
+                    LaunchedEffect(status) {
+                        snapshotFlow {
+                            nearListEnd to (uiState.orders[status]?.size ?: 0)
+                        }.collect { (nearEnd, listSize) ->
+                            if (!nearEnd || listSize == 0) return@collect
+                            val current = uiState
+                            if (current.hasMore[status] == true && current.loadingMore[status] != true) {
+                                orderViewModel.loadMore(status)
                             }
                         }
-                        LaunchedEffect(status) {
-                            snapshotFlow {
-                                nearListEnd to (uiState.orders[status]?.size ?: 0)
-                            }.collect { (nearEnd, listSize) ->
-                                if (!nearEnd || listSize == 0) return@collect
-                                val current = uiState
-                                if (current.hasMore[status] == true && current.loadingMore[status] != true) {
-                                    orderViewModel.loadMore(status)
-                                }
-                            }
-                        }
+                    }
 
                         LazyColumn(
                             state = listState,
@@ -263,26 +313,38 @@ fun OrderPage(
                                     }
                                 }
                             }
-
-                            if (isLoadingMore) {
-                                item {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .wrapContentWidth(Alignment.CenterHorizontally),
-                                        color = AppColors.colorScheme.primary,
-                                        strokeWidth = 2.dp
-                                    )
+                            // 分页尾部 loading：AnimatedVisibility 淡入淡出替代 if 硬插拔；
+                            // reduced motion 时降级为静态三点灰占位（取消无限旋转，保留"还在加载"的可读性）
+                            item(key = "load_more_footer") {
+                                AnimatedVisibility(
+                                    visible = isLoadingMore,
+                                    enter = fadeIn(tween<Float>(CROSSFADE_ALT_MS)),
+                                    exit = fadeOut(tween<Float>(CROSSFADE_ALT_MS))
+                                ) {
+                                    if (LocalReduceMotion.current) {
+                                        StaticLoadingDots(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    } else {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                                .wrapContentWidth(Alignment.CenterHorizontally),
+                                            color = AppColors.colorScheme.primary,
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
                                 }
                             }
                         }
-                    } else {
-                        EmptyState(
-                            icon = Icons.Default.LocalLaundryService,
-                            message = stringResource(R.string.no_orders)
-                        )
-                    }
+                } else {
+                    EmptyState(
+                        icon = Icons.Default.LocalLaundryService,
+                        message = stringResource(R.string.no_orders)
+                    )
                 }
             }
         }
@@ -299,6 +361,29 @@ fun OrderPage(
             },
             onDismiss = { confirmPayShow = false }
         )
+    }
+}
+
+/**
+ * reduced motion 降级占位 — 静态三点灰（规范 §8：取消无限旋转，但保留"加载中"状态可读性）。
+ * 非动效组件：本身不含任何动画，仅在 [LocalReduceMotion] 为真时替代 CircularProgressIndicator。
+ */
+@Composable
+private fun StaticLoadingDots(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.outline)
+            )
+        }
     }
 }
 

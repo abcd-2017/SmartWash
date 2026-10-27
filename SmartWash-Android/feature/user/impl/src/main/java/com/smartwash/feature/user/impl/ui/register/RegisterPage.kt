@@ -2,6 +2,14 @@ package com.smartwash.feature.user.impl.ui.register
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -75,10 +83,18 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
+import com.smartwash.common.utils.HapticEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -89,6 +105,8 @@ private val GradientBottom = AuthGradientBottom
 
 // 进度条非激活态（注册画板「进度2/3」= white 28%）
 private val ProgressInactive = Color.White.copy(alpha = 0.28f)
+// 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4）
+private const val EXIT_MICRO_MS = 140
 
 @Composable
 fun RegisterPage(
@@ -404,8 +422,11 @@ fun RegisterPage(
                         isPasswordError = password.length < 6 || password.length > 16
 
                         if (!isPhoneError && !isVerificationCodeError && !isPasswordError) {
+                            view.performHaptic(HapticEffect.MEDIUM)
                             keyboardController?.hide()
                             registerViewModel.userRegister(phone, password, verificationCode)
+                        } else {
+                            view.performHaptic(HapticEffect.ERROR)
                         }
                     },
                 )
@@ -430,8 +451,9 @@ fun RegisterPage(
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     modifier = Modifier
-                        .pressable(onClick = debouncedLoginClick, debounce = false)
+                        // 热区先行：padding 必须在 pressable 之前，否则可点区域只有文字本体
                         .padding(horizontal = 4.dp, vertical = 8.dp)
+                        .pressable(onClick = debouncedLoginClick, debounce = false)
                 )
             }
         }
@@ -520,6 +542,13 @@ private fun VerificationCodeRow(
             // 画板按钮相对输入行中心上移 6px（顶 437 对齐标签顶、底 485 对齐分隔线2），offset 精确复刻。
             // 倒计时/加载禁用态描边与文字透明度降至 .55；倒计时本身已防重复发送，不再叠加防抖
             val sendEnabled = countDown == 0 && captchaState !is RequestState.Loading
+            // 描边与文字色随可发送态过渡（reduced motion 下经 motionSpec 降级为 180ms 纯颜色变化）
+            val sendBorderColor = selectedColor(
+                if (sendEnabled) GlassInput else GlassInput.copy(alpha = GlassInput.alpha * 0.55f)
+            )
+            val sendTextColor = selectedColor(
+                contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
+            )
             Box(
                 modifier = Modifier
                     .height(48.dp)
@@ -530,24 +559,39 @@ private fun VerificationCodeRow(
                     )
                     .border(
                         width = 1.dp,
-                        color = if (sendEnabled) GlassInput
-                        else GlassInput.copy(alpha = GlassInput.alpha * 0.55f),
+                        color = sendBorderColor,
                         shape = RoundedCornerShape(AppDimens.radiusFull)
                     )
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
-                    else stringResource(R.string.get_verification_code),
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
-                )
+                // 「获取验证码 ↔ 59s」状态切换交叉淡入；倒计时每秒的数字跳动仍为直切（不加动画）
+                AnimatedContent(
+                    targetState = countDown > 0,
+                    transitionSpec = {
+                        fadeIn(tween(CROSSFADE_ALT_MS)) togetherWith fadeOut(tween(CROSSFADE_ALT_MS))
+                    },
+                    label = "sendCaptchaLabel",
+                ) { counting ->
+                    Text(
+                        text = if (counting) stringResource(R.string.countdown_format, countDown)
+                        else stringResource(R.string.get_verification_code),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = sendTextColor
+                    )
+                }
             }
         }
-        if (isVerificationCodeError) {
+        // 错误文案：淡入 + 纵向展开，避免卡片高度 0ms 突跳
+        AnimatedVisibility(
+            visible = isVerificationCodeError,
+            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+            exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+        ) {
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_verification_code),

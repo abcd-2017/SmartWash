@@ -1,9 +1,8 @@
 package com.smartwash.feature.divination.ui.page.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,17 +35,17 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.ui.components.CompassDial
 import com.smartwash.feature.divination.ui.components.DivCard
-import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.TianXiangHeader
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -164,23 +163,30 @@ fun DivHomePage(
         )
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(horizontal = 14.dp)) {
-                if (records.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.div_history_empty),
-                        fontSize = 12.sp,
-                        color = c.textTertiary,
-                        modifier = Modifier.padding(vertical = 18.dp),
-                    )
-                } else {
-                    records.take(3).forEachIndexed { index, record ->
-                        LedgerRow(record)
-                        if (index != 2 && index != records.take(3).lastIndex) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(c.hair)
-                            )
+                // 空态与记录列表互相替换时做交叉淡入淡出，避免 0ms 硬切
+                Crossfade(
+                    targetState = records.isEmpty(),
+                    animationSpec = tween(CROSSFADE_ALT_MS),
+                    label = "ledgerEmpty",
+                ) { empty ->
+                    if (empty) {
+                        Text(
+                            text = stringResource(R.string.div_history_empty),
+                            fontSize = 12.sp,
+                            color = c.textTertiary,
+                            modifier = Modifier.padding(vertical = 18.dp),
+                        )
+                    } else {
+                        records.take(3).forEachIndexed { index, record ->
+                            LedgerRow(record)
+                            if (index != 2 && index != records.take(3).lastIndex) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(c.hair)
+                                )
+                            }
                         }
                     }
                 }
@@ -241,16 +247,13 @@ private fun JadeTile(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
-    val interactionSource = remember { MutableInteractionSource() }
-    // 玉牌点击防抖：四牌并排且 navigate 无 launchSingleTop，连点会双推 Ask 页
-    val debouncedClick = rememberDebouncedClick { onClick() }
+    // 玉牌四牌并排且 navigate 无 launchSingleTop：连点会双推 Ask 页，按压反馈与防抖由 pressable 一套承载
     Box(
         modifier
             .height(156.dp)
-            .pressScale(interactionSource, 0.97f)
             .clip(RoundedCornerShape(16.dp))
             .background(c.surface)
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = debouncedClick),
+            .pressable(onClick = onClick),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textSecondary)

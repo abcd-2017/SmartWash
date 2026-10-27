@@ -29,6 +29,8 @@
     <!-- 服务页补充 -->
     <string name="service_tips">服务时间 07:00 – 22:00 · 节假日正常营业</string>
     <string name="service_search_hint">搜索洗护套餐…</string>
+    <!-- 服务页请求失败空态的重试按钮 -->
+    <string name="service_retry">重试</string>
     <string name="service_promo_title">新用户专享</string>
     <string name="service_promo_subtitle">首单立减 ¥5</string>
 </resources>

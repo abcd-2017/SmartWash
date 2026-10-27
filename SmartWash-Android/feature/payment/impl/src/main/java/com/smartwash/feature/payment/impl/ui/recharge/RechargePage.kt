@@ -1,10 +1,13 @@
 package com.smartwash.feature.payment.impl.ui.recharge
 
 import android.widget.Toast
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -20,13 +23,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material3.HorizontalDivider
@@ -58,14 +59,17 @@ import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SelectionDot
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
-import com.smartwash.common.utils.defaultSpring
-import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 
 
 @Composable
@@ -203,7 +207,13 @@ fun RechargePage(
                             onFocus = { isCustomAmountSelected = true },
                             modifier = Modifier.padding(top = 8.dp)
                         )
-                        if (showError) {
+                        // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
+                        AnimatedVisibility(
+                            visible = showError,
+                            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                                expandVertically(enterTween(DURATION_MICRO_MS)),
+                            exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
+                        ) {
                             Text(
                                 text = stringResource(R.string.select_or_input_amount),
                                 color = AppColors.colorScheme.error,
@@ -247,7 +257,13 @@ fun RechargePage(
                                 )
                             }
                         }
-                        if (showPayError) {
+                        // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
+                        AnimatedVisibility(
+                            visible = showPayError,
+                            enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                                expandVertically(enterTween(DURATION_MICRO_MS)),
+                            exit = fadeOut(exitTween(140)) + shrinkVertically(exitTween(140)),
+                        ) {
                             Text(
                                 text = stringResource(R.string.select_payment_method),
                                 color = AppColors.colorScheme.error,
@@ -304,15 +320,12 @@ fun RechargePage(
 private fun AmountPill(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    val bgColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else AppColors.colorScheme.surfaceVariant,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "amountBgColor"
+    // 选中态颜色统一走公共 selectedColor（200ms 档弹簧，reduced motion 自动降级 180ms）
+    val bgColor = selectedColor(
+        if (isSelected) MaterialTheme.colorScheme.primary else AppColors.colorScheme.surfaceVariant
     )
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else AppColors.colorScheme.textPrimary,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "amountTextColor"
+    val textColor = selectedColor(
+        if (isSelected) MaterialTheme.colorScheme.onPrimary else AppColors.colorScheme.textPrimary
     )
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -448,29 +461,8 @@ private fun PaymentMethodCard(
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )
-        // 选中标记（画板实测：24dp 圆；选中=primary 实心底 + check 图标 onPrimary，
-        // 未选=surface 底 + 1px outline 描边圈）
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .then(
-                    if (isSelected) Modifier.background(MaterialTheme.colorScheme.primary)
-                    else Modifier
-                        .background(AppColors.colorScheme.surface)
-                        .border(1.dp, AppColors.colorScheme.outline, CircleShape)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
+        // 圆形选中标记 — 复用公共 SelectionDot（内圆弹簧长出），替代手绘硬切
+        SelectionDot(selected = isSelected, dotSize = 24.dp)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.smartwash.feature.laundry.ui.service
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,10 +43,19 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import androidx.compose.material3.Icon
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.laundry.api.LaundryRoute
@@ -62,21 +73,35 @@ fun ServicePage(
         serviceViewModel.getLaundryItem()
     }
 
+    val laundryState = getLaundryItemState
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (getLaundryItemState is RequestState.Loading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // 搜索胶囊
-                item {
-                    SearchBar()
-                }
+        // 骨架 ↔ 内容整屏硬切 → 交叉淡变（reduced motion 经 motionSpec 自动降级为 180ms）
+        Crossfade(
+            targetState = laundryState is RequestState.Loading,
+            animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+            modifier = Modifier.fillMaxSize(),
+            label = "serviceContent"
+        ) { isLoading ->
+            when {
+                isLoading -> LoadingState(modifier = Modifier.fillMaxSize())
+                // 无缓存且请求失败时零呈现（空白卡）→ 空态 + 重试；只加 UI 分支，不动 VM 状态机
+                laundryState is RequestState.Error -> ServiceErrorState(
+                    message = (laundryState as RequestState.Error).getMessage(context),
+                    onRetry = { serviceViewModel.getLaundryItem() }
+                )
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // 搜索胶囊
+                    item {
+                        SearchBar()
+                    }
 
                 // 洗护分类标题
                 item {
@@ -91,31 +116,55 @@ fun ServicePage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 v3 §3.4）
-                item {
-                    ServiceListCard(
-                        items = laundryItems,
-                        onReserve = { navController.navigate(LaundryRoute.Laundry.text) }
-                    )
-                }
+                    // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 v3 §3.4）
+                    item {
+                        ServiceListCard(
+                            items = laundryItems,
+                            onReserve = { navController.navigate(LaundryRoute.Laundry.text) }
+                        )
+                    }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = stringResource(R.string.service_tips),
-                        // 画板实测 12/16/400 —— caption 档（bodySmall），非 captionStrong
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = AppDimens.pagePadding),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = stringResource(R.string.service_tips),
+                            // 画板实测 12/16/400 —— caption 档（bodySmall），非 captionStrong
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppDimens.pagePadding),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
         }
     }
+}
+
+/**
+ * 服务页错误空态 — 无缓存且请求失败时给出可读反馈与重试入口（原来是空白卡）。
+ * 空态入场自带 reduced motion 降级（见 [EmptyState]）。
+ */
+@Composable
+private fun ServiceErrorState(
+    message: String,
+    onRetry: () -> Unit
+) {
+    EmptyState(
+        icon = Icons.Default.LocalLaundryService,
+        message = message,
+        modifier = Modifier.fillMaxSize(),
+        action = {
+            AppButton(
+                text = stringResource(R.string.service_retry),
+                onClick = onRetry,
+                variant = AppButtonVariant.SECONDARY
+            )
+        }
+    )
 }
 
 /**
@@ -195,10 +244,16 @@ private fun ServiceItemRow(
     item: LaundryItem,
     onReserve: () -> Unit
 ) {
+    val view = currentView()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = onReserve)
+            .pressable(onClick = {
+                // 点击因果明确的时刻补触觉（规范 §7.7）；清单原写 HapticEffect.CLICK，
+                // 枚举中无此项，取语义最近的 LIGHT（一般交互轻触）
+                view.performHaptic(HapticEffect.LIGHT)
+                onReserve()
+            })
             // 画板实测行体 74 = 上 15 + 内容 52 + 下 7（卡高 296 = 4×74）；
             // 图标盒/名称/价格同顶（画板 y 均 167），非垂直居中
             .padding(start = 20.dp, end = 20.dp, top = 15.dp, bottom = 7.dp),

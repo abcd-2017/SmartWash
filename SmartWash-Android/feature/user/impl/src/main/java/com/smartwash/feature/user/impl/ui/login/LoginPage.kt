@@ -305,6 +305,8 @@ fun LoginPage(
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     modifier = Modifier
+                        // 热区先行：padding 必须在 clickable 之前，否则可点区域只有文字本体
+                        .padding(horizontal = 4.dp, vertical = 16.dp)
                         .clickable(
                             interactionSource = registerEntryInteractionSource,
                             indication = null
@@ -313,7 +315,6 @@ fun LoginPage(
                             debouncedRegisterClick()
                         }
                         .pressScale(registerEntryInteractionSource, 0.97f)
-                        .padding(horizontal = 4.dp, vertical = 16.dp)
                 )
             }
 

@@ -26,6 +26,10 @@
     <string name="expired">已过期</string>
     <string name="available">可使用</string>
 
+    <!-- 首载失败态（三列表均空）：说明 + 重试，不再只靠 Toast -->
+    <string name="coupon_load_failed">优惠券加载失败</string>
+    <string name="coupon_action_retry">重试</string>
+
     <!-- 优惠券状态（CouponStatus 枚举显示文本） -->
     <string name="coupon_status_expired">已失效</string>
     <string name="coupon_status_active">生效中</string>

@@ -94,6 +94,10 @@ class PaymentViewModel @Inject constructor(
         _paymentState.value = RequestState.Idle
     }
 
+    fun resetCalculationOrderState() {
+        _calculationOrderState.value = RequestState.Idle
+    }
+
     fun resetInitState() {
         _initState.value = RequestState.Idle
     }

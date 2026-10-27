@@ -14,11 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
 import com.smartwash.common.ui.theme.DarkDivinationColors
 import com.smartwash.common.ui.theme.LightDivinationColors
 import com.smartwash.common.ui.theme.LocalDivinationColors
-import com.smartwash.common.utils.isReduceMotionEnabled
 
 /**
  * 观象台页面根：进入模块即切换宣纸/玄墨子主题（CompositionLocal 覆盖），
@@ -66,7 +64,3 @@ fun DivinationScreen(
         }
     }
 }
-
-/** 观象台各页通用：reduced-motion 判定（ANIMATOR_DURATION_SCALE=0 时动效降级） */
-@Composable
-fun divReduceMotion(): Boolean = isReduceMotionEnabled(LocalContext.current)

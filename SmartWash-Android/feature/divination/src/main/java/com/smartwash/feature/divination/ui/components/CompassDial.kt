@@ -1,15 +1,13 @@
 package com.smartwash.feature.divination.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,35 +23,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toOffset
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.feature.divination.ui.divReduceMotion
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.spinInfinite
+
+/** 罗盘缓转周期 — 140s/圈（原型口径：极缓，仅作背景呼吸感） */
+private const val COMPASS_PERIOD_MS = 140_000
 
 /**
  * 观象台罗盘：十二支环缓转（140s/圈）+ 中宫「卜」（画板口径：外环 50% 金实线 + 12% 虚环 + 12sp 支环文）。
- * reduced-motion 时停转（静态盘仍完整可读）。
+ * reduced-motion 时停转（静态盘仍完整可读），且不创建无限动画——
+ * 否则 `rememberInfiniteTransition` 会每帧推进重组，降级形同虚设。
  */
 @Composable
 fun CompassDial(modifier: Modifier = Modifier, dialText: String = "卜") {
     val c = DivColors.current
-    val reduceMotion = divReduceMotion()
-    val transition = rememberInfiniteTransition(label = "compass")
-    val rotation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 140_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "compassRotation",
-    )
+    val rotation = if (LocalReduceMotion.current) {
+        remember { Animatable(0f) }.value
+    } else {
+        val transition = rememberInfiniteTransition(label = "compass")
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = spinInfinite(durationMs = COMPASS_PERIOD_MS),
+            label = "compassRotation",
+        ).value
+    }
     val textMeasurer = rememberTextMeasurer()
     val zhiLabels = listOf("子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥")
 
     Canvas(modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val radius = size.minDimension / 2f
-        val spin = if (reduceMotion) 0f else rotation
 
-        rotate(degrees = spin, pivot = center) {
+        rotate(degrees = rotation, pivot = center) {
             // 外环：50% 鎏金实线
             drawCircle(
                 color = c.gold.copy(alpha = 0.5f),

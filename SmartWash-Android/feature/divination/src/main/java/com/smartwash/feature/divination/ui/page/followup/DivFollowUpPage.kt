@@ -1,5 +1,7 @@
 package com.smartwash.feature.divination.ui.page.followup
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -50,14 +53,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
+import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
+
+/** 新气泡首帧淡入时长 */
+private const val BUBBLE_FADE_MS = 120
 
 /**
  * 追问页（画板「追问 · 玄墨 / 追问 · 宣纸」）：页头（居中标题 + 居中副题）+ 聊天流
@@ -132,6 +140,9 @@ fun DivFollowUpPage(
                 if (state.followUpState is RequestState.Loading) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            // 推演中的水波指示（§4.5 附：观象台金色；自带 reduced motion 静止分支）
+                            WaveIcon(isLoading = true, tint = c.gold, size = 16.dp)
+                            Spacer(Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.div_followup_thinking),
                                 fontSize = 12.sp,
@@ -155,10 +166,11 @@ fun DivFollowUpPage(
             }
 
             // 底部输入框
+            val pending = state.followUpState is RequestState.Loading
             FollowUpInputBar(
                 value = input,
                 onValueChange = { input = it },
-                enabled = state.followUpState !is RequestState.Loading,
+                pending = pending,
                 onSend = {
                     viewModel.send(input)
                     input = ""
@@ -169,11 +181,22 @@ fun DivFollowUpPage(
 }
 
 /** 聊天气泡（画板双板）：用户实金底右对齐（玄墨 gold.500 / 宣纸 gold.300、墨字、r16 无描边），
- *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 12/16，宽上限 220/240。 */
+ *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 12/16，宽上限 220/240；新气泡首帧淡入。 */
 @Composable
 private fun ChatBubble(turn: DivFollowUpTurn) {
     val c = DivColors.current
     val isUser = turn.role == "user"
+    // 新气泡首帧 alpha 0→1（reduced motion 取消，直接呈现）
+    val reduceMotion = LocalReduceMotion.current
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        if (reduceMotion) {
+            alpha.snapTo(1f)
+        } else {
+            alpha.animateTo(1f, tween(BUBBLE_FADE_MS))
+        }
+    }
+    val appear = Modifier.graphicsLayer { this.alpha = alpha.value }
     val shape = RoundedCornerShape(16.dp)
     Row(
         Modifier.fillMaxWidth(),
@@ -182,6 +205,7 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
         Box(
             Modifier
                 .widthIn(max = if (isUser) 220.dp else 240.dp)
+                .then(appear)
                 .clip(shape)
                 .background(if (isUser) c.goldGradient.first() else c.surface)
                 .then(
@@ -209,12 +233,12 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
 private fun FollowUpInputBar(
     value: String,
     onValueChange: (String) -> Unit,
-    enabled: Boolean,
+    pending: Boolean,
     onSend: () -> Unit,
 ) {
     val c = DivColors.current
     val view = currentView()
-    val canSend = enabled && value.isNotBlank()
+    val canSend = !pending && value.isNotBlank()
     val interactionSource = remember { MutableInteractionSource() }
     val debouncedSend = rememberDebouncedClick(enabled = canSend) {
         view.performHaptic(HapticEffect.LIGHT)

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -156,28 +159,11 @@ fun AiWorkPage(
                             .padding(top = 32.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 滚筒圆空态插画（设计稿画板实测：外圈 outline、内圈 surfaceVariant，双主题走语义色）
-                        val drumOuterColor = AppColors.colorScheme.outline
-                        val drumInnerColor = AppColors.colorScheme.surfaceVariant
-                        Box(
-                            modifier = Modifier.size(60.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.foundation.Canvas(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                drawCircle(
-                                    color = drumOuterColor,
-                                    radius = size.minDimension / 2 - 4.dp.toPx(),
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.4.dp.toPx())
-                                )
-                                drawCircle(
-                                    color = drumInnerColor,
-                                    radius = size.minDimension / 4,
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
-                                )
-                            }
-                        }
+                        // 滚筒圆空态插画 — 公共 DrumMark 母题（弱文本色，深浅主题各自可读）
+                        DrumMark(
+                            size = 60.dp,
+                            tint = AppColors.colorScheme.textTertiary
+                        )
                         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                         Text(
                             text = stringResource(R.string.ai_empty_recent),
@@ -238,10 +224,11 @@ fun AiWorkPage(
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusRequester)
+                            .onFocusChanged { inputFocused = it.isFocused }
                             .height(48.dp)
                             .border(
                                 width = 1.dp,
-                                color = AppColors.colorScheme.outline,
+                                color = inputBorderColor,
                                 shape = RoundedCornerShape(AppDimens.radiusMd)
                             ),
                         shape = RoundedCornerShape(AppDimens.radiusMd),
@@ -254,12 +241,22 @@ fun AiWorkPage(
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = { /* TODO: 接入 AI */ },
+                    // 发送 — 自绘圆钮：Material IconButton 的 state layer 会在渐变圆上浮出
+                    // 不贴合的涟漪（规范 §7 禁 ripple），改用 pressable（scale 0.97）
+                    Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .pressable(onClick = { /* TODO: 接入 AI */ })
                             .clip(CircleShape)
-                            .background(AppColors.colorScheme.primary)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        AppColors.colorScheme.primary,
+                                        AppColors.colorScheme.primaryDark
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Send,

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.InfiniteRepeatableSpec
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.SpringSpec
@@ -102,6 +103,21 @@ fun <T> pingPongInfinite(durationMs: Int): InfiniteRepeatableSpec<T> =
     infiniteRepeatable(
         animation = tween(durationMs, easing = FastOutSlowInEasing),
         repeatMode = RepeatMode.Reverse,
+    )
+
+/** 持续型旋转周期 — 小尺寸 pending 圆环自转一圈的时长（持续型动效一律 linear） */
+const val SPIN_PERIOD_MS = 900
+
+/**
+ * 持续型旋转规格 — 恒速单向自转（pending 圆环等）。
+ * 与 [pingPongInfinite] 的分工：本函数 `RepeatMode.Restart` 单向循环用于"转圈"，
+ * 后者 `RepeatMode.Reverse` 用于"去而复返"。调用方必须自备 reduced motion 分支
+ * （规范 §8：reduced motion 取消无限旋转，退化为静止圆环）。
+ */
+fun <T> spinInfinite(durationMs: Int = SPIN_PERIOD_MS): InfiniteRepeatableSpec<T> =
+    infiniteRepeatable(
+        animation = tween(durationMs, easing = LinearEasing),
+        repeatMode = RepeatMode.Restart,
     )
 
 /**

@@ -1,12 +1,17 @@
 package com.smartwash.feature.laundry.ui.laundry
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,7 +51,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -60,9 +63,20 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.payment.api.PaymentRoute
 
@@ -85,29 +99,31 @@ fun LaundryPage(
 
     LaunchedEffect(Unit) { laundryViewModel.getLaundryItem() }
 
-    when (getLaundryItemState) {
-        is RequestState.Error -> {
-            Toast.makeText(context, (getLaundryItemState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+    // 原写法把 Toast / reset 放在 when 渲染分支里（组合期副作用），重组会重复弹；
+    // 收进以状态为键的 LaunchedEffect，只在状态真正到达时执行一次
+    LaunchedEffect(getLaundryItemState) {
+        val state = getLaundryItemState
+        if (state is RequestState.Error) {
+            Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
             laundryViewModel.resetGetLaundryItemState()
         }
-        else -> {}
     }
 
-    when (reservationState) {
-        is RequestState.Success -> {
-            LaunchedEffect(reservationState) {
+    LaunchedEffect(reservationState) {
+        when (reservationState) {
+            is RequestState.Success -> {
                 navController.navigate("${PaymentRoute.Payment.text}/${orderId}") {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
             }
+            is RequestState.Error -> {
+                Toast.makeText(context, (reservationState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                laundryViewModel.resetReservationState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (reservationState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            laundryViewModel.resetReservationState()
-        }
-        else -> {}
     }
 
     if (showDialog) {
@@ -129,7 +145,14 @@ fun LaundryPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (getLaundryItemState is RequestState.Loading) {
+        // 骨架 ↔ 内容整屏硬切 → 交叉淡变（reduced motion 经 motionSpec 自动降级为 180ms）
+        Crossfade(
+            targetState = getLaundryItemState is RequestState.Loading,
+            animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+            modifier = Modifier.fillMaxSize(),
+            label = "laundryContent"
+        ) { isLoading ->
+        if (isLoading) {
             LoadingState(modifier = Modifier.fillMaxSize())
         } else {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -189,15 +212,16 @@ fun LaundryPage(
                                     )
                                 }
                             }
-                            TextButton(onClick = { showChangeSchoolDialog = true }) {
-                                // 绿色文字红线（§10）：green.700（primaryDark）且 ≥16sp、weight ≥600
-                                Text(
-                                    text = stringResource(R.string.change),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = AppColors.colorScheme.primaryDark
-                                )
-                            }
+                            // M3 TextButton 自带 state layer（涟漪色块不受令牌控制）→ 自绘 pressable 文字按钮
+                            Text(
+                                text = stringResource(R.string.change),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.colorScheme.primaryDark,
+                                modifier = Modifier
+                                    .pressable(onClick = { showChangeSchoolDialog = true })
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
                         }
                     }
                 }
@@ -265,12 +289,35 @@ fun LaundryPage(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary
                             )
-                            Text(
-                                text = stringResource(R.string.currency_format, totalPrice.toString()),
-                                style = AppTextStyles.DataLarge,
-                                // 金额主色对齐支付页惯例：primaryDark（green.700/#1E8C5C·浅 / #5BC894·深）
-                                color = AppColors.colorScheme.primaryDark
-                            )
+                            // 预估费用随套餐 0ms 跳变 → 交叉淡变（纯淡入淡出，无位移/缩放）；
+                            // reduced motion 降级为 180ms 纯淡入淡出（规范 §8）。
+                            // 注意：transitionSpec 是非 composable 上下文，reduced motion 判定必须在组合期取
+                            val reduceMotion = LocalReduceMotion.current
+                            val priceEnterSpec = if (reduceMotion) {
+                                tween<Float>(CROSSFADE_ALT_MS)
+                            } else {
+                                enterTween<Float>(DURATION_MICRO_MS)
+                            }
+                            val priceExitSpec = if (reduceMotion) {
+                                tween<Float>(CROSSFADE_ALT_MS)
+                            } else {
+                                // 退场取进入的 60%（动效语言 v0.4）；按 README「禁止页面魔法值」走 vocabulary 常量
+                                exitTween<Float>(DURATION_MICRO_MS * 6 / 10)
+                            }
+                            AnimatedContent(
+                                targetState = totalPrice,
+                                transitionSpec = {
+                                    fadeIn(priceEnterSpec) togetherWith fadeOut(priceExitSpec)
+                                },
+                                label = "totalPrice"
+                            ) { price ->
+                                Text(
+                                    text = stringResource(R.string.currency_format, price.toString()),
+                                    style = AppTextStyles.DataLarge,
+                                    // 金额主色对齐支付页惯例：primaryDark（green.700/#1E8C5C·浅 / #5BC894·深）
+                                    color = AppColors.colorScheme.primaryDark
+                                )
+                            }
                         }
                         AppButton(
                             text = stringResource(R.string.confirm_booking),
@@ -286,6 +333,7 @@ fun LaundryPage(
             }
         }
         }
+        }
     }
 }
 
@@ -297,6 +345,7 @@ private fun LaundryTypeItem(
     price: String,
     cardClick: () -> Unit,
 ) {
+    val view = currentView()
     // 选中态颜色过渡动画
     val bgColor by animateColorAsState(
         targetValue = if (isSelected) AppColors.colorScheme.primaryLight else AppColors.colorScheme.surface,
@@ -308,6 +357,22 @@ private fun LaundryTypeItem(
         animationSpec = defaultSpring(),
         label = "borderColor"
     )
+    // 描边宽度 0.5dp ↔ 1.5dp、阴影 level1 ↔ level2 硬切 → 弹簧过渡（reduced motion 自动降级 180ms）
+    val borderWidth by animateDpAsState(
+        targetValue = if (isSelected) 1.5.dp else 0.5.dp,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "borderWidth"
+    )
+    val shadowElevation by animateFloatAsState(
+        targetValue = if (isSelected) AppElevation.level2.value else AppElevation.level1.value,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "cardElevation"
+    )
+    // 指示器容器底色：原 if/else 瞬跳 → 统一走 selectedColor（200ms 档弹簧，reduced motion 降级 180ms）
+    val indicatorColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primary.copy(alpha = 0.15f)
+        else AppColors.colorScheme.divider
+    )
 
     val interactionSource = remember { MutableInteractionSource() }
     // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
@@ -315,12 +380,11 @@ private fun LaundryTypeItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                onClick = { cardClick() }
-            )
-            .pressScale(interactionSource, 0.97f),
+            // 原 clickable(indication = LocalIndication.current) 会浮出 Material 涟漪 → pressable（自带防抖与降级）
+            .pressable(onClick = {
+                view.performHaptic(HapticEffect.SELECTION)
+                cardClick()
+            }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
         shadowElevation = 0.dp,
@@ -348,28 +412,35 @@ private fun LaundryTypeItem(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = AppColors.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(AppColors.colorScheme.textTertiary)
-                        )
+                    // 勾选图标 ↔ 灰圆点瞬换 → 交叉淡变（180ms 降级档，纯淡入淡出）
+                    Crossfade(
+                        targetState = isSelected,
+                        animationSpec = tween(CROSSFADE_ALT_MS),
+                        label = "checkIndicator"
+                    ) { selected ->
+                        if (selected) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = AppColors.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(AppColors.colorScheme.textTertiary)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    // 卡片标题 = font.title 18/24/600（规范 §5），选中态不再变字重
+                    // 字重 Bold ↔ Normal 切换会改变文本宽度引发布局抖动 → 两态统一走 titleLarge 令牌字重
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Text(
                         text = description,

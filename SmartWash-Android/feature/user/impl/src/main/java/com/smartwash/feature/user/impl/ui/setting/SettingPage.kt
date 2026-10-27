@@ -52,6 +52,9 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 
 /**
@@ -78,6 +81,7 @@ fun SettingPage(
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = currentView()
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -242,6 +246,8 @@ fun SettingPage(
             message = stringResource(R.string.confirm_logout),
             isDanger = true,
             onConfirm = {
+                // 登出是不可逆的确认操作：先给中触，再清会话
+                view.performHaptic(HapticEffect.MEDIUM)
                 showDialog = false
                 // 登出（清会话 + 主动登出广播，见 SettingViewModel.logout）
                 settingViewModel.logout()

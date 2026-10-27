@@ -104,113 +104,119 @@ fun OrderDetailPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (getOrderDetailState is RequestState.Loading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
-        // 内容列 weight(1f) + 操作条顺序排布：内容不被固定条遮挡，让位高度动态（D-OD5）
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-        ) {
-            PageHeader(title = stringResource(R.string.order_detail), onBack = { navController.navigateUp() })
-
-            Column(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                // 状态区 — 无卡片：居中滚筒插画 + 状态字（设计稿屏 6，D-OD8）
-                // 屏 6 实测 页头文字底→插画顶 14dp：PageHeader 自带内边距已占 18dp，不再追加 Spacer
-                OrderStatusHeader(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
-
-                // 进度时间线（规范 §3.4）；卡片规格对齐同页组画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
-                // （规范 §3：卡片 elevation 0 用描边代替）
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.radiusLg),
-                    color = AppColors.colorScheme.surface,
-                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+        Crossfade(
+            targetState = getOrderDetailState is RequestState.Success,
+            animationSpec = motionSpec(enterTween<Float>(DURATION_CARD_MS)),
+            label = "orderDetailContent"
+        ) { ready ->
+            if (!ready) {
+                LoadingState(modifier = Modifier.fillMaxSize())
+            } else {
+                // 内容列 weight(1f) + 操作条顺序排布：内容不被固定条遮挡，让位高度动态（D-OD5）
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    // 屏 6 实测卡内边距：左右 20 / 上 10 / 下 4，标题→节点带 6
-                    Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 4.dp)) {
-                        Text(
-                            text = stringResource(R.string.progress_timeline),
-                            style = AppTextStyles.SectionTitle,
-                            letterSpacing = 0.3.sp,
-                            color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
-                        ProgressTimeline(
-                            currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1"),
-                            // 已接单节点副行：真实下单时间 HH:mm（格式异常则不显示，D-OD2）
-                            firstNodeTime = orderInfo?.createdAt?.drop(11)?.take(5)
-                                ?.takeIf { it.length == 5 && it.contains(':') }
-                        )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    PageHeader(title = stringResource(R.string.order_detail), onBack = { navController.navigateUp() })
+
+                    Column(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                        // 状态区 — 无卡片：居中滚筒插画 + 状态字（设计稿屏 6，D-OD8）
+                        // 屏 6 实测 页头文字底→插画顶 14dp：PageHeader 自带内边距已占 18dp，不再追加 Spacer
+                        OrderStatusHeader(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
+
+                        // 进度时间线（规范 §3.4）；卡片规格对齐同页组画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
+                        // （规范 §3：卡片 elevation 0 用描边代替）
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(AppDimens.radiusLg),
+                            color = AppColors.colorScheme.surface,
+                            border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                        ) {
+                            // 屏 6 实测卡内边距：左右 20 / 上 10 / 下 4，标题→节点带 6
+                            Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 4.dp)) {
+                                Text(
+                                    text = stringResource(R.string.progress_timeline),
+                                    style = AppTextStyles.SectionTitle,
+                                    letterSpacing = 0.3.sp,
+                                    color = AppColors.colorScheme.textPrimary,
+                                    modifier = Modifier.padding(bottom = 6.dp)
+                                )
+                                ProgressTimeline(
+                                    currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1"),
+                                    // 已接单节点副行：真实下单时间 HH:mm（格式异常则不显示，D-OD2）
+                                    firstNodeTime = orderInfo?.createdAt?.drop(11)?.take(5)
+                                        ?.takeIf { it.length == 5 && it.contains(':') }
+                                )
+                            }
+                        }
+
+                        // 屏 6 实测：时间线卡底 → 信息卡顶 12
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 订单信息（c3：物流/订单语义蓝图标，D-OD11）
+                        InfoSection(
+                            title = stringResource(R.string.order_info),
+                            icon = Icons.Rounded.Receipt,
+                            iconContainerColor = AppColors.colorScheme.iconContainerBlue,
+                            iconTint = AppColors.colorScheme.iconForegroundBlue
+                        ) {
+                            // 行距节奏：屏 6 实测 48（行高 34 + 行间距 14）；值列 12/500 = labelMedium，订单号启用 tnum
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                InfoRow(
+                                    stringResource(R.string.order_number),
+                                    orderInfo?.orderNo ?: "",
+                                    valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
+                                )
+                                InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
+                                // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
+                                InfoRow(
+                                    stringResource(R.string.price),
+                                    stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
+                                )
+                                // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
+                                InfoRow(
+                                    stringResource(R.string.actual_payment),
+                                    stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                                    valueColor = AppColors.colorScheme.primaryDark,
+                                    valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
+                                InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                            }
+                        }
+
+                        // 屏 6 实测：信息卡底 → 操作条顶 8
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                // 屏 6 实测：时间线卡底 → 信息卡顶 12
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 订单信息（c3：物流/订单语义蓝图标，D-OD11）
-                InfoSection(
-                    title = stringResource(R.string.order_info),
-                    icon = Icons.Rounded.Receipt,
-                    iconContainerColor = AppColors.colorScheme.iconContainerBlue,
-                    iconTint = AppColors.colorScheme.iconForegroundBlue
-                ) {
-                    // 行距节奏：屏 6 实测 48（行高 34 + 行间距 14）；值列 12/500 = labelMedium，订单号启用 tnum
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        InfoRow(
-                            stringResource(R.string.order_number),
-                            orderInfo?.orderNo ?: "",
-                            valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
-                        )
-                        InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
-                        // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
-                        InfoRow(
-                            stringResource(R.string.price),
-                            stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
-                        )
-                        // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
-                        InfoRow(
-                            stringResource(R.string.actual_payment),
-                            stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
-                            valueColor = AppColors.colorScheme.primaryDark,
-                            valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
-                        InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                // 底部操作条（设计稿屏 6：border-top + surface 底 + padding 16/24，D-OD5/6/7）
+                OrderDetailActionBar(
+                    onContactServiceClick = {
+                        // 待客服功能立项后接入（D-OD12，用户已确认：先以 Toast 兜底）
+                        Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
+                    },
+                    onPickupCodeClick = {
+                        // D-OD1：待寄件/待取件且取件码非空可弹窗（实时取 orderInfo 当前值），否则提示
+                        val status = OrderStatus.fromStatus(orderInfo?.status ?: "-1")
+                        val pickupCode = parsePickupCode(orderInfo)
+                        if ((status == OrderStatus.PENDING_SHIPMENT || status == OrderStatus.READY_FOR_PICKUP) &&
+                            pickupCode.isNotEmpty()
+                        ) {
+                            showPickupCodeDialog = true
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.no_pickup_code), Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-
-                // 屏 6 实测：信息卡底 → 操作条顶 8
-                Spacer(modifier = Modifier.height(8.dp))
+                )
             }
         }
-
-        // 底部操作条（设计稿屏 6：border-top + surface 底 + padding 16/24，D-OD5/6/7）
-        OrderDetailActionBar(
-            onContactServiceClick = {
-                // 待客服功能立项后接入（D-OD12，用户已确认：先以 Toast 兜底）
-                Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
-            },
-            onPickupCodeClick = {
-                // D-OD1：待寄件/待取件且取件码非空可弹窗（实时取 orderInfo 当前值），否则提示
-                val status = OrderStatus.fromStatus(orderInfo?.status ?: "-1")
-                val pickupCode = parsePickupCode(orderInfo)
-                if ((status == OrderStatus.PENDING_SHIPMENT || status == OrderStatus.READY_FOR_PICKUP) &&
-                    pickupCode.isNotEmpty()
-                ) {
-                    showPickupCodeDialog = true
-                } else {
-                    Toast.makeText(context, context.getString(R.string.no_pickup_code), Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-        }
-        }
+    }
 
         // 取件码弹窗（D-OD1）：柜号 + 取件码，承载旧版寄存柜信息卡的全部信息
         if (showPickupCodeDialog) {

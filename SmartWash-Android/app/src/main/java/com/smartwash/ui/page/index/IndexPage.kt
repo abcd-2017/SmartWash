@@ -1,6 +1,8 @@
 package com.smartwash.ui.page.index
 
 import android.widget.Toast
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -63,8 +65,13 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 import androidx.compose.ui.text.style.TextAlign
 
 @Composable
@@ -100,12 +107,21 @@ fun IndexPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (userInfoStatus is RequestState.Loading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+        // 骨架屏只在「首载且无任何数据」时出现：刷新（VM 置 Loading）时 userInfo 已有值，
+        // 保持已展示内容不被整屏骨架替换；骨架 ↔ 内容交叉淡变（reduced motion 自动 180ms）
+        val showSkeleton =
+            (userInfoStatus is RequestState.Idle || userInfoStatus is RequestState.Loading) && userInfo == null
+        Crossfade(
+            targetState = showSkeleton,
+            animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
+            label = "indexSkeleton"
+        ) { skeleton ->
+            if (skeleton) {
+                LoadingState(modifier = Modifier.fillMaxSize())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 item {
                     StatusHeroCard(
                         orderList = orderList,
@@ -185,28 +201,33 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                if (orderList.isNotEmpty()) {
-                    item {
-                        OrderListCard(
-                            orderList = orderList,
-                            onOrderClick = { orderId ->
-                                navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
-                            }
-                        )
-                    }
-                } else {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_ongoing_orders),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary
+                // 进行中订单列表 ↔ 空态：合并为单 item 交叉淡变，不再整块硬切
+                item {
+                    Crossfade(
+                        targetState = orderList.isNotEmpty(),
+                        animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
+                        label = "indexOrderList"
+                    ) { hasOrders ->
+                        if (hasOrders) {
+                            OrderListCard(
+                                orderList = orderList,
+                                onOrderClick = { orderId ->
+                                    navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                                }
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_ongoing_orders),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                            }
                         }
                     }
                 }
@@ -215,6 +236,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                     ServiceTips()
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                }
                 }
             }
         }
@@ -255,6 +277,14 @@ private fun StatusHeroCard(
     val currentOrder = orderList.firstOrNull()
     val orderStatus = currentOrder?.let { OrderStatus.fromStatus(it.status) }
 
+    // 进度弧跟随真实订单状态平滑推进（reduced motion 由 motionSpec 降级为 180ms 无回弹过渡）
+    val heroProgress = currentOrder?.let { orderProgress(it.status) } ?: 0f
+    val animatedHeroProgress by animateFloatAsState(
+        targetValue = heroProgress,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "heroProgress"
+    )
+
     // 品牌渐变 135°：浅色 #2D9B6A→#1E8C5C、深色 #2D9B6A→#5BC894（规范 §1.3 gradient.hero，设计稿首页画板实测）
     val gradient = Brush.linearGradient(
         colors = listOf(AppColors.colorScheme.heroGradientStart, AppColors.colorScheme.heroGradientEnd),
@@ -279,7 +309,7 @@ private fun StatusHeroCard(
                 // 滚筒圆 — 规范 §5 母题：同心环 + 进度弧 + 单条水波（D-I1）
                 DrumMark(
                     size = 64.dp,
-                    progress = currentOrder?.let { orderProgress(it.status) },
+                    progress = if (currentOrder != null) animatedHeroProgress else null,
                     tint = Color.White,
                     trackTint = Color.White.copy(alpha = 0.32f),
                     innerRingTint = Color.White.copy(alpha = 0.45f)
@@ -337,14 +367,20 @@ private fun StatusHeroCard(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                            .background(
+                                selectedColor(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                            )
                     )
                     if (index < steps.lastIndex) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(2.dp)
-                                .background(if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                                .background(
+                                    selectedColor(
+                                        if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+                                    )
+                                )
                         )
                     }
                 }

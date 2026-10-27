@@ -34,6 +34,8 @@
 
     <!-- 支付成功页 -->
     <string name="pay_success">支付成功</string>
+    <string name="pay_success_load_failed">加载失败，请重试</string>
+    <string name="pay_success_retry">重试</string>
     <string name="thanks_for_using">感谢使用智慧洗衣</string>
     <string name="order_info">订单信息</string>
     <string name="order_time_display">下单时间</string>
