@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { RouteNames } from "../constant/RouteNames"
 import { getUserSchoolId, login } from "../network/api/UserApi"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
@@ -66,7 +67,7 @@ struct Login {
 
         // 品牌文字
         Text("智能洗衣")
-          .fontSize(DesignFontSize.PAGE_TITLE)
+          .fontSize(DesignFontSize.ROOT_TITLE)
           .fontWeight(DesignFontWeight.BOLD)
           .fontColor(Color.White)
           .margin({ top: 20 })
@@ -88,7 +89,14 @@ struct Login {
             .placeholderColor(DesignColor.GLASS_TEXT_HINT)
             .backgroundColor(Color.Transparent)
             .width("100%")
-            .onChange((it: string) => this.phoneNumber = it)
+            .key("loginPhoneInput")
+            .onChange((it: string) => {
+              this.phoneNumber = it
+              // 手机号输满 11 位自动聚焦密码框（对齐安卓 LoginPage.kt:242-244）
+              if (it.length === 11) {
+                focusControl.requestFocus("loginPasswordInput")
+              }
+            })
           if (this.checkPhoneNumber) {
             Text("手机号必须为11位")
               .fontColor(DesignColor.WARNING)
@@ -112,6 +120,7 @@ struct Login {
               .placeholderColor(DesignColor.GLASS_TEXT_HINT)
               .backgroundColor(Color.Transparent)
               .layoutWeight(1)
+              .key("loginPasswordInput")
               .onChange((it: string) => this.password = it)
 
             // 密码可见性切换按钮
@@ -180,20 +189,20 @@ struct Login {
                 await setValue(CommonConstants.USER_TOKEN, token)
                 // role 存入 AppStorage 备用（普通用户固定 "user"）
                 AppStorage.setOrCreate("userRole", res.data?.role ?? "user")
+                // 登录成功 toast（对齐安卓 LoginPage.kt:140「登录成功」）
+                showToastSafety("登录成功")
                 let getIdRes = await getUserSchoolId()
-                if (getIdRes.code === HttpStatusCode.Ok) {
-                  this.controller.stopEditing()
-                  if (getIdRes.data == null) {
-                    pathStack.replacePathByName("AddSchool", null)
-                    return
-                  } else {
-                    if (pathStack.size() > 0) {
-                      pathStack.clear()
-                    }
-                    AppStorage.setOrCreate("userLoginFlag", true)
+                // 学校信息缺失判定统一为「专用接口 + 失败放行进首页」：
+                // 专用接口查询失败（网络抖动）不能误拦用户，与安卓 schoolInfoMissing() 网络失败返回 null 同语义
+                // （LoginViewModel.kt:72-83），放行后由 Index/首页继续工作
+                if (getIdRes.code !== HttpStatusCode.Ok || getIdRes.data !== null) {
+                  if (pathStack.size() > 0) {
+                    pathStack.clear()
                   }
+                  AppStorage.setOrCreate("userLoginFlag", true)
                 } else {
-                  showToastSafety(getIdRes.message, "获取学校信息失败，请重新登录")
+                  this.controller.stopEditing()
+                  pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
                 }
               } else {
                 showToastSafety(res.message, "登录失败，请稍后重试")
@@ -217,14 +226,19 @@ struct Login {
         }
         .margin({ bottom: 24 })
         .onClick(() => {
-          pathStack.replacePathByName("Register", null)
+          pathStack.replacePathByName(RouteNames.REGISTER, null)
         })
       }
       .width("100%")
       .height("100%")
       .linearGradient({
         direction: GradientDirection.Bottom,
-        colors: [[DesignColor.AUTH_GRADIENT_TOP, 0], [DesignColor.AUTH_GRADIENT_BOTTOM, 1]]
+        // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
+        colors: [
+          [DesignColor.AUTH_GRADIENT_TOP, 0],
+          [DesignColor.AUTH_GRADIENT_MID, 0.5],
+          [DesignColor.AUTH_GRADIENT_BOTTOM, 1]
+        ]
       })
     }
     .hideTitleBar(true)

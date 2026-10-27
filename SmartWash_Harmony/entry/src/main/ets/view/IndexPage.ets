@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { RouteNames } from "../constant/RouteNames"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
@@ -7,7 +8,9 @@ import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
+import { OrderStatusEnum } from "../constant/OrderStatus"
 import { showToastSafety } from "../utils/ToastUtil"
+import { IconBox } from "./common/AppComponents"
 
 // 连续轮询失败达到该次数才提示一次（评审 #4：避免每 5s 弹 toast）
 const POLLING_FAILURE_THRESHOLD: number = 3
@@ -147,7 +150,7 @@ export struct IndexPage {
         // 左侧问候信息
         Column() {
           Text(this.getGreeting())
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.ON_BACKGROUND)
 
@@ -214,7 +217,7 @@ export struct IndexPage {
             .fontColor(Color.White)
             .opacity(0.7)
           Text(`￥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(Color.White)
             .margin({ top: 4 })
@@ -238,7 +241,7 @@ export struct IndexPage {
         }
         .alignItems(HorizontalAlign.End)
         .onClick(() => {
-          pathStack.pushPathByName("Recharge", null)
+          pathStack.pushPathByName(RouteNames.RECHARGE, null)
         })
       }
       .width("100%")
@@ -255,24 +258,18 @@ export struct IndexPage {
 
   /**
    * 服务入口卡片 — 白底+边框样式，彩色图标容器
-   * @param serviceColor 图标颜色
-   * @param serviceColorLight 图标容器背景色
+   * @param serviceColor 图标前景色
+   * @param serviceColorLight 图标容器浅底色
    */
   @Builder
   ServiceEntryCard(icon: Resource, title: string, serviceColor: number, serviceColorLight: number, itemClick: () => void) {
     Column() {
-      // 图标容器
-      Column() {
-        SymbolGlyph(icon)
-          .fontSize(24)
-          .fontColor([serviceColor])
-      }
-      .width(48)
-      .height(48)
-      .borderRadius(14)
-      .backgroundColor(serviceColorLight)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
+      // 图标容器 — 统一 IconBox 模板（对齐安卓 IndexPage.kt：44/22/圆角 12）
+      IconBox({
+        icon: icon,
+        containerColor: serviceColorLight,
+        iconColor: serviceColor
+      })
 
       Text(title)
         .fontSize(DesignFontSize.CARD_TITLE)
@@ -282,7 +279,7 @@ export struct IndexPage {
     }
     .layoutWeight(1)
     .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
+    .borderRadius(DesignDimens.CARD_RADIUS)
     .border({ width: 0.5, color: DesignColor.OUTLINE })
     .backgroundColor(DesignColor.SURFACE)
     .justifyContent(FlexAlign.Center)
@@ -299,23 +296,21 @@ export struct IndexPage {
   OrderItemCard(order: OrderVo) {
     Column() {
       Row() {
-        // 左侧绿色图标容器
-        Column() {
-          SymbolGlyph($r('sys.symbol.laundry'))
-            .fontSize(20)
-            .fontColor([DesignColor.PRIMARY])
-        }
-        .width(40)
-        .height(40)
-        .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-        .backgroundColor(DesignColor.PRIMARY_LIGHT)
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
+        // 图标容器色按状态语义（对齐安卓 OrderListItem：清洗中→绿，其余→橙 36/18）
+        IconBox({
+          icon: $r('sys.symbol.laundry'),
+          sizeValue: 36,
+          iconSize: 18,
+          containerColor: order.status === OrderStatusEnum.WASHING ?
+            DesignColor.ICON_CONTAINER_GREEN : DesignColor.ICON_CONTAINER_ORANGE,
+          iconColor: order.status === OrderStatusEnum.WASHING ?
+            DesignColor.ICON_FOREGROUND_GREEN : DesignColor.ICON_FOREGROUND_ORANGE
+        })
         .margin({ right: 12 })
 
         // 状态文字 + 订单号
         Column() {
-          Text(getOrderStatusDescription(order.status ?? "") ?? "")
+          Text(getOrderStatusDescription(order.status))
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.TEXT_PRIMARY)
@@ -360,7 +355,7 @@ export struct IndexPage {
       offsetY: 1
     })
     .onClick(() => {
-      pathStack.pushPathByName("OrderDetail", order.orderId)
+      pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
     })
   }
 
@@ -405,17 +400,17 @@ export struct IndexPage {
 
         Row() {
           this.ServiceEntryCard($r('sys.symbol.laundry'), "立即预约", DesignColor.SERVICE_WASH, DesignColor.SERVICE_WASH_LIGHT, () => {
-            pathStack.pushPathByName("Laundry", null)
+            pathStack.pushPathByName(RouteNames.LAUNDRY, null)
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
           this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", DesignColor.SERVICE_LUXURY, DesignColor.SERVICE_LUXURY_LIGHT, () => {
-            pathStack.pushPathByName("PickUp", null)
+            pathStack.pushPathByName(RouteNames.PICK_UP, null)
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
           this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", DesignColor.SERVICE_PRESS, DesignColor.SERVICE_PRESS_LIGHT, () => {
-            pathStack.pushPathByName("Coupon", null)
+            pathStack.pushPathByName(RouteNames.COUPON, null)
           })
         }
         .width("100%")
@@ -435,7 +430,7 @@ export struct IndexPage {
             .fontSize(DesignFontSize.BODY)
             .fontColor(DesignColor.PRIMARY)
             .onClick(() => {
-              pathStack.pushPathByName("OrderList", 3)
+              pathStack.pushPathByName(RouteNames.ORDER_LIST, 3)
             })
         }
         .width("100%")

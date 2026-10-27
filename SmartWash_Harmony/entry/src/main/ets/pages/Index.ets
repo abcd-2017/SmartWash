@@ -85,7 +85,7 @@ struct Index {
         } else {
           HomeBuilder()
         }
-      }.backgroundColor($r('sys.color.background_primary'))
+      }.backgroundColor(DesignColor.BACKGROUND)
       .hideTitleBar(true)
       .mode(NavigationMode.Stack)
     }.height('100%')

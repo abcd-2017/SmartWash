@@ -35,7 +35,7 @@ export struct PageHeader {
 
       // 标题
       Text(this.title)
-        .fontSize(DesignFontSize.PAGE_TITLE)
+        .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.BOLD)
         .fontColor(DesignColor.ON_BACKGROUND)
         .margin({ left: this.showBack ? 4 : 0 })
@@ -48,6 +48,62 @@ export struct PageHeader {
     .height(56)
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     .alignItems(VerticalAlign.Center)
+  }
+}
+
+// ========== IconBox 图标容器模板（对齐 Android AppDesign.kt IconBox/CircleIconBox） ==========
+
+/**
+ * 方形图标容器 — 浅底 + 语义色前景图标，默认 44vp 容器 / 22fp 图标 / 12vp 圆角。
+ * 六色浅底/前景令牌见 DesignColor.ICON_CONTAINER_* / ICON_FOREGROUND_*。
+ */
+@ComponentV2
+export struct IconBox {
+  @Require @Param icon: Resource
+  @Param sizeValue: number = 44
+  @Param iconSize: number = 22
+  @Param containerColor: number = DesignColor.PRIMARY_LIGHT
+  @Param iconColor: number = DesignColor.PRIMARY
+  @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
+
+  build() {
+    Column() {
+      SymbolGlyph(this.icon)
+        .fontSize(this.iconSize)
+        .fontColor([this.iconColor])
+    }
+    .width(this.sizeValue)
+    .height(this.sizeValue)
+    .borderRadius(this.radius)
+    .backgroundColor(this.containerColor)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+  }
+}
+
+/**
+ * 圆形图标容器 — 默认 40vp 容器 / 20fp 图标，圆角取容器尺寸一半。
+ */
+@ComponentV2
+export struct CircleIconBox {
+  @Require @Param icon: Resource
+  @Param sizeValue: number = 40
+  @Param iconSize: number = 20
+  @Param containerColor: number = DesignColor.PRIMARY_LIGHT
+  @Param iconColor: number = DesignColor.PRIMARY
+
+  build() {
+    Column() {
+      SymbolGlyph(this.icon)
+        .fontSize(this.iconSize)
+        .fontColor([this.iconColor])
+    }
+    .width(this.sizeValue)
+    .height(this.sizeValue)
+    .borderRadius(this.sizeValue / 2)
+    .backgroundColor(this.containerColor)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
   }
 }
 
@@ -136,6 +192,80 @@ export struct AppButton {
         this.click()
       }
     })
+  }
+}
+
+// ========== AppInfoDialog 信息提示弹窗（对齐安卓 AppInfoDialog） ==========
+
+/**
+ * 单按钮信息弹窗
+ * 用于：请选择套餐、更换学校需联系客服、查看取件码等纯提示场景
+ *
+ * 使用方式：
+ * private infoDialogController: CustomDialogController = new CustomDialogController({
+ *   builder: AppInfoDialog({ message: '请选择套餐', onDismiss: () => { ... } }),
+ *   autoCancel: true,
+ *   alignment: DialogAlignment.Center,
+ *   customStyle: true
+ * })
+ */
+@CustomDialog
+export struct AppInfoDialog {
+  // 由父组件注入控制器（空 builder 的自建控制器不合法）
+  controller: CustomDialogController
+  @Prop title: string = ''
+  @Prop message: string = ''
+  @Prop buttonText: string = '确认'
+  onDismiss: () => void = () => {
+  }
+
+  build() {
+    Column() {
+      Column() {
+        if (this.title !== '') {
+          Text(this.title)
+            .fontSize(DesignFontSize.SECTION_TITLE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .margin({ bottom: 12 })
+        }
+
+        Text(this.message)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+      }
+      .width('100%')
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: 20,
+        bottom: 20
+      })
+      .shadow({
+        radius: DesignElevation.FLOAT_LAYER,
+        color: '#33000000',
+        offsetX: 0,
+        offsetY: 4
+      })
+
+      Divider()
+        .color(DesignColor.DIVIDER)
+        .strokeWidth(0.5)
+
+      Button(this.buttonText)
+        .type(ButtonType.Normal)
+        .width('100%')
+        .height(48)
+        .backgroundColor(Color.Transparent)
+        .fontColor(DesignColor.PRIMARY)
+        .fontSize(DesignFontSize.BODY)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .borderRadius(0)
+        .onClick(() => {
+          this.onDismiss()
+          this.controller.close()
+        })
+    }
   }
 }
 

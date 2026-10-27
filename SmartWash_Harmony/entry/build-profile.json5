@@ -1,8 +1,24 @@
 {
   "apiType": "stageMode",
   "buildOption": {
+    "arkOptions": {
+      // 模块级自定义构建参数兜底值：debug/未单独覆盖 buildOptionSet 的场景使用。
+      // BASE_URL 必须经 BuildProfile 注入，源码禁止硬编码服务器地址（根 AGENTS.md 环境红线）。
+      "buildProfileFields": {
+        "BASE_URL": "http://8.148.70.81:9000"
+      }
+    }
   },
   "buildOptionSet": [
+    {
+      "name": "debug",
+      "arkOptions": {
+        "buildProfileFields": {
+          // dev/联调：演示服务器（明文 HTTP，仅限内网联调，禁止随生产发布）
+          "BASE_URL": "http://8.148.70.81:9000"
+        }
+      }
+    },
     {
       "name": "release",
       "arkOptions": {
@@ -13,6 +29,15 @@
               "./obfuscation-rules.txt"
             ]
           }
+        },
+        "buildProfileFields": {
+          // prod：默认空串 = 未注入即构建失败不可用（Axios 启动时报错提示），
+          // 禁止回填任何明文 HTTP 地址。生产切换方式（二选一）：
+          // 1) DevEco Studio：File > Project Structure > Build Profiles / 直接改本文件，
+          //    将 BASE_URL 注入为运维提供的 HTTPS 域名（如 https://api.xxx.com）；
+          // 2) CI/命令行：构建前用脚本按环境替换本字段，或经 hvigor 自定义参数覆盖。
+          // 对齐安卓 app/build.gradle 的 Gradle 属性 baseUrl 注入机制（差异分析 01 §3.3）。
+          "BASE_URL": ""
         }
       }
     },

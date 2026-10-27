@@ -7,7 +7,10 @@ const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+    // 决策 D1（差异分析 2026-10-27）：固定亮色模式。
+    // DesignSystem.ets 仅有亮色令牌，此前跟随系统会出现"深色模式下界面仍为亮色配色"的不一致；
+    // 待暗色主题整套 Dark* 令牌补齐后再切回 COLOR_MODE_NOT_SET 跟随系统。
+    this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
 

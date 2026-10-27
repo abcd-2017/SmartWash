@@ -1,13 +1,25 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { OrderStatusList, ShowOrderStatusMap, ShowOrderStatus } from "../constant/ShowOrderStatus"
+import { RouteNames } from "../constant/RouteNames"
+import { OrderStatusList, getShowOrderStatusDescription } from "../constant/ShowOrderStatus"
 import { cancelOrder, getOrderList } from "../network/api/OrderApi"
-import { promptAction } from "@kit.ArkUI"
 import { OrderInfo } from "../network/vo/OrderInfo"
-import { OrderCard } from "../view/OrderCard"
+import { OrderMonthCard } from "../view/OrderCard"
+import { PickupDeliveryParam } from "./PickupDelivery"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
-import { DesignColor, DesignDimens, DesignFontSize, toColorString } from "../constant/DesignSystem"
+import { PagingController } from "../utils/PagingUtil"
+import { AppConfirmDialog } from "../view/common/AppComponents"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+
+// 分页每页条数
+const PAGE_SIZE: number = 10
+
+/** 月份分组段（对齐安卓 OrderListItem 混合列表项：月份标题 + 整月订单组） */
+interface MonthSection {
+  monthKey: string
+  orders: Array<OrderInfo>
+}
 
 @Builder
 export function OrderListBuilder() {
@@ -16,39 +28,107 @@ export function OrderListBuilder() {
 
 @Component
 struct OrderList {
-  @State orderList: Array<OrderInfo> = []
+  @State sections: Array<MonthSection> = []
   private list = OrderStatusList()
   private orderStatus: string = "001"
   @State currIndex: number = 0
   @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
-  @State canLoad: boolean = false
-  @State page: number = 1
-  @State currOrderId: number | null = null
+  // 取消订单确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
+  private confirmCancelController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      message: "确定要取消订单？",
+      onConfirm: () => {
+        this.doCancelOrder()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+  // 待取消的订单 id（确认弹窗回调用）
+  private pendingCancelOrderId: number | null = null
+  // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛（差异分析 01 §3.3）
+  private paging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchOrderPage(page)
+    },
+    (loading: boolean) => {
+      this.isLoadingMore = loading
+    }
+  )
 
   aboutToAppear(): void {
     // 安全取参（评审 #31）：参数缺失/非法时兜底第 0 个页签
-    this.currIndex = getNumberParam("OrderList") ?? 0
+    this.currIndex = getNumberParam(RouteNames.ORDER_LIST) ?? 0
     this.orderStatus = this.list[this.currIndex]
-    this.getOrderListByStatus()
+    this.fetchOrderPage(1)
   }
 
-  async getOrderListByStatus() {
-    let res = await getOrderList({ status: this.orderStatus, page: this.page, size: 10 })
+  /**
+   * 按页拉取订单列表。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  async fetchOrderPage(page: number): Promise<boolean> {
+    let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
     if (res.code === HttpStatusCode.Ok) {
       if (res.data == null || res.data?.length == 0) {
-        if (this.orderList.length > 0) {
+        if (this.orderListLength() > 0) {
           showToastSafety("没有更多数据了")
         }
-      } else {
-        if (this.page == 1) {
-          this.orderList = []
-        }
-        this.orderList.push(...res.data)
+        return false
       }
-    } else {
-      showToastSafety(res.message, "订单加载失败")
+      if (page == 1) {
+        this.sections = []
+      }
+      this.appendOrders(res.data)
+      return true
     }
+    showToastSafety(res.message, "订单加载失败")
+    return false
+  }
+
+  /** 当前状态下的订单总数（跨月份段累计） */
+  private orderListLength(): number {
+    let total = 0
+    for (const s of this.sections) {
+      total += s.orders.length
+    }
+    return total
+  }
+
+  /**
+   * 追加订单并重建月份分组（D2 决策：数据源维持单状态分页拉取，
+   * 列表结构对齐安卓——按 createdAt 降序、按 yyyy-MM 分组，组间倒序排列）
+   */
+  private appendOrders(data: Array<OrderInfo>): void {
+    const flat: Array<OrderInfo> = []
+    for (const s of this.sections) {
+      flat.push(...s.orders)
+    }
+    flat.push(...data)
+    flat.sort((a: OrderInfo, b: OrderInfo) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
+
+    const grouped: Map<string, Array<OrderInfo>> = new Map()
+    for (const order of flat) {
+      const key = (order.createdAt ?? "").substring(0, 7)
+      const bucket = grouped.get(key)
+      if (bucket === undefined) {
+        grouped.set(key, [order])
+      } else {
+        bucket.push(order)
+      }
+    }
+    const keys = Array.from(grouped.keys()).sort((a: string, b: string) => b.localeCompare(a))
+    const next: Array<MonthSection> = []
+    for (const key of keys) {
+      const orders = grouped.get(key)
+      if (orders !== undefined) {
+        const section: MonthSection = { monthKey: key, orders: orders }
+        next.push(section)
+      }
+    }
+    this.sections = next
   }
 
   aboutToDisappear(): void {
@@ -58,11 +138,27 @@ struct OrderList {
 
   refreshOrder() {
     this.isRefreshing = false
-    this.isLoadingMore = false
-    this.canLoad = false
-    this.page = 1
-    this.orderList = []
-    this.getOrderListByStatus()
+    this.paging.reset()
+    this.sections = []
+    this.fetchOrderPage(1)
+  }
+
+  /** 确认取消订单：成功后 toast + 当前状态全量重拉，并打标记让订单计数同步刷新 */
+  async doCancelOrder() {
+    if (this.pendingCancelOrderId === null) {
+      return
+    }
+    let res = await cancelOrder(this.pendingCancelOrderId)
+    if (res.code === HttpStatusCode.Ok) {
+      // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
+      // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
+      AppStorage.setOrCreate("refreshOrderCount", true)
+      this.refreshOrder()
+      showToastSafety("取消成功")
+    } else {
+      showToastSafety(res.message, "取消失败")
+    }
+    this.pendingCancelOrderId = null
   }
 
   @Builder
@@ -77,7 +173,7 @@ struct OrderList {
 
       Text("我的订单")
         .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontWeight(FontWeight.Bold)
+        .fontWeight(DesignFontWeight.BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .margin({ left: 8 })
     }
@@ -93,9 +189,9 @@ struct OrderList {
     Row() {
       ForEach(this.list, (title: string, index: number) => {
         Column() {
-          Text(ShowOrderStatusMap[title as ShowOrderStatus])
+          Text(getShowOrderStatusDescription(title))
             .fontSize(DesignFontSize.BODY)
-            .fontWeight(index === this.currIndex ? FontWeight.Bold : FontWeight.Normal)
+            .fontWeight(index === this.currIndex ? DesignFontWeight.BOLD : DesignFontWeight.NORMAL)
             .fontColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
 
           // 底部短横线指示器
@@ -136,84 +232,70 @@ struct OrderList {
           .color(DesignColor.DIVIDER)
 
         // 内容区域
-        if ((this.orderList?.length ?? 0) > 0) {
+        if (this.orderListLength() > 0) {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {
-              ForEach(this.orderList, (order: OrderInfo) => {
+              ForEach(this.sections, (section: MonthSection) => {
+                // 月份标题（对齐安卓 "%d年%d月" 月份行）
                 ListItem() {
-                  OrderCard({
-                    orderInfo: order,
-                    cancelClick: () => {
-                      this.currOrderId = order.orderId
-                      promptAction.showDialog({
-                        message: "确定要取消订单",
-                        buttons: [
-                          { text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
-                          { text: "确认", color: toColorString(DesignColor.PRIMARY) }
-                        ],
-                      }, async (err, data) => {
-                        if (data.index == 1) {
-                          let res = await cancelOrder(order.orderId ?? -1)
-                          if (res.code === HttpStatusCode.Ok) {
-                            this.refreshOrder()
-                            showToastSafety("取消成功")
-                          } else {
-                            showToastSafety(res.message, "取消失败")
-                          }
-                        }
-                      })
+                  Text(this.monthLabel(section.monthKey))
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontWeight(DesignFontWeight.SEMI_BOLD)
+                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 24, bottom: 8 })
+                }
+
+                // 整月订单合并卡
+                ListItem() {
+                  OrderMonthCard({
+                    orders: section.orders,
+                    cancelClick: (order: OrderInfo) => {
+                      this.pendingCancelOrderId = order.orderId
+                      this.confirmCancelController.open()
                     },
-                    paymentClick: () => {
+                    paymentClick: (order: OrderInfo) => {
                       // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
-                      pathStack.pushPathByName("Payment", order.orderId)
+                      pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
                     },
-                    shipmentClick: () => {
-                      pathStack.pushPathByName("PickupDelivery", order)
+                    shipmentClick: (order: OrderInfo) => {
+                      const param: PickupDeliveryParam = new PickupDeliveryParam()
+                      param.order = order
+                      param.isPickup = false
+                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
                     },
-                    pickupClick: () => {
-                      pathStack.pushPathByName("PickupDelivery", order)
+                    pickupClick: (order: OrderInfo) => {
+                      const param: PickupDeliveryParam = new PickupDeliveryParam()
+                      param.order = order
+                      param.isPickup = true
+                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
                     },
-                    itemClick: () => {
-                      pathStack.pushPathByName("OrderDetail", order.orderId)
+                    itemClick: (order: OrderInfo) => {
+                      pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
                     },
                   })
                 }
                 .padding({
                   left: DesignDimens.PAGE_PADDING,
                   right: DesignDimens.PAGE_PADDING,
-                  top: 6,
                   bottom: 6
                 })
-              })
+              }, (section: MonthSection) => section.monthKey)
+
               ListItem() {
                 LoadingFooter({ isLoading: !!this.isLoadingMore })
               }
             }
             .onScrollIndex((start: number, end: number) => {
-              if (this.canLoad && end >= (this.orderList?.length ?? 0) - 1) {
-                this.canLoad = false
-                this.isLoadingMore = true
-                setTimeout(() => {
-                  this.page++
-                  this.getOrderListByStatus()
-                  this.isLoadingMore = false
-                }, 1200)
-              }
+              this.paging.onScrollIndex(end, this.orderListLength())
             })
             .onScrollFrameBegin((offset: number, state: ScrollState) => {
-              if (offset > 5 && !this.isLoadingMore) {
-                this.canLoad = true
-              }
+              this.paging.onScrollFrameBegin(offset)
               return { offsetRemain: offset }
             })
             .height("100%")
           }
           .onRefreshing(() => {
-            setTimeout(() => {
-              this.page = 1
-              this.getOrderListByStatus()
-              this.isRefreshing = false
-            }, 2000)
+            this.refreshOrder()
           })
         } else {
           // 空状态
@@ -240,11 +322,16 @@ struct OrderList {
     .onShown(() => {
       // 支付/寄件等 pop() 均不带 result，原 onPop 回调不触发（评审 #8）；
       // 改为每次展示时重置分页后重拉：page==1 分支会在响应返回后整体替换列表，避免追加重复数据
-      this.isRefreshing = false
-      this.isLoadingMore = false
-      this.canLoad = false
-      this.page = 1
-      this.getOrderListByStatus()
+      this.refreshOrder()
     })
+  }
+
+  /** "yyyy-MM" → "yyyy年M月"（解析失败兜底原串） */
+  private monthLabel(monthKey: string): string {
+    const parts = monthKey.split("-")
+    if (parts.length === 2) {
+      return `${parts[0]}年${Number(parts[1])}月`
+    }
+    return monthKey
   }
 }

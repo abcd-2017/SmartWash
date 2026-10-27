@@ -1,120 +1,14 @@
 import { CommonConstants } from "../constant/CommonConstants"
+import { RouteNames } from "../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { promptAction } from "@kit.ArkUI"
 import { setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
+import { AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
+import { getAppVersionName } from "../utils/AppInfoUtil"
 
-// ========== 退出登录确认弹窗 ==========
-@CustomDialog
-struct LogoutConfirmDialog {
-  controller: CustomDialogController
-  onConfirm: () => void = () => {}
-
-  build() {
-    Column() {
-      // 弹窗内容区
-      Column() {
-        Text("提示")
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-
-        Text("是否要退出登录？")
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 12 })
-      }
-      .padding({ left: 24, right: 24, top: 20, bottom: 20 })
-      .alignItems(HorizontalAlign.Start)
-
-      // 分隔线
-      Divider()
-        .strokeWidth(0.5)
-        .color(DesignColor.DIVIDER)
-
-      // 按钮行
-      Row() {
-        Button("取消")
-          .layoutWeight(1)
-          .height(48)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .backgroundColor(Color.Transparent)
-          .borderRadius(0)
-          .onClick(() => {
-            this.controller.close()
-          })
-
-        Divider()
-          .vertical(true)
-          .strokeWidth(0.5)
-          .color(DesignColor.DIVIDER)
-          .height(48)
-
-        Button("确认")
-          .layoutWeight(1)
-          .height(48)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.ERROR)
-          .backgroundColor(Color.Transparent)
-          .borderRadius(0)
-          .onClick(() => {
-            this.controller.close()
-            this.onConfirm()
-          })
-      }
-      .width("100%")
-    }
-    .width("85%")
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(Color.White)
-  }
-}
-
-// ========== 关于我们弹窗 ==========
-@CustomDialog
-struct AboutDialog {
-  controller: CustomDialogController
-
-  build() {
-    Column() {
-      // 弹窗内容区
-      Column() {
-        Text("关于我们")
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-
-        Text("清氧洗衣 v1.0.0")
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 12 })
-      }
-      .padding({ left: 24, right: 24, top: 20, bottom: 20 })
-      .alignItems(HorizontalAlign.Start)
-
-      // 分隔线
-      Divider()
-        .strokeWidth(0.5)
-        .color(DesignColor.DIVIDER)
-
-      // 确认按钮
-      Button("确认")
-        .width("100%")
-        .height(48)
-        .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.PRIMARY)
-        .backgroundColor(Color.Transparent)
-        .borderRadius(0)
-        .onClick(() => {
-          this.controller.close()
-        })
-    }
-    .width("85%")
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(Color.White)
-  }
-}
+// 品牌名单一事实来源：与安卓 brand_name 一致（feature/user/impl strings.xml:17）
+const APP_NAME: string = "智能洗衣"
 
 // ========== 设置页面 ==========
 @Builder
@@ -126,17 +20,22 @@ export function SettingBuilder() {
 struct Setting {
   private scroller = new Scroller()
 
-  // 退出登录弹窗控制器
+  // 退出登录弹窗（对齐安卓 AppConfirmDialog isDanger，统一使用 #23 产出的通用组件）
   private logoutDialogController: CustomDialogController = new CustomDialogController({
-    builder: LogoutConfirmDialog({
+    builder: AppConfirmDialog({
+      title: "提示",
+      message: "是否要退出登录？",
+      confirmText: "确认",
+      cancelText: "取消",
       onConfirm: () => {
-        // 与网络层 401 处理同语义（评审 #23，参照 Axios.ets clearLoginState）：
-        // 清本地 token + 复位内存登录态，只清 token 不复位 AppStorage 标志，
-        // 重启后 Index 会按残留登录态直接进首页并循环 401
+        // 登出链路（对齐安卓 SettingViewModel.logout）：清本地 token + 清 role + 复位内存登录态，
+        // 再清栈跳登录页。userRole 属登录态脏数据，必须一并清理，
+        // 否则下次登录前的 AppStorage 仍残留上一位用户的角色
         setValue(CommonConstants.USER_TOKEN, "")
+        AppStorage.setOrCreate("userRole", "")
         AppStorage.setOrCreate("userLoginFlag", false)
         pathStack.clear()
-        pathStack.pushPathByName("Login", null)
+        pathStack.pushPathByName(RouteNames.LOGIN, null)
       }
     }),
     autoCancel: true,
@@ -144,9 +43,12 @@ struct Setting {
     customStyle: true
   })
 
-  // 关于我们弹窗控制器
+  // 关于我们弹窗（对齐安卓 AppInfoDialog，版本号动态读取）
   private aboutDialogController: CustomDialogController = new CustomDialogController({
-    builder: AboutDialog(),
+    builder: AppInfoDialog({
+      title: "关于我们",
+      message: `${APP_NAME} v${getAppVersionName()}`
+    }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: true
@@ -199,14 +101,6 @@ struct Setting {
   }
 
   // 分组卡片（原 @Builder 接收 children 并链式 .margin 的写法不满足 ArkTS UI 语法，改为子组件 SectionCard）
-  // 分隔线
-  @Builder
-  CardDivider() {
-    Divider()
-      .strokeWidth(0.5)
-      .color(DesignColor.DIVIDER)
-      .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-  }
 
   build() {
     NavDestination() {
@@ -221,7 +115,7 @@ struct Setting {
             })
 
           Text("设置")
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
             .margin({ left: 12 })
@@ -245,42 +139,8 @@ struct Setting {
                     promptAction.showToast({ message: "功能开发中" })
                   }
                 )
-                this.CardDivider()
-                this.SettingRowBuilder(
-                  $r('sys.symbol.envelope'),
-                  "邮件通知",
-                  "账单、优惠信息等",
-                  () => {
-                    promptAction.showToast({ message: "功能开发中" })
-                  }
-                )
               }
             })
-
-            // 隐私设置
-            SectionCard({
-              sectionTitle: "隐私设置",
-              content: () => {
-                this.SettingRowBuilder(
-                  $r('sys.symbol.key_shield'),
-                  "隐私设置",
-                  "个人信息、数据收集等",
-                  () => {
-                    promptAction.showToast({ message: "功能开发中" })
-                  }
-                )
-                this.CardDivider()
-                this.SettingRowBuilder(
-                  $r('sys.symbol.lock_fill'),
-                  "账号安全",
-                  "密码、登录设备等",
-                  () => {
-                    promptAction.showToast({ message: "功能开发中" })
-                  }
-                )
-              }
-            })
-            .margin({ top: DesignDimens.SECTION_SPACING })
 
             // 其他
             SectionCard({
@@ -289,38 +149,33 @@ struct Setting {
                 this.SettingRowBuilder(
                   $r('sys.symbol.info_circle'),
                   "关于我们",
-                  "版本信息、用户协议等",
+                  `v${getAppVersionName()}`,
                   () => {
                     this.aboutDialogController.open()
-                  }
-                )
-                this.CardDivider()
-                this.SettingRowBuilder(
-                  $r('sys.symbol.questionmark_circle'),
-                  "帮助与反馈",
-                  "常见问题、意见反馈",
-                  () => {
-                    promptAction.showToast({ message: "功能开发中" })
                   }
                 )
               }
             })
             .margin({ top: DesignDimens.SECTION_SPACING })
 
-            // 退出登录按钮 — 白底 + 红色边框 + 红色文字
-            Button("退出登录")
-              .width("100%")
-              .height(52)
-              .fontSize(DesignFontSize.CARD_TITLE)
-              .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.ERROR)
-              .backgroundColor(Color.White)
-              .borderRadius(DesignDimens.BUTTON_RADIUS)
-              .border({ width: 1, color: DesignColor.ERROR })
-              .margin({ top: 36, bottom: 24 })
-              .onClick(() => {
-                this.logoutDialogController.open()
-              })
+            // 退出登录 — 白卡内 dangerInk 文字行、无红色边框（对齐安卓 SettingPage.kt:217-232）
+            Column() {
+              Text("退出登录")
+                .width("100%")
+                .height(52)
+                .fontSize(DesignFontSize.BODY)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor(DesignColor.DANGER_INK)
+                .textAlign(TextAlign.Center)
+                .onClick(() => {
+                  this.logoutDialogController.open()
+                })
+            }
+            .width("100%")
+            .backgroundColor(DesignColor.SURFACE)
+            .borderRadius(DesignDimens.CARD_RADIUS)
+            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            .margin({ top: 16, bottom: 24 })
           }
           .width("100%")
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })

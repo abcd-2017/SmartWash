@@ -10,16 +10,24 @@ import { promptAction } from '@kit.ArkUI'
 import { logger } from '../utils/Logger'
 import { getValue, setValue } from '../utils/StorageUtil'
 import { CommonConstants } from '../constant/CommonConstants'
+import { RouteNames } from '../constant/RouteNames'
 import { pathStack } from '../utils/PathStackUtil'
+import BuildProfile from 'entry/BuildProfile'
 
 /**
- * 服务端地址配置（评审 #1：baseURL 收敛到此处单点维护）。
- * - demo/联调环境：指向测试服务器（HTTP 明文，仅限内网联调使用）；
- * - 生产切换方式：拿到运维提供的 HTTPS 域名后，将 BASE_URL 改为 https://域名，
- *   并建议参照 Android 端 BuildConfig 分环境机制接入 DevEco 多 target/profile 注入；
- *   禁止将生产地址以明文 HTTP 形式发布（AGENTS.md 硬规则：BASE_URL 禁止新增硬编码）。
+ * 服务端地址配置（差异分析 01 §3.3 环境红线修复）：
+ * - BASE_URL 由 hvigor 构建期经 entry/build-profile.json5 的
+ *   buildOption(Set).arkOptions.buildProfileFields 注入，代码零硬编码（对齐安卓 BuildConfig 机制）；
+ * - debug：演示服务器兜底（明文 HTTP，仅限内网联调，禁止随生产发布）；
+ * - release：默认空串（未注入即不可用），发布前必须在构建配置注入生产 HTTPS 域名，
+ *   环境切换步骤见 entry/build-profile.json5 内注释。
  */
-export const BASE_URL: string = "http://8.148.70.81:9000"
+const BASE_URL: string = BuildProfile.BASE_URL
+
+if (BASE_URL === "") {
+  logger.error("BASE_URL 未注入", "release 构建必须在 entry/build-profile.json5 buildOptionSet[release]" +
+    ".arkOptions.buildProfileFields 注入生产 HTTPS 域名后重新出包")
+}
 
 // 请求超时（毫秒）：与 Android 端 30s 基准对齐（评审 #9 / 跨端 #3），原 100s 过长
 const REQUEST_TIMEOUT: number = 30000
@@ -53,7 +61,9 @@ function showErrorToast(message: string): void {
 /** 清空本地 token 与内存登录态（401/退出登录统一语义，CLAUDE.md 硬规则） */
 async function clearLoginState(): Promise<void> {
   await setValue(CommonConstants.USER_TOKEN, "")
-  // 复位内存登录态：只跳转不清 token 会导致重启后循环 401
+  // role 与 userLoginFlag 同属登录态，一并复位：
+  // 只清 token 会残留上一位用户的角色与登录标志，下次登录前读到脏数据
+  AppStorage.setOrCreate("userRole", "")
   AppStorage.setOrCreate("userLoginFlag", false)
 }
 
@@ -72,7 +82,7 @@ function handleUnauthorized(toastMessage: string): void {
     showErrorToast(toastMessage)
   }
   clearLoginState()
-  pathStack.replacePathByName("Login", null)
+  pathStack.replacePathByName(RouteNames.LOGIN, null)
 }
 
 export const instance: AxiosInstance = axios.create({

@@ -1,10 +1,16 @@
 import { pathStack } from "../utils/PathStackUtil"
+import { RouteNames } from "../constant/RouteNames"
 import { getCaptcha, register } from "../network/api/UserApi"
 import { HttpStatusCode } from "@ohos/axios"
 import { showToastSafety } from "../utils/ToastUtil"
 import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
+import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+
+// 返回/去登录的节流间隔：与安卓 RegisterPage.kt:114-121 的 800ms 防抖一致，
+// 防转场残影期连点把导航栈弹空（黑屏）
+const NAV_THROTTLE_MS: number = 800
 
 @Builder
 export function RegisterBuilder() {
@@ -23,6 +29,8 @@ struct Register {
   // 注册请求进行中标记：按钮展示 loading 并拦截连点（评审 #12）
   @State registering: boolean = false
   private timer: number = -1
+  // 导航防抖（返回/去登录节流，防连点弹空导航栈）
+  private navDebouncer: Debouncer = new Debouncer()
 
   // 页面销毁时清理验证码倒计时定时器，避免泄漏（评审 #5）
   aboutToDisappear() {
@@ -30,6 +38,7 @@ struct Register {
       clearInterval(this.timer)
       this.timer = -1
     }
+    this.navDebouncer.cancel()
   }
 
   startCountDown() {
@@ -69,8 +78,10 @@ struct Register {
           .height("100%")
           .linearGradient({
             direction: GradientDirection.Bottom,
+            // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
             colors: [
               [DesignColor.AUTH_GRADIENT_TOP, 0.0],
+              [DesignColor.AUTH_GRADIENT_MID, 0.5],
               [DesignColor.AUTH_GRADIENT_BOTTOM, 1.0]
             ]
           })
@@ -81,10 +92,10 @@ struct Register {
           Column({ space: 8 }) {
             // 品牌标识 — 外圈光环 + 内圈图标
             Column() {
-              // 内圈 — 图标
+              // 内圈 — 图标（品牌图形与登录页统一为水波符号，替代跨设备渲染不可控的 emoji）
               Column() {
-                Text('✨')
-                  .fontSize(DesignFontSize.PAGE_TITLE)
+                SymbolGlyph($r('sys.symbol.water_waves'))
+                  .fontSize(36)
                   .fontColor(Color.White)
               }
               .width(72)
@@ -110,7 +121,7 @@ struct Register {
 
             // 品牌文字
             Text("创建账号")
-              .fontSize(DesignFontSize.PAGE_TITLE)
+              .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.BOLD)
               .fontColor(Color.White)
               .margin({ top: 20 })
@@ -191,7 +202,14 @@ struct Register {
                 .fontColor(Color.White)
                 .placeholderColor(DesignColor.GLASS_TEXT_HINT)
                 .backgroundColor(Color.Transparent)
-                .onChange(it => this.verificationCode = it)
+                .key("registerCodeInput")
+                .onChange(it => {
+                  this.verificationCode = it
+                  // 验证码输满 6 位自动聚焦密码框（对齐安卓 RegisterPage.kt:340-348）
+                  if (it.length === 6) {
+                    focusControl.requestFocus("registerPasswordInput")
+                  }
+                })
 
               Button(this.countDown > 0 ? `${this.countDown}s` : "获取验证码")
                 .height(36)
@@ -241,6 +259,7 @@ struct Register {
               .fontColor(Color.White)
               .placeholderColor(DesignColor.GLASS_TEXT_HINT)
               .backgroundColor(Color.Transparent)
+              .key("registerPasswordInput")
               .onChange(it => this.password = it)
 
             if (this.checkPassword) {
@@ -294,7 +313,7 @@ struct Register {
                   showToastSafety("注册成功")
                   // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
                   await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
-                  pathStack.replacePathByName("AddSchool", null)
+                  pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
                 } else {
                   showToastSafety(res.message, "注册失败")
                 }
@@ -315,7 +334,10 @@ struct Register {
           }
           .margin({ top: 16, bottom: 40 })
           .onClick(() => {
-            pathStack.pop()
+            // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐安卓 RegisterPage.kt:116-121）
+            this.navDebouncer.throttle(() => {
+              pathStack.pop()
+            }, NAV_THROTTLE_MS)
           })
         }
         .width("100%")
