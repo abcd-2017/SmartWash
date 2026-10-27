@@ -1,5 +1,7 @@
 package com.smartwash.ui.page.update
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +24,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -36,6 +50,9 @@ import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import java.io.File
 
@@ -57,6 +74,7 @@ fun UpdateAvailableDialog(
         ),
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -195,6 +213,7 @@ fun ForceUpdateRequiredDialog(
         ),
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -252,6 +271,7 @@ fun DownloadPreparingDialog() {
         ),
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -260,8 +280,9 @@ fun DownloadPreparingDialog() {
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(40.dp),
+                PreparingSpinner(
+                    size = 40.dp,
+                    strokeWidth = 4.dp,
                     color = AppColors.colorScheme.primary,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -291,6 +312,13 @@ fun DownloadProgressDialog(
     totalBytes: Long,
     onCancel: () -> Unit,
 ) {
+    // 下载进度每 1% 硬跳 → 弹簧平滑到目标值（进度本身仍由 WorkManager 真实进度驱动）；
+    // reduced motion 经 motionSpec 降级为 180ms 短过渡，不引入位移/缩放
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress / 100f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "downloadProgress"
+    )
     Dialog(
         onDismissRequest = { /* 下载中不允许关闭 */ },
         properties = DialogProperties(
@@ -299,6 +327,7 @@ fun DownloadProgressDialog(
         ),
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -320,7 +349,7 @@ fun DownloadProgressDialog(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 LinearProgressIndicator(
-                    progress = { progress / 100f },
+                    progress = { animatedProgress },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
                     color = AppColors.colorScheme.primary,
                     trackColor = AppColors.colorScheme.surfaceVariant,
@@ -338,7 +367,8 @@ fun DownloadProgressDialog(
                 )
                 Text(
                     text = "${progress}%",
-                    style = MaterialTheme.typography.titleMedium,
+                    // 百分比宽度随位数变化 → tabular numbers 等宽，消除数字抖动
+                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -374,6 +404,7 @@ fun DownloadCompleteDialog(
         onDismissRequest = onInstallLater,
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -445,6 +476,7 @@ fun DownloadErrorDialog(
         onDismissRequest = onClose,
     ) {
         Surface(
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -503,6 +535,62 @@ fun DownloadErrorDialog(
                 }
             }
         }
+    }
+}
+
+/**
+ * 更新弹窗统一入场动效 — 与公共 `AppConfirmDialog` 同规格：scale 0.92 → 1 + alpha 0 → 1
+ * 一次性入场；reduced motion 由 [motionSpec] 自动降级为 180ms 纯淡入（缩放归零）。
+ *
+ * 公共 helper 是 common:ui 模块内部私有实现，壳层无法直接复用，故在本目录复制等价实现。
+ * 退出动画受 Dialog 窗口机制限制（窗口由系统直接移除，拿不到退出帧），本仓库一律不做。
+ */
+private fun Modifier.dialogEnterMotion(): Modifier = composed {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val progress by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "updateDialogEnter"
+    )
+    val reduceMotion = LocalReduceMotion.current
+    this.graphicsLayer {
+        alpha = progress
+        val scale = if (reduceMotion) 1f else 0.92f + 0.08f * progress
+        scaleX = scale
+        scaleY = scale
+    }
+}
+
+/**
+ * 准备下载指示器 — 规范 §8：reduced motion 取消无限旋转，退化为**静态 270° 圆环**
+ * （保留"在忙"可读性）；正常态保留旋转。
+ */
+@Composable
+private fun PreparingSpinner(
+    size: Dp,
+    strokeWidth: Dp,
+    color: Color,
+) {
+    if (LocalReduceMotion.current) {
+        Canvas(modifier = Modifier.size(size)) {
+            val stroke = strokeWidth.toPx()
+            drawArc(
+                color = color,
+                startAngle = -90f,
+                sweepAngle = 270f,
+                useCenter = false,
+                topLeft = Offset(stroke / 2f, stroke / 2f),
+                size = Size(this.size.width - stroke, this.size.height - stroke),
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+        }
+    } else {
+        CircularProgressIndicator(
+            modifier = Modifier.size(size),
+            color = color,
+            strokeWidth = strokeWidth,
+        )
     }
 }
 
