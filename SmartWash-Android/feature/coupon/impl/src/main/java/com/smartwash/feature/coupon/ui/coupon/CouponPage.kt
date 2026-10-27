@@ -32,20 +32,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -61,8 +58,6 @@ import com.smartwash.feature.coupon.ui.coupon.tab.ClaimedCouponsTab
 import com.smartwash.feature.coupon.ui.coupon.tab.HistoricalCouponsTab
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
-import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 
@@ -117,39 +112,43 @@ fun CouponPage(
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.coupons), onBack = { navController.navigateUp() })
 
-            // 胶囊筛选（seg3 样式）
+            // 胶囊筛选（设计稿：视觉胶囊 40 高 r999 + 48 热区，文字 captionStrong 12/16/500）
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = AppDimens.pagePadding, vertical = 8.dp),
+                    .padding(horizontal = AppDimens.pagePadding),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 tabs.forEachIndexed { index, title ->
                     val selected = selectedTabIndex == index
-                    Surface(
+                    Box(
                         modifier = Modifier
-                            .height(34.dp)
+                            .height(48.dp)
                             .pressable(onClick = { selectedTabIndex = index }, debounce = false),
-                        color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
-                        border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
-                        shape = RoundedCornerShape(AppDimens.radiusFull)
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                                ),
-                                color = if (selected) Color.White else AppColors.colorScheme.textSecondary,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
+                        Surface(
+                            modifier = Modifier.height(40.dp),
+                            color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
+                            border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
+                            shape = RoundedCornerShape(AppDimens.radiusFull)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (selected) MaterialTheme.colorScheme.onPrimary
+                                    else AppColors.colorScheme.textSecondary,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             if (loadState is RequestState.Loading) {
                 LoadingState(modifier = Modifier.fillMaxSize())
@@ -167,8 +166,9 @@ fun CouponPage(
 }
 
 /**
- * 票券卡片（ticket3 样式）— 左右半圆打孔 + 中间虚线
- * 设计稿 §12：左侧金额区 brand-soft 纯色底，右侧内容区白色
+ * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态角标
+ * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline、无阴影（规范 §3 卡片 elevation 0）；
+ * 可用态金额区白底（画板无填充）、历史态金额区为页面底色块；弱化态靠换灰，不做整体透明
  */
 @Composable
 fun UserCouponCard(
@@ -176,11 +176,8 @@ fun UserCouponCard(
     isHistorical: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val alpha = if (isHistorical) 0.55f else 1f
-    val amountColor = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primaryDark
-    val unitColor = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primary
+    val amountColor = if (isHistorical) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primaryDark
     val titleColor = if (isHistorical) AppColors.colorScheme.textSecondary else AppColors.colorScheme.textPrimary
-    val statusColor = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primary
     val statusText = if (couponVo.isUsed) stringResource(R.string.used) else stringResource(R.string.expired)
 
     val outlineColor = AppColors.colorScheme.outline
@@ -189,15 +186,14 @@ fun UserCouponCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(alpha)
             .drawBehind {
-                // 中间虚线 — 规范 §3.1 票券卡
+                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下端避开打孔（φ12 @ x=88）
                 val dashWidth = 6.dp.toPx()
                 val dashGap = 4.dp.toPx()
                 val x = 88.dp.toPx()
                 val strokeWidth = 1.dp.toPx()
-                var y = 16.dp.toPx()
-                val maxY = size.height - 16.dp.toPx()
+                var y = 14.dp.toPx()
+                val maxY = size.height - 8.dp.toPx()
                 while (y < maxY) {
                     drawLine(
                         color = outlineColor,
@@ -211,87 +207,93 @@ fun UserCouponCard(
             },
         shape = TicketShape,
         color = surfaceColor,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, outlineColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(88.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
-            // 左侧金额区 — brand-soft 纯色底（历史态 surface-2 纯色）
+            // 左侧金额区 — 金额 titleLarge(22/28/600)+tnum，单位 caption 12/400
             Box(
                 modifier = Modifier
                     .width(88.dp)
                     .height(88.dp)
-                    .background(
-                        // brand-soft 等价令牌经 M3 原生 ColorScheme（AppColorScheme 无 primaryContainer 字段）
-                        color = if (isHistorical) AppColors.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.primaryContainer
+                    .clip(TicketShape)
+                    .then(
+                        if (isHistorical) Modifier.background(AppColors.colorScheme.background)
+                        else Modifier
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.0f", couponVo.couponVo.discount)),
-                        style = AppTextStyles.AmountMedium,
+                        style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                         color = amountColor
                     )
                     Text(
                         text = stringResource(com.smartwash.feature.coupon.R.string.coupon),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = unitColor,
-                        modifier = Modifier.padding(top = 5.dp)
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
 
-            // 右侧内容区
+            // 右侧内容区 — 标题行（标题 + 状态角标）与标题垂直居中，行间距 4
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 20.dp, top = 20.dp, bottom = 20.dp)
+                    .padding(start = 24.dp, top = 20.dp, end = 16.dp)
             ) {
-                Text(
-                    text = couponVo.couponVo.title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = titleColor
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = couponVo.couponVo.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = titleColor,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    // 状态角标 — 可用态 primaryContainer/onPrimaryContainer，弱化态 surfaceVariant/textSecondary
+                    Surface(
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
+                        color = if (isHistorical) AppColors.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = if (isHistorical) statusText else stringResource(R.string.available),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isHistorical) AppColors.colorScheme.textSecondary
+                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (couponVo.couponVo.threshold == 0f)
                         stringResource(R.string.no_threshold)
                     else
                         stringResource(R.string.coupon_min_amount_format, "${couponVo.couponVo.threshold}"),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.valid_until, "${couponVo.expiredAt}"),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
             }
-
-            // 状态标签
-            Text(
-                text = if (isHistorical) statusText else stringResource(R.string.available),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = statusColor,
-                modifier = Modifier.padding(end = 16.dp)
-            )
         }
     }
 }
 
 /**
- * 票券形状 — 左右半圆打孔
- * 设计稿 §12：ticket3::before 和 ticket3::after
- * 左侧凹口在票券左边缘，右侧凹口在金额区（88dp）右边缘
+ * 票券形状 — r16 圆角矩形 + 金额区右缘（88dp）与卡顶/底边相交处的 φ12 打孔凹口
+ * 设计稿「优惠券」画板：上打孔/下打孔 ellipse 12×12，圆心落在卡边缘线上
  */
 private val TicketShape = object : Shape {
     override fun createOutline(
@@ -299,48 +301,39 @@ private val TicketShape = object : Shape {
         layoutDirection: LayoutDirection,
         density: Density
     ): Outline {
-        val path = Path().apply {
-            // 打孔坐标与面额区 88dp 同源换算（裸像素在 density>1 时会偏离面额区右缘与虚线）
-            val notchRadius = with(density) { 7.dp.toPx() }
-            val rightNotchX = with(density) { 88.dp.toPx() }
-            val centerY = size.height / 2
+        val cardRadius = with(density) { 16.dp.toPx() }
+        val notchRadius = with(density) { 6.dp.toPx() }
+        val notchX = with(density) { 88.dp.toPx() }
+        val w = size.width
+        val h = size.height
 
-            // 从左上角开始
-            moveTo(0f, 0f)
-            // 顶边到右侧凹口顶部
-            lineTo(rightNotchX, 0f)
-            // 到右侧凹口起点
-            lineTo(rightNotchX, centerY - notchRadius)
-            // 右侧凹口（向下凹的半圆）
+        val path = Path().apply {
+            // 顶边：左上圆角起点 → 上打孔凹口（凹进卡内）→ 右上圆角
+            moveTo(cardRadius, 0f)
+            lineTo(notchX - notchRadius, 0f)
             arcTo(
-                rect = Rect(
-                    rightNotchX - notchRadius,
-                    centerY - notchRadius,
-                    rightNotchX + notchRadius,
-                    centerY + notchRadius
-                ),
-                startAngleDegrees = -90f,
-                sweepAngleDegrees = 180f,
+                rect = Rect(notchX - notchRadius, -notchRadius, notchX + notchRadius, notchRadius),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = -180f,
                 forceMoveTo = false
             )
-            // 继续到右下角
-            lineTo(size.width, size.height)
-            // 底边到左侧
-            lineTo(0f, size.height)
-            // 到左侧凹口起点
-            lineTo(0f, centerY + notchRadius)
-            // 左侧凹口（向上凹的半圆）
+            lineTo(w - cardRadius, 0f)
+            arcTo(Rect(w - 2 * cardRadius, 0f, w, 2 * cardRadius), 270f, 90f, false)
+            // 右边 → 底边：右下圆角 → 下打孔凹口 → 左下圆角
+            lineTo(w, h - cardRadius)
+            arcTo(Rect(w - 2 * cardRadius, h - 2 * cardRadius, w, h), 0f, 90f, false)
+            lineTo(notchX + notchRadius, h)
             arcTo(
-                rect = Rect(
-                    -notchRadius,
-                    centerY - notchRadius,
-                    notchRadius,
-                    centerY + notchRadius
-                ),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = 180f,
+                rect = Rect(notchX - notchRadius, h - notchRadius, notchX + notchRadius, h + notchRadius),
+                startAngleDegrees = 0f,
+                sweepAngleDegrees = -180f,
                 forceMoveTo = false
             )
+            lineTo(cardRadius, h)
+            arcTo(Rect(0f, h - 2 * cardRadius, 2 * cardRadius, h), 90f, 90f, false)
+            // 左边 → 闭合左上圆角
+            lineTo(0f, cardRadius)
+            arcTo(Rect(0f, 0f, 2 * cardRadius, 2 * cardRadius), 180f, 90f, false)
             close()
         }
         return Outline.Generic(path)

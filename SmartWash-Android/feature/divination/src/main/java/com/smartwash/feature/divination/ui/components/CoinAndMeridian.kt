@@ -5,7 +5,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -72,12 +71,12 @@ fun DivCoin(
         val normalized = ((rotationY % 360f) + 360f) % 360f
         val visibleFace = normalized < 90f || normalized > 270f
 
-        // 币身：径向渐变鎏金
+        // 币身：对角鎏金渐变（画板双板口径：玄墨 500→700 / 宣纸 300→500）
         drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color(0xFFE8D5A4), Color(0xFFC9A961), Color(0xFF8F7434)),
-                center = androidx.compose.ui.geometry.Offset(center.x - r * 0.3f, center.y - r * 0.35f),
-                radius = r * 1.4f,
+            brush = Brush.linearGradient(
+                colors = c.goldGradient,
+                start = Offset.Zero,
+                end = Offset(size.width, size.height),
             ),
             radius = r,
             center = center,
@@ -92,10 +91,10 @@ fun DivCoin(
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)),
             ),
         )
-        // 方孔
+        // 方孔（透出页面底色，画板口径）
         val holeHalf = r * 0.27f
         drawRect(
-            color = if (c.isDark) Color(0xFF141414) else Color(0xFF26231C),
+            color = c.bgColors[2],
             topLeft = androidx.compose.ui.geometry.Offset(center.x - holeHalf, center.y - holeHalf),
             size = androidx.compose.ui.geometry.Size(holeHalf * 2, holeHalf * 2),
         )
@@ -192,7 +191,7 @@ fun CoinTossRow(
             val tilt by tiltZ[i].asState()
             Box(
                 Modifier
-                    .padding(horizontal = 11.dp)
+                    .padding(horizontal = 6.dp)  // 画板币间距 12dp
                     .graphicsLayer {
                         translationY = liftV
                         rotationZ = tilt
@@ -204,7 +203,7 @@ fun CoinTossRow(
     }
 }
 
-/** 子午线单节点：爻位名 + 金点亮环 + 爻符号 + 爻名；未掷节点暗置 */
+/** 子午线单节点：爻位名 + 中列（待掷金点 / 爻符号）+ 爻名（画板口径：行高 50、列 40/120/右弹性、动爻金强调） */
 @Composable
 fun MeridianNode(
     positionLabel: String,
@@ -215,65 +214,54 @@ fun MeridianNode(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
+    // 动爻金强调：玄墨亮金（goldHi）、宣纸反转为墨（goldText）——画板双板口径
+    val movingColor = if (c.isDark) c.goldHi else c.goldText
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(50.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = positionLabel,
-            style = divSerif(12.sp, FontWeight.Medium, 2.sp),
-            color = c.textTertiary,
+            style = divSerif(12.sp, FontWeight.Normal, 0.sp, 16.sp),
+            color = c.textSecondary,
             textAlign = TextAlign.Right,
-            modifier = Modifier.width(34.dp),
+            modifier = Modifier.width(40.dp),
         )
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(32.dp))
         Box(
-            modifier = Modifier
-                .size(14.dp)
-                .border(1.dp, if (done) c.gold else c.goldHair, CircleShape),
+            modifier = Modifier.width(120.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (done) {
+            if (done && symbol != null) {
+                Text(
+                    text = symbol,
+                    style = divSerif(14.sp, FontWeight.SemiBold, 1.sp, 20.sp),
+                    color = if (isMoving) movingColor else c.textPrimary,
+                    textAlign = TextAlign.Center,
+                )
+            } else {
+                // 待掷点：8dp 25% 金
                 Box(
                     Modifier
-                        .size(6.dp)
-                        .background(c.gold, CircleShape)
+                        .size(8.dp)
+                        .background(c.gold.copy(alpha = 0.25f), CircleShape)
                 )
             }
         }
-        Spacer(Modifier.width(14.dp))
-        if (done && symbol != null) {
+        Spacer(Modifier.width(10.dp))
+        if (done && nameLabel != null) {
             Text(
-                text = symbol,
-                fontSize = 17.sp,
-                fontFamily = FontFamily.Serif,
-                color = c.textPrimary,
-            )
-            if (isMoving) {
-                Spacer(Modifier.width(4.dp))
-                // 老阳○ 鎏金 / 老阴× 朱砂 —— 颜色即信息
-                Text(
-                    text = if (nameLabel?.startsWith("老阳") == true) "○" else "×",
-                    fontSize = 13.sp,
-                    fontFamily = FontFamily.Serif,
-                    color = if (nameLabel?.startsWith("老阳") == true) c.gold else c.sealHi,
-                )
-            }
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = nameLabel ?: "",
-                fontSize = 11.sp,
-                color = if (isMoving) c.sealHi else c.gold.copy(alpha = 0.75f),
+                text = nameLabel,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = if (isMoving) movingColor else c.textSecondary,
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
             )
         } else {
-            Text(
-                text = "┄┄┄",
-                fontSize = 15.sp,
-                color = c.goldHair,
-                fontFamily = FontFamily.Serif,
-            )
+            Spacer(Modifier.weight(1f))
         }
     }
 }

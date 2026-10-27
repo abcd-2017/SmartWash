@@ -44,7 +44,7 @@ fun ClaimedCouponsTab(claimedCoupons: List<UserCouponVo>) {
                 }
             }
         } else {
-            items(claimedCoupons) { coupon ->
+            items(claimedCoupons, key = { it.userCouponId }) { coupon ->
                 UserCouponCard(couponVo = coupon, isHistorical = false)
             }
         }

@@ -50,7 +50,7 @@ class WorkbenchViewModel @Inject constructor() : ViewModel() {
                 titleRes = R.string.workbench_tool_fabric,
                 descriptionRes = R.string.workbench_tool_fabric_desc,
                 icon = Icons.Default.MenuBook,
-                tint = WorkbenchTint.TEAL,
+                tint = WorkbenchTint.GREEN,
                 action = WorkbenchAction.COMING_SOON,
             ),
             WorkbenchTool(
@@ -74,7 +74,7 @@ class WorkbenchViewModel @Inject constructor() : ViewModel() {
                 titleRes = R.string.workbench_tool_ai,
                 descriptionRes = R.string.workbench_tool_ai_desc,
                 icon = Icons.Default.ChatBubbleOutline,
-                tint = WorkbenchTint.GREEN,
+                tint = WorkbenchTint.BLUE,
                 action = WorkbenchAction.AI_ASSISTANT,
             ),
         )

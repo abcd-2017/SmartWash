@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -71,6 +70,7 @@ import com.smartwash.feature.toolbox.network.ShortCodeStatsVo
 import com.smartwash.feature.toolbox.ui.ToolboxDatePickerDialog
 import com.smartwash.feature.toolbox.ui.ToolboxExpiryPresetRow
 import com.smartwash.feature.toolbox.ui.ToolboxTagChip
+import com.smartwash.feature.toolbox.ui.copyToClipboard
 import com.smartwash.feature.toolbox.ui.notifyShortCodeChanged
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -167,16 +167,16 @@ fun ShortCodeDetailPage(
             title = stringResource(R.string.toolbox_detail_title),
             onBack = { navController.navigateUp() },
             actions = {
-                // 危险操作文字按钮（规范 §3.3 文字按钮 / §2.1 dangerInk 小字变体）
+                // 危险操作文字按钮 — 与列表页页头动作同规格：font.title 18/24/600，
+                // 色 dangerInk（#A8435A，规范 error 唯一角色），热区 48 高
                 Box(
                     modifier = Modifier
                         .pressable(onClick = { showDeleteDialog = true })
-                        .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp)
+                        .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
                 ) {
                     Text(
                         text = stringResource(R.string.toolbox_action_delete),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = AppColors.colorScheme.dangerInk,
                     )
                 }
@@ -263,10 +263,10 @@ fun ShortCodeDetailPage(
                             .pressable(onClick = { showRenewDialog = true })
                             .padding(vertical = AppDimens.spaceXxs)
                     ) {
+                        // 行内文字动作 — 13sp 非规范档收敛为 captionStrong 12/500（规范 §2 迁移表 13→12）
                         Text(
                             text = stringResource(R.string.toolbox_action_renew),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium,
                             color = AppColors.colorScheme.primary,
                         )
                     }
@@ -662,10 +662,4 @@ private fun openInBrowser(context: Context, url: String) {
     }.onFailure {
         Toast.makeText(context, context.getString(R.string.toolbox_open_failed), Toast.LENGTH_SHORT).show()
     }
-}
-
-/** 复制到剪贴板 */
-private fun copyToClipboard(context: Context, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("shortUrl", text))
 }

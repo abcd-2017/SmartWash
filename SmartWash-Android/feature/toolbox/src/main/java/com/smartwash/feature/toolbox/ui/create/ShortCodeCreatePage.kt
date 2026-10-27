@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -31,7 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
@@ -103,18 +101,20 @@ fun ShortCodeCreatePage(
                     placeholder = {
                         Text(
                             text = stringResource(R.string.toolbox_target_hint),
-                            style = LocalTextStyle.current.copy(fontSize = 16.sp),
+                            // 规范页样张实测：占位符 body 档 14/400 + textTertiary
+                            style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textTertiary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    textStyle = LocalTextStyle.current.copy(fontSize = 16.sp),
+                    textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(AppDimens.inputRadius),
+                        .height(48.dp),
+                    // 规范 §3 radius.input = 12（14 为非收敛档）
+                    shape = RoundedCornerShape(AppDimens.radiusMd),
                     colors = tokenTextFieldColors(),
                 )
                 Text(
@@ -134,16 +134,16 @@ fun ShortCodeCreatePage(
                     placeholder = {
                         Text(
                             text = stringResource(R.string.toolbox_custom_code_hint),
-                            style = LocalTextStyle.current.copy(fontSize = 16.sp),
+                            style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textTertiary,
                         )
                     },
-                    textStyle = LocalTextStyle.current.copy(fontSize = 16.sp),
+                    textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(AppDimens.inputRadius),
+                        .height(48.dp),
+                    shape = RoundedCornerShape(AppDimens.radiusMd),
                     colors = tokenTextFieldColors(),
                 )
 
@@ -237,7 +237,7 @@ private fun FormLabel(text: String) {
     )
 }
 
-/** 输入框令牌配色（对齐 UpdateUserInfoPage 先例：14dp 圆角 + surfaceVariant 底 + outline 描边） */
+/** 输入框令牌配色（对齐 UpdateUserInfoPage 先例：r12 + surfaceVariant 底 + outline 描边） */
 @Composable
 private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AppColors.colorScheme.primary,

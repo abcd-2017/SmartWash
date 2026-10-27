@@ -10,18 +10,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,25 +29,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.api.PaymentRoute
-import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.feature.order.api.OrderRoute
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.CircleIconBox
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.model.RequestState
 
 @Composable
@@ -88,138 +85,201 @@ fun PaySuccessPage(
         if (getOrderDetailState is RequestState.Loading) {
             LoadingState(modifier = Modifier.fillMaxSize())
         } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            PageHeader(title = stringResource(R.string.pay_success), onBack = { navController.navigateUp() })
+            Column(modifier = Modifier.fillMaxSize()) {
+                PageHeader(title = stringResource(R.string.pay_success), onBack = { navController.navigateUp() })
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = AppDimens.pagePadding),
-            ) {
-                // 成功庆祝区域
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
-                    color = AppColors.colorScheme.primaryLight,
-                    shadowElevation = 0.dp
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = AppDimens.pagePadding),
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    // 庆祝卡（画板实测：surface 白底 + 1px outline 描边 + r16，无阴影；
+                    // 上 40 / 下 44 内边距；成功圆 44 = primaryLight 容器 + 勾 28 = primary；
+                    // 结果大标题 28/700，绿字取 primaryDark（浅 #1E8C5C / 深 #5BC894，画板实测）
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
+                        color = AppColors.colorScheme.surface,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(AppColors.colorScheme.primary),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .padding(top = 40.dp, bottom = 44.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = stringResource(R.string.pay_success),
-                                modifier = Modifier.size(36.dp),
-                                tint = Color.White
+                            CircleIconBox(
+                                icon = Icons.Default.Check,
+                                size = 44.dp,
+                                iconSize = 28.dp
                             )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.pay_success),
-                            style = MaterialTheme.typography.displayLarge,
-                            color = AppColors.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.thanks_for_using),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-
-                // 订单信息卡
-                Text(
-                    text = stringResource(R.string.order_info),
-                    style = AppTextStyles.SectionTitle
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
-                    color = AppColors.colorScheme.surface,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                        InfoRow(stringResource(R.string.order_number), orderInfo?.orderNo ?: "")
-                        InfoRow(stringResource(R.string.payment_amount), stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"), valueColor = AppColors.colorScheme.primary)
-                        InfoRow(stringResource(R.string.order_time_display), orderInfo?.createdAt ?: "")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-
-                // 寄存柜提示卡
-                Text(
-                    text = stringResource(R.string.locker_info_section),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.cardRadius),
-                    color = AppColors.colorScheme.surface,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(0.5.dp, AppColors.colorScheme.outline)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(AppDimens.cardPadding),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        IconBox(
-                            icon = Icons.Default.LocalShipping,
-                            size = 36.dp,
-                            iconSize = 20.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(stringResource(R.string.locker_info_title), style = MaterialTheme.typography.bodyLarge)
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                             Text(
-                                stringResource(R.string.go_to_locker_format, "${orderInfo?.lockersVo?.lockerNumber ?: -1}"),
-                                style = MaterialTheme.typography.bodyLarge
+                                text = stringResource(R.string.pay_success),
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = AppColors.colorScheme.primaryDark
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                stringResource(R.string.locker_process_tip),
-                                style = MaterialTheme.typography.labelSmall,
+                                text = stringResource(R.string.thanks_for_using),
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = AppColors.colorScheme.textSecondary
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-            }
+                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-            // 底部按钮
-            Column(modifier = Modifier.padding(AppDimens.pagePadding)) {
-                AppButton(
-                    text = stringResource(R.string.go_ship_now),
-                    onClick = {
-                        navController.navigate(
-                            "${OrderRoute.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${OrderRoute.PICKUP_TYPE_DELIVERY}"
+                    // 订单信息卡（画板实测：标题 18/600，卡内边距横 20 / 纵 24，行距 16，行字 12/400）
+                    Text(
+                        text = stringResource(R.string.order_info),
+                        style = AppTextStyles.SectionTitle
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = 0.dp,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppDimens.cardPadding, vertical = AppDimens.spaceXl),
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                         ) {
-                            popUpTo(PaymentRoute.PaySuccess.text) { inclusive = true }
+                            // 金额/单号/时间启用等宽数字（规范 §5 tnum），值色 textPrimary（画板实测非品牌绿）
+                            val infoValueStyle = MaterialTheme.typography.bodySmall.copy(
+                                fontFeatureSettings = "tnum"
+                            )
+                            InfoRow(
+                                stringResource(R.string.order_number),
+                                orderInfo?.orderNo ?: "",
+                                valueStyle = infoValueStyle,
+                                rowHeight = 16.dp
+                            )
+                            InfoRow(
+                                stringResource(R.string.payment_amount),
+                                stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"),
+                                valueStyle = infoValueStyle,
+                                rowHeight = 16.dp
+                            )
+                            InfoRow(
+                                stringResource(R.string.order_time_display),
+                                orderInfo?.createdAt ?: "",
+                                valueStyle = infoValueStyle,
+                                rowHeight = 16.dp
+                            )
                         }
                     }
-                )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // 寄存柜提示卡（画板实测：图标盒 36/r12 + 首行随图标盒垂直居中；
+                    // 行间距 8，说明行 12/400 textSecondary）
+                    Text(
+                        text = stringResource(R.string.locker_info_section),
+                        style = AppTextStyles.SectionTitle
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(AppDimens.radiusLg),
+                        color = AppColors.colorScheme.surface,
+                        shadowElevation = 0.dp,
+                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(
+                                start = AppDimens.cardPadding,
+                                end = AppDimens.cardPadding,
+                                top = AppDimens.spaceXl,
+                                // 画板实测 14 不在 4dp 网格，收敛为 16
+                                bottom = 16.dp
+                            ),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            IconBox(
+                                icon = Icons.Default.LocalShipping,
+                                size = 36.dp,
+                                iconSize = 20.dp
+                            )
+                            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                            // 下沉 8 使首行与 36 图标盒中心对齐（画板实测图标盒中心 = 首行中心）
+                            Column(
+                                modifier = Modifier.padding(top = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
+                            ) {
+                                Text(
+                                    stringResource(
+                                        R.string.locker_deposited_format,
+                                        "${orderInfo?.lockersVo?.lockerNumber ?: -1}"
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.colorScheme.textPrimary
+                                )
+                                Text(
+                                    stringResource(
+                                        R.string.go_to_locker_format,
+                                        "${orderInfo?.lockersVo?.lockerNumber ?: -1}"
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = AppColors.colorScheme.textPrimary
+                                )
+                                Text(
+                                    stringResource(R.string.locker_process_tip),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                }
+
+                // 底部操作区（画板实测：主按钮 48 高 / 胶囊 / 纯色 primary / 字 18·600 onPrimary；
+                // 下附「返回首页」文字链 12/400 textSecondary）
+                Column(modifier = Modifier.navigationBarsPadding()) {
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = AppDimens.pagePadding)
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .pressable(onClick = {
+                                navController.navigate(
+                                    "${OrderRoute.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${OrderRoute.PICKUP_TYPE_DELIVERY}"
+                                ) {
+                                    popUpTo(PaymentRoute.PaySuccess.text) { inclusive = true }
+                                }
+                            })
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.go_ship_now),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    // 触控 ≥48dp 红线：文字链垂直内边距 16（画板视觉间距 8）
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressable(onClick = { navController.popBackStack(ShellRoute.HOME, inclusive = false) })
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.back_home),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                }
             }
-        }
         }
     }
 }

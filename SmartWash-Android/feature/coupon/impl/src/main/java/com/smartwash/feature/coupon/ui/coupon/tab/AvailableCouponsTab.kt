@@ -64,7 +64,7 @@ fun AvailableCouponsTab(
                 }
             }
         } else {
-            items(couponList) { coupon ->
+            items(couponList, key = { it.couponId }) { coupon ->
                 CouponCard(
                     coupon = coupon,
                     isAvailable = true,

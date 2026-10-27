@@ -2,8 +2,10 @@ package com.smartwash.feature.user.impl.ui.setting
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,7 +26,6 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,14 +39,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.PageHeader
@@ -66,6 +64,10 @@ import com.smartwash.common.utils.pressable
  *
  * T5.3 起会话操作（登出）经 [SettingViewModel] 模块内自取，签名不再暴露
  * SessionManager/SessionEventBus——宿主不触碰用户域实现类型。
+ *
+ * 视觉对齐（Penpot「设置 · 浅色/深色」画板，360 宽 = 360dp）：页面留白 24、
+ * 分组卡 groupBackground 底 + 1px outline 描边 + radius 16、行高 64（图标盒 32
+ * 顶距 16）、图标盒-文字间距 12、区块间距 24、退出登录 error 色独立分组。
  */
 @Composable
 fun SettingPage(
@@ -98,15 +100,15 @@ fun SettingPage(
             PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
 
             // 通用
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
             Text(
                 text = stringResource(R.string.general),
-                style = AppTextStyles.SectionTitle,
+                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Notifications,
                     containerColor = AppColors.colorScheme.iconContainerOrange,
@@ -115,7 +117,7 @@ fun SettingPage(
                     trailing = {
                         Text(
                             text = stringResource(R.string.enabled),
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -123,16 +125,16 @@ fun SettingPage(
                     },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
                     icon = Icons.Default.TouchApp,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                     title = stringResource(R.string.haptic_feedback),
                     trailing = {
                         Text(
                             text = stringResource(R.string.on),
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -143,15 +145,15 @@ fun SettingPage(
             }
 
             // 观象台
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
             Text(
                 text = stringResource(R.string.divination),
-                style = AppTextStyles.SectionTitle,
+                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 SettingRow(
                     icon = Icons.Default.Security,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -160,7 +162,7 @@ fun SettingPage(
                     trailing = {
                         Text(
                             text = "GLM-4.7",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -168,7 +170,7 @@ fun SettingPage(
                     },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -180,30 +182,30 @@ fun SettingPage(
             }
 
             // 其他
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
             Text(
                 text = stringResource(R.string.other),
-                style = AppTextStyles.SectionTitle,
+                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 检查更新（宿主注入的跨域插槽，feature:update 归 app 壳聚合）
                 checkUpdateContent?.invoke()
                 if (checkUpdateContent != null) {
-                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                    HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
                 }
                 SettingRow(
                     icon = Icons.Default.Info,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                     title = stringResource(R.string.about_smartwash),
                     trailing = {
                         Text(
                             text = stringResource(R.string.version_format, versionName),
-                            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                            color = AppColors.colorScheme.textTertiary
+                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         IconChevron()
@@ -212,9 +214,10 @@ fun SettingPage(
                 )
             }
 
-            // 退出登录 — 自绘文字按钮（danger 语义色不在 AppButton 三态内，规范 §7 禁 M3 交互组件）
+            // 退出登录 — error 色独立分组（设计规范 §4 危险操作），自绘文字按钮
+            // （danger 语义色不在 AppButton 三态内，规范 §7 禁 M3 交互组件）
             Spacer(modifier = Modifier.height(16.dp))
-            AppCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -224,8 +227,7 @@ fun SettingPage(
                 ) {
                     Text(
                         stringResource(R.string.logout),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = AppColors.colorScheme.dangerInk
                     )
                 }
@@ -260,6 +262,28 @@ fun SettingPage(
     }
 }
 
+/**
+ * 设置页分组卡 — 画板既成事实收敛（DESIGN-SPEC v0.4.1「01 页卡片度量裁决」）：
+ * groupBackground 底 + 1px outline 描边 + radius 16、无阴影（规范 §3 阴影：卡片
+ * elevation 0 用描边代替），区别于通用白底 AppCard。
+ */
+@Composable
+private fun SettingGroupCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val shape = RoundedCornerShape(AppDimens.radiusLg)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .border(1.dp, AppColors.colorScheme.outline, shape)
+            .background(AppColors.colorScheme.groupBackground, shape),
+    ) {
+        Column(content = content)
+    }
+}
+
 @Composable
 private fun SettingRow(
     icon: ImageVector,
@@ -272,29 +296,30 @@ private fun SettingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(64.dp)
             .pressable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+            .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ib32 图标容器（32dp，10px圆角，彩色浅底 + 语义色前景图标）
+        // ib32 图标容器（32dp，12px圆角，彩色浅底 + 语义色前景图标）
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(AppDimens.iconContainerRadius))
                 .background(containerColor),
             contentAlignment = Alignment.Center
         ) {
             androidx.compose.material3.Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
                 tint = iconForegroundColor
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )
@@ -307,7 +332,7 @@ private fun IconChevron() {
     androidx.compose.material3.Icon(
         imageVector = Icons.Default.ChevronRight,
         contentDescription = null,
-        modifier = Modifier.size(15.dp),
+        modifier = Modifier.size(20.dp),
         tint = AppColors.colorScheme.textTertiary
     )
 }

@@ -6,11 +6,11 @@
 <resources>
     <!-- 优惠券页 -->
     <string name="coupons">优惠券</string>
-    <string name="coupon">券</string>
+    <string name="coupon">优惠券</string>
     <string name="available_coupons">可领取</string>
     <string name="available_coupons_with_count" formatted="false">可用 %1$d</string>
     <string name="claimed_coupons">已领取</string>
-    <string name="historical_coupons">已使用</string>
+    <string name="historical_coupons">历史</string>
     <string name="claim_success">领取成功</string>
     <string name="claim_now">立即领取</string>
     <string name="claimed">已领取</string>

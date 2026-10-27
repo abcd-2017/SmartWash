@@ -197,22 +197,22 @@ private fun BottomNavItem(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 规范 §4.5：26dp 图标，Canvas 绘制带动画
+        // 设计稿「首页」画板底栏测量：icon.md 24dp（DESIGN-SPEC §5 bottomNav），Canvas 绘制带动画
         AnimatedBottomNavIcon(
             solidPath = solidPath,
             outlinePath = outlinePath,
             isSelected = isSelected,
             reduceMotion = reduceMotion,
             modifier = Modifier
-                .size(26.dp)
+                .size(24.dp)
                 .scale(scale)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) AppColors.colorScheme.primaryDark
-                    else AppColors.colorScheme.textSecondary
+            color = if (isSelected) AppColors.colorScheme.primary
+                    else AppColors.colorScheme.textTertiary
         )
     }
 }
@@ -257,8 +257,8 @@ private fun AnimatedBottomNavIcon(
         }
     }
 
-    val brandColor = AppColors.colorScheme.primaryDark
-    val grayColor = AppColors.colorScheme.textSecondary
+    val brandColor = AppColors.colorScheme.primary
+    val grayColor = AppColors.colorScheme.textTertiary
 
     Canvas(modifier = modifier) {
         // 路径坐标是 24 网格（§4.5），按画布尺寸换算密度缩放，否则 density>1 时图标缩小且左上偏移

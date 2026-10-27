@@ -30,6 +30,8 @@
     <string name="has_account">已有账号？</string>
     <string name="login_now">立即登录</string>
     <string name="verification_code">验证码</string>
+    <!-- 输入框示例占位符（注册画板「t:验证码」= 123456，同 common/ui phone_hint 模式） -->
+    <string name="verification_code_hint">123456</string>
     <string name="invalid_verification_code">请输入正确的验证码</string>
     <string name="get_verification_code">获取验证码</string>
     <string name="countdown_format">重新发送(%1$ds)</string>

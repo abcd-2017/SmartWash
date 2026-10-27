@@ -1,5 +1,8 @@
 package com.smartwash.feature.toolbox.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -26,10 +29,16 @@ import com.smartwash.feature.toolbox.logic.ShortCodeRules
 import java.time.LocalDate
 
 /**
- * 工具箱模块内共享小件：静态标签 chip（列表条目）、可选预设 chip 行（表单）与
- * 日期选择弹窗（创建页/续期共用）。均组合共享组件（Surface + pressable / M3 DatePicker），
- * 不引入新交互组件。
+ * 工具箱模块内共享小件：静态标签 chip（列表条目）、可选预设 chip 行（表单）、
+ * 日期选择弹窗（创建页/续期共用）与剪贴板复制（列表卡/详情页共用）。
+ * 均组合共享组件（Surface + pressable / M3 DatePicker），不引入新交互组件。
  */
+
+/** 复制到剪贴板（列表卡「复制」描边按钮与详情页二维码卡共用） */
+internal fun copyToClipboard(context: Context, text: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+    clipboard?.setPrimaryClip(ClipData.newPlainText("shortUrl", text))
+}
 
 /** 静态标签 chip —— 胶囊（radiusFull），11→12sp labelSmall，用于条目上的类型/可见性标注 */
 @Composable

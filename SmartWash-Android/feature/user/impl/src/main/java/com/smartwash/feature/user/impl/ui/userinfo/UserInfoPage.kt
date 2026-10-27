@@ -46,16 +46,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -175,11 +174,16 @@ fun UserInfoPage(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                // 标题行
+                // 标题行（设计：状态栏下 16，行底距头像行 8）
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                        .padding(
+                            start = AppDimens.pagePadding,
+                            end = AppDimens.pagePadding,
+                            top = 16.dp,
+                            bottom = 8.dp
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -188,38 +192,37 @@ fun UserInfoPage(
                         style = AppTextStyles.RootTitle,
                         color = AppColors.colorScheme.textPrimary
                     )
-                    // ib36 视觉 + 48dp 热区（防抖已注入，关闭叠加）
+                    // 设计：48dp 圆形底（radius 999）+ 20dp 图标，兼作 48dp 热区（防抖已注入，关闭叠加）
                     Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .clip(RoundedCornerShape(AppDimens.radiusFull))
+                            .background(AppColors.colorScheme.surfaceVariant)
                             .pressable(
                                 onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) },
                                 debounce = false,
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(AppColors.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = stringResource(R.string.settings),
-                                modifier = Modifier.size(18.dp),
-                                tint = AppColors.colorScheme.textSecondary
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings),
+                            modifier = Modifier.size(20.dp),
+                            tint = AppColors.colorScheme.textSecondary
+                        )
                     }
                 }
 
-                // 头像区域
+                // 头像区域（设计：标题行下 8，行底距数据卡 16）
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                        .padding(
+                            start = AppDimens.pagePadding,
+                            end = AppDimens.pagePadding,
+                            top = 8.dp,
+                            bottom = 16.dp
+                        ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -252,20 +255,22 @@ fun UserInfoPage(
                                     .size(56.dp)
                                     .clip(CircleShape)
                                     .background(
+                                        // 设计 gradient.hero：对角线渐变（浅 #2D9B6A→#1E8C5C / 深 #2D9B6A→#5BC894）
                                         Brush.linearGradient(
                                             colors = listOf(
                                                 AppColors.colorScheme.primary,
                                                 AppColors.colorScheme.primaryDark
-                                            )
+                                            ),
+                                            start = Offset.Zero,
+                                            end = Offset.Infinite
                                         )
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = userInfo?.phoneNumber?.firstOrNull()?.toString() ?: "U",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimary
                                 )
                             }
                         } else {
@@ -288,14 +293,13 @@ fun UserInfoPage(
                                 ?.takeIf { it.isNotEmpty() }
                                 ?.let { maskPhone(it) }
                                 ?: stringResource(R.string.username),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
                             color = AppColors.colorScheme.textPrimary
                         )
                         Text(
                             text = userInfo?.schoolVo?.schoolName ?: "",
-                            fontSize = 12.sp,
-                            color = AppColors.colorScheme.textTertiary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -303,7 +307,7 @@ fun UserInfoPage(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                         tint = AppColors.colorScheme.textTertiary
                     )
                 }
@@ -330,7 +334,7 @@ fun UserInfoPage(
                         ) {
                             Text(
                                 text = stringResource(R.string.wallet_balance),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary
                             )
                             Text(
@@ -340,10 +344,10 @@ fun UserInfoPage(
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
-                        // 分隔线
+                        // 分隔线（设计：1px hairline，高 40）
                         Box(
                             modifier = Modifier
-                                .width(0.5.dp)
+                                .width(1.dp)
                                 .height(40.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
@@ -364,15 +368,15 @@ fun UserInfoPage(
                             )
                             Text(
                                 text = stringResource(R.string.coupon),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
-                        // 分隔线
+                        // 分隔线（设计：1px hairline，高 40）
                         Box(
                             modifier = Modifier
-                                .width(0.5.dp)
+                                .width(1.dp)
                                 .height(40.dp)
                                 .background(AppColors.colorScheme.hairline)
                         )
@@ -388,7 +392,7 @@ fun UserInfoPage(
                             )
                             Text(
                                 text = stringResource(R.string.total_orders),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
@@ -404,21 +408,20 @@ fun UserInfoPage(
                 ) {
                     SettingRow(
                         icon = Icons.Default.CreditCard,
-                        containerColor = AppColors.colorScheme.iconContainerTeal,
-                        iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                        containerColor = AppColors.colorScheme.iconContainerGreen,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                         label = stringResource(R.string.campus_card),
                         trailing = {
                             Text(
                                 text = if (userInfo?.campusCard != null) stringResource(R.string.bound) else stringResource(R.string.not_bound),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = if (userInfo?.campusCard != null) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = AppColors.colorScheme.textTertiary
                             )
                         },
@@ -427,7 +430,7 @@ fun UserInfoPage(
                             else showBindDialog = true
                         }
                     )
-                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
                     SettingRow(
                         icon = Icons.Default.LocationOn,
                         containerColor = AppColors.colorScheme.iconContainerOrange,
@@ -437,7 +440,7 @@ fun UserInfoPage(
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = AppColors.colorScheme.textTertiary
                             )
                         },
@@ -445,7 +448,7 @@ fun UserInfoPage(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // 功能卡片
                 GroupCard(
@@ -459,20 +462,20 @@ fun UserInfoPage(
                         trailing = {
                             Text(
                                 text = stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0),
-                                fontSize = 12.sp,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = AppColors.colorScheme.textSecondary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = AppColors.colorScheme.textTertiary
                             )
                         },
                         onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
                     )
-                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
                     SettingRow(
                         icon = Icons.Default.Schedule,
                         containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -480,17 +483,17 @@ fun UserInfoPage(
                         label = stringResource(R.string.divination_calendar),
                         onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                     )
-                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                    HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
                     SettingRow(
                         icon = Icons.Default.Settings,
-                        containerColor = AppColors.colorScheme.iconContainerTeal,
-                        iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                        containerColor = AppColors.colorScheme.iconContainerGreen,
+                        iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
                         label = stringResource(R.string.settings),
                         trailing = {
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = AppColors.colorScheme.textTertiary
                             )
                         },
@@ -543,21 +546,21 @@ private fun SettingRow(
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            modifier = Modifier.size(15.dp),
+            modifier = Modifier.size(20.dp),
             tint = AppColors.colorScheme.textTertiary
         )
     },
     onClick: () -> Unit,
 ) {
-    // 水平内边距由 GroupCard cardPadding 承载，避免双重内缩（对齐设计 row3 卡内 20px）
+    // 水平内边距由 GroupCard cardPadding 承载；设计行距 64 = 16 + 32 图标盒 + 16
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick)
-            .padding(vertical = 15.dp),
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ib32 图标容器（32dp，10px圆角，彩色浅底 + 语义色图标）
+        // ib32 图标容器（32dp，12px圆角，彩色浅底 + 语义色图标 20）
         Box(
             modifier = Modifier
                 .size(32.dp)
@@ -568,14 +571,14 @@ private fun SettingRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
                 tint = iconForegroundColor
             )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.weight(1f)
         )

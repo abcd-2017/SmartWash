@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,10 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.payment.impl.R
@@ -139,20 +140,17 @@ fun PaymentPage(
                         .padding(horizontal = AppDimens.pagePadding),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
                 ) {
-                    // 应付金额卡片（独立卡片，设计稿 §10）
+                    // 应付金额卡片（画板实测：24 边距 / r16 / 1px outline 描边 / 内边距 20，无阴影）
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Column(modifier = Modifier.padding(20.dp)) {
                             Text(
                                 text = stringResource(R.string.amount_due),
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 0.3.sp,
                                 color = AppColors.colorScheme.textSecondary
                             )
                             Text(
@@ -165,7 +163,7 @@ fun PaymentPage(
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                             HorizontalDivider(
-                                thickness = 0.5.dp,
+                                thickness = 1.dp,
                                 color = AppColors.colorScheme.hairline,
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
@@ -175,18 +173,20 @@ fun PaymentPage(
                         }
                     }
 
-                    // 支付方式
+                    // 支付方式（区块标题 + 余额支付卡 + 优惠券行，卡间距 12 = 列表项间距）
                     Column {
                         Text(
                             text = stringResource(R.string.payment_method),
                             style = AppTextStyles.SectionTitle
                         )
                         Spacer(modifier = Modifier.height(12.dp))
+                        // 选中态画板实测：primaryContainer 底（#F0FBF4/#17322B）+ 1px 描边
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
-                            color = AppColors.colorScheme.surface,
-                            shadowElevation = AppElevation.level1,
+                            color = if (selectedPaymentMethod == "balance")
+                                MaterialTheme.colorScheme.primaryContainer
+                            else AppColors.colorScheme.surface,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Row(
@@ -196,20 +196,28 @@ fun PaymentPage(
                                         onClick = { selectedPaymentMethod = "balance" },
                                         debounce = false,
                                     )
-                                    .padding(horizontal = 20.dp, vertical = 15.dp),
+                                    .padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 20.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                        .background(AppColors.colorScheme.iconContainerGreen),
+                                        .background(
+                                            // 选中卡上的图标盒：浅色=白 surface、深色=surfaceVariant（画板实测）
+                                            if (selectedPaymentMethod == "balance") {
+                                                if (isSystemInDarkTheme()) AppColors.colorScheme.surfaceVariant
+                                                else AppColors.colorScheme.surface
+                                            } else {
+                                                AppColors.colorScheme.iconContainerGreen
+                                            }
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LocalOffer,
                                         contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(20.dp),
                                         tint = AppColors.colorScheme.primary
                                     )
                                 }
@@ -217,90 +225,99 @@ fun PaymentPage(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         stringResource(R.string.balance_payment),
-                                        style = MaterialTheme.typography.titleMedium
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = if (selectedPaymentMethod == "balance")
+                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                        else AppColors.colorScheme.textPrimary
                                     )
                                     Text(
                                         stringResource(R.string.current_balance_format, "${orderInfo?.userVo?.balance ?: 0}"),
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = AppColors.colorScheme.textTertiary,
+                                        color = AppColors.colorScheme.textSecondary,
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
                                 }
                                 CheckMark(
                                     isSelected = selectedPaymentMethod == "balance",
-                                    onClick = { selectedPaymentMethod = "balance" }
+                                    onClick = { selectedPaymentMethod = "balance" },
+                                    // 勾与文本列顶对齐（画板实测 y 同为 367），非整卡居中
+                                    modifier = Modifier.align(Alignment.Top)
                                 )
                             }
                         }
-                    }
 
-                    // 优惠券
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .pressable(onClick = { showBottomSheet = true }, debounce = false),
-                        shape = RoundedCornerShape(AppDimens.radiusLg),
-                        color = AppColors.colorScheme.surface,
-                        shadowElevation = AppElevation.level1,
-                        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
-                    ) {
-                        Row(
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 优惠券
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 15.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .pressable(onClick = { showBottomSheet = true }, debounce = false),
+                            shape = RoundedCornerShape(AppDimens.radiusLg),
+                            color = AppColors.colorScheme.surface,
+                            border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                    .background(AppColors.colorScheme.iconContainerOrange),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 15.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                        .background(AppColors.colorScheme.iconContainerOrange),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocalOffer,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.iconForegroundOrange
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    stringResource(R.string.coupon),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                if (selectedCoupon == -1 || userCouponList.isEmpty()) {
+                                    Text(
+                                        stringResource(R.string.do_not_use),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                } else {
+                                    Text(
+                                        "-￥${userCouponList[selectedCoupon].discount ?: 0}",
+                                        style = MaterialTheme.typography.bodySmall.copy(
+                                            fontFeatureSettings = "tnum"
+                                        ),
+                                        // 券抵扣小字：规范 §10 禁 12sp 品牌绿文字，取 onPrimaryContainer 墨绿
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                                Spacer(Modifier.width(8.dp))
                                 Icon(
-                                    Icons.Default.LocalOffer,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(19.dp),
-                                    tint = AppColors.colorScheme.iconForegroundOrange
+                                    Icons.Default.ChevronRight,
+                                    null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = AppColors.colorScheme.textTertiary
                                 )
                             }
-                            Spacer(Modifier.width(14.dp))
-                            Text(
-                                stringResource(R.string.coupon),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (selectedCoupon == -1 || userCouponList.isEmpty()) {
-                                Text(
-                                    stringResource(R.string.do_not_use),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AppColors.colorScheme.textSecondary
-                                )
-                            } else {
-                                Text(
-                                    "-￥${userCouponList[selectedCoupon].discount ?: 0}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = AppColors.colorScheme.primary
-                                )
-                            }
-                            Spacer(Modifier.width(4.dp))
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                null,
-                                modifier = Modifier.size(15.dp),
-                                tint = AppColors.colorScheme.textTertiary
-                            )
                         }
                     }
                 }
 
-                // 底部支付按钮（固定在底部，有顶部分隔线）
+                // 底部支付按钮（固定在底部，有顶部分隔线；安全区按规范 §4 避让手势条）
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(AppColors.colorScheme.surface)
                 ) {
-                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
+                    HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.outline)
                     AppButton(
                         text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
                         onClick = {
@@ -313,7 +330,10 @@ fun PaymentPage(
                             }
                         },
                         loading = paymentState is RequestState.Loading,
-                        modifier = Modifier.padding(16.dp, 24.dp)
+                        // 画板实测：按钮左右边距 24、上 16、下 20（画板无手势条，真机叠加 navigationBarsPadding）
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 20.dp)
                     )
                 }
             }
@@ -445,14 +465,15 @@ private fun InfoLine(label: String, value: String) {
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodySmall,
             color = AppColors.colorScheme.textSecondary
         )
         Text(
             value,
-            style = MaterialTheme.typography.bodyLarge.copy(
+            style = MaterialTheme.typography.bodySmall.copy(
                 fontFeatureSettings = "tnum"
             ),
+            color = AppColors.colorScheme.textPrimary
         )
     }
 }
@@ -460,26 +481,28 @@ private fun InfoLine(label: String, value: String) {
 @Composable
 private fun CheckMark(
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    // 画板实测：选中 = 28dp 实心圆（primary）内嵌 20dp 白勾（onPrimary）；
+    // 未选中态画板未给出，收敛为 1.5dp outline 空心圆
     Box(
-        modifier = Modifier
-            .size(20.dp)
+        modifier = modifier
+            .size(28.dp)
             .clip(CircleShape)
-            .border(
-                width = 1.6.dp,
-                color = if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline,
-                shape = CircleShape
+            .then(
+                if (isSelected) Modifier.background(MaterialTheme.colorScheme.primary)
+                else Modifier.border(1.5.dp, AppColors.colorScheme.outline, CircleShape)
             )
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center
     ) {
         if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.colorScheme.primary)
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onPrimary
             )
         }
     }

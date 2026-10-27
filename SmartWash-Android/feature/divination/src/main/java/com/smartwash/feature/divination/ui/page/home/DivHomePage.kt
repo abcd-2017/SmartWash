@@ -70,31 +70,30 @@ fun DivHomePage(
     Column {
         TianXiangHeader(
             text = uiState.tianXiang.ifEmpty { "—" },
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 12.dp),
         )
         Column(Modifier.padding(horizontal = 20.dp)) {
             Text(
                 text = stringResource(R.string.div_title),
-                style = divSerif(26.sp, FontWeight.SemiBold, 4.sp),
+                style = divSerif(22.sp, FontWeight.SemiBold, 0.sp),
                 color = c.textPrimary,
-                modifier = Modifier.padding(top = 10.dp),
+                modifier = Modifier.padding(top = 6.dp),
             )
             Text(
                 text = stringResource(R.string.div_home_xunkong_format, uiState.xunKong.ifEmpty { "—" }),
-                fontSize = 11.sp,
-                letterSpacing = 1.sp,
-                color = c.textTertiary,
-                modifier = Modifier.padding(top = 5.dp),
+                fontSize = 12.sp,
+                color = c.textSecondary,
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
         // 罗盘
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .padding(top = 8.dp, bottom = 12.dp),
             contentAlignment = Alignment.Center,
         ) {
-            CompassDial(modifier = Modifier.size(112.dp))
+            CompassDial(modifier = Modifier.size(104.dp))
         }
 
         // 四术玉牌
@@ -104,9 +103,9 @@ fun DivHomePage(
             Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for),
             Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for),
         )
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
             methods.chunked(2).forEach { rowMethods ->
-                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
                     rowMethods.forEach { (method, nameRes, descRes, useForRes) ->
                         JadeTile(
                             name = stringResource(nameRes),
@@ -130,31 +129,29 @@ fun DivHomePage(
         if (sign != null) {
             DivCard(
                 modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                borderColor = c.goldHair,
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 onClick = { viewModel.ensureTodaySignSaved { id -> navController.navigate("${DivRoute.Chart.text}/$id") } },
             ) {
                 Row(
-                    Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    Modifier.padding(start = 18.dp, top = 10.dp, end = 10.dp, bottom = 22.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DivSeal(stringResource(R.string.div_sign_seal), size = 44.dp, fontSize = 22.sp)
+                    DivSeal(stringResource(R.string.div_sign_seal), size = 44.dp, fontSize = 22.sp, cornerRadius = 8.dp)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.div_sign_card_title, sign.hexagramName),
-                            style = divSerif(18.sp, FontWeight.SemiBold, 4.sp),
+                            style = divSerif(18.sp, FontWeight.SemiBold, 0.sp),
                             color = c.textPrimary,
                         )
                         Text(
                             text = sign.subLine + " —— " + stringResource(R.string.div_sign_card_source),
-                            fontSize = 11.sp,
-                            letterSpacing = 1.sp,
+                            fontSize = 12.sp,
                             color = c.textSecondary,
-                            modifier = Modifier.padding(top = 5.dp),
+                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
-                    Text("›", color = c.gold.copy(alpha = 0.6f), fontSize = 16.sp)
+                    Text("›", color = c.goldText.copy(alpha = 0.6f), fontSize = 16.sp)
                 }
             }
         }
@@ -165,8 +162,8 @@ fun DivHomePage(
             tail = stringResource(R.string.div_home_ledger_more),
             onTailClick = { navController.navigate(DivRoute.History.text) },
         )
-        DivCard(Modifier.padding(horizontal = 20.dp), borderColor = c.goldHair) {
-            Column(Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+        DivCard(Modifier.padding(horizontal = 20.dp)) {
+            Column(Modifier.padding(horizontal = 14.dp)) {
                 if (records.isEmpty()) {
                     Text(
                         text = stringResource(R.string.div_history_empty),
@@ -181,8 +178,8 @@ fun DivHomePage(
                             Box(
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(0.5.dp)
-                                    .background(c.goldHair)
+                                    .height(1.dp)
+                                    .background(c.hair)
                             )
                         }
                     }
@@ -207,16 +204,18 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(dateText, fontSize = 11.sp, color = c.textTertiary, modifier = Modifier.width(44.dp))
+        Text(dateText, fontSize = 12.sp, color = c.textTertiary, modifier = Modifier.width(44.dp))
+        Spacer(Modifier.width(4.dp))
         Box(
             Modifier
                 .size(7.dp)
-                .background(if (record.method == DivMethod.LIU_YAO.id) c.gold else c.jade, CircleShape)
+                .background(c.gold, CircleShape)
         )
         Spacer(Modifier.width(12.dp))
         Text(
             text = record.question,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
+            lineHeight = 20.sp,
             color = c.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -225,8 +224,8 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
         Spacer(Modifier.width(8.dp))
         Text(
             text = DivMethod.fromId(record.method).name,
-            style = divSerif(12.sp, FontWeight.Medium, 2.sp),
-            color = c.gold.copy(alpha = 0.75f),
+            style = divSerif(12.sp, FontWeight.Medium, 0.sp),
+            color = c.goldText.copy(alpha = 0.75f),
         )
     }
 }
@@ -254,22 +253,22 @@ private fun JadeTile(
             .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = debouncedClick),
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(desc, fontSize = 11.5.sp, lineHeight = 18.sp, color = c.textSecondary)
+            Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textSecondary)
             if (useFor != null) {
                 Spacer(Modifier.height(4.dp))
-                Text(useFor, fontSize = 10.5.sp, color = c.textTertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(useFor, fontSize = 12.sp, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        // 竖排术名：writing-mode 语义用逐字换行实现
+        // 竖排术名：writing-mode 语义用逐字换行实现（画板：18/600、行距 26、右上内缩 14/2）
         Column(
             Modifier
                 .align(Alignment.TopEnd)
-                .padding(14.dp)
+                .padding(top = 14.dp, end = 2.dp)
         ) {
             name.forEach { ch ->
                 Text(
                     text = ch.toString(),
-                    style = divSerif(19.sp, FontWeight.SemiBold, 7.sp),
+                    style = divSerif(18.sp, FontWeight.SemiBold, 0.sp).copy(lineHeight = 26.sp),
                     color = c.textPrimary,
                 )
             }
@@ -277,12 +276,11 @@ private fun JadeTile(
         if (tag != null) {
             Text(
                 text = tag,
-                fontSize = 10.5.sp,
-                letterSpacing = 2.sp,
-                color = c.gold.copy(alpha = 0.75f),
+                fontSize = 12.sp,
+                color = c.goldText.copy(alpha = 0.75f),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp),
+                    .padding(start = 16.dp, bottom = 15.dp),
             )
         }
     }

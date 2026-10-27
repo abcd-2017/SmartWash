@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -51,35 +52,52 @@ import com.smartwash.common.utils.rememberDebouncedClick
  */
 
 /** 衬线仪式文本样式（卦名/章节标题/干支——衬线出现本身即"传统"语义） */
-fun divSerif(size: TextUnit, weight: FontWeight = FontWeight.SemiBold, spacing: TextUnit = 2.sp): TextStyle =
+fun divSerif(
+    size: TextUnit,
+    weight: FontWeight = FontWeight.SemiBold,
+    spacing: TextUnit = 2.sp,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+): TextStyle =
     TextStyle(
         fontFamily = FontFamily.Serif,
         fontWeight = weight,
         fontSize = size,
         letterSpacing = spacing,
+        lineHeight = lineHeight,
     )
 
-/** 朱砂印章：圆角方 + 白描边 + 同色溢出投影，承担卦名印/类别印/落款印三职 */
+/** 朱砂印章：圆角方 + 22% 金描边，承担卦名印/类别印/落款印三职；
+ *  flat=平涂深朱无描边（卦盘/卦历画板口径，双板一致 sealDeep） */
 @Composable
 fun DivSeal(
     text: String,
     modifier: Modifier = Modifier,
     size: Dp = 30.dp,
     fontSize: TextUnit = 15.sp,
+    cornerRadius: Dp = 6.dp,
+    flat: Boolean = false,
 ) {
     val c = DivColors.current
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(6.dp))
-            .background(Brush.linearGradient(listOf(c.sealHi, c.seal)))
-            .border(1.dp, Color(0x38FFFFFF), RoundedCornerShape(6.dp)),
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(
+                if (flat) SolidColor(c.sealDeep) else Brush.linearGradient(listOf(c.sealHi, c.seal)),
+            )
+            .then(
+                if (flat) {
+                    Modifier
+                } else {
+                    Modifier.border(1.dp, c.line, RoundedCornerShape(cornerRadius))
+                }
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
             style = divSerif(fontSize, FontWeight.Bold, 1.sp),
-            color = Color(0xFFF6E8DC),
+            color = Color(0xFFEFE9DA),  // 印面文字两主题恒为宣纸白（画板双板一致）
         )
     }
 }
@@ -99,66 +117,124 @@ fun TianXiangHeader(text: String, modifier: Modifier = Modifier) {
             Modifier
                 .height(1.dp)
                 .width(52.dp)
-                .background(Brush.horizontalGradient(listOf(Color.Transparent, c.goldLine)))
+                .background(c.goldLine)
         )
         Text(
             text = text,
-            style = divSerif(12.sp, FontWeight.Medium, 3.sp),
-            color = c.gold.copy(alpha = 0.75f),
-            modifier = Modifier.padding(horizontal = 12.dp),
+            style = divSerif(12.sp, FontWeight.Medium, 0.sp),
+            color = c.goldText.copy(alpha = 0.75f),
+            modifier = Modifier.padding(horizontal = 8.dp),
         )
         Box(
             Modifier
                 .height(1.dp)
                 .width(52.dp)
-                .background(Brush.horizontalGradient(listOf(c.goldLine, Color.Transparent)))
+                .background(c.goldLine)
         )
     }
 }
 
-/** 观象台页头：返回 + 可选印章 + 衬线标题 + 尾注 */
+/** 观象台页头：返回（48 触控）+ 居中衬线标题（可选印章）+ 右侧尾注（画板：18/600 居中、尾注金 75%）；
+ *  alignStart 为无返回页的左对齐口径（卦历画板：标题 18/600 左对齐 x20，状态栏下 6、下距 10）；
+ *  flatSeal=印章平涂口径、titleSpacing=标题字距（卦盘画板 2，问卦/卦历 4）；
+ *  sealTrailing=页头右侧固定卦印（解读画板：右缘 20、30 方印 r8 平涂深朱、印文 14/700；与 tail 互斥）；
+ *  subtitle=标题下居中副题（追问画板：下距 4、12/16 字距 2 次要色） */
 @Composable
 fun DivPageHeader(
     title: String,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     seal: String? = null,
+    flatSeal: Boolean = false,
     tail: String? = null,
+    alignStart: Boolean = false,
+    titleSpacing: TextUnit = 4.sp,
+    sealTrailing: String? = null,
+    subtitle: String? = null,
 ) {
     val c = DivColors.current
     // 返回箭头内置连击防抖：本模块 navigate 均无 launchSingleTop，连点会连弹/双推导航栈
     val debouncedBack = rememberDebouncedClick(enabled = onBack != null) { onBack?.invoke() }
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(top = if (alignStart) 6.dp else 10.dp, bottom = 10.dp),
     ) {
-        if (onBack != null) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "返回",
-                tint = c.textSecondary,
-                modifier = Modifier
-                    .size(40.dp)
-                    .padding(8.dp)
-                    .clickable(onClick = debouncedBack),
-            )
-            Spacer(Modifier.width(8.dp))
-        }
-        if (seal != null) {
-            DivSeal(seal, size = 30.dp, fontSize = 15.sp)
-            Spacer(Modifier.width(10.dp))
-        }
-        Text(
-            text = title,
-            style = divSerif(17.sp, FontWeight.SemiBold, 3.sp),
-            color = c.textPrimary,
-        )
-        if (tail != null) {
-            Spacer(Modifier.weight(1f))
-            Text(text = tail, fontSize = 11.sp, color = c.textTertiary)
+        Column(Modifier.fillMaxWidth()) {
+            Box(Modifier.fillMaxWidth()) {
+                if (onBack != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = 12.dp)
+                            .size(48.dp)
+                            .clickable(onClick = debouncedBack),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回",
+                            tint = c.textSecondary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+                Row(
+                    modifier = if (alignStart) {
+                        Modifier.align(Alignment.CenterStart).padding(start = 20.dp)
+                    } else {
+                        Modifier.align(Alignment.Center)
+                    },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (seal != null) {
+                        // 画板（卦盘）：30 方印 radius 8、印文 14/700
+                        DivSeal(seal, size = 30.dp, fontSize = 14.sp, cornerRadius = 8.dp, flat = flatSeal)
+                        Spacer(Modifier.width(10.dp))
+                    }
+                    Text(
+                        text = title,
+                        style = divSerif(18.sp, FontWeight.SemiBold, titleSpacing, lineHeight = 24.sp),
+                        color = c.textPrimary,
+                    )
+                }
+                if (tail != null) {
+                    Text(
+                        text = tail,
+                        fontSize = 12.sp,
+                        letterSpacing = 2.sp,
+                        color = c.goldText.copy(alpha = 0.75f),
+                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 20.dp),
+                    )
+                }
+                if (sealTrailing != null) {
+                    // 解读画板：页头右侧固定卦印，平涂深朱（双板一致 fill #A63A30 无描边）
+                    DivSeal(
+                        sealTrailing,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 20.dp),
+                        size = 30.dp,
+                        fontSize = 14.sp,
+                        cornerRadius = 8.dp,
+                        flat = true,
+                    )
+                }
+            }
+            if (subtitle != null) {
+                // 追问画板：标题下 4 居中副题（12/16、字距 2、次要色）
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    letterSpacing = 2.sp,
+                    lineHeight = 16.sp,
+                    color = c.textSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -186,10 +262,11 @@ fun DivSectionTitle(
         )
         if (tail != null) {
             Spacer(Modifier.weight(1f))
+            // 画板口径：可点击尾注为链接墨色（宣纸侧全墨），纯信息尾注降为次要灰
             Text(
                 text = tail,
-                fontSize = 11.sp,
-                color = c.textTertiary,
+                fontSize = 12.sp,
+                color = if (onTailClick != null) c.textTertiary else c.textSecondary,
                 modifier = if (onTailClick != null) {
                     Modifier.clickable(onClick = debouncedTailClick)
                 } else {
@@ -200,15 +277,17 @@ fun DivSectionTitle(
     }
 }
 
-/** 鎏金描边主按钮：金底 8% + 金线描边 + 衬线字 + 按压缩放 0.97 */
+/** 鎏金渐变主按钮：金渐变胶囊（52 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
+ *  soft=解读画板口径：14% 金底 + 金/墨字（玄墨金字/宣纸墨字，双板一致），用于次级仪式主行动 */
 @Composable
 fun DivGoldButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    height: androidx.compose.ui.unit.Dp = 48.dp,
-    fontSize: TextUnit = 15.sp,
+    height: androidx.compose.ui.unit.Dp = 52.dp,
+    fontSize: TextUnit = 14.sp,
+    soft: Boolean = false,
 ) {
     val c = DivColors.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -223,10 +302,12 @@ fun DivGoldButton(
             .height(height)
             .pressScale(interactionSource, 0.97f)
             .clip(RoundedCornerShape(height / 2))
-            .background(if (enabled) c.goldSoft else Color.Transparent)
-            .border(
-                BorderStroke(1.dp, if (enabled) c.goldLine else c.hair),
-                RoundedCornerShape(height / 2),
+            .background(
+                when {
+                    // 禁用态退回 14% 金底（画板「已保存」口径，无描边）；解读画板主按钮同为 14% 金底
+                    !enabled || soft -> SolidColor(c.gold14)
+                    else -> Brush.horizontalGradient(c.goldGradient)
+                },
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -238,14 +319,19 @@ fun DivGoldButton(
     ) {
         Text(
             text = text,
-            style = divSerif(fontSize, FontWeight.SemiBold, 4.sp),
-            color = if (enabled) c.gold else c.textTertiary,
+            style = divSerif(fontSize, FontWeight.SemiBold, 3.sp),
+            color = when {
+                !enabled -> c.goldText.copy(alpha = 0.7f)
+                // soft 口径（解读画板）：玄墨金字 / 宣纸墨字，即主题感知 goldText
+                soft -> c.goldText
+                else -> c.onGold
+            },
             textAlign = TextAlign.Center,
         )
     }
 }
 
-/** 发丝线卡片：surface 底 + 1px 渐变金线描边（135°：亮→隐→亮） */
+/** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径） */
 @Composable
 fun DivCard(
     modifier: Modifier = Modifier,
@@ -264,10 +350,7 @@ fun DivCard(
             .clip(shape)
             .background(background ?: c.surface)
             .border(
-                BorderStroke(
-                    1.dp,
-                    Brush.linearGradient(listOf(borderColor ?: c.goldLine, c.goldHair, borderColor ?: c.goldLine)),
-                ),
+                BorderStroke(1.dp, borderColor ?: c.hair),
                 shape,
             )
             .then(
@@ -285,40 +368,46 @@ fun DivCard(
     )
 }
 
-/** 问事领域 chip：选中金底 + 勾，未选素底 */
+/** 问事领域 chip：48 触控胶囊；选中金底 + 金环（玄墨实金线/宣纸 30% 线，画板双板口径）+ 金强调字；
+ *  水平内边距默认 12（问卦领域 chip 宽 48），卦历筛选 chip 画板宽 52 传 14 */
 @Composable
 fun DivCategoryChip(
     text: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 12.dp,
 ) {
     val c = DivColors.current
     val view = currentView()
+    val selectedBorder = if (c.isDark) c.gold else c.goldLine
+    val shape = RoundedCornerShape(999.dp)
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .height(48.dp)
+            .clip(shape)
             .background(if (selected) c.gold14 else c.surface)
             .border(
-                BorderStroke(1.dp, if (selected) c.goldLine else c.hair),
-                RoundedCornerShape(16.dp),
+                BorderStroke(1.dp, if (selected) selectedBorder else c.goldLine),
+                shape,
             )
             .clickable {
                 view.performHaptic(HapticEffect.SELECTION)
                 onClick()
             }
-            .padding(horizontal = 14.dp, vertical = 7.dp),
+            .padding(horizontal = horizontalPadding),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = if (selected) "$text ✓" else text,
+            text = text,
             fontSize = 12.sp,
-            color = if (selected) c.gold else c.textSecondary,
+            color = if (selected) c.goldText else c.textSecondary,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
         )
     }
 }
 
-/** 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点 */
+/** 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点（画板：内边距 20/12、环 20 点 8、未选行标题次级色） */
 @Composable
 fun DivRadioRow(
     title: String,
@@ -336,23 +425,33 @@ fun DivRadioRow(
                 view.performHaptic(HapticEffect.SELECTION)
                 onClick()
             }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(text = title, fontSize = 14.sp, color = c.textPrimary)
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 20.sp,
+                color = if (selected) c.textPrimary else c.textSecondary,
+            )
             if (subtitle != null) {
-                Spacer(Modifier.height(2.dp))
-                Text(text = subtitle, fontSize = 10.5.sp, color = c.textTertiary)
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = c.textSecondary,
+                )
             }
         }
         Box(
             modifier = Modifier
-                .size(19.dp)
+                .size(20.dp)
                 .clip(CircleShape)
                 .border(
-                    1.6.dp,
-                    if (selected) c.gold else c.line,
+                    1.dp,
+                    if (selected) c.gold.copy(alpha = 0.9f) else c.goldLine,
                     CircleShape,
                 ),
             contentAlignment = Alignment.Center,
@@ -360,7 +459,7 @@ fun DivRadioRow(
             if (selected) {
                 Box(
                     Modifier
-                        .size(9.dp)
+                        .size(8.dp)
                         .clip(CircleShape)
                         .background(c.gold)
                 )
@@ -375,12 +474,11 @@ fun DivFooterNote(text: String, modifier: Modifier = Modifier) {
     val c = DivColors.current
     Text(
         text = text,
-        fontSize = 10.sp,
+        fontSize = 12.sp,
         color = c.textTertiary,
         textAlign = TextAlign.Center,
-        letterSpacing = 1.sp,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 14.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
     )
 }

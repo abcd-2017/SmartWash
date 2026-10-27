@@ -60,7 +60,6 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
@@ -155,7 +154,8 @@ fun IndexPage(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    // 设计稿实测：服务标签底（y=416）→「进行中订单」标题（y=440）间距 24
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXl))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -167,11 +167,12 @@ fun IndexPage(
                             text = stringResource(R.string.in_progress_orders),
                             style = AppTextStyles.SectionTitle
                         )
-                        // 行内「查看全部」— 12sp SemiBold primary，无 ripple，48dp 热区（D-I7）
+                        // 行内「查看全部」— 16sp SemiBold primaryDark（green.700，规范 §10 绿色文字红线），
+                        // 无 ripple，48dp 热区（D-I7）；文字右缘对齐页面 24 边距（设计稿实测 y=444 右缘 336）
                         Text(
                             text = stringResource(R.string.view_all),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = AppColors.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = AppColors.colorScheme.primaryDark,
                             modifier = Modifier
                                 .pressable(
                                     onClick = rememberDebouncedClick {
@@ -179,7 +180,7 @@ fun IndexPage(
                                     },
                                     debounce = false,
                                 )
-                                .padding(start = 12.dp, top = 16.dp, end = 12.dp, bottom = 16.dp)
+                                .padding(start = 12.dp, top = 16.dp, bottom = 16.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -255,9 +256,9 @@ private fun StatusHeroCard(
     val currentOrder = orderList.firstOrNull()
     val orderStatus = currentOrder?.let { OrderStatus.fromStatus(it.status) }
 
-    // 品牌渐变 135° #2D9B6A → #1E8C5C（规范 §2.1 brandGradient，仅用于 hero）
+    // 品牌渐变 135°：浅色 #2D9B6A→#1E8C5C、深色 #2D9B6A→#5BC894（规范 §1.3 gradient.hero，设计稿首页画板实测）
     val gradient = Brush.linearGradient(
-        colors = listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark),
+        colors = listOf(AppColors.colorScheme.heroGradientStart, AppColors.colorScheme.heroGradientEnd),
         start = androidx.compose.ui.geometry.Offset(0f, 0f),
         end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
@@ -267,7 +268,7 @@ private fun StatusHeroCard(
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
             .padding(top = 8.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusXl))
+            .clip(RoundedCornerShape(AppDimens.radiusLg))
             .background(gradient)
             .padding(20.dp)
     ) {
@@ -296,14 +297,14 @@ private fun StatusHeroCard(
                     if (currentOrder != null) {
                         Text(
                             text = stringResource(R.string.home_hero_order_no, currentOrder.orderNo),
-                            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                            color = Color.White.copy(alpha = 0.88f)
+                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            color = Color.White
                         )
                     } else {
                         Text(
                             text = stringResource(R.string.home_hero_no_order_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.88f)
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White
                         )
                     }
                 }
@@ -332,18 +333,19 @@ private fun StatusHeroCard(
                 }
                 steps.forEachIndexed { index, _ ->
                     val isActive = index <= currentStep
+                    // 步进器令牌（规范 §5.1 stepper + 设计稿双主题画板实测）：激活点=primary / 未完成点=outline
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (isActive) Color.White else Color.White.copy(alpha = 0.32f))
+                            .background(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
                     )
                     if (index < steps.lastIndex) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(2.dp)
-                                .background(if (index < currentStep) Color.White else Color.White.copy(alpha = 0.28f))
+                                .background(if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
                         )
                     }
                 }
@@ -353,8 +355,8 @@ private fun StatusHeroCard(
                 steps.forEachIndexed { index, label ->
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.78f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White,
                         modifier = Modifier.weight(1f),
                         textAlign = when (index) {
                             0 -> androidx.compose.ui.text.style.TextAlign.Start
@@ -386,8 +388,8 @@ private fun AccountDataCard(
             .padding(top = 16.dp),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -404,7 +406,7 @@ private fun AccountDataCard(
                 Column {
                     Text(
                         text = stringResource(R.string.account_balance_label),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = AppColors.colorScheme.textSecondary
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -428,7 +430,7 @@ private fun AccountDataCard(
             // 分隔线
             Box(
                 modifier = Modifier
-                    .width(0.5.dp)
+                    .width(1.dp)
                     .height(40.dp)
                     .background(AppColors.colorScheme.hairline)
             )
@@ -448,7 +450,7 @@ private fun AccountDataCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.home_available_coupons),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     softWrap = false
@@ -457,7 +459,7 @@ private fun AccountDataCard(
             // 分隔线
             Box(
                 modifier = Modifier
-                    .width(0.5.dp)
+                    .width(1.dp)
                     .height(40.dp)
                     .background(AppColors.colorScheme.hairline)
             )
@@ -477,7 +479,7 @@ private fun AccountDataCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.home_total_orders),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     softWrap = false
@@ -520,8 +522,9 @@ private fun ServiceGrid(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.AccountBalanceWallet,
             label = stringResource(R.string.service_recharge),
-            containerColor = AppColors.colorScheme.iconContainerTeal,
-            iconTint = AppColors.colorScheme.iconForegroundTeal,
+            // 设计稿首页画板实测：充值入口为绿色系（与预约洗衣同 primaryContainer 底）
+            containerColor = AppColors.colorScheme.iconContainerGreen,
+            iconTint = AppColors.colorScheme.iconForegroundGreen,
             onClick = onRechargeClick
         )
         ServiceEntry(
@@ -553,13 +556,13 @@ private fun ServiceEntry(
         IconBox(
             icon = icon,
             size = 44.dp,
-            iconSize = 22.dp,
+            iconSize = 24.dp,
             containerColor = containerColor,
             iconTint = iconTint
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.bodySmall,
             color = AppColors.colorScheme.textSecondary
         )
     }
@@ -580,8 +583,8 @@ private fun OrderListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, AppColors.colorScheme.outline),
-        shadowElevation = AppElevation.level1
+        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
             orderList.forEachIndexed { index, order ->
@@ -594,7 +597,7 @@ private fun OrderListCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
-                            .height(0.5.dp)
+                            .height(1.dp)
                             .background(AppColors.colorScheme.hairline)
                     )
                 }
@@ -618,18 +621,18 @@ private fun OrderListItem(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 图标容器色按状态语义（D-I8）：清洗中→绿，其余→橙（进行中待办语义）
+        // 图标容器色按状态语义（设计稿首页画板实测）：清洗中→water 水蓝（icon.md 20），其余→橙（进行中待办语义）
         IconBox(
             icon = Icons.Default.LocalLaundryService,
             size = 36.dp,
-            iconSize = 18.dp,
+            iconSize = 20.dp,
             containerColor = if (orderStatus == OrderStatus.WASHING) {
-                AppColors.colorScheme.iconContainerGreen
+                AppColors.colorScheme.iconContainerBlue
             } else {
                 AppColors.colorScheme.iconContainerOrange
             },
             iconTint = if (orderStatus == OrderStatus.WASHING) {
-                AppColors.colorScheme.iconForegroundGreen
+                AppColors.colorScheme.water
             } else {
                 AppColors.colorScheme.iconForegroundOrange
             }
@@ -638,20 +641,20 @@ private fun OrderListItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = statusText,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.colorScheme.textPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.order_no_format, orderVo.orderNo),
-                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary
             )
         }
         Text(
             text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
             style = AppTextStyles.AmountMedium,
-            color = AppColors.colorScheme.primary
+            color = AppColors.colorScheme.primaryDark
         )
     }
 }
@@ -661,7 +664,7 @@ private fun ServiceTips() {
     // 服务须知 — 居中纯文字（D-I9）
     Text(
         text = stringResource(R.string.service_tips),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.bodySmall,
         color = AppColors.colorScheme.textSecondary,
         modifier = Modifier
             .fillMaxWidth()
