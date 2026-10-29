@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
 import androidx.compose.foundation.BorderStroke
 import com.smartwash.common.ui.components.EmptyState
@@ -64,6 +66,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.order.api.PickupDeliveryType
@@ -216,7 +219,10 @@ fun PickupDeliveryPage(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = AppColors.colorScheme.warningContainer,
-                                shadowElevation = 0.dp
+                                // 规范 §2.4 卡片唯一画法：1px 描边 + level1 阴影，两者必须成对，
+                                // 只有描边无投影会被读成"被禁的裸白卡"（§3.1 禁止项）
+                                shadowElevation = AppElevation.level1,
+                                border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(AppDimens.cardPadding),
@@ -247,11 +253,12 @@ fun PickupDeliveryPage(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
-                            shadowElevation = 0.dp,
+                            // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(
-                                modifier = Modifier.padding(AppDimens.sectionSpacing),
+                                modifier = Modifier.padding(AppDimens.cardPadding),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 // 二维码成图 0ms 硬切（占位 Box ↔ Image）→ 交叉淡变；
@@ -443,7 +450,7 @@ private fun PickupDeliveryActionBar(
 
 @Composable
 private fun StepRow(number: String, text: String) {
-    // 板实测：号盒 20 r8 iconContainerGreen（浅 #F0FAF5→规范收敛 #F0FBF4 / 深 #1D3229）；
+    // 板实测：号盒 20dp 圆形 iconContainerGreen（浅 #F0FAF5→规范收敛 #F0FBF4 / 深 #1D3229）；
     // 序号色不对称 浅 #17322B（onPrimaryContainer）/ 深 #5BC894（primary）
     val isDark = isSystemInDarkTheme()
     Row(
@@ -453,7 +460,7 @@ private fun StepRow(number: String, text: String) {
         Box(
             modifier = Modifier
                 .size(20.dp)
-                .clip(RoundedCornerShape(AppDimens.radiusSm))
+                .clip(CircleShape)
                 .background(AppColors.colorScheme.iconContainerGreen),
             contentAlignment = Alignment.Center
         ) {

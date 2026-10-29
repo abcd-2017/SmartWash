@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
@@ -75,8 +77,8 @@ fun DivSeal(
     text: String,
     modifier: Modifier = Modifier,
     size: Dp = 30.dp,
-    fontSize: TextUnit = 15.sp,
-    cornerRadius: Dp = 6.dp,
+    fontSize: TextUnit = 18.sp,
+    cornerRadius: Dp = 8.dp,
     flat: Boolean = false,
 ) {
     val c = DivColors.current
@@ -288,7 +290,7 @@ fun DivGoldButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     height: androidx.compose.ui.unit.Dp = 52.dp,
-    fontSize: TextUnit = 14.sp,
+    fontSize: TextUnit = 18.sp,
     soft: Boolean = false,
 ) {
     val c = DivColors.current
@@ -332,7 +334,9 @@ fun DivGoldButton(
     }
 }
 
-/** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径） */
+/** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径）+ 宣纸侧轻阴影。
+ *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [AppElevation.level1](1dp)；
+ *  玄墨深色卡按 §2.4「深色卡不加投影」豁免（层级由深色自身 + 金线描边承担）。 */
 @Composable
 fun DivCard(
     modifier: Modifier = Modifier,
@@ -346,6 +350,10 @@ fun DivCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影
+                if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+            )
             .clip(shape)
             .background(background ?: c.surface)
             .border(
@@ -415,7 +423,7 @@ fun DivCategoryChip(
             if (checkScale > 0f) {
                 Text(
                     text = "✓",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = textColor,
                     modifier = Modifier
                         .padding(start = 3.dp)

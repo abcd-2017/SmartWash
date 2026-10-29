@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,6 +75,7 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.utils.defaultSpring
@@ -227,14 +230,19 @@ fun UpdateUserInfoPage(
             }
 
             item(key = "form") {
-                // 字段分组卡 — 模板 C：surfaceGroup 底 + 1px outline 描边 + 圆角 16，无阴影
+                // 字段分组卡 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
+                // 描边 + 1dp 阴影（level1 ≈ CSS 0 2px 12px rgba(20,40,30,.05)）+ 圆角 16 + 内边距 20
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.radiusLg),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = AppElevation.level1,
+                    border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+                ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(AppDimens.radiusLg))
-                        .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.radiusLg))
-                        .background(AppColors.colorScheme.groupBackground)
-                        .padding(top = AppDimens.spaceMd, bottom = 24.dp, start = 20.dp, end = 20.dp),
+                        .padding(AppDimens.cardPadding),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                 ) {
                     // 字段标签 — captionStrong（12/16/500）
@@ -323,6 +331,7 @@ fun UpdateUserInfoPage(
                             disabledContainerColor = AppColors.colorScheme.surfaceVariant
                         )
                     )
+                }
                 }
             }
         }

@@ -66,7 +66,9 @@ fun AppPillTabRow(
                 modifier = Modifier
                     // Tab 快速连切是合法操作，关闭防抖；pressable 内置 indication = null（禁 ripple）
                     .padding(end = AppDimens.spaceXs)
-                    .clip(RoundedCornerShape(AppDimens.buttonRadius))
+                    // 选中胶囊 — 规范 §3.x 分段控件为胶囊形，取 radiusFull（999），
+                    // 非按钮档 buttonRadius(14)
+                    .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(containerColor)
                     .pressable(
                         onClick = {

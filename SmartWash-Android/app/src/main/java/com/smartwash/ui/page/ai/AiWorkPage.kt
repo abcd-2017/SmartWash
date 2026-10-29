@@ -53,14 +53,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartwash.R
+import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.selectedColor
 
 /**
  * AI 工具工作台 — 状态工作流 + 来源引用 + 人工确认
@@ -71,6 +74,7 @@ fun AiWorkPage(
     onBack: () -> Unit = {},
 ) {
     var inputText by remember { mutableStateOf("") }
+    var inputFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     Column(
@@ -155,7 +159,7 @@ fun AiWorkPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
+                            // GroupCard 自带 cardPadding(20)，横向不再重复内缩
                             .padding(top = 32.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -195,7 +199,9 @@ fun AiWorkPage(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = AppColors.colorScheme.surface,
-            shadowElevation = 0.dp
+            // 固定输入条是浮层（§2.4 豁免档），但浮层压在滚动内容之上仍需投影分界；
+            // level1(1dp) 是规范允许的两种阴影之一，与顶线叠加只增强分层不改变形态
+            shadowElevation = AppElevation.level1
         ) {
             Column {
                 // 顶部 1px 分隔线（画板「顶线」outline）
@@ -211,6 +217,10 @@ fun AiWorkPage(
                         .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // 聚焦反馈：外框颜色 primary ↔ outline 过渡（reduced motion 自动降级 180ms）
+                    val inputBorderColor = selectedColor(
+                        if (inputFocused) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+                    )
                     TextField(
                         value = inputText,
                         onValueChange = { inputText = it },
@@ -283,7 +293,8 @@ private fun QuickTaskCard(
         modifier = modifier.pressable(onClick = { /* TODO */ }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

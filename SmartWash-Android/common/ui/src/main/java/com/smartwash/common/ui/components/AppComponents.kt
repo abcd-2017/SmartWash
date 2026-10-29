@@ -147,44 +147,28 @@ fun PageHeader(
 
 // ========== 容器组件 ==========
 
-// 规范 §2.4 卡片阴影的 Compose 等价实现。CSS「0 2px 12px rgba(20,40,30,.05)」
-// 是模糊扩散模型；Compose 的 elevation 阴影是海拔投影模型且不可控模糊半径——
-// 用「3dp 海拔 + 低透明绿灰投影色」近似大扩散柔光（ambient/spot 颜色需 API 28+，minSdk 30）。
-// 1dp 描边在无阴影衬托时会读成生硬灰圈，故减半为 0.5dp 退居辅助防溢出。
-// 深色按 §6.5 换纯黑系 rgba(0,0,0,.28)——绿黑投影在深色底上会染出脏灰。
-private val CardShadowAmbientLight = Color(0x0D14281E)  // 5% 绿黑
-private val CardShadowSpotLight = Color(0x1A14281E)     // 10% 绿黑
-private val CardShadowAmbientDark = Color(0x24000000)   // 14% 黑（ambient 仍为 spot 的一半）
-private val CardShadowSpotDark = Color(0x47000000)      // 28% 黑
-
-@Composable
-private fun cardShadowColors(): Pair<Color, Color> =
-    if (isSystemInDarkTheme()) CardShadowAmbientDark to CardShadowSpotDark
-    else CardShadowAmbientLight to CardShadowSpotLight
+// DESIGN-SPEC v0.4 §2.4 卡片规格的 Compose 等价实现：规范「CSS 阴影 ↔ Compose elevation 映射表」
+// 裁定卡片 = `AppElevation.level1`（1dp），与页面侧 `Surface(shadowElevation = level1)` 同源。
+// 描边恢复设计稿的 1dp（0.5dp 是上一版「无阴影裸白卡」时期的退让，阴影补齐后不再需要）。
 
 /**
- * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 0.5dp 描边 + 柔和投影）
+ * 分组容器 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法（纯白 surface 底 + 1dp 描边 + level1 阴影）
  * 用于：设置页分组、订单详情信息组、内容分区
+ *
+ * 阴影走 §2.4「CSS 阴影 ↔ Compose elevation 映射表」的 `AppElevation.level1`，
+ * 与页面侧 `Surface(shadowElevation = level1)` 同一条路径 —— 全应用卡片阴影只有一个来源。
  */
 @Composable
 fun GroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(AppDimens.radiusLg)
-    val (shadowAmbient, shadowSpot) = cardShadowColors()
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 3.dp,
-                shape = shape,
-                ambientColor = shadowAmbient,
-                spotColor = shadowSpot,
-                clip = false,
-            )
-            .border(0.5.dp, AppColors.colorScheme.outline, shape)
-            .background(MaterialTheme.colorScheme.surface, shape),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding),
@@ -248,7 +232,6 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
-    val (shadowAmbient, shadowSpot) = cardShadowColors()
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -256,14 +239,13 @@ fun AppCard(
                 if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
             )
+            // 阴影与 GroupCard / 页面侧卡片同一条路径：§2.4 映射表 → AppElevation.level1
             .shadow(
-                elevation = 3.dp,
+                elevation = AppElevation.level1,
                 shape = shape,
-                ambientColor = shadowAmbient,
-                spotColor = shadowSpot,
                 clip = false,
             )
-            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .border(1.dp, AppColors.colorScheme.outline, shape)
             .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(content = content)
@@ -340,6 +322,10 @@ private fun Modifier.dialogEnterMotion(): Modifier = composed {
  * 规格（§3.3）：主 = 52dp 高 / 14dp 圆角 / 品牌渐变底 / 白字 15sp·600·ls 1sp；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色；文字 = 主色 13sp·600 无底无框。
  * 按压反馈 scale 0.97（pressable 内置 indication=null）。
+ *
+ * [contentColor] 仅用于**同形态换语义色**的少数场景（如「退出登录」次按钮配 dangerInk，
+ * §2.1 例外条款）：非 null 时替换文字与 spinner 色，容器形态与尺寸一律不变。
+ * 默认 null 保持三态既有配色不变。
  */
 @Composable
 fun AppButton(
@@ -349,6 +335,7 @@ fun AppButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     variant: AppButtonVariant = AppButtonVariant.PRIMARY,
+    contentColor: Color? = null,
 ) {
     // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
     val debouncedOnClick = rememberDebouncedClick { onClick() }
@@ -381,14 +368,14 @@ fun AppButton(
                     ButtonSpinner(
                         size = 14.dp,
                         strokeWidth = 1.5.dp,
-                        color = AppColors.colorScheme.primary,
+                        color = contentColor ?: AppColors.colorScheme.primary,
                     )
                 } else {
                     Text(
                         text = text,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = textColor,
+                        color = contentColor ?: textColor,
                     )
                 }
             }
@@ -417,12 +404,14 @@ fun AppButton(
         animationSpec = motionSpec(defaultSpring()),
         label = "appButtonSecondaryContainer"
     )
+    // contentColor 为语义色覆盖（如 dangerInk），只做颜色值替换，不参与禁用降透明
+    val baseContentColor = contentColor ?: if (isPrimary) {
+        if (active) Color.White else GlassTextDisabled
+    } else {
+        AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
+    }
     val animatedContentColor by animateColorAsState(
-        targetValue = if (isPrimary) {
-            if (active) Color.White else GlassTextDisabled
-        } else {
-            AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
-        },
+        targetValue = baseContentColor,
         animationSpec = motionSpec(defaultSpring()),
         label = "appButtonContentColor"
     )
@@ -461,7 +450,9 @@ fun AppButton(
             } else {
                 Text(
                     text = text,
-                    fontSize = 15.sp,
+                    // v0.4 字阶：按钮文字 = title 档 18sp / SemiBold（与设计稿 CTA 标签一致，
+                    // 原 15sp 属 2026-10-06 版的正文档，v0.4 已取消该档）
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
                     color = animatedContentColor,
@@ -492,7 +483,7 @@ fun SettingRow(
             .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
+        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 20.dp)
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -514,13 +505,21 @@ fun SettingRow(
 
 // ========== 空状态 ==========
 
+/**
+ * 空状态 — 规范 §3.6：滚筒圆母题（[DrumMark]）静止态 + 一句引导文案 + 可选行动按钮。
+ *
+ * 规范 §3.2 禁止「用一个灰色 Material 图标了事」，故本组件**只渲染滚筒圆母题**，
+ * 不再提供回退到裸 Material 图标的分支。[icon] 保留为占位参数：既有 12 处调用点已传
+ * Material core 图标（不引 icons-extended），删掉参数会波及 common/ui 之外的 9 个模块文件。
+ *
+ * @param icon 不渲染，仅为兼容既有调用点的占位参数
+ */
 @Composable
 fun EmptyState(
     icon: ImageVector,
     message: String,
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
-    useDrumMark: Boolean = true,
 ) {
     // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
     val reduceMotion = LocalReduceMotion.current
@@ -542,21 +541,13 @@ fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 图标 — 规范 §3.6：滚筒圆母题（DrumMark）静止态
-            if (useDrumMark) {
-                DrumMark(
-                    size = 64.dp,
-                    tint = AppColors.colorScheme.textTertiary
-                )
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = AppColors.colorScheme.textTertiary
-                )
-            }
+            // 图标 — 规范 §3.6：滚筒圆母题（DrumMark）静止态；48dp + primary（规范 §3.6 母题色）
+            DrumMark(
+                size = 48.dp,
+                tint = AppColors.colorScheme.primary
+            )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
@@ -614,7 +605,7 @@ fun rememberSkeletonBrush(): Brush {
 @Composable
 fun SkeletonBlock(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(AppDimens.radiusSm),
+    shape: Shape = RoundedCornerShape(AppDimens.radiusMd),
 ) {
     Box(
         modifier = modifier
@@ -822,8 +813,10 @@ fun AppConfirmDialog(
                             .background(AppColors.colorScheme.divider)
                     )
                     DialogAction(
+                        // 危险确认 — 规范 §2.1：危险语义一律 dangerInk（浅 #A8435A / 暗 #E795A5），
+                        // 不复用 error 角色色（error 留给表单校验红）
                         text = confirmText,
-                        color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary,
+                        color = if (isDanger) AppColors.colorScheme.dangerInk else AppColors.colorScheme.primary,
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
                     )

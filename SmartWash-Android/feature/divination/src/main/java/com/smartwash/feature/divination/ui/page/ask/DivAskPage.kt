@@ -310,7 +310,7 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(48.dp))
-        DivSeal(stringResource(R.string.div_safety_seal), size = 44.dp, fontSize = 26.sp)
+        DivSeal(stringResource(R.string.div_safety_seal), size = 44.dp, fontSize = 22.sp)
         Spacer(Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.div_safety_title),
@@ -320,7 +320,7 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Text(
             text = stringResource(R.string.div_safety_body),
-            fontSize = 13.sp,
+            fontSize = 16.sp,
             lineHeight = 24.sp,
             color = c.textSecondary,
             textAlign = TextAlign.Center,
@@ -400,8 +400,8 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                 DivGoldButton(
                     text = stringResource(R.string.div_manual_confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    height = 42.dp,
-                    fontSize = 13.sp,
+                    height = 52.dp,
+                    fontSize = 18.sp,
                     onClick = { onConfirm(lines) },
                 )
             }
@@ -426,7 +426,7 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     color = c.textPrimary,
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(stringResource(R.string.div_numbers_hint), fontSize = 11.sp, color = c.textTertiary)
+                Text(stringResource(R.string.div_numbers_hint), fontSize = 12.sp, color = c.textTertiary)
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NumberField(first, { first = it }, Modifier.weight(1f))
@@ -437,8 +437,8 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     text = stringResource(R.string.div_manual_confirm),
                     enabled = valid,
                     modifier = Modifier.fillMaxWidth(),
-                    height = 42.dp,
-                    fontSize = 13.sp,
+                    height = 52.dp,
+                    fontSize = 18.sp,
                     onClick = { onConfirm(first.toInt(), second.toInt()) },
                 )
             }

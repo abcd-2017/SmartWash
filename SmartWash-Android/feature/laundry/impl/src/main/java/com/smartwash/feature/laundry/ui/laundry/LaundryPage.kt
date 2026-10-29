@@ -4,14 +4,13 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -171,12 +171,13 @@ fun LaundryPage(
                         color = AppColors.colorScheme.textPrimary
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
+                    // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边
+                    // + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = 0.dp,
+                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Row(
@@ -357,17 +358,6 @@ private fun LaundryTypeItem(
         animationSpec = defaultSpring(),
         label = "borderColor"
     )
-    // 描边宽度 0.5dp ↔ 1.5dp、阴影 level1 ↔ level2 硬切 → 弹簧过渡（reduced motion 自动降级 180ms）
-    val borderWidth by animateDpAsState(
-        targetValue = if (isSelected) 1.5.dp else 0.5.dp,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "borderWidth"
-    )
-    val shadowElevation by animateFloatAsState(
-        targetValue = if (isSelected) AppElevation.level2.value else AppElevation.level1.value,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "cardElevation"
-    )
     // 指示器容器底色：原 if/else 瞬跳 → 统一走 selectedColor（200ms 档弹簧，reduced motion 降级 180ms）
     val indicatorColor = selectedColor(
         if (isSelected) AppColors.colorScheme.primary.copy(alpha = 0.15f)
@@ -375,20 +365,21 @@ private fun LaundryTypeItem(
     )
 
     val interactionSource = remember { MutableInteractionSource() }
-    // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
-    // （规范 §3：卡片 elevation 0 用描边代替；选中强调由 primaryLight 底 + primary 描边承担）
+    // 卡片规格：radiusLg 16 + 1px outline 描边 + 阴影 level1（规范 §2.4 卡片档）。
+    // 选中强调由 primaryLight 底 + primary 描边承担，描边宽度不再随选中变化（原 0.5/1/1.5dp
+    // 三档与弹簧过渡未接入绘制，属死代码，一并移除——视觉与时序均无变化）
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            // 原 clickable(indication = LocalIndication.current) 会浮出 Material 涟漪 → pressable（自带防抖与降级）
+            // 原 clickable 直挂 Material 涟漪（§7 禁令）→ pressable（自带防抖与降级）
             .pressable(onClick = {
                 view.performHaptic(HapticEffect.SELECTION)
                 cardClick()
             }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
-        shadowElevation = 0.dp,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier

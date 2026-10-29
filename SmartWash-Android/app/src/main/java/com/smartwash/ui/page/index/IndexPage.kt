@@ -62,6 +62,7 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
@@ -297,7 +298,7 @@ private fun StatusHeroCard(
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
             .padding(top = 8.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusLg))
+            .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
             .padding(20.dp)
     ) {
@@ -406,7 +407,7 @@ private fun StatusHeroCard(
 }
 
 /**
- * 账户数据卡 — 白底 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 账户数据卡 — 白底 + 1px 描边 + 轻阴影（规范 v0.4 §3.1 / §2.4）。
  * 余额是主角（大字），优惠券和累计订单是小字。
  */
 @Composable
@@ -423,7 +424,8 @@ private fun AccountDataCard(
             .padding(top = 16.dp),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -447,14 +449,12 @@ private fun AccountDataCard(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                        // 数据大字恒为 36sp（v0.4 §2.2 硬规则：一屏一个锚点级大字）。
+                        // 窄屏降级只允许落到阶梯内的档（headline 28 / titleLarge 22），不造夹档。
                         style = when {
                             availableWidth >= 160.dp -> AppTextStyles.DataLarge
-                            availableWidth >= 130.dp -> AppTextStyles.DataLarge.copy(
-                                fontSize = 30.sp, lineHeight = 38.sp
-                            )
-                            else -> AppTextStyles.DataLarge.copy(
-                                fontSize = 24.sp, lineHeight = 32.sp
-                            )
+                            availableWidth >= 130.dp -> AppTextStyles.Headline
+                            else -> MaterialTheme.typography.titleLarge
                         },
                         color = AppColors.colorScheme.primaryDark,
                         maxLines = 1,
@@ -604,7 +604,7 @@ private fun ServiceEntry(
 }
 
 /**
- * 进行中订单列表 — 白底卡片 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 进行中订单列表 — 白底卡片 + 1px 描边 + 轻阴影（规范 v0.4 §3.1 / §2.4）。
  * 36dp 图标容器 + 等宽价格。
  */
 @Composable
@@ -618,7 +618,8 @@ private fun OrderListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
@@ -653,7 +654,8 @@ private fun OrderListItem(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            // §3.4 列表行高 56dp：图标容器 36 + 上下各 10dp（原 16dp 会得 68dp）
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 图标容器色按状态语义（设计稿首页画板实测）：清洗中→water 水蓝（icon.md 20），其余→橙（进行中待办语义）

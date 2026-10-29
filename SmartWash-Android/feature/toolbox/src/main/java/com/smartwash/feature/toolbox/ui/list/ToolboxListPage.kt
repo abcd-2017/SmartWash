@@ -47,6 +47,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.pressable
@@ -233,7 +234,8 @@ private fun AppendLoadingRow() {
 }
 
 /**
- * 短链条目卡（画板「短链管理」312×122 · r16 · surface 底 + 1px outline 描边、无阴影）：
+ * 短链条目卡（画板「短链管理」312×122 · r16 · surface 底 + 1px outline 描边 +
+ * 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法））：
  * 图标盒 36（蓝·链接语义，icon 24）+ 短码（title 18/600 + tnum）+ 类型/可见性 chip +
  * 右列（点击数/有效期 caption 12/400 + 复制描边按钮），次行为目标链接预览（caption，单行省略）。
  */
@@ -253,6 +255,7 @@ private fun ShortCodeCard(
             .pressable(onClick = onClick, scaleFactor = 0.97f),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         // 画板实测：内边距左/上/右 20，底部 12 留给链接行
@@ -268,7 +271,7 @@ private fun ShortCodeCard(
                 IconBox(
                     icon = Icons.Rounded.Link,
                     size = 36.dp,
-                    iconSize = 24.dp,
+                    iconSize = 20.dp,
                     containerColor = AppColors.colorScheme.iconContainerBlue,
                     iconTint = AppColors.colorScheme.iconForegroundBlue,
                 )

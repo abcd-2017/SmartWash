@@ -60,21 +60,23 @@ fun PhoneNumberInput(
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
-        // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432）
+        // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp),
+                .height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 前缀图标 16dp + opacity .5（§3.7）
             Icon(
                 Icons.Rounded.Phone,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 tint = if (isPhoneError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            // 前缀与文字间距 spaceSm(12dp)（§3.7）
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = phone,
                 onValueChange = { newValue ->
@@ -85,17 +87,19 @@ fun PhoneNumberInput(
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下
                 textStyle = LocalTextStyle.current.copy(
-                    fontSize = 14.sp, lineHeight = 20.sp, color = contentColor
+                    fontSize = 16.sp, lineHeight = 24.sp, color = contentColor
                 ),
                 cursorBrush = SolidColor(if (isPhoneError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
                         if (phone.isEmpty()) {
+                            // §3.7：占位符字号与正文一致
                             Text(
                                 text = stringResource(R.string.phone_hint),
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }

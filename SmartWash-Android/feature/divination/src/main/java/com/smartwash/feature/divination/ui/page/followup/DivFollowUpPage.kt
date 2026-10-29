@@ -3,7 +3,6 @@ package com.smartwash.feature.divination.ui.page.followup
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -42,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
@@ -55,6 +55,7 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
 import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivPageHeader
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
@@ -205,6 +206,11 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
         Box(
             Modifier
                 .widthIn(max = if (isUser) 220.dp else 240.dp)
+                // 回复气泡即卡面（surface + 1px 描边 + r16，§3.1 卡片画法）：宣纸侧补 level1 轻阴影；
+                // 用户金底气泡按 §2.4「按钮/hero 类实色块不加投影」豁免
+                .then(
+                    if (isUser || c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+                )
                 .then(appear)
                 .clip(shape)
                 .background(if (isUser) c.goldGradient.first() else c.surface)
@@ -298,7 +304,9 @@ private fun FollowUpInputBar(
                     .background(if (canSend) c.gold else c.gold14)
                     .clickable(
                         interactionSource = interactionSource,
-                        indication = LocalIndication.current,
+                        // 规范 §7：交互反馈不使用 Material ripple —— 涟漪形状不受令牌控制，
+                        // 会浮出与容器不贴合的圆形色块；按压反馈由 pressScale(0.97) 承载
+                        indication = null,
                         enabled = canSend,
                         onClick = debouncedSend,
                     ),

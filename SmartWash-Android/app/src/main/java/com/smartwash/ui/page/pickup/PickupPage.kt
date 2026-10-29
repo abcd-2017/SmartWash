@@ -7,15 +7,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,19 +27,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smartwash.common.utils.pressable
 import androidx.navigation.NavHostController
@@ -48,14 +50,21 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.OrderRoute
+import com.smartwash.ui.page.PageConstant
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.Background
+import com.smartwash.common.ui.theme.Divider
+import com.smartwash.common.ui.theme.Primary
+import com.smartwash.common.ui.theme.PrimaryLight
+import com.smartwash.common.ui.theme.TextSecondary
 import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -129,11 +138,12 @@ fun PickupPage(
                             IconBox(
                                 icon = Icons.Default.School,
                                 size = 32.dp,
+                                // v0.4 图标容器小档 = 32 容器 / 12 圆角 / 20 图标
                                 iconSize = 20.dp,
                                 containerColor = AppColors.colorScheme.iconContainerBlue,
                                 iconTint = AppColors.colorScheme.iconForegroundBlue
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                             Text(
                                 text = orderList[0]?.schoolsVo?.schoolName ?: "",
                                 style = MaterialTheme.typography.titleMedium
@@ -154,30 +164,24 @@ fun PickupPage(
                                 }
                             }
                         }
+                        PickupActionBar(
+                            onContactServiceClick = {
+                                // 客服功能未立项，先以 Toast 兜底（与 OrderDetailPage D-OD12 约定一致）
+                                Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
+                            },
+                            onCopyPickupCodeClick = {
+                                // 主行动取列表首单的取件码；无码时给原因提示
+                                val code = orderList.peek(0)?.pickupCode?.split(":")?.getOrNull(2) ?: ""
+                                if (code.isNotEmpty()) {
+                                    clipboardManager.setText(AnnotatedString(code))
+                                    Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, context.getString(R.string.no_pickup_code), Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
                     }
                 }
-
-                PickupActionBar(
-                    onContactServiceClick = {
-                        // 客服功能未立项，先以 Toast 兜底（与 OrderDetailPage D-OD12 约定一致）
-                        Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
-                    },
-                    onCopyPickupCodeClick = {
-                        // 主行动取列表首单的取件码；无码时给原因提示
-                        val code = orderList.peek(0)?.pickupCode?.split(":")?.getOrNull(2) ?: ""
-                        if (code.isNotEmpty()) {
-                            clipboardManager.setText(AnnotatedString(code))
-                            Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, context.getString(R.string.no_pickup_code), Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-            } else {
-                EmptyState(
-                    icon = Icons.Default.LocalLaundryService,
-                    message = stringResource(R.string.no_pickup_orders)
-                )
             }
         }
     }
@@ -202,27 +206,25 @@ private fun PickupOrderCard(
                 Column {
                     Text(
                         text = stringResource(R.string.order_no_format, order.orderNo),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary
                     )
                 }
-                // 金额 18/24/700 + primaryDark（画板实测 #1E8C5C·浅 / #5BC894·深）
                 Text(
                     text = stringResource(R.string.currency_format, "${order.totalPrice}"),
-                    style = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold),
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primaryDark
                 )
             }
 
-            // 画板实测节奏：说明区 → 20 → 1dp hairline 分隔 → 12 → 取件码区
-            Spacer(modifier = Modifier.height(AppDimens.spaceLg))
-            HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline)
-            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            Box(modifier = Modifier.fillMaxWidth().height(0.5.dp).background(AppColors.colorScheme.divider))
+            Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -231,36 +233,42 @@ private fun PickupOrderCard(
             ) {
                 Text(
                     text = stringResource(R.string.pickup_code),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        color = AppColors.colorScheme.textSecondary
+                    )
                 )
-                // 取件码大字 = font.display 36/44/700 + tnum（AppTextStyles.DataLarge）
                 Text(
                     text = pickupCode,
-                    style = AppTextStyles.DataLarge,
-                    color = AppColors.colorScheme.primaryDark
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.colorScheme.primaryDark,
+                        fontFeatureSettings = "tnum",
+                        letterSpacing = 0.sp
+                    )
                 )
             }
 
             if (pickupCode.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                Spacer(modifier = Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    // 复制按钮（画板实测：80×48 胶囊 radiusFull、surfaceVariant 底、文字 12/400 textPrimary）
-                    Box(
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = AppColors.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .pressable(onClick = {
                                 clipboardManager.setText(AnnotatedString(pickupCode))
                                 view.performHaptic(HapticEffect.SELECTION)
                                 Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
                             })
-                            .background(AppColors.colorScheme.surfaceVariant, RoundedCornerShape(AppDimens.radiusFull))
-                            .defaultMinSize(minWidth = 80.dp, minHeight = 48.dp),
-                        contentAlignment = Alignment.Center
+                            .clip(RoundedCornerShape(12.dp))
                     ) {
                         Text(
                             text = stringResource(R.string.copy_pickup_code),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textPrimary
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppColors.colorScheme.textPrimary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
                 }
@@ -269,11 +277,7 @@ private fun PickupOrderCard(
     }
 }
 
-/**
- * 底部操作栏（模板 E 变体）— 画板实测：无 surface 底/顶线，按钮直接落在页面底上；
- * 高 48 / radiusFull 胶囊 / 按钮间距 12 / 底部留白 16 / 文字 font.title 18/600；
- * 主按钮纯色 primary + onPrimary 双主题字；次按钮透明底 + 1dp outline 描边 + primaryDark 字
- */
+/** 底部操作栏 — 次按钮（联系客服）+ 主按钮（复制取件码），双 48dp 胶囊落在页面底上 */
 @Composable
 private fun PickupActionBar(
     onContactServiceClick: () -> Unit,

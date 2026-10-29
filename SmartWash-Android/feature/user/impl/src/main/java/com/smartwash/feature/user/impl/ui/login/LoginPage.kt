@@ -215,14 +215,16 @@ fun LoginPage(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 毛玻璃输入卡片 — 内边距上 16 / 下 24 / 水平 16（登录画板 376→584：392 顶距 16、560→584 底距 24）
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（DESIGN-SPEC v0.4 §5：玻璃卡统一
+            // 「垂直 20 / 水平 16」，必须写双参重载 padding(horizontal, vertical)——
+            // 双位置参重载是 (start, top)，方向会反转）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgCard)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,

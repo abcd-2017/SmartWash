@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,7 @@ import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.TianXiangHeader
 import com.smartwash.feature.divination.ui.components.divSerif
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.HapticEffect
@@ -236,7 +238,7 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
     }
 }
 
-/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标 */
+/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（自绘卡：宣纸侧按 §2.4 补 level1 轻阴影，玄墨侧豁免） */
 @Composable
 private fun JadeTile(
     name: String,
@@ -247,11 +249,13 @@ private fun JadeTile(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
+    val shape = RoundedCornerShape(16.dp)
     // 玉牌四牌并排且 navigate 无 launchSingleTop：连点会双推 Ask 页，按压反馈与防抖由 pressable 一套承载
     Box(
         modifier
             .height(156.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
+            .clip(shape)
             .background(c.surface)
             .pressable(onClick = onClick),
     ) {

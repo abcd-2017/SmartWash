@@ -154,11 +154,13 @@ fun PaymentPage(
                             .padding(horizontal = AppDimens.pagePadding),
                         verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
                     ) {
-                        // 应付金额卡片（画板实测：24 边距 / r16 / 1px outline 描边 / 内边距 20，无阴影）
+                        // 应付金额卡片（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
+                        // 描边 + level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20）
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
@@ -186,8 +188,9 @@ fun PaymentPage(
                                         modifier = Modifier.padding(top = 8.dp)
                                     )
                                 }
+                                // §1.3 卡内行分隔线 = 0.5dp hairline
                                 HorizontalDivider(
-                                    thickness = 1.dp,
+                                    thickness = 0.5.dp,
                                     color = AppColors.colorScheme.hairline,
                                     modifier = Modifier.padding(vertical = 16.dp)
                                 )
@@ -204,13 +207,14 @@ fun PaymentPage(
                                 style = AppTextStyles.SectionTitle
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                            // 选中态画板实测：primaryContainer 底（#F0FBF4/#17322B）+ 1px 描边
+                            // 选中态画板实测：primaryContainer 底（#F0FBF4/#17322B）+ 1px 描边 + level1 阴影
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = if (selectedPaymentMethod == "balance")
                                     MaterialTheme.colorScheme.primaryContainer
                                 else AppColors.colorScheme.surface,
+                                shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -272,13 +276,14 @@ fun PaymentPage(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // 优惠券
+                            // 优惠券卡：surface 白底 + 1px outline 描边 + level1(1dp) 阴影（§3.1）
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressable(onClick = { showBottomSheet = true }, debounce = false),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = AppColors.colorScheme.surface,
+                                shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -345,7 +350,8 @@ fun PaymentPage(
                             .fillMaxWidth()
                             .background(AppColors.colorScheme.surface)
                     ) {
-                        HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.outline)
+                        // §2.4 豁免：固定 CTA 条与滚动内容之间可用 0.5dp 分隔线
+                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                         AppButton(
                             text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
                             onClick = {

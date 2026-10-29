@@ -26,6 +26,15 @@ object AppTextStyles {
         fontFeatureSettings = "tnum",
     )
 
+    /** 保留大字 — 28sp / 36sp / 700（v0.4 字阶 headline 档）。
+     *  用于「数据大字在窄屏的阶梯内降级」：36 → 28 → 22，不造夹档。 */
+    val Headline = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = 0.sp,
+    )
+
     /** 状态大字 — hero 订单状态锚点字（迁移 21→22 = font.titleLarge） */
     val StatusLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,

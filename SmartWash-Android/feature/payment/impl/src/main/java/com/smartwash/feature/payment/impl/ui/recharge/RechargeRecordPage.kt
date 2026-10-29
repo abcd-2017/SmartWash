@@ -43,6 +43,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.motionSpec
 
@@ -147,11 +148,13 @@ fun RechargeRecordPage(
 
 @Composable
 private fun RechargeRecordCard(record: RechargeRecordVo) {
-    // 画板实测：卡片 surface 底 + 1px outline 描边 + r16、无阴影，内边距 20
+    // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
+    // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20（旧实现无阴影属禁止项）
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

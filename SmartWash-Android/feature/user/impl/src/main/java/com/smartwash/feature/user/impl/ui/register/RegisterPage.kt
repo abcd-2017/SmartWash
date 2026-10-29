@@ -318,14 +318,15 @@ fun RegisterPage(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 毛玻璃输入卡片 — 内边距上 16 / 下 24 / 水平 16（对齐登录画板 376→584：392 顶距 16、560→584 底距 24；同模板 A）
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（DESIGN-SPEC v0.4 §5 玻璃卡统一值，
+            // 与登录页同模板；双参重载避免方向反转）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgCard)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -501,20 +502,23 @@ private fun VerificationCodeRow(
             Spacer(modifier = Modifier.height(4.dp))
         }
         // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432 同款，D-R4）
+        // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp),
+                .height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 前缀图标 16dp + opacity .5（§3.7）
             Icon(
                 Icons.Rounded.Key,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 tint = if (isVerificationCodeError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            // 前缀与文字间距 spaceSm(12dp)（§3.7）
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = verificationCode,
                 onValueChange = onValueChange,
@@ -523,17 +527,19 @@ private fun VerificationCodeRow(
                     .focusRequester(focusRequester),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下
                 textStyle = LocalTextStyle.current.copy(
-                    fontSize = 14.sp, lineHeight = 20.sp, color = contentColor
+                    fontSize = 16.sp, lineHeight = 24.sp, color = contentColor
                 ),
                 cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
                         if (verificationCode.isEmpty()) {
+                            // §3.7：占位符字号与正文一致
                             Text(
                                 text = stringResource(R.string.verification_code_hint),
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }
@@ -553,10 +559,11 @@ private fun VerificationCodeRow(
             val sendTextColor = selectedColor(
                 contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
             )
+            // §3.7 尾缀发送 = 描边按钮：1dp 描边 + radiusSmall(12dp) + 高 40dp + 横向 14dp；
+            // 行高已为 48dp，按钮交由 Row 的 CenterVertically 居中，不再需要 offset 补偿
             Box(
                 modifier = Modifier
-                    .height(48.dp)
-                    .offset(y = (-6).dp)
+                    .height(40.dp)
                     .then(
                         if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
                         else Modifier
@@ -564,7 +571,7 @@ private fun VerificationCodeRow(
                     .border(
                         width = 1.dp,
                         color = sendBorderColor,
-                        shape = RoundedCornerShape(AppDimens.radiusFull)
+                        shape = RoundedCornerShape(AppDimens.radiusSmall)
                     )
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center

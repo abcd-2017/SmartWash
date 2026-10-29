@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.detail
 
 import android.widget.Toast
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -62,10 +63,14 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
+import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 
 @Composable
@@ -129,16 +134,17 @@ fun OrderDetailPage(
                         // 屏 6 实测 页头文字底→插画顶 14dp：PageHeader 自带内边距已占 18dp，不再追加 Spacer
                         OrderStatusHeader(status = OrderStatus.fromStatus(orderInfo?.status ?: "-1"))
 
-                        // 进度时间线（规范 §3.4）；卡片规格对齐同页组画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
-                        // （规范 §3：卡片 elevation 0 用描边代替）
+                        // 进度时间线（规范 §3.4）；卡片规格对齐 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
+                            // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
-                            // 屏 6 实测卡内边距：左右 20 / 上 10 / 下 4，标题→节点带 6
-                            Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 4.dp)) {
+                            // 卡内边距统一 20（v0.4 §2.3），标题→节点带 6
+                            Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
                                 Text(
                                     text = stringResource(R.string.progress_timeline),
                                     style = AppTextStyles.SectionTitle,

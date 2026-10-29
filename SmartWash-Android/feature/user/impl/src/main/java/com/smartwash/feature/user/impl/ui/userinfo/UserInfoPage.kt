@@ -472,7 +472,7 @@ fun UserInfoPage(
                                 else showBindDialog = true
                             }
                         )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(
                             icon = Icons.Default.LocationOn,
                             containerColor = AppColors.colorScheme.iconContainerOrange,
@@ -517,7 +517,7 @@ fun UserInfoPage(
                             },
                             onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
                         )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(
                             icon = Icons.Default.Schedule,
                             containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -525,7 +525,7 @@ fun UserInfoPage(
                             label = stringResource(R.string.divination_calendar),
                             onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                         )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 1.dp)
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(
                             icon = Icons.Default.Settings,
                             containerColor = AppColors.colorScheme.iconContainerGreen,

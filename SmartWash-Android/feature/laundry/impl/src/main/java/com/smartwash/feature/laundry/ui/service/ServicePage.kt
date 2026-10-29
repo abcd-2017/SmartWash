@@ -17,11 +17,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.LocalLaundryService
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Checkroom
+import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DryCleaning
+import androidx.compose.material.icons.rounded.LocalLaundryService
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,6 +49,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
@@ -154,7 +155,7 @@ private fun ServiceErrorState(
     onRetry: () -> Unit
 ) {
     EmptyState(
-        icon = Icons.Default.LocalLaundryService,
+        icon = Icons.Rounded.LocalLaundryService,
         message = message,
         modifier = Modifier.fillMaxSize(),
         action = {
@@ -169,7 +170,7 @@ private fun ServiceErrorState(
 
 /**
  * 搜索胶囊 — 48dp 高（画板实测），胶囊圆角（radiusFull），
- * 白底 + 1px 描边、无阴影（画板 shadows=[]，规范：卡片 elevation 0 用描边代替）。
+ * 白底 + 1px 描边 + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）。
  */
 @Composable
 private fun SearchBar() {
@@ -180,6 +181,7 @@ private fun SearchBar() {
             .padding(top = 8.dp),
         shape = RoundedCornerShape(AppDimens.radiusFull),
         color = MaterialTheme.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -190,7 +192,7 @@ private fun SearchBar() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Search,
+                imageVector = Icons.Rounded.Search,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = AppColors.colorScheme.textTertiary
@@ -206,7 +208,7 @@ private fun SearchBar() {
 }
 
 /**
- * 服务项目列表卡片 — 白底 + 1px 描边、无阴影（画板实测 shadows=[]，规范 elevation 0）。
+ * 服务项目列表卡片 — 白底 + 1px 描边 + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）。
  * 36dp 图标容器（四色 iconTile）+ 等宽价格 + 预约胶囊（画板实测 60×24）。
  */
 @Composable
@@ -220,6 +222,7 @@ private fun ServiceListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
@@ -263,7 +266,7 @@ private fun ServiceItemRow(
         IconBox(
             icon = serviceIcon(item),
             size = 36.dp,
-            iconSize = 24.dp,
+            iconSize = 20.dp,
             containerColor = tileColor,
             iconTint = tileTint
         )
@@ -317,11 +320,18 @@ private fun ReservePill() {
     }
 }
 
+/**
+ * 服务图标统一走 `Icons.Rounded`（规范 §10「混用图标变体」：filled 与 rounded 不得混在同一组）。
+ * 本组为 serviceIcons 回退序列 + [serviceIcon] 的返回值集合，二者必须同变体。
+ *
+ * ⚠️ 待办（本次不动）：[serviceIcon] 按中文服务名 `contains("干"/"精"/"熨"/"洗")` 选图标，
+ * 名称改动即错配；应改为按 itemId/服务端下发的图标标识映射。属逻辑改动，本次仅统一图标变体。
+ */
 private val serviceIcons = listOf(
-    Icons.Filled.LocalLaundryService,
+    Icons.Rounded.LocalLaundryService,
     Icons.Rounded.DryCleaning,
     Icons.Rounded.Checkroom,
-    Icons.Filled.CleaningServices,
+    Icons.Rounded.CleaningServices,
 )
 
 private fun serviceIcon(item: LaundryItem): ImageVector {
@@ -329,8 +339,8 @@ private fun serviceIcon(item: LaundryItem): ImageVector {
     return when {
         name.contains("干") -> Icons.Rounded.DryCleaning
         name.contains("精") || name.contains("护理") || name.contains("奢") -> Icons.Rounded.Checkroom
-        name.contains("熨") -> Icons.Filled.CleaningServices
-        name.contains("洗") || name.contains("标准") -> Icons.Filled.LocalLaundryService
+        name.contains("熨") -> Icons.Rounded.CleaningServices
+        name.contains("洗") || name.contains("标准") -> Icons.Rounded.LocalLaundryService
         else -> serviceIcons[(item.itemId % serviceIcons.size).toInt()]
     }
 }

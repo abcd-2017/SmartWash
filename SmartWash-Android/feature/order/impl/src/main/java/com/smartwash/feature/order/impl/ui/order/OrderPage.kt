@@ -65,6 +65,7 @@ import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.StatusDot
@@ -400,11 +401,13 @@ private fun MonthGroupCard(
     cancelClick: (Long) -> Unit,
     itemClick: (OrderInfo) -> Unit,
 ) {
-    // 设计稿实测：白底 + radiusLg 16 + 1px outline 描边 + 无阴影（对齐同页组「洗衣服务」画板取值）
+    // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：纯白 surface 底 + 1px outline 描边 + level1(1dp) 阴影
+    //（≈ CSS 0 2px 12px rgba(20,40,30,.05)）。旧实现「无阴影裸白卡」属规范明令禁止项。
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
@@ -418,9 +421,11 @@ private fun MonthGroupCard(
                     itemClick = { itemClick(order) }
                 )
                 if (index < group.orders.lastIndex) {
+                    // §1.3：0.5dp 发丝线只能用在同一张卡片内部的行之间；
+                    // 本卡无卡片级内边距（行自己带 horizontal 20dp），故分隔线同步内缩 20dp 与文字对齐
                     HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        thickness = 1.dp,
+                        modifier = Modifier.padding(horizontal = AppDimens.cardPadding),
+                        thickness = 0.5.dp,
                         color = AppColors.colorScheme.hairline
                     )
                 }

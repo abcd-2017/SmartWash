@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
@@ -177,7 +178,7 @@ fun CouponPage(
 
                         // 首载失败（三列表均空）：给出说明与重试，不再只靠 Toast
                         CouponContentState.Error -> EmptyState(
-                            // EmptyState 默认 useDrumMark：icon 不渲染，仅占位（core 图标，不引 icons-extended）
+                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位（core 图标，不引 icons-extended）
                             icon = Icons.Default.Refresh,
                             message = stringResource(R.string.coupon_load_failed),
                             modifier = Modifier
@@ -218,7 +219,8 @@ fun CouponPage(
 
 /**
  * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态角标
- * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline、无阴影（规范 §3 卡片 elevation 0）；
+ * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline；
+ * 阴影按规范 §2.4 卡片档 = AppElevation.level1（CSS 0 2px 12px rgba(20,40,30,.05) 的最近似档位）；
  * 可用态金额区白底（画板无填充）、历史态金额区为页面底色块；弱化态靠换灰，不做整体透明
  */
 @Composable
@@ -258,6 +260,7 @@ fun UserCouponCard(
             },
         shape = TicketShape,
         color = surfaceColor,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, outlineColor)
     ) {
         Row(

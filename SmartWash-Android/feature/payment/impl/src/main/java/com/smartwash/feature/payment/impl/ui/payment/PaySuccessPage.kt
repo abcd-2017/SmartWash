@@ -51,6 +51,7 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.CircleIconBox
 import com.smartwash.common.ui.theme.IconBox
@@ -145,13 +146,15 @@ fun PaySuccessPage(
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = AppDimens.pagePadding),
                     ) {
-                        // 庆祝卡（画板实测：surface 白底 + 1px outline 描边 + r16，无阴影；
-                        // 上 40 / 下 44 内边距；成功圆 44 = primaryLight 容器 + 勾 28 = primary；
-                        // 结果大标题 28/700，绿字取 primaryDark（浅 #1E8C5C / 深 #5BC894，画板实测）
+                        // 庆祝卡（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
+                        // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；上 40 / 下 44 内边距；
+                        // 成功圆 44 = primaryLight 容器 + 勾 28 = primary；结果大标题 28/700，绿字取
+                        // primaryDark（浅 #1E8C5C / 深 #5BC894，画板实测）
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(
@@ -171,7 +174,7 @@ fun PaySuccessPage(
                                     CircleIconBox(
                                         icon = Icons.Default.Check,
                                         size = 44.dp,
-                                        iconSize = 28.dp
+                                        iconSize = 24.dp
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(24.dp))
@@ -191,7 +194,8 @@ fun PaySuccessPage(
 
                         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
 
-                        // 订单信息卡（画板实测：标题 18/600，卡内边距横 20 / 纵 24，行距 16，行字 12/400）
+                        // 订单信息卡（DESIGN-SPEC v0.4 §3.1：surface 白底 + 1px outline 描边 +
+                        // level1(1dp) 阴影；标题 18/600，卡内边距横 20 / 纵 24，行距 16，行字 12/400）
                         Text(
                             text = stringResource(R.string.order_info),
                             style = AppTextStyles.SectionTitle
@@ -201,7 +205,7 @@ fun PaySuccessPage(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
-                            shadowElevation = 0.dp,
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(
@@ -237,8 +241,9 @@ fun PaySuccessPage(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // 寄存柜提示卡（画板实测：图标盒 36/r12 + 首行随图标盒垂直居中；
-                        // 行间距 8，说明行 12/400 textSecondary）
+                        // 寄存柜提示卡（DESIGN-SPEC v0.4 §3.1：surface 白底 + 1px outline 描边 +
+                        // level1(1dp) 阴影；图标盒 36/r12 + 首行随图标盒垂直居中；行间距 8，
+                        // 说明行 12/400 textSecondary）
                         Text(
                             text = stringResource(R.string.locker_info_section),
                             style = AppTextStyles.SectionTitle
@@ -248,7 +253,7 @@ fun PaySuccessPage(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
-                            shadowElevation = 0.dp,
+                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Row(
