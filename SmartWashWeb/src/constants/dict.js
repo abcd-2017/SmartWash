@@ -27,6 +27,7 @@ export const PAY_STATUS_TAG_TYPES = {
   0: 'warning', // 待支付
   1: 'success', // 已支付
   2: 'danger', // 失败
+  3: 'primary', // 处理中
 };
 
 /** 储物柜状态 → el-tag 类型 */
@@ -53,6 +54,26 @@ export const RECHARGE_TYPE_TAG_TYPES = {
   1: 'success', // 微信支付
   2: 'primary', // 支付宝支付
 };
+
+/** 充值状态 → 文案（与后端充值记录 status 对齐：1 成功 2 失败 3 处理中） */
+export const RECHARGE_STATUS_TEXT = {
+  1: '成功',
+  2: '失败',
+  3: '处理中',
+};
+
+/** 充值状态 → el-tag 类型 */
+export const RECHARGE_STATUS_TAG_TYPES = {
+  1: 'success',
+  2: 'danger',
+  3: 'warning',
+};
+
+/** 充值状态文案（未知值兜底） */
+export const rechargeStatusText = (status) => RECHARGE_STATUS_TEXT[status] || '未知';
+
+/** 充值状态标签配色 */
+export const rechargeStatusTagType = (status) => dictValue(RECHARGE_STATUS_TAG_TYPES, status);
 
 /** 订单状态标签配色 */
 export const orderStatusTagType = (status) => dictValue(ORDER_STATUS_TAG_TYPES, status);
@@ -145,3 +166,17 @@ export const couponStatusText = (status) => COUPON_STATUS_TEXT[status] || '已�
 
 /** 优惠券状态标签配色 */
 export const couponStatusTagType = (status) => dictValue(COUPON_STATUS_TAG_TYPES, status);
+
+// ---------- 观象台·术数方法（与后端占卜模块 method 枚举对齐） ----------
+
+/** 术数方法选项（筛选下拉/表单下拉用） */
+export const DIV_METHOD_OPTIONS = [
+  { value: 'liuyao', label: '六爻' },
+  { value: 'meihua', label: '梅花易数' },
+  { value: 'qimen', label: '奇门遁甲' },
+  { value: 'liuren', label: '大六壬' },
+];
+
+/** 术数方法 → 文案（未知值回显原值） */
+export const divinationMethodText = (method) =>
+  DIV_METHOD_OPTIONS.find((m) => m.value === method)?.label || method;

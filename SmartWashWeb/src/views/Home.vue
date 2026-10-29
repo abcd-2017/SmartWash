@@ -112,24 +112,12 @@ onMounted(async () => {
   padding: 0;
 }
 
-/* 统计卡片网格：进场淡入上移（首挂载一次；数值滚动由 useAnimatedNumber 处理） */
+/* 统计卡片网格 */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 24px;
-  animation: home-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
-}
-
-@keyframes home-fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @media (min-width: 900px) {
@@ -195,13 +183,12 @@ onMounted(async () => {
   color: #0f172a;
 }
 
-/* 快捷操作区：与统计卡同一进场节奏，略延迟形成微交错 */
+/* 快捷操作区 */
 .quick-actions {
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  animation: home-fade-in-up var(--motion-slow) var(--ease-decelerate) 80ms both;
 }
 
 .quick-actions__title {
@@ -235,11 +222,18 @@ onMounted(async () => {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 .quick-action-item:hover {
   background: rgba(99, 102, 241, 0.08);
   color: #6366f1;
+  /* hover 上浮表达「可进入」，与统计卡层级语言一致 */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 </style>

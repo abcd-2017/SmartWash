@@ -51,9 +51,11 @@ function handleUnauthorized() {
   }, 1500);
 
   ElMessage.error('登录已过期，请重新登录');
-  // 动态引入 router 避免 http.js 与 router 的循环依赖，SPA 内跳转到登录页
+  // 动态引入 router 避免 http.js 与 router 的循环依赖，SPA 内跳转到登录页；
+  // 带上当前地址，登录成功后原路返回，避免深层操作被过期 token 打断后丢失现场
   import('@/router').then(({ default: router }) => {
-    router.push('/login');
+    const current = router.currentRoute.value.fullPath;
+    router.push(`/login?redirect=${encodeURIComponent(current)}`);
   });
 }
 
@@ -94,7 +96,11 @@ http.interceptors.response.use(
       handleUnauthorized();
     } else {
       // 非 401 的 HTTP 错误统一提示（优先展示后端返回的 message）
-      ElMessage.error(error.response?.data?.message || error.message || '网络异常，请稍后重试');
+      // grouping 合并同文案的并发失败提示（页面初始化多请求齐挂时只弹一条）
+      ElMessage.error({
+        message: error.response?.data?.message || error.message || '网络异常，请稍后重试',
+        grouping: true,
+      });
     }
     return Promise.reject(error);
   }

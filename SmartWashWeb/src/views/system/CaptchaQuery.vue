@@ -15,7 +15,7 @@
             v-model="form.phoneNumber"
             placeholder="请输入手机号"
             clearable
-            maxlength="13"
+            maxlength="14"
             style="width: 240px"
             @input="phoneError = ''"
           />

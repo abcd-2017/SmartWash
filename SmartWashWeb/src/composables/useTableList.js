@@ -29,15 +29,34 @@ export function useTableList({ fetchApi, baseQuery = {}, buildParams, errorMsg =
     ...baseQuery,
   });
 
+  // 竞态守卫：快速翻页/连续搜索时旧响应后到会覆盖新页数据（点第 5 页显示第 3 页），
+  // 每次拉取自增序号，响应回来时序号不一致即丢弃
+  let fetchSeq = 0;
+  // 是否已完成过首次加载（首次加载不触发回顶，页面本来就在顶部）
+  let hasFetchedOnce = false;
+
   // 获取数据
   const fetchData = async () => {
+    const mySeq = ++fetchSeq;
     listLoading.value = true;
     try {
       const params = buildParams ? buildParams(listQuery) : { ...listQuery };
       const res = await fetchApi(params);
+      if (mySeq !== fetchSeq) return;
       list.value = res.records;
       total.value = res.total;
+      // 翻页/搜索后回到表格顶部（公共结构固定为 .table-card），减少视口下部翻页的往返滚动；
+      // reduced-motion 用户直接跳转不做平滑滚动
+      if (hasFetchedOnce) {
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        document.querySelector('.table-card')?.scrollIntoView({
+          block: 'start',
+          behavior: reduced ? 'auto' : 'smooth',
+        });
+      }
+      hasFetchedOnce = true;
     } catch (error) {
+      if (mySeq !== fetchSeq) return;
       ElMessage.error(error.message || errorMsg);
     } finally {
       listLoading.value = false;
