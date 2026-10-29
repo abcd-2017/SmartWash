@@ -21,7 +21,9 @@ import {
   divSpiritColor
 } from './DivComponents'
 
-function emptyContent(): void {
+@Builder
+@Builder
+function emptyContent() {
 }
 
 /** 六爻行显示顺序（自上爻到初爻） */
@@ -165,7 +167,7 @@ export struct LiuYaoPan {
           .backgroundColor(divSpiritColor(line.liuShen))
         DivSerifText({
           text: line.liuShen,
-          size: 10.5,
+          textSize: 10.5,
           weight: 400,
           spacing: 0,
           color: DivPalette.textSecondary,
@@ -187,7 +189,7 @@ export struct LiuYaoPan {
           // 老阳○ 鎏金 / 老阴× 朱砂 —— 颜色即信息
           DivSerifText({
             text: line.yao.code === 3 ? '○' : '×',
-            size: 13,
+            textSize: 13,
             weight: 700,
             spacing: 0,
             color: line.yao.code === 3 ? DivPalette.gold : DivPalette.sealHi
@@ -203,14 +205,14 @@ export struct LiuYaoPan {
       Row() {
         DivSerifText({
           text: line.liuQin,
-          size: 12.5,
+          textSize: 12.5,
           weight: 500,
           spacing: 1,
           color: DivPalette.textPrimary
         })
         DivSerifText({
           text: line.ganZhi + line.zhiWuXing.label,
-          size: 10.5,
+          textSize: 10.5,
           weight: 400,
           spacing: 0,
           color: DivPalette.gold
@@ -222,11 +224,11 @@ export struct LiuYaoPan {
       // 世应徽标：世鎏金 / 应青玉
       DivSerifText({
         text: line.shiYing ?? '',
-        size: 9.5,
+        textSize: 9.5,
         weight: 400,
         spacing: 0,
         color: line.shiYing === '世' ? DivPalette.gold : DivPalette.jade,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
         .width(20)
         .padding({ left: 6 })
@@ -238,16 +240,16 @@ export struct LiuYaoPan {
 
   build() {
     if (this.hasChart()) {
-      DivCard({ borderColor: DivPalette.goldLine }) {
+      DivCard({ lineColor: DivPalette.goldLine }) {
         Column() {
           // 表头
           Row() {
-            DivSerifText({ text: '六神', size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: '六神', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
               .width(52)
-            DivSerifText({ text: '爻象', size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: '爻象', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
               .layoutWeight(1)
-            DivSerifText({ text: '六亲 · 干支', size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
-            DivSerifText({ text: '世应', size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: '六亲 · 干支', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: '世应', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
               .width(20)
           }
           .width('100%')
@@ -265,7 +267,7 @@ export struct LiuYaoPan {
           Row() {
             DivSerifText({
               text: this.typeFooterText(),
-              size: 11,
+              textSize: 11,
               weight: 400,
               spacing: 0,
               color: DivPalette.textSecondary
@@ -273,7 +275,7 @@ export struct LiuYaoPan {
               .layoutWeight(1)
             DivSerifText({
               text: this.bianTypeText(),
-              size: 11,
+              textSize: 11,
               weight: 600,
               spacing: 1,
               color: DivPalette.textPrimary
@@ -298,11 +300,11 @@ export struct DivMiniCard {
   @BuilderParam content: () => void = emptyContent
 
   build() {
-    DivCard({ borderColor: DivPalette.goldHair }) {
+    DivCard({ lineColor: DivPalette.goldHair }) {
       Column() {
         DivSerifText({
           text: this.label,
-          size: 9.5,
+          textSize: 9.5,
           weight: 400,
           spacing: 2,
           color: DivPalette.textTertiary
@@ -362,7 +364,7 @@ export struct MeiHuaTripleCards {
 
   @Builder
   MeiHuaCard(item: MeiHuaCardData) {
-    DivCard({ background: DivPalette.surface, borderColor: DivPalette.goldHair }) {
+    DivCard({ bgColor: DivPalette.surface, lineColor: DivPalette.goldHair }) {
       Column() {
         Column()
           .width('100%')
@@ -370,9 +372,9 @@ export struct MeiHuaTripleCards {
           .backgroundColor(item.barColor)
 
         Column() {
-          DivSerifText({ text: item.label, size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+          DivSerifText({ text: item.label, textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
           Column().height(8)
-          DivSerifText({ text: item.name, size: 17, weight: 600, spacing: 2, color: DivPalette.textPrimary })
+          DivSerifText({ text: item.name, textSize: 17, weight: 600, spacing: 2, color: DivPalette.textPrimary })
           Column().height(10)
           // 爻象：自上爻到初爻
           ForEach(DISPLAY_INDEXES, (index: number) => {
@@ -393,7 +395,7 @@ export struct MeiHuaTripleCards {
           Column().height(10)
           DivSerifText({
             text: item.chip,
-            size: 10,
+            textSize: 10,
             weight: 400,
             spacing: 0,
             color: item.chipGold ? DivPalette.gold : DivPalette.textSecondary
@@ -472,9 +474,9 @@ export struct QimenGrid {
       Column() {
         if (gong === 5) {
           Column() {
-            DivSerifText({ text: '二 · 五', size: 17, weight: 600, spacing: 3, color: DivPalette.gold })
+            DivSerifText({ text: '二 · 五', textSize: 17, weight: 600, spacing: 3, color: DivPalette.gold })
             Column().height(6)
-            DivSerifText({ text: '寄 坤 二 宫', size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+            DivSerifText({ text: '寄 坤 二 宫', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
           }
           .width('100%')
           .height('100%')
@@ -482,15 +484,15 @@ export struct QimenGrid {
           .alignItems(HorizontalAlign.Center)
         } else {
           Column() {
-            DivSerifText({ text: this.cellBaShen(gong), size: 10, weight: 400, spacing: 1, color: DivPalette.gold })
+            DivSerifText({ text: this.cellBaShen(gong), textSize: 10, weight: 400, spacing: 1, color: DivPalette.gold })
             Column().height(4)
-            DivSerifText({ text: this.cellJiuXing(gong), size: 13, weight: 500, spacing: 1, color: DivPalette.textPrimary })
-            DivSerifText({ text: this.cellTianPan(gong), size: 15, weight: 600, spacing: 0, color: DivPalette.gold })
+            DivSerifText({ text: this.cellJiuXing(gong), textSize: 13, weight: 500, spacing: 1, color: DivPalette.textPrimary })
+            DivSerifText({ text: this.cellTianPan(gong), textSize: 15, weight: 600, spacing: 0, color: DivPalette.gold })
             Column().height(4)
             Row() {
-              DivSerifText({ text: this.cellBaMen(gong), size: 10.5, weight: 400, spacing: 0, color: DivPalette.textSecondary })
+              DivSerifText({ text: this.cellBaMen(gong), textSize: 10.5, weight: 400, spacing: 0, color: DivPalette.textSecondary })
               Column().width(6)
-              DivSerifText({ text: this.cellDiPan(gong), size: 12.5, weight: 400, spacing: 0, color: DivPalette.textSecondary })
+              DivSerifText({ text: this.cellDiPan(gong), textSize: 12.5, weight: 400, spacing: 0, color: DivPalette.textSecondary })
             }
             .alignItems(VerticalAlign.Center)
           }
@@ -498,13 +500,13 @@ export struct QimenGrid {
           .alignItems(HorizontalAlign.Start)
 
           // 暗干角标
-          DivSerifText({ text: `暗·${this.cellAnGan(gong)}`, size: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
+          DivSerifText({ text: `暗·${this.cellAnGan(gong)}`, textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
             .align(Alignment.BottomEnd)
             .padding({ right: 8, bottom: 6 })
 
           // 空亡 / 驿马 badge
           if (this.hasBadge(gong)) {
-            DivSerifText({ text: this.badgeText(gong), size: 9, weight: 400, spacing: 0, color: DivPalette.sealHi })
+            DivSerifText({ text: this.badgeText(gong), textSize: 9, weight: 400, spacing: 0, color: DivPalette.sealHi })
               .align(Alignment.TopEnd)
               .padding({ left: 5, right: 5, top: 1, bottom: 1 })
               .borderRadius(8)
@@ -518,7 +520,7 @@ export struct QimenGrid {
       .padding({ left: 8, right: 8, top: 8, bottom: 8 })
 
       // 宫名
-      DivSerifText({ text: this.gongNameText(gong), size: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
+      DivSerifText({ text: this.gongNameText(gong), textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
         .align(Alignment.BottomStart)
         .padding({ left: 8, bottom: 6 })
     }
@@ -723,13 +725,13 @@ export struct LiurenCourses {
 
   @Builder
   CourseCard(course: LiuRenCourse) {
-    DivCard({ borderColor: DivPalette.goldHair }) {
+    DivCard({ lineColor: DivPalette.goldHair }) {
       Column() {
-        DivSerifText({ text: course.label, size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+        DivSerifText({ text: course.label, textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
         Column().height(8)
-        DivSerifText({ text: course.upper, size: 15, weight: 600, spacing: 0, color: DivPalette.textPrimary })
+        DivSerifText({ text: course.upper, textSize: 15, weight: 600, spacing: 0, color: DivPalette.textPrimary })
         Column().height(6)
-        DivSerifText({ text: course.lower, size: 15, weight: 600, spacing: 0, color: DivPalette.gold })
+        DivSerifText({ text: course.lower, textSize: 15, weight: 600, spacing: 0, color: DivPalette.gold })
       }
       .width('100%')
       .padding({ top: 10, bottom: 10 })
@@ -739,13 +741,13 @@ export struct LiurenCourses {
 
   @Builder
   ChuanCard(label: string, value: string, jiang: string) {
-    DivCard({ borderColor: DivPalette.goldLine }) {
+    DivCard({ lineColor: DivPalette.goldLine }) {
       Column() {
-        DivSerifText({ text: label, size: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
+        DivSerifText({ text: label, textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
         Column().height(8)
-        DivSerifText({ text: value, size: 15, weight: 600, spacing: 0, color: DivPalette.textPrimary })
+        DivSerifText({ text: value, textSize: 15, weight: 600, spacing: 0, color: DivPalette.textPrimary })
         Column().height(6)
-        DivSerifText({ text: jiang, size: 9.5, weight: 400, spacing: 1, color: DivPalette.gold })
+        DivSerifText({ text: jiang, textSize: 9.5, weight: 400, spacing: 1, color: DivPalette.gold })
       }
       .width('100%')
       .padding({ top: 10, bottom: 10 })

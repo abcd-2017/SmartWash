@@ -7,7 +7,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { AppButton } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentSuccessBuilder() {
@@ -70,8 +70,17 @@ struct PaymentSuccess {
           }
           .width("100%")
           .padding({ top: 32, bottom: 32 })
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          // 对齐安卓 PaySuccessPage.kt:149-193：庆祝卡按 DESIGN-SPEC v0.4 §3.1 唯一卡片画法
+          // 取 surface 白底 + 1px outline 描边 + level1 阴影（旧实现为无描边无阴影的 primaryLight 块）
+          .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .margin({ top: DesignDimens.SECTION_SPACING })
 
           // 订单信息卡
@@ -89,9 +98,16 @@ struct PaymentSuccess {
           }
           .width("100%")
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(Color.White)
+          // 对齐安卓 PaySuccessPage.kt:204-240：surface 白底 + 1px outline 描边 + level1 阴影
+          .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
 
           // 寄存柜提示卡
           Text("寄存柜信息")
@@ -136,9 +152,16 @@ struct PaymentSuccess {
           }
           .width("100%")
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(Color.White)
+          // 对齐安卓 PaySuccessPage.kt:252-300：surface 白底 + 1px outline 描边 + level1 阴影
+          .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(VerticalAlign.Top)
 
           Blank()

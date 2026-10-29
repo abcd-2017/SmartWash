@@ -8,15 +8,15 @@
  * 红线：只读库中已落盘的记录，绝不在此页重算排盘。
  */
 
-import { DivRecordRow, DivRecordRepository, decodeBundleFromJson } from '../../data/DivinationStore'
+import { DivRecordRow, DivRecordRepository, decodeBundleFromJson } from '../../../data/DivinationStore'
 import { readLiuYaoChart, readMeiHuaChart, readQiMenChart, readLiuRenChart, divMethodName }
-  from '../../data/DivChartReader'
+  from '../../../data/DivChartReader'
 import { DivCard, DivCategoryChip, DivFooterNote, DivPageHeader, DivSeal } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { pathStack } from '../../../../utils/PathStackUtil'
-import { DesignDimens } from '../../../../constant/DesignSystem'
-import { DivColor } from '../../../../constant/DivTheme'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { pathStack } from '../../../../../utils/PathStackUtil'
+import { DesignDimens } from '../../../../../constant/DesignSystem'
+import { DivColor } from '../../../../../constant/DivTheme'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
@@ -121,7 +121,7 @@ export struct DivHistoryPage {
           DivCategoryChip({
             text: '全部',
             selected: this.filter === FILTER_ALL,
-            onClick: () => {
+            onAction: () => {
               this.filter = FILTER_ALL
             }
           })
@@ -129,7 +129,7 @@ export struct DivHistoryPage {
             DivCategoryChip({
               text: divMethodName(method),
               selected: this.filter === method,
-              onClick: () => {
+              onAction: () => {
                 this.filter = method
               }
             })
@@ -142,7 +142,7 @@ export struct DivHistoryPage {
         if (this.filtered().length === 0) {
           // 空态
           Column() {
-            DivSeal({ text: '空', size: 44, fontSize: 22 })
+            DivSeal({ text: '空', sealSize: 44, fontSize: 22 })
             Text('暂无卦象记录')
               .fontSize(12)
               .fontColor(DivColor.TEXT_TERTIARY_LIGHT)
@@ -157,10 +157,10 @@ export struct DivHistoryPage {
               ListItem() {
                 DivCard({
                   clickable: true,
-                  onClick: () => this.openChart(row)
+                  onAction: () => this.openChart(row)
                 }) {
                   Row() {
-                    DivSeal({ text: this.sealOf(row.method), size: 32, fontSize: 15 })
+                    DivSeal({ text: this.sealOf(row.method), sealSize: 32, fontSize: 15 })
                     Column() {
                       Text(row.question.length > 0 ? row.question : '—')
                         .fontSize(13.5)

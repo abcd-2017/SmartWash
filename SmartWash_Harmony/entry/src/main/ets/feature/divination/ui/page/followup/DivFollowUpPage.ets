@@ -12,7 +12,7 @@
 
 import { DivMessage, followUp as requestFollowUp } from '../../../network/DivinationApi'
 import { chartNameOf, divMethodName } from '../../../data/DivChartReader'
-import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../data/DivinationStore'
+import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivGoldButton,
   DivPageHeader,
@@ -22,8 +22,9 @@ import {
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { getNumberParam, pathStack } from '../../../../utils/PathStackUtil'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 
 @Builder
 export function DivFollowUpBuilder() {
@@ -138,11 +139,11 @@ struct DivFollowUpPage {
   @Builder
   SummaryBar() {
     Row() {
-      DivSeal({ text: this.chartSeal, size: 32, fontSize: 12 })
+      DivSeal({ text: this.chartSeal, sealSize: 32, fontSize: 12 })
       Column().width(10)
       DivSerifText({
         text: this.chartName.length > 0 ? this.chartName : divMethodName(this.record?.method ?? ''),
-        size: 11.5,
+        textSize: 11.5,
         weight: 500,
         spacing: 2,
         color: DivPalette.textPrimary,
@@ -152,7 +153,7 @@ struct DivFollowUpPage {
         .layoutWeight(1)
       DivSerifText({
         text: this.timeText,
-        size: 9.5,
+        textSize: 9.5,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary
@@ -165,6 +166,11 @@ struct DivFollowUpPage {
     .alignItems(VerticalAlign.Center)
   }
 
+  /**
+   * 聊天气泡：回复气泡即卡面（宣纸 surface + 1px 金线 + level1 轻阴影，规范 §2.4/§3.1）；
+   * 用户气泡为浅金块（非实色卡），不加投影，但保留 1px 金线以界定形状。
+   * 规范 §7：本组件无可点击行为，无 Material 涟漪（对齐安卓 indication = null）。
+   */
   @Builder
   ChatBubble(turn: DivMessage) {
     if (turn.role === 'user') {
@@ -172,7 +178,7 @@ struct DivFollowUpPage {
         Column() {
           DivSerifText({
             text: turn.content,
-            size: 12.5,
+            textSize: 12.5,
             weight: 400,
             spacing: 0,
             color: DivPalette.textPrimary
@@ -182,7 +188,8 @@ struct DivFollowUpPage {
         .padding({ left: 13, right: 13, top: 9, bottom: 9 })
         .borderRadius({ topLeft: 14, topRight: 14, bottomLeft: 4, bottomRight: 14 })
         .backgroundColor(DivPalette.goldSoft)
-        .border({ width: 0.5, color: DivPalette.goldHair })
+        // 描边宽度归一到 1px（0.5dp 按 §1.3 只保留给卡内行分隔线）；浅金底非实色块，不加投影
+        .border({ width: 1, color: DivPalette.goldHair })
       }
       .width('100%')
       .justifyContent(FlexAlign.End)
@@ -191,7 +198,7 @@ struct DivFollowUpPage {
         Column() {
           DivSerifText({
             text: turn.content,
-            size: 12.5,
+            textSize: 12.5,
             weight: 400,
             spacing: 0,
             color: DivPalette.textPrimary
@@ -201,7 +208,14 @@ struct DivFollowUpPage {
         .padding({ left: 13, right: 13, top: 11, bottom: 11 })
         .borderRadius({ topLeft: 14, topRight: 14, bottomLeft: 14, bottomRight: 4 })
         .backgroundColor(DivPalette.surface)
-        .border({ width: 0.5, color: DivPalette.goldHair })
+        // 回复气泡 = 卡面：1px 描边 + level1 轻阴影（宣纸侧；安卓 ChatBubble 同此）
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
+        .border({ width: 1, color: DivPalette.goldHair })
       }
       .width('100%')
       .justifyContent(FlexAlign.Start)
@@ -230,9 +244,9 @@ struct DivFollowUpPage {
         DivGoldButton({
           text: DivText.followupSend,
           isEnabled: !this.sending && this.input.trim().length > 0,
-          height: 38,
+          btnHeight: 38,
           fontSize: 13,
-          onClick: () => {
+          onAction: () => {
             this.send()
           }
         })
@@ -259,22 +273,22 @@ struct DivFollowUpPage {
           if (this.loadingRecord) {
             DivSerifText({
               text: DivText.chartLoading,
-              size: 12,
+              textSize: 12,
               weight: 400,
               spacing: 0,
               color: DivPalette.textTertiary,
-              align: TextAlign.Center
+              textAlign: TextAlign.Center
             })
               .width('100%')
               .padding({ top: 120 })
           } else if (this.record === null) {
             DivSerifText({
               text: DivText.chartMissing,
-              size: 13,
+              textSize: 13,
               weight: 400,
               spacing: 0,
               color: DivPalette.textTertiary,
-              align: TextAlign.Center
+              textAlign: TextAlign.Center
             })
               .width('100%')
               .padding({ top: 80 })
@@ -288,11 +302,11 @@ struct DivFollowUpPage {
                 ListItem() {
                   DivSerifText({
                     text: DivText.followupEmpty,
-                    size: 12,
+                    textSize: 12,
                     weight: 400,
                     spacing: 0,
                     color: DivPalette.textTertiary,
-                    align: TextAlign.Center
+                    textAlign: TextAlign.Center
                   })
                     .width('100%')
                     .padding({ top: 40 })
@@ -310,7 +324,7 @@ struct DivFollowUpPage {
                   Row() {
                     DivSerifText({
                       text: DivText.followupThinking,
-                      size: 11,
+                      textSize: 11,
                       weight: 400,
                       spacing: 0,
                       color: DivPalette.textTertiary
@@ -320,7 +334,7 @@ struct DivFollowUpPage {
                 }
               }
             }
-            .weight(1)
+            .layoutWeight(1)
             .width('100%')
             .padding({ left: 20, right: 20, top: 8, bottom: 8 })
             .scrollBar(BarState.Off)

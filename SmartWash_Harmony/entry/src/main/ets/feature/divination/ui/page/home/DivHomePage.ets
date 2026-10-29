@@ -13,8 +13,8 @@ import { Solar } from '../../../core/lunar/lunar'
 import { LunarAdapter } from '../../../core/LunarAdapter'
 import { DivMethod } from '../../../core/DivinationCommon'
 import { MeiHuaChart } from '../../../core/meihua/MeiHuaChart'
-import { DivRecordRepository, DivRecordRow, encodeBundle, encodeBundleToJson } from '../../data/DivinationStore'
-import { encodeChartJson } from '../../data/DivChartCodec'
+import { DivRecordRepository, DivRecordRow, encodeBundle, encodeBundleToJson } from '../../../data/DivinationStore'
+import { encodeChartJson } from '../../../data/DivChartCodec'
 import {
   CompassDial,
   DivCard,
@@ -27,9 +27,11 @@ import {
   TianXiangHeader
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { pathStack } from '../../../../utils/PathStackUtil'
-import { Debouncer } from '../../../../utils/DebounceUtil'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { pathStack } from '../../../../../utils/PathStackUtil'
+import { Debouncer } from '../../../../../utils/DebounceUtil'
+import { DivChartParam } from '../../DivChartParam'
 
 /** 四术玉牌展示元数据（对齐安卓 DivHomePage.kt:101-106 的 Quad 列表） */
 const METHOD_LABELS: Record<string, string> = {
@@ -114,7 +116,8 @@ struct DivHomePage {
         'meihua', 'other', question, JSON.stringify(chart.lines), Date.now(), bundleJson)
     }
     // 跳卦盘（DivChart 路由随卦盘批次注册；复盘入口不播动爻进场动画）
-    pathStack.pushPathByName(RouteNames.DIV_CHART, { recordId: id, animate: false })
+    const chartParam: DivChartParam = { recordId: id, animate: false }
+    pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
   /** 日期 MM-dd（对齐安卓 SimpleDateFormat("MM-dd")） */
@@ -147,7 +150,7 @@ struct DivHomePage {
     Row() {
       DivSerifText({
         text: this.formatMonthDay(record.castAt),
-        size: 11,
+        textSize: 11,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary
@@ -164,7 +167,7 @@ struct DivHomePage {
 
       DivSerifText({
         text: record.question,
-        size: 13,
+        textSize: 13,
         weight: 400,
         spacing: 0,
         color: DivPalette.textPrimary,
@@ -177,7 +180,7 @@ struct DivHomePage {
 
       DivSerifText({
         text: this.methodName(record.method),
-        size: 12,
+        textSize: 12,
         weight: 500,
         spacing: 2,
         color: DivPalette.gold
@@ -188,7 +191,10 @@ struct DivHomePage {
     .alignItems(VerticalAlign.Center)
   }
 
-  /** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（点击防抖 + pressScale + 触感） */
+  /**
+   * 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（点击防抖 + pressScale + 触感）。
+   * 自绘卡（非 DivCard）：按规范 §2.4/§3.1 补 1px 金线描边同款的 level1 轻阴影，玄墨侧同 DivCard 豁免。
+   */
   @Builder
   JadeTile(method: string, name: string, desc: string, useFor: string, tag: string) {
     Stack() {
@@ -196,7 +202,7 @@ struct DivHomePage {
       Column() {
         DivSerifText({
           text: desc,
-          size: 11,
+          textSize: 11,
           weight: 400,
           spacing: 0,
           color: DivPalette.textSecondary,
@@ -206,7 +212,7 @@ struct DivHomePage {
         if (useFor.length > 0) {
           DivSerifText({
             text: useFor,
-            size: 10,
+            textSize: 10,
             weight: 400,
             spacing: 0,
             color: DivPalette.textTertiary,
@@ -225,14 +231,14 @@ struct DivHomePage {
       // 右上：竖排术名（逐字换行）
       Column() {
         ForEach(name.split(''), (ch: string, index: number) => {
-          DivSerifText({ text: ch, size: 19, weight: 600, spacing: 7, color: DivPalette.textPrimary })
+          DivSerifText({ text: ch, textSize: 19, weight: 600, spacing: 7, color: DivPalette.textPrimary })
         }, (ch: string, index: number) => index.toString())
       }
       .padding(14)
       .alignItems(HorizontalAlign.End)
 
       if (tag.length > 0) {
-        DivSerifText({ text: tag, size: 10, weight: 400, spacing: 2, color: DivPalette.gold })
+        DivSerifText({ text: tag, textSize: 10, weight: 400, spacing: 2, color: DivPalette.gold })
           .position({ x: 16, y: 156 - 10 - 16 })
       }
     }
@@ -240,6 +246,13 @@ struct DivHomePage {
     .height(156)
     .borderRadius(16)
     .backgroundColor(DivPalette.surface)
+    // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + level1 轻阴影（宣纸侧；安卓 JadeTile 同此）
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .border({ width: 1, color: DivPalette.goldLine })
     .scale({ x: this.pressedKey === method ? 0.97 : 1, y: this.pressedKey === method ? 0.97 : 1 })
     .onTouch((event: TouchEvent) => {
@@ -268,7 +281,7 @@ struct DivHomePage {
         Column() {
           DivSerifText({
             text: DivText.title,
-            size: 26,
+            textSize: 26,
             weight: 600,
             spacing: 4,
             color: DivPalette.textPrimary
@@ -277,7 +290,7 @@ struct DivHomePage {
 
           DivSerifText({
             text: `旬空 ${this.xunKong.length > 0 ? this.xunKong : '—'}`,
-            size: 11,
+            textSize: 11,
             weight: 400,
             spacing: 1,
             color: DivPalette.textTertiary
@@ -320,25 +333,25 @@ struct DivHomePage {
         if (this.hasTodaySign) {
           DivCard({
             clickable: true,
-            borderColor: DivPalette.goldHair,
-            onClick: () => {
+            lineColor: DivPalette.goldHair,
+            onAction: () => {
               this.ensureTodaySignSaved()
             }
           }) {
             Row() {
-              DivSeal({ text: DivText.signSeal, size: 44, fontSize: 22 })
+              DivSeal({ text: DivText.signSeal, sealSize: 44, fontSize: 22 })
               Column().width(16)
               Column() {
                 DivSerifText({
                   text: `今日一签 · ${this.todaySignName}`,
-                  size: 18,
+                  textSize: 18,
                   weight: 600,
                   spacing: 4,
                   color: DivPalette.textPrimary
                 })
                 DivSerifText({
                   text: `${this.todaySignSub} —— ${DivText.signCardSource}`,
-                  size: 11,
+                  textSize: 11,
                   weight: 400,
                   spacing: 1,
                   color: DivPalette.textSecondary
@@ -348,13 +361,13 @@ struct DivHomePage {
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Start)
 
-              DivSerifText({ text: '›', size: 16, weight: 400, spacing: 0, color: DivPalette.gold })
+              DivSerifText({ text: '›', textSize: 16, weight: 400, spacing: 0, color: DivPalette.gold })
             }
             .width('100%')
             .padding({ left: 18, right: 18, top: 16, bottom: 16 })
             .alignItems(VerticalAlign.Center)
-          }
           .margin({ left: 20, right: 20, top: 14, bottom: 14 })
+          }
         }
 
         // 6. 案卷
@@ -369,12 +382,12 @@ struct DivHomePage {
           }
         })
 
-        DivCard({ borderColor: DivPalette.goldHair }) {
+        DivCard({ lineColor: DivPalette.goldHair }) {
           Column() {
             if (this.records.length === 0) {
               DivSerifText({
                 text: DivText.historyEmpty,
-                size: 12,
+                textSize: 12,
                 weight: 400,
                 spacing: 0,
                 color: DivPalette.textTertiary
@@ -397,8 +410,8 @@ struct DivHomePage {
           }
           .width('100%')
           .padding({ left: 14, top: 4, bottom: 4 })
-        }
         .margin({ left: 20, right: 20 })
+        }
 
         // 7. 页脚免责声明
         DivFooterNote({ text: DivText.disclaimerFooter })

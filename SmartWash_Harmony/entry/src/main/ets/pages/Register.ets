@@ -96,7 +96,7 @@ struct Register {
               Column() {
                 SymbolGlyph($r('sys.symbol.water_waves'))
                   .fontSize(36)
-                  .fontColor(Color.White)
+                  .fontColor([Color.White])
               }
               .width(72)
               .height(72)
@@ -156,8 +156,8 @@ struct Register {
                 .height(6)
                 .borderRadius(3)
                 .backgroundColor(DesignColor.GLASS_INPUT)
-            }
             .margin({ top: 24 })
+            }
           }
           .width("100%")
           .alignItems(HorizontalAlign.Center)
@@ -180,7 +180,7 @@ struct Register {
 
             if (this.checkPhoneNumber) {
               Text("手机号非法")
-                .fontColor(DesignColor.ERROR_LIGHT)
+                .fontColor(DesignColor.ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .margin({ top: 4 })
             }
@@ -238,7 +238,7 @@ struct Register {
 
             if (this.checkCode) {
               Text("验证码不能为空")
-                .fontColor(DesignColor.ERROR_LIGHT)
+                .fontColor(DesignColor.ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .margin({ top: 4 })
             }
@@ -264,14 +264,14 @@ struct Register {
 
             if (this.checkPassword) {
               Text("密码必须为6-16位")
-                .fontColor(DesignColor.ERROR_LIGHT)
+                .fontColor(DesignColor.ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .margin({ top: 4 })
             }
           }
           .width("85%")
-          // ArkUI 的 Padding 无 vertical 字段，拆分为 top/bottom（视觉效果不变）
-          .padding({ top: 12, bottom: 12 })
+          // 玻璃卡内边距对齐安卓 RegisterPage.kt:329 = padding(horizontal = 16, vertical = 20)
+          .padding({ left: 16, right: 16, top: 20, bottom: 20 })
           .backgroundColor(DesignColor.GLASS_BG)
           .borderRadius(28)
           .border({
@@ -331,8 +331,8 @@ struct Register {
               .fontSize(DesignFontSize.BODY)
               .fontColor(Color.White)
               .fontWeight(DesignFontWeight.MEDIUM)
-          }
           .margin({ top: 16, bottom: 40 })
+          }
           .onClick(() => {
             // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐安卓 RegisterPage.kt:116-121）
             this.navDebouncer.throttle(() => {

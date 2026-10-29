@@ -278,7 +278,8 @@ export class LiuRenChart {
       if (e instanceof LiuRenUnsupportedException) {
         unsupported = e.gate;
       } else {
-        throw e;
+        // arkts-limited-throw：只能抛 Error 实例
+        throw new Error(`六壬排盘失败：${String(e)}`);
       }
     }
 

@@ -190,11 +190,13 @@ export struct UserInfo {
     .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
+    // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值（原为旧值 #1A000000/offsetY 1）
+    .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: '#1A000000',
+      color: 'rgba(20,40,30,0.05)',
       offsetX: 0,
-      offsetY: 1
+      offsetY: 2
     })
     .onClick(onClick)
   }
@@ -272,7 +274,7 @@ export struct UserInfo {
           })
 
           // 手机号（掩码展示，对齐安卓 maskPhone）
-          Text(maskPhone(this.userInfo?.phoneNumber))
+          Text(maskPhone(this.userInfo?.phoneNumber ?? null))
             .fontSize(20)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
@@ -348,8 +350,8 @@ export struct UserInfo {
                 SymbolGlyph($r('sys.symbol.chevron_right'))
                   .fontSize(18)
                   .fontColor([Color.White])
-              }
               .margin({ top: 4 })
+              }
               .onClick(() => {
                 pathStack.pushPathByName(RouteNames.RECHARGE, "")
               })
@@ -419,11 +421,13 @@ export struct UserInfo {
         .margin({ top: 12 })
         .backgroundColor(DesignColor.SURFACE)
         .borderRadius(DesignDimens.CARD_RADIUS)
+        // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值
+        .border({ width: 1, color: DesignColor.OUTLINE })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: '#1A000000',
+          color: 'rgba(20,40,30,0.05)',
           offsetX: 0,
-          offsetY: 1
+          offsetY: 2
         })
 
         // ========== 功能列表 ==========
@@ -434,7 +438,7 @@ export struct UserInfo {
           })
 
           // 收货地址占位行（对齐安卓 UserInfoPage.kt:431-445，功能未开放）
-          this.functionItem($r('sys.symbol.location_fill'), "收货地址", "收货地址管理", () => {
+          this.functionItem($r('sys.symbol.pin_fill'), "收货地址", "收货地址管理", () => {
             promptAction.showToast({ message: "功能开发中" })
           })
 

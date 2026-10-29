@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
@@ -9,6 +9,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { AppInfoDialog } from "../view/common/AppComponents"
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
+@Builder
 @Builder
 function emptyContent() {
 }
@@ -284,7 +285,14 @@ struct OrderDetail {
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
     .backgroundColor(DesignColor.SURFACE)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   @Builder
@@ -308,7 +316,7 @@ struct OrderDetail {
   BottomActionBar() {
     Column() {
       Divider()
-        .strokeWidth(0.5)
+        .strokeWidth(1)
         .color(DesignColor.OUTLINE)
 
       Row() {
@@ -526,6 +534,13 @@ struct InfoSectionCard {
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
     .backgroundColor(DesignColor.SURFACE)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 }

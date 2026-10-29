@@ -17,8 +17,9 @@ struct Home {
   @Builder
   tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {
     Column() {
+      // 图标 24vp（对齐安卓 v0.4 bottomNav：icon.md 24dp）；未选中 TEXT_TERTIARY / 选中 PRIMARY
       SymbolGlyph(this.currentIndex === targetIndex ? selectedImg : normalImg)
-        .fontSize(22)
+        .fontSize(24)
         .fontColor([this.currentIndex === targetIndex ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY])
         .margin({ top: 8 })
       Text(title)
@@ -80,6 +81,8 @@ struct Home {
         }
       })
       .barOverlap(true)
+      // 底栏高 68（对齐安卓 v0.4 AppDimens.bottomBarHeight = 68dp）
+      .barHeight(68)
       .backgroundColor('#F2FFFFFF')  // 半透明白色
       .divider(null)  // 移除硬分隔线
     }

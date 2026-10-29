@@ -133,4 +133,3 @@ export async function followUp(form: DivFollowUpForm): Promise<BaseResponse<DivF
   return { code: 200, message: 'ok', data: { reply: reply } }
 }
 
-export { DivInterpretForm, DivFollowUpForm, DivReadingVo, DivFollowUpVo }

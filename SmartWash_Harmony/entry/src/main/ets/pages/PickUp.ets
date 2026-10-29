@@ -9,7 +9,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { pasteboard } from "@kit.BasicServicesKit"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -160,7 +160,14 @@ struct PickUp {
       .padding(DesignDimens.CARD_PADDING)
       .backgroundColor(DesignColor.SURFACE)
       .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 0.5, color: DesignColor.OUTLINE })
+      // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+      .border({ width: 1, color: DesignColor.OUTLINE })
+      .shadow({
+        radius: DesignElevation.LEVEL_1,
+        color: 'rgba(20,40,30,0.05)',
+        offsetX: 0,
+        offsetY: 2
+      })
       .onClick(() => {
         // 显式类型入参（差异分析 02 §8.3）：不再由 status 推断取件/寄件模式
         const param: PickupDeliveryParam = new PickupDeliveryParam()

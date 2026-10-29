@@ -61,29 +61,30 @@ export interface WorkbenchTool {
  * 工作台文案表 — 键名逐一对齐安卓 app/src/main/res/values/strings.xml 的 workbench_* 资源，
  * 便于跨端文案核对（安卓 workbench_title / workbench_subtitle / workbench_divination_name ...）。
  */
-export const WorkbenchText = {
-  workbench_title: "工作台",
-  workbench_subtitle: "小工具，慢慢加",
-  workbench_divination_name: "观象台",
-  workbench_divination_subtitle: "六爻 · 梅花 · 奇门 · 大六壬",
-  workbench_all_tools: "全部工具",
-  workbench_tool_calendar: "洗衣黄历",
-  workbench_tool_calendar_desc: "今天宜洗什么颜色",
-  workbench_tool_stain: "渍迹识别",
-  workbench_tool_stain_desc: "拍照认污渍类型",
-  workbench_tool_fabric: "面料百科",
-  workbench_tool_fabric_desc: "什么面料怎么洗",
-  workbench_tool_estimate: "费用估算",
-  workbench_tool_estimate_desc: "洗之前先算个账",
-  workbench_tool_history: "我的卦历",
-  workbench_tool_history_desc: "起过的卦都在这里",
-  workbench_tool_ai: "AI 助手",
-  workbench_tool_ai_desc: "洗护问题随口问",
-  workbench_tool_short_code: "短链管理",
-  workbench_tool_short_code_desc: "生成并管理跳转短链",
-  workbench_footer: "工具会陆续加进来",
-  workbench_coming_soon: "功能建设中，敬请期待"
+export class WorkbenchText {
+  static readonly workbench_title: string = "工作台"
+  static readonly workbench_subtitle: string = "小工具，慢慢加"
+  static readonly workbench_divination_name: string = "观象台"
+  static readonly workbench_divination_subtitle: string = "六爻 · 梅花 · 奇门 · 大六壬"
+  static readonly workbench_all_tools: string = "全部工具"
+  static readonly workbench_tool_calendar: string = "洗衣黄历"
+  static readonly workbench_tool_calendar_desc: string = "今天宜洗什么颜色"
+  static readonly workbench_tool_stain: string = "渍迹识别"
+  static readonly workbench_tool_stain_desc: string = "拍照认污渍类型"
+  static readonly workbench_tool_fabric: string = "面料百科"
+  static readonly workbench_tool_fabric_desc: string = "什么面料怎么洗"
+  static readonly workbench_tool_estimate: string = "费用估算"
+  static readonly workbench_tool_estimate_desc: string = "洗之前先算个账"
+  static readonly workbench_tool_history: string = "我的卦历"
+  static readonly workbench_tool_history_desc: string = "起过的卦都在这里"
+  static readonly workbench_tool_ai: string = "AI 助手"
+  static readonly workbench_tool_ai_desc: string = "洗护问题随口问"
+  static readonly workbench_tool_short_code: string = "短链管理"
+  static readonly workbench_tool_short_code_desc: string = "生成并管理跳转短链"
+  static readonly workbench_footer: string = "工具会陆续加进来"
+  static readonly workbench_coming_soon: string = "功能建设中，敬请期待"
 }
+
 
 // TODO(工作台接口): 接口就绪后移除内置列表，改为请求 /web 工作台配置（顺序、文案、启停由服务端下发）
 /** 内置默认工具列表（设计稿屏 15 定稿六项，对齐安卓 WorkbenchViewModel.defaultTools()） */

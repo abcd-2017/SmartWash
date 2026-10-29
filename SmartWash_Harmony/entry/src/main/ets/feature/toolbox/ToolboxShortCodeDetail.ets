@@ -12,7 +12,7 @@ import { common, Want } from '@kit.AbilityKit'
 import { image } from '@kit.ImageKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   ShortCodeStatsVo,
   TOOLBOX_PAGE_SIZE,
@@ -415,7 +415,14 @@ struct ToolboxShortCodeDetail {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   /** 二维码卡（本地生成 + 复制 + 打开） */
@@ -434,7 +441,7 @@ struct ToolboxShortCodeDetail {
           .width(200)
           .height(200)
           .borderRadius(DesignDimens.RADIUS_MD)
-          .objectFit(ImageFit.Fit)
+          .objectFit(ImageFit.Contain)
       } else {
         Column() {
           if (this.qrLoading) {
@@ -522,7 +529,14 @@ struct ToolboxShortCodeDetail {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   /** 访问明细行（时间 + IP 摘要，次行 UA / Referer 均脱敏弱化展示） */
@@ -676,7 +690,14 @@ struct ToolboxShortCodeDetail {
             .padding(DesignDimens.CARD_PADDING)
             .backgroundColor(DesignColor.SURFACE)
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+            .border({ width: 1, color: DesignColor.OUTLINE })
+            .shadow({
+              radius: DesignElevation.LEVEL_1,
+              color: 'rgba(20,40,30,0.05)',
+              offsetX: 0,
+              offsetY: 2
+            })
           }
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 4, bottom: 24 })
         }

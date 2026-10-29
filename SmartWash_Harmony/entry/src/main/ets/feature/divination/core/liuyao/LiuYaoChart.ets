@@ -461,3 +461,6 @@ function buildHidden(gongTrigram: Trigram, qin6: string[],
   }
   return new LiuYaoHidden(gongName, seats);
 }
+
+// 兼容旧导入路径：LiuYaoFacts 定义在同级 LiuYaoFacts.ets，此处转出
+export { LiuYaoFacts } from './LiuYaoFacts'

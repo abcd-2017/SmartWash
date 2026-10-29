@@ -149,7 +149,8 @@ struct Login {
           color: DesignColor.GLASS_BORDER_SUBTLE,
           style: BorderStyle.Solid
         })
-        .padding({ left: 20, right: 20, top: 20, bottom: 20 })
+        // 玻璃卡内边距对齐安卓 LoginPage.kt:227 = padding(horizontal = 16, vertical = 20)
+        .padding({ left: 16, right: 16, top: 20, bottom: 20 })
         .margin({ top: 40, left: 24, right: 24 })
 
         // 登录按钮
@@ -223,8 +224,8 @@ struct Login {
           Text("立即注册")
             .fontSize(DesignFontSize.BODY)
             .fontColor(Color.White)
-        }
         .margin({ bottom: 24 })
+        }
         .onClick(() => {
           pathStack.replacePathByName(RouteNames.REGISTER, null)
         })

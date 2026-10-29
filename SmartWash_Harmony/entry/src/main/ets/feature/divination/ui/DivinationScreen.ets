@@ -7,7 +7,9 @@
 
 import { DivColor } from '../../../constant/DivTheme'
 
-function emptyContent(): void {
+@Builder
+@Builder
+function emptyContent() {
 }
 
 @ComponentV2

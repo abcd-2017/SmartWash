@@ -1,5 +1,7 @@
 // 清氧设计系统 — 鸿蒙端设计常量
-// 参考 Android 端 Color.kt + AppDesign.kt + Type.kt（差异分析 2026-10-27 对齐后与安卓逐项一致）
+// 基准：Android common/ui/theme/Color.kt + AppDesign.kt + Type.kt（DESIGN-SPEC v0.4，2026-10-24 定稿）
+// 2026-10-29 全量对齐安卓 v0.4：字阶收敛 8 档、background/surfaceVariant 互换、
+// outline/textTertiary/error/danger/success 取值、图标容器绿色系改 #F0FBF4。
 // 决策 D1：鸿蒙当前固定亮色模式（EntryAbility setColorMode COLOR_MODE_LIGHT），
 // 暗色主题整套 Dark* 令牌待后续专项补齐后再开放跟随系统。
 
@@ -19,19 +21,19 @@ export function toColorString(color: number): string {
 }
 
 /**
- * 清氧设计系统颜色常量
+ * 清氧设计系统颜色常量（对齐 Android Color.kt）
  * 颜色值使用 ARGB 格式（0xAARRGGBB）
  */
 export class DesignColor {
   // 主色 — 自然绿
   static readonly PRIMARY: number = 0xFF2D9B6A
   static readonly ON_PRIMARY: number = 0xFFFFFFFF
-  static readonly PRIMARY_CONTAINER: number = 0xFFE8F6EF
-  static readonly ON_PRIMARY_CONTAINER: number = 0xFF0B3625
+  static readonly PRIMARY_CONTAINER: number = 0xFFF0FBF4
+  static readonly ON_PRIMARY_CONTAINER: number = 0xFF17322B
 
   // 主色变体
-  static readonly PRIMARY_LIGHT: number = 0xFFF0FAF5 // 超浅绿，选中态背景
-  static readonly PRIMARY_DARK: number = 0xFF1E8C5C // 深绿，按下态
+  static readonly PRIMARY_LIGHT: number = 0xFFF0FBF4 // 超浅绿，选中态背景（= primaryContainer）
+  static readonly PRIMARY_DARK: number = 0xFF1E8C5C  // 深绿，按下态
 
   // 次要色
   static readonly SECONDARY: number = 0xFF8E8E93
@@ -39,64 +41,72 @@ export class DesignColor {
   static readonly SECONDARY_CONTAINER: number = 0xFFF2F2F7
   static readonly ON_SECONDARY_CONTAINER: number = 0xFF1C1C1E
 
+  // 第三色
+  static readonly TERTIARY: number = 0xFF6B7280
+  static readonly ON_TERTIARY: number = 0xFFFFFFFF
+  static readonly TERTIARY_CONTAINER: number = 0xFFF2F2F7
+  static readonly ON_TERTIARY_CONTAINER: number = 0xFF1C1C1E
+
   // 背景 & 表面
-  static readonly BACKGROUND: number = 0xFFEFF1EE // 微绿调米白页面底色（规范 §2.1）
+  // v0.4：background 与 surfaceVariant 的取值相较 2026-10-06 版**互换**了，以安卓 Color.kt 为准
+  static readonly BACKGROUND: number = 0xFFF5F6F3        // 页面底色
   static readonly ON_BACKGROUND: number = 0xFF1C1C1E
-  static readonly SURFACE: number = 0xFFFFFFFF // 纯白卡片
+  static readonly SURFACE: number = 0xFFFFFFFF           // 纯白卡片
   static readonly ON_SURFACE: number = 0xFF1C1C1E
-  static readonly SURFACE_VARIANT: number = 0xFFF5F6F3 // 卡内次级块（输入框底、嵌套卡）
+  static readonly SURFACE_VARIANT: number = 0xFFEFF1EE   // 卡内次级块（输入框底、嵌套卡）
   static readonly ON_SURFACE_VARIANT: number = 0xFF6B6E73
-  static readonly GROUP_BACKGROUND: number = 0xFFE7EAE4 // 分组容器底（比页面底再深一档）
-  static readonly HAIRLINE: number = 0xFFEFF1EE // 容器内部行分隔线底色
+  static readonly GROUP_BACKGROUND: number = 0xFFE7EAE4  // 分组容器底（比页面底再深一档）
+  static readonly HAIRLINE: number = 0xFFEFF1EE          // 容器内部行分隔线底色
 
   // 边框 & 辅助
-  static readonly OUTLINE: number = 0xFFE3E7E2 // 卡片描边（1px）
-  static readonly OUTLINE_VARIANT: number = 0xFFF5F6F3
+  static readonly OUTLINE: number = 0xFFE6E9E6           // 卡片描边（1px）
+  static readonly OUTLINE_VARIANT: number = 0xFFEFF1EE
 
-  // 错误
-  static readonly ERROR: number = 0xFFFF3B30
+  // 错误（v0.4 收敛为单一 error 角色 #A8435A，弃 iOS 红 #FF3B30）
+  static readonly ERROR: number = 0xFFA8435A
   static readonly ON_ERROR: number = 0xFFFFFFFF
-  static readonly ERROR_CONTAINER: number = 0xFFFFF1F0
-  static readonly ON_ERROR_CONTAINER: number = 0xFF991B1B
-  static readonly ERROR_LIGHT: number = 0xFFFFB4AB // 输入框错误态
+  static readonly ERROR_CONTAINER: number = 0xFFF7E9EC
+  static readonly ON_ERROR_CONTAINER: number = 0xFFA8435A
 
-  // 警告 — 规范语义橙（iOS 系统橙 on 白对比度不足，安卓已废弃）
+  // 警告 — 规范语义橙
   static readonly WARNING: number = 0xFFD98A26
   static readonly ON_WARNING: number = 0xFFFFFFFF
-  static readonly WARNING_CONTAINER: number = 0xFFFFF7ED
+  static readonly WARNING_CONTAINER: number = 0xFFFDF3E7
   static readonly ON_WARNING_CONTAINER: number = 0xFF92400E
 
-  // 状态语义（进行中 / 危险，规范 §6.5）
+  // 状态语义（进行中 / 危险）
+  // v0.4：ongoingInk 与 ongoing 合并，不再单列小字变体
   static readonly ONGOING: number = 0xFFD98A26
-  static readonly ONGOING_INK: number = 0xFF8F5B0C
-  static readonly DANGER: number = 0xFFC9526B
+  static readonly ONGOING_INK: number = 0xFFD98A26
+  static readonly DANGER: number = 0xFFA8435A
   static readonly DANGER_INK: number = 0xFFA8435A
 
-  // 成功
-  static readonly SUCCESS: number = 0xFF34C759
+  // 成功（v0.4 收敛：success 与 done 合并为 #2D9B6A）
+  static readonly SUCCESS: number = 0xFF2D9B6A
   static readonly ON_SUCCESS: number = 0xFFFFFFFF
-  static readonly SUCCESS_CONTAINER: number = 0xFFF0FAF5
-  static readonly ON_SUCCESS_CONTAINER: number = 0xFF065F46
+  static readonly SUCCESS_CONTAINER: number = 0xFFF0FBF4
+  static readonly ON_SUCCESS_CONTAINER: number = 0xFF17322B
 
   // 文字色阶
   static readonly TEXT_PRIMARY: number = 0xFF1C1C1E
-  static readonly TEXT_SECONDARY: number = 0xFF6B6E73 // 次文本（对比度更高）
-  static readonly TEXT_TERTIARY: number = 0xFF9A9DA3 // 弱文本（对比度更高）
+  static readonly TEXT_SECONDARY: number = 0xFF6B6E73 // 次文本
+  static readonly TEXT_TERTIARY: number = 0xFFA9AEA9  // 弱文本
 
   // 分隔线
   static readonly DIVIDER: number = 0xFFEFF1EE
 
   // 水意象（次要强调、进度、水滴）
   static readonly WATER: number = 0xFF4A9FD4
-  static readonly WATER_SOFT: number = 0xFFDCEFF7 // 水色浅底容器
+  static readonly WATER_SOFT: number = 0xFFDCEFF7     // 水色浅底容器
 
   // 图标容器六色浅底（规范 §2.1）
-  static readonly ICON_CONTAINER_GREEN: number = 0xFFE8F6EF // 洗护/主
-  static readonly ICON_CONTAINER_BLUE: number = 0xFFEEF2FB // 物流/寄件
-  static readonly ICON_CONTAINER_ORANGE: number = 0xFFFDF3E7 // 取件/待办
-  static readonly ICON_CONTAINER_PINK: number = 0xFFFDEEF0 // 异常/取消
-  static readonly ICON_CONTAINER_TEAL: number = 0xFFF0FBF4 // 账户/安全
-  static readonly ICON_CONTAINER_PURPLE: number = 0xFFF4F0FB // 观象台/AI
+  // v0.4：绿与青同值 #F0FBF4（安卓 Color.kt 同名同值）
+  static readonly ICON_CONTAINER_GREEN: number = 0xFFF0FBF4   // 洗护/主
+  static readonly ICON_CONTAINER_BLUE: number = 0xFFEEF2FB    // 物流/寄件
+  static readonly ICON_CONTAINER_ORANGE: number = 0xFFFDF3E7  // 取件/待办
+  static readonly ICON_CONTAINER_PINK: number = 0xFFFDEEF0    // 异常/取消
+  static readonly ICON_CONTAINER_TEAL: number = 0xFFF0FBF4    // 账户/安全
+  static readonly ICON_CONTAINER_PURPLE: number = 0xFFF4F0FB  // 观象台/AI
 
   // 图标前景六色（规范 §2.1 六色深色版）
   static readonly ICON_FOREGROUND_GREEN: number = 0xFF2D9B6A
@@ -105,6 +115,80 @@ export class DesignColor {
   static readonly ICON_FOREGROUND_PINK: number = 0xFFC9526B
   static readonly ICON_FOREGROUND_TEAL: number = 0xFF3F9D78
   static readonly ICON_FOREGROUND_PURPLE: number = 0xFF7C3AED
+
+  // ========== 清氧设计系统 — 暗色主题（对齐 Android Color.kt Dark* 系） ==========
+
+  static readonly DARK_PRIMARY: number = 0xFF5BC894
+  static readonly DARK_ON_PRIMARY: number = 0xFF17322B
+  static readonly DARK_PRIMARY_CONTAINER: number = 0xFF17322B
+  static readonly DARK_ON_PRIMARY_CONTAINER: number = 0xFFF0FBF4
+  static readonly DARK_PRIMARY_LIGHT: number = 0xFF17322B
+  static readonly DARK_PRIMARY_DARK: number = 0xFF5BC894
+
+  static readonly DARK_SECONDARY: number = 0xFFA9AEA9
+  static readonly DARK_ON_SECONDARY: number = 0xFF141614
+  static readonly DARK_SECONDARY_CONTAINER: number = 0xFF262A27
+  static readonly DARK_ON_SECONDARY_CONTAINER: number = 0xFFE6E9E6
+
+  static readonly DARK_TERTIARY: number = 0xFFA9AEA9
+  static readonly DARK_ON_TERTIARY: number = 0xFF141614
+  static readonly DARK_TERTIARY_CONTAINER: number = 0xFF262A27
+  static readonly DARK_ON_TERTIARY_CONTAINER: number = 0xFFE6E9E6
+
+  static readonly DARK_BACKGROUND: number = 0xFF141614
+  static readonly DARK_ON_BACKGROUND: number = 0xFFE6E9E6
+  static readonly DARK_SURFACE: number = 0xFF1D201E
+  static readonly DARK_ON_SURFACE: number = 0xFFE6E9E6
+  static readonly DARK_SURFACE_VARIANT: number = 0xFF262A27
+  static readonly DARK_ON_SURFACE_VARIANT: number = 0xFFA9AEA9
+  static readonly DARK_GROUP_BACKGROUND: number = 0xFF1A1E1B
+  static readonly DARK_HAIRLINE: number = 0xFF262A27
+
+  static readonly DARK_OUTLINE: number = 0xFF2C312D
+  static readonly DARK_OUTLINE_VARIANT: number = 0xFF262A27
+
+  static readonly DARK_ERROR: number = 0xFFE795A5
+  static readonly DARK_ON_ERROR: number = 0xFF141614
+  static readonly DARK_ERROR_CONTAINER: number = 0xFF3A1F28
+  static readonly DARK_ON_ERROR_CONTAINER: number = 0xFFE795A5
+
+  static readonly DARK_WARNING: number = 0xFFE5AC5C
+  static readonly DARK_ON_WARNING: number = 0xFF141614
+  static readonly DARK_WARNING_CONTAINER: number = 0xFF332917
+  static readonly DARK_ON_WARNING_CONTAINER: number = 0xFFECB36A
+
+  static readonly DARK_ONGOING: number = 0xFFE5AC5C
+  static readonly DARK_ONGOING_INK: number = 0xFFECB36A
+  static readonly DARK_DANGER: number = 0xFFE795A5
+  static readonly DARK_DANGER_INK: number = 0xFFE795A5
+
+  static readonly DARK_SUCCESS: number = 0xFF5BC894
+  static readonly DARK_ON_SUCCESS: number = 0xFF141614
+  static readonly DARK_SUCCESS_CONTAINER: number = 0xFF17322B
+  static readonly DARK_ON_SUCCESS_CONTAINER: number = 0xFFF0FBF4
+
+  static readonly DARK_TEXT_PRIMARY: number = 0xFFE6E9E6
+  static readonly DARK_TEXT_SECONDARY: number = 0xFFA9AEA9
+  static readonly DARK_TEXT_TERTIARY: number = 0xFF7E837D
+
+  static readonly DARK_DIVIDER: number = 0xFF262A27
+
+  static readonly DARK_WATER: number = 0xFF5FAEE0
+  static readonly DARK_WATER_SOFT: number = 0xFF1C2F3B
+
+  static readonly DARK_ICON_CONTAINER_GREEN: number = 0xFF1D3229
+  static readonly DARK_ICON_CONTAINER_BLUE: number = 0xFF1F2637
+  static readonly DARK_ICON_CONTAINER_ORANGE: number = 0xFF332917
+  static readonly DARK_ICON_CONTAINER_PINK: number = 0xFF341E24
+  static readonly DARK_ICON_CONTAINER_TEAL: number = 0xFF17322B
+  static readonly DARK_ICON_CONTAINER_PURPLE: number = 0xFF272038
+
+  static readonly DARK_ICON_FOREGROUND_GREEN: number = 0xFF5BC894
+  static readonly DARK_ICON_FOREGROUND_BLUE: number = 0xFF85A3E8
+  static readonly DARK_ICON_FOREGROUND_ORANGE: number = 0xFFE5AC5C
+  static readonly DARK_ICON_FOREGROUND_PINK: number = 0xFFE58A9A
+  static readonly DARK_ICON_FOREGROUND_TEAL: number = 0xFF57C9A4
+  static readonly DARK_ICON_FOREGROUND_PURPLE: number = 0xFFB49CE8
 
   // ========== 认证页渐变色（160deg 三段 #1A9E6E → #0D7A4A@50% → #0B5C3A） ==========
   static readonly AUTH_GRADIENT_TOP: number = 0xFF1A9E6E
@@ -129,9 +213,9 @@ export class DesignColor {
   static readonly WECHAT_GREEN_LIGHT: number = 0x1A07C160
   static readonly ALIPAY_BLUE_LIGHT: number = 0x1A1677FF
 
-  // ========== 服务类型色彩 ==========
+  // ========== 服务类型色彩（页面自有语义，非令牌层） ==========
   static readonly SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿
-  static readonly SERVICE_WASH_LIGHT: number = 0xFFE8F6EF
+  static readonly SERVICE_WASH_LIGHT: number = 0xFFF0FBF4
   static readonly SERVICE_DRY: number = 0xFF7C3AED        // 干洗 — 优雅紫
   static readonly SERVICE_DRY_LIGHT: number = 0xFFF3EFFE
   static readonly SERVICE_PRESS: number = 0xFFE07B00      // 熨烫 — 暖橙
@@ -155,11 +239,9 @@ export class DesignDimens {
   static readonly CARD_PADDING: number = 20
   static readonly CARD_SPACING: number = 16
   static readonly SECTION_SPACING: number = 32
-  // 圆角 token（规范 §2.3）：CARD_RADIUS 16 为卡片唯一值，RADIUS_XL 20 仅用于 hero/大容器
-  static readonly RADIUS_XS: number = 4     // 标签、小角标
-  static readonly RADIUS_SM: number = 8     // 输入框、小按钮
+  // 圆角 token（规范 §2.3 五档：16 卡 / 20 hero / 14 按钮·输入 / 12 图标容器 / 10 小容器）
   static readonly RADIUS_SMALL: number = 10 // 小图标容器、徽标
-  static readonly RADIUS_MD: number = 12    // 分组背景、图标容器、内嵌套块
+  static readonly RADIUS_MD: number = 12    // 图标容器、内嵌套块
   static readonly CARD_RADIUS: number = 16  // 卡片（唯一值，= Android radiusLg）
   static readonly RADIUS_XL: number = 20    // hero、大容器（= Android radiusXl）
   static readonly RADIUS_FULL: number = 999 // 头像、胶囊
@@ -195,34 +277,36 @@ export class DesignElevation {
 // ========== 字体大小常量 ==========
 
 /**
- * 清氧设计系统语义字阶（对齐 Android AppTextStyles 七档 + 正文辅助档）
+ * 清氧设计系统字阶（DESIGN-SPEC v0.4：收敛为 8 档，weight 仅 400/500/600/700）
+ * 对齐 Android AppTextStyles 的语义别名。
+ * **不存在 15/17/20/21/24 档。**
  * 单位：fp (字体像素)
  */
 export class DesignFontSize {
-  /** 数据大字 — 余额、应付金额、取件码（Bold / tabular numbers） */
+  /** display — 数据大字：余额、应付金额、取件码（Bold / tabular numbers） */
   static readonly DATA_LARGE: number = 36
-  /** 状态大字 — hero 订单状态锚点字（Bold），每屏唯一锚点 */
-  static readonly STATUS_LARGE: number = 21
-  /** 金额中字 — 列表内价格、券面额（Bold / tabular numbers） */
-  static readonly AMOUNT_MEDIUM: number = 20
-  /** 根页大标题 — 首页/服务/我的（Bold） */
-  static readonly ROOT_TITLE: number = 24
-  /** 二级页页头（SemiBold） */
-  static readonly PAGE_HEADER: number = 20
-  /** 区块标题 — 页面内分区标题（SemiBold） */
-  static readonly SECTION_TITLE: number = 17
-  /** 卡片标题（Medium） */
-  static readonly CARD_TITLE: number = 16
-  /** 正文 */
-  static readonly BODY: number = 15
-  /** 辅助说明 */
-  static readonly CAPTION: number = 13
+  /** headline — 保留档（根页大标题等超大标题场景） */
+  static readonly HEADLINE: number = 28
+  /** titleLarge — 状态大字（hero 锚点）/ 根页大标题（SemiBold） */
+  static readonly STATUS_LARGE: number = 22
+  static readonly ROOT_TITLE: number = 22
+  /** title — 金额中字（+tabular）/ 内页标题 / 卡片标题 / 区块标题（SemiBold） */
+  static readonly AMOUNT_MEDIUM: number = 18
+  static readonly PAGE_HEADER: number = 18
+  static readonly CARD_TITLE: number = 18
+  static readonly SECTION_TITLE: number = 18
+  /** bodyLarge — 正文 */
+  static readonly BODY: number = 16
+  /** body — 列表行主文案（§3.4 特许，配 FontWeight.MEDIUM） */
+  static readonly BODY_SMALL: number = 14
+  /** caption — 辅助 / 角标 / labelSmall */
+  static readonly CAPTION: number = 12
 }
 
 // ========== 字体粗细常量 ==========
 
 /**
- * 清氧设计系统字体粗细常量
+ * 清氧设计系统字体粗细常量（对齐 Android：只允许 400/500/600/700）
  */
 export class DesignFontWeight {
   static readonly BOLD: number = 700

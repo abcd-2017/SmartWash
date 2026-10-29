@@ -8,7 +8,7 @@ import { reservationLaundry } from "../network/api/OrderApi"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppInfoDialog } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function LaundryBuilder() {
@@ -124,12 +124,20 @@ struct Laundry {
     }
     .backgroundColor(this.selectItemId == item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
     .padding(DesignDimens.CARD_PADDING)
+    // 卡片唯一画法（规范 §3.1）：1px 描边 + level1 卡片阴影；
+    // 描边宽度不再随选中变化（对齐安卓 v0.4），选中强调由 primaryLight 底 + primary 描边承担
     .border({
-      width: this.selectItemId == item.itemId ? 1.5 : 0.5,
+      width: 1,
       color: this.selectItemId == item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE,
       radius: DesignDimens.CARD_RADIUS
     })
     .borderRadius(DesignDimens.CARD_RADIUS)
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .animation({ duration: 200, curve: Curve.EaseOut })
     .onClick(() => {
       this.selectItemId = item.itemId
@@ -212,7 +220,14 @@ struct Laundry {
             }
             .borderRadius(DesignDimens.CARD_RADIUS)
             .backgroundColor(DesignColor.SURFACE)
-            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+            .border({ width: 1, color: DesignColor.OUTLINE })
+            .shadow({
+              radius: DesignElevation.LEVEL_1,
+              color: 'rgba(20,40,30,0.05)',
+              offsetX: 0,
+              offsetY: 2
+            })
             .padding(DesignDimens.CARD_PADDING)
             .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
@@ -279,7 +294,7 @@ struct Laundry {
           .width(160)
         }
         .backgroundColor(DesignColor.SURFACE)
-        .border({ width: { top: 0.5 }, color: DesignColor.OUTLINE })
+        .border({ width: { top: 1 }, color: DesignColor.OUTLINE })
         .width("100%")
         .height(72)
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })

@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
 import { RouteNames } from "../constant/RouteNames"
@@ -112,12 +112,13 @@ export struct Service {
       .alignItems(HorizontalAlign.End)
     }
     .width("100%")
-    .alignItems(VerticalAlign.Center)
+    // 对齐安卓 ServicePage.ServiceRow：行体 74 = 上 15 + 内容 52 + 下 7，图标盒/名称/价格同顶
+    .alignItems(VerticalAlign.Top)
     .padding({
       left: DesignDimens.CARD_PADDING,
       right: DesignDimens.CARD_PADDING,
       top: 15,
-      bottom: 15
+      bottom: 7
     })
     .onClick(() => {
       pathStack.pushPathByName(RouteNames.LAUNDRY, null)
@@ -143,7 +144,14 @@ export struct Service {
     .width("100%")
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   build() {

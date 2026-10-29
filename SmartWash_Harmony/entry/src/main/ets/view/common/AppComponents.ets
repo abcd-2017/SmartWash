@@ -110,8 +110,8 @@ export struct CircleIconBox {
 // ========== AppCard 统一卡片容器 ==========
 
 /**
- * 统一卡片容器
- * 白底、20vp 圆角、0.5vp 边框（替代 shadow）
+ * 统一卡片容器 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法：
+ * surface 白底 + 1px outline 描边 + level1 阴影（0 2px rgba(20,40,30,.05)）+ 圆角 16
  *
  * 使用方式：
  * AppCard() {
@@ -132,24 +132,27 @@ export struct AppCard {
     .width('100%')
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(this.cardRadius)
-    .borderWidth(0.5)
+    .borderWidth(1)
     .borderColor(DesignColor.OUTLINE)
     .padding(this.paddingValue)
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: '#1A000000',
+      color: 'rgba(20,40,30,0.05)',
       offsetX: 0,
-      offsetY: 1
+      offsetY: 2
     })
   }
 }
 
-// ========== AppButton 统一主按钮 ==========
+// ========== AppButton 统一按钮 ==========
 
 /**
- * 统一主按钮
- * 绿底(#2D9B6A)、14vp 圆角、52vp 高度
+ * 统一按钮（规范 §3.3）
+ * 默认 = 主按钮：绿底(#2D9B6A)、14vp 圆角、52vp 高度、文字 18 档 SemiBold
  * 支持 loading 状态显示 LoadingProgress
+ *
+ * 次按钮形态（设置页「退出登录」等）：传 bgColor / textColor / textSize 覆盖；
+ * 三者不传时与主按钮完全一致，既有调用方行为不变。
  */
 @ComponentV2
 export struct AppButton {
@@ -157,6 +160,10 @@ export struct AppButton {
   // 命名注意：不能叫 enabled（与 CustomComponent 基类的同名属性方法冲突导致编译错误）
   @Param isEnabled: boolean = true
   @Param loading: boolean = false
+  // 次按钮形态的可选覆盖项（默认 null / 原值 = 主按钮逻辑）
+  @Param textColor: ResourceColor | null = null
+  @Param bgColor: ResourceColor | null = null
+  @Param textSize: number = DesignFontSize.SECTION_TITLE
   @Event click: () => void = () => {
   }
 
@@ -169,16 +176,16 @@ export struct AppButton {
           .color(Color.White)
       } else {
         Text(this.text)
-          .fontSize(DesignFontSize.SECTION_TITLE)
+          .fontSize(this.textSize)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.ON_PRIMARY)
+          .fontColor(this.textColor ?? DesignColor.ON_PRIMARY)
       }
     }
     .type(ButtonType.Capsule)
     .width('100%')
     .height(52)
     .borderRadius(DesignDimens.BUTTON_RADIUS)
-    .backgroundColor(this.isEnabled && !this.loading ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
+    .backgroundColor(this.bgColor ?? (this.isEnabled && !this.loading ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY))
     .stateEffect(this.isEnabled && !this.loading)
     .enabled(this.isEnabled && !this.loading)
     .onClick(() => {
@@ -317,39 +324,140 @@ export struct AppTabBar {
   }
 }
 
+// ========== DrumMark 滚筒圆母题（规范 §5；对齐安卓 DrumMark.kt:35-102） ==========
+
+/**
+ * 滚筒圆 — 规范 §5 母题：同心圆环 + 一条穿过它的水波线。
+ *
+ * 几何基准 64，全部尺寸相对 [sizeValue] 等比缩放：
+ * - 外环 track：r = 28/64，描边宽 2.5/64，颜色 [trackTint]（默认同 [tint]）
+ * - 进度弧：同半径同宽，起始 -90°、扫角 360° × progress，颜色 [tint]（progress 为 null 或 ≤ 0 不绘制）
+ * - 内环：r = 17/64，描边宽 2/64，颜色 [innerRingTint]（null 不绘制）
+ * - 单条水波：描边宽 2.4/64，颜色 [tint]，对照设计稿 `M23 32c3-3.5 6 2 9-.5s6 1.5 9-1`
+ *
+ * 组件本身不带动画：进度环由真实状态传入；空态传 progress = null 即为静止滚筒。
+ * 说明：ArkUI Canvas 只在 aboutToAppear 绘制一次（本组件当前仅作静态母题消费，无状态驱动）。
+ */
+@ComponentV2
+export struct DrumMark {
+  @Param sizeValue: number = 48
+  @Param tint: number = DesignColor.PRIMARY
+  @Param trackTint: number | null = null
+  @Param innerRingTint: number | null = null
+  @Param progress: number | null = null
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
+
+  aboutToAppear(): void {
+    this.drawMark()
+  }
+
+  /** 滚筒圆绘制（外环 track + 可选进度弧 + 可选内环 + 单条水波线） */
+  private drawMark(): void {
+    const size: number = this.sizeValue
+    const scaleFactor: number = size / 64
+    const cx: number = size / 2
+    const cy: number = size / 2
+    const track: number = this.trackTint ?? this.tint
+
+    this.ctx.clearRect(0, 0, size, size)
+    this.ctx.lineCap = 'round'
+
+    // 外环 track
+    this.ctx.lineWidth = 2.5 * scaleFactor
+    this.ctx.strokeStyle = track
+    this.ctx.beginPath()
+    this.ctx.arc(cx, cy, 28 * scaleFactor, 0, Math.PI * 2, false)
+    this.ctx.stroke()
+
+    // 进度弧（起始 -90°，扫角 360° × progress）
+    const progressValue: number | null = this.progress
+    if (progressValue !== null) {
+      const clamped: number = Math.min(1, Math.max(0, progressValue))
+      if (clamped > 0) {
+        this.ctx.lineWidth = 2.5 * scaleFactor
+        this.ctx.strokeStyle = this.tint
+        this.ctx.beginPath()
+        this.ctx.arc(cx, cy, 28 * scaleFactor, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamped, false)
+        this.ctx.stroke()
+      }
+    }
+
+    // 内环
+    const innerRing: number | null = this.innerRingTint
+    if (innerRing !== null) {
+      this.ctx.lineWidth = 2 * scaleFactor
+      this.ctx.strokeStyle = innerRing
+      this.ctx.beginPath()
+      this.ctx.arc(cx, cy, 17 * scaleFactor, 0, Math.PI * 2, false)
+      this.ctx.stroke()
+    }
+
+    // 单条水波线（穿过圆环）— 设计稿 M23 32c3-3.5 6 2 9-.5s6 1.5 9-1，中心 32,32
+    this.ctx.lineWidth = 2.4 * scaleFactor
+    this.ctx.strokeStyle = this.tint
+    this.ctx.beginPath()
+    this.ctx.moveTo(cx - 9 * scaleFactor, cy)
+    this.ctx.bezierCurveTo(
+      cx - 6 * scaleFactor, cy - 3.5 * scaleFactor,
+      cx - 3 * scaleFactor, cy + 2 * scaleFactor,
+      cx, cy - 0.5 * scaleFactor
+    )
+    // s 指令：第一控制点为上一段第二控制点关于当前点的反射 → (3, -3)
+    this.ctx.bezierCurveTo(
+      cx + 3 * scaleFactor, cy - 3 * scaleFactor,
+      cx + 6 * scaleFactor, cy + 1 * scaleFactor,
+      cx + 9 * scaleFactor, cy - 1.5 * scaleFactor
+    )
+    this.ctx.stroke()
+  }
+
+  build() {
+    Canvas(this.ctx)
+      .width(this.sizeValue)
+      .height(this.sizeValue)
+  }
+}
+
 // ========== EmptyState 空状态占位 ==========
 
 /**
- * 空状态占位
- * 居中图标 + 提示文字
+ * 空状态占位（规范 §3.6）— 滚筒圆母题（DrumMark）静止态 + 一句引导文案 + 可选行动按钮。
+ *
+ * 规范 §3.6 禁止「用一个灰色 Material 图标了事」，故本组件只渲染滚筒圆母题，
+ * 不再提供回退到裸 SymbolGlyph 图标的分支。
+ *
+ * 垂直内边距 32 / 母题 → 文案 spaceMd(16) / 文案 → 行动按钮由插槽自行给出
+ * （对齐安卓 EmptyState：padding vertical 32dp + DrumMark(size 48dp, primary)）。
+ *
+ * @param icon 不渲染，仅为兼容既有调用点的占位参数（对齐安卓 EmptyState 的 icon 占位）
  */
 @ComponentV2
 export struct EmptyState {
   @Param message: string = '暂无数据'
   @Param icon: Resource = $r('sys.symbol.square_slash')
+  // 行动按钮插槽（规范 §3.6：空态 = 滚筒圆母题 + 引导文案 + 行动按钮）。
+  // 默认走空插槽 emptyContent，不渲染任何内容，故既有只传 message 的调用点视觉不变。
+  @BuilderParam action: () => void = emptyContent
 
   build() {
     Column() {
-      // 图标 — 圆形底色背景
-      Column() {
-        SymbolGlyph(this.icon)
-          .fontSize(40)
-          .fontColor([DesignColor.TEXT_SECONDARY])
-      }
-      .width(96)
-      .height(96)
-      .borderRadius(48)
-      .backgroundColor(DesignColor.SURFACE_VARIANT)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .margin({ bottom: 16 })
+      // 母题 — 滚筒圆（DrumMark）静止态；48vp + primary（规范 §3.6 母题色）
+      DrumMark({
+        sizeValue: 48,
+        tint: DesignColor.PRIMARY
+      })
+        .margin({ bottom: DesignDimens.SPACE_MD })
 
+      // 引导文案 — 空态主文案档 bodyLarge(16)
       Text(this.message)
         .fontSize(DesignFontSize.BODY)
         .fontColor(DesignColor.TEXT_SECONDARY)
+
+      // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）
+      this.action()
     }
     .width('100%')
-    .padding({ top: 64, bottom: 64 })
+    .padding({ top: 32, bottom: 32 })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
   }
@@ -382,6 +490,8 @@ export struct AppConfirmDialog {
   @Prop message: string = ''
   @Prop confirmText: string = '确认'
   @Prop cancelText: string = '取消'
+  // 危险操作（退出登录/解绑等）：确认按钮走 dangerInk，与安卓 AppConfirmDialog(isDanger = true) 对齐
+  @Prop isDanger: boolean = false
   onConfirm: () => void = () => {
   }
   onDismiss: () => void = () => {
@@ -452,7 +562,8 @@ export struct AppConfirmDialog {
           .layoutWeight(1)
           .height(48)
           .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.PRIMARY)
+          // 危险操作确认键用 dangerInk（#A8435A），普通确认用品牌绿
+          .fontColor(this.isDanger ? DesignColor.DANGER_INK : DesignColor.PRIMARY)
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)

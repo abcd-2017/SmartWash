@@ -17,8 +17,8 @@ import { LiuYaoChart } from '../../../core/liuyao/LiuYaoChart'
 import { MeiHuaChart } from '../../../core/meihua/MeiHuaChart'
 import { QiMenChart } from '../../../core/qimen/QiMenChart'
 import { LiuRenChart } from '../../../core/liuren/LiuRenChart'
-import { encodeChartJson } from '../../data/DivChartCodec'
-import { DivRecordRepository, encodeBundle, encodeBundleToJson } from '../../data/DivinationStore'
+import { encodeChartJson } from '../../../data/DivChartCodec'
+import { DivRecordRepository, encodeBundle, encodeBundleToJson } from '../../../data/DivinationStore'
 import { DivCastParam } from '../../DivCastParam'
 import {
   DivCard,
@@ -34,9 +34,11 @@ import {
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { pathStack, getStringParam } from '../../../../utils/PathStackUtil'
-import { showToastSafety } from '../../../../utils/ToastUtil'
+import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
+import { showToastSafety } from '../../../../../utils/ToastUtil'
+import { DivChartParam } from '../../DivChartParam'
 
 /** 六爻起卦方式 */
 const LIU_YAO_MODE_SHAKE: string = 'shake'
@@ -214,7 +216,8 @@ struct DivAskPage {
   private navigateChart(id: number): void {
     pathStack.clear()
     pathStack.pushPathByName(RouteNames.DIV_HOME, null)
-    pathStack.pushPathByName(RouteNames.DIV_CHART, { recordId: id, animate: true })
+    const chartParam: DivChartParam = { recordId: id, animate: true }
+    pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
   // ========== 弹窗（每次新建控制器，保证入参为最新） ==========
@@ -299,28 +302,28 @@ struct DivAskPage {
     Column() {
       Column().height(48)
 
-      DivSeal({ text: DivText.safetySeal, size: 44, fontSize: 26 })
+      DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 26 })
 
       Column().height(20)
 
       DivSerifText({
         text: DivText.safetyTitle,
-        size: 18,
+        textSize: 18,
         weight: 600,
         spacing: 3,
         color: DivPalette.textPrimary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
 
       Column().height(12)
 
       DivSerifText({
         text: DivText.safetyBody,
-        size: 13,
+        textSize: 13,
         weight: 400,
         spacing: 0,
         color: DivPalette.textSecondary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
         .padding({ left: 12, right: 12 })
 
@@ -328,7 +331,7 @@ struct DivAskPage {
 
       DivGoldButton({
         text: DivText.safetyBack,
-        onClick: () => {
+        onAction: () => {
           this.onQuestionChange('')
           pathStack.pop()
         }
@@ -358,7 +361,7 @@ struct DivAskPage {
             Column() {
               DivSerifText({
                 text: DivText.askHint,
-                size: 11,
+                textSize: 11,
                 weight: 400,
                 spacing: 0,
                 color: DivPalette.textTertiary
@@ -379,9 +382,8 @@ struct DivAskPage {
                 })
             }
             .width('100%')
-            .padding(14)
+            .padding({ left: 20, right: 20, top: 14, bottom: 14 })
           }
-          .padding({ left: 20, right: 20 })
 
           // 2. 所问领域（自动识别 / 手动选择）
           DivSectionTitle({
@@ -395,7 +397,7 @@ struct DivAskPage {
                 DivCategoryChip({
                   text: item[1],
                   selected: this.category === item[0],
-                  onClick: () => {
+                  onAction: () => {
                     this.onCategorySelect(item[0])
                   }
                 })
@@ -418,7 +420,7 @@ struct DivAskPage {
                   title: DivText.castMethodShake,
                   subtitle: DivText.castMethodShakeSub,
                   selected: this.liuYaoMode === LIU_YAO_MODE_SHAKE,
-                  onClick: () => {
+                  onAction: () => {
                     this.liuYaoMode = LIU_YAO_MODE_SHAKE
                   }
                 })
@@ -426,7 +428,7 @@ struct DivAskPage {
                   title: DivText.castMethodLines,
                   subtitle: DivText.castMethodLinesSub,
                   selected: this.liuYaoMode === LIU_YAO_MODE_LINES,
-                  onClick: () => {
+                  onAction: () => {
                     this.liuYaoMode = LIU_YAO_MODE_LINES
                   }
                 })
@@ -435,7 +437,7 @@ struct DivAskPage {
                   title: DivText.castMethodTime,
                   subtitle: DivText.castMethodTimeSub,
                   selected: this.meiHuaMode === MEI_HUA_MODE_TIME,
-                  onClick: () => {
+                  onAction: () => {
                     this.meiHuaMode = MEI_HUA_MODE_TIME
                   }
                 })
@@ -443,7 +445,7 @@ struct DivAskPage {
                   title: DivText.castMethodNumber,
                   subtitle: DivText.castMethodNumberSub,
                   selected: this.meiHuaMode === MEI_HUA_MODE_NUMBERS,
-                  onClick: () => {
+                  onAction: () => {
                     this.meiHuaMode = MEI_HUA_MODE_NUMBERS
                   }
                 })
@@ -452,7 +454,7 @@ struct DivAskPage {
                   title: DivText.castMethodNowJu,
                   subtitle: DivText.castMethodNowJuSub,
                   selected: true,
-                  onClick: () => {
+                  onAction: () => {
                   }
                 })
               } else {
@@ -460,14 +462,14 @@ struct DivAskPage {
                   title: DivText.castMethodNowKe,
                   subtitle: DivText.castMethodNowKeSub,
                   selected: true,
-                  onClick: () => {
+                  onAction: () => {
                   }
                 })
               }
             }
             .width('100%')
+            .padding({ left: 20, right: 20 })
           }
-          .padding({ left: 20, right: 20 })
 
           Column().height(20)
 
@@ -475,7 +477,7 @@ struct DivAskPage {
           DivGoldButton({
             text: DivText.askGo,
             isEnabled: this.question.trim().length > 0,
-            onClick: () => {
+            onAction: () => {
               this.onGo()
             }
           })
@@ -505,7 +507,7 @@ struct ManualLinesDialog {
     Column() {
       DivSerifText({
         text: DivText.manualTitle,
-        size: 15,
+        textSize: 15,
         weight: 600,
         spacing: 3,
         color: DivPalette.textPrimary
@@ -516,7 +518,7 @@ struct ManualLinesDialog {
         Row() {
           DivSerifText({
             text: DivText.lineNames[index],
-            size: 12,
+            textSize: 12,
             weight: 400,
             spacing: 0,
             color: DivPalette.textSecondary
@@ -528,18 +530,18 @@ struct ManualLinesDialog {
               Column() {
                 DivSerifText({
                   text: DivText.manualOptionLabels[code - 1],
-                  size: 10,
+                  textSize: 10,
                   weight: 400,
                   spacing: 0,
                   color: this.lines[index] === code ? DivPalette.gold : DivPalette.textSecondary,
-                  align: TextAlign.Center
+                  textAlign: TextAlign.Center
                 })
               }
               .padding({ left: 8, right: 8, top: 4, bottom: 4 })
               .borderRadius(10)
               .backgroundColor(this.lines[index] === code ? DivPalette.gold14 : Color.Transparent)
               .border({
-                width: 0.5,
+                width: 1,
                 color: this.lines[index] === code ? DivPalette.goldLine : DivPalette.hair,
                 radius: 10
               })
@@ -560,9 +562,9 @@ struct ManualLinesDialog {
 
       DivGoldButton({
         text: DivText.manualConfirm,
-        height: 42,
+        btnHeight: 42,
         fontSize: 13,
-        onClick: () => {
+        onAction: () => {
           this.onConfirm(this.lines)
           this.controller.close()
         }
@@ -573,6 +575,8 @@ struct ManualLinesDialog {
     .borderRadius(16)
     .backgroundColor(DivPalette.surface2)
     .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
+    // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
+    .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
   }
 }
 
@@ -612,7 +616,7 @@ struct NumbersDialog {
     Column() {
       DivSerifText({
         text: DivText.numbersTitle,
-        size: 15,
+        textSize: 15,
         weight: 600,
         spacing: 3,
         color: DivPalette.textPrimary
@@ -621,7 +625,7 @@ struct NumbersDialog {
 
       DivSerifText({
         text: DivText.numbersHint,
-        size: 11,
+        textSize: 11,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary
@@ -660,9 +664,9 @@ struct NumbersDialog {
       DivGoldButton({
         text: DivText.manualConfirm,
         isEnabled: this.isValid(),
-        height: 42,
+        btnHeight: 42,
         fontSize: 13,
-        onClick: () => {
+        onAction: () => {
           this.onConfirm(Number(this.first), Number(this.second))
           this.controller.close()
         }
@@ -673,5 +677,7 @@ struct NumbersDialog {
     .borderRadius(16)
     .backgroundColor(DivPalette.surface2)
     .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
+    // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
+    .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
   }
 }

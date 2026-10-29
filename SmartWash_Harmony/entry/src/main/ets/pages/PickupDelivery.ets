@@ -7,7 +7,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
 import { AppButton, AppConfirmDialog } from "../view/common/AppComponents"
 import { BaseResponse } from "../network/BaseResponse"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 /**
  * PickupDelivery 路由入参：显式指定取件/寄件类型（差异分析 02 §8.3）。
@@ -248,6 +248,9 @@ struct PickupDelivery {
             .padding(DesignDimens.CARD_PADDING)
             .backgroundColor(DesignColor.WARNING_CONTAINER)
             .borderRadius(DesignDimens.CARD_RADIUS)
+            // DESIGN-SPEC v0.4 §2.4：卡片 1px outline 描边；警告底自带层级，按安卓
+            // PickupDeliveryPage.kt:218-224 取 shadowElevation = 0（不加投影）
+            .border({ width: 1, color: DesignColor.OUTLINE })
             .alignItems(HorizontalAlign.Start)
 
             RowSplit().height("30")
@@ -276,7 +279,14 @@ struct PickupDelivery {
           .padding(DesignDimens.CARD_PADDING + 8)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(HorizontalAlign.Center)
 
           RowSplit().height("20")
@@ -315,7 +325,14 @@ struct PickupDelivery {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
 
           RowSplit().height("20")
 
@@ -342,7 +359,14 @@ struct PickupDelivery {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
         }
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: 24 })
       }.scrollBar(BarState.Off)

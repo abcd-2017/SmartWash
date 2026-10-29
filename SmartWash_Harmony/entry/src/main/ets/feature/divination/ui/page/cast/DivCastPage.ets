@@ -15,8 +15,8 @@
 import { Solar } from '../../../core/lunar/lunar'
 import { CoinTosser, YaoValue } from '../../../core/Yao'
 import { LiuYaoChart } from '../../../core/liuyao/LiuYaoChart'
-import { encodeChartJson } from '../../data/DivChartCodec'
-import { DivRecordRepository, encodeBundle, encodeBundleToJson } from '../../data/DivinationStore'
+import { encodeChartJson } from '../../../data/DivChartCodec'
+import { DivRecordRepository, encodeBundle, encodeBundleToJson } from '../../../data/DivinationStore'
 import { DivCastParam } from '../../DivCastParam'
 import {
   DivGoldButton,
@@ -27,10 +27,11 @@ import {
   divReduceMotion
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { AppConfirmDialog } from '../../../../view/common/AppComponents'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { getObjectParam, pathStack } from '../../../../utils/PathStackUtil'
-import { showToastSafety } from '../../../../utils/ToastUtil'
+import { AppConfirmDialog } from '../../../../../view/common/AppComponents'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { getObjectParam, pathStack } from '../../../../../utils/PathStackUtil'
+import { showToastSafety } from '../../../../../utils/ToastUtil'
+import { DivChartParam } from '../../DivChartParam'
 
 /** 铜钱尺寸 / 间距（对齐安卓 CoinAndMeridian.kt:63 的 72dp 币身 + 11dp 水平内距） */
 const COIN_SIZE: number = 72
@@ -245,7 +246,8 @@ struct DivCastPage {
   private navigateChart(id: number): void {
     pathStack.clear()
     pathStack.pushPathByName(RouteNames.DIV_HOME, null)
-    pathStack.pushPathByName(RouteNames.DIV_CHART, { recordId: id, animate: true })
+    const chartParam: DivChartParam = { recordId: id, animate: true }
+    pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
   // ========== 铜钱绘制（Canvas 拟真：径向渐变 + 回纹内圈 + 方孔 + 正背面） ==========
@@ -343,11 +345,11 @@ struct DivCastPage {
     Row() {
       DivSerifText({
         text: positionLabel,
-        size: 12,
+        textSize: 12,
         weight: 500,
         spacing: 2,
         color: DivPalette.textTertiary,
-        align: TextAlign.End
+        textAlign: TextAlign.End
       })
         .width(34)
 
@@ -374,12 +376,12 @@ struct DivCastPage {
       Column().width(14)
 
       if (data.done && data.symbol.length > 0) {
-        DivSerifText({ text: data.symbol, size: 17, weight: 400, spacing: 0, color: DivPalette.textPrimary })
+        DivSerifText({ text: data.symbol, textSize: 17, weight: 400, spacing: 0, color: DivPalette.textPrimary })
         if (data.isMoving) {
           // 老阳○ 鎏金 / 老阴× 朱砂 —— 颜色即信息
           DivSerifText({
             text: data.nameLabel.indexOf('老阳') === 0 ? '○' : '×',
-            size: 13,
+            textSize: 13,
             weight: 400,
             spacing: 0,
             color: data.nameLabel.indexOf('老阳') === 0 ? DivPalette.gold : DivPalette.sealHi
@@ -388,14 +390,14 @@ struct DivCastPage {
         }
         DivSerifText({
           text: data.nameLabel,
-          size: 11,
+          textSize: 11,
           weight: 400,
           spacing: 0,
           color: data.isMoving ? DivPalette.sealHi : DivPalette.gold
         })
           .margin({ left: 8 })
       } else {
-        DivSerifText({ text: '┄┄┄', size: 15, weight: 400, spacing: 0, color: DivPalette.goldHair })
+        DivSerifText({ text: '┄┄┄', textSize: 15, weight: 400, spacing: 0, color: DivPalette.goldHair })
       }
     }
     .width('100%')
@@ -409,22 +411,22 @@ struct DivCastPage {
         // 1. 标题 + 进度
         DivSerifText({
           text: DivText.castTitle,
-          size: 15,
+          textSize: 15,
           weight: 500,
           spacing: 4,
           color: DivPalette.textSecondary,
-          align: TextAlign.Center
+          textAlign: TextAlign.Center
         })
           .width('100%')
           .margin({ top: 10 })
 
         DivSerifText({
           text: `第 ${Math.min(this.tossCount(), 6)} 掷 · 共 6 掷`,
-          size: 11,
+          textSize: 11,
           weight: 400,
           spacing: 3,
           color: DivPalette.gold,
-          align: TextAlign.Center
+          textAlign: TextAlign.Center
         })
           .width('100%')
           .padding({ top: 4, bottom: 8 })
@@ -481,7 +483,7 @@ struct DivCastPage {
         DivGoldButton({
           text: this.isComplete() ? DivText.castDone : DivText.castToss,
           isEnabled: !this.tossing && !this.saving && this.pendingYao === null,
-          onClick: () => {
+          onAction: () => {
             this.onMainButtonClick()
           }
         })

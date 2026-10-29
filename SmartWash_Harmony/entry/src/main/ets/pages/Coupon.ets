@@ -5,7 +5,7 @@ import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { EmptyState } from "../view/common/AppComponents"
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
@@ -149,7 +149,7 @@ struct Coupon {
         .width("100%")
         .height(48)
         .backgroundColor(DesignColor.SURFACE)
-        .border({ width: { bottom: 0.5 }, color: DesignColor.DIVIDER })
+        .border({ width: { bottom: 1 }, color: DesignColor.DIVIDER })
 
         // ========== 内容区域 ==========
         if (this.isLoading && this.availableCoupons.length === 0) {
@@ -321,7 +321,14 @@ struct AvailableCouponCard {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影（0 2px 12px rgba(20,40,30,.05)）
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 }
 
@@ -459,7 +466,14 @@ struct CouponTicketCard {
       .alignItems(VerticalAlign.Center)
       .backgroundColor(DesignColor.SURFACE)
       .borderRadius(DesignDimens.CARD_RADIUS)
+      // 票券卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
       .border({ width: 1, color: DesignColor.OUTLINE })
+      .shadow({
+        radius: DesignElevation.LEVEL_1,
+        color: 'rgba(20,40,30,0.05)',
+        offsetX: 0,
+        offsetY: 2
+      })
       .clip(true)
       .opacity(this.isHistorical ? 0.55 : 1.0)
 

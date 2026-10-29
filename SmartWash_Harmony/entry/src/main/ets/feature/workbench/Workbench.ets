@@ -230,13 +230,14 @@ export struct Workbench {
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
+    .border({ width: 1, color: DesignColor.OUTLINE })
     .backgroundColor(DesignColor.SURFACE)
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: '#1A000000',
+      color: 'rgba(20,40,30,0.05)',
       offsetX: 0,
-      offsetY: 1
+      offsetY: 2
     })
     .onClick(() => {
       this.onToolClick(tool)

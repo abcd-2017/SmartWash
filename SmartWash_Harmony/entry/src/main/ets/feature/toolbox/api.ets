@@ -99,75 +99,70 @@ export class ToolboxShortCodeDetailParam {
  * 工具箱短链文案表 — 键名逐一对齐安卓 feature/toolbox/src/main/res/values/strings.xml 的 toolbox_* 资源。
  * 便于跨端文案核对。
  */
-export const ToolboxText = {
-  toolbox_title: "短链管理",
-  toolbox_create_title: "新建短链",
-  toolbox_detail_title: "短链详情",
-  toolbox_action_new: "新建",
-
-  toolbox_empty_message: "还没有短链，创建一个吧",
-  toolbox_empty_action: "新建短链",
-  toolbox_error_load: "短链加载失败",
-  toolbox_action_retry: "重试",
-  toolbox_type_short_link: "短链",
-  toolbox_visibility_public_value: "公开",
-  toolbox_visibility_private_value: "私有",
-  toolbox_expiry_permanent: "永久有效",
-  toolbox_expiry_expired: "已过期",
-  // 有效期展示前缀（对齐安卓 toolbox_expiry_until_format「有效期至 %1$s」，%s 由 toolboxExpiryUntil 填充）
-  toolbox_expiry_until_format: "有效期至 %s",
-  // 点击次数单位后缀（对齐安卓 toolbox_clicks_format「%1$d 次点击」，数字由 toolboxClicksFormat 前置）
-  toolbox_clicks_unit: "次点击",
-  toolbox_value_none: "—",
-
-  toolbox_target_label: "目标链接",
-  toolbox_target_hint: "https://example.com/very-long-link",
-  toolbox_target_helper: "必填，以 http:// 或 https:// 开头",
-  toolbox_custom_code_label: "自定义短码（可选）",
-  toolbox_custom_code_hint: "4-16 位字母数字或 -_",
-  toolbox_visibility_label: "可见性",
-  toolbox_visibility_public_desc: "任何人可经短链跳转",
-  toolbox_visibility_private_desc: "仅自己可解析打开",
-  toolbox_expiry_label: "有效期",
-  toolbox_expiry_preset_permanent: "永久",
-  toolbox_expiry_preset_7d: "7 天",
-  toolbox_expiry_preset_30d: "30 天",
-  toolbox_expiry_preset_custom: "自定义",
-  toolbox_expiry_custom_pick: "选择过期日期",
-  toolbox_submit_create: "创建",
-  toolbox_toast_create_success: "创建成功",
-  toolbox_error_invalid_target: "目标链接须以 http:// 或 https:// 开头",
-  toolbox_error_invalid_custom_code: "短码须为 4-16 位字母数字或 -_",
-  toolbox_error_custom_date_required: "请先选择过期日期",
-  toolbox_error_submit: "提交失败，请重试",
-
-  toolbox_label_code: "短码",
-  toolbox_label_type: "类型",
-  toolbox_label_visibility: "可见性",
-  toolbox_label_clicks: "点击次数",
-  toolbox_label_created: "创建时间",
-  toolbox_label_expiry: "有效期",
-  toolbox_label_target: "目标链接",
-  toolbox_action_renew: "修改有效期",
-  toolbox_renew_title: "修改有效期",
-  toolbox_action_delete: "删除",
-  toolbox_confirm_delete_title: "删除短链",
-  toolbox_qr_section_title: "扫码访问",
-  toolbox_private_open_hint: "私有短码将经服务器解析后打开（计入一次点击）",
-  toolbox_action_copy: "复制短链",
-  toolbox_action_open: "打开链接",
-  toolbox_copy_success: "短链已复制",
-  toolbox_open_failed: "未找到可打开链接的应用",
-  toolbox_resolve_failed: "解析失败，请重试",
-  toolbox_toast_renew_success: "有效期已更新",
-  toolbox_toast_delete_success: "已删除",
-  toolbox_qr_loading: "二维码生成中",
-  toolbox_qr_failed: "二维码生成失败，点击重试",
-
-  toolbox_stats_title: "访问明细",
-  toolbox_stats_empty: "暂无访问记录",
-  toolbox_stats_error_load: "访问明细加载失败"
+export class ToolboxText {
+  static readonly toolbox_title: string = "短链管理"
+  static readonly toolbox_create_title: string = "新建短链"
+  static readonly toolbox_detail_title: string = "短链详情"
+  static readonly toolbox_action_new: string = "新建"
+  static readonly toolbox_empty_message: string = "还没有短链，创建一个吧"
+  static readonly toolbox_empty_action: string = "新建短链"
+  static readonly toolbox_error_load: string = "短链加载失败"
+  static readonly toolbox_action_retry: string = "重试"
+  static readonly toolbox_type_short_link: string = "短链"
+  static readonly toolbox_visibility_public_value: string = "公开"
+  static readonly toolbox_visibility_private_value: string = "私有"
+  static readonly toolbox_expiry_permanent: string = "永久有效"
+  static readonly toolbox_expiry_expired: string = "已过期"
+  static readonly toolbox_expiry_until_format: string = "有效期至 %s"
+  static readonly toolbox_clicks_unit: string = "次点击"
+  static readonly toolbox_value_none: string = "—"
+  static readonly toolbox_target_label: string = "目标链接"
+  static readonly toolbox_target_hint: string = "https://example.com/very-long-link"
+  static readonly toolbox_target_helper: string = "必填，以 http:// 或 https:// 开头"
+  static readonly toolbox_custom_code_label: string = "自定义短码（可选）"
+  static readonly toolbox_custom_code_hint: string = "4-16 位字母数字或 -_"
+  static readonly toolbox_visibility_label: string = "可见性"
+  static readonly toolbox_visibility_public_desc: string = "任何人可经短链跳转"
+  static readonly toolbox_visibility_private_desc: string = "仅自己可解析打开"
+  static readonly toolbox_expiry_label: string = "有效期"
+  static readonly toolbox_expiry_preset_permanent: string = "永久"
+  static readonly toolbox_expiry_preset_7d: string = "7 天"
+  static readonly toolbox_expiry_preset_30d: string = "30 天"
+  static readonly toolbox_expiry_preset_custom: string = "自定义"
+  static readonly toolbox_expiry_custom_pick: string = "选择过期日期"
+  static readonly toolbox_submit_create: string = "创建"
+  static readonly toolbox_toast_create_success: string = "创建成功"
+  static readonly toolbox_error_invalid_target: string = "目标链接须以 http:// 或 https:// 开头"
+  static readonly toolbox_error_invalid_custom_code: string = "短码须为 4-16 位字母数字或 -_"
+  static readonly toolbox_error_custom_date_required: string = "请先选择过期日期"
+  static readonly toolbox_error_submit: string = "提交失败，请重试"
+  static readonly toolbox_label_code: string = "短码"
+  static readonly toolbox_label_type: string = "类型"
+  static readonly toolbox_label_visibility: string = "可见性"
+  static readonly toolbox_label_clicks: string = "点击次数"
+  static readonly toolbox_label_created: string = "创建时间"
+  static readonly toolbox_label_expiry: string = "有效期"
+  static readonly toolbox_label_target: string = "目标链接"
+  static readonly toolbox_action_renew: string = "修改有效期"
+  static readonly toolbox_renew_title: string = "修改有效期"
+  static readonly toolbox_action_delete: string = "删除"
+  static readonly toolbox_confirm_delete_title: string = "删除短链"
+  static readonly toolbox_qr_section_title: string = "扫码访问"
+  static readonly toolbox_private_open_hint: string = "私有短码将经服务器解析后打开（计入一次点击）"
+  static readonly toolbox_action_copy: string = "复制短链"
+  static readonly toolbox_action_open: string = "打开链接"
+  static readonly toolbox_copy_success: string = "短链已复制"
+  static readonly toolbox_open_failed: string = "未找到可打开链接的应用"
+  static readonly toolbox_resolve_failed: string = "解析失败，请重试"
+  static readonly toolbox_toast_renew_success: string = "有效期已更新"
+  static readonly toolbox_toast_delete_success: string = "已删除"
+  static readonly toolbox_qr_loading: string = "二维码生成中"
+  static readonly toolbox_qr_failed: string = "二维码生成失败，点击重试"
+  static readonly toolbox_stats_title: string = "访问明细"
+  static readonly toolbox_stats_empty: string = "暂无访问记录"
+  static readonly toolbox_stats_error_load: string = "访问明细加载失败"
 }
+
 
 /** 删除确认文案（%s 占位短码） */
 export function toolboxConfirmDeleteMessage(code: string): string {

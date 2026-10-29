@@ -10,6 +10,7 @@
 
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
+import { DesignElevation } from '../../../../constant/DesignSystem'
 
 // ========== 文案（对齐安卓 res/values/strings.xml 的 div_* 键；纯中文 demo 暂用字面量） ==========
 
@@ -122,26 +123,27 @@ export class DivText {
 }
 
 /** 观象台子主题色快捷访问（避免每处写 DivColor.XXX，语义与安卓 DivColors.current 对齐） */
-export const DivPalette = {
-  textPrimary: DivColor.TEXT_PRIMARY_LIGHT,
-  textSecondary: DivColor.TEXT_SECONDARY_LIGHT,
-  textTertiary: DivColor.TEXT_TERTIARY_LIGHT,
-  gold: DivColor.GOLD_LIGHT,
-  goldHi: DivColor.GOLD_HI_LIGHT,
-  goldLine: DivColor.GOLD_LINE_LIGHT,
-  goldHair: DivColor.GOLD_HAIR_LIGHT,
-  goldSoft: DivColor.GOLD_SOFT_LIGHT,
-  gold14: DivColor.GOLD_14_LIGHT,
-  surface: DivColor.SURFACE_LIGHT,
-  surface2: DivColor.SURFACE_2_LIGHT,
-  seal: DivColor.SEAL_LIGHT,
-  sealHi: DivColor.SEAL_HI_LIGHT,
-  jade: DivColor.JADE_LIGHT,
-  hair: DivColor.HAIR_LIGHT,
-  line: DivColor.LINE_LIGHT,
-  yaoTop: DivColor.YAO_TOP_LIGHT,
-  yaoBottom: DivColor.YAO_BOTTOM_LIGHT,
+export class DivPalette {
+  static readonly textPrimary: number = DivColor.TEXT_PRIMARY_LIGHT
+  static readonly textSecondary: number = DivColor.TEXT_SECONDARY_LIGHT
+  static readonly textTertiary: number = DivColor.TEXT_TERTIARY_LIGHT
+  static readonly gold: number = DivColor.GOLD_LIGHT
+  static readonly goldHi: number = DivColor.GOLD_HI_LIGHT
+  static readonly goldLine: number = DivColor.GOLD_LINE_LIGHT
+  static readonly goldHair: number = DivColor.GOLD_HAIR_LIGHT
+  static readonly goldSoft: number = DivColor.GOLD_SOFT_LIGHT
+  static readonly gold14: number = DivColor.GOLD_14_LIGHT
+  static readonly surface: number = DivColor.SURFACE_LIGHT
+  static readonly surface2: number = DivColor.SURFACE_2_LIGHT
+  static readonly seal: number = DivColor.SEAL_LIGHT
+  static readonly sealHi: number = DivColor.SEAL_HI_LIGHT
+  static readonly jade: number = DivColor.JADE_LIGHT
+  static readonly hair: number = DivColor.HAIR_LIGHT
+  static readonly line: number = DivColor.LINE_LIGHT
+  static readonly yaoTop: number = DivColor.YAO_TOP_LIGHT
+  static readonly yaoBottom: number = DivColor.YAO_BOTTOM_LIGHT
 }
+
 
 /** 六神顺序（对齐安卓 LiuYaoRow 的 listOf("青龙","朱雀","勾陈","螣蛇","白虎","玄武")） */
 const SPIRIT6: string[] = ['青龙', '朱雀', '勾陈', '螣蛇', '白虎', '玄武']
@@ -208,7 +210,9 @@ export function divReduceMotion(): boolean {
   return false
 }
 
-function emptyContent(): void {
+@Builder
+@Builder
+function emptyContent() {
 }
 
 // ========== 衬线仪式文本（卦名 / 章节标题 / 干支——衬线出现本身即"传统"语义） ==========
@@ -216,33 +220,33 @@ function emptyContent(): void {
 @ComponentV2
 export struct DivSerifText {
   @Param text: string = ''
-  @Param size: number = 15
+  @Param textSize: number = 15
   @Param weight: number = 600
   @Param spacing: number = 2
   @Param color: number = DivPalette.textPrimary
-  @Param align: TextAlign = TextAlign.Start
+  @Param textAlign: TextAlign = TextAlign.Start
   @Param maxLines: number = 0
   @Param overflow: TextOverflow = TextOverflow.Ellipsis
 
   build() {
     if (this.maxLines > 0) {
       Text(this.text)
-        .fontSize(this.size)
+        .fontSize(this.textSize)
         .fontWeight(this.weight)
         .fontColor(this.color)
         .letterSpacing(this.spacing)
         .fontFamily('serif')
-        .textAlign(this.align)
+        .textAlign(this.textAlign)
         .maxLines(this.maxLines)
         .textOverflow({ overflow: this.overflow })
     } else {
       Text(this.text)
-        .fontSize(this.size)
+        .fontSize(this.textSize)
         .fontWeight(this.weight)
         .fontColor(this.color)
         .letterSpacing(this.spacing)
         .fontFamily('serif')
-        .textAlign(this.align)
+        .textAlign(this.textAlign)
     }
   }
 }
@@ -252,23 +256,23 @@ export struct DivSerifText {
 @ComponentV2
 export struct DivSeal {
   @Param text: string = ''
-  @Param size: number = 30
-  @Param fontSize: number = 15
+  @Param sealSize: number = 30
+  @Param fontSize: number = 18
 
   build() {
     Column() {
       DivSerifText({
         text: this.text,
-        size: this.fontSize,
+        textSize: this.fontSize,
         weight: 700,
         spacing: 1,
         color: 0xFFF6E8DC,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
     }
-    .width(this.size)
-    .height(this.size)
-    .borderRadius(6)
+    .width(this.sealSize)
+    .height(this.sealSize)
+    .borderRadius(8)
     .linearGradient({
       angle: 135,
       colors: [[DivPalette.sealHi, 0.0], [DivPalette.seal, 1.0]]
@@ -298,11 +302,11 @@ export struct TianXiangHeader {
 
       DivSerifText({
         text: this.text,
-        size: 12,
+        textSize: 12,
         weight: 500,
         spacing: 3,
         color: DivPalette.gold,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
         .padding({ left: 12, right: 12 })
 
@@ -351,22 +355,22 @@ export struct DivPageHeader {
       }
 
       if (this.seal.length > 0) {
-        DivSeal({ text: this.seal, size: 30, fontSize: 15 })
+        DivSeal({ text: this.seal, sealSize: 30, fontSize: 15 })
         Column().width(10)
       }
 
-      DivSerifText({ text: this.title, size: 17, weight: 600, spacing: 3, color: DivPalette.textPrimary })
+      DivSerifText({ text: this.title, textSize: 17, weight: 600, spacing: 3, color: DivPalette.textPrimary })
 
       Blank()
 
       if (this.tail.length > 0) {
         DivSerifText({
           text: this.tail,
-          size: 11,
+          textSize: 11,
           weight: 400,
           spacing: 0,
           color: DivPalette.textTertiary,
-          align: TextAlign.End
+          textAlign: TextAlign.End
         })
       }
     }
@@ -388,18 +392,18 @@ export struct DivSectionTitle {
 
   build() {
     Row() {
-      DivSerifText({ text: this.title, size: 14, weight: 600, spacing: 4, color: DivPalette.textPrimary })
+      DivSerifText({ text: this.title, textSize: 14, weight: 600, spacing: 4, color: DivPalette.textPrimary })
 
       Blank()
 
       if (this.tail.length > 0) {
         DivSerifText({
           text: this.tail,
-          size: 11,
+          textSize: 11,
           weight: 400,
           spacing: 0,
           color: DivPalette.textTertiary,
-          align: TextAlign.End
+          textAlign: TextAlign.End
         })
         .onClick(() => {
           if (this.tailClickable) {
@@ -421,65 +425,98 @@ export struct DivSectionTitle {
 export struct DivGoldButton {
   @Param text: string = ''
   @Param isEnabled: boolean = true
-  @Param height: number = 48
-  @Param fontSize: number = 15
-  @Event onClick: () => void = () => {
+  @Param btnHeight: number = 52
+  @Param fontSize: number = 18
+  @Event onAction: () => void = () => {
   }
+  // 按压态（scale 0.97）—— 见下方 build 说明
+  @Local pressed: boolean = false
 
   build() {
     Column() {
       DivSerifText({
         text: this.text,
-        size: this.fontSize,
+        textSize: this.fontSize,
         weight: 600,
         spacing: 4,
         color: this.isEnabled ? DivPalette.gold : DivPalette.textTertiary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
     }
     .width('100%')
-    .height(this.height)
-    .borderRadius(this.height / 2)
+    .height(this.btnHeight)
+    .borderRadius(this.btnHeight / 2)
     .backgroundColor(this.isEnabled ? DivPalette.goldSoft : Color.Transparent)
     .border({ width: 1, color: this.isEnabled ? DivPalette.goldLine : DivPalette.hair })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .enabled(this.isEnabled)
-    .stateEffect(this.isEnabled)
+    // 规范 §7：交互反馈不使用 Material ripple —— 原 .stateEffect() 不是通用属性（实测 ArkTS 编译报错
+    // 「Property 'stateEffect' does not exist on type 'ColumnAttribute'」），且涟漪形状不受令牌控制；
+    // 按压反馈统一由 scale 0.97 承载，禁用态不缩放（对齐安卓 DivGoldButton 的 pressable scaleFactor=0.97/1f）
+    .scale({ x: this.isEnabled && this.pressed ? 0.97 : 1, y: this.isEnabled && this.pressed ? 0.97 : 1 })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       if (this.isEnabled) {
         DivHaptic.light()
-        this.onClick()
+        this.onAction()
       }
     })
   }
 }
 
-// ========== 发丝线卡片：surface 底 + 1px 渐变金线描边（135°：亮→隐→亮） ==========
+// ========== 发丝线卡片：surface 底 + 1px 渐变金线描边（135°：亮→隐→亮）+ 宣纸侧 level1 轻阴影 ==========
 
 @ComponentV2
 export struct DivCard {
-  @Param background: number | null = null
-  @Param borderColor: number | null = null
+  @Param bgColor: number | null = null
+  @Param lineColor: number | null = null
   @Param clickable: boolean = false
   @BuilderParam content: () => void = emptyContent
-  @Event onClick: () => void = () => {
+  @Event onAction: () => void = () => {
   }
+  // 按压态（scale 0.97）—— 见下方 build 说明
+  @Local pressed: boolean = false
 
   build() {
     Column() {
       this.content()
     }
     .width('100%')
-    .backgroundColor(this.background ?? DivPalette.surface)
+    .backgroundColor(this.bgColor ?? DivPalette.surface)
     .borderRadius(16)
-    .border({ width: 1, color: this.borderColor ?? DivPalette.goldLine, radius: 16 })
+    // 规范 §2.4 / §3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，安卓 v0.4 取 AppElevation.level1。
+    // 观象台侧把「白底 + OUTLINE」换成「宣纸 surface + 金线」，阴影取值不变。
+    // §2.4「玄墨深色卡不加投影」豁免：观象台当前固定宣纸浅卡（DivPalette 全取 *_LIGHT），本组件无深色卡消费方；
+    // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
+    .border({ width: 1, color: this.lineColor ?? DivPalette.goldLine, radius: 16 })
     .enabled(this.clickable)
-    .stateEffect(this.clickable)
+    // 规范 §7：不使用 Material ripple（原 .stateEffect() 非通用属性，实测编译报错），按压反馈由 scale 0.97 承载
+    // （对齐安卓 DivCard 的 pressable：indication = null + scaleFactor 0.97）
+    .scale({ x: this.clickable && this.pressed ? 0.97 : 1, y: this.clickable && this.pressed ? 0.97 : 1 })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
     .onClick(() => {
       if (this.clickable) {
         DivHaptic.light()
-        this.onClick()
+        this.onAction()
       }
     })
   }
@@ -491,18 +528,18 @@ export struct DivCard {
 export struct DivCategoryChip {
   @Param text: string = ''
   @Param selected: boolean = false
-  @Event onClick: () => void = () => {
+  @Event onAction: () => void = () => {
   }
 
   build() {
     Row() {
       DivSerifText({
         text: this.selected ? this.text + ' ✓' : this.text,
-        size: 12,
+        textSize: 12,
         weight: this.selected ? 600 : 400,
         spacing: 0,
         color: this.selected ? DivPalette.gold : DivPalette.textSecondary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
     }
     .padding({ left: 14, right: 14, top: 7, bottom: 7 })
@@ -511,7 +548,7 @@ export struct DivCategoryChip {
     .border({ width: 1, color: this.selected ? DivPalette.goldLine : DivPalette.hair })
     .onClick(() => {
       DivHaptic.selection()
-      this.onClick()
+      this.onAction()
     })
   }
 }
@@ -523,17 +560,17 @@ export struct DivRadioRow {
   @Param title: string = ''
   @Param subtitle: string = ''
   @Param selected: boolean = false
-  @Event onClick: () => void = () => {
+  @Event onAction: () => void = () => {
   }
 
   build() {
     Row() {
       Column() {
-        DivSerifText({ text: this.title, size: 14, weight: 400, spacing: 0, color: DivPalette.textPrimary })
+        DivSerifText({ text: this.title, textSize: 14, weight: 400, spacing: 0, color: DivPalette.textPrimary })
         if (this.subtitle.length > 0) {
           DivSerifText({
             text: this.subtitle,
-            size: 10,
+            textSize: 10,
             weight: 400,
             spacing: 0,
             color: DivPalette.textTertiary
@@ -568,7 +605,7 @@ export struct DivRadioRow {
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
       DivHaptic.selection()
-      this.onClick()
+      this.onAction()
     })
   }
 }
@@ -582,11 +619,11 @@ export struct DivFooterNote {
   build() {
     DivSerifText({
       text: this.text,
-      size: 10,
+      textSize: 10,
       weight: 400,
       spacing: 1,
       color: DivPalette.textTertiary,
-      align: TextAlign.Center
+      textAlign: TextAlign.Center
     })
       .width('100%')
       .padding({ left: 24, right: 24, top: 14, bottom: 14 })

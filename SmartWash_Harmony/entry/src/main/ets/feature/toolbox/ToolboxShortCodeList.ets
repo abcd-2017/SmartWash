@@ -7,7 +7,7 @@
 
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   CONTENT_TYPE_SHORT_LINK,
   ShortCodeVo,
@@ -20,7 +20,7 @@ import {
   toolboxExpiryUntil
 } from './api'
 import { ExpiryState, expiryStateOf, formatDisplayDateTime, isPublicVisibility } from './ShortCodeRules'
-import { IconBox } from '../../view/common/AppComponents'
+import { AppButton, EmptyState, IconBox } from '../../view/common/AppComponents'
 import { LoadingFooter } from '../../view/LoadingFooter'
 import { PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
@@ -142,39 +142,33 @@ struct ToolboxShortCodeList {
       .borderRadius(DesignDimens.RADIUS_FULL)
   }
 
-  /** 空态/错误态（对齐安卓 EmptyState + 行动按钮；isError=true 为重试态） */
+  /**
+   * 空态/错误态（规范 §3.6：滚筒圆母题 + 引导文案 + 行动按钮）。
+   * 统一复用组件层 EmptyState（不再自绘图标 + 裸 Button），isError=true 为重试态。
+   */
   @Builder
   Placeholder(message: string, actionText: string, isError: boolean) {
     Column() {
-      SymbolGlyph($r('sys.symbol.link'))
-        .fontSize(56)
-        .fontColor([DesignColor.TEXT_TERTIARY])
-        .margin({ bottom: 16 })
-
-      Text(message)
-        .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      Button(actionText)
-        .type(ButtonType.Capsule)
-        .height(44)
-        .padding({ left: 28, right: 28 })
-        .backgroundColor(DesignColor.PRIMARY)
-        .fontColor(DesignColor.ON_PRIMARY)
-        .fontSize(DesignFontSize.BODY)
-        .margin({ top: 20 })
-        .onClick(() => {
-          if (isError) {
-            this.refreshList()
-          } else {
-            this.goCreate()
-          }
-        })
+      EmptyState({ message: message }) {
+        // 间距由插槽内给出（EmptyState 自身只在插槽为空时零占位）
+        Column() {
+          AppButton({
+            text: actionText,
+            click: () => {
+              if (isError) {
+                this.refreshList()
+              } else {
+                this.goCreate()
+              }
+            }
+          })
+        .margin({ top: DesignDimens.SPACE_MD })
+        }
+      }
     }
     .width('100%')
     .layoutWeight(1)
     .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
   }
 
   /** 短链条目卡（对齐安卓 ShortCodeCard） */
@@ -244,7 +238,14 @@ struct ToolboxShortCodeList {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .onClick(() => {
       this.goDetail(vo)
     })

@@ -12,7 +12,7 @@
 
 import { DivReadingSection, DivReadingVo, interpret as requestInterpret } from '../../../network/DivinationApi'
 import { chartNameOf, divMethodName } from '../../../data/DivChartReader'
-import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../data/DivinationStore'
+import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivCard,
   DivFooterNote,
@@ -24,8 +24,8 @@ import {
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { getNumberParam, pathStack } from '../../../../utils/PathStackUtil'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 
 /** 解读正文状态（对齐安卓 RequestState） */
 type ReadingState = 'idle' | 'loading' | 'success' | 'error'
@@ -140,11 +140,11 @@ struct DivReadingPage {
   @Builder
   SummaryCard() {
     Row() {
-      DivSeal({ text: this.chartSeal, size: 32, fontSize: 15 })
+      DivSeal({ text: this.chartSeal, sealSize: 32, fontSize: 15 })
       Column().width(12)
       DivSerifText({
         text: this.chartName.length > 0 ? this.chartName : divMethodName(this.record?.method ?? ''),
-        size: 15,
+        textSize: 15,
         weight: 600,
         spacing: 3,
         color: DivPalette.textPrimary
@@ -152,7 +152,7 @@ struct DivReadingPage {
         .layoutWeight(1)
       DivSerifText({
         text: this.timeText,
-        size: 10,
+        textSize: 10,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary
@@ -165,11 +165,11 @@ struct DivReadingPage {
 
   @Builder
   SectionCard(section: DivReadingSection) {
-    DivCard({ borderColor: DivPalette.goldHair }) {
+    DivCard({ lineColor: DivPalette.goldHair }) {
       Column() {
         DivSerifText({
           text: section.title,
-          size: 13.5,
+          textSize: 13.5,
           weight: 600,
           spacing: 3,
           color: DivPalette.gold
@@ -177,7 +177,7 @@ struct DivReadingPage {
         Column().height(6)
         DivSerifText({
           text: section.content,
-          size: 12.5,
+          textSize: 12.5,
           weight: 400,
           spacing: 0,
           color: DivPalette.textPrimary
@@ -185,17 +185,17 @@ struct DivReadingPage {
       }
       .width('100%')
       .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-    }
     .margin({ top: 6, bottom: 6 })
+    }
   }
 
   @Builder
   ActionCard(action: string) {
-    DivCard({ background: DivPalette.goldSoft, borderColor: DivPalette.goldLine }) {
+    DivCard({ bgColor: DivPalette.goldSoft, lineColor: DivPalette.goldLine }) {
       Column() {
         DivSerifText({
           text: DivText.readingAction,
-          size: 13,
+          textSize: 13,
           weight: 600,
           spacing: 3,
           color: DivPalette.gold
@@ -203,7 +203,7 @@ struct DivReadingPage {
         Column().height(6)
         DivSerifText({
           text: action,
-          size: 12.5,
+          textSize: 12.5,
           weight: 400,
           spacing: 0,
           color: DivPalette.textPrimary
@@ -211,14 +211,14 @@ struct DivReadingPage {
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
-    }
     .margin({ left: 20, right: 20, top: 8, bottom: 8 })
+    }
   }
 
   @Builder
   EndSeal() {
     Column() {
-      DivSeal({ text: DivText.readingEndseal, size: 36, fontSize: 18 })
+      DivSeal({ text: DivText.readingEndseal, sealSize: 36, fontSize: 18 })
     }
     .width('100%')
     .padding({ top: 8 })
@@ -238,61 +238,63 @@ struct DivReadingPage {
         if (this.loadingRecord) {
           DivSerifText({
             text: DivText.readingLoading,
-            size: 12,
+            textSize: 12,
             weight: 400,
             spacing: 0,
             color: DivPalette.textTertiary,
-            align: TextAlign.Center
+            textAlign: TextAlign.Center
           })
             .width('100%')
             .padding({ top: 120 })
         } else if (this.record === null) {
           DivSerifText({
             text: DivText.chartMissing,
-            size: 13,
+            textSize: 13,
             weight: 400,
             spacing: 0,
             color: DivPalette.textTertiary,
-            align: TextAlign.Center
+            textAlign: TextAlign.Center
           })
             .width('100%')
             .padding({ top: 80 })
         } else {
           // 盘面摘要卡
-          DivCard({ borderColor: DivPalette.goldLine }) {
-            this.SummaryCard()
+          DivCard({ lineColor: DivPalette.goldLine }) {
+            Column() {
+              this.SummaryCard()
+            }
+            .margin({ left: 20, right: 20 })
           }
-          .margin({ left: 20, right: 20 })
 
           // 解读正文三态
           if (this.readingState === 'loading' || this.readingState === 'idle') {
             DivCard() {
               DivSerifText({
                 text: DivText.readingLoading,
-                size: 12,
+                textSize: 12,
                 weight: 400,
                 spacing: 0,
                 color: DivPalette.textTertiary,
-                align: TextAlign.Center
+                textAlign: TextAlign.Center
               })
                 .width('100%')
                 .padding({ top: 24, bottom: 24 })
-            }
             .margin({ left: 20, right: 20 })
+            }
           } else if (this.readingState === 'error') {
             DivCard() {
               DivSerifText({
                 text: DivText.readingError,
-                size: 12,
+                textSize: 12,
                 weight: 400,
                 spacing: 0,
                 color: DivPalette.textTertiary,
-                align: TextAlign.Center
+                textAlign: TextAlign.Center
               })
                 .width('100%')
                 .padding({ top: 24, bottom: 24 })
-            }
             .margin({ left: 20, right: 20 })
+            }
           } else if (this.hasReading()) {
             // 章节卡列表
             Column() {
@@ -315,7 +317,7 @@ struct DivReadingPage {
               DivGoldButton({
                 text: DivText.readingFollowup,
                 isEnabled: true,
-                onClick: () => {
+                onAction: () => {
                   const id = this.record?.id ?? 0
                   pathStack.pushPathByName(RouteNames.DIV_FOLLOW_UP, id)
                 }
@@ -327,7 +329,7 @@ struct DivReadingPage {
               DivGoldButton({
                 text: DivText.readingShare,
                 isEnabled: false,
-                onClick: () => {
+                onAction: () => {
                 }
               })
             }

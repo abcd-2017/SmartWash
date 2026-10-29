@@ -1,4 +1,4 @@
-import { bundleManager } from '@kit.BasicServicesKit'
+import { bundleManager } from '@kit.AbilityKit'
 
 // 版本号读取失败时的兜底文案（对齐安卓 SettingPage.kt:80-86 的 PackageManager 兜底 1.0.0）
 const FALLBACK_VERSION: string = "1.0.0"

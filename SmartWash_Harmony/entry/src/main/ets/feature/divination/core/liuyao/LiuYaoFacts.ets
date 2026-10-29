@@ -162,16 +162,16 @@ export class LiuYaoFacts {
         // 装卦缺此六亲 → 取伏神
         if (chart.hidden !== null) {
           let hiddenKey: number | null = null;
-          let hiddenPair: [string, string] | null = null;
-          chart.hidden.seats.forEach((value, key) => {
+          let hiddenText: string = '';
+          chart.hidden.seats.forEach((value: string[], key: number) => {
             if (hiddenKey === null && value[0] === qin) {
               hiddenKey = key;
-              hiddenPair = value;
+              hiddenText = value.length > 0 ? `${value[0]}${value[1] ?? ''}` : '';
             }
           });
-          if (hiddenKey !== null && hiddenPair !== null) {
+          if (hiddenKey !== null) {
             yongPosition = hiddenKey;
-            yongLabel = `伏神 ${hiddenPair[0]}${hiddenPair[1]}（伏于${cnPosition(hiddenKey)}爻下）`;
+            yongLabel = `伏神 ${hiddenText}（伏于${cnPosition(hiddenKey)}爻下）`;
             yongNote = `卦中缺${qin}，取${chart.hidden.gongName}本宫伏神`;
             done = true;
             break;

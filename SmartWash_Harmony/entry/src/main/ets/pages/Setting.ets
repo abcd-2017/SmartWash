@@ -4,7 +4,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../
 import { promptAction } from "@kit.ArkUI"
 import { setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
-import { AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
+import { AppButton, AppCard, AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
 import { getAppVersionName } from "../utils/AppInfoUtil"
 
 // 品牌名单一事实来源：与安卓 brand_name 一致（feature/user/impl strings.xml:17）
@@ -27,6 +27,8 @@ struct Setting {
       message: "是否要退出登录？",
       confirmText: "确认",
       cancelText: "取消",
+      // 退出登录是不可逆操作 → 确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
+      isDanger: true,
       onConfirm: () => {
         // 登出链路（对齐安卓 SettingViewModel.logout）：清本地 token + 清 role + 复位内存登录态，
         // 再清栈跳登录页。userRole 属登录态脏数据，必须一并清理，
@@ -158,23 +160,17 @@ struct Setting {
             })
             .margin({ top: DesignDimens.SECTION_SPACING })
 
-            // 退出登录 — 白卡内 dangerInk 文字行、无红色边框（对齐安卓 SettingPage.kt:217-232）
-            Column() {
-              Text("退出登录")
-                .width("100%")
-                .height(52)
-                .fontSize(DesignFontSize.BODY)
-                .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.DANGER_INK)
-                .textAlign(TextAlign.Center)
-                .onClick(() => {
-                  this.logoutDialogController.open()
-                })
-            }
-            .width("100%")
-            .backgroundColor(DesignColor.SURFACE)
-            .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 0.5, color: DesignColor.OUTLINE })
+            // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮形态（对齐安卓 SettingPage.kt:226-236）
+            // = 52vp 高 / 14vp 圆角 / surfaceVariant 底 / dangerInk 文字 16 档
+            AppButton({
+              text: "退出登录",
+              bgColor: DesignColor.SURFACE_VARIANT,
+              textColor: DesignColor.DANGER_INK,
+              textSize: DesignFontSize.BODY,
+              click: () => {
+                this.logoutDialogController.open()
+              }
+            })
             .margin({ top: 16, bottom: 24 })
           }
           .width("100%")
@@ -196,6 +192,9 @@ struct Setting {
  * 通用分组卡片（组标题 + 内容插槽）。
  * 原 @Builder 方法接收 `children: () => void` 参数：@Builder 调用返回 void 无法链式设置外边距、
  * 且 children() 不满足 UI 组件语法，故改为子组件 + @BuilderParam（ArkTS 标准插槽模式）。
+ *
+ * 卡片本体复用组件层 AppCard（DESIGN-SPEC v0.4 §3.1 唯一卡片画法），
+ * 不在此重复维护描边/阴影取值。
  */
 @Component
 struct SectionCard {
@@ -211,20 +210,18 @@ struct SectionCard {
         .fontColor(DesignColor.TEXT_PRIMARY)
         .margin({ bottom: 12 })
 
-      // 卡片
-      Column() {
+      // 卡片 — 复用组件层 AppCard：surface 白底 + 1px outline 描边 + level1 阴影 + 圆角 16 + 内边距 20
+      //（与安卓 SettingGroupCard 同构：卡内边距 20，SettingRow 内再各让 20）
+      AppCard() {
         this.content()
       }
-      .width("100%")
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .backgroundColor(Color.White)
-      .border({ width: 0.5, color: DesignColor.OUTLINE })
     }
     .width("100%")
   }
 }
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
+@Builder
 @Builder
 function emptyContent() {
 }

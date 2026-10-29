@@ -20,8 +20,8 @@ import {
   readMeiHuaChart,
   readQiMenChart,
   readLiuRenChart
-} from '../../data/DivChartReader'
-import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../data/DivinationStore'
+} from '../../../data/DivChartReader'
+import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import { DivChartParam } from '../../DivChartParam'
 import {
   DivCard,
@@ -34,8 +34,8 @@ import {
 } from '../../components/DivComponents'
 import { DivMiniCard, LiurenCourses, LiurenPan, LiuYaoPan, MeiHuaTripleCards, QimenGrid } from '../../components/DivPanels'
 import { DivinationScreen } from '../../DivinationScreen'
-import { RouteNames } from '../../../../constant/RouteNames'
-import { getObjectParam, getNumberParam, getBooleanParam, pathStack } from '../../../../utils/PathStackUtil'
+import { RouteNames } from '../../../../../constant/RouteNames'
+import { getObjectParam, getNumberParam, getBooleanParam, pathStack } from '../../../../../utils/PathStackUtil'
 
 /** 爻位名（自初爻到上爻，索引 0..5） */
 const POSITION_NAMES: string[] = ['初', '二', '三', '四', '五', '上']
@@ -238,11 +238,11 @@ struct DivChartPage {
       })
       DivSerifText({
         text: DivText.chartMissing,
-        size: 13,
+        textSize: 13,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
         .width('100%')
         .padding({ top: 80 })
@@ -274,7 +274,7 @@ struct DivChartPage {
         DivMiniCard({ label: DivText.liuyaoYongshen }) {
           DivSerifText({
             text: this.liuYaoFacts?.yongShenLabel ?? '—',
-            size: 12.5,
+            textSize: 12.5,
             weight: 500,
             spacing: 1,
             color: DivPalette.gold
@@ -282,7 +282,7 @@ struct DivChartPage {
           if (this.yongShenExtraText().length > 0) {
             DivSerifText({
               text: this.yongShenExtraText(),
-              size: 10,
+              textSize: 10,
               weight: 400,
               spacing: 0,
               color: DivPalette.textSecondary
@@ -297,7 +297,7 @@ struct DivChartPage {
         DivMiniCard({ label: DivText.liuyaoFacts }) {
           DivSerifText({
             text: this.factsText(),
-            size: 11,
+            textSize: 11,
             weight: 400,
             spacing: 0,
             color: DivPalette.textPrimary
@@ -313,18 +313,18 @@ struct DivChartPage {
   @Builder
   MeiHuaTiyongCard() {
     if (this.hasMeiHua()) {
-      DivCard({ borderColor: DivPalette.goldHair }) {
+      DivCard({ lineColor: DivPalette.goldHair }) {
         Column() {
           DivSerifText({
             text: DivText.meihuaTiyong,
-            size: 9.5,
+            textSize: 9.5,
             weight: 400,
             spacing: 2,
             color: DivPalette.textTertiary
           })
           DivSerifText({
             text: this.meiHuaTiyongText(),
-            size: 11,
+            textSize: 11,
             weight: 400,
             spacing: 0,
             color: DivPalette.textPrimary
@@ -333,8 +333,8 @@ struct DivChartPage {
         }
         .width('100%')
         .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-      }
       .margin({ left: 20, right: 20 })
+      }
     }
   }
 
@@ -346,14 +346,14 @@ struct DivChartPage {
           DivMiniCard({ label: DivText.qimenYongshen }) {
             DivSerifText({
               text: this.qimenYongshenMain(),
-              size: 12,
+              textSize: 12,
               weight: 500,
               spacing: 0,
               color: DivPalette.gold
             })
             DivSerifText({
               text: this.qimenYongshenSub(),
-              size: 10,
+              textSize: 10,
               weight: 400,
               spacing: 0,
               color: DivPalette.textSecondary
@@ -367,7 +367,7 @@ struct DivChartPage {
           DivMiniCard({ label: DivText.qimenFacts }) {
             DivSerifText({
               text: this.qimenFactsText(),
-              size: 11,
+              textSize: 11,
               weight: 400,
               spacing: 0,
               color: DivPalette.textPrimary
@@ -386,11 +386,11 @@ struct DivChartPage {
     if (this.hasLiuren()) {
       DivSerifText({
         text: this.liurenFooterText(),
-        size: 11,
+        textSize: 11,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary,
-        align: TextAlign.Center
+        textAlign: TextAlign.Center
       })
         .width('100%')
         .padding({ left: 20, right: 20 })
@@ -463,11 +463,11 @@ struct DivChartPage {
             DivPageHeader({ title: DivText.chartTitle })
             DivSerifText({
               text: DivText.chartLoading,
-              size: 12,
+              textSize: 12,
               weight: 400,
               spacing: 0,
               color: DivPalette.textTertiary,
-              align: TextAlign.Center
+              textAlign: TextAlign.Center
             })
               .width('100%')
               .padding({ top: 120 })
@@ -487,11 +487,11 @@ struct DivChartPage {
           // 干支/口径声明行
           DivSerifText({
             text: this.declarationText(),
-            size: 11,
+            textSize: 11,
             weight: 400,
             spacing: 2,
             color: DivPalette.gold,
-            align: TextAlign.Center
+            textAlign: TextAlign.Center
           })
             .width('100%')
             .padding({ left: 20, right: 20, top: 4, bottom: 4 })
@@ -500,11 +500,11 @@ struct DivChartPage {
           if (this.method === 'qimen') {
             DivSerifText({
               text: this.juDeclaration(),
-              size: 12,
+              textSize: 12,
               weight: 500,
               spacing: 3,
               color: DivPalette.gold,
-              align: TextAlign.Center
+              textAlign: TextAlign.Center
             })
               .width('100%')
               .padding({ top: 8, bottom: 8 })
@@ -548,7 +548,7 @@ struct DivChartPage {
               DivGoldButton({
                 text: DivText.chartInterpret,
                 isEnabled: true,
-                onClick: () => {
+                onAction: () => {
                   const id = this.record?.id ?? 0
                   pathStack.pushPathByName(RouteNames.DIV_READING, id)
                 }
@@ -560,7 +560,7 @@ struct DivChartPage {
               DivGoldButton({
                 text: DivText.chartSaved,
                 isEnabled: false,
-                onClick: () => {
+                onAction: () => {
                 }
               })
             }

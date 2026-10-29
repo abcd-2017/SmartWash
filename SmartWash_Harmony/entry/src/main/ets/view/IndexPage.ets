@@ -163,8 +163,8 @@ export struct IndexPage {
               .fontSize(DesignFontSize.CAPTION)
               .fontColor(DesignColor.TEXT_SECONDARY)
               .margin({ left: 4 })
-          }
           .margin({ top: 4 })
+          }
         }
         .alignItems(HorizontalAlign.Start)
 
@@ -197,6 +197,8 @@ export struct IndexPage {
       })
     }
     .width("100%")
+    // Hero 卡圆角 RADIUS_XL(20)（对齐安卓 v0.4 StatusHeroCard：clip(RoundedCornerShape(radiusXl))）
+    .borderRadius(DesignDimens.RADIUS_XL)
     .linearGradient({
       direction: GradientDirection.Right,
       colors: [[0x142D9B6A, 0.0], [0x0AF0FAF5, 1.0]]
@@ -236,8 +238,8 @@ export struct IndexPage {
             Text("去充值 >")
               .fontSize(DesignFontSize.CARD_TITLE)
               .fontColor(Color.White)
-          }
           .margin({ top: 4 })
+          }
         }
         .alignItems(HorizontalAlign.End)
         .onClick(() => {
@@ -253,6 +255,14 @@ export struct IndexPage {
     .linearGradient({
       direction: GradientDirection.Right,
       colors: [[DesignColor.PRIMARY, 0.0], [DesignColor.PRIMARY_DARK, 1.0]]
+    })
+    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
     })
   }
 
@@ -280,7 +290,14 @@ export struct IndexPage {
     .layoutWeight(1)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    // 规范 §2.4 卡片：1px OUTLINE 描边（原 0.5 发丝线仅为卡内分隔线许可，卡边界须 1px）
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .backgroundColor(DesignColor.SURFACE)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
@@ -347,12 +364,14 @@ export struct IndexPage {
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
+    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
+    .border({ width: 1, color: DesignColor.OUTLINE })
     .backgroundColor(DesignColor.SURFACE)
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: '#1A000000',
+      color: 'rgba(20,40,30,0.05)',
       offsetX: 0,
-      offsetY: 1
+      offsetY: 2
     })
     .onClick(() => {
       pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)

@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { formatOrderTime } from "../utils/TimeUtil"
@@ -9,6 +9,10 @@ import { Debouncer } from "../utils/DebounceUtil"
  * 每月一张卡，行间 0.5 发丝线分隔；行内含状态文字+语义色点、订单号·套餐名、
  * 相对时间（今天/昨天/M月d日）、价格（已取消置灰）与按状态的操作按钮（节流防抖）。
  * 卡壳不可点，行点击进详情；动作按钮自身消费点击，与行点击不冲突。
+ *
+ * 卡片画法（DESIGN-SPEC v0.4 §3.1 / §2.4）：surface 白底 + 1px outline 描边 +
+ * level1(1vp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)。行间分隔线按 §1.3 保持 0.5dp
+ * （仅卡内使用）。行上下内边距 12（对齐安卓 OrderPage.kt OrderRow 的 vertical = 12.dp）。
  */
 @ComponentV2
 export struct OrderMonthCard {
@@ -175,8 +179,8 @@ export struct OrderMonthCard {
     .padding({
       left: DesignDimens.CARD_PADDING,
       right: DesignDimens.CARD_PADDING,
-      top: 15,
-      bottom: 15
+      top: 12,
+      bottom: 12
     })
     .onClick(() => {
       this.itemClick(order)
@@ -198,6 +202,12 @@ export struct OrderMonthCard {
     .width("100%")
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 }

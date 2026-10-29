@@ -6,7 +6,7 @@
  * 爻值编码（全模块约定）：1=少阳 2=少阴 3=老阳○(动) 4=老阴×(动)。
  */
 
-import cryptoFramework from '@kit.CryptoArchitectureKit';
+import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 
 /** 爻值（1=少阳 2=少阴 3=老阳○(动) 4=老阴×(动)） */
 export class YaoValue {

@@ -12,7 +12,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
 import { AppButton, AppConfirmDialog } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentBuilder() {
@@ -253,7 +253,14 @@ struct Payment {
         .width("100%")
         .borderRadius(DesignDimens.CARD_RADIUS)
         .backgroundColor(DesignColor.SURFACE)
-        .border({ width: 0.5, color: DesignColor.OUTLINE })
+        // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+        .border({ width: 1, color: DesignColor.OUTLINE })
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
         .padding(DesignDimens.CARD_PADDING)
         .justifyContent(FlexAlign.SpaceBetween)
         .margin({ bottom: DesignDimens.CARD_SPACING })
@@ -279,8 +286,8 @@ struct Payment {
                       `满${coupon.couponVo?.threshold?.toFixed(1)}元可用`}`)
                       .fontSize(DesignFontSize.CAPTION)
                       .fontColor(DesignColor.TEXT_SECONDARY)
-                  }
                   .margin({ top: 6, bottom: 6 })
+                  }
 
                   Row() {
                     Text(`有效期至${coupon.expiredAt}`)
@@ -302,7 +309,14 @@ struct Payment {
               .width("100%")
               .borderRadius(DesignDimens.CARD_RADIUS)
               .backgroundColor(DesignColor.SURFACE)
-              .border({ width: 0.5, color: DesignColor.OUTLINE })
+              // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+              .border({ width: 1, color: DesignColor.OUTLINE })
+              .shadow({
+                radius: DesignElevation.LEVEL_1,
+                color: 'rgba(20,40,30,0.05)',
+                offsetX: 0,
+                offsetY: 2
+              })
               .padding(DesignDimens.CARD_PADDING)
               .justifyContent(FlexAlign.SpaceBetween)
               .onClick(() => {
@@ -325,7 +339,7 @@ struct Payment {
 
         // 分隔线
         Divider()
-          .strokeWidth(0.5)
+          .strokeWidth(1)
           .color(DesignColor.DIVIDER)
 
         // 内容区域
@@ -384,7 +398,7 @@ struct Payment {
 
             // 分隔线
             Divider()
-              .strokeWidth(0.5)
+              .strokeWidth(1)
               .color(DesignColor.DIVIDER)
               .margin({ top: 12, bottom: 12 })
 
@@ -407,7 +421,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(HorizontalAlign.Start)
 
           // ========== 支付方式卡片 ==========
@@ -455,7 +476,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(HorizontalAlign.Start)
 
           // ========== 优惠券卡片 ==========
@@ -485,7 +513,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .bindSheet($$this.showSheet, this.BottomSheet(), {
             height: "50%",
             showClose: false,

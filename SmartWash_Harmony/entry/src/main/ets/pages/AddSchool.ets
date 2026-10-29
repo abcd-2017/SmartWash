@@ -5,7 +5,7 @@ import { SchoolName } from "../network/vo/SchoolName"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
-import { DesignColor, DesignDimens } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation } from "../constant/DesignSystem"
 
 @Builder
 export function AddSchoolBuilder() {
@@ -212,7 +212,13 @@ struct AddSchool {
               }.backgroundColor(DesignColor.SURFACE_VARIANT)
               .height(200)
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .border({ width: 0.5, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: DesignColor.OUTLINE })
+              .shadow({
+                radius: DesignElevation.LEVEL_1,
+                color: 'rgba(20,40,30,0.05)',
+                offsetX: 0,
+                offsetY: 2
+              })
             }
 
             Column() {
@@ -236,7 +242,14 @@ struct AddSchool {
         .borderRadius(DesignDimens.CARD_RADIUS)
         .padding(DesignDimens.CARD_PADDING)
         .backgroundColor(DesignColor.SURFACE)
-        .border({ width: 0.5, color: DesignColor.OUTLINE })
+        .border({ width: 1, color: DesignColor.OUTLINE })
+        // 卡片补 v0.4 §3.1 画法：1px outline 描边 + level1 阴影（对齐安卓 UpdateUserInfoPage.kt:235-241）
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
 
         RowSplit()
 

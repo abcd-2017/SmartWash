@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
@@ -54,9 +54,14 @@ struct Recharge {
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(this.currItem == index ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border(this.currItem == index ?
-      { width: 1.5, color: DesignColor.PRIMARY, radius: DesignDimens.CARD_RADIUS } :
-      { width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    // DESIGN-SPEC v0.4 §2.4 / §3.1：描边统一 1px（选中态仅换色、不再加粗）+ level1 阴影
+    .border({ width: 1, color: this.currItem == index ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .onClick(() => {
       this.payNum = amount
       this.currItem = index
@@ -114,9 +119,14 @@ struct Recharge {
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(this.currItem == 5 ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border(this.currItem == 5 ?
-      { width: 1.5, color: DesignColor.PRIMARY, radius: DesignDimens.CARD_RADIUS } :
-      { width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    // DESIGN-SPEC v0.4 §2.4 / §3.1：描边统一 1px（选中态仅换色、不再加粗）+ level1 阴影
+    .border({ width: 1, color: this.currItem == 5 ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .onClick(() => {
       this.currItem = 5
     })
@@ -353,7 +363,14 @@ struct Recharge {
         .width("100%")
         .backgroundColor(DesignColor.SURFACE)
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+        // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+        .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
 
         if (this.checkPayType) {
           Text("请选择支付方式")

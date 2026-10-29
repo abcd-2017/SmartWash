@@ -5,7 +5,7 @@
 // 校验只在提交时内联展示（规范 §3.7 基线⑤）；成功后 toast + 返回列表（列表 onShown 重拉）。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   AddShortCodeForm,
   createShortCode,
@@ -261,7 +261,15 @@ struct ToolboxShortCodeCreate {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // 表单卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+          // （卡内输入框/预设 chip 的 1px 描边属控件自身规格，不受此规则约束）
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
 
           // ---------- 提交错误（仅提交后展示，error 色） ----------
           if (this.errorMessage.length > 0) {

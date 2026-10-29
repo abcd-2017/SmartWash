@@ -228,7 +228,7 @@ struct OrderList {
 
         // 分隔线
         Divider()
-          .strokeWidth(0.5)
+          .strokeWidth(1)
           .color(DesignColor.DIVIDER)
 
         // 内容区域
