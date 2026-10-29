@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 
 @Composable
@@ -29,18 +30,21 @@ fun InfoSection(
     iconTint: Color? = null,
     content: @Composable () -> Unit,
 ) {
-    // 卡片规格对齐同页组画板实测：radiusLg 16 + 1px outline 描边 + 无阴影
-    // （规范 §3：卡片 elevation 0 用描边代替；由订单详情页对齐任务统一，取件/寄件页共用本组件）
+    // 卡片规格 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
+    // （订单详情页与取件/寄件页共用本组件，描边与阴影在此一处收敛）
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding)
         ) {
-            // 订单详情屏 6 实测：图标块底 → 首行 4（配合页内行距 34+14 得 48 行距节奏）；图标 20 = icon.sm 档
+            // 图标块底 → 首行 4dp 贴合（InfoRow 行高已按 §3.4 收敛为 56dp，行距节奏由行高承担）；
+            // 图标块 36/20 = 规范 §3.4 的 icon.sm 档
             // 寄件板（寄件 · 浅色/深色）操作指引卡无图标：icon 传 null 时只渲染标题行
             Row(
                 verticalAlignment = Alignment.CenterVertically,

@@ -1,10 +1,11 @@
 package com.smartwash.ui.page.home
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +21,9 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,7 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.core.graphics.PathParser
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -45,6 +52,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
@@ -53,10 +61,6 @@ import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.motionSpec
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import com.smartwash.ui.page.HomePageConstant
 import com.smartwash.ui.page.index.IndexPage
 import com.smartwash.ui.page.workbench.WorkbenchPage
@@ -66,6 +70,15 @@ import com.smartwash.feature.user.impl.ui.userinfo.UserInfoPage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
+import kotlinx.coroutines.launch
+
+/** 底部 tab 页序（= 底栏顺序）：Pager 页码与底栏索引共用此表 */
+private val homeTabItems = listOf(
+    HomePageConstant.Index,
+    HomePageConstant.Service,
+    HomePageConstant.Workbench,
+    HomePageConstant.UserInfo,
+)
 
 @Composable
 fun HomePage(
@@ -74,7 +87,10 @@ fun HomePage(
 ) {
     val hasUserSchool by homeViewModel.hasUserSchool.collectAsState()
     val getSchoolState by homeViewModel.getSchoolState.collectAsState()
-    val homePageNavController = rememberNavController()
+    val reduceMotion = LocalReduceMotion.current
+    val pagerState = rememberPagerState(pageCount = { homeTabItems.size })
+    val coroutineScope = rememberCoroutineScope()
+    val view = currentView()
 
     LaunchedEffect(Unit) {
         homeViewModel.getUserSchool()
@@ -90,47 +106,43 @@ fun HomePage(
             else -> {}
         }
     }
+
+    // 滑动切 tab 到位的选中触感（跳过首组合；点击路径由 BottomBar 触发）
+    var lastSettledPage by remember { mutableIntStateOf(pagerState.settledPage) }
+    LaunchedEffect(pagerState.settledPage) {
+        if (pagerState.settledPage != lastSettledPage) {
+            lastSettledPage = pagerState.settledPage
+            view.performHaptic(HapticEffect.SELECTION)
+        }
+    }
+
     Scaffold(
         containerColor = AppColors.colorScheme.background,
-        bottomBar = { BottomBar(homePageNavController) }
+        bottomBar = { BottomBar(pagerState, reduceMotion) }
     ) { paddingValues ->
-        NavHost(
-            navController = homePageNavController,
-            startDestination = HomePageConstant.Index.text,
+        // 非首页 tab 按系统返回先回首页 tab（复刻原 tab 栈 pop 行为），首页则交还系统退出
+        BackHandler(enabled = pagerState.settledPage != 0) {
+            coroutineScope.launch {
+                if (reduceMotion) pagerState.scrollToPage(0) else pagerState.animateScrollToPage(0)
+            }
+        }
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.padding(paddingValues),
-            enterTransition = {
-                fadeIn(animationSpec = defaultSpring())
-            },
-            exitTransition = {
-                fadeOut(animationSpec = defaultSpring())
-            }
-        ) {
-            composable(HomePageConstant.Index.text) {
-                IndexPage(homePageNavController, navController)
-            }
-            composable(HomePageConstant.Service.text) {
-                ServicePage(navController = navController)
-            }
-            composable(HomePageConstant.Workbench.text) {
-                WorkbenchPage(navController)
-            }
-            composable(HomePageConstant.UserInfo.text) {
-                UserInfoPage(navController, homePageNavController)
+        ) { page ->
+            when (page) {
+                0 -> IndexPage(isActive = pagerState.settledPage == 0, navController = navController)
+                1 -> ServicePage(navController = navController)
+                2 -> WorkbenchPage(navController = navController)
+                else -> UserInfoPage(navController, isActive = pagerState.settledPage == 3)
             }
         }
     }
 }
 
 @Composable
-fun BottomBar(navController: NavHostController) {
-    val bottomNavItems = listOf(
-        HomePageConstant.Index,
-        HomePageConstant.Service,
-        HomePageConstant.Workbench,
-        HomePageConstant.UserInfo
-    )
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+fun BottomBar(pagerState: PagerState, reduceMotion: Boolean) {
+    val coroutineScope = rememberCoroutineScope()
     val view = currentView()
 
     // 底部栏 — 规范 §4.5：68dp 高、0.5dp 顶部分隔线、纯白底（D-I10）
@@ -155,8 +167,9 @@ fun BottomBar(navController: NavHostController) {
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            bottomNavItems.forEach { item ->
-                val isSelected = currentRoute == item.text
+            homeTabItems.forEachIndexed { index, item ->
+                // targetPage：滑动中途即高亮目标 tab，选中反馈跟手
+                val isSelected = pagerState.targetPage == index
                 BottomNavItem(
                     solidPath = item.solidPath,
                     outlinePath = item.outlinePath,
@@ -165,10 +178,10 @@ fun BottomBar(navController: NavHostController) {
                     onClick = {
                         view.performHaptic(HapticEffect.SELECTION)
                         if (!isSelected) {
-                            navController.navigate(item.text) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                            coroutineScope.launch {
+                                // reduced motion（规范 §8）：程序化切页取消位移，瞬跳
+                                if (reduceMotion) pagerState.scrollToPage(index)
+                                else pagerState.animateScrollToPage(index)
                             }
                         }
                     }
@@ -188,8 +201,20 @@ private fun BottomNavItem(
 ) {
     val reduceMotion = LocalReduceMotion.current
 
-    // 规范 §4.5：选中 scale 1.06，未选中 1.0；reduced motion 时取消缩放
-    val scale = if (reduceMotion) 1f else if (isSelected) 1.06f else 1f
+    // 规范 §4.5：选中 scale 1.06，未选中 1.0；reduced motion 时目标恒为 1（无缩放动画）
+    val scale by animateFloatAsState(
+        targetValue = if (reduceMotion) 1f else if (isSelected) 1.06f else 1f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "bottomNavScale",
+    )
+    // label 颜色 200ms 平滑过渡（小组件预算），与图标 600ms 渐变衔接；
+    // reduced motion 降 180ms 短 tween，颜色可读性保留（规范 §8）
+    val labelColor by animateColorAsState(
+        targetValue = if (isSelected) AppColors.colorScheme.primary
+        else AppColors.colorScheme.textTertiary,
+        animationSpec = motionSpec(tween(DURATION_MICRO_MS)),
+        label = "bottomNavLabelColor",
+    )
 
     Column(
         modifier = Modifier
@@ -211,8 +236,7 @@ private fun BottomNavItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isSelected) AppColors.colorScheme.primary
-                    else AppColors.colorScheme.textTertiary
+            color = labelColor,
         )
     }
 }

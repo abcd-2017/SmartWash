@@ -1,12 +1,12 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, toColorString } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
-import { promptAction } from "@kit.ArkUI"
 import { userRecharge } from "../network/api/ReChargeApi"
 import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { AppButton } from "../view/common/AppComponents"
+import { AppButton, AppConfirmDialog } from "../view/common/AppComponents"
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
 const MAX_RECHARGE_AMOUNT: number = 10000
@@ -27,6 +27,8 @@ struct Recharge {
   @State currItem: number | null = null
   @State checkPayType: boolean = false
   @State checkPayNumber: boolean = false
+  // 充值请求进行中标记：按钮 loading 并拦截连点（评审 #12）
+  @State isRecharging: boolean = false
   // 金额校验失败的具体文案（评审 #19：错误提示友好化）
   @State checkPayNumberMsg: string = "请选择或输入充值金额"
 
@@ -37,21 +39,48 @@ struct Recharge {
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(this.currItem == index ? DesignColor.PRIMARY : DesignColor.TEXT_PRIMARY)
+
+      // 赠送标签（与套餐同源硬编码，对齐安卓 RechargePage.kt:313-318）
+      if (this.bonusText(amount) !== "") {
+        Text(this.bonusText(amount))
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.ONGOING_INK)
+          .margin({ top: 2 })
+      }
     }
     .height(66)
     .width("100%")
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(this.currItem == index ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
-    .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
-    .border(this.currItem == index ?
-      { width: 1.5, color: DesignColor.PRIMARY, radius: DesignDimens.SMALL_CARD_RADIUS } :
-      { width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.SMALL_CARD_RADIUS })
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    // DESIGN-SPEC v0.4 §2.4 / §3.1：描边统一 1px（选中态仅换色、不再加粗）+ level1 阴影
+    .border({ width: 1, color: this.currItem == index ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .onClick(() => {
       this.payNum = amount
       this.currItem = index
       this.checkPayNumber = false
     })
+  }
+
+  // 套餐赠送金额（与 presetAmount 同源硬编码；50 送 2 / 100 送 8 / 200 送 20）
+  private bonusText(amount: number): string {
+    if (amount === 50) {
+      return "送 ¥2"
+    }
+    if (amount === 100) {
+      return "送 ¥8"
+    }
+    if (amount === 200) {
+      return "送 ¥20"
+    }
+    return ""
   }
 
   @Builder
@@ -89,10 +118,15 @@ struct Recharge {
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .backgroundColor(this.currItem == 5 ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
-    .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
-    .border(this.currItem == 5 ?
-      { width: 1.5, color: DesignColor.PRIMARY, radius: DesignDimens.SMALL_CARD_RADIUS } :
-      { width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.SMALL_CARD_RADIUS })
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    // DESIGN-SPEC v0.4 §2.4 / §3.1：描边统一 1px（选中态仅换色、不再加粗）+ level1 阴影
+    .border({ width: 1, color: this.currItem == 5 ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
     .onClick(() => {
       this.currItem = 5
     })
@@ -147,6 +181,25 @@ struct Recharge {
     AppStorage.setOrCreate("refreshUserInfo", true)
   }
 
+  // 充值确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
+  private confirmDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      title: "提示",
+      message: "确认充值？",
+      onConfirm: () => {
+        this.doRecharge()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  // 提交按钮文案（对齐安卓「立即充值 ¥xx.00」，未选金额时不拼金额）
+  private submitText(): string {
+    return this.currItem == null ? "立即充值" : `立即充值 ¥${this.payNum.toFixed(2)}`
+  }
+
   check() {
     // 金额精确校验（评审 #19）：不合法时 checkPayNumberMsg 已写入具体原因
     this.checkPayNumber = !this.validateAmount()
@@ -189,6 +242,38 @@ struct Recharge {
     return true
   }
 
+  /**
+   * 提交充值（对齐安卓 RechargePage.kt:262-272：确认弹窗 onConfirm 内先校验，
+   * 未选支付方式 / 金额非法则提示且不提交）。
+   */
+  async doRecharge() {
+    this.check()
+    if (this.checkPayType || this.checkPayNumber) {
+      return
+    }
+    // 防连点：请求进行中直接忽略
+    if (this.isRecharging) {
+      return
+    }
+    this.isRecharging = true
+    try {
+      let res = await userRecharge({
+        amount: this.payNum,
+        // 充值渠道类型码用具名常量，替代魔法值（评审 #30）：1=微信 2=支付宝
+        rechargeType: this.payType == PaymentMethod.WECHAT ?
+          RechargeType.WECHAT : RechargeType.ALIPAY
+      })
+      if (res.code == HttpStatusCode.Ok) {
+        pathStack.pop()
+        showToastSafety("充值成功")
+      } else {
+        showToastSafety(res.message, "充值失败")
+      }
+    } finally {
+      this.isRecharging = false
+    }
+  }
+
   build() {
     NavDestination() {
       Column() {
@@ -203,7 +288,7 @@ struct Recharge {
             .padding(8)
 
           Text("充值")
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.ON_BACKGROUND)
             .margin({ left: 4 })
@@ -215,7 +300,7 @@ struct Recharge {
             .fontSize(22)
             .fontColor([DesignColor.TEXT_SECONDARY])
             .onClick(() => {
-              pathStack.pushPathByName("RechargeRecord", null)
+              pathStack.pushPathByName(RouteNames.RECHARGE_RECORD, null)
             })
             .padding(8)
         }
@@ -278,7 +363,14 @@ struct Recharge {
         .width("100%")
         .backgroundColor(DesignColor.SURFACE)
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+        // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+        .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
 
         if (this.checkPayType) {
           Text("请选择支付方式")
@@ -293,33 +385,10 @@ struct Recharge {
 
         // 确认支付按钮
         AppButton({
-          text: `确认支付 ¥${this.currItem == 5 ? this.inputPreset ?? "0" : this.payNum}`,
+          text: this.submitText(),
+          loading: this.isRecharging,
           click: () => {
-            promptAction.showDialog({
-              title: "提示",
-              message: "是否确认充值",
-              buttons: [{ text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
-                { text: "确认", color: toColorString(DesignColor.TEXT_PRIMARY) }],
-            }, async (err, data) => {
-              if (data.index == 1) {
-                this.check()
-                if (this.checkPayType || this.checkPayNumber) {
-                  return
-                }
-                let res = await userRecharge({
-                  amount: this.payNum,
-                  // 充值渠道类型码用具名常量，替代魔法值（评审 #30）：1=微信 2=支付宝
-                  rechargeType: this.payType == PaymentMethod.WECHAT ?
-                    RechargeType.WECHAT : RechargeType.ALIPAY
-                })
-                if (res.code == HttpStatusCode.Ok) {
-                  pathStack.pop()
-                  showToastSafety("充值成功")
-                } else {
-                  showToastSafety(res.message, "充值失败")
-                }
-              }
-            })
+            this.confirmDialogController.open()
           }
         })
         .margin({ bottom: DesignDimens.PAGE_PADDING })

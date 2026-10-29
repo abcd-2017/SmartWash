@@ -1,11 +1,9 @@
 package com.smartwash.feature.coupon.ui.coupon
 
 import android.widget.Toast
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,11 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,11 +25,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -51,6 +51,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppPillTabRow
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.feature.coupon.ui.coupon.tab.AvailableCouponsTab
@@ -58,19 +62,36 @@ import com.smartwash.feature.coupon.ui.coupon.tab.ClaimedCouponsTab
 import com.smartwash.feature.coupon.ui.coupon.tab.HistoricalCouponsTab
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
-import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.motionSpec
+import kotlinx.coroutines.launch
+
+/** 优惠券页 tab 数：可领取 / 已领取 / 已使用 */
+private const val COUPON_TAB_COUNT = 3
+
+/** 优惠券页内容区三态：首载骨架 / 首载失败 / 内容（三 tab Pager） */
+private enum class CouponContentState { Skeleton, Error, Content }
 
 @Composable
 fun CouponPage(
     navController: NavHostController,
     couponViewModel: CouponViewModel = hiltViewModel(),
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val reduceMotion = LocalReduceMotion.current
+    val coroutineScope = rememberCoroutineScope()
+    // 三 tab 改由 Pager 承载：页间切换不再重建列表，LazyLayout 按页保存滚动位置
+    val pagerState = rememberPagerState(pageCount = { COUPON_TAB_COUNT })
     val loadState by couponViewModel.loadState.collectAsState()
     val availableCoupons by couponViewModel.availableCoupons.collectAsState()
     val claimedCoupons by couponViewModel.claimedCoupons.collectAsState()
     val historicalCoupons by couponViewModel.historicalCoupons.collectAsState()
+    // 领券进行中（页面局部 UI 状态）：按钮原位换圆环并禁点，阻断重复提交
+    var claimingId by remember { mutableStateOf<Long?>(null) }
     // D-C1：可用 tab 文案带真实计数
     val tabs = listOf(
         stringResource(R.string.available_coupons_with_count, availableCoupons.size),
@@ -85,13 +106,16 @@ fun CouponPage(
     }
 
     LaunchedEffect(receiveCouponState) {
-        when (receiveCouponState) {
+        when (val state = receiveCouponState) {
             is RequestState.Success -> {
+                // 领券收尾：成功也清 pending（loadAllCoupons 期间列表保持原位，不再整屏骨架）
+                claimingId = null
                 Toast.makeText(context, context.getString(R.string.claim_success), Toast.LENGTH_SHORT).show()
                 couponViewModel.resetReceiveState()
             }
             is RequestState.Error -> {
-                Toast.makeText(context, (receiveCouponState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+                claimingId = null
+                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
                 couponViewModel.resetReceiveState()
             }
             else -> {}
@@ -104,6 +128,16 @@ fun CouponPage(
         }
     }
 
+    // 首载骨架：三列表都空且状态为 Idle/Loading（Idle 首帧同按加载处理，避免空态闪现）。
+    // 领券后 loadAllCoupons 会把 loadState 置回 Loading，但此时列表已有内容 → 保留内容，不整屏替换。
+    val listsEmpty = availableCoupons.isEmpty() && claimedCoupons.isEmpty() && historicalCoupons.isEmpty()
+    val contentState = when {
+        listsEmpty && (loadState is RequestState.Idle || loadState is RequestState.Loading) ->
+            CouponContentState.Skeleton
+        listsEmpty && loadState is RequestState.Error -> CouponContentState.Error
+        else -> CouponContentState.Content
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -112,53 +146,71 @@ fun CouponPage(
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(title = stringResource(R.string.coupons), onBack = { navController.navigateUp() })
 
-            // 胶囊筛选（设计稿：视觉胶囊 40 高 r999 + 48 热区，文字 captionStrong 12/16/500）
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = AppDimens.pagePadding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    val selected = selectedTabIndex == index
-                    Box(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .pressable(onClick = { selectedTabIndex = index }, debounce = false),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            modifier = Modifier.height(40.dp),
-                            color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface,
-                            border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
-                            shape = RoundedCornerShape(AppDimens.radiusFull)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (selected) MaterialTheme.colorScheme.onPrimary
-                                    else AppColors.colorScheme.textSecondary,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                            }
-                        }
+            // 胶囊筛选（seg3 样式）— 公共 AppPillTabRow：选中色过渡 + 选中触觉 + 禁 ripple
+            AppPillTabRow(
+                tabs = tabs,
+                selectedIndex = pagerState.targetPage,
+                onSelect = { index ->
+                    coroutineScope.launch {
+                        // reduced motion：取消位移动画，直接落到目标页（规范 §8）
+                        if (reduceMotion) pagerState.scrollToPage(index)
+                        else pagerState.animateScrollToPage(index)
                     }
-                }
-            }
+                },
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            if (loadState is RequestState.Loading) {
-                LoadingState(modifier = Modifier.fillMaxSize())
-            } else {
-                when (selectedTabIndex) {
-                    0 -> AvailableCouponsTab(availableCoupons) {
-                        couponViewModel.receiveCoupon(it)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                // 骨架 ↔ 内容交叉淡变；reduced motion 经 motionSpec 降级为 180ms 纯淡变
+                Crossfade(
+                    targetState = contentState,
+                    animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
+                    label = "couponContent",
+                ) { state ->
+                    when (state) {
+                        CouponContentState.Skeleton -> LoadingState(modifier = Modifier.fillMaxSize())
+
+                        // 首载失败（三列表均空）：给出说明与重试，不再只靠 Toast
+                        CouponContentState.Error -> EmptyState(
+                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位（core 图标，不引 icons-extended）
+                            icon = Icons.Default.Refresh,
+                            message = stringResource(R.string.coupon_load_failed),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = AppDimens.pagePadding),
+                            action = {
+                                AppButton(
+                                    text = stringResource(R.string.coupon_action_retry),
+                                    onClick = { couponViewModel.loadAllCoupons() },
+                                    variant = AppButtonVariant.SECONDARY,
+                                )
+                            },
+                        )
+
+                        CouponContentState.Content -> HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) { page ->
+                            when (page) {
+                                0 -> AvailableCouponsTab(
+                                    couponList = availableCoupons,
+                                    claimingId = claimingId,
+                                    itemClick = { couponId ->
+                                        claimingId = couponId
+                                        couponViewModel.receiveCoupon(couponId)
+                                    },
+                                )
+                                1 -> ClaimedCouponsTab(claimedCoupons)
+                                else -> HistoricalCouponsTab(historicalCoupons)
+                            }
+                        }
                     }
-                    1 -> ClaimedCouponsTab(claimedCoupons)
-                    2 -> HistoricalCouponsTab(historicalCoupons)
                 }
             }
         }
@@ -167,7 +219,8 @@ fun CouponPage(
 
 /**
  * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态角标
- * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline、无阴影（规范 §3 卡片 elevation 0）；
+ * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline；
+ * 阴影按规范 §2.4 卡片档 = AppElevation.level1（CSS 0 2px 12px rgba(20,40,30,.05) 的最近似档位）；
  * 可用态金额区白底（画板无填充）、历史态金额区为页面底色块；弱化态靠换灰，不做整体透明
  */
 @Composable
@@ -207,6 +260,7 @@ fun UserCouponCard(
             },
         shape = TicketShape,
         color = surfaceColor,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, outlineColor)
     ) {
         Row(

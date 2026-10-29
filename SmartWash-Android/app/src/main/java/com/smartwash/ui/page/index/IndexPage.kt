@@ -1,6 +1,8 @@
 package com.smartwash.ui.page.index
 
 import android.widget.Toast
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -60,16 +62,22 @@ import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun IndexPage(
-    pageNavController: NavHostController,
+    isActive: Boolean,
     navController: NavHostController,
     indexViewModel: IndexViewModel = hiltViewModel(),
 ) {
@@ -78,8 +86,9 @@ fun IndexPage(
     val userInfo by indexViewModel.userInfo.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
 
-    LaunchedEffect(pageNavController.currentBackStackEntry) {
-        indexViewModel.getInfoData()
+    // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
+    LaunchedEffect(isActive) {
+        if (isActive) indexViewModel.getInfoData()
     }
 
     val errorContext = LocalContext.current
@@ -99,12 +108,21 @@ fun IndexPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (userInfoStatus is RequestState.Loading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+        // 骨架屏只在「首载且无任何数据」时出现：刷新（VM 置 Loading）时 userInfo 已有值，
+        // 保持已展示内容不被整屏骨架替换；骨架 ↔ 内容交叉淡变（reduced motion 自动 180ms）
+        val showSkeleton =
+            (userInfoStatus is RequestState.Idle || userInfoStatus is RequestState.Loading) && userInfo == null
+        Crossfade(
+            targetState = showSkeleton,
+            animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
+            label = "indexSkeleton"
+        ) { skeleton ->
+            if (skeleton) {
+                LoadingState(modifier = Modifier.fillMaxSize())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 item {
                     StatusHeroCard(
                         orderList = orderList,
@@ -136,9 +154,7 @@ fun IndexPage(
                     ServiceGrid(
                         onBookingClick = {
                             navController.navigate(LaundryRoute.Laundry.text) {
-                                popUpTo(pageNavController.graph.startDestinationId) { saveState = true }
                                 launchSingleTop = true
-                                restoreState = true
                             }
                         },
                         onPickupClick = {
@@ -186,28 +202,33 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                if (orderList.isNotEmpty()) {
-                    item {
-                        OrderListCard(
-                            orderList = orderList,
-                            onOrderClick = { orderId ->
-                                navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
-                            }
-                        )
-                    }
-                } else {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_ongoing_orders),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary
+                // 进行中订单列表 ↔ 空态：合并为单 item 交叉淡变，不再整块硬切
+                item {
+                    Crossfade(
+                        targetState = orderList.isNotEmpty(),
+                        animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
+                        label = "indexOrderList"
+                    ) { hasOrders ->
+                        if (hasOrders) {
+                            OrderListCard(
+                                orderList = orderList,
+                                onOrderClick = { orderId ->
+                                    navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                                }
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_ongoing_orders),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                            }
                         }
                     }
                 }
@@ -216,6 +237,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                     ServiceTips()
                     Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                }
                 }
             }
         }
@@ -256,6 +278,14 @@ private fun StatusHeroCard(
     val currentOrder = orderList.firstOrNull()
     val orderStatus = currentOrder?.let { OrderStatus.fromStatus(it.status) }
 
+    // 进度弧跟随真实订单状态平滑推进（reduced motion 由 motionSpec 降级为 180ms 无回弹过渡）
+    val heroProgress = currentOrder?.let { orderProgress(it.status) } ?: 0f
+    val animatedHeroProgress by animateFloatAsState(
+        targetValue = heroProgress,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "heroProgress"
+    )
+
     // 品牌渐变 135°：浅色 #2D9B6A→#1E8C5C、深色 #2D9B6A→#5BC894（规范 §1.3 gradient.hero，设计稿首页画板实测）
     val gradient = Brush.linearGradient(
         colors = listOf(AppColors.colorScheme.heroGradientStart, AppColors.colorScheme.heroGradientEnd),
@@ -268,7 +298,7 @@ private fun StatusHeroCard(
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
             .padding(top = 8.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusLg))
+            .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
             .padding(20.dp)
     ) {
@@ -280,7 +310,7 @@ private fun StatusHeroCard(
                 // 滚筒圆 — 规范 §5 母题：同心环 + 进度弧 + 单条水波（D-I1）
                 DrumMark(
                     size = 64.dp,
-                    progress = currentOrder?.let { orderProgress(it.status) },
+                    progress = if (currentOrder != null) animatedHeroProgress else null,
                     tint = Color.White,
                     trackTint = Color.White.copy(alpha = 0.32f),
                     innerRingTint = Color.White.copy(alpha = 0.45f)
@@ -338,14 +368,20 @@ private fun StatusHeroCard(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                            .background(
+                                selectedColor(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                            )
                     )
                     if (index < steps.lastIndex) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(2.dp)
-                                .background(if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                                .background(
+                                    selectedColor(
+                                        if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+                                    )
+                                )
                         )
                     }
                 }
@@ -371,7 +407,7 @@ private fun StatusHeroCard(
 }
 
 /**
- * 账户数据卡 — 白底 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 账户数据卡 — 白底 + 1px 描边 + 轻阴影（规范 v0.4 §3.1 / §2.4）。
  * 余额是主角（大字），优惠券和累计订单是小字。
  */
 @Composable
@@ -388,7 +424,8 @@ private fun AccountDataCard(
             .padding(top = 16.dp),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -412,14 +449,12 @@ private fun AccountDataCard(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
+                        // 数据大字恒为 36sp（v0.4 §2.2 硬规则：一屏一个锚点级大字）。
+                        // 窄屏降级只允许落到阶梯内的档（headline 28 / titleLarge 22），不造夹档。
                         style = when {
                             availableWidth >= 160.dp -> AppTextStyles.DataLarge
-                            availableWidth >= 130.dp -> AppTextStyles.DataLarge.copy(
-                                fontSize = 30.sp, lineHeight = 38.sp
-                            )
-                            else -> AppTextStyles.DataLarge.copy(
-                                fontSize = 24.sp, lineHeight = 32.sp
-                            )
+                            availableWidth >= 130.dp -> AppTextStyles.Headline
+                            else -> MaterialTheme.typography.titleLarge
                         },
                         color = AppColors.colorScheme.primaryDark,
                         maxLines = 1,
@@ -569,7 +604,7 @@ private fun ServiceEntry(
 }
 
 /**
- * 进行中订单列表 — 白底卡片 + 1px 描边 + 轻阴影（规范 v3 §3.1）。
+ * 进行中订单列表 — 白底卡片 + 1px 描边 + 轻阴影（规范 v0.4 §3.1 / §2.4）。
  * 36dp 图标容器 + 等宽价格。
  */
 @Composable
@@ -583,7 +618,8 @@ private fun OrderListCard(
             .padding(horizontal = AppDimens.pagePadding),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
@@ -618,7 +654,8 @@ private fun OrderListItem(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            // §3.4 列表行高 56dp：图标容器 36 + 上下各 10dp（原 16dp 会得 68dp）
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 图标容器色按状态语义（设计稿首页画板实测）：清洗中→water 水蓝（icon.md 20），其余→橙（进行中待办语义）

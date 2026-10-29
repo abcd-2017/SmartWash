@@ -1,9 +1,8 @@
 package com.smartwash.feature.divination.ui.page.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,17 +36,18 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.ui.components.CompassDial
 import com.smartwash.feature.divination.ui.components.DivCard
-import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.TianXiangHeader
 import com.smartwash.feature.divination.ui.components.divSerif
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -164,23 +165,30 @@ fun DivHomePage(
         )
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(horizontal = 14.dp)) {
-                if (records.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.div_history_empty),
-                        fontSize = 12.sp,
-                        color = c.textTertiary,
-                        modifier = Modifier.padding(vertical = 18.dp),
-                    )
-                } else {
-                    records.take(3).forEachIndexed { index, record ->
-                        LedgerRow(record)
-                        if (index != 2 && index != records.take(3).lastIndex) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(c.hair)
-                            )
+                // 空态与记录列表互相替换时做交叉淡入淡出，避免 0ms 硬切
+                Crossfade(
+                    targetState = records.isEmpty(),
+                    animationSpec = tween(CROSSFADE_ALT_MS),
+                    label = "ledgerEmpty",
+                ) { empty ->
+                    if (empty) {
+                        Text(
+                            text = stringResource(R.string.div_history_empty),
+                            fontSize = 12.sp,
+                            color = c.textTertiary,
+                            modifier = Modifier.padding(vertical = 18.dp),
+                        )
+                    } else {
+                        records.take(3).forEachIndexed { index, record ->
+                            LedgerRow(record)
+                            if (index != 2 && index != records.take(3).lastIndex) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(c.hair)
+                                )
+                            }
                         }
                     }
                 }
@@ -230,7 +238,7 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
     }
 }
 
-/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标 */
+/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（自绘卡：宣纸侧按 §2.4 补 level1 轻阴影，玄墨侧豁免） */
 @Composable
 private fun JadeTile(
     name: String,
@@ -241,16 +249,15 @@ private fun JadeTile(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
-    val interactionSource = remember { MutableInteractionSource() }
-    // 玉牌点击防抖：四牌并排且 navigate 无 launchSingleTop，连点会双推 Ask 页
-    val debouncedClick = rememberDebouncedClick { onClick() }
+    val shape = RoundedCornerShape(16.dp)
+    // 玉牌四牌并排且 navigate 无 launchSingleTop：连点会双推 Ask 页，按压反馈与防抖由 pressable 一套承载
     Box(
         modifier
             .height(156.dp)
-            .pressScale(interactionSource, 0.97f)
-            .clip(RoundedCornerShape(16.dp))
+            .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
+            .clip(shape)
             .background(c.surface)
-            .clickable(interactionSource = interactionSource, indication = LocalIndication.current, onClick = debouncedClick),
+            .pressable(onClick = onClick),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textSecondary)

@@ -2,14 +2,22 @@ package com.smartwash.common.utils
 
 import android.content.Context
 import android.provider.Settings
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.InfiniteRepeatableSpec
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 
 /**
  * 动效工具 — 全应用唯一的动效 vocabulary。
@@ -66,6 +74,65 @@ const val PRESS_DURATION_MS = 100
 
 /** reduced motion 降级时长 — CrossfadeAlt */
 const val CROSSFADE_ALT_MS = 180
+
+// ========== 时长层级（动效语言 v0.4：退出时长 ≈ 进入的 60–70%） ==========
+
+/** 小组件级 — 选中态、tint、微反馈时长上限 */
+const val DURATION_MICRO_MS = 200
+
+/** 卡片与展开级 — 内容块/卡片过渡 */
+const val DURATION_CARD_MS = 300
+
+/** 页面与弹层转场级 */
+const val DURATION_SCREEN_MS = 400
+
+/** 进入减速 tween — 动效语言：进入减速（LinearOutSlowInEasing） */
+fun <T> enterTween(durationMillis: Int): TweenSpec<T> =
+    tween(durationMillis, easing = LinearOutSlowInEasing)
+
+/** 退出加速 tween — 动效语言：退出加速（FastOutLinearInEasing），时长取进入的 60–70% */
+fun <T> exitTween(durationMillis: Int): TweenSpec<T> =
+    tween(durationMillis, easing = FastOutLinearInEasing)
+
+/**
+ * 往返循环规格 — 修 MotionIcons 锯齿循环的根：`infiniteRepeatable` 必须带
+ * [RepeatMode.Reverse]，否则 1 → 1.07 后瞬间跳回 1（视觉锯齿）。
+ * 供所有"去而复返"的无限动效复用（水滴呼吸、泡沫上浮等）。
+ */
+fun <T> pingPongInfinite(durationMs: Int): InfiniteRepeatableSpec<T> =
+    infiniteRepeatable(
+        animation = tween(durationMs, easing = FastOutSlowInEasing),
+        repeatMode = RepeatMode.Reverse,
+    )
+
+/** 持续型旋转周期 — 小尺寸 pending 圆环自转一圈的时长（持续型动效一律 linear） */
+const val SPIN_PERIOD_MS = 900
+
+/**
+ * 持续型旋转规格 — 恒速单向自转（pending 圆环等）。
+ * 与 [pingPongInfinite] 的分工：本函数 `RepeatMode.Restart` 单向循环用于"转圈"，
+ * 后者 `RepeatMode.Reverse` 用于"去而复返"。调用方必须自备 reduced motion 分支
+ * （规范 §8：reduced motion 取消无限旋转，退化为静止圆环）。
+ */
+fun <T> spinInfinite(durationMs: Int = SPIN_PERIOD_MS): InfiniteRepeatableSpec<T> =
+    infiniteRepeatable(
+        animation = tween(durationMs, easing = LinearEasing),
+        repeatMode = RepeatMode.Restart,
+    )
+
+/**
+ * 选中态颜色 — 全应用统一的"选中 / 未选中"颜色过渡（200ms 档弹簧，
+ * reduced motion 时经 [motionSpec] 自动降级为 180ms 纯颜色过渡）。
+ *
+ * 收敛全应用"选中态颜色"模式：调用侧只给目标色，不再各写一遍 animateColorAsState。
+ */
+@Composable
+fun selectedColor(target: Color): Color =
+    animateColorAsState(
+        targetValue = target,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "selectedColor",
+    ).value
 
 /** TweenPress — 按压反馈规格（注意是 tween 而非 spring：按压要"立刻"而不是"弹一下"） */
 fun <T> pressTween(): TweenSpec<T> = tween(

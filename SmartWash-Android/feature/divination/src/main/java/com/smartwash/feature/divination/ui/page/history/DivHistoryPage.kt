@@ -1,7 +1,8 @@
 package com.smartwash.feature.divination.ui.page.history
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,10 @@ import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.motionSpec
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -86,29 +91,46 @@ fun DivHistoryPage(
         // 画板：筛选行到首卡间距 20（本 Spacer 16 + 列表 contentPadding 顶 4）
         Spacer(Modifier.height(16.dp))
 
-        if (records.isEmpty()) {
-            Box(Modifier.fillMaxWidth().padding(top = 80.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    DivSeal("空", size = 44.dp, fontSize = 22.sp)
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.div_history_empty),
-                        fontSize = 12.sp,
-                        color = c.textTertiary,
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
-            ) {
-                items(records, key = { it.id }) { record ->
-                    HistoryCard(record) {
-                        navController.navigate("${DivRoute.Chart.text}/${record.id}?animate=false")
+        // 空态与列表互相替换走 Crossfade，避免 0ms 硬切
+        Crossfade(
+            targetState = records.isEmpty(),
+            animationSpec = tween(CROSSFADE_ALT_MS),
+            label = "historyEmpty",
+        ) { empty ->
+            if (empty) {
+                Box(Modifier.fillMaxWidth().padding(top = 80.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        DivSeal("空", size = 44.dp, fontSize = 22.sp)
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(R.string.div_history_empty),
+                            fontSize = 12.sp,
+                            color = c.textTertiary,
+                        )
                     }
-                    // 画板：卡间距 8（卡高 60）
-                    Spacer(Modifier.height(8.dp))
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                ) {
+                    items(records, key = { it.id }) { record ->
+                        HistoryCard(
+                            record = record,
+                            onClick = {
+                                navController.navigate("${DivRoute.Chart.text}/${record.id}?animate=false")
+                            },
+                            // 筛选切换的位移补间：reduced motion 取消（规范 §8）
+                            // （animateItemPlacement 已废弃且需 OptIn 实验 API，改用其官方替代 animateItem）
+                            modifier = if (LocalReduceMotion.current) {
+                                Modifier
+                            } else {
+                                Modifier.animateItem(placementSpec = motionSpec(defaultSpring()))
+                            },
+                        )
+                        // 画板：卡间距 8（卡高 60）
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
             }
         }
@@ -118,12 +140,16 @@ fun DivHistoryPage(
 }
 
 @Composable
-private fun HistoryCard(record: com.smartwash.feature.divination.database.DivRecordEntity, onClick: () -> Unit) {
+private fun HistoryCard(
+    record: com.smartwash.feature.divination.database.DivRecordEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val c = DivColors.current
     val timeText = remember(record.castAt) {
         SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(record.castAt))
     }
-    DivCard(onClick = onClick) {
+    DivCard(modifier = modifier, onClick = onClick) {
         // 画板：卡高 60，印章距左 14；问句 14/20 偏上 12、元信息 12/14 间隔 2；› 距右 8
         Row(
             Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),

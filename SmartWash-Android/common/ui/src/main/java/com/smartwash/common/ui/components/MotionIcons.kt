@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.pingPongInfinite
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -46,9 +47,10 @@ fun DropIcon(
 
     LaunchedEffect(active, reduce) {
         if (active && !reduce) {
+            // 必须 RepeatMode.Reverse：否则 1 → 1.07 后瞬间跳回 1，形成锯齿循环
             scaleAnim.animateTo(
                 1.07f,
-                infiniteRepeatable(tween(2400, easing = EaseInOut))
+                pingPongInfinite(2400)
             )
         } else {
             scaleAnim.snapTo(1f)
@@ -186,16 +188,17 @@ fun FoamIcon(
         if (active && !reduce) {
             coroutineScope {
                 launch {
+                    // 必须 RepeatMode.Reverse：否则 0 → -2.6 后瞬间跳回 0，形成锯齿循环
                     offset1.animateTo(
                         -2.6f,
-                        infiniteRepeatable(tween(2400, easing = EaseInOut))
+                        pingPongInfinite(2400)
                     )
                 }
                 launch {
                     delay(700)
                     offset2.animateTo(
                         -2.6f,
-                        infiniteRepeatable(tween(2400, easing = EaseInOut))
+                        pingPongInfinite(2400)
                     )
                 }
             }

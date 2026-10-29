@@ -1,5 +1,9 @@
 package com.smartwash.feature.divination.ui.page.reading
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,11 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +29,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.ui.DivinationScreen
+import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivCard
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivGoldButton
@@ -30,7 +37,22 @@ import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.model.RequestState
+import kotlinx.coroutines.delay
+
+/** 章节卡逐项淡入的间隔 — ≤60ms（规范 7） */
+private const val SECTION_STAGGER_MS = 60L
+
+/** 章节卡逐项淡入的单卡时长 */
+private const val SECTION_FADE_MS = 120
+
+/** 章节卡总入场时长上限（规范 7：总时长 ≤400ms） */
+private const val SECTION_STAGGER_CAP_MS = 240L
 
 /**
  * 解读页（画板「解读 · 玄墨 / 宣纸」双板口径）：页头右侧卦印 + 解读章节卡（发丝金线）+
@@ -80,60 +102,68 @@ fun DivReadingPage(
                 val record = state.record ?: return@DivinationScreen
                 val reading = state.reading
 
-                // 解读正文（loading / error / success）
-                when (state.readingState) {
-                    is RequestState.Loading -> {
-                        DivCard(Modifier.padding(horizontal = 20.dp)) {
-                            Column(
-                                Modifier.padding(vertical = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.div_reading_loading),
-                                    fontSize = 12.sp,
-                                    color = c.textTertiary,
-                                )
-                            }
-                        }
-                    }
-
-                    is RequestState.Error -> {
-                        DivCard(Modifier.padding(horizontal = 20.dp)) {
-                            Column(
-                                Modifier.padding(vertical = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.div_reading_error),
-                                    fontSize = 12.sp,
-                                    color = c.textTertiary,
-                                )
-                            }
-                        }
-                    }
-
-                    else -> if (reading != null) {
-                        // 解读章节（画板：卡宽 320、页边距 20、卡间 12）
-                        Column(Modifier.padding(horizontal = 20.dp)) {
-                            reading.sections.forEach { section ->
-                                ReadingSectionCard(section)
+                // 解读正文（loading / error / success）：三态互相替换走 Crossfade，避免硬切
+                Crossfade(
+                    targetState = state.readingState,
+                    animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+                    label = "readingState",
+                ) { readingState ->
+                    when (readingState) {
+                        is RequestState.Loading -> {
+                            DivCard(Modifier.padding(horizontal = 20.dp)) {
+                                Column(
+                                    Modifier.padding(vertical = 24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    WaveIcon(isLoading = true, tint = c.gold, size = 18.dp)
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.div_reading_loading),
+                                        fontSize = 12.sp,
+                                        color = c.textTertiary,
+                                    )
+                                }
                             }
                         }
 
-                        // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
-                        ActionCard(reading.action)
+                        is RequestState.Error -> {
+                            DivCard(Modifier.padding(horizontal = 20.dp)) {
+                                Column(
+                                    Modifier.padding(vertical = 24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.div_reading_error),
+                                        fontSize = 12.sp,
+                                        color = c.textTertiary,
+                                    )
+                                }
+                            }
+                        }
 
-                        // 主行动（画板：单个全宽胶囊 320×52、14% 金底 + 金/墨字）
-                        DivGoldButton(
-                            text = stringResource(R.string.div_reading_followup),
-                            soft = true,
-                            modifier = Modifier
-                                .padding(start = 20.dp, end = 20.dp, top = 20.dp)
-                                .fillMaxWidth(),
-                            onClick = {
-                                navController.navigate("${DivRoute.FollowUp.text}/$recordId")
-                            },
-                        )
+                        else -> if (reading != null) {
+                            // 解读章节（画板：卡宽 320、页边距 20、卡间 12）
+                            Column(Modifier.padding(horizontal = 20.dp)) {
+                                reading.sections.forEachIndexed { index, section ->
+                                    ReadingSectionCard(section, index)
+                                }
+                            }
+
+                            // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
+                            ActionCard(reading.action)
+
+                            // 主行动（画板：单个全宽胶囊 320×52、14% 金底 + 金/墨字）
+                            DivGoldButton(
+                                text = stringResource(R.string.div_reading_followup),
+                                soft = true,
+                                modifier = Modifier
+                                    .padding(start = 20.dp, end = 20.dp, top = 20.dp)
+                                    .fillMaxWidth(),
+                                onClick = {
+                                    navController.navigate("${DivRoute.FollowUp.text}/$recordId")
+                                },
+                            )
+                        }
                     }
                 }
 
@@ -166,11 +196,31 @@ private fun readingSealText(record: com.smartwash.feature.divination.database.Di
     }
 }
 
-/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8） */
+/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8）；
+ *  首屏逐项淡入（无位移），reduced motion 退化为纯淡入 */
 @Composable
-private fun ReadingSectionCard(section: com.smartwash.feature.divination.data.DivReadingSection) {
+private fun ReadingSectionCard(
+    section: com.smartwash.feature.divination.data.DivReadingSection,
+    index: Int,
+) {
     val c = DivColors.current
-    DivCard(Modifier.padding(vertical = 6.dp)) {
+    val reduceMotion = LocalReduceMotion.current
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        if (reduceMotion) {
+            // 降级：纯 180ms 淡入，取消逐项延迟
+            alpha.animateTo(1f, tween(CROSSFADE_ALT_MS))
+        } else {
+            // 间隔 ≤60ms，总时长 ≤400ms（规范 7）
+            delay((index * SECTION_STAGGER_MS).coerceAtMost(SECTION_STAGGER_CAP_MS))
+            alpha.animateTo(1f, tween(SECTION_FADE_MS, easing = LinearOutSlowInEasing))
+        }
+    }
+    DivCard(
+        Modifier
+            .padding(vertical = 6.dp)
+            .graphicsLayer { this.alpha = alpha.value },
+    ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
             Text(
                 text = section.title,

@@ -1,8 +1,6 @@
 package com.smartwash.feature.divination.ui.components
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,9 +38,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.momentumSpring
 import kotlin.math.abs
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+
+/** 三币翻转时长 — 420ms（原型口径：起跳 → 落定） */
+private const val COIN_SPIN_MS = 420
 
 /**
  * 方孔铜钱（Canvas 拟真：径向渐变 + 回纹内圈 + 方孔）与摇卦子午线节点。
@@ -139,6 +142,9 @@ fun DivCoin(
 /**
  * 掷币编排：tossId 变化即三币同步起跳翻转（translationY 弧线 + rotationX/随机 tiltZ），
  * ~420ms 落定（SpringMomentum），落定对齐结果面。动画期间由页面禁用掷爻按钮。
+ *
+ * reduced-motion：不播放翻转/回弹，直接把三币定格到结果面与落定角，随后照常回调
+ * [onSettled]（触觉保留，规范 §8：降级不是没有反馈）。
  */
 @Composable
 fun CoinTossRow(
@@ -146,6 +152,7 @@ fun CoinTossRow(
     tossId: Long,                   // 递增触发器；变化即播放一次编排
     onSettled: () -> Unit,
     modifier: Modifier = Modifier,
+    reduceMotion: Boolean = false,
 ) {
     val rotY = remember { List(3) { Animatable(0f) } }
     val lift = remember { List(3) { Animatable(0f) } }
@@ -153,18 +160,28 @@ fun CoinTossRow(
 
     LaunchedEffect(tossId) {
         if (tossId == 0L) return@LaunchedEffect
+        if (reduceMotion) {
+            // 直接定格结果面（字=0°、背=180°）与落定角，取消翻转/回弹/位移
+            rotY.forEachIndexed { i, anim -> anim.snapTo(if (faces[i]) 0f else 180f) }
+            lift.forEach { it.snapTo(0f) }
+            tiltZ.forEach { it.snapTo(0f) }
+            onSettled()
+            return@LaunchedEffect
+        }
         // 随机相位：避免每次轨迹一模一样（rotationZ ±20°、起跳高度扰动）
         val tilts = List(3) { (kotlin.random.Random.nextInt(41) - 20).toFloat() }
         val heights = List(3) { 52f + kotlin.random.Random.nextInt(17) }
         coroutineScope {
-            rotY.forEachIndexed { i, anim ->
+            val spinJobs = rotY.mapIndexed { i, anim ->
                 launch {
                     // 目标净角：字=0°，背=180°（至少两整圈，从当前值续转）
                     val current = anim.value
                     val targetAngle = if (faces[i]) 0f else 180f
                     val delta = 720f + ((targetAngle - current) % 360f + 360f) % 360f
-                    anim.animateTo(current + delta, tween(420))
+                    anim.animateTo(current + delta, tween(COIN_SPIN_MS))
                 }
+            }
+            rotY.indices.forEach { i ->
                 launch {
                     tiltZ[i].snapTo(0f)
                     tiltZ[i].animateTo(tilts[i], tween(200))
@@ -173,11 +190,14 @@ fun CoinTossRow(
                 launch {
                     lift[i].snapTo(0f)
                     lift[i].animateTo(-heights[i], tween(200))
-                    lift[i].animateTo(0f, spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium))
+                    // 落定回弹：惯性弹簧（vocabulary: momentumSpring）
+                    lift[i].animateTo(0f, momentumSpring())
                 }
             }
+            // 落定触觉对齐 rotY 翻转结束点（≈420ms），抬升回弹继续播放不等待
+            spinJobs.joinAll()
+            onSettled()
         }
-        onSettled()
     }
 
     Row(

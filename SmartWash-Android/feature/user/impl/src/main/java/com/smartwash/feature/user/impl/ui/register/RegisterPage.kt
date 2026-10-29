@@ -2,6 +2,14 @@ package com.smartwash.feature.user.impl.ui.register
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -75,20 +83,29 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.isValidPhone
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
-import kotlinx.coroutines.Dispatchers
+import com.smartwash.common.utils.selectedColor
+import com.smartwash.common.utils.HapticEffect
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 private val GradientTop = AuthGradientTop
 private val GradientBottom = AuthGradientBottom
 
 // 进度条非激活态（注册画板「进度2/3」= white 28%）
 private val ProgressInactive = Color.White.copy(alpha = 0.28f)
+// 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4）
+private const val EXIT_MICRO_MS = 140
 
 @Composable
 fun RegisterPage(
@@ -106,6 +123,8 @@ fun RegisterPage(
     val passwordFocusRequester = remember { FocusRequester() }
 
     var countDown by remember { mutableStateOf(0) }
+    // 倒计时任务句柄：发送失败时取消，使按钮立刻恢复可点（对齐鸿蒙 Register.ets:211-215）
+    var countDownJob by remember { mutableStateOf<Job?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     // 连点防抖：本页返回箭头/去登录均为 popBackStack 出栈，转场残影期被重复触发会连 Login 一起弹掉，
@@ -147,8 +166,11 @@ fun RegisterPage(
                     (captchaState as RequestState.Error).getMessage(context),
                     Toast.LENGTH_SHORT
                 ).show()
+                // 发送失败立即可重发：取消倒计时而不是重置为 60s 继续锁按钮
+                countDownJob?.cancel()
+                countDownJob = null
+                countDown = 0
                 registerViewModel.setCaptchaIdle()
-                countDown = UserImplConstant.SEND_CAPTCHA
             }
 
             else -> {}
@@ -296,14 +318,15 @@ fun RegisterPage(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 毛玻璃输入卡片 — 内边距上 16 / 下 24 / 水平 16（对齐登录画板 376→584：392 顶距 16、560→584 底距 24；同模板 A）
+            // 毛玻璃输入卡片 — 内边距垂直 20 / 水平 16（DESIGN-SPEC v0.4 §5 玻璃卡统一值，
+            // 与登录页同模板；双参重载避免方向反转）
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(glassShape)
                     .background(GlassBgCard)
                     .border(1.dp, GlassBorderSubtle, glassShape)
-                    .padding(top = 16.dp, bottom = 24.dp, start = 16.dp, end = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
             ) {
                 PhoneNumberInput(
                     phone = phone,
@@ -354,17 +377,17 @@ fun RegisterPage(
                         // 先校验手机号格式，通过后再请求验证码，避免无效手机号也发起请求
                         if (isValidPhone(phone)) {
                             registerViewModel.getCaptcha(phone)
+                            // 同步置倒计时（立即禁用按钮防连点），倒计时任务句柄留存以便失败时取消
+                            countDownJob?.cancel()
                             countDown = UserImplConstant.SEND_CAPTCHA
-                            coroutineScope.launch {
+                            countDownJob = coroutineScope.launch {
                                 while (countDown > 0) {
                                     delay(1000)
                                     countDown--
                                 }
                                 // 倒计时结束归零，允许重新发送
                                 countDown = 0
-                                withContext(Dispatchers.Main) {
-                                    registerViewModel.setCaptchaIdle()
-                                }
+                                registerViewModel.setCaptchaIdle()
                             }
                         } else {
                             isPhoneError = true
@@ -404,8 +427,11 @@ fun RegisterPage(
                         isPasswordError = password.length < 6 || password.length > 16
 
                         if (!isPhoneError && !isVerificationCodeError && !isPasswordError) {
+                            view.performHaptic(HapticEffect.MEDIUM)
                             keyboardController?.hide()
                             registerViewModel.userRegister(phone, password, verificationCode)
+                        } else {
+                            view.performHaptic(HapticEffect.ERROR)
                         }
                     },
                 )
@@ -430,8 +456,9 @@ fun RegisterPage(
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     modifier = Modifier
-                        .pressable(onClick = debouncedLoginClick, debounce = false)
+                        // 热区先行：padding 必须在 pressable 之前，否则可点区域只有文字本体
                         .padding(horizontal = 4.dp, vertical = 8.dp)
+                        .pressable(onClick = debouncedLoginClick, debounce = false)
                 )
             }
         }
@@ -475,20 +502,23 @@ private fun VerificationCodeRow(
             Spacer(modifier = Modifier.height(4.dp))
         }
         // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432 同款，D-R4）
+        // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(20.dp),
+                .height(48.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 前缀图标 16dp + opacity .5（§3.7）
             Icon(
                 Icons.Rounded.Key,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 tint = if (isVerificationCodeError) ErrorLight
                 else contentColor.copy(alpha = 0.5f)
             )
-            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            // 前缀与文字间距 spaceSm(12dp)（§3.7）
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             BasicTextField(
                 value = verificationCode,
                 onValueChange = onValueChange,
@@ -497,17 +527,19 @@ private fun VerificationCodeRow(
                     .focusRequester(focusRequester),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                // §3.7：输入正文 16sp / Normal —— 输入是高频读写场景，禁用 14sp 及以下
                 textStyle = LocalTextStyle.current.copy(
-                    fontSize = 14.sp, lineHeight = 20.sp, color = contentColor
+                    fontSize = 16.sp, lineHeight = 24.sp, color = contentColor
                 ),
                 cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
                         if (verificationCode.isEmpty()) {
+                            // §3.7：占位符字号与正文一致
                             Text(
                                 text = stringResource(R.string.verification_code_hint),
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
                                 color = contentColor.copy(alpha = 0.45f)
                             )
                         }
@@ -520,34 +552,57 @@ private fun VerificationCodeRow(
             // 画板按钮相对输入行中心上移 6px（顶 437 对齐标签顶、底 485 对齐分隔线2），offset 精确复刻。
             // 倒计时/加载禁用态描边与文字透明度降至 .55；倒计时本身已防重复发送，不再叠加防抖
             val sendEnabled = countDown == 0 && captchaState !is RequestState.Loading
+            // 描边与文字色随可发送态过渡（reduced motion 下经 motionSpec 降级为 180ms 纯颜色变化）
+            val sendBorderColor = selectedColor(
+                if (sendEnabled) GlassInput else GlassInput.copy(alpha = GlassInput.alpha * 0.55f)
+            )
+            val sendTextColor = selectedColor(
+                contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
+            )
+            // §3.7 尾缀发送 = 描边按钮：1dp 描边 + radiusSmall(12dp) + 高 40dp + 横向 14dp；
+            // 行高已为 48dp，按钮交由 Row 的 CenterVertically 居中，不再需要 offset 补偿
             Box(
                 modifier = Modifier
-                    .height(48.dp)
-                    .offset(y = (-6).dp)
+                    .height(40.dp)
                     .then(
                         if (sendEnabled) Modifier.pressable(onClick = onSendCaptcha, debounce = false)
                         else Modifier
                     )
                     .border(
                         width = 1.dp,
-                        color = if (sendEnabled) GlassInput
-                        else GlassInput.copy(alpha = GlassInput.alpha * 0.55f),
-                        shape = RoundedCornerShape(AppDimens.radiusFull)
+                        color = sendBorderColor,
+                        shape = RoundedCornerShape(AppDimens.radiusSmall)
                     )
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (countDown > 0) stringResource(R.string.countdown_format, countDown)
-                    else stringResource(R.string.get_verification_code),
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
-                )
+                // 「获取验证码 ↔ 59s」状态切换交叉淡入；倒计时每秒的数字跳动仍为直切（不加动画）
+                AnimatedContent(
+                    targetState = countDown > 0,
+                    transitionSpec = {
+                        fadeIn(tween(CROSSFADE_ALT_MS)) togetherWith fadeOut(tween(CROSSFADE_ALT_MS))
+                    },
+                    label = "sendCaptchaLabel",
+                ) { counting ->
+                    Text(
+                        text = if (counting) stringResource(R.string.countdown_format, countDown)
+                        else stringResource(R.string.get_verification_code),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = sendTextColor
+                    )
+                }
             }
         }
-        if (isVerificationCodeError) {
+        // 错误文案：淡入 + 纵向展开，避免卡片高度 0ms 突跳
+        AnimatedVisibility(
+            visible = isVerificationCodeError,
+            enter = fadeIn(motionSpec(enterTween(DURATION_MICRO_MS))) +
+                expandVertically(motionSpec(enterTween(DURATION_MICRO_MS))),
+            exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+        ) {
             // 错误文案沿用既有 supportingText 内容（原 TextField supportingText 平替）
             Text(
                 text = stringResource(R.string.invalid_verification_code),

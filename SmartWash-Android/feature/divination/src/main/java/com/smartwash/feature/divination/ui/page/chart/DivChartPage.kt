@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -24,6 +25,7 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.liuyao.LiuYaoChart
 import com.smartwash.feature.divination.ui.DivinationScreen
+import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivCard
 import com.smartwash.feature.divination.ui.components.DivFooterNote
 import com.smartwash.feature.divination.ui.components.DivGoldButton
@@ -58,13 +60,20 @@ fun DivChartPage(
     DivinationScreen {
         if (state.loading) {
             Spacer(Modifier.height(120.dp))
-            Text(
-                text = stringResource(R.string.div_chart_loading),
-                fontSize = 12.sp,
-                color = c.textTertiary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 水波指示（§4.5 附：观象台金色；自带 reduced motion 静止分支）
+                WaveIcon(isLoading = true, tint = c.gold, size = 18.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.div_chart_loading),
+                    fontSize = 12.sp,
+                    color = c.textTertiary,
+                )
+            }
             return@DivinationScreen
         }
         if (record == null || bundle == null) {

@@ -7,9 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.feature.order.api.OrderApi
-import com.smartwash.feature.order.api.model.OrderItemCount
-import com.smartwash.feature.order.api.model.ShowOrderStatus
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.feature.user.impl.network.vo.user.UserInfoVo
@@ -26,15 +23,12 @@ import javax.inject.Inject
 @HiltViewModel
 class UserInfoViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val orderApi: OrderApi,
     private val application: Application,
 ) : ViewModel() {
     private val _userInfoStatus = MutableStateFlow<RequestState>(RequestState.Idle)
     val userInfoStatus = _userInfoStatus.asStateFlow()
     private val _userInfo = MutableStateFlow<UserInfoVo?>(null)
     val userInfo = _userInfo.asStateFlow()
-    private val _orderItemCount = MutableStateFlow<OrderItemCount?>(null)
-    val orderItemCount = _orderItemCount.asStateFlow()
     private val _bindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
     val bindCampusState = _bindCampusState.asStateFlow()
     private val _unBindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -47,12 +41,6 @@ class UserInfoViewModel @Inject constructor(
             _userInfoStatus.value = RequestState.Loading
             try {
                 _userInfo.value = userRepository.getUserInfo()
-                _orderItemCount.value = orderApi.getOrderItemCount(
-                    processingStatus = ShowOrderStatus.WASHING.status,
-                    shippedStatus = ShowOrderStatus.PENDING_SHIPMENT.status,
-                    pendingPickupStatus = ShowOrderStatus.READY_FOR_PICKUP.status,
-                    pendingPaymentStatus = ShowOrderStatus.PENDING_PAYMENT.status
-                )
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
                 Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.getUserInfo: ${e.message}", e)

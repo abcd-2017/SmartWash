@@ -68,12 +68,13 @@ private val DarkColorScheme = darkColorScheme(
     onErrorContainer = DarkOnErrorContainer,
 )
 
+// 圆角五档（规范 §2.3）：extraSmall 10 · small 12 · medium 16 · large 20 · extraLarge 999（胶囊）
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
+    extraSmall = RoundedCornerShape(10.dp),
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(24.dp)
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(999.dp)
 )
 
 @Composable

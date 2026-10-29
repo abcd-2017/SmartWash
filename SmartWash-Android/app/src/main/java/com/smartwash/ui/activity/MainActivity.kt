@@ -185,6 +185,7 @@ class MainActivity : ComponentActivity() {
                             // 检查更新行插槽注入（feature:update 归壳层聚合，user-impl 不依赖它）
                             userGraph(
                                 navController,
+                                reduceMotion,
                                 checkUpdateContent = { CheckUpdateSettingRow(updateViewModel) }
                             )
                             orderGraph(navController)

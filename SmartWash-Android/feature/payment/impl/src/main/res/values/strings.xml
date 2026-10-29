@@ -24,6 +24,8 @@
     <string name="currency_format">¥%s</string>
     <string name="coupon">优惠券</string>
     <string name="do_not_use">不使用</string>
+    <string name="do_not_use_coupon">不使用优惠券</string>
+    <string name="do_not_use_coupon_tip">按订单原价支付</string>
     <string name="select_coupon">选择优惠券</string>
     <string name="go_claim">去领取</string>
     <string name="no_coupons">暂无优惠券</string>
@@ -34,6 +36,8 @@
 
     <!-- 支付成功页 -->
     <string name="pay_success">支付成功</string>
+    <string name="pay_success_load_failed">加载失败，请重试</string>
+    <string name="pay_success_retry">重试</string>
     <string name="thanks_for_using">感谢使用智慧洗衣</string>
     <string name="order_info">订单信息</string>
     <string name="order_time_display">下单时间</string>
@@ -55,6 +59,10 @@
     <string name="custom_amount_placeholder">输入自定义金额</string>
     <string name="recharge_bonus_hint">¥50送¥2 · ¥100送¥8 · ¥200送¥20</string>
     <string name="select_or_input_amount">请选择或输入充值金额</string>
+    <string name="recharge_amount_empty">请输入充值金额</string>
+    <string name="recharge_amount_invalid_format">金额格式不正确，最多支持两位小数</string>
+    <string name="recharge_amount_not_positive">充值金额必须大于 0 元</string>
+    <string name="recharge_amount_exceed_max_format" formatted="false">单笔充值金额不能超过 %s 元</string>
     <string name="select_payment_method">请选择充值方式</string>
     <string name="confirm_recharge_question">是否确认充值？</string>
     <string name="recharge_now_format" formatted="false">立即充值 ¥%s</string>

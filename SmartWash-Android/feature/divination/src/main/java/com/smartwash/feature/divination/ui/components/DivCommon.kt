@@ -1,11 +1,9 @@
 package com.smartwash.feature.divination.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,13 +22,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,12 +39,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
-import com.smartwash.common.utils.pressScale
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.common.utils.selectedColor
 
 /**
  * 观象台公共组件：衬线样式 / 印章 / 天象头 / 页头 / 鎏金按钮 / 发丝线卡片 / 领域 chips / 脚注。
@@ -73,8 +77,8 @@ fun DivSeal(
     text: String,
     modifier: Modifier = Modifier,
     size: Dp = 30.dp,
-    fontSize: TextUnit = 15.sp,
-    cornerRadius: Dp = 6.dp,
+    fontSize: TextUnit = 18.sp,
+    cornerRadius: Dp = 8.dp,
     flat: Boolean = false,
 ) {
     val c = DivColors.current
@@ -169,7 +173,7 @@ fun DivPageHeader(
                             .align(Alignment.CenterStart)
                             .padding(start = 12.dp)
                             .size(48.dp)
-                            .clickable(onClick = debouncedBack),
+                            .pressable(onClick = debouncedBack),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -268,7 +272,7 @@ fun DivSectionTitle(
                 fontSize = 12.sp,
                 color = if (onTailClick != null) c.textTertiary else c.textSecondary,
                 modifier = if (onTailClick != null) {
-                    Modifier.clickable(onClick = debouncedTailClick)
+                    Modifier.pressable(onClick = debouncedTailClick)
                 } else {
                     Modifier
                 },
@@ -286,21 +290,16 @@ fun DivGoldButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     height: androidx.compose.ui.unit.Dp = 52.dp,
-    fontSize: TextUnit = 14.sp,
+    fontSize: TextUnit = 18.sp,
     soft: Boolean = false,
 ) {
     val c = DivColors.current
-    val interactionSource = remember { MutableInteractionSource() }
     val view = currentView()
-    // 主按钮多承载入库/导航等有副作用动作，内置连击防抖（禁用态点击不消耗防抖窗口）
-    val debouncedOnClick = rememberDebouncedClick(enabled = enabled) {
-        view.performHaptic(HapticEffect.LIGHT)
-        onClick()
-    }
+    // 鎏金按钮多承载入库/导航等有副作用动作：连击防抖 + 按压缩放/触觉由 pressable 一套承载
+    // （不再叠加 Material ripple：涟漪形状不受令牌控制，且与容器不贴合）
     Box(
         modifier = modifier
             .height(height)
-            .pressScale(interactionSource, 0.97f)
             .clip(RoundedCornerShape(height / 2))
             .background(
                 when {
@@ -309,11 +308,15 @@ fun DivGoldButton(
                     else -> Brush.horizontalGradient(c.goldGradient)
                 },
             )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-                enabled = enabled,
-                onClick = debouncedOnClick,
+            .pressable(
+                onClick = {
+                    if (enabled) {
+                        view.performHaptic(HapticEffect.LIGHT)
+                        onClick()
+                    }
+                },
+                // 禁用态不给按压反馈（保持"禁用即可点但无反馈"的既有行为）
+                scaleFactor = if (enabled) 0.97f else 1f,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -331,7 +334,9 @@ fun DivGoldButton(
     }
 }
 
-/** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径） */
+/** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径）+ 宣纸侧轻阴影。
+ *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [AppElevation.level1](1dp)；
+ *  玄墨深色卡按 §2.4「深色卡不加投影」豁免（层级由深色自身 + 金线描边承担）。 */
 @Composable
 fun DivCard(
     modifier: Modifier = Modifier,
@@ -341,12 +346,14 @@ fun DivCard(
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val c = DivColors.current
-    val interactionSource = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(16.dp)
-    val debouncedCardClick = rememberDebouncedClick(enabled = onClick != null) { onClick?.invoke() }
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影
+                if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+            )
             .clip(shape)
             .background(background ?: c.surface)
             .border(
@@ -355,11 +362,8 @@ fun DivCard(
             )
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = LocalIndication.current,
-                        onClick = debouncedCardClick,
-                    )
+                    // 按压反馈统一走 pressable（indication=null + scale 0.97 + reduced-motion 降级）
+                    Modifier.pressable(onClick = onClick)
                 } else {
                     Modifier
                 }
@@ -369,7 +373,7 @@ fun DivCard(
 }
 
 /** 问事领域 chip：48 触控胶囊；选中金底 + 金环（玄墨实金线/宣纸 30% 线，画板双板口径）+ 金强调字；
- *  水平内边距默认 12（问卦领域 chip 宽 48），卦历筛选 chip 画板宽 52 传 14 */
+ *  水平内边距默认 12（问卦领域 chip 宽 48），卦历筛选 chip 画板宽 52 传 14；底色/描边/字色与勾均过渡，不硬切 */
 @Composable
 fun DivCategoryChip(
     text: String,
@@ -382,32 +386,58 @@ fun DivCategoryChip(
     val view = currentView()
     val selectedBorder = if (c.isDark) c.gold else c.goldLine
     val shape = RoundedCornerShape(999.dp)
+    // 颜色过渡（200ms 档，reduced motion 经 motionSpec 自动降 180ms）
+    val background = selectedColor(if (selected) c.gold14 else c.surface)
+    val border = selectedColor(if (selected) selectedBorder else c.goldLine)
+    val textColor = selectedColor(if (selected) c.goldText else c.textSecondary)
+    // 勾：弹簧缩放盖上/退下（无位移，reduced motion 降级为 180ms）
+    val checkScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "chipCheck",
+    )
     Box(
         modifier = modifier
             .height(48.dp)
             .clip(shape)
-            .background(if (selected) c.gold14 else c.surface)
-            .border(
-                BorderStroke(1.dp, if (selected) selectedBorder else c.goldLine),
-                shape,
+            .background(background)
+            .border(BorderStroke(1.dp, border), shape)
+            .pressable(
+                onClick = {
+                    view.performHaptic(HapticEffect.SELECTION)
+                    onClick()
+                },
+                debounce = false,
             )
-            .clickable {
-                view.performHaptic(HapticEffect.SELECTION)
-                onClick()
-            }
             .padding(horizontal = horizontalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            color = if (selected) c.goldText else c.textSecondary,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = text,
+                fontSize = 12.sp,
+                color = textColor,
+                // 字重无插值能力，保留瞬时切换作为"选中"的状态可读性
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            )
+            if (checkScale > 0f) {
+                Text(
+                    text = "✓",
+                    fontSize = 12.sp,
+                    color = textColor,
+                    modifier = Modifier
+                        .padding(start = 3.dp)
+                        .graphicsLayer {
+                            scaleX = checkScale
+                            scaleY = checkScale
+                        },
+                )
+            }
+        }
     }
 }
 
-/** 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点（画板：内边距 20/12、环 20 点 8、未选行标题次级色） */
+/** 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点（画板：内边距 20/12、环 20 点 8、未选行标题次级色；选中金点弹簧缩放进出） */
 @Composable
 fun DivRadioRow(
     title: String,
@@ -418,13 +448,21 @@ fun DivRadioRow(
 ) {
     val c = DivColors.current
     val view = currentView()
+    val dotScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "radioDot",
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable {
-                view.performHaptic(HapticEffect.SELECTION)
-                onClick()
-            }
+            .pressable(
+                onClick = {
+                    view.performHaptic(HapticEffect.SELECTION)
+                    onClick()
+                },
+                debounce = false,
+            )
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -456,14 +494,16 @@ fun DivRadioRow(
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            if (selected) {
-                Box(
-                    Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(c.gold)
-                )
-            }
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .graphicsLayer {
+                        scaleX = dotScale
+                        scaleY = dotScale
+                    }
+                    .clip(CircleShape)
+                    .background(c.gold)
+            )
         }
     }
 }

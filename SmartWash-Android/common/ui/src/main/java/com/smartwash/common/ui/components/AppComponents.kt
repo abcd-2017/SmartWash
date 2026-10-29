@@ -1,6 +1,7 @@
 package com.smartwash.common.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
@@ -10,8 +11,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -30,13 +35,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -49,17 +54,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import com.smartwash.common.ui.theme.GlassTextDisabled
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.R
@@ -76,10 +87,14 @@ import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.Primary
 import com.smartwash.common.ui.theme.PrimaryDark
 import com.smartwash.common.ui.theme.TextSecondary
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
@@ -103,9 +118,13 @@ fun PageHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBack != null) {
-            IconButton(
-                onClick = debouncedBack,
-                modifier = Modifier.size(40.dp)
+            // §7 禁 Material 交互组件（IconButton 自带 state layer 涟漪）：改自绘按压热区，
+            // pressable 内置 indication = null + scale 0.97 按压反馈
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .pressable(onClick = debouncedBack),
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Default.ArrowBack,
@@ -128,44 +147,28 @@ fun PageHeader(
 
 // ========== 容器组件 ==========
 
-// 规范 §2.4 卡片阴影的 Compose 等价实现。CSS「0 2px 12px rgba(20,40,30,.05)」
-// 是模糊扩散模型；Compose 的 elevation 阴影是海拔投影模型且不可控模糊半径——
-// 用「3dp 海拔 + 低透明绿灰投影色」近似大扩散柔光（ambient/spot 颜色需 API 28+，minSdk 30）。
-// 1dp 描边在无阴影衬托时会读成生硬灰圈，故减半为 0.5dp 退居辅助防溢出。
-// 深色按 §6.5 换纯黑系 rgba(0,0,0,.28)——绿黑投影在深色底上会染出脏灰。
-private val CardShadowAmbientLight = Color(0x0D14281E)  // 5% 绿黑
-private val CardShadowSpotLight = Color(0x1A14281E)     // 10% 绿黑
-private val CardShadowAmbientDark = Color(0x24000000)   // 14% 黑（ambient 仍为 spot 的一半）
-private val CardShadowSpotDark = Color(0x47000000)      // 28% 黑
-
-@Composable
-private fun cardShadowColors(): Pair<Color, Color> =
-    if (isSystemInDarkTheme()) CardShadowAmbientDark to CardShadowSpotDark
-    else CardShadowAmbientLight to CardShadowSpotLight
+// DESIGN-SPEC v0.4 §2.4 卡片规格的 Compose 等价实现：规范「CSS 阴影 ↔ Compose elevation 映射表」
+// 裁定卡片 = `AppElevation.level1`（1dp），与页面侧 `Surface(shadowElevation = level1)` 同源。
+// 描边恢复设计稿的 1dp（0.5dp 是上一版「无阴影裸白卡」时期的退让，阴影补齐后不再需要）。
 
 /**
- * 分组容器 — 规范 §3.1 标准卡片画法（白底 + 0.5dp 描边 + 柔和投影）
+ * 分组容器 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法（纯白 surface 底 + 1dp 描边 + level1 阴影）
  * 用于：设置页分组、订单详情信息组、内容分区
+ *
+ * 阴影走 §2.4「CSS 阴影 ↔ Compose elevation 映射表」的 `AppElevation.level1`，
+ * 与页面侧 `Surface(shadowElevation = level1)` 同一条路径 —— 全应用卡片阴影只有一个来源。
  */
 @Composable
 fun GroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(AppDimens.radiusLg)
-    val (shadowAmbient, shadowSpot) = cardShadowColors()
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 3.dp,
-                shape = shape,
-                ambientColor = shadowAmbient,
-                spotColor = shadowSpot,
-                clip = false,
-            )
-            .border(0.5.dp, AppColors.colorScheme.outline, shape)
-            .background(MaterialTheme.colorScheme.surface, shape),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
             modifier = Modifier.padding(AppDimens.cardPadding),
@@ -229,7 +232,6 @@ fun AppCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(AppDimens.radiusLg)
-    val (shadowAmbient, shadowSpot) = cardShadowColors()
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -237,14 +239,13 @@ fun AppCard(
                 if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
             )
+            // 阴影与 GroupCard / 页面侧卡片同一条路径：§2.4 映射表 → AppElevation.level1
             .shadow(
-                elevation = 3.dp,
+                elevation = AppElevation.level1,
                 shape = shape,
-                ambientColor = shadowAmbient,
-                spotColor = shadowSpot,
                 clip = false,
             )
-            .border(0.5.dp, AppColors.colorScheme.outline, shape)
+            .border(1.dp, AppColors.colorScheme.outline, shape)
             .background(MaterialTheme.colorScheme.surface, shape),
     ) {
         Column(content = content)
@@ -257,12 +258,74 @@ fun AppCard(
 enum class AppButtonVariant { PRIMARY, SECONDARY, TEXT }
 
 /**
+ * 按钮 loading 指示器 — 规范 §7.8：reduced motion 时取消旋转，退化为**静态 270° 圆环**
+ * （保留"在忙"的可读性，取消前庭不适的无限旋转）。
+ * 全应用按钮共用，避免各页面自绘 spinner。
+ */
+@Composable
+internal fun ButtonSpinner(
+    size: Dp,
+    strokeWidth: Dp,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    if (LocalReduceMotion.current) {
+        Canvas(modifier = modifier.size(size)) {
+            val stroke = strokeWidth.toPx()
+            drawArc(
+                color = color,
+                startAngle = -90f,
+                sweepAngle = 270f,
+                useCenter = false,
+                topLeft = Offset(stroke / 2f, stroke / 2f),
+                size = Size(this.size.width - stroke, this.size.height - stroke),
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+        }
+    } else {
+        CircularProgressIndicator(
+            modifier = modifier.size(size),
+            color = color,
+            strokeWidth = strokeWidth,
+        )
+    }
+}
+
+/**
+ * 弹窗入场动效 — 规范 §7.8：scale 0.92 → 1 + alpha 0 → 1 的**一次性**入场，
+ * 组合时启动；reduced motion 由 [motionSpec] 自动降级为 180ms 纯淡入（缩放归零）。
+ *
+ * 关闭动画受 `Dialog` 窗口机制限制（窗口由系统直接移除，拿不到退出帧），
+ * 本仓库一律不做弹窗退出动画——见各 Dialog 调用处。
+ */
+private fun Modifier.dialogEnterMotion(): Modifier = composed {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val progress by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "dialogEnter"
+    )
+    val reduceMotion = LocalReduceMotion.current
+    this.graphicsLayer {
+        alpha = progress
+        val scale = if (reduceMotion) 1f else 0.92f + 0.08f * progress
+        scaleX = scale
+        scaleY = scale
+    }
+}
+
+/**
  * 统一按钮 — 自绘实现，不使用 Material Button（其 state layer 颜色与形状不受
  * 令牌控制，规范 §7 禁止）。业务层一律经本组件消费，禁止直接使用 M3 交互组件。
  *
  * 规格（§3.3）：主 = 52dp 高 / 14dp 圆角 / 品牌渐变底 / 白字 15sp·600·ls 1sp；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色；文字 = 主色 13sp·600 无底无框。
  * 按压反馈 scale 0.97（pressable 内置 indication=null）。
+ *
+ * [contentColor] 仅用于**同形态换语义色**的少数场景（如「退出登录」次按钮配 dangerInk，
+ * §2.1 例外条款）：非 null 时替换文字与 spinner 色，容器形态与尺寸一律不变。
+ * 默认 null 保持三态既有配色不变。
  */
 @Composable
 fun AppButton(
@@ -272,6 +335,7 @@ fun AppButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     variant: AppButtonVariant = AppButtonVariant.PRIMARY,
+    contentColor: Color? = null,
 ) {
     // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
     val debouncedOnClick = rememberDebouncedClick { onClick() }
@@ -279,26 +343,41 @@ fun AppButton(
     val shape = RoundedCornerShape(AppDimens.buttonRadius)
 
     if (variant == AppButtonVariant.TEXT) {
+        // 文字色 0ms 硬切 → 弹簧过渡；reduced motion 自动降级 180ms（规范 7.8）
+        val textColor by animateColorAsState(
+            targetValue = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+            animationSpec = motionSpec(defaultSpring()),
+            label = "appButtonText"
+        )
         Box(
             modifier = modifier
                 .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
                 .heightIn(min = 44.dp)
+                // 最小宽度占位：loading 的 14dp spinner 不会把按钮压窄，消除宽度收缩抖动
+                .widthIn(min = 44.dp)
                 .padding(horizontal = AppDimens.spaceSm),
             contentAlignment = Alignment.Center,
         ) {
-            if (loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(14.dp),
-                    color = AppColors.colorScheme.primary,
-                    strokeWidth = 1.5.dp,
-                )
-            } else {
-                Text(
-                    text = text,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
-                )
+            // 文字 ↔ spinner 硬切 → 交叉淡变（规范 7.8 的 CrossfadeAlt 档）
+            Crossfade(
+                targetState = loading,
+                animationSpec = tween(CROSSFADE_ALT_MS),
+                label = "appButtonTextContent"
+            ) { isLoading ->
+                if (isLoading) {
+                    ButtonSpinner(
+                        size = 14.dp,
+                        strokeWidth = 1.5.dp,
+                        color = contentColor ?: AppColors.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text = text,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = contentColor ?: textColor,
+                    )
+                }
             }
         }
         return
@@ -307,31 +386,46 @@ fun AppButton(
     // 主/次按钮共用容器：高 52dp；主 = 135° primary→primaryDark 渐变，
     // 次 = surfaceVariant（§3.3 的 #F5F6F3 即浅色 surfaceVariant 令牌）
     val isPrimary = variant == AppButtonVariant.PRIMARY
+
+    // 渐变 / surfaceVariant / contentColor 三处颜色 0ms 硬切 → 弹簧过渡。
+    // 目标值里保留"禁用降透明度"，动画只负责把跳变抹平，不改变最终视觉。
+    val gradientStart by animateColorAsState(
+        targetValue = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+        animationSpec = motionSpec(defaultSpring()),
+        label = "appButtonGradientStart"
+    )
+    val gradientEnd by animateColorAsState(
+        targetValue = AppColors.colorScheme.primaryDark.copy(alpha = if (active) 1f else 0.5f),
+        animationSpec = motionSpec(defaultSpring()),
+        label = "appButtonGradientEnd"
+    )
+    val secondaryContainer by animateColorAsState(
+        targetValue = AppColors.colorScheme.surfaceVariant.copy(alpha = if (active) 1f else 0.5f),
+        animationSpec = motionSpec(defaultSpring()),
+        label = "appButtonSecondaryContainer"
+    )
+    // contentColor 为语义色覆盖（如 dangerInk），只做颜色值替换，不参与禁用降透明
+    val baseContentColor = contentColor ?: if (isPrimary) {
+        if (active) Color.White else GlassTextDisabled
+    } else {
+        AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
+    }
+    val animatedContentColor by animateColorAsState(
+        targetValue = baseContentColor,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "appButtonContentColor"
+    )
+
     val containerModifier = if (isPrimary) {
         // 禁用/加载态渐变降透明度（视觉完全由 brush 承担，避免双层叠加变淡）
         val buttonBrush = Brush.linearGradient(
-            colors = if (active) {
-                listOf(AppColors.colorScheme.primary, AppColors.colorScheme.primaryDark)
-            } else {
-                listOf(
-                    AppColors.colorScheme.primary.copy(alpha = 0.5f),
-                    AppColors.colorScheme.primaryDark.copy(alpha = 0.5f),
-                )
-            },
+            colors = listOf(gradientStart, gradientEnd),
             start = Offset.Zero,
             end = Offset.Infinite,
         )
         Modifier.background(buttonBrush, shape)
     } else {
-        Modifier.background(
-            AppColors.colorScheme.surfaceVariant.copy(alpha = if (active) 1f else 0.5f),
-            shape,
-        )
-    }
-    val contentColor = if (isPrimary) {
-        if (active) Color.White else GlassTextDisabled
-    } else {
-        AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
+        Modifier.background(secondaryContainer, shape)
     }
     Box(
         modifier = modifier
@@ -341,20 +435,29 @@ fun AppButton(
             .then(containerModifier),
         contentAlignment = Alignment.Center,
     ) {
-        if (loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(22.dp),
-                color = contentColor,
-                strokeWidth = 2.dp,
-            )
-        } else {
-            Text(
-                text = text,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp,
-                color = contentColor,
-            )
+        // 文字 ↔ spinner 硬切 → 交叉淡变（规范 7.8 的 CrossfadeAlt 档）
+        Crossfade(
+            targetState = loading,
+            animationSpec = tween(CROSSFADE_ALT_MS),
+            label = "appButtonContent"
+        ) { isLoading ->
+            if (isLoading) {
+                ButtonSpinner(
+                    size = 22.dp,
+                    strokeWidth = 2.dp,
+                    color = animatedContentColor,
+                )
+            } else {
+                Text(
+                    text = text,
+                    // v0.4 字阶：按钮文字 = title 档 18sp / SemiBold（与设计稿 CTA 标签一致，
+                    // 原 15sp 属 2026-10-06 版的正文档，v0.4 已取消该档）
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp,
+                    color = animatedContentColor,
+                )
+            }
         }
     }
 }
@@ -380,7 +483,7 @@ fun SettingRow(
             .padding(horizontal = AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 18.dp)
+        com.smartwash.common.ui.theme.IconBox(icon = icon, size = 36.dp, iconSize = 20.dp)
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -402,13 +505,21 @@ fun SettingRow(
 
 // ========== 空状态 ==========
 
+/**
+ * 空状态 — 规范 §3.6：滚筒圆母题（[DrumMark]）静止态 + 一句引导文案 + 可选行动按钮。
+ *
+ * 规范 §3.2 禁止「用一个灰色 Material 图标了事」，故本组件**只渲染滚筒圆母题**，
+ * 不再提供回退到裸 Material 图标的分支。[icon] 保留为占位参数：既有 12 处调用点已传
+ * Material core 图标（不引 icons-extended），删掉参数会波及 common/ui 之外的 9 个模块文件。
+ *
+ * @param icon 不渲染，仅为兼容既有调用点的占位参数
+ */
 @Composable
 fun EmptyState(
     icon: ImageVector,
     message: String,
     modifier: Modifier = Modifier,
     action: @Composable (() -> Unit)? = null,
-    useDrumMark: Boolean = true,
 ) {
     // 空态是"状态到达"的时刻，给一次入场；reduced motion 时位移归零只留淡入（规范 7.8）
     val reduceMotion = LocalReduceMotion.current
@@ -430,21 +541,13 @@ fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 图标 — 规范 §3.6：滚筒圆母题（DrumMark）静止态
-            if (useDrumMark) {
-                DrumMark(
-                    size = 64.dp,
-                    tint = AppColors.colorScheme.textTertiary
-                )
-            } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = AppColors.colorScheme.textTertiary
-                )
-            }
+            // 图标 — 规范 §3.6：滚筒圆母题（DrumMark）静止态；48dp + primary（规范 §3.6 母题色）
+            DrumMark(
+                size = 48.dp,
+                tint = AppColors.colorScheme.primary
+            )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+            // 引导文案 — 空态主文案档 bodyLarge(16sp)（字阶 §2，非 caption）
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyLarge,
@@ -502,7 +605,7 @@ fun rememberSkeletonBrush(): Brush {
 @Composable
 fun SkeletonBlock(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(AppDimens.radiusSm),
+    shape: Shape = RoundedCornerShape(AppDimens.radiusMd),
 ) {
     Box(
         modifier = modifier
@@ -598,12 +701,15 @@ fun AppTabBar(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    // 两态同为 14sp，只差字重 — 避免选中瞬间字号跳变
+                    // 两态同为 14sp，只差字重 — 避免选中瞬间字号跳变。
+                    //
+                    // 字重硬切的修法取舍（计划二选一，此处选「统一字重」）：
+                    // 用 animateValueAsState + FontWeight TwoWayConverter 平滑字重，会让
+                    // 文字宽度在整段动画里持续变化，在可横滚 Row 里表现为兄弟节点连续位移，
+                    // 观感比一次跳变更差（本仓库无法做真机观感回归，取不会变差的方案）。
+                    // 选中态由已动画的颜色 + 指示条承担，字重统一为 Medium。
                     text = title,
-                    style = if (selected)
-                        MaterialTheme.typography.labelLarge
-                    else
-                        MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelLarge,
                     color = labelColor
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -665,6 +771,9 @@ fun AppConfirmDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
+            // 统一弹窗入场：scale 0.92→1 + alpha 0→1 一次性；reduced motion 降级 180ms 纯淡入。
+            // 退出动画受 Dialog 窗口机制限制（窗口由系统直接移除），本仓库不做。
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer
@@ -704,8 +813,10 @@ fun AppConfirmDialog(
                             .background(AppColors.colorScheme.divider)
                     )
                     DialogAction(
+                        // 危险确认 — 规范 §2.1：危险语义一律 dangerInk（浅 #A8435A / 暗 #E795A5），
+                        // 不复用 error 角色色（error 留给表单校验红）
                         text = confirmText,
-                        color = if (isDanger) AppColors.colorScheme.error else AppColors.colorScheme.primary,
+                        color = if (isDanger) AppColors.colorScheme.dangerInk else AppColors.colorScheme.primary,
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
                     )
@@ -728,6 +839,9 @@ fun AppInfoDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
+            // 统一弹窗入场：scale 0.92→1 + alpha 0→1 一次性；reduced motion 降级 180ms 纯淡入。
+            // 退出动画受 Dialog 窗口机制限制（窗口由系统直接移除），本仓库不做。
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer
@@ -780,6 +894,9 @@ fun AppInputDialog(
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Surface(
+            // 统一弹窗入场：scale 0.92→1 + alpha 0→1 一次性；reduced motion 降级 180ms 纯淡入。
+            // 退出动画受 Dialog 窗口机制限制（窗口由系统直接移除），本仓库不做。
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer
@@ -799,8 +916,15 @@ fun AppInputDialog(
                         onValueChange = onValueChange,
                         label = { Text(inputLabel) },
                         supportingText = {
-                            if (isError && errorMessage != null) {
-                                Text(errorMessage)
+                            // 错误行 0ms 硬切 → 展开/收起 + 淡入淡出（规范 7.8）
+                            AnimatedVisibility(
+                                visible = isError && errorMessage != null,
+                                enter = fadeIn(enterTween(DURATION_MICRO_MS)) +
+                                    expandVertically(enterTween(DURATION_MICRO_MS)),
+                                exit = fadeOut(exitTween(140)) +
+                                    shrinkVertically(exitTween(140)),
+                            ) {
+                                Text(text = errorMessage.orEmpty())
                             }
                         },
                         // §3.7：输入正文禁用 14sp 及以下，覆盖 M3 默认

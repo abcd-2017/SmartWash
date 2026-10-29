@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,20 +45,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartwash.R
+import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.selectedColor
 
 /**
  * AI 工具工作台 — 状态工作流 + 来源引用 + 人工确认
@@ -68,6 +74,7 @@ fun AiWorkPage(
     onBack: () -> Unit = {},
 ) {
     var inputText by remember { mutableStateOf("") }
+    var inputFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     Column(
@@ -152,32 +159,15 @@ fun AiWorkPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
+                            // GroupCard 自带 cardPadding(20)，横向不再重复内缩
                             .padding(top = 32.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // 滚筒圆空态插画（设计稿画板实测：外圈 outline、内圈 surfaceVariant，双主题走语义色）
-                        val drumOuterColor = AppColors.colorScheme.outline
-                        val drumInnerColor = AppColors.colorScheme.surfaceVariant
-                        Box(
-                            modifier = Modifier.size(60.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.foundation.Canvas(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                drawCircle(
-                                    color = drumOuterColor,
-                                    radius = size.minDimension / 2 - 4.dp.toPx(),
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.4.dp.toPx())
-                                )
-                                drawCircle(
-                                    color = drumInnerColor,
-                                    radius = size.minDimension / 4,
-                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
-                                )
-                            }
-                        }
+                        // 滚筒圆空态插画 — 公共 DrumMark 母题（弱文本色，深浅主题各自可读）
+                        DrumMark(
+                            size = 60.dp,
+                            tint = AppColors.colorScheme.textTertiary
+                        )
                         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                         Text(
                             text = stringResource(R.string.ai_empty_recent),
@@ -209,7 +199,9 @@ fun AiWorkPage(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = AppColors.colorScheme.surface,
-            shadowElevation = 0.dp
+            // 固定输入条是浮层（§2.4 豁免档），但浮层压在滚动内容之上仍需投影分界；
+            // level1(1dp) 是规范允许的两种阴影之一，与顶线叠加只增强分层不改变形态
+            shadowElevation = AppElevation.level1
         ) {
             Column {
                 // 顶部 1px 分隔线（画板「顶线」outline）
@@ -225,6 +217,10 @@ fun AiWorkPage(
                         .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // 聚焦反馈：外框颜色 primary ↔ outline 过渡（reduced motion 自动降级 180ms）
+                    val inputBorderColor = selectedColor(
+                        if (inputFocused) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+                    )
                     TextField(
                         value = inputText,
                         onValueChange = { inputText = it },
@@ -238,10 +234,11 @@ fun AiWorkPage(
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusRequester)
+                            .onFocusChanged { inputFocused = it.isFocused }
                             .height(48.dp)
                             .border(
                                 width = 1.dp,
-                                color = AppColors.colorScheme.outline,
+                                color = inputBorderColor,
                                 shape = RoundedCornerShape(AppDimens.radiusMd)
                             ),
                         shape = RoundedCornerShape(AppDimens.radiusMd),
@@ -254,12 +251,22 @@ fun AiWorkPage(
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = { /* TODO: 接入 AI */ },
+                    // 发送 — 自绘圆钮：Material IconButton 的 state layer 会在渐变圆上浮出
+                    // 不贴合的涟漪（规范 §7 禁 ripple），改用 pressable（scale 0.97）
+                    Box(
                         modifier = Modifier
                             .size(48.dp)
+                            .pressable(onClick = { /* TODO: 接入 AI */ })
                             .clip(CircleShape)
-                            .background(AppColors.colorScheme.primary)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        AppColors.colorScheme.primary,
+                                        AppColors.colorScheme.primaryDark
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Send,
@@ -286,7 +293,8 @@ private fun QuickTaskCard(
         modifier = modifier.pressable(onClick = { /* TODO */ }),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        // 规范 §3：卡片 1px 描边、默认 elevation 0（设计稿画板实测无阴影）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

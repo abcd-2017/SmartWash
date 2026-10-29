@@ -1,10 +1,9 @@
 package com.smartwash.feature.divination.ui.page.ask
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +52,10 @@ import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressable
 
 /**
  * 问事页（原型 Ask）：问题输入 + 领域 chips（自动预选）+ 起卦方式单选。
@@ -78,21 +81,8 @@ fun DivAskPage(
         }
     }
 
-    DivinationScreen {
-        DivPageHeader(
-            title = stringResource(R.string.div_ask_title),
-            onBack = { navController.popBackStack() },
-            tail = divMethodTail(state.method),
-        )
-
-        if (state.safetyBlocked) {
-            SafetyBlockingPage(
-                onBack = { navController.popBackStack() },
-                onClear = { viewModel.onQuestionChange("") },
-            )
-            return@DivinationScreen
-        }
-
+    // 问事表单本体（供高风险分流页与表单之间的 Crossfade 复用）
+    val askForm: @Composable () -> Unit = {
         // 问题卡
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(14.dp)) {
@@ -263,6 +253,30 @@ fun DivAskPage(
             )
         }
     }
+
+    DivinationScreen {
+        DivPageHeader(
+            title = stringResource(R.string.div_ask_title),
+            onBack = { navController.popBackStack() },
+            tail = divMethodTail(state.method),
+        )
+
+        // 高风险分流页与问事表单之间的整页替换：Crossfade 过渡，避免硬切
+        Crossfade(
+            targetState = state.safetyBlocked,
+            animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+            label = "safetyBlocked",
+        ) { blocked ->
+            if (blocked) {
+                SafetyBlockingPage(
+                    onBack = { navController.popBackStack() },
+                    onClear = { viewModel.onQuestionChange("") },
+                )
+            } else {
+                askForm()
+            }
+        }
+    }
 }
 
 private fun divMethodTail(method: DivMethod): String = when (method) {
@@ -296,7 +310,7 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(48.dp))
-        DivSeal(stringResource(R.string.div_safety_seal), size = 44.dp, fontSize = 26.sp)
+        DivSeal(stringResource(R.string.div_safety_seal), size = 44.dp, fontSize = 22.sp)
         Spacer(Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.div_safety_title),
@@ -306,7 +320,7 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Text(
             text = stringResource(R.string.div_safety_body),
-            fontSize = 13.sp,
+            fontSize = 16.sp,
             lineHeight = 24.sp,
             color = c.textSecondary,
             textAlign = TextAlign.Center,
@@ -338,7 +352,6 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
         )
     }
     var lines by remember { mutableStateOf(listOf(1, 1, 1, 1, 1, 1)) }
-    val noIndication = remember { MutableInteractionSource() }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         DivCard(background = c.surface2) {
@@ -369,12 +382,12 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                                             if (selected) c.goldLine else c.hair,
                                             RoundedCornerShape(10.dp),
                                         )
-                                        .clickable(
-                                            interactionSource = noIndication,
-                                            indication = null,
-                                        ) {
-                                            lines = lines.toMutableList().also { it[index] = code }
-                                        }
+                                        .pressable(
+                                            onClick = {
+                                                lines = lines.toMutableList().also { it[index] = code }
+                                            },
+                                            debounce = false,
+                                        )
                                         .padding(horizontal = 8.dp, vertical = 4.dp),
                                 ) {
                                     Text(label, fontSize = 10.sp, color = if (selected) c.gold else c.textSecondary)
@@ -387,8 +400,8 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                 DivGoldButton(
                     text = stringResource(R.string.div_manual_confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    height = 42.dp,
-                    fontSize = 13.sp,
+                    height = 52.dp,
+                    fontSize = 18.sp,
                     onClick = { onConfirm(lines) },
                 )
             }
@@ -413,7 +426,7 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     color = c.textPrimary,
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(stringResource(R.string.div_numbers_hint), fontSize = 11.sp, color = c.textTertiary)
+                Text(stringResource(R.string.div_numbers_hint), fontSize = 12.sp, color = c.textTertiary)
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     NumberField(first, { first = it }, Modifier.weight(1f))
@@ -424,8 +437,8 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     text = stringResource(R.string.div_manual_confirm),
                     enabled = valid,
                     modifier = Modifier.fillMaxWidth(),
-                    height = 42.dp,
-                    fontSize = 13.sp,
+                    height = 52.dp,
+                    fontSize = 18.sp,
                     onClick = { onConfirm(first.toInt(), second.toInt()) },
                 )
             }

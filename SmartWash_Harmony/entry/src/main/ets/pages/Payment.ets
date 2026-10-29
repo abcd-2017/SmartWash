@@ -1,8 +1,8 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { RouteNames } from "../constant/RouteNames"
 import { calculationOrder, getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
-import { promptAction } from "@kit.ArkUI"
 import { getCanUseCoupon } from "../network/api/CouponApi"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { getUserInfo } from "../network/api/UserApi"
@@ -10,7 +10,9 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { payment } from "../network/api/PaymentApi"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PaymentType } from "../constant/PaymentType"
-import { DesignColor, DesignDimens, DesignFontSize, toColorString } from "../constant/DesignSystem"
+import { Debouncer } from "../utils/DebounceUtil"
+import { AppButton, AppConfirmDialog } from "../view/common/AppComponents"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
 export function PaymentBuilder() {
@@ -26,12 +28,41 @@ struct Payment {
   @State selectCoupon: UserCouponVo | null = null
   @State showSheet: boolean = false
   @State selectCouponId: number | null = null
-  // 支付请求进行中标记：按钮展示 loading 并拦截连点，防止重复扣款（评审 #12）
+  // 支付请求进行中标记：AppButton loading 展示并拦截连点，防止重复扣款（评审 #12）
   @State paying: boolean = false
+  // 确认支付二次确认弹窗（资金链路）：确认后立即关窗再发起请求——
+  // 勿复制安卓旧版「等 Success 才关窗」缺陷（确认键持续可点 + 后端无幂等 = 连点重复扣款入口）
+  private confirmPayController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      message: "确定要支付？",
+      onConfirm: () => {
+        this.doPay()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+  // 余额不足弹窗（对齐安卓 AppConfirmDialog「余额不足」→ 去充值）
+  private insufficientDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      title: "余额不足",
+      message: "当前余额不足，请先充值",
+      confirmText: "去充值",
+      onConfirm: () => {
+        pathStack.pushPathByName(RouteNames.RECHARGE, null)
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+  // 选券试算节流：calculationOrder 后端无防重，Radio onChange 与行点击可能双触发，500ms 内只发一次
+  private calcThrottler: Debouncer = new Debouncer()
 
   async aboutToAppear() {
     // 安全取参（评审 #31 / #6）：统一走 getNumberParam，缺失/非法返回 null（Number() 显式转换，NaN 同视为缺失）
-    this.orderId = getNumberParam("Payment")
+    this.orderId = getNumberParam(RouteNames.PAYMENT)
     if (this.orderId !== null) {
       let res = await getOrderInfo(this.orderId)
       if (res.code === HttpStatusCode.Ok) {
@@ -61,20 +92,74 @@ struct Payment {
   }
 
   /**
-   * 试算订单金额（评审 #17）：coupon 传 null 表示"不使用优惠券"，
-   * 按无券（userCouponId=-1）重新试算并清空选中态，使优惠券可随时取消选择。
+   * 试算订单金额（评审 #17）：coupon 传 null 表示"不使用优惠券"。
+   *
+   * 后端 OrdersServiceImpl.calculationOrder 仅认 userCouponId == null || 0 为不使用优惠券，
+   * 传 -1 会抛"优惠券异常"（#31），故此处统一传 0。
    */
   async calculationOrder(coupon: UserCouponVo | null) {
     this.selectCouponId = coupon?.userCouponId ?? null
     this.showSheet = false
     this.selectCoupon = coupon
     if (this.orderId !== null) {
-      let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? -1)
+      let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? 0)
       if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
         showToastSafety(res.message, "优惠券试算失败")
       }
+    }
+  }
+
+  /** 选券试算入口（节流防连点，见 calcThrottler） */
+  selectCouponWithThrottle(coupon: UserCouponVo | null) {
+    this.calcThrottler.throttle(() => {
+      this.calculationOrder(coupon)
+    }, 500)
+  }
+
+  aboutToDisappear(): void {
+    this.calcThrottler.cancel()
+  }
+
+  /**
+   * 发起支付（资金链路）：
+   * 仅在「确认支付？」弹窗确认后调用——弹窗确认回调先关窗再进本方法，
+   * 配合 paying 标记 + AppButton loading 形成两层防重。
+   */
+  async doPay() {
+    if (this.paying) {
+      return
+    }
+    this.paying = true
+    try {
+      let res = await payment({
+        orderId: this.orderId,
+        // PaymentType 已对齐安卓 string 契约，直接传枚举值
+        paymentType: PaymentType.PURSE,
+        userCouponId: this.selectCoupon?.userCouponId ?? null
+      })
+      if (res.code === HttpStatusCode.Ok) {
+        showToastSafety(res.data, "支付成功")
+        pathStack.pop()
+        pathStack.pushPathByName(RouteNames.PAYMENT_SUCCESS, this.orderId)
+      } else {
+        showToastSafety(res.message, "支付失败，请稍后重试")
+      }
+    } finally {
+      this.paying = false
+    }
+  }
+
+  /** 确认支付按钮入口：余额充足弹二次确认，不足弹「余额不足」去充值 */
+  onPayClick() {
+    if (this.paying) {
+      return
+    }
+    if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
+      this.confirmPayController.open()
+    } else {
+      this.insufficientDialogController.open()
     }
   }
 
@@ -125,7 +210,7 @@ struct Payment {
         }
         .onClick(() => {
           this.showSheet = false
-          pathStack.pushPathByName("Coupon", null)
+          pathStack.pushPathByName(RouteNames.COUPON, null)
         })
       }
       .width("100%")
@@ -161,19 +246,26 @@ struct Payment {
             .checked(this.selectCouponId == null)
             .onChange((flag) => {
               if (flag) {
-                this.calculationOrder(null)
+                this.selectCouponWithThrottle(null)
               }
             })
         }
         .width("100%")
-        .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
+        .borderRadius(DesignDimens.CARD_RADIUS)
         .backgroundColor(DesignColor.SURFACE)
-        .border({ width: 0.5, color: DesignColor.OUTLINE })
+        // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+        .border({ width: 1, color: DesignColor.OUTLINE })
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: 'rgba(20,40,30,0.05)',
+          offsetX: 0,
+          offsetY: 2
+        })
         .padding(DesignDimens.CARD_PADDING)
         .justifyContent(FlexAlign.SpaceBetween)
         .margin({ bottom: DesignDimens.CARD_SPACING })
         .onClick(() => {
-          this.calculationOrder(null)
+          this.selectCouponWithThrottle(null)
         })
 
         List({ space: DesignDimens.CARD_SPACING }) {
@@ -194,8 +286,8 @@ struct Payment {
                       `满${coupon.couponVo?.threshold?.toFixed(1)}元可用`}`)
                       .fontSize(DesignFontSize.CAPTION)
                       .fontColor(DesignColor.TEXT_SECONDARY)
-                  }
                   .margin({ top: 6, bottom: 6 })
+                  }
 
                   Row() {
                     Text(`有效期至${coupon.expiredAt}`)
@@ -210,18 +302,25 @@ struct Payment {
                   .checked(this.selectCouponId == coupon.userCouponId)
                   .onChange((flag) => {
                     if (flag) {
-                      this.calculationOrder(coupon)
+                      this.selectCouponWithThrottle(coupon)
                     }
                   })
               }
               .width("100%")
-              .borderRadius(DesignDimens.SMALL_CARD_RADIUS)
+              .borderRadius(DesignDimens.CARD_RADIUS)
               .backgroundColor(DesignColor.SURFACE)
-              .border({ width: 0.5, color: DesignColor.OUTLINE })
+              // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+              .border({ width: 1, color: DesignColor.OUTLINE })
+              .shadow({
+                radius: DesignElevation.LEVEL_1,
+                color: 'rgba(20,40,30,0.05)',
+                offsetX: 0,
+                offsetY: 2
+              })
               .padding(DesignDimens.CARD_PADDING)
               .justifyContent(FlexAlign.SpaceBetween)
               .onClick(() => {
-                this.calculationOrder(coupon)
+                this.selectCouponWithThrottle(coupon)
               })
             }
           })
@@ -240,7 +339,7 @@ struct Payment {
 
         // 分隔线
         Divider()
-          .strokeWidth(0.5)
+          .strokeWidth(1)
           .color(DesignColor.DIVIDER)
 
         // 内容区域
@@ -299,7 +398,7 @@ struct Payment {
 
             // 分隔线
             Divider()
-              .strokeWidth(0.5)
+              .strokeWidth(1)
               .color(DesignColor.DIVIDER)
               .margin({ top: 12, bottom: 12 })
 
@@ -322,7 +421,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(HorizontalAlign.Start)
 
           // ========== 支付方式卡片 ==========
@@ -370,7 +476,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .alignItems(HorizontalAlign.Start)
 
           // ========== 优惠券卡片 ==========
@@ -400,7 +513,14 @@ struct Payment {
           .padding(DesignDimens.CARD_PADDING)
           .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 0.5, color: DesignColor.OUTLINE })
+          // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: 'rgba(20,40,30,0.05)',
+            offsetX: 0,
+            offsetY: 2
+          })
           .bindSheet($$this.showSheet, this.BottomSheet(), {
             height: "50%",
             showClose: false,
@@ -414,53 +534,15 @@ struct Payment {
           Blank()
 
           // ========== 确认支付按钮 ==========
-          Button(this.paying ? "支付中..." : `确认支付￥${this.orderInfo?.payPrice}`)
-            .fontSize(DesignFontSize.CARD_TITLE)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(DesignColor.ON_PRIMARY)
-            .backgroundColor(DesignColor.PRIMARY)
-            .borderRadius(DesignDimens.BUTTON_RADIUS)
-            .width("100%")
-            .height(48)
-            .enabled(!this.paying)
-            .onClick(async (event: ClickEvent) => {
-              // 防连点：请求进行中直接忽略，防止重复扣款
-              if (this.paying) {
-                return
-              }
-              if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
-                this.paying = true
-                try {
-                  let res = await payment({
-                    orderId: this.orderId,
-                    paymentType: `${PaymentType.PURSE}`,
-                    userCouponId: this.selectCoupon?.userCouponId ?? null
-                  })
-                  if (res.code === HttpStatusCode.Ok) {
-                    showToastSafety(res.data, "支付成功")
-                    pathStack.pop()
-                    pathStack.pushPathByName("PaymentSuccess", this.orderId)
-                  } else {
-                    showToastSafety(res.message, "支付失败，请稍后重试")
-                  }
-                } finally {
-                  this.paying = false
-                }
-              } else {
-                promptAction.showDialog({
-                  title: "余额不足",
-                  message: "当前余额不足，请先充值",
-                  buttons: [
-                    { text: "取消", color: toColorString(DesignColor.TEXT_PRIMARY) },
-                    { text: "确认", color: toColorString(DesignColor.PRIMARY) }
-                  ],
-                }, async (err, data) => {
-                  if (data.index == 1) {
-                    pathStack.pushPathByName("Recharge", null)
-                  }
-                })
-              }
-            })
+          // AppButton 自带 loading 防重；点击走 onPayClick：余额充足弹「确定要支付？」
+          // 二次确认（确认即关窗），不足弹「余额不足」去充值
+          AppButton({
+            text: `确认支付￥${this.orderInfo?.payPrice}`,
+            loading: this.paying,
+            click: () => {
+              this.onPayClick()
+            }
+          })
         }
         .width("100%")
         .layoutWeight(1)

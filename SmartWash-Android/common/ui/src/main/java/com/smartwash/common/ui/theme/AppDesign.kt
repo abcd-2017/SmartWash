@@ -182,9 +182,7 @@ object AppDimens {
     val cardPadding = 20.dp
     val cardSpacing = 16.dp
     val sectionSpacing = 32.dp
-    // 新圆角 token（规范 §2.3）
-    val radiusXs = 4.dp     // 标签、小角标
-    val radiusSm = 8.dp     // 输入框、小按钮
+    // 新圆角 token（规范 §2.3）—— 五档：10 / 12 / 16 / 20 / 胶囊
     val radiusSmall = 10.dp // 小图标容器、徽标
     val radiusMd = 12.dp    // 分组背景、图标容器、内嵌套块
     val radiusLg = 16.dp    // 卡片（唯一值）
@@ -235,7 +233,7 @@ fun IconBox(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
-    iconSize: Dp = 22.dp,
+    iconSize: Dp = 24.dp,
     containerColor: Color = AppColors.colorScheme.primaryLight,
     iconTint: Color = AppColors.colorScheme.primary,
 ) {

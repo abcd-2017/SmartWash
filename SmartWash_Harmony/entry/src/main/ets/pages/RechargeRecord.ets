@@ -1,4 +1,4 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
 import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
@@ -6,6 +6,10 @@ import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
+import { PagingController } from "../utils/PagingUtil"
+
+// 分页每页条数
+const PAGE_SIZE: number = 10
 
 @Builder
 export function RechargeRecordBuilder() {
@@ -17,19 +21,32 @@ struct RechargeRecord {
   @State recordList: Array<RechargeRecordVo> = []
   @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
-  @State canLoad: boolean = false
-  @State page: number = 1
-  @State hasMore: boolean = true
+  // 首屏加载态：数据返回前展示占位，避免页面空白（对齐安卓 RechargeRecordPage.kt:111-120）
+  @State isLoadingFirst: boolean = true
+  // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛（差异分析 01 §3.3）
+  private paging: PagingController = new PagingController(
+    (page: number): Promise<boolean> => {
+      return this.fetchRecordPage(page)
+    },
+    (loading: boolean) => {
+      this.isLoadingMore = loading
+    }
+  )
 
-  aboutToAppear(): void {
-    this.loadRecords()
+  async aboutToAppear(): Promise<void> {
+    await this.fetchRecordPage(1)
+    this.isLoadingFirst = false
   }
 
-  async loadRecords() {
+  /**
+   * 按页拉取充值记录。
+   * @returns 本页是否有数据（供 PagingController 判断是否封底）
+   */
+  async fetchRecordPage(page: number): Promise<boolean> {
     // ArkTS 禁止裸对象字面量作参数（arkts-no-untyped-obj-literals），查询参数用 Record 并按索引赋值
     const param: Record<string, Object> = {}
-    param['page'] = this.page
-    param['size'] = 10
+    param['page'] = page
+    param['size'] = PAGE_SIZE
     let res = await getRechargeRecordList(param)
     if (res.code == HttpStatusCode.Ok && res.data != null) {
       let records = res.data!.records
@@ -37,26 +54,23 @@ struct RechargeRecord {
         if (this.recordList.length > 0) {
           showToastSafety("没有更多数据了")
         }
-        this.hasMore = false
-      } else {
-        if (this.page == 1) {
-          this.recordList = []
-        }
-        this.recordList.push(...records)
+        return false
       }
-    } else {
-      showToastSafety(res.message, "充值记录加载失败")
+      if (page == 1) {
+        this.recordList = []
+      }
+      this.recordList.push(...records)
+      return true
     }
+    showToastSafety(res.message, "充值记录加载失败")
+    return false
   }
 
   refreshRecords() {
     this.isRefreshing = false
-    this.isLoadingMore = false
-    this.canLoad = false
-    this.page = 1
-    this.hasMore = true
+    this.paging.reset()
     this.recordList = []
-    this.loadRecords()
+    this.fetchRecordPage(1)
   }
 
   @Builder
@@ -114,7 +128,14 @@ struct RechargeRecord {
     .padding(DesignDimens.CARD_PADDING)
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 0.5, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
+    .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: 'rgba(20,40,30,0.05)',
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   build() {
@@ -131,7 +152,7 @@ struct RechargeRecord {
             .padding(8)
 
           Text("充值记录")
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.ON_BACKGROUND)
             .margin({ left: 4 })
@@ -141,7 +162,22 @@ struct RechargeRecord {
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         .alignItems(VerticalAlign.Center)
 
-        if (this.recordList.length > 0) {
+        if (this.isLoadingFirst) {
+          // 首屏加载态（对齐安卓 RechargeRecordPage.kt:111-120）
+          Column() {
+            LoadingProgress()
+              .width(40)
+              .height(40)
+              .color(DesignColor.PRIMARY)
+            Text("加载中")
+              .fontSize(DesignFontSize.BODY)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .margin({ top: 12 })
+          }
+          .width("100%")
+          .layoutWeight(1)
+          .justifyContent(FlexAlign.Center)
+        } else if (this.recordList.length > 0) {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {
               ForEach(this.recordList, (record: RechargeRecordVo) => {
@@ -158,28 +194,15 @@ struct RechargeRecord {
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
-              if (this.canLoad && this.hasMore && end >= (this.recordList?.length ?? 0) - 1) {
-                this.canLoad = false
-                this.isLoadingMore = true
-                setTimeout(() => {
-                  this.page++
-                  this.loadRecords()
-                  this.isLoadingMore = false
-                }, 1200)
-              }
+              this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
             })
             .onScrollFrameBegin((offset: number, state: ScrollState) => {
-              if (offset > 5 && !this.isLoadingMore) {
-                this.canLoad = true
-              }
+              this.paging.onScrollFrameBegin(offset)
               return { offsetRemain: offset }
             })
           }
           .onRefreshing(() => {
-            setTimeout(() => {
-              this.refreshRecords()
-              this.isRefreshing = false
-            }, 2000)
+            this.refreshRecords()
           })
         } else {
           // 空状态

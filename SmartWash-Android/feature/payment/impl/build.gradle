@@ -62,4 +62,7 @@ dependencies {
     implementation libs.androidx.paging.compose
     // ViewModel 协程 launch / Flow
     implementation libs.kotlinx.coroutines.android
+
+    // JVM 单测（充值金额上限/精度校验纯函数）
+    testImplementation libs.junit
 }

@@ -63,6 +63,8 @@ oh_modules/
 # === 文档（本地资料不提交；agent 工作流文档除外） ===
 **/docs/
 !/.claude/docs/
+# 鸿蒙/安卓差异分析等本地工作文档（不提交，本地保留）
+/.claude/docs/harmony-android-gap-2026-10-27/
 !/docs/
 /docs/*
 !/docs/agents/

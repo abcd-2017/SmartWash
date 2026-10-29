@@ -3,6 +3,13 @@ package com.smartwash.ui.page.pickup
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +27,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -48,21 +56,36 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
 import androidx.compose.foundation.BorderStroke
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.InfoSection
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.generateQrCodeBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+/** 详情三态：骨架（加载中）/ 空态 + 重试（加载失败）/ 内容 */
+private enum class DetailLoadState { LOADING, ERROR, CONTENT }
 
 @SuppressLint("RememberReturnType")
 @Composable
@@ -77,17 +100,20 @@ fun PickupDeliveryPage(
     val orderInfo by pickupDeliveryViewModel.orderInfo.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = currentView()
 
     if (orderId != -1L) {
         LaunchedEffect(Unit) { pickupDeliveryViewModel.getOrderDetail(orderId) }
     }
 
-    when (getOrderDetailState) {
-        is RequestState.Error -> {
-            Toast.makeText(context, (getOrderDetailState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
+    // 详情加载失败：Toast + 复位收进 effect。原实现在组合期直接 Toast/reset，
+    // 每次重组都会重复弹 Toast，且复位后的 Toast 与 UI 状态脱节。
+    LaunchedEffect(getOrderDetailState) {
+        val detailState = getOrderDetailState
+        if (detailState is RequestState.Error) {
+            Toast.makeText(context, detailState.getMessage(context), Toast.LENGTH_SHORT).show()
             pickupDeliveryViewModel.resetState()
         }
-        else -> {}
     }
     val pickupCode = orderInfo?.pickupCode?.let { it.split(":").getOrNull(2) } ?: ""
     val lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0
@@ -105,17 +131,34 @@ fun PickupDeliveryPage(
     }
     val imageBitmap = qrBitmap?.asImageBitmap()
 
-    when (setOrderNextState) {
-        is RequestState.Success -> {
-            showDialog = false
-            LaunchedEffect(Unit) { navController.navigateUp() }
-            pickupDeliveryViewModel.resetNextStatusState()
+    // 确认操作结果统一收进同一 effect：原实现把 navigateUp 写在 Success 分支内的
+    // LaunchedEffect(Unit) 里、又在分支里 reset，reset 把状态打回 Idle 后该 effect 被取消，
+    // navigateUp 可能根本不执行（页面卡在原地）。Success → 触觉 → navigateUp → reset 顺序执行。
+    LaunchedEffect(setOrderNextState) {
+        val nextState = setOrderNextState
+        when (nextState) {
+            is RequestState.Success -> {
+                showDialog = false
+                view.performHaptic(HapticEffect.SUCCESS)
+                navController.navigateUp()
+                pickupDeliveryViewModel.resetNextStatusState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, nextState.getMessage(context), Toast.LENGTH_SHORT).show()
+                pickupDeliveryViewModel.resetNextStatusState()
+            }
+            else -> {}
         }
-        is RequestState.Error -> {
-            Toast.makeText(context, (setOrderNextState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
-            pickupDeliveryViewModel.resetNextStatusState()
-        }
-        else -> {}
+    }
+
+    // 三分态：Loading → 骨架；Error → 空态 + 重试；orderInfo != null → 内容。
+    // 原实现只判 Loading，Error 被 reset 成 Idle 后落入内容分支，QR 占位框永远"加载中"；
+    // orderId == -1L 同样会伪加载。重试只挂 Error 态（详情可能已被壳层缓存，其余分支不给入口）。
+    val detailContentState = when {
+        getOrderDetailState is RequestState.Loading -> DetailLoadState.LOADING
+        getOrderDetailState is RequestState.Error -> DetailLoadState.ERROR
+        orderInfo != null -> DetailLoadState.CONTENT
+        else -> if (orderId == -1L) DetailLoadState.ERROR else DetailLoadState.LOADING
     }
 
     Box(
@@ -123,9 +166,6 @@ fun PickupDeliveryPage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        if (getOrderDetailState is RequestState.Loading) {
-            LoadingState(modifier = Modifier.fillMaxSize())
-        } else {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
                 title = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup) else stringResource(R.string.delivery_type),
@@ -134,94 +174,142 @@ fun PickupDeliveryPage(
             // 寄件板实测 页头文字底 → 首卡顶 22：PageHeader 自带 12 内边距，补 8 收敛 4 网格
             Spacer(modifier = Modifier.height(8.dp))
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = AppDimens.pagePadding)
-            ) {
-                // 寄件注意事项（板实测：warningContainer 底 r16、图标 20 warning、标题 14/500 warning、
-                // 正文 12/16 浅 textSecondary/深 warning；卡内边距上下实测 10 → 收敛 4 网格 12）
-                if (type == PickupDeliveryType.DELIVERY.type) {
-                    val isDark = isSystemInDarkTheme()
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.radiusLg),
-                        color = AppColors.colorScheme.warningContainer,
-                        shadowElevation = 0.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(
-                                horizontal = AppDimens.cardPadding,
-                                vertical = AppDimens.spaceSm
-                            ),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Warning,
-                                contentDescription = null,
-                                tint = AppColors.colorScheme.warning,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    stringResource(R.string.notes),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = AppColors.colorScheme.warning
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    stringResource(R.string.notes_content),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    // 板实测正文色不对称：浅 #6B6E73（textSecondary）/ 深 #E5AC5C（warning）
-                                    color = if (isDark) AppColors.colorScheme.warning
-                                    else AppColors.colorScheme.textSecondary
+            // 三分态统一进同一容器：进入 200ms 减速淡入、退出 140ms 加速淡出。
+            // transitionSpec 不是 @Composable 上下文（不能在其中调 motionSpec()），
+            // 故按规范 §8 用 LocalReduceMotion 显式分支：降级统一 180ms 纯淡入。
+            val reduceMotion = LocalReduceMotion.current
+            val detailTransition: ContentTransform =
+                if (reduceMotion) {
+                    fadeIn(tween(CROSSFADE_ALT_MS)) togetherWith fadeOut(tween(CROSSFADE_ALT_MS))
+                } else {
+                    fadeIn(enterTween(DURATION_MICRO_MS)) togetherWith fadeOut(exitTween(140))
+                }
+            AnimatedContent(
+                targetState = detailContentState,
+                transitionSpec = { detailTransition },
+                label = "pickupDeliveryDetail",
+                modifier = Modifier.weight(1f)
+            ) { state ->
+                when (state) {
+                    DetailLoadState.LOADING -> LoadingState(modifier = Modifier.fillMaxSize())
+
+                    DetailLoadState.ERROR -> EmptyState(
+                        icon = Icons.Rounded.Warning,
+                        message = stringResource(R.string.error_network_fail),
+                        modifier = Modifier.fillMaxSize(),
+                        action = if (orderId != -1L) {
+                            {
+                                AppButton(
+                                    text = stringResource(R.string.retry),
+                                    onClick = { pickupDeliveryViewModel.getOrderDetail(orderId) }
                                 )
                             }
-                        }
-                    }
-                    // 板实测卡间距一律 12（注意事项卡→二维码卡 188→200）
-                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                }
+                        } else null
+                    )
 
-                // 二维码卡（板实测：surface + 1dp outline 描边 r16；二维码块 80×80 白底 r16 居中、
-                // 卡顶距 8；标签 18/600 textPrimary、码 36/700 primaryDark；卡底距 4）
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(AppDimens.radiusLg),
-                    color = AppColors.colorScheme.surface,
-                    shadowElevation = 0.dp,
-                    border = BorderStroke(1.dp, AppColors.colorScheme.outline)
-                ) {
-                    Column(
+                    DetailLoadState.CONTENT -> Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 4.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = AppDimens.pagePadding)
                     ) {
-                        if (imageBitmap != null) {
-                            Image(
-                                bitmap = imageBitmap,
-                                contentDescription = stringResource(R.string.qr_code),
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(RoundedCornerShape(AppDimens.radiusLg))
-                            )
-                        } else {
-                            // 二维码底两主题固定白（板实测 浅/深均 #FFFFFF，扫码可读性要求；
-                            // 设计稿固定色不随主题，参照 OrderDetailPage 滚筒插画先例）
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(RoundedCornerShape(AppDimens.radiusLg))
-                                    .background(Color.White),
-                                contentAlignment = Alignment.Center
+                        // 寄件注意事项
+                        if (type == PickupDeliveryType.DELIVERY.type) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(AppDimens.radiusLg),
+                                color = AppColors.colorScheme.warningContainer,
+                                // 规范 §2.4 卡片唯一画法：1px 描边 + level1 阴影，两者必须成对，
+                                // 只有描边无投影会被读成"被禁的裸白卡"（§3.1 禁止项）
+                                shadowElevation = AppElevation.level1,
+                                border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
+                                Row(
+                                    modifier = Modifier.padding(AppDimens.cardPadding),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Warning,
+                                        contentDescription = null,
+                                        tint = AppColors.colorScheme.warning,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, color = AppColors.colorScheme.onWarningContainer)
+                                        Text(
+                                            stringResource(R.string.notes_content),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = AppColors.colorScheme.onWarningContainer
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                        }
+
+                        // 二维码卡
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(AppDimens.radiusLg),
+                            color = AppColors.colorScheme.surface,
+                            // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+                            shadowElevation = AppElevation.level1,
+                            border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(AppDimens.cardPadding),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                // 二维码成图 0ms 硬切（占位 Box ↔ Image）→ 交叉淡变；
+                                // reduced motion 经 motionSpec 自动降级为 180ms 纯淡变（规范 §8）
+                                Crossfade(
+                                    targetState = imageBitmap != null,
+                                    animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+                                    label = "pickupQrCode"
+                                ) { hasQrBitmap ->
+                                    val qrImage = imageBitmap
+                                    if (hasQrBitmap && qrImage != null) {
+                                        Image(
+                                            bitmap = qrImage,
+                                            contentDescription = stringResource(R.string.qr_code),
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(RoundedCornerShape(AppDimens.radiusLg))
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(RoundedCornerShape(AppDimens.radiusLg))
+                                                .background(AppColors.colorScheme.surface),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.loading),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = AppColors.colorScheme.textSecondary
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(20.dp))
                                 Text(
-                                    text = stringResource(R.string.loading),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textSecondary
+                                    text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
+                                    style = AppTextStyles.SectionTitle
+                                )
+                                Text(
+                                    text = pickupCode,
+                                    style = AppTextStyles.DataLarge,
+                                    color = AppColors.colorScheme.primaryDark
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                // 确认按钮未接 loading：请求期间按钮不禁用不禁用无反馈，
+                                // 用户会重复点确认。AppButton 内置禁用 + spinner（降级由桶 A 处理）
+                                AppButton(
+                                    text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.confirm_picked_up) else stringResource(R.string.confirm_delivered),
+                                    onClick = { showDialog = true },
+                                    loading = setOrderNextState is RequestState.Loading
                                 )
                             }
                         }
@@ -295,7 +383,6 @@ fun PickupDeliveryPage(
                 }
             )
         }
-        }
     }
 
     if (showDialog) {
@@ -363,7 +450,7 @@ private fun PickupDeliveryActionBar(
 
 @Composable
 private fun StepRow(number: String, text: String) {
-    // 板实测：号盒 20 r8 iconContainerGreen（浅 #F0FAF5→规范收敛 #F0FBF4 / 深 #1D3229）；
+    // 板实测：号盒 20dp 圆形 iconContainerGreen（浅 #F0FAF5→规范收敛 #F0FBF4 / 深 #1D3229）；
     // 序号色不对称 浅 #17322B（onPrimaryContainer）/ 深 #5BC894（primary）
     val isDark = isSystemInDarkTheme()
     Row(
@@ -373,7 +460,7 @@ private fun StepRow(number: String, text: String) {
         Box(
             modifier = Modifier
                 .size(20.dp)
-                .clip(RoundedCornerShape(AppDimens.radiusSm))
+                .clip(CircleShape)
                 .background(AppColors.colorScheme.iconContainerGreen),
             contentAlignment = Alignment.Center
         ) {

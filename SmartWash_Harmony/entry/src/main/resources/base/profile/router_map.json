@@ -111,6 +111,83 @@
       "buildFunction": "RechargeRecordBuilder",
       "data": {
       }
+    },
+    {
+      "name": "Workbench",
+      "pageSourceFile": "src/main/ets/feature/workbench/Workbench.ets",
+      "buildFunction": "WorkbenchBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxShortCodeList",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxShortCodeList.ets",
+      "buildFunction": "ToolboxShortCodeListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxShortCodeCreate",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxShortCodeCreate.ets",
+      "buildFunction": "ToolboxShortCodeCreateBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxShortCodeDetail",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ToolboxShortCodeDetail.ets",
+      "buildFunction": "ToolboxShortCodeDetailBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivHome",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/home/DivHomePage.ets",
+      "buildFunction": "DivHomeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivAsk",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/ask/DivAskPage.ets",
+      "buildFunction": "DivAskBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivCast",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/cast/DivCastPage.ets",
+      "buildFunction": "DivCastBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivChart",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/chart/DivChartPage.ets",
+      "buildFunction": "DivChartBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivReading",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/reading/DivReadingPage.ets",
+      "buildFunction": "DivReadingBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivFollowUp",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/followup/DivFollowUpPage.ets",
+      "buildFunction": "DivFollowUpBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivHistory",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/history/DivHistoryPage.ets",
+      "buildFunction": "DivHistoryBuilder",
+      "data": {
+      }
     }
   ]
 }

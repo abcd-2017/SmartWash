@@ -1,5 +1,7 @@
 package com.smartwash.feature.payment.impl.ui.recharge
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -37,9 +39,16 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.motionSpec
+
+/** 充值记录页三态：列表 / 空态 / 首载加载 */
+private enum class RecordListState { Content, Empty, Loading }
 
 @Composable
 fun RechargeRecordPage(
@@ -47,6 +56,13 @@ fun RechargeRecordPage(
     viewModel: RechargeRecordViewModel = hiltViewModel(),
 ) {
     val records = viewModel.pagingFlow.collectAsLazyPagingItems()
+
+    // refresh 中（有旧内容）保持列表可读；仅无内容且非空态时走首载骨架
+    val listState = when {
+        records.itemCount > 0 -> RecordListState.Content
+        records.loadState.refresh is LoadState.NotLoading -> RecordListState.Empty
+        else -> RecordListState.Loading
+    }
 
     Box(
         modifier = Modifier
@@ -59,83 +75,71 @@ fun RechargeRecordPage(
                 onBack = { navController.navigateUp() }
             )
 
-            if (records.itemCount > 0) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = AppDimens.pagePadding)
-                ) {
-                    items(
-                        count = records.itemCount,
-                        key = { index -> records.peek(index)?.recordId ?: "pending-$index" }
-                    ) { index ->
-                        val record = records[index]
-                        if (record != null) {
-                            Column {
-                                RechargeRecordCard(record)
-                                // 画板实测：卡间 12 内含 1px 分组分隔线（hairline），最后一项不带
-                                if (index < records.itemCount - 1) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(AppDimens.spaceSm),
-                                        contentAlignment = Alignment.Center
-                                    ) {
+            // 列表 ↔ 空态 ↔ 首载骨架：交叉淡变（reduced motion 由 motionSpec 降级为 180ms）
+            Crossfade(
+                targetState = listState,
+                animationSpec = motionSpec(tween(CROSSFADE_ALT_MS)),
+                label = "rechargeRecordState",
+                modifier = Modifier.fillMaxSize()
+            ) { state ->
+                when (state) {
+                    RecordListState.Content -> LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = AppDimens.pagePadding)
+                    ) {
+                        items(
+                            count = records.itemCount,
+                            key = { index -> records.peek(index)?.recordId ?: "pending-$index" }
+                        ) { index ->
+                            val record = records[index]
+                            if (record != null) {
+                                Column {
+                                    RechargeRecordCard(record)
+                                    // 画板实测：卡间 12 内含 1px 分组分隔线（hairline），最后一项不带
+                                    if (index < records.itemCount - 1) {
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(1.dp)
-                                                .background(AppColors.colorScheme.hairline)
-                                        )
+                                                .height(AppDimens.spaceSm),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(1.dp)
+                                                    .background(AppColors.colorScheme.hairline)
+                                            )
+                                        }
                                     }
+                                }
+                            }
+                        }
+
+                        records.apply {
+                            // 尾部转圈仅保留给 append；refresh 不追加尾部指示（旧内容保持可读）
+                            if (loadState.append is LoadState.Loading) {
+                                item {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
+                                            .wrapContentWidth(Alignment.CenterHorizontally),
+                                        color = AppColors.colorScheme.primary,
+                                        strokeWidth = 2.dp
+                                    )
                                 }
                             }
                         }
                     }
 
-                    records.apply {
-                        when {
-                            loadState.refresh is LoadState.Loading -> {
-                                item {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .wrapContentWidth(Alignment.CenterHorizontally),
-                                        color = AppColors.colorScheme.primary,
-                                        strokeWidth = 2.dp
-                                    )
-                                }
-                            }
-                            loadState.append is LoadState.Loading -> {
-                                item {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .wrapContentWidth(Alignment.CenterHorizontally),
-                                        color = AppColors.colorScheme.primary,
-                                        strokeWidth = 2.dp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if (records.loadState.refresh is LoadState.NotLoading) {
-                EmptyState(
-                    icon = Icons.Default.AccountBalanceWallet,
-                    message = stringResource(R.string.no_recharge_records)
-                )
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = AppColors.colorScheme.primary,
-                        strokeWidth = 2.dp
+                    RecordListState.Empty -> EmptyState(
+                        icon = Icons.Default.AccountBalanceWallet,
+                        message = stringResource(R.string.no_recharge_records),
+                        modifier = Modifier.fillMaxSize()
                     )
+
+                    RecordListState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
                 }
             }
         }
@@ -144,11 +148,13 @@ fun RechargeRecordPage(
 
 @Composable
 private fun RechargeRecordCard(record: RechargeRecordVo) {
-    // 画板实测：卡片 surface 底 + 1px outline 描边 + r16、无阴影，内边距 20
+    // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
+    // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20（旧实现无阴影属禁止项）
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

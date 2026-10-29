@@ -46,6 +46,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.DivBgBottomDark
 import com.smartwash.common.ui.theme.DivBgMidDark
@@ -314,7 +315,7 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
     }
 }
 
-/** 工具卡（设计稿 tile3）：白卡 1px 描边无阴影 + 44dp 语义图标容器（icon.md 24）+ 14sp 标题 + 12sp 描述 */
+/** 工具卡（设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）+ 14sp 标题 + 12sp 描述 */
 @Composable
 private fun ToolTile(
     tool: WorkbenchTool,
@@ -332,7 +333,8 @@ private fun ToolTile(
         modifier = modifier.pressable(onClick = onClick),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = scheme.surface,
-        // 设计稿：描边 1px（outline），无投影（规范 §3 卡片 elevation 0，用描边代替）
+        // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
+        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
         Column(modifier = Modifier.padding(AppDimens.cardPadding)) {

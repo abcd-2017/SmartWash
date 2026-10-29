@@ -25,6 +25,52 @@ export function getNumberParam(name: string): number | null {
 }
 
 /**
+ * 按路由名安全读取 string 类型参数（如路由 query 参数 method/category）。
+ * 仅在运行时 typeof 校验确认其为字符串后才收窄类型；空串视为合法值（调用方自行兜底默认值）。
+ *
+ * @param name 路由页面名（router_map 中注册的 name）
+ * @returns 参数值；同名路由不存在、参数缺失或非字符串时返回 null
+ */
+export function getStringParam(name: string): string | null {
+  // 同 getNumberParam：SDK 返回 Array<unknown>，此处仅做类型桥接，见上注释
+  const params = pathStack.getParamByName(name) as Array<Object>
+  if (params.length === 0) {
+    return null
+  }
+  const value: Object | null = params[0]
+  if (typeof value === "string") {
+    return value
+  }
+  return null
+}
+
+/**
+ * 按路由名安全读取 boolean 类型参数（如 DivChart 的 animate 开关）。
+ * 页面入栈时可能传 boolean 或字符串 "true"/"false"，统一显式转换；其余值视为缺失/非法。
+ *
+ * @param name 路由页面名（router_map 中注册的 name）
+ * @returns 参数值；同名路由不存在、参数缺失或非法时返回 null
+ */
+export function getBooleanParam(name: string): boolean | null {
+  // 同 getNumberParam：SDK 返回 Array<unknown>，此处仅做类型桥接，见上注释
+  const params = pathStack.getParamByName(name) as Array<Object>
+  if (params.length === 0) {
+    return null
+  }
+  const value: Object | null = params[0]
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (value === 'true') {
+    return true
+  }
+  if (value === 'false') {
+    return false
+  }
+  return null
+}
+
+/**
  * 按路由名安全读取对象类型参数（如 VO）。
  * 仅在运行时 typeof 校验确认其为对象后才收窄类型，避免对缺失参数做裸 as 强转（评审 #31）。
  *

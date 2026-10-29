@@ -13,7 +13,9 @@ export struct OrderItemRow {
         .fontSize(13)
         .fontWeight(FontWeight.Medium)
     }.width("100%")
+    // 列表行高 56vp（DESIGN-SPEC v0.4 §3.4：列表行高 56dp），行内容垂直居中
+    .height(56)
     .justifyContent(FlexAlign.SpaceBetween)
-    .margin({ top: 6, bottom: 6 })
+    .alignItems(VerticalAlign.Center)
   }
 }

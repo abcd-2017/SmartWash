@@ -1,4 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { RouteNames } from "../constant/RouteNames"
 import { CommonConstants } from "../constant/CommonConstants"
 import { bindCampus, unBindCampus } from "../network/api/UserApi"
 import { BaseResponse } from "../network/BaseResponse"
@@ -14,15 +15,54 @@ export function BingCampusCardAlertBuilder() {
 @Component
 struct BingCampusCardAlert {
   @State userInfo: UserInfoVo | null = null
+  // 绑定态判定统一为「campusCard 空串=未绑」（差异分析 02 §9.3，两端同语义防漂移）
   @State isBingFlag: boolean = false
   @State campusCard: string | null = ""
   @State showErrorMessage: string | null = null
+  // 请求进行中标记：确认按钮防重（对齐安卓 bindCampusState Loading 防重）
+  @State submitting: boolean = false
   private inputController = new TextInputController()
 
   aboutToAppear(): void {
     // 安全取参（评审 #31）：参数缺失/非对象时返回 null，isBingFlag 兜底为绑定态
-    this.userInfo = getObjectParam<UserInfoVo>("BingCampusCardAlert")
+    this.userInfo = getObjectParam<UserInfoVo>(RouteNames.BING_CAMPUS_CARD_ALERT)
     this.isBingFlag = (this.userInfo?.campusCard ?? "") == ""
+  }
+
+  /** 确认绑定/解绑（防重：请求进行中忽略后续点击） */
+  async confirmAction() {
+    if (this.submitting) {
+      return
+    }
+    let res: BaseResponse<boolean>
+    if (this.isBingFlag) {
+      if (this.campusCard == null || this.campusCard == "") {
+        this.showErrorMessage = "校园卡号不能为空"
+        return
+      } else {
+        this.showErrorMessage = ""
+        this.submitting = true
+        try {
+          res = await bindCampus(this.campusCard)
+        } finally {
+          this.submitting = false
+        }
+      }
+    } else {
+      this.submitting = true
+      try {
+        res = await unBindCampus()
+      } finally {
+        this.submitting = false
+      }
+    }
+    if (res.code == HttpStatusCode.Ok) {
+      this.inputController.stopEditing()
+      pathStack.pop()
+      showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
+    } else {
+      showToastSafety(res.message, "操作失败")
+    }
   }
 
   build() {
@@ -40,10 +80,12 @@ struct BingCampusCardAlert {
 
           Row() {
             if (this.isBingFlag) {
+              // 数字键盘限定（对齐安卓 KeyboardType.Number，卡号仅数字）
               TextInput({ text: this.campusCard, placeholder: "请输入校园卡号", controller: this.inputController })
                 .onChange((it) => {
                   this.campusCard = it
                 })
+                .type(InputType.Number)
                 .fontSize(14)
                 .width("90%")
                 .showUnderline(true)
@@ -61,26 +103,8 @@ struct BingCampusCardAlert {
               .margin({ right: 20 })
               .fontSize(16)
 
-            Text(`确认${this.isBingFlag ? "绑定" : "解绑"}`).onClick(async () => {
-              let res: BaseResponse<boolean>
-              if (this.isBingFlag) {
-                if (this.campusCard == null || this.campusCard == "") {
-                  this.showErrorMessage = "校园卡号不能为空"
-                  return
-                } else {
-                  this.showErrorMessage = ""
-                  res = await bindCampus(this.campusCard)
-                }
-              } else {
-                res = await unBindCampus()
-              }
-              if (res.code == HttpStatusCode.Ok) {
-                this.inputController.stopEditing()
-                pathStack.pop()
-                showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
-              } else {
-                showToastSafety(res.message, "操作失败")
-              }
+            Text(this.submitting ? "处理中..." : `确认${this.isBingFlag ? "绑定" : "解绑"}`).onClick(() => {
+              this.confirmAction()
             }).fontColor($r('sys.color.brand')).fontSize(16)
           }.width("100%")
           .margin({ top: 28 })

@@ -1,8 +1,8 @@
 package com.smartwash.feature.user.impl.ui.setting
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,13 +46,19 @@ import androidx.navigation.NavController
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 
 /**
@@ -66,8 +73,9 @@ import com.smartwash.common.utils.pressable
  * SessionManager/SessionEventBus——宿主不触碰用户域实现类型。
  *
  * 视觉对齐（Penpot「设置 · 浅色/深色」画板，360 宽 = 360dp）：页面留白 24、
- * 分组卡 groupBackground 底 + 1px outline 描边 + radius 16、行高 64（图标盒 32
- * 顶距 16）、图标盒-文字间距 12、区块间距 24、退出登录 error 色独立分组。
+ * 分组卡 = 规范 §3.1 唯一卡片画法（surface 白底 + 1px outline 描边 + level1 阴影
+ * + radius 16 + 内边距 20）、行高 64（图标盒 32 顶距 16）、图标盒-文字间距 12、
+ * 区块间距 24；退出登录按 §2.1 例外用次按钮形态（52dp / 14dp / surfaceVariant / dangerInk）。
  */
 @Composable
 fun SettingPage(
@@ -78,6 +86,7 @@ fun SettingPage(
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = currentView()
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -125,7 +134,7 @@ fun SettingPage(
                     },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
                     icon = Icons.Default.TouchApp,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
@@ -161,7 +170,7 @@ fun SettingPage(
                     title = stringResource(R.string.interpretation_model),
                     trailing = {
                         Text(
-                            text = "GLM-4.7",
+                            text = stringResource(R.string.interpretation_model_glm),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
@@ -170,7 +179,7 @@ fun SettingPage(
                     },
                     onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                 )
-                HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -194,7 +203,7 @@ fun SettingPage(
                 // 检查更新（宿主注入的跨域插槽，feature:update 归 app 壳聚合）
                 checkUpdateContent?.invoke()
                 if (checkUpdateContent != null) {
-                    HorizontalDivider(thickness = 1.dp, color = AppColors.colorScheme.hairline, modifier = Modifier.padding(horizontal = 20.dp))
+                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 }
                 SettingRow(
                     icon = Icons.Default.Info,
@@ -214,24 +223,17 @@ fun SettingPage(
                 )
             }
 
-            // 退出登录 — error 色独立分组（设计规范 §4 危险操作），自绘文字按钮
-            // （danger 语义色不在 AppButton 三态内，规范 §7 禁 M3 交互组件）
+            // 退出登录 — §2.1 唯一按钮例外（2026-10-29 用户拍板）：次按钮形态
+            // = 52dp 高 / 14dp 圆角 / surfaceVariant 底 / dangerInk 文字 15sp，
+            // 不套分组卡（按钮自身即浮起物）；危险语义经 contentColor 注入，不改 AppButton 三态
             Spacer(modifier = Modifier.height(16.dp))
-            SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .pressable(onClick = { showDialog = true }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        stringResource(R.string.logout),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = AppColors.colorScheme.dangerInk
-                    )
-                }
-            }
+            AppButton(
+                text = stringResource(R.string.logout),
+                onClick = { showDialog = true },
+                variant = AppButtonVariant.SECONDARY,
+                contentColor = AppColors.colorScheme.dangerInk,
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -242,6 +244,8 @@ fun SettingPage(
             message = stringResource(R.string.confirm_logout),
             isDanger = true,
             onConfirm = {
+                // 登出是不可逆的确认操作：先给中触，再清会话
+                view.performHaptic(HapticEffect.MEDIUM)
                 showDialog = false
                 // 登出（清会话 + 主动登出广播，见 SettingViewModel.logout）
                 settingViewModel.logout()
@@ -263,24 +267,29 @@ fun SettingPage(
 }
 
 /**
- * 设置页分组卡 — 画板既成事实收敛（DESIGN-SPEC v0.4.1「01 页卡片度量裁决」）：
- * groupBackground 底 + 1px outline 描边 + radius 16、无阴影（规范 §3 阴影：卡片
- * elevation 0 用描边代替），区别于通用白底 AppCard。
+ * 设置页分组卡 — 收敛为 DESIGN-SPEC v0.4 §3.1 唯一卡片画法（全应用只允许这一种）：
+ * 纯白 surface 底 + 1px outline 描边 + 1dp 阴影（level1 ≈ CSS 0 2px 12px rgba(20,40,30,.05)）
+ * + radiusLg 16 + cardPadding 20 内边距。
+ *
+ * 上一版 groupBackground 灰底 + 无阴影属被禁的「灰底卡片 / 无阴影裸白卡」，已废弃。
+ * 行内分隔线缩进随之由 20 交由卡片内边距承载，视觉与 UpdateUserInfo 字段分组卡一致。
  */
 @Composable
 private fun SettingGroupCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val shape = RoundedCornerShape(AppDimens.radiusLg)
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .border(1.dp, AppColors.colorScheme.outline, shape)
-            .background(AppColors.colorScheme.groupBackground, shape),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        shadowElevation = AppElevation.level1,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
-        Column(content = content)
+        Column(
+            modifier = Modifier.padding(AppDimens.cardPadding),
+            content = content
+        )
     }
 }
 

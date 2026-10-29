@@ -1,13 +1,27 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { RouteNames } from "../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
+import { promptAction } from '@kit.ArkUI'
 import { OrderItemCountVo } from "../network/vo/OrderItemCountVo"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
+
+/**
+ * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:586-587 maskPhone）：
+ * 隐私要求不在页面明文展示完整手机号。
+ */
+function maskPhone(phone: string | null): string {
+  const value = phone ?? ""
+  if (value.length < 7) {
+    return value
+  }
+  return `${value.substring(0, 3)}****${value.substring(value.length - 4)}`
+}
 
 @Component
 export struct UserInfo {
@@ -63,6 +77,9 @@ export struct UserInfo {
         let res = await uploadAvatar(uri)
         if (res.code == HttpStatusCode.Ok) {
           this.avatarUrl = res.data
+          // 上传成功后全量重拉用户信息：余额等其余字段由服务端在该响应后变更，
+          // 直接用响应 data 更新头像会导致页面其余字段陈旧（对齐安卓 UserInfoViewModel.kt:117）
+          await this.refreshUserInfo()
           showToastSafety("头像上传成功")
         } else {
           showToastSafety(res.message, "头像上传失败")
@@ -92,7 +109,7 @@ export struct UserInfo {
   //跳转到订单列表页
   jumpToOrderList(index: number) {
     pathStack.pushPath({
-      name: "OrderList", param: index
+      name: RouteNames.ORDER_LIST, param: index
     })
   }
 
@@ -173,11 +190,13 @@ export struct UserInfo {
     .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
+    // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值（原为旧值 #1A000000/offsetY 1）
+    .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: '#1A000000',
+      color: 'rgba(20,40,30,0.05)',
       offsetX: 0,
-      offsetY: 1
+      offsetY: 2
     })
     .onClick(onClick)
   }
@@ -188,7 +207,7 @@ export struct UserInfo {
         // ========== 标题行 ==========
         Row() {
           Text("个人中心")
-            .fontSize(DesignFontSize.PAGE_TITLE)
+            .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.ON_BACKGROUND)
 
@@ -197,7 +216,7 @@ export struct UserInfo {
             .fontColor([DesignColor.TEXT_SECONDARY])
             .padding(12)
             .onClick(() => {
-              pathStack.pushPathByName("Setting", null)
+              pathStack.pushPathByName(RouteNames.SETTING, null)
             })
         }
         .justifyContent(FlexAlign.SpaceBetween)
@@ -254,15 +273,15 @@ export struct UserInfo {
             this.selectAndUploadAvatar()
           })
 
-          // 手机号
-          Text(this.userInfo?.phoneNumber ?? "未登录")
+          // 手机号（掩码展示，对齐安卓 maskPhone）
+          Text(maskPhone(this.userInfo?.phoneNumber ?? null))
             .fontSize(20)
             .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
             .margin({ top: 14 })
 
-          // 学号
-          Text(`学号：${this.userInfo?.studentId ?? ""}`)
+          // 学校名（对齐安卓 UserInfoPage.kt:296 schoolVo.schoolName；无学校时回落学号）
+          Text(this.userInfo?.schoolVo?.schoolName ?? `学号：${this.userInfo?.studentId ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
@@ -292,14 +311,32 @@ export struct UserInfo {
             }
             .alignItems(HorizontalAlign.Start)
 
+            // 中间：优惠券计数（点击进优惠券页，对齐安卓 UserInfoPage.kt:342-368 三列数据卡）
+            Column() {
+              Text(`${this.userInfo?.couponCount ?? 0}`)
+                .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor(Color.White)
+              Text("优惠券")
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(Color.White)
+                .opacity(0.7)
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Center)
+            .onClick(() => {
+              pathStack.pushPathByName(RouteNames.COUPON, null)
+            })
+
             // 右侧：校园卡状态 + 去充值
             Column() {
-              Text(`校园卡：${this.userInfo?.campusCard == null ? "未绑定" : "已绑定"}`)
+              // 绑定态判定与绑定页同语义：campusCard 空串=未绑（差异分析 02 §9.3）
+              Text(`校园卡：${(this.userInfo?.campusCard ?? "") == "" ? "未绑定" : "已绑定"}`)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(Color.White)
                 .opacity(0.7)
                 .onClick(() => {
-                  pathStack.pushPathByName("BingCampusCardAlert", this.userInfo, popInfo => {
+                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()
                   }, false)
                 })
@@ -313,10 +350,10 @@ export struct UserInfo {
                 SymbolGlyph($r('sys.symbol.chevron_right'))
                   .fontSize(18)
                   .fontColor([Color.White])
-              }
               .margin({ top: 4 })
+              }
               .onClick(() => {
-                pathStack.pushPathByName("Recharge", "")
+                pathStack.pushPathByName(RouteNames.RECHARGE, "")
               })
             }
             .alignItems(HorizontalAlign.End)
@@ -384,26 +421,33 @@ export struct UserInfo {
         .margin({ top: 12 })
         .backgroundColor(DesignColor.SURFACE)
         .borderRadius(DesignDimens.CARD_RADIUS)
+        // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值
+        .border({ width: 1, color: DesignColor.OUTLINE })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: '#1A000000',
+          color: 'rgba(20,40,30,0.05)',
           offsetX: 0,
-          offsetY: 1
+          offsetY: 2
         })
 
         // ========== 功能列表 ==========
         // Column 无 .space 属性（原写法为 Flex 用法），改用构造参数 { space } 实现行间距
         Column({ space: DesignDimens.CARD_SPACING }) {
           this.functionItem($r('sys.symbol.label'), "优惠券", "可领取优惠券", () => {
-            pathStack.pushPathByName("Coupon", null)
+            pathStack.pushPathByName(RouteNames.COUPON, null)
+          })
+
+          // 收货地址占位行（对齐安卓 UserInfoPage.kt:431-445，功能未开放）
+          this.functionItem($r('sys.symbol.pin_fill'), "收货地址", "收货地址管理", () => {
+            promptAction.showToast({ message: "功能开发中" })
           })
 
           this.functionItem($r('sys.symbol.service'), "联系客服", "在线咨询", () => {
-            // 联系客服逻辑
+            promptAction.showToast({ message: "功能开发中" })
           })
 
           this.functionItem($r('sys.symbol.questionmark_circle'), "常见问题", "使用指南", () => {
-            // 常见问题逻辑
+            promptAction.showToast({ message: "功能开发中" })
           })
         }
         .width("100%")

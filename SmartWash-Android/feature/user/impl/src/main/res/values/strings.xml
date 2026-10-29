@@ -115,6 +115,7 @@
     <string name="divination">观象台</string>
     <string name="haptic_feedback">触感反馈</string>
     <string name="interpretation_model">解读模型</string>
+    <string name="interpretation_model_glm">GLM-4.7</string>
     <string name="privacy_disclaimer">隐私与免责声明</string>
     <string name="about_smartwash">关于 SmartWash</string>
     <string name="enabled">已开启</string>

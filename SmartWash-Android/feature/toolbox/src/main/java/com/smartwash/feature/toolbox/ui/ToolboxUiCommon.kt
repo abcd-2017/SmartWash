@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.ShortCodeRules
 import java.time.LocalDate
@@ -70,19 +71,30 @@ fun ToolboxSelectableChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 选中底色 / 文字色 / 描边色统一走公共 selectedColor（200ms 档弹簧，reduced motion 自动降级）
+    val containerColor = selectedColor(
+        if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface
+    )
+    val contentColor = selectedColor(
+        if (selected) Color.White else AppColors.colorScheme.textSecondary
+    )
+    // 描边常驻 1dp、颜色在 outline ↔ 透明间过渡：选中切换不再让描边整条消失/出现
+    val borderColor = selectedColor(
+        if (selected) Color.Transparent else AppColors.colorScheme.outline
+    )
     Surface(
         modifier = modifier.pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface,
-        border = if (selected) null else BorderStroke(1.dp, AppColors.colorScheme.outline),
+        color = containerColor,
+        border = BorderStroke(1.dp, borderColor),
     ) {
         Box {
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                ),
-                color = if (selected) Color.White else AppColors.colorScheme.textSecondary,
+                style = MaterialTheme.typography.labelMedium,
+                // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
                 modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
             )
         }

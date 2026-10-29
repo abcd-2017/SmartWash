@@ -1,6 +1,12 @@
 package com.smartwash.feature.user.impl.ui.update_userinfo
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,10 +39,10 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,9 +75,24 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.Primary
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
+import com.smartwash.common.utils.selectedColor
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+// 退出时长 ≈ 进入（DURATION_MICRO_MS）的 70%（动效语言 v0.4）
+private const val EXIT_MICRO_MS = 140
+
+/** 选中高亮至少可见的时长——颜色过渡走完再收焦点收起下拉 */
+private const val SELECTION_SETTLE_MS = 180L
 
 @Composable
 fun UpdateUserInfoPage(
@@ -84,6 +106,9 @@ fun UpdateUserInfoPage(
     val focusManager = LocalFocusManager.current
     var query by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // 选中后延迟收起下拉的协程句柄——连点不同学校时取消上一次，避免提前收起
+    var dismissJob by remember { mutableStateOf<Job?>(null) }
 
     val schoolList by userInfoViewModel.schools.collectAsState()
     val interactionSource = remember { MutableInteractionSource() }
@@ -205,14 +230,19 @@ fun UpdateUserInfoPage(
             }
 
             item(key = "form") {
-                // 字段分组卡 — 模板 C：surfaceGroup 底 + 1px outline 描边 + 圆角 16，无阴影
+                // 字段分组卡 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
+                // 描边 + 1dp 阴影（level1 ≈ CSS 0 2px 12px rgba(20,40,30,.05)）+ 圆角 16 + 内边距 20
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.radiusLg),
+                    color = AppColors.colorScheme.surface,
+                    shadowElevation = AppElevation.level1,
+                    border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+                ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(AppDimens.radiusLg))
-                        .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.radiusLg))
-                        .background(AppColors.colorScheme.groupBackground)
-                        .padding(top = AppDimens.spaceMd, bottom = 24.dp, start = 20.dp, end = 20.dp),
+                        .padding(AppDimens.cardPadding),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                 ) {
                     // 字段标签 — captionStrong（12/16/500）
@@ -235,10 +265,15 @@ fun UpdateUserInfoPage(
                         itemClick = { school ->
                             selectedSchoolId = school.schoolId
                             query = school.schoolName
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
                             isSchoolError = false
-                            isSearchFocused = false
+                            // 先让选中高亮落地，再收焦点收起下拉（收起走 exit 动画）
+                            dismissJob?.cancel()
+                            dismissJob = scope.launch {
+                                delay(SELECTION_SETTLE_MS)
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                                isSearchFocused = false
+                            }
                         },
                         clearOnClick = {
                             query = ""
@@ -296,6 +331,7 @@ fun UpdateUserInfoPage(
                             disabledContainerColor = AppColors.colorScheme.surfaceVariant
                         )
                     )
+                }
                 }
             }
         }
@@ -376,7 +412,16 @@ fun SearchSchoolInput(
                 )
             },
             trailingIcon = {
-                IconButton(onClick = clearOnClick, enabled = enabled) {
+                // 40dp 自绘清空按钮（M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .then(
+                            if (enabled) Modifier.pressable(onClick = clearOnClick, debounce = false)
+                            else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         Icons.Rounded.Clear,
                         contentDescription = stringResource(R.string.clear),
@@ -398,9 +443,18 @@ fun SearchSchoolInput(
             )
         )
 
-        if (isSearchFocused && schoolList.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            SchoolItem(schoolList, selectedSchoolId, itemClick)
+        // 下拉列表：展开/收起走弹簧 + 淡入，替代 0ms 出现/消失
+        AnimatedVisibility(
+            visible = isSearchFocused && schoolList.isNotEmpty(),
+            enter = fadeIn(motionSpec(defaultSpring())) +
+                expandVertically(motionSpec(defaultSpring())),
+            exit = fadeOut(motionSpec(exitTween(EXIT_MICRO_MS))) +
+                shrinkVertically(motionSpec(exitTween(EXIT_MICRO_MS))),
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(8.dp))
+                SchoolItem(schoolList, selectedSchoolId, itemClick)
+            }
         }
     }
 }
@@ -420,23 +474,27 @@ fun SchoolItem(
         ) {
             items(schoolList, key = { it.schoolId }) { school ->
                 val isSelected = school.schoolId == selectedSchoolId
+                // 选中态背景/文字色统一走 selectedColor 过渡（reduced motion 降级为 180ms 纯颜色变化）
+                val rowBackground = selectedColor(
+                    if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                )
+                val rowTextColor = selectedColor(
+                    if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .then(
-                            if (isSelected) Modifier.background(MaterialTheme.colorScheme.primaryContainer)
-                            else Modifier
-                        )
+                        .background(rowBackground)
                         .pressable(onClick = { onClick(school) })
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // 字重固定为 Normal：选中只靠背景+文字色区分，避免字重跳变导致行内重排
                     Text(
                         text = school.schoolName,
                         fontSize = 12.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else null,
-                        color = if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary,
+                        color = rowTextColor,
                         modifier = Modifier.weight(1f)
                     )
                 }

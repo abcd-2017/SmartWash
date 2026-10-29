@@ -20,6 +20,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,9 +41,19 @@ import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.utils.currentView
-import com.smartwash.common.utils.performHaptic
+
+/** 本掷爻值的可持久化 Saver（存爻码，-1 = 无待落定爻） */
+private val YaoValueSaver: Saver<YaoValue?, Int> = Saver(
+    save = { it?.code ?: -1 },
+    restore = { code -> YaoValue.entries.firstOrNull { it.code == code } },
+)
+
+/** 三币结果面初始掩码（三字，即字面） */
+private const val FACES_MASK_ALL_ZI = 0b111
 
 /**
  * 摇卦页（原型 Cast）：三币 + 子午线六节点。
@@ -59,14 +71,22 @@ fun DivCastPage(
     val c = DivColors.current
     val view = currentView()
     val state by viewModel.uiState.collectAsState()
-    val reduceMotion = com.smartwash.feature.divination.ui.divReduceMotion()
+    val reduceMotion = LocalReduceMotion.current
 
-    // 本掷状态
-    var pendingYao by remember { mutableStateOf<YaoValue?>(null) }
-    var tossId by remember { mutableStateOf(0L) }
-    var faces by remember { mutableStateOf(listOf(true, true, true)) }
+    // 本掷状态必须可持久化：旋转/进程重建后 VM tossing 仍为 true，
+    // 本地状态若丢失，掷爻按钮会被永久禁用（死锁）
+    var pendingYao by rememberSaveable(stateSaver = YaoValueSaver) { mutableStateOf<YaoValue?>(null) }
+    var tossId by rememberSaveable { mutableStateOf(0L) }
+    // 三币结果面位掩码（bit0/1/2 = 币 0/1/2 是否字面）
+    var facesMask by rememberSaveable { mutableStateOf(FACES_MASK_ALL_ZI) }
     var showQuitDialog by remember { mutableStateOf(false) }
 
+    // 兜底释放：待落定爻缺失时复位 VM tossing，避免按钮永久禁用
+    LaunchedEffect(Unit) {
+        if (pendingYao == null) viewModel.setTossing(false)
+    }
+
+    val faces = listOf(facesMask and 1 != 0, facesMask and 2 != 0, facesMask and 4 != 0)
     val tossCount = state.lines.size + (if (pendingYao != null) 1 else 0)
 
     BackHandler(enabled = true) {
@@ -105,11 +125,12 @@ fun DivCastPage(
         CoinTossRow(
             faces = faces,
             tossId = tossId,
+            reduceMotion = reduceMotion,
             onSettled = {
-                // 币落定【同帧】触觉；动爻（老阴/老阳）更强反馈
+                // 币落定【同帧】触觉；动爻（老阴/老阳）用双连击反馈（§7.7 口径）
                 val yao = pendingYao
                 if (yao != null) {
-                    view.performHaptic(if (yao.isMoving) HapticEffect.SUCCESS else HapticEffect.MEDIUM)
+                    view.performHaptic(if (yao.isMoving) HapticEffect.DOUBLE_TICK else HapticEffect.LIGHT)
                     viewModel.commitToss(yao)
                     pendingYao = null
                 }
@@ -189,17 +210,12 @@ fun DivCastPage(
                     }
                 } else {
                     // t=0：三币同步起跳（预生成结果，动画只呈现）
+                    // reduced-motion 由 CoinTossRow 内部直接定格结果面并回调 onSettled（保留落定触觉）
                     val yao = viewModel.nextToss()
                     pendingYao = yao
-                    faces = List(3) { coinFace(yao, it) }
+                    facesMask = coinFacesMask(yao)
                     viewModel.setTossing(true)
                     tossId++
-                    if (reduceMotion) {
-                        // reduced-motion：直接定格结果面，仅保留落定触觉
-                        view.performHaptic(if (yao.isMoving) HapticEffect.SUCCESS else HapticEffect.MEDIUM)
-                        viewModel.commitToss(yao)
-                        pendingYao = null
-                    }
                 }
             },
         )
@@ -219,13 +235,13 @@ fun DivCastPage(
     }
 }
 
-/** 由爻值定三币结果面：字记 3、背记 2，和 6/7/8/9 = 老阴/少阳/少阴/老阳；face=true 为字 */
-private fun coinFace(yao: YaoValue, coinIndex: Int): Boolean {
+/** 由爻值定三币结果面位掩码：字记 3、背记 2，和 6/7/8/9 = 老阴/少阳/少阴/老阳；bit i = 币 i 是否字面 */
+private fun coinFacesMask(yao: YaoValue): Int {
     val ziCount = when (yao) {
         YaoValue.LAO_YANG -> 3  // 3+3+3 = 9 三字
         YaoValue.SHAO_YIN -> 2  // 3+3+2 = 8 二字一背
         YaoValue.SHAO_YANG -> 1 // 3+2+2 = 7 一字两背
         YaoValue.LAO_YIN -> 0   // 2+2+2 = 6 三背
     }
-    return coinIndex < ziCount
+    return (0 until ziCount).fold(0) { mask, coinIndex -> mask or (1 shl coinIndex) }
 }

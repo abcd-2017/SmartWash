@@ -1,6 +1,7 @@
 import { IndexPage } from "../view/IndexPage"
 import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
+import { Workbench } from "../feature/workbench/Workbench"
 import { DesignColor } from "../constant/DesignSystem"
 
 @Builder
@@ -16,8 +17,9 @@ struct Home {
   @Builder
   tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {
     Column() {
+      // 图标 24vp（对齐安卓 v0.4 bottomNav：icon.md 24dp）；未选中 TEXT_TERTIARY / 选中 PRIMARY
       SymbolGlyph(this.currentIndex === targetIndex ? selectedImg : normalImg)
-        .fontSize(22)
+        .fontSize(24)
         .fontColor([this.currentIndex === targetIndex ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY])
         .margin({ top: 8 })
       Text(title)
@@ -47,7 +49,7 @@ struct Home {
           Column() {
             IndexPage({
               userInfoClick: () => {
-                this.controller.changeIndex(2)
+                this.controller.changeIndex(3)
               },
               isActive: this.currentIndex === 0
             })
@@ -61,17 +63,26 @@ struct Home {
           $r('sys.symbol.list_bullet_square')))
 
         TabContent() {
+          Workbench()
+        }.tabBar(this.tabBuilder("工作台", 2, $r('sys.symbol.square_grid_2x2'),
+          // 过渡图标：安卓自绘「三方块 + 一圆」，SDK 5.0.5 无 square_grid_2x2_fill，
+          // 选中态由文字色/加粗 + 胶囊指示器区分
+          $r('sys.symbol.square_grid_2x2')))
+
+        TabContent() {
           UserInfo()
-        }.tabBar(this.tabBuilder("主页", 2, $r('sys.symbol.person_fill'), $r('sys.symbol.person')))
+        }.tabBar(this.tabBuilder("我的", 3, $r('sys.symbol.person_fill'), $r('sys.symbol.person')))
       }
       .onChange(i => {
         this.currentIndex = i
-        if (i == 2) {
+        if (i === 3) {
           AppStorage.setOrCreate("refreshUserInfo", true)
           AppStorage.setOrCreate("refreshOrderCount", true)
         }
       })
       .barOverlap(true)
+      // 底栏高 68（对齐安卓 v0.4 AppDimens.bottomBarHeight = 68dp）
+      .barHeight(68)
       .backgroundColor('#F2FFFFFF')  // 半透明白色
       .divider(null)  // 移除硬分隔线
     }

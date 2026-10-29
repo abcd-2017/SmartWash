@@ -5,6 +5,13 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,9 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,8 +69,16 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.StatusDot
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.generateQrCodeBitmap
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressTween
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.ToolboxConstant
@@ -76,6 +93,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+/** 续期弹窗展开/收起退出时长 — 动效语言 v0.4：退出 ≈ 进入的 70%（由 vocabulary 派生） */
+private val RENEW_EXIT_MS = DURATION_MICRO_MS * 7 / 10
 
 /**
  * 短链详情页：基础信息（路由携带）+ shortUrl 二维码（:common:utils generateQrCodeBitmap）+
@@ -571,6 +591,9 @@ private fun RenewDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         androidx.compose.material3.Surface(
+            // 统一弹窗入场（与公共 AppConfirmDialog 同规格）；公共 helper 为 common:ui 内部私有，
+            // 故本文件复制等价实现
+            modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
@@ -592,14 +615,32 @@ private fun RenewDialog(
                         onSelect = onPresetChange,
                         includePermanent = false,
                     )
-                    if (preset == ShortCodeRules.ExpiryPreset.CUSTOM) {
-                        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                        AppButton(
-                            text = customDate?.let { ShortCodeRules.formatDate(it) }
-                                ?: stringResource(R.string.toolbox_expiry_custom_pick),
-                            onClick = onPickDate,
-                            variant = AppButtonVariant.SECONDARY,
-                        )
+                    val reduceMotion = LocalReduceMotion.current
+                    AnimatedVisibility(
+                        visible = preset == ShortCodeRules.ExpiryPreset.CUSTOM,
+                        // reduced motion：只留 180ms 淡入淡出，展开/收起（尺寸动画）归零
+                        enter = if (reduceMotion) {
+                            fadeIn(animationSpec = tween(CROSSFADE_ALT_MS))
+                        } else {
+                            fadeIn(enterTween(DURATION_MICRO_MS)) +
+                                expandVertically(enterTween(DURATION_MICRO_MS))
+                        },
+                        exit = if (reduceMotion) {
+                            fadeOut(animationSpec = tween(CROSSFADE_ALT_MS))
+                        } else {
+                            fadeOut(exitTween(RENEW_EXIT_MS)) +
+                                shrinkVertically(exitTween(RENEW_EXIT_MS))
+                        },
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                            AppButton(
+                                text = customDate?.let { ShortCodeRules.formatDate(it) }
+                                    ?: stringResource(R.string.toolbox_expiry_custom_pick),
+                                onClick = onPickDate,
+                                variant = AppButtonVariant.SECONDARY,
+                            )
+                        }
                     }
                 }
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
@@ -638,19 +679,50 @@ private fun DialogAction(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    // 禁用态透明度 0ms 硬切 → 按压档 tween（reduced motion 经 motionSpec 降级 180ms）
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.5f,
+        animationSpec = motionSpec(pressTween()),
+        label = "dialogActionAlpha"
+    )
     Box(
         modifier = modifier
             .height(48.dp)
-            .pressable(onClick = onClick, alphaFactor = 0.5f, debounce = false)
-            .then(if (!enabled) Modifier.background(Color.Transparent) else Modifier),
+            // 禁用态不得挂 clickable：此前无条件 pressable，loading 期间仍可重复提交续期
+            .then(
+                if (enabled) Modifier.pressable(onClick = onClick, alphaFactor = 0.5f, debounce = false)
+                else Modifier
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            color = color.copy(alpha = if (enabled) 1f else 0.5f),
+            color = color.copy(alpha = contentAlpha),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )
+    }
+}
+
+/**
+ * 弹窗入场动效 — 与公共 `AppConfirmDialog` 同规格：scale 0.92 → 1 + alpha 0 → 1 一次性入场；
+ * reduced motion 由 [motionSpec] 自动降级为 180ms 纯淡入（缩放归零）。
+ * 公共 helper 是 common:ui 模块内部私有实现，故在此复制等价实现。
+ */
+private fun Modifier.dialogEnterMotion(): Modifier = composed {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val progress by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "renewDialogEnter"
+    )
+    val reduceMotion = LocalReduceMotion.current
+    this.graphicsLayer {
+        alpha = progress
+        val scale = if (reduceMotion) 1f else 0.92f + 0.08f * progress
+        scaleX = scale
+        scaleY = scale
     }
 }
 
