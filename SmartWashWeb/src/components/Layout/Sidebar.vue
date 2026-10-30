@@ -66,6 +66,8 @@ import {
   Suitcase,
   Link,
   Grid,
+  // 工作台配置
+  Guide,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -104,6 +106,8 @@ const iconRegistry = {
   MagicStick: markRaw(MagicStick),
   Suitcase: markRaw(Suitcase),
   Grid: markRaw(Grid),
+  // 工作台配置
+  Guide: markRaw(Guide),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
@@ -136,6 +140,7 @@ const MENU_GROUP_CONFIG = [
     ],
   },
   { title: '工具箱', icon: 'Suitcase', paths: ['/captcha', '/toolbox/short-codes'] },
+  { title: '工作台', icon: 'Grid', paths: ['/workbench/entries', '/workbench/deeplink-routes'] },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);

@@ -173,6 +173,29 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 工作台配置 =====
+      {
+        path: '/workbench/entries',
+        name: 'WorkbenchEntryList',
+        component: () => import('@/views/workbench/WorkbenchEntryList.vue'),
+        meta: {
+          title: '工作台入口',
+          showInMenu: true,
+          icon: 'Grid',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/workbench/deeplink-routes',
+        name: 'DeeplinkRouteList',
+        component: () => import('@/views/workbench/DeeplinkRouteList.vue'),
+        meta: {
+          title: '跳转路由',
+          showInMenu: true,
+          icon: 'Guide',
+          requiresAuth: true,
+        },
+      },
       // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',
