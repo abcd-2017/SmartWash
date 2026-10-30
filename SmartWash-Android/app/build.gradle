@@ -203,4 +203,8 @@ dependencies {
     //路由常量 ReviewRoute 为模块内单一事实来源；MainActivity NavHost 一行 reviewGraph 聚合，
     //入口宿主后续接入（模式同 toolboxGraph，本次不改动壳层导航）
     implementation project(":feature:review")
+
+    //订阅逃生舱子系统：列表/添加编辑/详情/提醒独立路由，宿主入口待接——
+    //MainActivity NavHost 一行 subscriptionGraph 聚合（本提交不改动壳层导航）
+    implementation project(":feature:subscription")
 }

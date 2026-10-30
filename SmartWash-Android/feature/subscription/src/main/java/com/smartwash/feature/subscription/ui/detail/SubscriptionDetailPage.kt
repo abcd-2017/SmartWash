@@ -1,0 +1,824 @@
+package com.smartwash.feature.subscription.ui.detail
+
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.InfoRow
+import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.ui.theme.StatusDot
+import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
+import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.pressable
+import com.smartwash.feature.subscription.R
+import com.smartwash.feature.subscription.SubscriptionConstant
+import com.smartwash.feature.subscription.SubscriptionRoute
+import com.smartwash.feature.subscription.SubscriptionStatus
+import com.smartwash.feature.subscription.logic.SubscriptionRules
+import com.smartwash.feature.subscription.network.SubscriptionVo
+import com.smartwash.feature.subscription.network.UsageLogVo
+import com.smartwash.feature.subscription.ui.SubscriptionTagChip
+import com.smartwash.feature.subscription.ui.copyToClipboard
+import com.smartwash.feature.subscription.ui.navigateToSubscriptionEdit
+import com.smartwash.feature.subscription.ui.notifySubscriptionChanged
+import com.smartwash.feature.subscription.ui.renewRelativeColor
+import com.smartwash.feature.subscription.ui.renewRelativeText
+import com.smartwash.feature.subscription.ui.statusText
+import java.time.LocalDate
+
+/** 折叠卡展开/收起退出时长 — 动效语言 v0.4：退出 ≈ 进入的 70%（由 vocabulary 派生） */
+private val COLLAPSE_EXIT_MS = DURATION_MICRO_MS * 7 / 10
+
+/**
+ * 订阅详情页：续费信息卡（金额/周期/续费日/试用/自动续费/状态）+ 状态操作
+ * （active↔pause、cancel/finish，按当前状态显隐；终态只读）+ 近 90 天使用统计 +
+ * 使用打卡按钮与打卡列表（可撤销）+ 取消路径折叠卡（网址可打开/复制）。
+ * 详情数据实时拉取；编辑经表单页（返回经 CHANGED_KEY 触发刷新并转发列表）。
+ */
+@Composable
+fun SubscriptionDetailPage(
+    navController: NavHostController,
+    viewModel: SubscriptionDetailViewModel = hiltViewModel(),
+) {
+    val context = LocalContext.current
+    val detail by viewModel.detail.collectAsState()
+    val loadState by viewModel.loadState.collectAsState()
+    val statsItem by viewModel.statsItem.collectAsState()
+    val statsState by viewModel.statsState.collectAsState()
+    val transitionState by viewModel.transitionState.collectAsState()
+    val deleteState by viewModel.deleteState.collectAsState()
+    val checkInState by viewModel.checkInState.collectAsState()
+    val undoState by viewModel.undoState.collectAsState()
+    val usageItems = viewModel.usagePagingFlow.collectAsLazyPagingItems()
+
+    var showCancelDialog by rememberSaveable { mutableStateOf(false) }
+    var showFinishDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var pendingUndoId by rememberSaveable { mutableStateOf(-1L) }
+    var cancelPathExpanded by rememberSaveable { mutableStateOf(false) }
+
+    /** 变更成功后的统一刷新：本页重载 + 转发列表刷新信号（返回列表时生效） */
+    fun refreshSelfAndForward() {
+        viewModel.refreshAll()
+        navController.previousBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, true)
+    }
+
+    // 编辑页返回的变更信号（编辑成功 → 本页刷新 + 转发列表）
+    val changedState = navController.currentBackStackEntry?.savedStateHandle
+        ?.getStateFlow(SubscriptionRoute.CHANGED_KEY, false)
+        ?.collectAsState()
+    LaunchedEffect(changedState?.value) {
+        if (changedState?.value == true) {
+            viewModel.refreshAll()
+            navController.currentBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, false)
+            navController.previousBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, true)
+        }
+    }
+
+    LaunchedEffect(transitionState) {
+        when (val state = transitionState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.subscription_toast_status_updated), Toast_LENGTH).show()
+                refreshSelfAndForward()
+                viewModel.resetTransitionState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast_LENGTH).show()
+                viewModel.resetTransitionState()
+            }
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(deleteState) {
+        when (val state = deleteState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.subscription_toast_delete_success), Toast_LENGTH).show()
+                navController.notifySubscriptionChanged()
+                navController.popBackStack()
+                viewModel.resetDeleteState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast_LENGTH).show()
+                viewModel.resetDeleteState()
+            }
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(checkInState) {
+        when (val state = checkInState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.subscription_usage_check_in_done), Toast_LENGTH).show()
+                refreshSelfAndForward()
+                viewModel.resetCheckInState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast_LENGTH).show()
+                viewModel.resetCheckInState()
+            }
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(undoState) {
+        when (val state = undoState) {
+            is RequestState.Success -> {
+                Toast.makeText(context, context.getString(R.string.subscription_toast_undo_success), Toast_LENGTH).show()
+                refreshSelfAndForward()
+                viewModel.resetUndoState()
+            }
+            is RequestState.Error -> {
+                Toast.makeText(context, state.getMessage(context), Toast_LENGTH).show()
+                viewModel.resetUndoState()
+            }
+            else -> {}
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppColors.colorScheme.background)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageHeader(
+                title = stringResource(R.string.subscription_detail_title),
+                onBack = { navController.navigateUp() },
+                actions = {
+                    val vo = detail
+                    // 编辑仅非终态可见（终态只读）；删除恒可见（终态数据也可清）
+                    if (vo != null && !SubscriptionStatus.fromRawOrDefault(vo.status).isTerminal) {
+                        Box(
+                            modifier = Modifier
+                                .pressable(onClick = { navController.navigateToSubscriptionEdit(vo.subscriptionId) })
+                                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.subscription_action_edit),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = AppColors.colorScheme.primaryDark,
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .pressable(onClick = { showDeleteDialog = true })
+                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.subscription_action_delete),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = AppColors.colorScheme.dangerInk,
+                        )
+                    }
+                },
+            )
+            when {
+                loadState is RequestState.Loading -> {
+                    SkeletonList(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = AppDimens.spaceLg),
+                        rows = 6,
+                    )
+                }
+                loadState is RequestState.Error || detail == null -> {
+                    EmptyState(
+                        icon = Icons.Rounded.Autorenew,
+                        message = (loadState as? RequestState.Error)?.getMessage(context)
+                            ?: context.getString(R.string.subscription_error_load_detail),
+                        modifier = Modifier.fillMaxSize(),
+                        action = {
+                            AppButton(
+                                text = stringResource(R.string.subscription_detail_retry),
+                                onClick = viewModel::load,
+                            )
+                        },
+                    )
+                }
+                else -> {
+                    val vo = detail ?: return@Column
+                    DetailContent(
+                        vo = vo,
+                        context = context,
+                        navController = navController,
+                        viewModel = viewModel,
+                        statsItem = statsItem,
+                        statsState = statsState,
+                        transitionState = transitionState,
+                        checkInState = checkInState,
+                        usageItems = usageItems,
+                        cancelPathExpanded = cancelPathExpanded,
+                        onCancelPathExpandedChange = { cancelPathExpanded = it },
+                        onShowCancelDialog = { showCancelDialog = true },
+                        onShowFinishDialog = { showFinishDialog = true },
+                        onShowUndoDialog = { pendingUndoId = it },
+                        onOpenUrl = { com.smartwash.feature.subscription.ui.edit.openInBrowser(context, it) },
+                        onCopyUrl = {
+                            copyToClipboard(context, it)
+                            Toast.makeText(context, context.getString(R.string.subscription_copy_success), Toast_LENGTH).show()
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    if (showCancelDialog && detail != null) {
+        AppConfirmDialog(
+            title = stringResource(R.string.subscription_confirm_cancel_title),
+            message = stringResource(R.string.subscription_confirm_cancel_message, detail?.name.orEmpty()),
+            isDanger = true,
+            confirmText = stringResource(R.string.subscription_action_cancel_sub),
+            onConfirm = {
+                showCancelDialog = false
+                viewModel.cancel()
+            },
+            onDismiss = { showCancelDialog = false },
+        )
+    }
+    if (showFinishDialog && detail != null) {
+        AppConfirmDialog(
+            title = stringResource(R.string.subscription_confirm_finish_title),
+            message = stringResource(R.string.subscription_confirm_finish_message, detail?.name.orEmpty()),
+            isDanger = true,
+            confirmText = stringResource(R.string.subscription_action_finish),
+            onConfirm = {
+                showFinishDialog = false
+                viewModel.finish()
+            },
+            onDismiss = { showFinishDialog = false },
+        )
+    }
+    if (showDeleteDialog && detail != null) {
+        AppConfirmDialog(
+            title = stringResource(R.string.subscription_confirm_delete_title),
+            message = stringResource(R.string.subscription_confirm_delete_message, detail?.name.orEmpty()),
+            isDanger = true,
+            confirmText = stringResource(R.string.subscription_action_delete),
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.delete()
+            },
+            onDismiss = { showDeleteDialog = false },
+        )
+    }
+    if (pendingUndoId > 0) {
+        val undoDate = usageItems.itemSnapshotList
+            .firstOrNull { it?.usageId == pendingUndoId }?.usageDate.orEmpty()
+        AppConfirmDialog(
+            title = stringResource(R.string.subscription_confirm_delete_usage_title),
+            message = stringResource(R.string.subscription_confirm_delete_usage_message, undoDate),
+            isDanger = true,
+            confirmText = stringResource(R.string.subscription_usage_undo),
+            onConfirm = {
+                viewModel.undoUsage(pendingUndoId)
+                pendingUndoId = -1L
+            },
+            onDismiss = { pendingUndoId = -1L },
+        )
+    }
+}
+
+private const val Toast_LENGTH = android.widget.Toast.LENGTH_SHORT
+
+@Composable
+private fun DetailContent(
+    vo: SubscriptionVo,
+    context: android.content.Context,
+    navController: NavHostController,
+    viewModel: SubscriptionDetailViewModel,
+    statsItem: com.smartwash.feature.subscription.network.SubscriptionStatsItemVo?,
+    statsState: RequestState,
+    transitionState: RequestState,
+    checkInState: RequestState,
+    usageItems: androidx.paging.compose.LazyPagingItems<UsageLogVo>,
+    cancelPathExpanded: Boolean,
+    onCancelPathExpandedChange: (Boolean) -> Unit,
+    onShowCancelDialog: () -> Unit,
+    onShowFinishDialog: () -> Unit,
+    onShowUndoDialog: (Long) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onCopyUrl: (String) -> Unit,
+) {
+    val status = SubscriptionStatus.fromRawOrDefault(vo.status)
+    val terminal = status.isTerminal
+    val cycleType = com.smartwash.feature.subscription.SubscriptionCycleType.fromRaw(vo.cycleType)
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
+        contentPadding = PaddingValues(
+            horizontal = AppDimens.pagePadding,
+            vertical = AppDimens.spaceSm,
+        ),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        // ---------- 续费信息卡 ----------
+        item(key = "info") {
+            GroupCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconBox(
+                        icon = Icons.Rounded.Autorenew,
+                        size = 44.dp,
+                        iconSize = 24.dp,
+                        containerColor = AppColors.colorScheme.iconContainerTeal,
+                        iconTint = AppColors.colorScheme.iconForegroundTeal,
+                    )
+                    Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                    Text(
+                        text = vo.name,
+                        style = AppTextStyles.CardTitle,
+                        color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SubscriptionTagChip(
+                        text = statusText(status),
+                        containerColor = if (terminal) AppColors.colorScheme.surfaceVariant else AppColors.colorScheme.iconContainerTeal,
+                        contentColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.iconForegroundTeal,
+                    )
+                }
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_amount),
+                    value = stringResource(R.string.subscription_amount_per_period, SubscriptionRules.formatAmount(vo.amount)),
+                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    valueColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primaryDark,
+                )
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_cycle),
+                    value = cycleDescriptionFor(cycleType, vo.cycleInterval),
+                )
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_next_renew),
+                    value = renewRelativeText(vo),
+                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    valueColor = renewRelativeColor(vo),
+                )
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_trial_end),
+                    value = vo.trialEndDate ?: stringResource(R.string.subscription_value_none),
+                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                )
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_auto_renew),
+                    value = stringResource(
+                        if (vo.autoRenew == SubscriptionConstant.FLAG_ON) R.string.subscription_detail_auto_renew_on
+                        else R.string.subscription_detail_auto_renew_off
+                    ),
+                )
+                InfoRow(
+                    label = stringResource(R.string.subscription_detail_remind_days),
+                    value = if (vo.remindDaysBefore > 0) {
+                        stringResource(R.string.subscription_detail_remind_days_format, vo.remindDaysBefore)
+                    } else {
+                        stringResource(R.string.subscription_detail_remind_days_zero)
+                    },
+                )
+                if (!vo.note.isNullOrBlank()) {
+                    InfoRow(
+                        label = stringResource(R.string.subscription_detail_note),
+                        value = vo.note.orEmpty(),
+                    )
+                }
+                if (terminal) {
+                    Text(
+                        text = stringResource(R.string.subscription_terminal_readonly),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.colorScheme.textTertiary,
+                        modifier = Modifier.padding(top = AppDimens.spaceXs),
+                    )
+                }
+            }
+        }
+
+        // ---------- 状态操作（按当前状态显隐；终态只读） ----------
+        if (!terminal) {
+            item(key = "actions") {
+                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                        AppButton(
+                            text = stringResource(
+                                if (status == SubscriptionStatus.ACTIVE) R.string.subscription_action_pause
+                                else R.string.subscription_action_resume
+                            ),
+                            onClick = {
+                                if (status == SubscriptionStatus.ACTIVE) viewModel.pause() else viewModel.resume()
+                            },
+                            loading = transitionState is RequestState.Loading,
+                            variant = AppButtonVariant.SECONDARY,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AppButton(
+                            text = stringResource(R.string.subscription_action_finish),
+                            onClick = onShowFinishDialog,
+                            variant = AppButtonVariant.SECONDARY,
+                            enabled = transitionState !is RequestState.Loading,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    AppButton(
+                        text = stringResource(R.string.subscription_action_cancel_sub),
+                        onClick = onShowCancelDialog,
+                        variant = AppButtonVariant.SECONDARY,
+                        // 危险语义换色不变形（规范 §2.1 例外条款：同形态换语义色）
+                        contentColor = AppColors.colorScheme.dangerInk,
+                        enabled = transitionState !is RequestState.Loading,
+                    )
+                }
+            }
+        }
+
+        // ---------- 近 90 天使用统计 ----------
+        item(key = "stats") {
+            GroupCard {
+                Text(
+                    text = stringResource(R.string.subscription_stats_title),
+                    style = AppTextStyles.SectionTitle,
+                    color = AppColors.colorScheme.textPrimary,
+                    modifier = Modifier.padding(bottom = AppDimens.spaceXs),
+                )
+                when {
+                    statsState is RequestState.Loading -> {
+                        SkeletonList(rows = 2)
+                    }
+                    statsState is RequestState.Error -> {
+                        Text(
+                            text = statsState.getMessage(context),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                        Text(
+                            text = stringResource(R.string.subscription_action_retry),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.primary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .pressable(onClick = viewModel::loadStats)
+                                .padding(vertical = AppDimens.spaceXs),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    else -> {
+                        InfoRow(
+                            label = stringResource(R.string.subscription_stats_usage_format, statsItem?.usageCount90d ?: 0),
+                            value = stringResource(R.string.subscription_stats_monthly_format, SubscriptionRules.formatAmount(statsItem?.monthlyNormalized ?: 0.0)),
+                            valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            valueColor = AppColors.colorScheme.primaryDark,
+                        )
+                        val perUse = statsItem?.perUseCost
+                        Text(
+                            text = if (perUse != null) {
+                                stringResource(R.string.subscription_stats_per_use_format, SubscriptionRules.formatAmount(perUse))
+                            } else {
+                                stringResource(R.string.subscription_stats_per_use_none)
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            color = if (perUse != null) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textTertiary,
+                            modifier = Modifier.padding(vertical = AppDimens.spaceSm),
+                        )
+                    }
+                }
+            }
+        }
+
+        // ---------- 使用打卡 ----------
+        item(key = "usage") {
+            GroupCard {
+                Text(
+                    text = stringResource(R.string.subscription_usage_title),
+                    style = AppTextStyles.SectionTitle,
+                    color = AppColors.colorScheme.textPrimary,
+                    modifier = Modifier.padding(bottom = AppDimens.spaceXs),
+                )
+                if (!terminal) {
+                    AppButton(
+                        text = stringResource(R.string.subscription_usage_check_in),
+                        onClick = viewModel::checkIn,
+                        loading = checkInState is RequestState.Loading,
+                    )
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                }
+                UsageListBlock(
+                    usageItems = usageItems,
+                    terminal = terminal,
+                    onUndo = onShowUndoDialog,
+                )
+            }
+        }
+
+        // ---------- 取消路径（折叠卡） ----------
+        item(key = "cancel_path") {
+            CancelPathCard(
+                cancelUrl = vo.cancelUrl,
+                cancelSteps = vo.cancelSteps,
+                expanded = cancelPathExpanded,
+                onExpandedChange = onCancelPathExpandedChange,
+                onOpenUrl = onOpenUrl,
+                onCopyUrl = onCopyUrl,
+            )
+        }
+    }
+}
+
+/** 打卡列表块：分页（首刷骨架/失败重试/空态）+ 行内撤销入口（终态只读隐藏） */
+@Composable
+private fun UsageListBlock(
+    usageItems: androidx.paging.compose.LazyPagingItems<UsageLogVo>,
+    terminal: Boolean,
+    onUndo: (Long) -> Unit,
+) {
+    val refreshState = usageItems.loadState.refresh
+    when {
+        usageItems.itemCount == 0 && refreshState is LoadState.Loading -> {
+            SkeletonList(rows = 2)
+        }
+        usageItems.itemCount == 0 && refreshState is LoadState.Error -> {
+            Column {
+                Text(
+                    text = stringResource(R.string.subscription_usage_error_load),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.colorScheme.textSecondary,
+                )
+                Text(
+                    text = stringResource(R.string.subscription_action_retry),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pressable(onClick = { usageItems.retry() })
+                        .padding(vertical = AppDimens.spaceXs),
+                )
+            }
+        }
+        usageItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+            Text(
+                text = stringResource(R.string.subscription_usage_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textTertiary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = AppDimens.spaceMd),
+            )
+        }
+        else -> {
+            Column {
+                usageItems.itemCount.let { count ->
+                    repeat(count) { index ->
+                        if (index > 0) {
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.hairline,
+                            )
+                        }
+                        usageItems[index]?.let { log ->
+                            UsageRow(
+                                log = log,
+                                terminal = terminal,
+                                onUndo = onUndo,
+                            )
+                        }
+                    }
+                }
+                if (usageItems.loadState.append is LoadState.Loading) {
+                    com.smartwash.common.ui.components.SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(14.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 打卡行：使用日期（今天标亮）+ 撤销文字动作（终态只读不展示） */
+@Composable
+private fun UsageRow(
+    log: UsageLogVo,
+    terminal: Boolean,
+    onUndo: (Long) -> Unit,
+) {
+    val today = remember { LocalDate.now() }
+    val usageDate = SubscriptionRules.parseDate(log.usageDate)
+    val isToday = usageDate == today
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceSm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatusDot(color = if (isToday) AppColors.colorScheme.primary else AppColors.colorScheme.water)
+        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        Text(
+            text = log.usageDate.orEmpty(),
+            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+            fontWeight = if (isToday) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (isToday) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary,
+        )
+        if (isToday) {
+            Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+            SubscriptionTagChip(
+                text = stringResource(R.string.subscription_usage_today),
+                containerColor = AppColors.colorScheme.iconContainerGreen,
+                contentColor = AppColors.colorScheme.iconForegroundGreen,
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        if (!terminal) {
+            Text(
+                text = stringResource(R.string.subscription_usage_undo),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.colorScheme.dangerInk,
+                modifier = Modifier
+                    .pressable(onClick = { onUndo(log.usageId) })
+                    .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
+            )
+        }
+    }
+}
+
+/** 取消路径折叠卡：标题行 + AnimatedVisibility（reduced motion 降级 180ms 纯淡入淡出） */
+@Composable
+private fun CancelPathCard(
+    cancelUrl: String?,
+    cancelSteps: String?,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onCopyUrl: (String) -> Unit,
+) {
+    val reduceMotion = LocalReduceMotion.current
+    GroupCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(onClick = { onExpandedChange(!expanded) }),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.subscription_cancel_path_title),
+                style = AppTextStyles.SectionTitle,
+                color = AppColors.colorScheme.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                contentDescription = null,
+                tint = AppColors.colorScheme.textSecondary,
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = if (reduceMotion) {
+                fadeIn(animationSpec = tween(CROSSFADE_ALT_MS))
+            } else {
+                fadeIn(enterTween(DURATION_MICRO_MS)) + expandVertically(enterTween(DURATION_MICRO_MS))
+            },
+            exit = if (reduceMotion) {
+                fadeOut(animationSpec = tween(CROSSFADE_ALT_MS))
+            } else {
+                fadeOut(exitTween(COLLAPSE_EXIT_MS)) + shrinkVertically(exitTween(COLLAPSE_EXIT_MS))
+            },
+        ) {
+            Column(modifier = Modifier.padding(top = AppDimens.spaceXs)) {
+                if (cancelUrl.isNullOrBlank() && cancelSteps.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.subscription_cancel_path_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AppColors.colorScheme.textTertiary,
+                    )
+                } else {
+                    if (!cancelUrl.isNullOrBlank()) {
+                        Text(
+                            text = stringResource(R.string.subscription_cancel_path_url),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                        Text(
+                            text = cancelUrl,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                            color = AppColors.colorScheme.textPrimary,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                        Row(modifier = Modifier.padding(top = AppDimens.spaceXs)) {
+                            Text(
+                                text = stringResource(R.string.subscription_action_open_browser),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.colorScheme.primary,
+                                modifier = Modifier
+                                    .pressable(onClick = { onOpenUrl(cancelUrl) })
+                                    .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
+                            )
+                            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+                            Text(
+                                text = stringResource(R.string.subscription_action_copy),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.colorScheme.primary,
+                                modifier = Modifier
+                                    .pressable(onClick = { onCopyUrl(cancelUrl) })
+                                    .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
+                            )
+                        }
+                    }
+                    if (!cancelSteps.isNullOrBlank()) {
+                        if (!cancelUrl.isNullOrBlank()) {
+                            HorizontalDivider(
+                                thickness = 0.5.dp,
+                                color = AppColors.colorScheme.hairline,
+                                modifier = Modifier.padding(vertical = AppDimens.spaceSm),
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.subscription_cancel_path_steps),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = AppColors.colorScheme.textSecondary,
+                        )
+                        Text(
+                            text = cancelSteps,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textPrimary,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 周期描述（复用 SubscriptionUiCommon 同源实现，详情信息行消费） */
+@Composable
+private fun cycleDescriptionFor(
+    cycleType: com.smartwash.feature.subscription.SubscriptionCycleType,
+    interval: Int,
+): String = com.smartwash.feature.subscription.ui.cycleDescription(cycleType, interval)
