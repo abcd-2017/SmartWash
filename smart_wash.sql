@@ -1328,4 +1328,66 @@ CREATE TABLE `mood_record` (
   CONSTRAINT `chk_mood_level` CHECK (`mood_level` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪气象站-每日情绪记录';
 
+-- =====================================================================
+-- 记忆复习接力（FSRS-6 调度）—— 3 张业务表
+-- 字段名对齐 py-fsrs Card/CardDict(open-spaced-repetition/py-fsrs, MIT)
+-- =====================================================================
+
+SET NAMES utf8mb4;
+
+-- ----------------------------
+-- Table structure for study_material（复习资料）
+-- ----------------------------
+DROP TABLE IF EXISTS `study_material`;
+CREATE TABLE `study_material` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT       NOT NULL COMMENT 'users.id',
+  `title`      VARCHAR(100) NOT NULL COMMENT '资料标题',
+  `raw_text`   MEDIUMTEXT   NULL COMMENT '粘贴的原文',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-资料';
+
+-- ----------------------------
+-- Table structure for review_card（复习卡,FSRS 状态列）
+-- ----------------------------
+DROP TABLE IF EXISTS `review_card`;
+CREATE TABLE `review_card` (
+  `id`             BIGINT        NOT NULL AUTO_INCREMENT,
+  `user_id`        BIGINT        NOT NULL COMMENT 'users.id',
+  `material_id`    BIGINT        NULL COMMENT 'study_material.id,NULL=独立卡',
+  `question`       VARCHAR(1000) NOT NULL,
+  `answer`         VARCHAR(2000) NOT NULL,
+  `state`          TINYINT       NOT NULL DEFAULT 1 COMMENT '1=Learning 2=Review 3=Relearning(py-fsrs State)',
+  `step`           TINYINT       NULL COMMENT 'learning/relearning 步序号,Review 态为NULL',
+  `stability`      DECIMAL(10,4) NULL COMMENT '稳定度S(天)',
+  `difficulty`     DECIMAL(10,4) NULL COMMENT '难度D(1-10)',
+  `due_at`         DATETIME      NOT NULL COMMENT '下次到期时刻',
+  `last_review_at` DATETIME      NULL COMMENT 'NULL=从未复习的新卡',
+  `reps`           INT           NOT NULL DEFAULT 0 COMMENT '累计复习次数',
+  `lapses`         INT           NOT NULL DEFAULT 0 COMMENT 'Again次数(遗忘次数)',
+  `created_at`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_due` (`user_id`, `due_at`),
+  KEY `idx_material` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-卡片';
+
+-- ----------------------------
+-- Table structure for review_log（复习日志,重放重算与统计依赖,不可省）
+-- ----------------------------
+DROP TABLE IF EXISTS `review_log`;
+CREATE TABLE `review_log` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT,
+  `user_id`     BIGINT   NOT NULL COMMENT 'users.id',
+  `card_id`     BIGINT   NOT NULL COMMENT 'review_card.id',
+  `rating`      TINYINT  NOT NULL COMMENT '1=Again 2=Hard 3=Good 4=Easy(py-fsrs Rating)',
+  `reviewed_at` DATETIME NOT NULL COMMENT '复习时刻',
+  `duration_ms` INT      NULL COMMENT '作答耗时毫秒',
+  PRIMARY KEY (`id`),
+  KEY `idx_card` (`card_id`, `reviewed_at`),
+  KEY `idx_user_time` (`user_id`, `reviewed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-日志';
+
 SET FOREIGN_KEY_CHECKS = 1;
