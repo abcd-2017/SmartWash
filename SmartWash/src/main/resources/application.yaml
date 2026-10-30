@@ -34,9 +34,10 @@ spring:
 
   servlet:
     multipart:
-      # 10MB 对齐游戏库上传上限（超限走 413 语义），max-request-size 留出表单字段余量
-      max-file-size: 10MB
-      max-request-size: 11MB
+      # 单文件上限对齐设备投递（toolbox/delivery）20MB 业务上限；游戏库上传的 10MB 上限由业务层强制
+      max-file-size: 20MB
+      # 略高于单文件上限，容纳 multipart 表单字段开销
+      max-request-size: 25MB
 
 mybatis-plus:
   global-config:

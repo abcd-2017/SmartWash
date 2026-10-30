@@ -2,6 +2,7 @@ package com.smartwash.game.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.game.from.SearchGameFrom;
 import com.smartwash.game.from.UpdateGameFrom;
 import com.smartwash.game.from.UploadGameFrom;
@@ -45,6 +46,10 @@ public class GameAdminController {
     @PostMapping("/upload")
     public Result<AdminGameVo> upload(@RequestPart("file") MultipartFile file,
                                       @Valid @ModelAttribute UploadGameFrom from) {
+        // 业务层强制 10MB 上限（全局 multipart 上限已抬高至 20MB 以兼容设备投递大文件）
+        if (file.getSize() > 10L * 1024 * 1024) {
+            throw new CustomExceptions(413, "游戏包大小不能超过10MB");
+        }
         return Result.ok(gameConfigService.upload(from, file));
     }
 

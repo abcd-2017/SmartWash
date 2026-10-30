@@ -1167,7 +1167,7 @@ DROP TABLE IF EXISTS `toolbox_short_code`;
 CREATE TABLE `toolbox_short_code` (
   `id`              BIGINT        NOT NULL AUTO_INCREMENT,
   `code`            VARCHAR(16)   NOT NULL COMMENT '短码:7位随机或4-16位自定义别名',
-  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊',
+  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递',
   `target`          VARCHAR(2048) NULL COMMENT '类型1/2:目标长链;类型4:MinIO对象名',
   `content`         MEDIUMTEXT    NULL COMMENT '类型3/5:文本正文(交付箱密文/胶囊内容)',
   `owner_user_id`   BIGINT        NOT NULL COMMENT 'users.id',
@@ -1453,5 +1453,33 @@ CREATE TABLE `subscription_reminder_log` (
   PRIMARY KEY (`reminder_id`) USING BTREE,
   UNIQUE INDEX `uk_sub_type_date` (`subscription_id`,`remind_type`,`remind_date`) USING BTREE COMMENT '幂等:同一订阅同类型同日只发一次(renewlet notification_jobs 唯一索引先例)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订阅提醒记录' ROW_FORMAT = Dynamic;
+-- =====================================================================
+-- 设备投递（toolbox/delivery）—— 1 张业务表
+-- =====================================================================
 
+-- ----------------------------
+-- Table structure for toolbox_delivery_item（设备投递条目,会话主记录复用 toolbox_short_code content_type=6）
+-- ----------------------------
+DROP TABLE IF EXISTS `toolbox_delivery_item`;
+CREATE TABLE `toolbox_delivery_item` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+  `session_code`    VARCHAR(16)  NOT NULL COMMENT '投递码(冗余关联,无外键,对齐 toolbox_short_visit 冗余风格)',
+  `direction`       TINYINT      NOT NULL COMMENT '1手机→电脑 2电脑→手机',
+  `kind`            TINYINT      NOT NULL DEFAULT 1 COMMENT '1文本 2图片 3文件',
+  `title`           VARCHAR(255) NOT NULL COMMENT '文件名或文本摘要',
+  `text_content`    MEDIUMTEXT   NULL COMMENT 'kind=1:文本正文;焚毁后置 NULL',
+  `object_key`      VARCHAR(512) NULL COMMENT 'kind=2/3:MinIO对象名 delivery/{code}/{uuid}.{ext}',
+  `object_size`     BIGINT       NULL COMMENT '字节数',
+  `mime_type`       VARCHAR(128) NULL,
+  `sha256`          CHAR(64)     NULL COMMENT '完整性校验(LocalSend协议同名字段;015秒传思路预留)',
+  `burn_after_take` TINYINT      NOT NULL DEFAULT 1 COMMENT '1取走即焚(默认) 0保留至会话结束',
+  `taken`           TINYINT      NOT NULL DEFAULT 0 COMMENT '0未取走 1已取走(原子置位,PsiTransfer claim语义)',
+  `taken_at`        DATETIME     NULL,
+  `expire_at`       DATETIME     NULL COMMENT '条目过期,NULL继承会话,读路径判断',
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code_time` (`session_code`, `created_at`),
+  KEY `idx_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
 SET FOREIGN_KEY_CHECKS = 1;

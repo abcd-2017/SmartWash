@@ -43,7 +43,8 @@ public class ExceptionControllerAdvice {
     @ExceptionHandler(value = CustomExceptions.class)
     public Result<String> runTimeException(CustomExceptions e) {
         log.warn("业务异常: {}", e.getMessage());
-        return Result.failMsg(e.getMessage());
+        // code 由异常携带（如设备投递的 404/403/409/413 语义），未携带时沿用默认失败码
+        return Result.build(null, e.getCode() != null ? e.getCode() : ResultCodeEnum.FAIL.getCode(), e.getMessage());
     }
 
     /**
