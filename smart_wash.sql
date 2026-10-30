@@ -1390,4 +1390,68 @@ CREATE TABLE `review_log` (
   KEY `idx_user_time` (`user_id`, `reviewed_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-日志';
 
+-- =====================================================================
+-- 订阅逃生舱（用户订阅档案）—— 3 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for user_subscription（订阅主档）
+-- ----------------------------
+DROP TABLE IF EXISTS `user_subscription`;
+CREATE TABLE `user_subscription` (
+  `subscription_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '订阅 ID',
+  `user_id`            BIGINT        NOT NULL COMMENT '所属用户(users.id)',
+  `name`               VARCHAR(100)  NOT NULL COMMENT '订阅名称',
+  `amount`             DECIMAL(10,2) NOT NULL COMMENT '每期金额',
+  `cycle_type`         VARCHAR(10)   NOT NULL DEFAULT 'month' COMMENT '计费周期 month/year',
+  `cycle_interval`     INT           NOT NULL DEFAULT 1 COMMENT '间隔期数(如每2月=2;firefly-iii repetition_skip 简化版)',
+  `next_renew_date`    DATE          NOT NULL COMMENT '下次续费日',
+  `first_anchor_date`  DATE          NULL COMMENT '起始锚点日(月末策略锚,保留字段;firefly-iii repetition_moment 简化版)',
+  `trial_end_date`     DATE          NULL COMMENT '试用截止日(NULL=非试用)',
+  `auto_renew`         TINYINT       NOT NULL DEFAULT 1 COMMENT '自动续费 0否 1是',
+  `status`             VARCHAR(20)   NOT NULL DEFAULT 'active' COMMENT 'active生效中/paused已暂停/canceled已取消/finished已结束(终态保留数据)',
+  `cancel_url`         VARCHAR(500)  NULL COMMENT '取消入口网址',
+  `cancel_steps`       VARCHAR(1000) NULL COMMENT '取消路径步骤备忘',
+  `remind_days_before` INT           NOT NULL DEFAULT 3 COMMENT '续费/试用截止前提醒天数(Wallos notification_settings.days 简化为主档字段)',
+  `note`               VARCHAR(500)  NULL COMMENT '备注',
+  `created_at`         TIMESTAMP     NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`         TIMESTAMP     NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`subscription_id`) USING BTREE,
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_next_renew` (`next_renew_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅主档' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for user_subscription_usage_log（使用打卡流水）
+-- ----------------------------
+DROP TABLE IF EXISTS `user_subscription_usage_log`;
+CREATE TABLE `user_subscription_usage_log` (
+  `usage_id`        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '使用记录 ID',
+  `subscription_id` BIGINT       NOT NULL COMMENT '订阅 ID',
+  `user_id`         BIGINT       NOT NULL COMMENT '所属用户(users.id)',
+  `usage_date`      DATE         NOT NULL COMMENT '使用日期(每订阅每天一条)',
+  `note`            VARCHAR(200) NULL COMMENT '使用备注',
+  `created_at`      TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`usage_id`) USING BTREE,
+  KEY `idx_sub_date` (`subscription_id`,`usage_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订阅使用频率打卡(决策依据:近3月使用次数)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for subscription_reminder_log（提醒记录,唯一索引幂等）
+-- ----------------------------
+DROP TABLE IF EXISTS `subscription_reminder_log`;
+CREATE TABLE `subscription_reminder_log` (
+  `reminder_id`     BIGINT      NOT NULL AUTO_INCREMENT COMMENT '提醒 ID',
+  `subscription_id` BIGINT      NOT NULL COMMENT '订阅 ID',
+  `user_id`         BIGINT      NOT NULL COMMENT '所属用户(users.id)',
+  `remind_type`     VARCHAR(20) NOT NULL COMMENT 'renew续费/trial_end试用截止',
+  `remind_date`     DATE        NOT NULL COMMENT '应提醒日(=被提醒的目标日期,与uk_sub_type_date配合实现幂等)',
+  `is_read`         TINYINT     NOT NULL DEFAULT 0 COMMENT '已读 0未读 1已读',
+  `created_at`      TIMESTAMP   NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      TIMESTAMP   NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`reminder_id`) USING BTREE,
+  UNIQUE INDEX `uk_sub_type_date` (`subscription_id`,`remind_type`,`remind_date`) USING BTREE COMMENT '幂等:同一订阅同类型同日只发一次(renewlet notification_jobs 唯一索引先例)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订阅提醒记录' ROW_FORMAT = Dynamic;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.subscription.mapper.SubscriptionReminderLogMapper">
+
+    <!-- 按订阅分组统计未读提醒数：列表/详情红点，一次分组查询替代逐订阅 count -->
+    <select id="countUnreadGroupBySubscription" resultType="com.smartwash.subscription.vo.SubscriptionGroupCountVo">
+        select subscription_id as subscriptionId,
+               count(*)        as cnt
+        from subscription_reminder_log
+        where user_id = #{userId}
+          and is_read = 0
+        group by subscription_id
+    </select>
+
+    <!-- 标记已读条件更新：仅未读且归属当前用户时生效，天然幂等（重复已读影响 0 行） -->
+    <update id="casMarkRead">
+        update subscription_reminder_log
+        set is_read = 1
+        where reminder_id = #{reminderId}
+          and user_id = #{userId}
+          and is_read = 0
+    </update>
+</mapper>

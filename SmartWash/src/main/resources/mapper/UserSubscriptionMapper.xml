@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.subscription.mapper.UserSubscriptionMapper">
+
+    <!-- 状态机条件流转闸门：状态命中 expectStatuses 才流转，判影响行数，禁止 check-then-act 裸更新 -->
+    <update id="casTransition">
+        update user_subscription
+        set status = #{targetStatus}
+        where subscription_id = #{subscriptionId}
+          and user_id = #{userId}
+          and status in
+        <foreach collection="expectStatuses" item="expectStatus" open="(" separator="," close=")">
+            #{expectStatus}
+        </foreach>
+    </update>
+
+    <!-- 续费日推进 CAS 闸门：next_renew_date 必须仍为扫描时旧值，且订阅仍处于自动续费生效态，
+         防止推进覆盖用户并发编辑/暂停/取消后的意图；影响行数 0 即放弃本次推进 -->
+    <update id="casAdvanceRenewDate">
+        update user_subscription
+        set next_renew_date = #{newDate}
+        where subscription_id = #{subscriptionId}
+          and next_renew_date = #{expectDate}
+          and auto_renew = 1
+          and status = 'active'
+    </update>
+
+    <!-- 续费提醒扫描：active 且 next_renew_date 落入 remind_days_before 提前窗口（列间比较，含已过期的补提醒） -->
+    <select id="selectRenewDue" resultType="com.smartwash.subscription.entity.UserSubscription">
+        select subscription_id, user_id, name, amount, cycle_type, cycle_interval,
+               next_renew_date, first_anchor_date, trial_end_date, auto_renew, status,
+               cancel_url, cancel_steps, remind_days_before, note, created_at, updated_at
+        from user_subscription
+        where status = 'active'
+          and next_renew_date &lt;= date_add(#{today}, interval remind_days_before day)
+        order by next_renew_date
+    </select>
+
+    <!-- 试用截止提醒扫描：仅 trial_end_date 恰为当日触发（对齐 Wallos 取消日语义） -->
+    <select id="selectTrialEnding" resultType="com.smartwash.subscription.entity.UserSubscription">
+        select subscription_id, user_id, name, amount, cycle_type, cycle_interval,
+               next_renew_date, first_anchor_date, trial_end_date, auto_renew, status,
+               cancel_url, cancel_steps, remind_days_before, note, created_at, updated_at
+        from user_subscription
+        where status = 'active'
+          and trial_end_date = #{today}
+        order by subscription_id
+    </select>
+</mapper>
