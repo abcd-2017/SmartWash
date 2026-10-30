@@ -72,4 +72,84 @@
     <string name="toolbox_stats_title">访问明细</string>
     <string name="toolbox_stats_empty">暂无访问记录</string>
     <string name="toolbox_stats_error_load">访问明细加载失败</string>
+
+    <!-- ==================== 设备投递 · 通用 ==================== -->
+    <string name="toolbox_delivery_title">设备投递</string>
+    <string name="toolbox_delivery_qr_desc">投递会话二维码</string>
+    <string name="toolbox_delivery_countdown_format">剩余 %1$s</string>
+
+    <!-- ==================== 设备投递 · 发起页表单 ==================== -->
+    <string name="toolbox_delivery_duration_label">有效期</string>
+    <string name="toolbox_delivery_duration_desc">时间内有效，到期自动失效</string>
+    <string name="toolbox_delivery_duration_minutes_format">%1$d 分钟</string>
+    <string name="toolbox_delivery_duration_60m">1 小时</string>
+    <string name="toolbox_delivery_duration_120m">2 小时</string>
+    <string name="toolbox_delivery_password_label">进入密码（可选）</string>
+    <string name="toolbox_delivery_password_hint">4-64 位</string>
+    <string name="toolbox_delivery_password_helper">电脑端进入时需输入，留空则无需密码</string>
+    <string name="toolbox_delivery_privacy_notice">内容经服务器中转，服务器可见明文；条目取走即焚毁，会话到期自动回收</string>
+    <string name="toolbox_delivery_submit_create">创建投递</string>
+    <string name="toolbox_delivery_error_invalid_password">密码须为 4-64 位</string>
+    <string name="toolbox_delivery_error_create">创建失败，请重试</string>
+
+    <!-- ==================== 设备投递 · 发起页会话态 ==================== -->
+    <string name="toolbox_delivery_code_label">投递码</string>
+    <string name="toolbox_delivery_session_expired">已失效</string>
+    <string name="toolbox_delivery_has_password">需密码</string>
+    <string name="toolbox_delivery_clicks_format">%1$d 次进入</string>
+    <string name="toolbox_delivery_action_copy_link">复制链接</string>
+    <string name="toolbox_delivery_action_open_session">进入会话</string>
+    <string name="toolbox_delivery_action_close">关闭会话</string>
+    <string name="toolbox_delivery_action_recreate">重新发起</string>
+    <string name="toolbox_delivery_toast_close_success">会话已关闭</string>
+    <string name="toolbox_delivery_toast_link_copied">链接已复制</string>
+    <string name="toolbox_delivery_error_close">关闭失败，请重试</string>
+
+    <!-- ==================== 设备投递 · 会话页 ==================== -->
+    <string name="toolbox_delivery_session_title">设备投递</string>
+    <string name="toolbox_delivery_url_fallback">电脑浏览器打开本链接进入</string>
+    <string name="toolbox_delivery_action_close_session">关闭</string>
+    <string name="toolbox_delivery_confirm_close_title">关闭投递会话</string>
+    <string name="toolbox_delivery_confirm_close_message">关闭后投递码立即失效且条目不可再取，确定关闭？</string>
+    <string name="toolbox_delivery_empty_message">还没有条目，等对端进入后互传</string>
+    <string name="toolbox_delivery_poll_error">条目同步失败，正在自动重试</string>
+    <string name="toolbox_delivery_error_load">条目加载失败</string>
+    <string name="toolbox_delivery_action_retry">重试</string>
+    <string name="toolbox_delivery_direction_out">发出</string>
+    <string name="toolbox_delivery_direction_in">收到</string>
+    <string name="toolbox_delivery_kind_text">文本</string>
+    <string name="toolbox_delivery_kind_image">图片</string>
+    <string name="toolbox_delivery_kind_file">文件</string>
+    <string name="toolbox_delivery_state_pending">待取走</string>
+    <string name="toolbox_delivery_state_taken">已取走</string>
+    <string name="toolbox_delivery_meta_format">%1$s · %2$s</string>
+    <string name="toolbox_delivery_toast_code_copied">投递码已复制</string>
+    <string name="toolbox_delivery_sending">正在传输…</string>
+    <string name="toolbox_delivery_send_hint">输入要投递的文本…</string>
+    <string name="toolbox_delivery_action_send">发送</string>
+    <string name="toolbox_delivery_pick_image">选图片</string>
+    <string name="toolbox_delivery_pick_file">选文件</string>
+    <string name="toolbox_delivery_error_send">发送失败，请重试</string>
+    <string name="toolbox_delivery_error_file_too_large">文件超过 20MB 上限</string>
+    <string name="toolbox_delivery_error_text_too_long">文本超过 10 万字符上限</string>
+    <string name="toolbox_delivery_error_text_empty">请输入要投递的文本</string>
+    <string name="toolbox_delivery_session_gone_toast">投递会话不存在或已失效</string>
+    <string name="toolbox_delivery_item_taken_toast">条目已被取走</string>
+
+    <!-- ==================== 设备投递 · 预览与取走 ==================== -->
+    <string name="toolbox_delivery_file_type">类型</string>
+    <string name="toolbox_delivery_file_size">大小</string>
+    <string name="toolbox_delivery_preview_text_burnt">内容已焚毁</string>
+    <string name="toolbox_delivery_preview_decode_failed">预览解码失败，可直接保存</string>
+    <string name="toolbox_delivery_preview_image_hint">内容已取走并焚毁，请及时保存到相册</string>
+    <string name="toolbox_delivery_confirm_image_message">取走后下载预览并焚毁，请及时保存到相册，取走后不可恢复</string>
+    <string name="toolbox_delivery_confirm_file_message">取走并保存到系统「下载」的 SmartWash 目录，取走即焚毁不可恢复</string>
+    <string name="toolbox_delivery_action_copy_take">复制并取走</string>
+    <string name="toolbox_delivery_action_take_image">取走并预览</string>
+    <string name="toolbox_delivery_action_take_file">取走并保存</string>
+    <string name="toolbox_delivery_action_save_gallery">保存到相册</string>
+    <string name="toolbox_delivery_toast_copy_success">文本已复制，条目已焚毁</string>
+    <string name="toolbox_delivery_toast_saved_gallery">已保存到相册</string>
+    <string name="toolbox_delivery_toast_saved_file">已保存到「下载」/SmartWash</string>
+    <string name="toolbox_delivery_preview_error">内容读取失败</string>
 </resources>

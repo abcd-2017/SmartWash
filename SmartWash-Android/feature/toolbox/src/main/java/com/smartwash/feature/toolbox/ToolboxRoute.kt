@@ -17,6 +17,12 @@ sealed class ToolboxRoute(val text: String) {
     /** 短链详情（参数经 query 携带，见 [ToolboxGraph]） */
     data object Detail : ToolboxRoute("ToolboxShortCodeDetail")
 
+    /** 设备投递发起页（表单 + 会话信息，见 ui/delivery/DeliveryGraph） */
+    data object Delivery : ToolboxRoute("ToolboxDelivery")
+
+    /** 设备投递会话页（会话码经 query 携带，见 ui/delivery/DeliveryGraph） */
+    data object DeliverySession : ToolboxRoute("ToolboxDeliverySession")
+
     companion object {
         /**
          * 列表页刷新信号 key（存于列表页 backStackEntry 的 savedStateHandle）：
