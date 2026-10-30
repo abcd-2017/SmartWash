@@ -3,19 +3,31 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 
-// 创建 axios 实例
 // baseURL 从环境变量读取：开发环境为 /api（走 vite 代理转发），
 // 生产环境由 .env.production 注入完整地址；生产建议改用 Nginx 反代 + HTTPS 域名
+const baseURL = __SMART_WASH_BASE_URL__ || import.meta.env.VITE_BASE_URL || '/api';
+
+// 创建 axios 实例
 const http = axios.create({
   // 编译时由 vite.config.js define 注入 __SMART_WASH_BASE_URL__（与 Android 端对齐）；
   // 兜底：VITE_BASE_URL（.env 文件）→ /api（开发代理）
-  baseURL: __SMART_WASH_BASE_URL__ || import.meta.env.VITE_BASE_URL || '/api',
+  baseURL,
   // 请求超时 30 秒：与 Android（OkHttp read 30s）、鸿蒙端（readTimeout 30s）三端统一基准（评审 #20），
   // 覆盖导出、地图选点等慢接口，避免大分页/弱网下被 5s 误杀
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// 公开信封请求实例：匿名公开页专用（当前唯一消费方为设备投递公开页 /d/:code，
+// 接口段 /web/delivery/**，码即凭证、本就无 token）。与主实例的区别：
+// 1. 不注入 Bearer、不读登录态，也不会触发全局 401 登出逻辑；
+// 2. 不解包信封、不弹全局 ElMessage——业务码 403/404/409/413 是投递语义
+//    （密码错误/会话失效/被占用/负载超限），由调用方拿到完整 { code, message, data } 自行消费
+export const envelopeHttp = axios.create({
+  baseURL,
+  timeout: 30000,
 });
 
 // 从登录态 store 获取 token；pinia 未激活的极端场景（如单测环境）回退读持久化层

@@ -14,6 +14,17 @@ const routes = [
     },
   },
   {
+    // 设备投递公开取件页（对端 = 电脑浏览器）：免登录匿名访问，码即凭证。
+    // 独立可达，不挂 Layout、不进导航菜单；:code 可选——无码访问时进入页提供输码表单
+    path: '/d/:code?',
+    name: 'DeliveryPickup',
+    component: () => import('@/views/delivery/DeliveryPickup.vue'),
+    meta: {
+      title: '设备投递',
+      requiresAuth: false,
+    },
+  },
+  {
     path: '/',
     component: Layout,
     children: [
