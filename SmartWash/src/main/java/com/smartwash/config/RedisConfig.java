@@ -77,6 +77,9 @@ public class RedisConfig {
         cacheConfigs.put("laundryItems", defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigs.put("coupon", defaultConfig.entryTtl(Duration.ofMinutes(10)));
         cacheConfigs.put("dashboard", defaultConfig.entryTtl(Duration.ofMinutes(2)));
+        // 工作台配置类字典：变更频率低，管理端写操作统一 @CacheEvict 失效
+        cacheConfigs.put("workbenchEntries", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigs.put("deeplinkRoutes", defaultConfig.entryTtl(Duration.ofMinutes(30)));
 
         log.info("RedisCacheManager 初始化成功");
         return RedisCacheManager.builder(connectionFactory)

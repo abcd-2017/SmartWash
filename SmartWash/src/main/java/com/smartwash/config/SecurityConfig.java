@@ -50,7 +50,8 @@ public class SecurityConfig {
                             "/web/payments/payStatus",
                             "/web/app/version",
                             "/web/app/download",
-                            "/web/t/**" // 工具箱短码跳转（匿名扫码流量）
+                            "/web/t/**", // 工具箱短码跳转（匿名扫码流量）
+                            "/web/deeplink/routes" // deeplink 字典，端上冷启动解析兜底
                     ).permitAll()
                     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**", "/v3/api-docs/**").permitAll() // Swagger API 文档
                     .anyRequest().authenticated()
