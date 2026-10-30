@@ -4,7 +4,7 @@
 
 - **Gradle 坐标**：`:app`
 - **包名**：`com.smartwash`
-- **职责**：单 Activity 壳——聚合各域 NavGraph 路由注册、留守跨域页面（主页壳/订单详情/取件）、更新流程（事件收集→弹窗）、登录态/401 事件分发、Hilt 全局注入（BASE_URL / HiltWorkerFactory）、InitEngine 启动调度。
+- **职责**：单 Activity 壳——聚合各域 NavGraph 路由注册、留守跨域页面（主页壳/订单详情/取件/内置浏览器）、更新流程（事件收集→弹窗）、深链分发（smartwash:// scheme，经 :feature:deeplink）、登录态/401 事件分发、Hilt 全局注入（BASE_URL / HiltWorkerFactory）、InitEngine 启动调度、工作台入口下发（壳层 tab 页自持网络链路）。
 
 ## 2. 包结构
 
@@ -12,14 +12,21 @@
 com.smartwash
 ├── App.kt                           # @HiltAndroidApp Application，InitEngine 启动 + WorkManager 按需初始化
 ├── di/
-│   └── BaseUrlModule.kt             # BASE_URL 注入（BuildConfig 兜底演示地址，生产 -PbaseUrl 切换）
+│   ├── BaseUrlModule.kt             # BASE_URL 注入（BuildConfig 兜底演示地址，生产 -PbaseUrl 切换）
+│   └── WorkbenchModule.kt           # 工作台入口 Api/Repository 供给（壳层自有页面）
+├── network/
+│   └── api/
+│       └── WorkbenchEntryApi.kt     # GET /web/auth/workbench/entries + WorkbenchEntryVo（壳层自有）
+├── repository/
+│   ├── WorkbenchEntryRepository.kt       # 工作台入口数据契约
+│   └── WorkbenchEntryRepositoryImpl.kt   # 实现（失败抛 NetworkException 交 VM 兜底）
 └── ui/
     ├── activity/
-    │   └── MainActivity.kt          # 单 Activity，NavHost 聚合所有 xxxGraph
+    │   └── MainActivity.kt          # 单 Activity，NavHost 聚合所有 xxxGraph + 深链冷/热启动收集
     ├── navigation/
-    │   └── ShellGraph.kt            # shellGraph 路由聚合 + 壳层全局转场动画
+    │   └── ShellGraph.kt            # shellGraph 路由聚合（含 WebView 页）+ 壳层全局转场动画
     └── page/
-        ├── PageConstant.kt          # 壳层路由常量（仅剩 Pickup）+ HomePageConstant（底部 tab）
+        ├── PageConstant.kt          # 壳层路由常量（Pickup/AiWork/WebView）+ HomePageConstant（底部 tab）
         ├── detail/                  # 订单详情（跨域留守）
         │   ├── OrderDetailPage.kt
         │   └── OrderDetailViewModel.kt
@@ -34,6 +41,12 @@ com.smartwash
         │   ├── PickupViewModel.kt
         │   ├── PickupDeliveryPage.kt
         │   └── PickupDeliveryViewModel.kt
+        ├── webview/                 # 内置浏览器页（深链 web 分支承载；AndroidView 包原生 WebView）
+        │   └── WebViewPage.kt
+        ├── workbench/               # 工作台 tab 根页（入口下发 + 深链点击分发）
+        │   ├── WorkbenchPage.kt
+        │   ├── WorkbenchTool.kt
+        │   └── WorkbenchViewModel.kt
         └── update/                  # 更新弹窗（壳层 UI）
             ├── UpdateDialog.kt
             └── UpdateFlow.kt
@@ -45,15 +58,16 @@ com.smartwash
 
 | 责任 | 说明 |
 |------|------|
-| NavHost 聚合 | `MainActivity` 经 `shellGraph` + `userGraph` + `orderGraph` + `paymentGraph` + `laundryGraph` + `couponGraph` + `divinationGraph` 完成路由注册 |
+| NavHost 聚合 | `MainActivity` 经 `shellGraph` + `userGraph` + `orderGraph` + `paymentGraph` + `laundryGraph` + `couponGraph` + `divinationGraph` + `toolboxGraph` 完成路由注册 |
 | InitEngine 调度 | `App.onCreate` 经 `applicationScope.launch { InitEngine(initTaskRegistry.getTasks()).executeAll() }` 启动各模块 InitTask |
 | 登录态事件分发 | `MainActivity` 收集 `UserApi.loginEvents`（LoginEvent.LoggedOut/LoggedIn）→ 统一跳登录页，401 去重 + `launchSingleTop` |
+| 深链分发 | `MainActivity`（Manifest scheme `smartwash`，singleTask）冷启动 onCreate / 热启动 onNewIntent → `pendingDeepLinkUri` → NavHost 就绪后 `DeepLinkHandler.resolve + navigate`；未登录直接放行（401 兜底拉回登录），scheme 清单见 docs/deeplink-对接文档.md |
 | 更新流程 | `UpdateFlow` 收集 `UpdateEventBus` 事件 → 驱动 `UpdateViewModel` → `UpdateDialog` 弹窗 |
 | WorkManager 工厂 | `App` 实现 `Configuration.Provider`，注入 `HiltWorkerFactory` 供 `@HiltWorker` 实例化 |
 
 ## 4. 依赖关系
 
-- **壳层留守页面**（本模块自有）：主页壳 HomePage、首页 Tab IndexPage、订单详情 OrderDetailPage、取件 Pickup/PickupDelivery、更新弹窗 UpdateDialog/UpdateFlow
+- **壳层留守页面**（本模块自有）：主页壳 HomePage、首页 Tab IndexPage、订单详情 OrderDetailPage、取件 Pickup/PickupDelivery、内置浏览器 WebViewPage、工作台 tab 根页、更新弹窗 UpdateDialog/UpdateFlow
 - **聚合的域模块**（全部 implementation）：
   - `:feature:user:api` + `:feature:user:impl`（用户域）
   - `:feature:order:api` + `:feature:order:impl`（订单域）
@@ -61,6 +75,8 @@ com.smartwash
   - `:feature:laundry:api` + `:feature:laundry:impl`（洗衣域）
   - `:feature:coupon:api` + `:feature:coupon:impl`（优惠券域）
   - `:feature:divination`（观象台）
+  - `:feature:toolbox`（工具箱短链）
+  - `:feature:deeplink`（深链：MainActivity 消费 DeepLinkHandler，工作台点击分发复用）
   - `:feature:update`（热更新）
 - **公共基建**：`:common:init`、`:common:utils`、`:common:utils`、`:common:network`、`:common:database`、`:common:ui`
 - **无 Room 注解类**：app 不编译 Room 实体，ksp 处理器随 DivinationDatabase 迁入 `:feature:divination`；本模块仅声明 `libs.androidx.work.runtime.ktx` + `libs.androidx.hilt.work`（feature 的 implementation 不传递）
@@ -68,11 +84,13 @@ com.smartwash
 ## 5. 内部约定
 
 1. **单 Activity + NavHost**：全局一个 `MainActivity`，`startDestination = UserRoute.Login`；转场动画经 `shellEnterTransition/shellExitTransition` 统一，`reduceMotion` 时降级短 tween。
-2. **路由常量单一事实来源**：各域路由归位各域 `Route` 常量（UserRoute/OrderRoute/PaymentRoute/LaundryRoute/CouponRoute/DivRoute/ShellRoute）；`PageConstant` 仅保留壳层留守页面（Pickup）；`HomePageConstant` 委托各域 Route 值。
+2. **路由常量单一事实来源**：各域路由归位各域 `Route` 常量（UserRoute/OrderRoute/PaymentRoute/LaundryRoute/CouponRoute/DivRoute/ShellRoute）；`PageConstant` 仅保留壳层留守页面（Pickup/AiWork/WebView，其中 WebView 委托 `ShellRoute.WEB_VIEW`）；`HomePageConstant` 委托各域 Route 值。
 3. **域模块经 NavGraphBuilder.xxxGraph 自注册**：壳层不内联各页面 composable，一行 `xxxGraph(navController)` 完成聚合。
 4. **BASE_URL 注入**：`BaseUrlModule` 读 `BuildConfig.BASE_URL`（debug/release 同值），生产经 Gradle 属性 `-PbaseUrl=https://your-domain.com/`（保留末尾斜杠）切换，并同步删除 `network_security_config.xml` 中对应明文放行。
 5. **会话事件去重**：`UserApi.loginEvents` 已由拦截器幂等清 token + 事件源去重 + `navigate(launchSingleTop)`，壳层不重复清 token。
 6. **更新弹窗事件驱动**：`UpdateFlow` 收集 `UpdateEventBus`（replay=1），不反向调用 `:feature:update` 检查时机；4 态弹窗分流（强制/可选/已关闭/最新）在壳层自理。
+7. **深链消费时机**：`resolve` 是挂起函数（未命中本地注册表会查后端字典），只在 `LaunchedEffect(pendingDeepLinkUri)` 内调用（NavHost 组合完成后），catch 分支必须先 rethrow `CancellationException`；onCreate/onNewIntent 只写 `pendingDeepLinkUri` state，不做解析。
+8. **工作台数据流**：WorkbenchViewModel → WorkbenchEntryRepository（壳层自有，app/di 供给）→ `GET /web/auth/workbench/entries`；失败/空列表回落本地兜底（含观象台品牌位之外的 7 项）；点击 target 经 `DeepLinkHandler` 分发，观象台玄墨特色卡为端上固定品牌位不参与下发。
 
 ## 6. 已知坑
 

@@ -195,6 +195,16 @@
     <string name="workbench_tool_history_desc">起过的卦都在这里</string>
     <string name="workbench_tool_ai">AI 助手</string>
     <string name="workbench_tool_ai_desc">洗护问题随口问</string>
+    <string name="workbench_tool_short_code">短链工具箱</string>
+    <string name="workbench_tool_short_code_desc">短链、活码随手建</string>
     <string name="workbench_footer">工具会陆续加进来</string>
     <string name="workbench_coming_soon">功能建设中，敬请期待</string>
+    <!-- 服务端入口配置拉取失败时的静默兜底留痕（RequestState.Error 消费方备用） -->
+    <string name="workbench_entries_fallback">工具列表加载失败，已显示默认工具</string>
+
+    <!-- ==================== 内置浏览器页（壳层留守，深链 web 分支承载） ==================== -->
+    <string name="webview_default_title">详情页</string>
+    <string name="webview_error_url_unsupported">仅支持打开网页链接</string>
+    <string name="webview_error_load">页面加载失败，请检查网络后重试</string>
+    <string name="webview_action_retry">重试</string>
 </resources>

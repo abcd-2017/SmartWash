@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 深链模块：无自有组件声明（解析/导航经宿主 MainActivity 与壳层 WebView 页承载），
+     此文件仅保留模块占位，manifest merger 合入宿主。 -->
+<manifest />

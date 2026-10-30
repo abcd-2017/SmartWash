@@ -1,0 +1,24 @@
+// 深链模块（单模块，照 :feature:toolbox 先例）：解析器/注册表为纯 Kotlin（JVM 单测），
+// Handler 依赖 NavHostController（导航）；页面承载在 app 壳 WebView 页，本模块零 Composable，
+// 故不应用 compose.gradle。路由字符串集中登记于 DeepLinkRoutes（各域 *Route 密封类的字面量副本）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.deeplink'
+}
+
+dependencies {
+    // 响应信封 ApiResult、动效/反馈不涉及；本模块仅消费 ApiResult 与 RequestState 无关
+    implementation project(':common:utils')
+    // Retrofit 供给（DeepLinkApi 复用 :common:network 注入的 Retrofit，
+    // 拦截器经 NetworkModule 自动生效；@RequireAuthorization 本模块公开接口不消费）
+    implementation project(':common:network')
+    // ShellRoute.WEB_VIEW —— WebView 壳层路由契约（common:ui 单一事实来源）
+    implementation project(':common:ui')
+    // NavHostController（DeepLinkHandler.navigate 消费）
+    implementation libs.androidx.navigation.compose
+
+    // JVM 单测（DeepLinkParser 全分支 + DefaultDeepLinkRegistry 注册表）
+    testImplementation libs.junit
+}

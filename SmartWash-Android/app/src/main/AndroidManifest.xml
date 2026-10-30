@@ -26,10 +26,21 @@
             android:name=".ui.activity.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.SmartWashAndroid">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!--  深链入口（scheme 清单见 SmartWash-Android/docs/deeplink-对接文档.md）：
+                  BROWSABLE 允许浏览器拉起，DEFAULT 必须显式声明；singleTask 复用既有
+                  MainActivity 实例（热启动深链走 onNewIntent），避免浏览器拉起第二实例
+                  导致导航栈分裂  -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="smartwash" />
             </intent-filter>
         </activity>
 
