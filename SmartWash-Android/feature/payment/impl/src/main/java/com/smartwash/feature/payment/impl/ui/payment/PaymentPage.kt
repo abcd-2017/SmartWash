@@ -58,6 +58,7 @@ import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.coupon.api.model.UsableCoupon
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SelectionDot
@@ -380,7 +381,23 @@ fun PaymentPage(
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
             sheetState = sheetState,
-            modifier = Modifier.fillMaxHeight()
+            modifier = Modifier.fillMaxHeight(),
+            // 对齐清氧规范：容器 = surface 令牌（tonalElevation 归零防 M3 默认叠加色偏灰），
+            // 顶部圆角 radiusXl 20dp（§2.3 hero/大容器档，替代 M3 默认 28dp），
+            // 拖拽指示条自绘走令牌色（M3 默认样式不受令牌控制）
+            containerColor = AppColors.colorScheme.surface,
+            tonalElevation = 0.dp,
+            shape = RoundedCornerShape(topStart = AppDimens.radiusXl, topEnd = AppDimens.radiusXl),
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .padding(vertical = AppDimens.spaceSm)
+                        .width(32.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(AppDimens.radiusFull))
+                        .background(AppColors.colorScheme.outline)
+                )
+            },
         ) {
             LazyColumn(
                 modifier = Modifier
@@ -425,18 +442,11 @@ fun PaymentPage(
                 }
                 if (userCouponList.isEmpty()) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                stringResource(R.string.no_coupons),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = AppColors.colorScheme.textSecondary
-                            )
-                        }
+                        // 空态 — §3.6：滚筒圆母题 + 引导文案（替代裸 Text）
+                        EmptyState(
+                            icon = Icons.Default.LocalOffer,
+                            message = stringResource(R.string.no_coupons),
+                        )
                     }
                 } else {
                     item(key = "no_coupon") {

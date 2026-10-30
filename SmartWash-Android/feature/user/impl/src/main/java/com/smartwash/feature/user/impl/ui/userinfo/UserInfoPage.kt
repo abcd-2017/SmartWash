@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,6 +62,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInputDialog
+import com.smartwash.common.ui.components.ButtonSpinner
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
@@ -280,10 +280,11 @@ fun UserInfoPage(
                                             .background(AppColors.colorScheme.primaryLight),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
+                                        // 公共 ButtonSpinner（§7.8：reduced motion 退化为静态 270° 圆环）
+                                        ButtonSpinner(
+                                            size = 24.dp,
+                                            strokeWidth = 2.dp,
                                             color = AppColors.colorScheme.primary,
-                                            strokeWidth = 2.dp
                                         )
                                     }
 
