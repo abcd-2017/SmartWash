@@ -1305,4 +1305,27 @@ CREATE TABLE `game_config` (
   UNIQUE KEY `uk_game_key` (`game_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5游戏库与下发配置';
 
+-- =====================================================================
+-- 情绪气象站 —— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for mood_record（每日情绪记录,一天一条,重复提交覆盖）
+-- ----------------------------
+DROP TABLE IF EXISTS `mood_record`;
+CREATE TABLE `mood_record` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT       NOT NULL COMMENT 'users.id',
+  `mood_date`  DATE         NOT NULL COMMENT '记录日期(自然日,与user_id组成uk一天一条)',
+  `mood_level` TINYINT      NOT NULL COMMENT '1暴雨 2阴 3多云 4晴 5大晴',
+  `color`      VARCHAR(9)   NULL COMMENT '快照当日颜色(#RRGGBB/#RRGGBBAA),改词典不改史',
+  `word`       VARCHAR(20)  NULL COMMENT '一个词(累/顺/静/燥/燃等),可空',
+  `note`       VARCHAR(200) NULL COMMENT '一句话备注,可空',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_date` (`user_id`, `mood_date`),
+  CONSTRAINT `chk_mood_level` CHECK (`mood_level` BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪气象站-每日情绪记录';
+
 SET FOREIGN_KEY_CHECKS = 1;

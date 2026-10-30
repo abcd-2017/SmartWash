@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.mood.mapper.MoodRecordMapper">
+
+    <!-- 记录/覆盖当日情绪：uk_user_date 冲突原子转 UPDATE，规避先查后分叉的并发竞态 -->
+    <insert id="upsertToday">
+        insert into mood_record (user_id, mood_date, mood_level, color, word, note)
+        values (#{userId}, #{moodDate}, #{moodLevel}, #{color}, #{word}, #{note})
+        on duplicate key update
+            mood_level = values(mood_level),
+            color      = values(color),
+            word       = values(word),
+            note       = values(note)
+    </insert>
+
+    <!-- 月历取数：自然月闭区间 [1日, 月末]，按日期升序；无记录日期不返回（端上缺省灰格） -->
+    <select id="selectMonthDays" resultType="com.smartwash.mood.entity.MoodRecord">
+        select id,
+               user_id,
+               mood_date,
+               mood_level,
+               color,
+               word,
+               note,
+               created_at,
+               updated_at
+        from mood_record
+        where user_id = #{userId}
+          and mood_date between #{begin} and #{end}
+        order by mood_date asc
+    </select>
+
+    <!-- 某用户某月各情绪等级计数（uk_user_date 保证一天一条，Σcount 即记录天数） -->
+    <select id="selectLevelCounts" resultType="com.smartwash.mood.vo.MoodLevelCountVo">
+        select mood_level   as level,
+               count(*)     as record_count
+        from mood_record
+        where user_id = #{userId}
+          and mood_date between #{begin} and #{end}
+        group by mood_level
+        order by mood_level
+    </select>
+</mapper>
