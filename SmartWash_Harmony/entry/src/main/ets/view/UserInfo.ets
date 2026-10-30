@@ -194,7 +194,7 @@ export struct UserInfo {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -425,7 +425,7 @@ export struct UserInfo {
         .border({ width: 1, color: DesignColor.OUTLINE })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: 'rgba(20,40,30,0.05)',
+          color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
         })

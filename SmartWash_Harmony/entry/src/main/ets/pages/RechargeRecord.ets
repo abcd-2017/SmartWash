@@ -1,3 +1,4 @@
+import { LoadingState } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
@@ -132,7 +133,7 @@ struct RechargeRecord {
     .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -163,20 +164,10 @@ struct RechargeRecord {
         .alignItems(VerticalAlign.Center)
 
         if (this.isLoadingFirst) {
-          // 首屏加载态（对齐安卓 RechargeRecordPage.kt:111-120）
-          Column() {
-            LoadingProgress()
-              .width(40)
-              .height(40)
-              .color(DesignColor.PRIMARY)
-            Text("加载中")
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .margin({ top: 12 })
-          }
+          // 首屏加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
+          LoadingState()
           .width("100%")
           .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
         } else if (this.recordList.length > 0) {
           Refresh({ refreshing: $$this.isRefreshing }) {
             List() {

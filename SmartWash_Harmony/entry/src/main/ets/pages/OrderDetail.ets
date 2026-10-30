@@ -6,7 +6,7 @@ import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { AppInfoDialog } from "../view/common/AppComponents"
+import { AppInfoDialog, LoadingState } from "../view/common/AppComponents"
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
 @Builder
@@ -289,7 +289,7 @@ struct OrderDetail {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -483,15 +483,10 @@ struct OrderDetail {
 
         // 加载态
         if (this.isLoading) {
-          Column() {
-            LoadingProgress()
-              .width(40)
-              .height(40)
-              .color(DesignColor.PRIMARY)
-          }
+          // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
+          LoadingState()
           .width("100%")
           .height("100%")
-          .justifyContent(FlexAlign.Center)
           .backgroundColor(DesignColor.BACKGROUND)
           .zIndex(2)
         }
@@ -538,7 +533,7 @@ struct InfoSectionCard {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })

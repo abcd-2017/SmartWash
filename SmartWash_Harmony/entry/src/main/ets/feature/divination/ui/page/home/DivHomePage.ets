@@ -28,7 +28,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
 import { DivChartParam } from '../../DivChartParam'
@@ -249,7 +249,7 @@ struct DivHomePage {
     // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + level1 轻阴影（宣纸侧；安卓 JadeTile 同此）
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })

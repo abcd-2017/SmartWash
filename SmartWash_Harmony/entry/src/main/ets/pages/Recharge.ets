@@ -58,7 +58,7 @@ struct Recharge {
     .border({ width: 1, color: this.currItem == index ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -123,7 +123,7 @@ struct Recharge {
     .border({ width: 1, color: this.currItem == 5 ? DesignColor.PRIMARY : DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -367,7 +367,7 @@ struct Recharge {
         .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: 'rgba(20,40,30,0.05)',
+          color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
         })

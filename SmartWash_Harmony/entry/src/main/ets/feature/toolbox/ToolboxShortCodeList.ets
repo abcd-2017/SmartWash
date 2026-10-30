@@ -20,7 +20,7 @@ import {
   toolboxExpiryUntil
 } from './api'
 import { ExpiryState, expiryStateOf, formatDisplayDateTime, isPublicVisibility } from './ShortCodeRules'
-import { AppButton, EmptyState, IconBox } from '../../view/common/AppComponents'
+import { AppButton, EmptyState, IconBox, LoadingState } from '../../view/common/AppComponents'
 import { LoadingFooter } from '../../view/LoadingFooter'
 import { PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
@@ -242,7 +242,7 @@ struct ToolboxShortCodeList {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -287,20 +287,10 @@ struct ToolboxShortCodeList {
         .alignItems(VerticalAlign.Center)
 
         if (this.isLoadingFirst) {
-          // 首刷 loading：鸿蒙无骨架屏组件，降级为居中占位（对齐 04 §2.4「降级为 LoadingFooter + 空态」）
-          Column() {
-            LoadingProgress()
-              .width(36)
-              .height(36)
-              .color(DesignColor.PRIMARY)
-            Text("加载中")
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .margin({ top: 8 })
-          }
+          // 首刷加载态（对齐安卓 ToolboxListPage：骨架屏；骨架组件已补齐，不再降级转圈）
+          LoadingState()
           .width('100%')
           .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
         } else if (this.isFirstError && this.list.length === 0) {
           this.Placeholder(ToolboxText.toolbox_error_load, ToolboxText.toolbox_action_retry, true)
         } else if (this.list.length === 0) {

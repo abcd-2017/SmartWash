@@ -5,6 +5,8 @@
 // 决策 D1：鸿蒙当前固定亮色模式（EntryAbility setColorMode COLOR_MODE_LIGHT），
 // 暗色主题整套 Dark* 令牌待后续专项补齐后再开放跟随系统。
 
+import { curves } from '@kit.ArkUI'
+
 // ========== 颜色常量 ==========
 
 /**
@@ -224,6 +226,11 @@ export class DesignColor {
   static readonly SERVICE_LUXURY_LIGHT: number = 0xFFEFF6FF
   static readonly SERVICE_SHOES: number = 0xFFDC2626      // 洗鞋 — 活力红
   static readonly SERVICE_SHOES_LIGHT: number = 0xFFFEF2F2
+
+  // ========== 阴影色（规范 §2.4 全应用仅两档，替代组件内散落的写死色） ==========
+  // 字符串类型：shadow.color 接受 ResourceColor，rgba() 直译设计稿 CSS 值
+  static readonly SHADOW_COLOR_CARD: string = 'rgba(20, 40, 30, 0.05)'   // 卡片档
+  static readonly SHADOW_COLOR_FLOAT: string = 'rgba(20, 40, 30, 0.10)'  // 浮层/弹窗档
 }
 
 // ========== 设计 Token ==========
@@ -272,6 +279,33 @@ export class DesignElevation {
   static readonly LEVEL_3: number = 6   // 高度浮起（交互卡片）
   static readonly LEVEL_4: number = 12  // 最高（弹窗/Sheet）
   static readonly FLOAT_LAYER: number = 10 // 浮层（弹窗/对话框）— 规范 §2.4 浮层档
+
+  // 阴影几何（规范 §2.4 CSS 值的 ArkUI 直译：卡片 0 2px 12px / 浮层 0 10px 24px）
+  static readonly CARD_SHADOW_RADIUS: number = 12
+  static readonly CARD_SHADOW_OFFSET: number = 2
+  static readonly FLOAT_SHADOW_RADIUS: number = 24
+  static readonly FLOAT_SHADOW_OFFSET: number = 10
+}
+
+// ========== 动效词汇（对齐安卓 common/utils/AnimationUtils.kt） ==========
+
+/**
+ * 动效 timing — 安卓弹簧参数（dampingRatio/stiffness）在 ArkUI 的等价物是
+ * springMotion(response, dampingFraction)。弹簧从当前值起动画、天然可中断，
+ * 不用固定时长 tween 描述位移动画（规范 §7）。
+ */
+export class MotionTiming {
+  /** 标准弹簧 — 对齐安卓 defaultSpring(1.0, 350)：临界阻尼无回弹（curves 工厂返回 ICurve） */
+  static readonly SPRING: ICurve = curves.springMotion(0.4, 1)
+
+  /**
+   * 弹窗入场 — 对齐安卓 dialogEnterMotion：scale 0.92→1 + fade 0→1 一次性进场。
+   * 退出动画受弹窗窗口机制限制（窗口由系统直接移除），两端一致不做。
+   */
+  static readonly DIALOG_ENTER: AnimateParam = { duration: 220, curve: curves.springMotion(0.4, 1) }
+
+  /** 内容进场（空态等状态到达时刻） — 同弹簧 */
+  static readonly ENTER: AnimateParam = { duration: 220, curve: curves.springMotion(0.4, 1) }
 }
 
 // ========== 字体大小常量 ==========

@@ -23,7 +23,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 
 @Builder
@@ -211,7 +211,7 @@ struct DivFollowUpPage {
         // 回复气泡 = 卡面：1px 描边 + level1 轻阴影（宣纸侧；安卓 ChatBubble 同此）
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: 'rgba(20,40,30,0.05)',
+          color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
         })

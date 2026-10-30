@@ -10,7 +10,7 @@
 
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
-import { DesignElevation } from '../../../../constant/DesignSystem'
+import { DesignElevation, DesignColor } from '../../../../constant/DesignSystem'
 
 // ========== 文案（对齐安卓 res/values/strings.xml 的 div_* 键；纯中文 demo 暂用字面量） ==========
 
@@ -497,7 +497,7 @@ export struct DivCard {
     // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })

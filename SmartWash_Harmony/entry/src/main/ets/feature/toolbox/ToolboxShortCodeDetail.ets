@@ -37,7 +37,7 @@ import {
 } from './ShortCodeRules'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { ToolboxRenewDialog } from './ToolboxRenewDialog'
-import { AppButton, AppConfirmDialog } from '../../view/common/AppComponents'
+import { AppButton, AppConfirmDialog, LoadingState } from '../../view/common/AppComponents'
 import { LoadingFooter } from '../../view/LoadingFooter'
 import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
@@ -419,7 +419,7 @@ struct ToolboxShortCodeDetail {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -533,7 +533,7 @@ struct ToolboxShortCodeDetail {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -641,11 +641,8 @@ struct ToolboxShortCodeDetail {
           ListItem() {
             Column() {
               if (this.statsLoadingFirst) {
-                LoadingProgress()
-                  .width(28)
-                  .height(28)
-                  .color(DesignColor.PRIMARY)
-                  .margin({ top: 12 })
+                // 统计首刷骨架（对齐安卓 ShortCodeDetailPage：SkeletonList，§3.6 禁转圈）
+                LoadingState()
               } else if (this.statsError && this.statsList.length === 0) {
                 Text(ToolboxText.toolbox_stats_error_load)
                   .fontSize(DesignFontSize.BODY)
@@ -694,7 +691,7 @@ struct ToolboxShortCodeDetail {
             .border({ width: 1, color: DesignColor.OUTLINE })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: 'rgba(20,40,30,0.05)',
+              color: DesignColor.SHADOW_COLOR_CARD,
               offsetX: 0,
               offsetY: 2
             })
