@@ -198,4 +198,9 @@ dependencies {
     //gameGraph 聚合；游戏页承载复用壳层 WebView 路由（零新建容器），
     //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:game")
+
+    //记忆复习域（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
+    //路由常量 ReviewRoute 为模块内单一事实来源；MainActivity NavHost 一行 reviewGraph 聚合，
+    //入口宿主后续接入（模式同 toolboxGraph，本次不改动壳层导航）
+    implementation project(":feature:review")
 }
