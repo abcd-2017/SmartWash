@@ -198,7 +198,7 @@ export async function createShortCode(form: AddShortCodeForm): Promise<BaseRespo
     body['expireAt'] = form.expireAt
   }
   body['isPublic'] = form.isPublic
-  return httpUtil.post<ShortCodeVo>('web/auth/toolbox/short-codes', body)
+  return httpUtil.post<ShortCodeVo>('/web/auth/toolbox/short-codes', body)
 }
 
 /**
@@ -210,7 +210,7 @@ export async function pageShortCodes(page: number, size: number)
   const params: Record<string, Object> = {}
   params['page'] = page
   params['size'] = size
-  return httpUtil.get<ToolboxPageData<ShortCodeVo>>('web/auth/toolbox/short-codes', params)
+  return httpUtil.get<ToolboxPageData<ShortCodeVo>>('/web/auth/toolbox/short-codes', params)
 }
 
 /**
@@ -226,7 +226,7 @@ export async function updateShortCode(id: number, form: UpdateShortCodeForm)
   if (form.expireAt !== undefined) {
     body['expireAt'] = form.expireAt
   }
-  return httpUtil.put<ShortCodeVo>(`web/auth/toolbox/short-codes/${id}`, body)
+  return httpUtil.put<ShortCodeVo>(`/web/auth/toolbox/short-codes/${id}`, body)
 }
 
 /**
@@ -234,7 +234,7 @@ export async function updateShortCode(id: number, form: UpdateShortCodeForm)
  * 后端 Result.ok(null)：data 字段为 null（或省略），成功一律以 code === 200 判定，勿判 data 非空。
  */
 export async function deleteShortCode(id: number): Promise<BaseResponse<string>> {
-  return httpUtil.delete<string>(`web/auth/toolbox/short-codes/${id}`)
+  return httpUtil.delete<string>(`/web/auth/toolbox/short-codes/${id}`)
 }
 
 /** 访问明细分页（IP 仅存摘要） */
@@ -243,7 +243,7 @@ export async function pageShortCodeStats(id: number, page: number, size: number)
   const params: Record<string, Object> = {}
   params['page'] = page
   params['size'] = size
-  return httpUtil.get<ToolboxPageData<ShortCodeStatsVo>>(`web/auth/toolbox/short-codes/${id}/stats`, params)
+  return httpUtil.get<ToolboxPageData<ShortCodeStatsVo>>(`/web/auth/toolbox/short-codes/${id}/stats`, params)
 }
 
 /**
@@ -253,14 +253,14 @@ export async function pageShortCodeStats(id: number, page: number, size: number)
 export async function resolveShortCode(code: string): Promise<BaseResponse<ShortCodeVo>> {
   const params: Record<string, Object> = {}
   params['code'] = code
-  return httpUtil.get<ShortCodeVo>('web/auth/toolbox/short-codes/resolve', params)
+  return httpUtil.get<ShortCodeVo>('/web/auth/toolbox/short-codes/resolve', params)
 }
 
 /**
  * 契约核对（issue #28 验收：路径/参数与安卓 ToolboxApi.kt 一致；冲突时以后端实现为准）：
  * | 接口 | 安卓 ToolboxApi.kt | 后端 ToolboxShortCodeController | 本域 |
  * |---|---|---|---|
- * | POST  | web/auth/toolbox/short-codes | @PostMapping 同路径 | ✓ |
+ * | POST  | /web/auth/toolbox/short-codes | @PostMapping 同路径 | ✓ |
  * | GET   | 同路径 ?page&size&contentType | @GetMapping + SearchShortCodeFrom | ✓ |
  * | PUT   | /{id} body{target?,expireAt?} | @PutMapping("/{id}") + UpdateShortCodeFrom | ✓ |
  * | DELETE| /{id} → data null | @DeleteMapping("/{id}") → Result.ok(null) | ✓ |
