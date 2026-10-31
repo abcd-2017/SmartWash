@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.game.mapper.GameConfigMapper">
+
+    <!-- 用户端下发查询：仅启用中的游戏，按 sort 升序、id 升序（与端上渲染顺序一致）；
+         显式列清单，不下发 enabled/remark/entry_path/object_key 等管理字段 -->
+    <select id="selectEnabledList" resultType="com.smartwash.game.entity.GameConfig">
+        SELECT id,
+               game_key,
+               title,
+               description,
+               icon,
+               color,
+               category,
+               badge,
+               url,
+               sort
+        FROM game_config
+        WHERE enabled = 1
+        ORDER BY sort ASC, id ASC
+    </select>
+
+</mapper>

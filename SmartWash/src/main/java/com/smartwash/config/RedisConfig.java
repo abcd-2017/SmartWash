@@ -80,6 +80,8 @@ public class RedisConfig {
         // 工作台配置类字典：变更频率低，管理端写操作统一 @CacheEvict 失效
         cacheConfigs.put("workbenchEntries", defaultConfig.entryTtl(Duration.ofMinutes(30)));
         cacheConfigs.put("deeplinkRoutes", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        // 游戏中心下发列表：上传/编辑/开关/删除均 @CacheEvict 全量失效
+        cacheConfigs.put("gameList", defaultConfig.entryTtl(Duration.ofMinutes(30)));
 
         log.info("RedisCacheManager 初始化成功");
         return RedisCacheManager.builder(connectionFactory)

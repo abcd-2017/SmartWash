@@ -68,6 +68,8 @@ import {
   Grid,
   // 工作台配置
   Guide,
+  // 游戏库
+  VideoPlay,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -108,6 +110,8 @@ const iconRegistry = {
   Grid: markRaw(Grid),
   // 工作台配置
   Guide: markRaw(Guide),
+  // 游戏库
+  VideoPlay: markRaw(VideoPlay),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
@@ -140,7 +144,11 @@ const MENU_GROUP_CONFIG = [
     ],
   },
   { title: '工具箱', icon: 'Suitcase', paths: ['/captcha', '/toolbox/short-codes'] },
-  { title: '工作台', icon: 'Grid', paths: ['/workbench/entries', '/workbench/deeplink-routes'] },
+  {
+    title: '工作台',
+    icon: 'Grid',
+    paths: ['/workbench/entries', '/workbench/deeplink-routes', '/game/list'],
+  },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);

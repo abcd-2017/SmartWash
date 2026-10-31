@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 游戏中心文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题 ==================== -->
+    <string name="game_center_title">游戏中心</string>
+
+    <!-- ==================== 分类筛选 chips ==================== -->
+    <string name="game_category_all">全部</string>
+    <string name="game_category_puzzle">益智</string>
+    <string name="game_category_arcade">街机</string>
+    <string name="game_category_word">文字</string>
+    <string name="game_category_board">桌版</string>
+
+    <!-- ==================== 三态（骨架屏为组件无文案） ==================== -->
+    <string name="game_empty_message">游戏架还空着，去后台上传几个</string>
+    <!-- 分类筛选无命中（与全量空态区分，避免误导用户去后台上传） -->
+    <string name="game_empty_category">该分类暂无游戏，看看全部吧</string>
+    <string name="game_error_load">游戏加载失败，请检查网络后重试</string>
+    <string name="game_action_retry">重试</string>
+</resources>

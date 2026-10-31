@@ -11,6 +11,12 @@ plugins {
 // 并同步删除 network_security_config.xml 中对应的明文放行。
 def SMART_WASH_BASE_URL = project.hasProperty('baseUrl') ? "\"${project.baseUrl}\"" : '"http://8.148.70.81:9000/"'
 
+// 统一 MinIO 对象存储端点（游戏 H5 / 头像等公共读直链来源）：与 baseUrl 同款 Gradle 属性注入，
+// 兜底为后端 application.yaml 的 minio.endpoint 开发默认值（两端 host 必须一致）。
+// 生产发布切换方式：-PminioEndpoint=https://your-minio-domain/，并与后端 MINIO_ENDPOINT 同步注入。
+// WebView 深色主题桥（GameThemeBridge）白名单 = BASE_URL host + MINIO_ENDPOINT host，两端任一变更需同步。
+def SMART_WASH_MINIO_ENDPOINT = project.hasProperty('minioEndpoint') ? "\"${project.minioEndpoint}\"" : '"http://192.168.1.61:9000"'
+
 android {
     namespace 'com.smartwash'
     compileSdk 35
@@ -43,11 +49,13 @@ android {
     buildTypes {
         debug {
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
+            buildConfigField "String", "MINIO_ENDPOINT", SMART_WASH_MINIO_ENDPOINT
         }
         release {
             // 签名：CI 环境注入 release 签名；本地未配置时回退 debug keystore（仅测试用）
             signingConfig signingConfigs.release
             buildConfigField "String", "BASE_URL", SMART_WASH_BASE_URL
+            buildConfigField "String", "MINIO_ENDPOINT", SMART_WASH_MINIO_ENDPOINT
             minifyEnabled true // 开启代码压缩与混淆
             shrinkResources true // 移除未使用资源
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -187,4 +195,9 @@ dependencies {
     //工具箱子系统（短链首批）：列表/创建/详情独立路由，经 MainActivity NavHost 一行
     //toolboxGraph 聚合；工作台入口走深链（smartwash://toolbox-short-code）
     implementation project(":feature:toolbox")
+
+    //游戏中心子系统（H5 小游戏）：GameCenterPage 独立路由，经 MainActivity NavHost 一行
+    //gameGraph 聚合；游戏页承载复用壳层 WebView 路由（零新建容器），
+    //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
+    implementation project(":feature:game")
 }

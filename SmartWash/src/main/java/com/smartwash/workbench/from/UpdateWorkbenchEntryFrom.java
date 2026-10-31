@@ -27,8 +27,8 @@ public class UpdateWorkbenchEntryFrom {
     @Size(max = 128, message = "描述过长（上限128字符）")
     private String description;
 
-    /** 图标 key（端上白名单枚举映射） */
-    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|default)$", message = "图标 key 不在白名单内")
+    /** 图标 key（端上白名单枚举映射；gamepad 对应游戏中心种子入口） */
+    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|gamepad|default)$", message = "图标 key 不在白名单内")
     private String icon;
 
     /** 图标色组 key */

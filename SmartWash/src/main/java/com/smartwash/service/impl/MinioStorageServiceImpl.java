@@ -21,13 +21,15 @@ import java.util.UUID;
 /**
  * 基于 MinIO 的文件存储服务实现
  *
- * <p><b>待办（评审报告后端 #23，本批次未实施）</b>：存储桶当前设置为公共读
- * （见 {@link #setBucketPublicReadPolicy}），任何拿到对象 URL 的匿名用户都可读取桶内全部对象，
- * 用户头像等上传内容缺乏访问控制。后续应将桶改为私有读写，对象访问改为后端签发的
- * 预签名 URL（presigned GET，短时效）。
+ * <p><b>访问控制（评审报告后端 #23 已部分收敛）</b>：存储桶匿名访问已收窄为
+ * {@link MinioPublicReadPolicy#PUBLIC_READ_PREFIXES} 前缀白名单
+ * （game/ 游戏直链、avatar/ 用户头像、default/ 默认头像），仅授予 s3:GetObject，
+ * 其余前缀（投递等私密内容）不再匿名可读；桶级公共读泄露面已消除。
+ * <b>残留待办</b>：白名单内对象仍为永久直链（无时效），后续如需进一步收敛，
+ * 对象访问应改为后端签发的预签名 URL（presigned GET，短时效）——与 APK 下载桶的做法一致。
  * <b>影响面</b>：三端（Android / 鸿蒙 / Web 管理后台）当前均直接使用后端返回的完整 URL 渲染头像，
  * 改造需同步调整头像字段的语义（返回签名 URL）或新增签名换取接口，并连带处理三端图片加载逻辑、
- * default/avatar.png 等内置资源的访问方式以及 URL 缓存/过期刷新策略，涉及接口响应结构变更，故本次暂缓。
+ * default/avatar.png 等内置资源的访问方式以及 URL 缓存/过期刷新策略，涉及接口响应结构变更。
  */
 @Slf4j
 @Service
@@ -44,7 +46,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
     public void init() {
         try {
             ensureBucketExists();
-            setBucketPublicReadPolicy();
+            setScopedPublicReadPolicy();
             initDefaultAvatar();
         } catch (Exception e) {
             log.error("MinIO 初始化失败", e);
@@ -137,32 +139,41 @@ public class MinioStorageServiceImpl implements FileStorageService {
     }
 
     /**
-     * 设置存储桶为公开读取策略，允许匿名访问文件
+     * 匿名只读策略收窄为前缀白名单（评审 #23 收敛，幂等）：
+     * 仅 game/avatar/default 三前缀授予 s3:GetObject（不授 ListBucket/写入），
+     * 其余前缀（投递等私密内容）不再匿名可读。已符合则跳过写入；
+     * 不符合（含历史全桶公共读）则覆盖为目标白名单——桶策略由本类统一管理，
+     * 覆盖会移除其它既有语句（当前无第三方语句，如部署侧手工配置过需自行合并）。
      */
-    private void setBucketPublicReadPolicy() {
+    private void setScopedPublicReadPolicy() {
+        String bucketName = minioConfig.getBucketName();
+        String existing = null;
         try {
-            String policy = """
-                {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {"AWS": ["*"]},
-                            "Action": ["s3:GetObject"],
-                            "Resource": ["arn:aws:s3:::%s/*"]
-                        }
-                    ]
-                }
-                """.formatted(minioConfig.getBucketName());
+            existing = minioClient.getBucketPolicy(
+                    GetBucketPolicyArgs.builder().bucket(bucketName).build());
+        } catch (Exception e) {
+            // 无策略时 MinIO 抛 NoSuchBucketPolicy 类错误，按无策略处理继续收窄
+            log.debug("读取桶策略未命中（视为无策略）: {}", e.getMessage());
+        }
+        if (MinioPublicReadPolicy.isScopedSatisfied(existing, bucketName)) {
+            log.info("桶匿名只读白名单策略已符合，跳过设置，当前策略: {}", existing);
+            return;
+        }
+        String scoped = MinioPublicReadPolicy.buildScopedPolicy(bucketName);
+        try {
             minioClient.setBucketPolicy(
                     SetBucketPolicyArgs.builder()
-                            .bucket(minioConfig.getBucketName())
-                            .config(policy)
+                            .bucket(bucketName)
+                            .config(scoped)
                             .build()
             );
-            log.info("MinIO 存储桶公开读取策略设置成功");
+            log.info("桶匿名只读策略已收窄为前缀白名单 {}，生效策略: {}",
+                    MinioPublicReadPolicy.PUBLIC_READ_PREFIXES, scoped);
+            if (existing != null && !existing.isBlank()) {
+                log.info("原桶策略已被收窄覆盖: {}", existing);
+            }
         } catch (Exception e) {
-            log.warn("设置 MinIO 存储桶策略失败（可能已存在）", e);
+            log.warn("设置 MinIO 桶白名单策略失败（游戏/头像直链将无法匿名读取，请检查 MinIO 权限）", e);
         }
     }
 

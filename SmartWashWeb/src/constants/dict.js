@@ -223,6 +223,79 @@ export const workbenchEntryColorText = (color) =>
 export const workbenchEntryColorHex = (color) =>
   WORKBENCH_ENTRY_COLOR_OPTIONS.find((o) => o.value === color)?.hex || '#94a3b8';
 
+// ---------- 游戏库（与后端 game 模块对齐，方案 05 §三/§五） ----------
+
+/**
+ * 游戏分类选项（筛选下拉/表单下拉用）。
+ * 白名单与 Android :feature:game 的 GameCategory 枚举对齐（puzzle/arcade/word/board/other），
+ * 中文文案对齐 Android strings.xml（益智/街机/文字/桌版）。
+ */
+export const GAME_CATEGORY_OPTIONS = [
+  { value: 'puzzle', label: '益智' },
+  { value: 'arcade', label: '街机' },
+  { value: 'word', label: '文字' },
+  { value: 'board', label: '桌版' },
+  { value: 'other', label: '其他' },
+];
+
+/** 游戏分类 → 文案（未知值回显原值，端上会兜底 OTHER） */
+export const gameCategoryText = (category) =>
+  GAME_CATEGORY_OPTIONS.find((o) => o.value === category)?.label || category || '-';
+
+/** 游戏分类 → el-tag 类型 */
+export const GAME_CATEGORY_TAG_TYPES = {
+  puzzle: 'primary',
+  arcade: 'success',
+  word: 'warning',
+  board: 'danger',
+  other: 'info',
+};
+
+/** 游戏分类标签配色 */
+export const gameCategoryTagType = (category) => dictValue(GAME_CATEGORY_TAG_TYPES, category);
+
+/**
+ * 游戏图标白名单选项（表单下拉用）。
+ * 与 Android gameIconFromKey 白名单对齐（方案 05 §十偏差 3 键集）：
+ * gamepad/arcade/puzzle/grid/board/word，default/未知值端上兜底默认图标。
+ */
+export const GAME_ICON_OPTIONS = [
+  { value: 'gamepad', label: '通用游戏' },
+  { value: 'arcade', label: '街机' },
+  { value: 'puzzle', label: '益智拼图' },
+  { value: 'grid', label: '数字方块' },
+  { value: 'board', label: '棋牌桌游' },
+  { value: 'word', label: '文字' },
+  { value: 'default', label: '默认' },
+];
+
+/**
+ * 游戏色组选项：与工作台入口共用端上同一份六色组白名单
+ * （green/blue/orange/pink/teal/purple，Android GameTint 同语言），不重复定义。
+ */
+export const GAME_COLOR_OPTIONS = WORKBENCH_ENTRY_COLOR_OPTIONS;
+
+/** 游戏色组 key → 色值（同工作台色组映射，未知值回退 Slate 灰） */
+export const gameColorHex = workbenchEntryColorHex;
+
+/** 游戏来源 → 文案（source_type：1 上传包 2 外链，方案 05 §三） */
+export const GAME_SOURCE_TYPE_TEXT = {
+  1: '上传',
+  2: '外链',
+};
+
+/** 游戏来源 → el-tag 类型 */
+export const GAME_SOURCE_TYPE_TAG_TYPES = {
+  1: 'primary',
+  2: 'info',
+};
+
+/** 游戏来源文案（未知值兜底） */
+export const gameSourceTypeText = (type) => GAME_SOURCE_TYPE_TEXT[type] || '未知';
+
+/** 游戏来源标签配色 */
+export const gameSourceTypeTagType = (type) => dictValue(GAME_SOURCE_TYPE_TAG_TYPES, type);
+
 // ---------- 跳转路由字典（与后端 deeplink 模块对齐） ----------
 
 /** 平台选项（筛选/表单下拉用）：1 Android 2 HarmonyOS 3 双端 */

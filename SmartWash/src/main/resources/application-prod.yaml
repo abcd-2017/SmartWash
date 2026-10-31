@@ -48,3 +48,6 @@ minio:
 # 工作台工具箱：短码对外跳转域名必须显式注入（拼 {base}/web/t/{code}），禁止 127.0.0.1 兜底上生产
 toolbox:
   public-base-url: ${TOOLBOX_PUBLIC_BASE_URL}
+
+# 游戏中心：可玩地址 = MinIO 对象直链（MINIO_ENDPOINT 必须为 https 公网地址，禁止明文 HTTP 上生产）
+# 对象元数据携带 immutable 缓存，读取授权依赖桶公共读策略（与头像同先例，见 MinioStorageServiceImpl）

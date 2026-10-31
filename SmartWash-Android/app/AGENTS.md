@@ -64,7 +64,7 @@ com.smartwash
 
 | 责任 | 说明 |
 |------|------|
-| NavHost 聚合 | `MainActivity` 经 `shellGraph` + `userGraph` + `orderGraph` + `paymentGraph` + `laundryGraph` + `couponGraph` + `divinationGraph` + `toolboxGraph` 完成路由注册 |
+| NavHost 聚合 | `MainActivity` 经 `shellGraph` + `userGraph` + `orderGraph` + `paymentGraph` + `laundryGraph` + `couponGraph` + `divinationGraph` + `toolboxGraph` + `gameGraph` 完成路由注册 |
 | InitEngine 调度 | `App.onCreate` 经 `applicationScope.launch { InitEngine(initTaskRegistry.getTasks()).executeAll() }` 启动各模块 InitTask |
 | 登录态事件分发 | `MainActivity` 收集 `UserApi.loginEvents`（LoginEvent.LoggedOut/LoggedIn）→ 统一跳登录页，401 去重 + `launchSingleTop` |
 | 深链分发 | `MainActivity`（Manifest scheme `smartwash`，singleTask）冷启动 onCreate / 热启动 onNewIntent → `pendingDeepLinkUri` → NavHost 就绪后 `DeepLinkHandler.resolve + navigate`；未登录直接放行（401 兜底拉回登录）。host 由各域贡献者注册（见下方「深链章节」），scheme 清单与 adb 示例见 docs/deeplink-对接文档.md |
@@ -82,6 +82,7 @@ com.smartwash
   - `:feature:coupon:api` + `:feature:coupon:impl`（优惠券域）
   - `:feature:divination`（观象台）
   - `:feature:toolbox`（工具箱短链）
+  - `:feature:game`（游戏中心）
   - `:feature:update`（热更新）
 - **公共基建**：`:common:init`、`:common:utils`、`:common:utils`、`:common:network`、`:common:database`、`:common:ui`
 - **无 Room 注解类**：app 不编译 Room 实体，ksp 处理器随 DivinationDatabase 迁入 `:feature:divination`；本模块仅声明 `libs.androidx.work.runtime.ktx` + `libs.androidx.hilt.work`（feature 的 implementation 不传递）
@@ -112,6 +113,7 @@ com.smartwash
 | laundry | LaundryRoute.Laundry | :feature:laundry:impl di/LaundryDeepLinkModule | — |
 | divination / divination-history | DivRoute.Home/History | :feature:divination di/DivinationDeepLinkModule | — |
 | toolbox-short-code / t | ToolboxRoute.List/Detail | :feature:toolbox di/ToolboxDeepLinkModule | t：path 段 code（4-16 位字母数字，本域自校验） |
+| game-center | GameRoute.Center | :feature:game di/GameDeepLinkModule | —（后端 workbench_entry 卡片 target 即本深链） |
 | pickup / ai-work | PageConstant.Pickup/AiWork | :app di/ShellDeepLinkModule（壳层自有） | — |
 | web | Parser 内建分支 → 壳层 WebView 页 | — | query `url` 必填（须 http/https）、`title` 可选 |
 

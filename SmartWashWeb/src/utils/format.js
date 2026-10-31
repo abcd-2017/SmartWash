@@ -18,3 +18,23 @@ export function formatTime(time, fmt = DEFAULT_TIME_FORMAT) {
   }
   return dayjs(time).format(fmt);
 }
+
+/**
+ * 文件大小人性化展示（字节 → B/KB/MB），用于游戏包体积列
+ * 空值（null/undefined）返回占位符 "-"（外链等无体积场景）
+ * @param {Number|null} bytes 字节数
+ * @returns {String}
+ */
+export function formatFileSize(bytes) {
+  if (bytes === null || bytes === undefined || bytes === '' || Number.isNaN(Number(bytes))) {
+    return '-';
+  }
+  const size = Number(bytes);
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}

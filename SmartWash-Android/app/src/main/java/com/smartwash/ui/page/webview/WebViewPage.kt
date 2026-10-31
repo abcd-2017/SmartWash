@@ -3,6 +3,7 @@ package com.smartwash.ui.page.webview
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavHostController
+import com.smartwash.BuildConfig
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -102,6 +106,11 @@ fun WebViewPage(
  * WebView 容器：细进度条 + 网页视图 + 加载失败错误态。
  * WebView 实例按导航条目生命周期创建/销毁（DisposableEffect onDispose destroy），
  * url 随路由条目固定，无需响应变化重建。
+ *
+ * 游戏 H5 主题桥（SmartWashGameBridge）挂载于本容器：
+ * - 白名单 host（后端 API + MinIO endpoint，均取 BuildConfig 注入值）内 getTheme 生效；
+ * - 主题/uiMode 变化与 onPageFinished 双保险推送 window.__applySmartWashTheme(mode)；
+ * - API 33+ 显式关闭算法加深（主题由 H5 自渲染，禁系统二次反色）。
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -110,12 +119,30 @@ private fun WebViewContent(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    // uiMode 变化经 LocalConfiguration 观察触发重推（Activity 因 uiMode 重建时由
+    // 重建后的 onPageFinished 兜底，两种路径覆盖）
+    val configuration = LocalConfiguration.current
     // 0-100 真实加载进度（WebChromeClient 回调驱动；1-99 显示细进度条）
     var progress by remember { mutableIntStateOf(0) }
     // 主框架加载失败标记（仅主框架错误置位，子资源失败不打断页面）
     var loadError by remember { mutableStateOf(false) }
     // 网页历史回退可用性（onPageFinished 后刷新）
     var canGoBack by remember { mutableStateOf(false) }
+
+    // 主题桥白名单 host：后端 API + MinIO endpoint（BuildConfig 注入，Kotlin 侧零硬编码）
+    val themeBridgeWhitelist = remember {
+        GameThemeBridgePolicy.whitelistHostsOf(BuildConfig.BASE_URL, BuildConfig.MINIO_ENDPOINT)
+    }
+    // getTheme 返回的主题模式：仓库无应用内主题开关 → 'system'（见 resolveBridgeThemeMode 注释）
+    val bridgeThemeMode = remember { GameThemeBridgePolicy.resolveBridgeThemeMode(inAppThemeMode = null) }
+    val themeBridge = remember {
+        SmartWashGameBridge(
+            whitelist = themeBridgeWhitelist,
+            themeModeProvider = { bridgeThemeMode },
+        ).apply {
+            currentPageHost = GameThemeBridgePolicy.hostOf(url)
+        }
+    }
 
     val webView = remember {
         WebView(context).apply {
@@ -126,6 +153,12 @@ private fun WebViewContent(
             settings.javaScriptEnabled = true
             // 常规 H5（含登录态 localStorage）依赖 DOM 存储，关闭会导致大量页面异常
             settings.domStorageEnabled = true
+            // 游戏 H5 主题由桥同步、H5 自行渲染，禁止系统算法加深二次反色（API 33+ 显式关；
+            // targetSdk 35 下 API 29-32 的 force dark AUTO 本就不生效，且全仓未调用 setForceDark）
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                settings.isAlgorithmicDarkeningAllowed = false
+            }
+            addJavascriptInterface(themeBridge, GAME_THEME_BRIDGE_NAME)
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(
                     view: WebView,
@@ -143,10 +176,18 @@ private fun WebViewContent(
                     // 新一轮导航开始时复位错误态与进度
                     loadError = false
                     progress = 0
+                    // 刷新主题桥的当前页 host 快照（onPageStarted 先于页面 JS，覆盖首帧与站内跳转）
+                    themeBridge.currentPageHost = GameThemeBridgePolicy.hostOf(startedUrl)
                 }
 
                 override fun onPageFinished(view: WebView, finishedUrl: String?) {
                     canGoBack = view.canGoBack()
+                    // 双保险推送：覆盖页面加载晚于 uiMode 变化推送的时序
+                    pushGameTheme(
+                        webView = view,
+                        mode = GameThemeBridgePolicy.resolveCurrentTheme(view.resources.configuration.uiMode),
+                        whitelist = themeBridgeWhitelist,
+                    )
                 }
 
                 override fun onReceivedError(
@@ -186,6 +227,17 @@ private fun WebViewContent(
     // 导航条目离开时释放 WebView（销毁内部线程与 WebCore，防内存泄漏）
     DisposableEffect(Unit) {
         onDispose { webView.destroy() }
+    }
+
+    // 主题/uiMode 变化主动推送（H5 侧 window.__applySmartWashTheme 钩子）：
+    // 首次组合亦推一次（页面未加载时为空操作），后续 uiMode 变化经 LocalConfiguration
+    // 观察触发；推送前统一过 host 白名单（pushGameTheme 内置），白名单外静默跳过。
+    LaunchedEffect(configuration.uiMode) {
+        pushGameTheme(
+            webView = webView,
+            mode = GameThemeBridgePolicy.resolveCurrentTheme(configuration.uiMode),
+            whitelist = themeBridgeWhitelist,
+        )
     }
 
     Box(modifier = modifier) {

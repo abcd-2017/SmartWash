@@ -3,6 +3,7 @@ package com.smartwash.config;
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.exception.GameServiceException;
 import com.smartwash.exception.UserAuthenticationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -10,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -42,6 +44,25 @@ public class ExceptionControllerAdvice {
     public Result<String> runTimeException(CustomExceptions e) {
         log.warn("业务异常: {}", e.getMessage());
         return Result.failMsg(e.getMessage());
+    }
+
+    /**
+     * 游戏中心业务异常捕获：按异常携带的 HTTP 语义业务码返回信封
+     * （400 参数/包内容不合法、403 路径穿越、404 不存在、409 gameKey 冲突、413 体积超限）。
+     */
+    @ExceptionHandler(value = GameServiceException.class)
+    public Result<String> handleGameServiceException(GameServiceException e) {
+        log.warn("游戏中心业务异常: code={}, message={}", e.getCode(), e.getMessage());
+        return Result.build(null, e.getCode(), e.getMessage());
+    }
+
+    /**
+     * multipart 体积超限捕获（multipart 上限先于业务校验触发）：413 语义，对齐上传链路错误码契约。
+     */
+    @ExceptionHandler(value = MaxUploadSizeExceededException.class)
+    public Result<String> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+        log.warn("上传文件超过 multipart 上限: {}", e.getMessage());
+        return Result.build(null, GameServiceException.PAYLOAD_TOO_LARGE, "上传文件过大（单文件上限10MB）");
     }
 
     /**
