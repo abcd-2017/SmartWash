@@ -196,6 +196,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 游戏库（与工作台配置同组） =====
+      {
+        path: '/game/list',
+        name: 'GameList',
+        component: () => import('@/views/game/GameList.vue'),
+        meta: {
+          title: '游戏库',
+          showInMenu: true,
+          icon: 'VideoPlay',
+          requiresAuth: true,
+        },
+      },
       // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',
