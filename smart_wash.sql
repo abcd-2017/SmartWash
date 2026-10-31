@@ -1262,7 +1262,8 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('ai-work',            'AI 助手',     3, 0, NULL, 1),
   ('toolbox-short-code', '短链工具箱',  3, 1, NULL, 1),
   ('web',                '内置 WebView', 3, 0, 'scheme 说明：smartwash://web?url= 打开内置 WebView', 1),
-  ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1);
+  ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1),
+  ('game-center',        '游戏中心',    3, 1, 'smartwash://game-center 打开游戏中心列表页', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
@@ -1270,6 +1271,38 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
 INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
   ('toolbox-short-code', '短链工具箱', '生成与管理短链', 'link',    'blue',   'smartwash://toolbox-short-code',   NULL, 1, 1, NULL),
   ('my-history',         '我的卦历',   NULL,             'history', 'purple', 'smartwash://divination-history',   NULL, 1, 2, NULL),
-  ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL);
+  ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL),
+  ('game-center',        '游戏中心',   'H5 小游戏合集',  'gamepad', 'teal',   'smartwash://game-center',          NULL, 1, 9, NULL);
+
+-- =====================================================================
+-- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for game_config（H5 游戏库与下发配置）
+-- ----------------------------
+DROP TABLE IF EXISTS `game_config`;
+CREATE TABLE `game_config` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+  `game_key`    VARCHAR(64)  NOT NULL COMMENT '游戏唯一标识,管理端与端上引用',
+  `title`       VARCHAR(32)  NOT NULL COMMENT '游戏名',
+  `description` VARCHAR(128) DEFAULT NULL COMMENT '一句话玩法描述',
+  `icon`        VARCHAR(32)  NOT NULL DEFAULT 'default' COMMENT '图标key,端上白名单枚举映射,未知值默认图标',
+  `color`       VARCHAR(16)  NOT NULL DEFAULT 'green' COMMENT '图标色组key: green/blue/orange/pink/teal/purple',
+  `category`    VARCHAR(20)  NOT NULL DEFAULT 'puzzle' COMMENT '分类: puzzle/arcade/word/board/other',
+  `source_type` TINYINT      NOT NULL DEFAULT 1 COMMENT '1上传包 2外链',
+  `entry_path`  VARCHAR(255) DEFAULT NULL COMMENT 'source_type=1: 包内入口相对路径,默认 index.html',
+  `url`         VARCHAR(512) NOT NULL COMMENT '最终可玩地址(https,构造规则见方案第四节)',
+  `object_key`  VARCHAR(512) DEFAULT NULL COMMENT 'source_type=1: MinIO对象键前缀 game/{game_key}/',
+  `file_size`   BIGINT       DEFAULT NULL COMMENT '包体积字节(source_type=1)',
+  `badge`       VARCHAR(16)  DEFAULT NULL COMMENT '角标文案(新/热),空不显示',
+  `enabled`     TINYINT      NOT NULL DEFAULT 0 COMMENT '1下发 0不下发(上架开关)',
+  `sort`        INT          NOT NULL DEFAULT 100 COMMENT '排序,越小越靠前',
+  `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_game_key` (`game_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5游戏库与下发配置';
 
 SET FOREIGN_KEY_CHECKS = 1;

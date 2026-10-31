@@ -34,8 +34,9 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      # 10MB 对齐游戏库上传上限（超限走 413 语义），max-request-size 留出表单字段余量
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 mybatis-plus:
   global-config:
@@ -95,3 +96,9 @@ security:
 toolbox:
   # 短码对外完整跳转 URL 的域名前缀（拼 {base}/web/t/{code}），生产必须通过 TOOLBOX_PUBLIC_BASE_URL 注入真实域名
   public-base-url: ${TOOLBOX_PUBLIC_BASE_URL:http://127.0.0.1:8080}
+
+# 游戏中心配置
+game:
+  # 可玩地址域名前缀（拼 {base}/web/game/{gameKey}/，落库 game_config.url）。
+  # 生产必须通过 GAME_PUBLIC_BASE_URL 注入 https 真实域名（环境红线：生产禁明文 HTTP）
+  public-base-url: ${GAME_PUBLIC_BASE_URL:http://127.0.0.1:8080}
