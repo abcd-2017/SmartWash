@@ -39,12 +39,14 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
 
 /** 充值记录页三态：列表 / 空态 / 首载加载 */
@@ -117,17 +119,27 @@ fun RechargeRecordPage(
                         }
 
                         records.apply {
-                            // 尾部转圈仅保留给 append；refresh 不追加尾部指示（旧内容保持可读）
+                            // 尾部转圈仅保留给 append；refresh 不追加尾部指示（旧内容保持可读）。
+                            // reduced motion 降级为静态三点灰（§8：取消无限旋转，保留"在忙"可读性，
+                            // 与订单页分页 footer 同规格）
                             if (loadState.append is LoadState.Loading) {
-                                item {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp)
-                                            .wrapContentWidth(Alignment.CenterHorizontally),
-                                        color = AppColors.colorScheme.primary,
-                                        strokeWidth = 2.dp
-                                    )
+                                item(key = "append_loading_footer") {
+                                    if (LocalReduceMotion.current) {
+                                        LoadingDots(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                        )
+                                    } else {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp)
+                                                .wrapContentWidth(Alignment.CenterHorizontally),
+                                            color = AppColors.colorScheme.primary,
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
                                 }
                             }
                         }

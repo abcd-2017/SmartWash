@@ -180,3 +180,75 @@ export const DIV_METHOD_OPTIONS = [
 /** 术数方法 → 文案（未知值回显原值） */
 export const divinationMethodText = (method) =>
   DIV_METHOD_OPTIONS.find((m) => m.value === method)?.label || method;
+
+// ---------- 工作台入口配置（与后端 workbench 模块对齐） ----------
+
+/**
+ * 入口图标白名单选项（表单下拉用）。
+ * 端上按 key 做白名单映射，未知 key 一律显示 default 默认图标，因此后端取值须与此处对齐。
+ */
+export const WORKBENCH_ENTRY_ICON_OPTIONS = [
+  { value: 'calendar', label: '洗衣黄历' },
+  { value: 'search', label: '渍迹识别' },
+  { value: 'book', label: '面料百科' },
+  { value: 'calculate', label: '费用估算' },
+  { value: 'history', label: '卦历' },
+  { value: 'chat', label: 'AI 助手' },
+  { value: 'link', label: '短链' },
+  { value: 'default', label: '默认' },
+];
+
+/**
+ * 入口色组选项（表单下拉用，hex 供选项/表格色块渲染）。
+ * 取值与用户端工作台卡片的色组白名单一致，两端需同步维护。
+ */
+export const WORKBENCH_ENTRY_COLOR_OPTIONS = [
+  { value: 'green', label: '绿色', hex: '#22c55e' },
+  { value: 'blue', label: '蓝色', hex: '#3b82f6' },
+  { value: 'orange', label: '橙色', hex: '#f97316' },
+  { value: 'pink', label: '粉色', hex: '#ec4899' },
+  { value: 'teal', label: '青色', hex: '#14b8a6' },
+  { value: 'purple', label: '紫色', hex: '#8b5cf6' },
+];
+
+/** 图标 key → 文案（未知值回显原值，端上会兜底为默认图标） */
+export const workbenchEntryIconText = (icon) =>
+  WORKBENCH_ENTRY_ICON_OPTIONS.find((o) => o.value === icon)?.label || icon || '-';
+
+/** 色组 key → 文案（未知值回显原值） */
+export const workbenchEntryColorText = (color) =>
+  WORKBENCH_ENTRY_COLOR_OPTIONS.find((o) => o.value === color)?.label || color || '-';
+
+/** 色组 key → 色值（未知值回退 Slate 灰，用于色块兜底渲染） */
+export const workbenchEntryColorHex = (color) =>
+  WORKBENCH_ENTRY_COLOR_OPTIONS.find((o) => o.value === color)?.hex || '#94a3b8';
+
+// ---------- 跳转路由字典（与后端 deeplink 模块对齐） ----------
+
+/** 平台选项（筛选/表单下拉用）：1 Android 2 HarmonyOS 3 双端 */
+export const DEEPLINK_PLATFORM_OPTIONS = [
+  { value: 1, label: 'Android' },
+  { value: 2, label: 'HarmonyOS' },
+  { value: 3, label: '双端' },
+];
+
+/** 平台 → 文案 */
+export const DEEPLINK_PLATFORM_TEXT = {
+  1: 'Android',
+  2: 'HarmonyOS',
+  3: '双端',
+};
+
+/** 平台 → el-tag 类型 */
+export const DEEPLINK_PLATFORM_TAG_TYPES = {
+  1: 'primary',
+  2: 'success',
+  3: 'warning',
+};
+
+/** 平台文案（未知值兜底） */
+export const deeplinkPlatformText = (platform) => DEEPLINK_PLATFORM_TEXT[platform] || '未知';
+
+/** 平台标签配色 */
+export const deeplinkPlatformTagType = (platform) =>
+  dictValue(DEEPLINK_PLATFORM_TAG_TYPES, platform);

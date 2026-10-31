@@ -51,6 +51,7 @@ import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
+import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
@@ -354,7 +355,8 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
     var lines by remember { mutableStateOf(listOf(1, 1, 1, 1, 1, 1)) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        DivCard(background = c.surface2) {
+        // 与公共弹窗同一条入场动效（scale 0.92→1 + alpha，reduced motion 降级纯淡入）
+        DivCard(modifier = Modifier.dialogEnterMotion(), background = c.surface2) {
             Column(Modifier.padding(20.dp)) {
                 Text(
                     text = stringResource(R.string.div_manual_title),
@@ -418,7 +420,8 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
     val valid = first.toIntOrNull() in 1..999 && second.toIntOrNull() in 1..999
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        DivCard(background = c.surface2) {
+        // 与公共弹窗同一条入场动效（scale 0.92→1 + alpha，reduced motion 降级纯淡入）
+        DivCard(modifier = Modifier.dialogEnterMotion(), background = c.surface2) {
             Column(Modifier.padding(20.dp)) {
                 Text(
                     text = stringResource(R.string.div_numbers_title),

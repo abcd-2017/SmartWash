@@ -11,7 +11,7 @@ import { payment } from "../network/api/PaymentApi"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
-import { AppButton, AppConfirmDialog } from "../view/common/AppComponents"
+import { AppButton, AppConfirmDialog, EmptyState, SelectionDot } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 @Builder
@@ -189,6 +189,15 @@ struct Payment {
   @Builder
   BottomSheet() {
     Column() {
+      // 拖拽指示条 — 对齐安卓自绘 handle（32×4 outline 胶囊）：bindSheet 的 dragBar
+      // 是系统样式不受令牌控制，故 dragBar:false + 内容顶部自绘
+      Row()
+        .width(32)
+        .height(4)
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor(DesignColor.OUTLINE)
+        .margin({ top: DesignDimens.SPACE_SM })
+
       // 标题栏
       Row() {
         Text("选择优惠券")
@@ -217,14 +226,10 @@ struct Payment {
       .margin({ top: 8, bottom: 16 })
 
       if (this.userCoupon == null || this.userCoupon.length == 0) {
-        Column() {
-          Text("暂无优惠券")
-            .fontSize(DesignFontSize.BODY)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-        }
-        .height(120)
-        .width("100%")
-        .justifyContent(FlexAlign.Center)
+        // 空态 — 规范 §3.6：滚筒圆母题 + 引导文案（替代裸 Text）
+        EmptyState({ message: "暂无优惠券" })
+          .width("100%")
+          .height(160)
       } else {
         // "不使用优惠券"选项（评审 #17）：默认选中，用于从已选优惠券切换回不使用
         Row() {
@@ -242,13 +247,9 @@ struct Payment {
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1)
 
-          Radio({ value: "noCoupon", group: "userCoupon" })
-            .checked(this.selectCouponId == null)
-            .onChange((flag) => {
-              if (flag) {
-                this.selectCouponWithThrottle(null)
-              }
-            })
+          // 公共 SelectionDot（对齐安卓）：系统 Radio 的圈点样式/尺寸不受令牌控制；
+          // 行 onClick 已承担选择，这里只做状态表达
+          SelectionDot({ selected: this.selectCouponId == null })
         }
         .width("100%")
         .borderRadius(DesignDimens.CARD_RADIUS)
@@ -257,7 +258,7 @@ struct Payment {
         .border({ width: 1, color: DesignColor.OUTLINE })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: 'rgba(20,40,30,0.05)',
+          color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
         })
@@ -298,13 +299,8 @@ struct Payment {
                 .alignItems(HorizontalAlign.Start)
                 .layoutWeight(1)
 
-                Radio({ value: `${coupon.userCouponId}`, group: "userCoupon" })
-                  .checked(this.selectCouponId == coupon.userCouponId)
-                  .onChange((flag) => {
-                    if (flag) {
-                      this.selectCouponWithThrottle(coupon)
-                    }
-                  })
+                // 公共 SelectionDot（对齐安卓）：行 onClick 已承担选择，这里只做状态表达
+                SelectionDot({ selected: this.selectCouponId == coupon.userCouponId })
               }
               .width("100%")
               .borderRadius(DesignDimens.CARD_RADIUS)
@@ -313,7 +309,7 @@ struct Payment {
               .border({ width: 1, color: DesignColor.OUTLINE })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: 'rgba(20,40,30,0.05)',
+                color: DesignColor.SHADOW_COLOR_CARD,
                 offsetX: 0,
                 offsetY: 2
               })
@@ -425,7 +421,7 @@ struct Payment {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
@@ -480,7 +476,7 @@ struct Payment {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
@@ -517,12 +513,14 @@ struct Payment {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
           .bindSheet($$this.showSheet, this.BottomSheet(), {
-            height: "50%",
+            // 对齐安卓 ModalBottomSheet(fillMaxHeight) 的近全高选券浮层；
+            // 留 10% 露出遮罩便于点空白处关闭（安卓点 scrim 关闭）
+            height: "90%",
             showClose: false,
             dragBar: false
           })

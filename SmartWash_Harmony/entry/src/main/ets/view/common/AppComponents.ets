@@ -1,7 +1,7 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
 
@@ -136,23 +136,33 @@ export struct AppCard {
     .borderColor(DesignColor.OUTLINE)
     .padding(this.paddingValue)
     .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
-      offsetY: 2
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
   }
 }
 
-// ========== AppButton 统一按钮 ==========
+// ========== AppButton 统一按钮（三态变体，对齐安卓 AppButtonVariant §3.3） ==========
+
+/** AppButton 形态 — 主（品牌渐变底）/ 次（surfaceVariant 底）/ 文字（无底无框） */
+export enum AppButtonVariant {
+  PRIMARY,
+  SECONDARY,
+  TEXT
+}
 
 /**
- * 统一按钮（规范 §3.3）
- * 默认 = 主按钮：绿底(#2D9B6A)、14vp 圆角、52vp 高度、文字 18 档 SemiBold
- * 支持 loading 状态显示 LoadingProgress
+ * 统一按钮（规范 §3.3）— 自绘实现，业务层一律经本组件消费，禁止裸写可点击按钮：
+ * 主 = 52vp 高 / 14vp 圆角 / 135° primary→primaryDark 渐变底 / onPrimary 文字 18 档 SemiBold；
+ * 次 = 同尺寸 surfaceVariant 底 + 主文本色（「退出登录」等经 contentColor 换语义色，容器不变）；
+ * 文字 = 主色无底无框，最小触控 44。
  *
- * 次按钮形态（设置页「退出登录」等）：传 bgColor / textColor / textSize 覆盖；
- * 三者不传时与主按钮完全一致，既有调用方行为不变。
+ * 形态用 Normal 方角 + BUTTON_RADIUS：此前 Capsule 会让 borderRadius(14) 失效变胶囊，
+ * 与安卓 AppButton 的 14 圆角矩形不一致（v0.4 §3.3）。
+ * disabled/loading：整钮降透明度 0.5 + 禁点（对齐安卓禁用降透明，替代旧灰底 TEXT_TERTIARY）；
+ * spinner 色随文字色，浅底次按钮上不再出现不可见的白圈。
  */
 @ComponentV2
 export struct AppButton {
@@ -160,45 +170,95 @@ export struct AppButton {
   // 命名注意：不能叫 enabled（与 CustomComponent 基类的同名属性方法冲突导致编译错误）
   @Param isEnabled: boolean = true
   @Param loading: boolean = false
-  // 次按钮形态的可选覆盖项（默认 null / 原值 = 主按钮逻辑）
-  @Param textColor: ResourceColor | null = null
-  @Param bgColor: ResourceColor | null = null
-  @Param textSize: number = DesignFontSize.SECTION_TITLE
+  @Param variant: AppButtonVariant = AppButtonVariant.PRIMARY
+  /** 次按钮文字语义色覆盖（如退出登录 dangerInk）；仅 SECONDARY 生效，容器形态不变 */
+  @Param contentColor: number | null = null
   @Event click: () => void = () => {
   }
 
-  build() {
-    Button() {
-      if (this.loading) {
-        LoadingProgress()
-          .width(22)
-          .height(22)
-          .color(Color.White)
-      } else {
-        Text(this.text)
-          .fontSize(this.textSize)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(this.textColor ?? DesignColor.ON_PRIMARY)
-      }
+  private isActive(): boolean {
+    return this.isEnabled && !this.loading
+  }
+
+  /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=primary */
+  private contentTint(): number {
+    if (this.variant === AppButtonVariant.PRIMARY) {
+      return DesignColor.ON_PRIMARY
     }
-    .type(ButtonType.Capsule)
-    .width('100%')
-    .height(52)
-    .borderRadius(DesignDimens.BUTTON_RADIUS)
-    .backgroundColor(this.bgColor ?? (this.isEnabled && !this.loading ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY))
-    .stateEffect(this.isEnabled && !this.loading)
-    .enabled(this.isEnabled && !this.loading)
-    .onClick(() => {
-      if (this.isEnabled && !this.loading) {
-        // 触觉反馈
-        try {
-          vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
-        } catch (err) {
-          // 忽略不支持的设备
+    if (this.variant === AppButtonVariant.SECONDARY) {
+      return this.contentColor ?? DesignColor.TEXT_PRIMARY
+    }
+    return DesignColor.PRIMARY
+  }
+
+  private triggerClick(): void {
+    if (!this.isActive()) {
+      return
+    }
+    // 触觉反馈
+    try {
+      vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+    } catch (err) {
+      // 忽略不支持的设备
+    }
+    this.click()
+  }
+
+  build() {
+    if (this.variant === AppButtonVariant.TEXT) {
+      Row() {
+        if (this.loading) {
+          LoadingProgress()
+            .width(14)
+            .height(14)
+            .color(this.contentTint())
+        } else {
+          Text(this.text)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(this.contentTint())
         }
-        this.click()
       }
-    })
+      .justifyContent(FlexAlign.Center)
+      .constraintSize({ minWidth: 44, minHeight: 44 })
+      .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+      .opacity(this.isActive() ? 1 : 0.5)
+      .onClick(() => {
+        this.triggerClick()
+      })
+    } else {
+      Button() {
+        if (this.loading) {
+          LoadingProgress()
+            .width(22)
+            .height(22)
+            .color(this.contentTint())
+        } else {
+          Text(this.text)
+            .fontSize(DesignFontSize.SECTION_TITLE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(this.contentTint())
+        }
+      }
+      .type(ButtonType.Normal)
+      .width('100%')
+      .height(52)
+      .borderRadius(DesignDimens.BUTTON_RADIUS)
+      // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）
+      .backgroundColor(this.variant === AppButtonVariant.SECONDARY ? DesignColor.SURFACE_VARIANT : Color.Transparent)
+      .linearGradient({
+        angle: 135,
+        colors: this.variant === AppButtonVariant.PRIMARY
+          ? [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+          : [[Color.Transparent, 0], [Color.Transparent, 1]]
+      })
+      .opacity(this.isActive() ? 1 : 0.5)
+      .stateEffect(this.isActive())
+      .enabled(this.isActive())
+      .onClick(() => {
+        this.triggerClick()
+      })
+    }
   }
 }
 
@@ -223,7 +283,20 @@ export struct AppInfoDialog {
   @Prop title: string = ''
   @Prop message: string = ''
   @Prop buttonText: string = '确认'
+  @State entered: boolean = false
   onDismiss: () => void = () => {
+  }
+
+  /**
+   * 弹窗统一入场（对齐安卓 dialogEnterMotion）：scale 0.92→1 + fade 0→1 弹簧一次性进场。
+   * 首帧后再触发，保证初始 0.92/0 先上屏，过渡才可见；退出动画窗口层不支持，两端一致不做。
+   */
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   build() {
@@ -248,12 +321,6 @@ export struct AppInfoDialog {
         top: 20,
         bottom: 20
       })
-      .shadow({
-        radius: DesignElevation.FLOAT_LAYER,
-        color: '#33000000',
-        offsetX: 0,
-        offsetY: 4
-      })
 
       Divider()
         .color(DesignColor.DIVIDER)
@@ -273,15 +340,29 @@ export struct AppInfoDialog {
           this.controller.close()
         })
     }
+    .backgroundColor(DesignColor.SURFACE)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
+    .shadow({
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_FLOAT,
+      offsetX: 0,
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }
 
 // ========== AppTabBar 标签栏 ==========
 
 /**
- * 标签栏
- * 文字标签 + 底部短横线指示器
- * 选中项绿色加粗，未选中灰色
+ * 标签栏（下划线指示条形态，对齐安卓 AppTabBar）
+ * 两态同字号同字重（14/Medium），只差颜色与指示条 —— 避免选中瞬间字号跳变
+ * 拉动兄弟节点位移；指示条常驻、宽度 0↔20 弹簧过渡，切换不再硬跳。
  */
 @ComponentV2
 export struct AppTabBar {
@@ -295,23 +376,19 @@ export struct AppTabBar {
       ForEach(this.tabs, (title: string, index: number) => {
         Column() {
           Text(title)
-            .fontSize(this.selectedIndex === index ? DesignFontSize.CARD_TITLE : DesignFontSize.BODY)
-            .fontWeight(this.selectedIndex === index ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
             .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .animation(MotionTiming.ENTER)
 
-          // 底部指示器
-          if (this.selectedIndex === index) {
-            Row()
-              .width(20)
-              .height(3)
-              .borderRadius(1.5)
-              .backgroundColor(DesignColor.PRIMARY)
-          } else {
-            Row()
-              .width(20)
-              .height(3)
-          }
+          // 底部指示器 — 常驻，宽度 0↔20 过渡
+          Row()
+            .width(this.selectedIndex === index ? 20 : 0)
+            .height(3)
+            .borderRadius(1.5)
+            .backgroundColor(DesignColor.PRIMARY)
+            .animation(MotionTiming.ENTER)
         }
         .alignItems(HorizontalAlign.Center)
         .onClick(() => {
@@ -321,6 +398,192 @@ export struct AppTabBar {
     }
     .width('100%')
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+  }
+}
+
+// ========== AppPillTabRow 胶囊分段选择器（对齐安卓 AppPillTabRow.kt） ==========
+
+/**
+ * 胶囊分段选择器 — 与 AppTabBar 的分工：本组件是「胶囊分段」形态（选中项有底色胶囊），
+ * AppTabBar 是「下划线指示条」形态，页面按设计稿二选一（优惠券三 tab 用本组件）。
+ *
+ * 字重统一 SemiBold：字重渐变会让文字宽度在动画期间持续变化、兄弟节点连续位移，
+ * 观感差于一次跳变；选中底/文字色经 .animation 弹簧过渡。触觉：选中档。
+ */
+@ComponentV2
+export struct AppPillTabRow {
+  @Param tabs: string[] = []
+  @Param selectedIndex: number = 0
+  @Event tabSelected: (index: number) => void = (_: number) => {
+  }
+
+  build() {
+    Row() {
+      ForEach(this.tabs, (title: string, index: number) => {
+        Row() {
+          Text(title)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+        }
+        .justifyContent(FlexAlign.Center)
+        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 8, bottom: 8 })
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY_LIGHT : Color.Transparent)
+        .margin({ right: DesignDimens.SPACE_XS })
+        .animation(MotionTiming.ENTER)
+        .onClick(() => {
+          try {
+            vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+          } catch (err) {
+            // 忽略不支持的设备
+          }
+          this.tabSelected(index)
+        })
+      }, (title: string) => title)
+    }
+    .width('100%')
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+  }
+}
+
+// ========== SelectionDot 选中圆点（对齐安卓 SelectionDot.kt） ==========
+
+/**
+ * 公共选中圆点 — 单选/步骤态的标记（支付选券等）。
+ * 结构：20vp 外环（描边色随选中过渡）+ 内圆（scale 0→1 弹簧长出）。
+ * 无点击逻辑：按压反馈由调用方负责（本组件只做状态表达），替代系统 Radio
+ * （其圈点样式/尺寸不受令牌控制）。
+ */
+@ComponentV2
+export struct SelectionDot {
+  @Param selected: boolean = false
+  @Param dotSize: number = 20
+
+  build() {
+    Stack() {
+      // 外环
+      Column()
+        .width(this.dotSize)
+        .height(this.dotSize)
+        .borderRadius(this.dotSize / 2)
+        .border({
+          width: 1,
+          color: this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+          style: BorderStyle.Solid
+        })
+        .animation(MotionTiming.ENTER)
+
+      // 内圆：选中时从圆心长出（scale 0→1）
+      Column()
+        .width(this.dotSize / 2)
+        .height(this.dotSize / 2)
+        .borderRadius(this.dotSize / 4)
+        .backgroundColor(DesignColor.PRIMARY)
+        .scale({ x: this.selected ? 1 : 0, y: this.selected ? 1 : 0 })
+        .animation(MotionTiming.ENTER)
+    }
+    .width(this.dotSize)
+    .height(this.dotSize)
+  }
+}
+
+// ========== 骨架屏（规范 §3.6：加载态用骨架微光，禁止转圈占位列表） ==========
+
+/**
+ * 骨架块 — 底块 surfaceVariant + 线性渐变高光层做 1400ms 呼吸明暗。
+ * ArkUI 无法平移渐变偏移量，用高光层 opacity 呼吸近似安卓 shimmer 的「微光扫过」；
+ * 尺寸/圆角由调用方以属性链给定（对齐安卓 SkeletonBlock 的 modifier 用法）。
+ */
+@ComponentV2
+export struct SkeletonBlock {
+  @Param blockRadius: number = DesignDimens.RADIUS_MD
+  @Local glow: boolean = false
+
+  build() {
+    Stack() {
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor(DesignColor.SURFACE_VARIANT)
+
+      Column()
+        .width('100%')
+        .height('100%')
+        .linearGradient({
+          angle: 90,
+          colors: [['rgba(255,255,255,0)', 0], [DesignColor.SURFACE, 0.5], ['rgba(255,255,255,0)', 1]]
+        })
+        .opacity(this.glow ? 1 : 0.3)
+        .animation({
+          duration: 1400,
+          curve: Curve.Linear,
+          iterations: -1,
+          playMode: PlayMode.Alternate
+        })
+    }
+    .clip(true)
+    .borderRadius(this.blockRadius)
+    .onAppear(() => {
+      this.glow = true
+    })
+  }
+}
+
+/**
+ * 列表骨架 — 列表型页面（订单/券/收支/服务）的加载占位，替代居中转圈：
+ * 转圈只说明「在忙」，骨架说明「马上出现什么形状」（规范 §3.6）。
+ */
+@ComponentV2
+export struct SkeletonList {
+  @Param rows: number = 4
+
+  /** ForEach 数据源（ArkTS 不支持在 build 内构造数组，收敛到方法） */
+  private rowKeys(): number[] {
+    const keys: number[] = []
+    for (let i = 0; i < this.rows; i++) {
+      keys.push(i)
+    }
+    return keys
+  }
+
+  build() {
+    Column({ space: DesignDimens.CARD_SPACING }) {
+      ForEach(this.rowKeys(), (row: number) => {
+        Row({ space: DesignDimens.SPACE_SM }) {
+          SkeletonBlock()
+            .width(40)
+            .height(40)
+          Column({ space: 8 }) {
+            SkeletonBlock()
+              .width('55%')
+              .height(14)
+            SkeletonBlock()
+              .width('35%')
+              .height(12)
+          }
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Center)
+      }, (row: number) => row.toString())
+    }
+    .width('100%')
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
+      top: DesignDimens.SPACE_SM,
+      bottom: DesignDimens.SPACE_SM
+    })
+  }
+}
+
+/** 加载态（规范 §3.6：骨架屏，禁止转圈）— 列表骨架 4 行，对齐安卓 LoadingState */
+@ComponentV2
+export struct LoadingState {
+  build() {
+    SkeletonList({ rows: 4 })
   }
 }
 
@@ -438,6 +701,9 @@ export struct EmptyState {
   // 行动按钮插槽（规范 §3.6：空态 = 滚筒圆母题 + 引导文案 + 行动按钮）。
   // 默认走空插槽 emptyContent，不渲染任何内容，故既有只传 message 的调用点视觉不变。
   @BuilderParam action: () => void = emptyContent
+  // 空态是"状态到达"的时刻，给一次进场（fade + 上移归位，对齐安卓 EmptyState 入场）。
+  // V2 组件内部状态用 @Local（@State 是 V1 装饰器）
+  @Local entered: boolean = false
 
   build() {
     Column() {
@@ -460,6 +726,16 @@ export struct EmptyState {
     .padding({ top: 32, bottom: 32 })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .opacity(this.entered ? 1 : 0)
+    .translate({ y: this.entered ? 0 : 12 })
+    .onAppear(() => {
+      // 首帧后再触发，保证初始态先上屏，弹簧进场才可见
+      setTimeout(() => {
+        animateTo(MotionTiming.ENTER, () => {
+          this.entered = true
+        })
+      }, 16)
+    })
   }
 }
 
@@ -492,9 +768,19 @@ export struct AppConfirmDialog {
   @Prop cancelText: string = '取消'
   // 危险操作（退出登录/解绑等）：确认按钮走 dangerInk，与安卓 AppConfirmDialog(isDanger = true) 对齐
   @Prop isDanger: boolean = false
+  @State entered: boolean = false
   onConfirm: () => void = () => {
   }
   onDismiss: () => void = () => {
+  }
+
+  /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   build() {
@@ -523,12 +809,6 @@ export struct AppConfirmDialog {
         right: DesignDimens.PAGE_PADDING,
         top: 20,
         bottom: 0
-      })
-      .shadow({
-        radius: DesignElevation.LEVEL_4,
-        color: '#33000000',
-        offsetX: 0,
-        offsetY: 4
       })
 
       // 分隔线
@@ -574,5 +854,19 @@ export struct AppConfirmDialog {
       }
       .width('100%')
     }
+    .backgroundColor(DesignColor.SURFACE)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
+    .shadow({
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_FLOAT,
+      offsetX: 0,
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }

@@ -34,7 +34,7 @@ import {
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { DesignElevation } from '../../../../../constant/DesignSystem'
+import { DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
@@ -498,9 +498,19 @@ struct DivAskPage {
 struct ManualLinesDialog {
   controller: CustomDialogController
   @State lines: number[] = [1, 1, 1, 1, 1, 1]
+  // 与公共弹窗同一条入场动效（对齐安卓 dialogEnterMotion：scale 0.92→1 + fade）
+  @State entered: boolean = false
   onConfirm: (lines: number[]) => void = () => {
   }
   onDismiss: () => void = () => {
+  }
+
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   build() {
@@ -577,6 +587,11 @@ struct ManualLinesDialog {
     .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
     // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
     .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }
 
@@ -587,9 +602,19 @@ struct NumbersDialog {
   controller: CustomDialogController
   @State first: string = ''
   @State second: string = ''
+  // 与公共弹窗同一条入场动效（对齐安卓 dialogEnterMotion：scale 0.92→1 + fade）
+  @State entered: boolean = false
   onConfirm: (a: number, b: number) => void = () => {
   }
   onDismiss: () => void = () => {
+  }
+
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   private isValid(): boolean {
@@ -679,5 +704,10 @@ struct NumbersDialog {
     .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
     // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
     .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }

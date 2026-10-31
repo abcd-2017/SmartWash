@@ -215,7 +215,7 @@ struct AddSchool {
               .border({ width: 1, color: DesignColor.OUTLINE })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: 'rgba(20,40,30,0.05)',
+                color: DesignColor.SHADOW_COLOR_CARD,
                 offsetX: 0,
                 offsetY: 2
               })
@@ -246,7 +246,7 @@ struct AddSchool {
         // 卡片补 v0.4 §3.1 画法：1px outline 描边 + level1 阴影（对齐安卓 UpdateUserInfoPage.kt:235-241）
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: 'rgba(20,40,30,0.05)',
+          color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
         })

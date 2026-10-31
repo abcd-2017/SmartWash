@@ -7,7 +7,7 @@
 // 选中结果以「yyyy-MM-dd」本地日期串回传（Android 侧 DatePicker 按 UTC 取整日、这里按本地时间取整日，
 // 二者对「用户选中的那一天」语义一致；短链过期时刻由 ShortCodeRules.expireAtFor 补 23:59:59）。
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { formatDate } from './ShortCodeRules'
 
 @CustomDialog
@@ -18,9 +18,19 @@ export struct ToolboxDatePickerDialog {
   @Prop initialDate: string = ""
   @Prop title: string = "选择过期日期"
   @State selected: Date = new Date()
+  @State entered: boolean = false
   onConfirm: (date: string) => void = () => {
   }
   onDismiss: () => void = () => {
+  }
+
+  /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   aboutToAppear(): void {
@@ -88,6 +98,18 @@ export struct ToolboxDatePickerDialog {
     .width('100%')
     .padding(20)
     .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.RADIUS_XL)
+    // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .shadow({
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_FLOAT,
+      offsetX: 0,
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }

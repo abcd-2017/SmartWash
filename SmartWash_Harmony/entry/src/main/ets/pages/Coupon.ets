@@ -6,7 +6,7 @@ import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
-import { EmptyState } from "../view/common/AppComponents"
+import { AppPillTabRow, EmptyState, LoadingState } from "../view/common/AppComponents"
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
 // 前端节流 + loading 是唯二防线（对齐安卓 rememberDebouncedClick）
@@ -122,51 +122,24 @@ struct Coupon {
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
 
-        // ========== 自定义标签栏 ==========
-        Row() {
-          ForEach(this.tabTitles, (title: string, index: number) => {
-            Column() {
-              Text(this.tabLabel(index))
-                .fontSize(DesignFontSize.BODY)
-                .fontWeight(this.selectedIndex === index ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
-                .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
-
-              // 底部指示器
-              Divider()
-                .width(20)
-                .height(3)
-                .color(this.selectedIndex === index ? DesignColor.PRIMARY : Color.Transparent)
-                .borderRadius(1.5)
-                .margin({ top: 6 })
-            }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Center)
-            .onClick(() => {
-              this.onTabChange(index)
-            })
-          })
-        }
-        .width("100%")
+        // ========== 自定义标签栏（胶囊分段形态，对齐安卓 AppPillTabRow） ==========
+        AppPillTabRow({
+          tabs: this.tabTitles.map((_: string, index: number): string => this.tabLabel(index)),
+          selectedIndex: this.selectedIndex,
+          tabSelected: (index: number) => {
+            this.onTabChange(index)
+          }
+        })
         .height(48)
         .backgroundColor(DesignColor.SURFACE)
         .border({ width: { bottom: 1 }, color: DesignColor.DIVIDER })
 
         // ========== 内容区域 ==========
         if (this.isLoading && this.availableCoupons.length === 0) {
-          // 加载态（对齐安卓 LoadingState）
-          Column() {
-            LoadingProgress()
-              .width(40)
-              .height(40)
-              .color(DesignColor.PRIMARY)
-            Text("加载中")
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .margin({ top: 12 })
-          }
+          // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
+          LoadingState()
           .width("100%")
           .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
         } else if (this.selectedIndex === 0) {
           if (this.availableCoupons.length === 0) {
             this.emptyPlaceholder("暂无优惠券")
@@ -325,7 +298,7 @@ struct AvailableCouponCard {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -470,7 +443,7 @@ struct CouponTicketCard {
       .border({ width: 1, color: DesignColor.OUTLINE })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: 'rgba(20,40,30,0.05)',
+        color: DesignColor.SHADOW_COLOR_CARD,
         offsetX: 0,
         offsetY: 2
       })

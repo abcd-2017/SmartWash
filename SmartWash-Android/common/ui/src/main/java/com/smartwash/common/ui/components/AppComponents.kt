@@ -260,10 +260,10 @@ enum class AppButtonVariant { PRIMARY, SECONDARY, TEXT }
 /**
  * 按钮 loading 指示器 — 规范 §7.8：reduced motion 时取消旋转，退化为**静态 270° 圆环**
  * （保留"在忙"的可读性，取消前庭不适的无限旋转）。
- * 全应用按钮共用，避免各页面自绘 spinner。
+ * 全应用共用（按钮内嵌、头像上传、准备中等局部忙态），避免各模块自绘 spinner。
  */
 @Composable
-internal fun ButtonSpinner(
+fun ButtonSpinner(
     size: Dp,
     strokeWidth: Dp,
     color: Color,
@@ -297,8 +297,11 @@ internal fun ButtonSpinner(
  *
  * 关闭动画受 `Dialog` 窗口机制限制（窗口由系统直接移除，拿不到退出帧），
  * 本仓库一律不做弹窗退出动画——见各 Dialog 调用处。
+ *
+ * 公开给壳层更新弹窗与观象台私有弹窗复用：全应用自绘弹窗共用同一条入场动效，
+ * 禁止在模块内再复制等价实现。
  */
-private fun Modifier.dialogEnterMotion(): Modifier = composed {
+fun Modifier.dialogEnterMotion(): Modifier = composed {
     var entered by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { entered = true }
     val progress by animateFloatAsState(
@@ -406,7 +409,9 @@ fun AppButton(
     )
     // contentColor 为语义色覆盖（如 dangerInk），只做颜色值替换，不参与禁用降透明
     val baseContentColor = contentColor ?: if (isPrimary) {
-        if (active) Color.White else GlassTextDisabled
+        // onPrimary 令牌（浅色白 / 深色深绿 #17322B）：深色模式下品牌绿提亮为 #5BC894，
+        // 白字对比度不足，必须随主题切换
+        if (active) AppColors.colorScheme.onPrimary else GlassTextDisabled
     } else {
         AppColors.colorScheme.textPrimary.copy(alpha = if (active) 1f else 0.5f)
     }
@@ -657,6 +662,32 @@ fun SkeletonList(
     }
 }
 
+// ========== 分页尾部静态加载点 ==========
+
+/**
+ * 静态三点灰 — reduced motion 降级占位（§8：取消无限旋转，但保留"还在加载"的可读性）。
+ * 非动效组件：本身不含任何动画，仅在 [LocalReduceMotion] 为真时替代 CircularProgressIndicator。
+ * 分页 footer 共用（订单/收支记录等），禁止页面内再复制等价实现。
+ */
+@Composable
+fun LoadingDots(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.outline)
+            )
+        }
+    }
+}
+
 // ========== 标签栏 ==========
 
 @Composable
@@ -736,9 +767,11 @@ fun AppTabBar(
  * 弹窗底部分区按钮——左右贴合弹窗边缘，按压反馈为整区透明度变化（iOS 惯例）。
  * 不使用 Material 按钮：其胶囊形 state layer 会浮在弹窗白底上，与贴边的
  * 矩形分区不重叠。
+ *
+ * 公开给壳层更新弹窗复用（下载完成/失败弹窗同款分区按钮），禁止再内联复制。
  */
 @Composable
-private fun DialogAction(
+fun DialogAction(
     text: String,
     color: Color,
     onClick: () -> Unit,

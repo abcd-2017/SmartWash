@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 @Immutable
 data class AppColorScheme(
     val primary: Color,
+    val onPrimary: Color,
     val primaryLight: Color,
     val primaryDark: Color,
     val heroGradientStart: Color,
@@ -74,6 +75,7 @@ data class AppColorScheme(
 
 val LightAppColorScheme = AppColorScheme(
     primary = Primary,
+    onPrimary = OnPrimary,
     primaryLight = PrimaryLight,
     primaryDark = PrimaryDark,
     heroGradientStart = HeroGradientStart,
@@ -118,6 +120,7 @@ val LightAppColorScheme = AppColorScheme(
 
 val DarkAppColorScheme = AppColorScheme(
     primary = DarkPrimary,
+    onPrimary = DarkOnPrimary,
     primaryLight = DarkPrimaryLight,
     primaryDark = DarkPrimaryDark,
     heroGradientStart = HeroGradientStart,

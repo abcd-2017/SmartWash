@@ -1200,4 +1200,76 @@ CREATE TABLE `toolbox_short_visit` (
   KEY `idx_code_time` (`code`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-短码访问明细';
 
+-- =====================================================================
+-- 工作台入口配置 + App deeplink 路由字典 —— 2 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for workbench_entry（移动端工作台入口配置）
+-- ----------------------------
+DROP TABLE IF EXISTS `workbench_entry`;
+CREATE TABLE `workbench_entry` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT,
+  `entry_key`   VARCHAR(64)  NOT NULL COMMENT '业务唯一标识,端上兜底列表与下发数据对齐用',
+  `title`       VARCHAR(32)  NOT NULL COMMENT '入口标题',
+  `description` VARCHAR(128) DEFAULT NULL COMMENT '副标题描述',
+  `icon`        VARCHAR(32)  NOT NULL DEFAULT 'default' COMMENT '图标key,端上白名单枚举映射,未知值显示默认图标',
+  `color`       VARCHAR(16)  NOT NULL DEFAULT 'green' COMMENT '图标色组key: green/blue/orange/pink/teal/purple',
+  `target`      VARCHAR(512) NOT NULL COMMENT '跳转URI: smartwash://... 或 https://...',
+  `badge`       VARCHAR(16)  DEFAULT NULL COMMENT '角标文案(如 新/热),空则不显示',
+  `enabled`     TINYINT      NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
+  `sort`        INT          NOT NULL DEFAULT 100 COMMENT '排序,越小越靠前',
+  `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_entry_key` (`entry_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='移动端工作台入口配置';
+
+-- ----------------------------
+-- Table structure for app_deeplink_route（App deeplink 路由字典,管理端配置 target 的数据源 + 端上未知 host 元数据）
+-- ----------------------------
+DROP TABLE IF EXISTS `app_deeplink_route`;
+CREATE TABLE `app_deeplink_route` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT,
+  `host`          VARCHAR(64)  NOT NULL COMMENT 'smartwash:// 的 host,如 login',
+  `name`          VARCHAR(64)  NOT NULL COMMENT '页面名称(管理端展示)',
+  `platform`      TINYINT      NOT NULL DEFAULT 3 COMMENT '1 Android 2 HarmonyOS 3 双端',
+  `require_login` TINYINT      NOT NULL DEFAULT 0 COMMENT '1需要登录',
+  `description`   VARCHAR(255) DEFAULT NULL COMMENT '说明',
+  `enabled`       TINYINT      NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
+  `created_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_host` (`host`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='App deeplink 路由字典';
+
+-- ----------------------------
+-- 种子数据：app_deeplink_route（全部 enabled=1,platform 默认双端）
+-- ----------------------------
+INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `description`, `enabled`) VALUES
+  ('login',              '登录页',      3, 0, NULL, 1),
+  ('register',           '注册页',      3, 0, NULL, 1),
+  ('setting',            '设置',        3, 1, NULL, 1),
+  ('recharge',           '余额充值',    3, 1, NULL, 1),
+  ('recharge-record',    '充值记录',    3, 1, NULL, 1),
+  ('coupon',             '优惠券',      3, 1, NULL, 1),
+  ('order',              '订单',        3, 1, '订单列表，smartwash://order?tab=xx 支持页签参数', 1),
+  ('pickup',             '取件',        3, 1, NULL, 1),
+  ('laundry',            '洗衣',        3, 1, NULL, 1),
+  ('divination',         '观象台',      3, 0, NULL, 1),
+  ('divination-history', '卦历历史',    3, 1, NULL, 1),
+  ('ai-work',            'AI 助手',     3, 0, NULL, 1),
+  ('toolbox-short-code', '短链工具箱',  3, 1, NULL, 1),
+  ('web',                '内置 WebView', 3, 0, 'scheme 说明：smartwash://web?url= 打开内置 WebView', 1),
+  ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1);
+
+-- ----------------------------
+-- 种子数据：workbench_entry（全部 enabled=1）
+-- ----------------------------
+INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
+  ('toolbox-short-code', '短链工具箱', '生成与管理短链', 'link',    'blue',   'smartwash://toolbox-short-code',   NULL, 1, 1, NULL),
+  ('my-history',         '我的卦历',   NULL,             'history', 'purple', 'smartwash://divination-history',   NULL, 1, 2, NULL),
+  ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL);
+
 SET FOREIGN_KEY_CHECKS = 1;

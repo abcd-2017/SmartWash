@@ -61,6 +61,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
@@ -323,7 +324,7 @@ fun OrderPage(
                                     exit = fadeOut(tween<Float>(CROSSFADE_ALT_MS))
                                 ) {
                                     if (LocalReduceMotion.current) {
-                                        StaticLoadingDots(
+                                        LoadingDots(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(16.dp)
@@ -362,29 +363,6 @@ fun OrderPage(
             },
             onDismiss = { confirmPayShow = false }
         )
-    }
-}
-
-/**
- * reduced motion 降级占位 — 静态三点灰（规范 §8：取消无限旋转，但保留"加载中"状态可读性）。
- * 非动效组件：本身不含任何动画，仅在 [LocalReduceMotion] 为真时替代 CircularProgressIndicator。
- */
-@Composable
-private fun StaticLoadingDots(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        repeat(3) {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 3.dp)
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.colorScheme.outline)
-            )
-        }
     }
 }
 

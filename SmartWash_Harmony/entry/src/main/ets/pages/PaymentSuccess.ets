@@ -5,7 +5,7 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { OrderItemRow } from "../view/OrderItemRow"
-import { AppButton } from "../view/common/AppComponents"
+import { AppButton, LoadingState } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
@@ -77,7 +77,7 @@ struct PaymentSuccess {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
@@ -104,7 +104,7 @@ struct PaymentSuccess {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
@@ -158,7 +158,7 @@ struct PaymentSuccess {
           .border({ width: 1, color: DesignColor.OUTLINE })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: 'rgba(20,40,30,0.05)',
+            color: DesignColor.SHADOW_COLOR_CARD,
             offsetX: 0,
             offsetY: 2
           })
@@ -188,15 +188,10 @@ struct PaymentSuccess {
 
         // 加载态
         if (this.isLoading) {
-          Column() {
-            LoadingProgress()
-              .width(40)
-              .height(40)
-              .color(DesignColor.PRIMARY)
-          }
+          // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
+          LoadingState()
           .width("100%")
           .height("100%")
-          .justifyContent(FlexAlign.Center)
           .backgroundColor(DesignColor.BACKGROUND)
           .zIndex(2)
         }

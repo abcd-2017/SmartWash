@@ -4,7 +4,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../
 import { promptAction } from "@kit.ArkUI"
 import { setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
-import { AppButton, AppCard, AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
+import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
 import { getAppVersionName } from "../utils/AppInfoUtil"
 
 // 品牌名单一事实来源：与安卓 brand_name 一致（feature/user/impl strings.xml:17）
@@ -160,13 +160,12 @@ struct Setting {
             })
             .margin({ top: DesignDimens.SECTION_SPACING })
 
-            // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮形态（对齐安卓 SettingPage.kt:226-236）
-            // = 52vp 高 / 14vp 圆角 / surfaceVariant 底 / dangerInk 文字 16 档
+            // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮变体（对齐安卓 AppButton(SECONDARY)）
+            // = 52vp 高 / 14vp 圆角 / surfaceVariant 底 / dangerInk 文字
             AppButton({
               text: "退出登录",
-              bgColor: DesignColor.SURFACE_VARIANT,
-              textColor: DesignColor.DANGER_INK,
-              textSize: DesignFontSize.BODY,
+              variant: AppButtonVariant.SECONDARY,
+              contentColor: DesignColor.DANGER_INK,
               click: () => {
                 this.logoutDialogController.open()
               }

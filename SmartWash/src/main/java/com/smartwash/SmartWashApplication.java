@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Slf4j
 @SpringBootApplication
-@MapperScan({"com.smartwash.mapper", "com.smartwash.divination.mapper", "com.smartwash.toolbox.mapper"})
+@MapperScan({"com.smartwash.mapper", "com.smartwash.divination.mapper", "com.smartwash.toolbox.mapper", "com.smartwash.workbench.mapper"})
 @EnableScheduling
 @EnableAsync
 public class SmartWashApplication {

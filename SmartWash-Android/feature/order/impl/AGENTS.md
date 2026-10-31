@@ -12,7 +12,8 @@ com.smartwash.feature.order.impl
 ├── OrderApiImpl.kt              # @Binds OrderApi 实现（纯委托 OrderRepository，零业务逻辑）
 ├── OrderImplConstant.kt         # 模块内常量（APP_NAME / PAGE_SIZE = 10）
 ├── di/
-│   └── OrderImplModule.kt       # Hilt 模块（OrderApi 绑定 + OrderServiceApi 供给）
+│   ├── OrderImplModule.kt       # Hilt 模块（OrderApi 绑定 + OrderServiceApi 供给）
+│   └── DeepLinkModule.kt        # 深链贡献者（@IntoSet：order?tab= → Order/{tab}，模式同 InitTask 注册）
 ├── network/
 │   ├── api/
 │   │   └── OrderServiceApi.kt   # Retrofit 接口（预约/详情/列表/分组/计数/寄取件/取消/优惠券试算）

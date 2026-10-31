@@ -1,6 +1,10 @@
 package com.smartwash.ui.page.workbench
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,8 +30,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -44,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -55,14 +65,33 @@ import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.ui.theme.DivGoldDark
 import com.smartwash.common.ui.theme.DivTextPrimaryDark
 import com.smartwash.common.ui.theme.IconBox
-import com.smartwash.feature.divination.DivRoute
+import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.defaultSpring
+import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
+import com.smartwash.feature.divination.DivRoute
 import com.smartwash.ui.page.PageConstant
+import kotlinx.coroutines.delay
+
+/** 工具网格列数（tile3 两列卡） */
+private const val GRID_COLUMNS = 2
+
+/** 逐项入场错峰间隔（规范 §7：间隔 ≤60ms；40ms 取中段） */
+private const val TOOL_STAGGER_MS = 40
+
+/** 错峰索引上限（40ms × 8 = 320ms，留出入场时长仍在 §7 总预算 400ms 内） */
+private const val STAGGER_MAX_INDEX = 8
+
+/** 单项入场淡入时长（reduced motion 由 motionSpec 自动降级 180ms 交叉淡变档） */
+private const val TOOL_ENTER_MS = 150
 
 /**
  * 工作台 — 底栏 tab 根页（设计稿屏 15）。
  * 清氧页面里的一扇玄墨之窗：观象台特色卡 + 工具网格（占卜降为其中一个入口）。
- * 工具列表来自 [WorkbenchViewModel]（当前假数据，后端工作台接口就绪后替换数据源）。
+ * 工具列表来自 [WorkbenchViewModel]：服务端入口配置下发（`/web/auth/workbench/entries`），
+ * 失败/空配置回落本地兜底列表；点击统一走深链分发（DeepLinkHandler.resolve → navigate）。
+ * 观象台玄墨特色卡为端上固定品牌位，不参与服务端下发。
  */
 @Composable
 fun WorkbenchPage(
@@ -70,14 +99,26 @@ fun WorkbenchPage(
     workbenchViewModel: WorkbenchViewModel = hiltViewModel(),
 ) {
     val tools by workbenchViewModel.tools.collectAsState()
+    val entriesState by workbenchViewModel.entriesState.collectAsState()
     val context = LocalContext.current
+
+    // 深链解析回流导航：resolve 在 VM 协程内完成，本收集端只承担导航副作用（规范：副作用出组合期）
+    LaunchedEffect(Unit) {
+        workbenchViewModel.navigateAction.collect { action ->
+            workbenchViewModel.navigate(navController, action)
+        }
+    }
+
+    // 两列网格行（entryKey 稳定，服务端下发顺序即后端 sort 序）
+    val toolRows = remember(tools) { tools.chunked(GRID_COLUMNS) }
+    val showSkeleton = entriesState is RequestState.Loading && tools.isEmpty()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        item {
+        item(key = "wb_title") {
             // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→特色卡 20 为设计稿实测）
             Column(
                 modifier = Modifier.padding(
@@ -101,15 +142,15 @@ fun WorkbenchPage(
             }
         }
 
-        item {
-            // 观象台特色卡 — 玄墨渐变窗（上距取区块令牌）
+        item(key = "wb_divination") {
+            // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）；上距取区块令牌
             DivinationEntryCard(
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
                 onClick = { navController.navigate(DivRoute.Home.text) }
             )
         }
 
-        item {
+        item(key = "wb_tools_header") {
             // 全部工具（设计稿实测：特色卡底→标题 32、标题底→网格 12；字距 0.3 与观象台卡标题同款）
             Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
@@ -121,49 +162,85 @@ fun WorkbenchPage(
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
         }
 
-        item {
-            // 工具网格 — 2 列 tile3（白卡唯一画法 + 44dp 语义图标容器）
-            Column(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-            ) {
-                tools.chunked(2).forEach { rowTools ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-                    ) {
-                        rowTools.forEach { tool ->
+        if (showSkeleton) {
+            // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
+            item(key = "wb_tools_skeleton") {
+                Column(
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                ) {
+                    repeat(2) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                        ) {
+                            repeat(GRID_COLUMNS) {
+                                SkeletonBlock(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(148.dp),
+                                    shape = RoundedCornerShape(AppDimens.radiusLg)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // 工具网格 — 两列 tile3（白卡唯一画法 + 44dp 语义图标容器 + 角标胶囊）。
+            // 行 key 由 entryKey 拼接（稳定；行数前缀防不同切分的拼接碰撞），
+            // 服务端配置变更时按 key 精准复用与重排。
+            // 行间距：行内 bottom padding = cardSpacing（footer top 相应 24→8，视觉总距不变 24）
+            itemsIndexed(
+                toolRows,
+                key = { _, rowTools ->
+                    "wb_tool_${rowTools.size}_" + rowTools.joinToString("-") { it.entryKey }
+                }
+            ) { rowIndex, rowTools ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = AppDimens.pagePadding,
+                            end = AppDimens.pagePadding,
+                            bottom = AppDimens.cardSpacing
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                ) {
+                    rowTools.forEachIndexed { colIndex, tool ->
+                        StaggerIn(
+                            index = rowIndex * GRID_COLUMNS + colIndex,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             ToolTile(
                                 tool = tool,
-                                modifier = Modifier.weight(1f),
                                 onClick = {
-                                    when (tool.action) {
-                                        WorkbenchAction.DIVINATION_HOME ->
-                                            navController.navigate(DivRoute.Home.text)
-                                        WorkbenchAction.DIV_HISTORY ->
-                                            navController.navigate(DivRoute.History.text)
-                                        WorkbenchAction.AI_ASSISTANT ->
-                                            navController.navigate(PageConstant.AiWork.text)
-                                        WorkbenchAction.COMING_SOON -> Toast.makeText(
+                                    if (tool.target.isBlank()) {
+                                        // 兜底占位项：功能建设中（不走深链链路）
+                                        Toast.makeText(
                                             context,
                                             context.getString(R.string.workbench_coming_soon),
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                    } else {
+                                        // 已下发/已注册 target：resolve 后经 navigateAction 回流导航
+                                        workbenchViewModel.onToolClick(tool)
                                     }
                                 }
                             )
                         }
-                        // 接口返回奇数个工具时末行补位，保持两列网格
-                        if (rowTools.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                    }
+                    // 接口返回奇数个工具时末行补位，保持两列网格
+                    if (rowTools.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
 
-        item {
-            // 页脚弱提示（设计稿 margin 26/10 → 24/8）
+        item(key = "wb_footer") {
+            // 页脚弱提示（设计稿 margin 26/10 → 24/8；top 由 24 改 8 是因网格行自带
+            // bottom cardSpacing，16+8=24 与原稿总距一致）
             Text(
                 text = stringResource(R.string.workbench_footer),
                 style = MaterialTheme.typography.labelSmall,
@@ -174,7 +251,7 @@ fun WorkbenchPage(
                     .padding(
                         start = AppDimens.pagePadding,
                         end = AppDimens.pagePadding,
-                        top = 24.dp,
+                        top = 8.dp,
                         bottom = 8.dp
                     )
             )
@@ -183,7 +260,41 @@ fun WorkbenchPage(
 }
 
 /**
+ * 逐项错峰入场：淡入 + 轻位移（规范 §7 列表逐项入场节奏）；
+ * reduced motion（规范 §8）：取消错峰延迟与位移，纯 180ms 淡入。
+ */
+@Composable
+private fun StaggerIn(
+    index: Int,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val reduceMotion = LocalReduceMotion.current
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (reduceMotion) {
+            shown = true
+        } else {
+            delay((index.coerceAtMost(STAGGER_MAX_INDEX) * TOOL_STAGGER_MS).toLong())
+            shown = true
+        }
+    }
+    AnimatedVisibility(
+        visible = shown,
+        enter = fadeIn(animationSpec = motionSpec(tween(TOOL_ENTER_MS))) +
+            slideInVertically(
+                animationSpec = motionSpec(defaultSpring()),
+                initialOffsetY = { if (reduceMotion) 0 else it / 6 }
+            ),
+        modifier = modifier
+    ) {
+        content()
+    }
+}
+
+/**
  * 观象台玄墨特色卡（设计稿 darkcard3）：清氧页面里开一扇通往玄墨世界的窗。
+ * **端上固定品牌位**：不参与服务端工作台入口下发，样式与跳转（DivRoute.Home）端上写死。
  * 深色自带分层不加投影；皮肤取 DivColors 玄墨暗色令牌，浅深模式同款（设计稿两板对此卡同款）。
  * 渐变对角 135° 三段 #201D18→#1A1917@55%→#151412 = 规范 §1.5 divination.ink（画板实测）。
  */
@@ -315,7 +426,12 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
     }
 }
 
-/** 工具卡（设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）+ 14sp 标题 + 12sp 描述 */
+/**
+ * 工具卡（设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）
+ * + 14sp 标题 + 12sp 描述；右上角 badge 角标（清氧小胶囊：radiusFull、主色浅底/主色文字）。
+ * icon/color 由 WorkbenchTint 白名单映射（未知值兜底），触控整卡 ≥48dp、按压反馈走 pressable
+ * （scale 0.97 + indication = null，禁止 Material ripple）。
+ */
 @Composable
 private fun ToolTile(
     tool: WorkbenchTool,
@@ -326,6 +442,8 @@ private fun ToolTile(
     val (containerColor, iconTint) = when (tool.tint) {
         WorkbenchTint.GREEN -> scheme.iconContainerGreen to scheme.iconForegroundGreen
         WorkbenchTint.BLUE -> scheme.iconContainerBlue to scheme.iconForegroundBlue
+        WorkbenchTint.ORANGE -> scheme.iconContainerOrange to scheme.iconForegroundOrange
+        WorkbenchTint.PINK -> scheme.iconContainerPink to scheme.iconForegroundPink
         WorkbenchTint.TEAL -> scheme.iconContainerTeal to scheme.iconForegroundTeal
         WorkbenchTint.PURPLE -> scheme.iconContainerPurple to scheme.iconForegroundPurple
     }
@@ -337,25 +455,40 @@ private fun ToolTile(
         shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
-        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-            IconBox(
-                icon = tool.icon,
-                containerColor = containerColor,
-                iconTint = iconTint,
-                iconSize = 24.dp
-            )
-            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-            Text(
-                text = stringResource(tool.titleRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = scheme.textPrimary
-            )
-            Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-            Text(
-                text = stringResource(tool.descriptionRes),
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.textSecondary
-            )
+        Box {
+            Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+                IconBox(
+                    icon = tool.icon,
+                    containerColor = containerColor,
+                    iconTint = iconTint,
+                    iconSize = 24.dp
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Text(
+                    text = tool.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.textPrimary
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                Text(
+                    text = tool.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.textSecondary
+                )
+            }
+            // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字（caption 档）
+            if (!tool.badge.isNullOrBlank()) {
+                Text(
+                    text = tool.badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.primary,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm)
+                        .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
+                        .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
+                )
+            }
         }
     }
 }

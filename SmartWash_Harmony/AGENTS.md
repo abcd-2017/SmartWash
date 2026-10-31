@@ -35,6 +35,7 @@ entry/src/main/ets/
 │   ├── PickUp.ets  PickupDelivery.ets
 │   ├── Recharge.ets  RechargeRecord.ets
 │   ├── Coupon.ets  Setting.ets  UserInfo.ets  BingCampusCardAlert.ets
+│   └── WebPage.ets                 # 内置浏览器页（深链 web 分支与运营位 H5 承载）
 ├── view/                           # 可复用组件
 │   ├── common/AppComponents.ets    # AppButton（自带 loading 防重）等
 │   ├── IndexPage.ets               # 首页框架（Tab + 轮询）
@@ -44,11 +45,12 @@ entry/src/main/ets/
 │   ├── Axios.ets                   # Axios 实例 + 请求/响应拦截器
 │   ├── HttpUtil.ets                # GET/POST 封装（单例）
 │   ├── BaseResponse.ets            # { data, code?, message? } 信封
-│   ├── api/                        # 7 个 API 模块（与 Android network/api/ 逐接口一致）
+│   ├── api/                        # 8 个 API 模块（与 Android network/api/ 逐接口一致，含 workbench.ets）
 │   ├── entity/                     # 请求体 DTO
 │   └── vo/                         # 响应 VO
 ├── constant/                       # 枚举、状态常量、DesignSystem 色值
 └── utils/                          # StorageUtil、PathStackUtil、Logger、TimeUtil、CheckStatus
+    └── deeplink/                   # 深链解析/注册表/分发（Parser / Registry / Handler）
 ```
 
 ---
@@ -71,7 +73,19 @@ entry/src/main/ets/
 
 ---
 
-## 五、ArkTS 硬规则
+## 五、深链（smartwash:// scheme）
+
+完整契约与调测命令见 [docs/deeplink-对接文档.md](docs/deeplink-对接文档.md)（与 Android 端同名文档对齐）。要点：
+
+- **架构**：解析与执行下沉 `utils/deeplink/`（`DeepLinkParser.ets` 纯函数解析、`DeepLinkRegistry.ets` host → 路由名注册表、`DeepLinkHandler.ets` 三态分发），Want 接入在 `entryability/EntryAbility.ets`，WebView 承载页为 `pages/WebPage.ets`（路由名 `RouteNames.WEB_PAGE`）。
+- **声明**：`module.json5` EntryAbility skills 独立对象声明 `scheme: "smartwash"`（`ohos.want.action.viewData` + `entity.system.browsable`），host 省略即通配。
+- **消费时序**：`onCreate` / `onNewWant` 把 `want.uri` 暂存 `AppStorage('pendingDeepLinkUri')`；`pages/Home.ets` 挂载后（aboutToAppear）与热更新时（@StorageLink + @Watch）消费。未登录时暂存不丢，登录后补消费；消费点不做登录前置判断，由 401 统一兜底（对齐 Android）。
+- **新页面接入**：router_map 注册路由 + `RouteNames` 加常量 + `DeepLinkRegistry.lookup` 加映射（带参 host 仿 `order` / `t` 自行解析校验），三处同步。
+- **host 表**：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）与 `ai-work`（鸿蒙未实现该页）不注册。
+
+---
+
+## 六、ArkTS 硬规则
 
 1. **`@ComponentV2` 没有 `onDidUpdate`**（只有 aboutToAppear/onReuse/aboutToRecycle/aboutToDisappear）；状态变化启停逻辑用 `@Monitor('属性名')`。历史事故：IndexPage 轮询启停静默失效。
 2. **定时器必须清理**：`setInterval`/`setTimeout` 在 `aboutToDisappear` 中 clear（验证码倒计时曾泄漏）。
@@ -81,7 +95,7 @@ entry/src/main/ets/
 
 ---
 
-## 六、编码规范
+## 七、编码规范
 
 - 所有对话、注释、提交信息使用中文；提交格式 `<type>(Harmony): <描述>`，一个 commit 一个完整功能点。
 - 新组件优先 `@ComponentV2` + `@Param`/`@Local`/`@Event`。
@@ -89,7 +103,7 @@ entry/src/main/ets/
 
 ---
 
-## 七、构建与运行
+## 八、构建与运行
 
 ```bash
 ohpm install           # 安装依赖
@@ -103,13 +117,13 @@ code-linter --fix      # Lint
 
 ---
 
-## 八、接口变更联动
+## 九、接口变更联动
 
 `network/api/` 与 Android `network/api/` 逐接口对齐。改任何接口，必须同步检查 Android 端与后端 `controller/web/`，并参照根目录 CLAUDE.md 四端联动检查表。
 
 ---
 
-## 九、已知问题
+## 十、已知问题
 
 完整评审清单（含行号）见 `.claude/docs/code-review-2026-08-28.md` 第四章。P0 级：
 

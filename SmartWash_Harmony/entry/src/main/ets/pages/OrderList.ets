@@ -189,15 +189,17 @@ struct OrderList {
     Row() {
       ForEach(this.list, (title: string, index: number) => {
         Column() {
+          // 两态同字号同字重（14/Medium，对齐安卓 AppTabBar）：避免选中瞬间字号跳变拉动兄弟位移
           Text(getShowOrderStatusDescription(title))
-            .fontSize(DesignFontSize.BODY)
-            .fontWeight(index === this.currIndex ? DesignFontWeight.BOLD : DesignFontWeight.NORMAL)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
 
-          // 底部短横线指示器
+          // 底部短横线指示器（20×3 r1.5，对齐安卓 AppTabBar）
           Divider()
-            .strokeWidth(2)
-            .width(24)
+            .strokeWidth(3)
+            .width(20)
+            .borderRadius(1.5)
             .color(index === this.currIndex ? DesignColor.PRIMARY : Color.Transparent)
             .margin({ top: 6 })
         }

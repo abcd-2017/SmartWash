@@ -4,7 +4,7 @@
 // （后端 UpdateShortCodeFrom 中 expireAt 不传即不修改，无法表达「改为永久」）。
 // 自定义日期由父页面另开 ToolboxDatePickerDialog 选择后回填。
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { ExpiryPreset } from './ShortCodeRules'
 import { ToolboxText } from './api'
 
@@ -16,6 +16,7 @@ export struct ToolboxRenewDialog {
   /** 已选自定义日期「yyyy-MM-dd」，空串表示未选 */
   @Prop customDate: string = ""
   @Prop loading: boolean = false
+  @State entered: boolean = false
   onPresetChange: (preset: ExpiryPreset) => void = () => {
   }
   onPickDate: () => void = () => {
@@ -23,6 +24,15 @@ export struct ToolboxRenewDialog {
   onConfirm: () => void = () => {
   }
   onDismiss: () => void = () => {
+  }
+
+  /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：首帧后再触发，弹簧 scale 0.92→1 + fade */
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
   }
 
   /** 预设 chip（选中 = 品牌底白字，未选中 = 白底描边） */
@@ -123,6 +133,18 @@ export struct ToolboxRenewDialog {
     .width('100%')
     .padding(20)
     .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.RADIUS_XL)
+    // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .shadow({
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_FLOAT,
+      offsetX: 0,
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
+    })
   }
 }

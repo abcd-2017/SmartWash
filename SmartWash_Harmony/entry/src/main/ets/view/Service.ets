@@ -1,3 +1,4 @@
+import { LoadingState } from './common/AppComponents'
 import { HttpStatusCode } from "@ohos/axios"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
@@ -148,7 +149,7 @@ export struct Service {
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: 'rgba(20,40,30,0.05)',
+      color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
@@ -202,15 +203,10 @@ export struct Service {
 
       // 加载态（首屏请求期间全屏 Loading）
       if (this.isLoading) {
-        Column() {
-          LoadingProgress()
-            .width(40)
-            .height(40)
-            .color(DesignColor.PRIMARY)
-        }
+        // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
+        LoadingState()
         .width("100%")
         .height("100%")
-        .justifyContent(FlexAlign.Center)
         .backgroundColor(DesignColor.BACKGROUND)
       }
 

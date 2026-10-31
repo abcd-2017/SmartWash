@@ -1,6 +1,7 @@
 package com.smartwash.ui.page
 
 import com.smartwash.common.ui.R as CommonUiR
+import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.user.api.UserRoute
 
@@ -20,6 +21,13 @@ sealed class PageConstant(val text: String, val description: String) {
 
     /** AI 工具工作台（壳层留守页面，注册于壳层 shellGraph；AI 接入为后续迭代） */
     data object AiWork : PageConstant("AiWork", "AI 工具工作台")
+
+    /**
+     * 内置浏览器页（壳层留守页面，注册于壳层 shellGraph；深链 web 分支与运营位 H5 承载）。
+     * 路由值委托 [ShellRoute.WEB_VIEW]（common:ui 单一事实来源，壳层 DeepLinkHandler 同源跳转）；
+     * 注册形态 "WebView?url={url}&title={title}"，url/title 均须 Uri.encode 编码。
+     */
+    data object WebView : PageConstant(ShellRoute.WEB_VIEW, "内置浏览器页")
 }
 
 /**

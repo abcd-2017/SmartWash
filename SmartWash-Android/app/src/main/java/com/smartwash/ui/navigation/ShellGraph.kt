@@ -25,13 +25,14 @@ import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
+import com.smartwash.ui.page.webview.WebViewPage
 
 /**
- * 壳层留守页面路由聚合（T8.1）：主页壳（HomePage）+ 订单详情/寄件取件/取件/AI 工具台
- * 四页面（T6.1/T7.1 调研结论：页面留 app 壳）的 composable 注册，自 MainActivity NavHost
- * 迁入。路由取值：主页壳走 common:ui 的 [ShellRoute] 壳层契约；订单详情/寄件取件
- * 语义归订单域，走 order-api 的 [OrderRoute]；取件页/AI 工具台为壳层自有常量
- * （[PageConstant.Pickup] / [PageConstant.AiWork]）。
+ * 壳层留守页面路由聚合（T8.1）：主页壳（HomePage）+ 订单详情/寄件取件/取件/AI 工具台/
+ * 内置浏览器五页面（T6.1/T7.1 调研结论：页面留 app 壳）的 composable 注册，自 MainActivity
+ * NavHost 迁入。路由取值：主页壳/内置浏览器走 common:ui 的 [ShellRoute] 壳层契约；
+ * 订单详情/寄件取件语义归订单域，走 order-api 的 [OrderRoute]；取件页/AI 工具台为
+ * 壳层自有常量（[PageConstant.Pickup] / [PageConstant.AiWork]）。
  */
 fun NavGraphBuilder.shellGraph(navController: NavHostController) {
     composable(ShellRoute.HOME) {
@@ -74,6 +75,27 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
     }
     composable(PageConstant.AiWork.text) {
         AiWorkPage(onBack = { navController.popBackStack() })
+    }
+    // 内置浏览器页：url 必填（仅 http/https，非法值页面内展示错误态）、title 可选；
+    // 字符串参数一律经 Uri.encode 编码（完整 URL 含 / ? & 等保留字），模式同 Toolbox 详情页
+    composable(
+        route = "${PageConstant.WebView.text}?url={url}&title={title}",
+        arguments = listOf(
+            navArgument("url") {
+                type = NavType.StringType
+                defaultValue = ""
+            },
+            navArgument("title") {
+                type = NavType.StringType
+                defaultValue = ""
+            }
+        )
+    ) { entity ->
+        WebViewPage(
+            navController,
+            url = entity.arguments?.getString("url").orEmpty(),
+            title = entity.arguments?.getString("title").orEmpty(),
+        )
     }
 }
 

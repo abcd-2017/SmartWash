@@ -31,6 +31,23 @@
             "actions": [
               "action.system.home"
             ]
+          },
+          {
+            // 深链接收（对齐安卓 intent-filter scheme="smartwash"）：
+            // action/entity 取值对齐 wantConstant.ACTION_VIEW_DATA / ENTITY_BROWSABLE；
+            // uris 仅声明 scheme、host 缺省 = 任意 host 均可匹配（鸿蒙 Deep Link 规范：
+            // host 省略时按通配处理，无需写 "*"）。onCreate/onNewWant 消费链路见 EntryAbility。
+            "entities": [
+              "entity.system.browsable"
+            ],
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "smartwash"
+              }
+            ]
           }
         ]
       }

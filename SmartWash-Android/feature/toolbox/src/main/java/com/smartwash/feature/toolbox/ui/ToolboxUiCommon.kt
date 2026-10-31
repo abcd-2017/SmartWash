@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberDatePickerState
@@ -76,7 +77,8 @@ fun ToolboxSelectableChip(
         if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface
     )
     val contentColor = selectedColor(
-        if (selected) Color.White else AppColors.colorScheme.textSecondary
+        // onPrimary 令牌（浅白/深绿）：深色模式下品牌绿提亮，白字对比度不足
+        if (selected) AppColors.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
     )
     // 描边常驻 1dp、颜色在 outline ↔ 透明间过渡：选中切换不再让描边整条消失/出现
     val borderColor = selectedColor(
@@ -150,6 +152,12 @@ fun ToolboxDatePickerDialog(
         ?.toInstant()
         ?.toEpochMilli()
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    // 对齐清氧规范：弹窗圆角收敛到 radiusLg 16dp（M3 默认 28dp 不在 §2.3 五档内），
+    // 容器走 surface 令牌 + tonalElevation 归零（防 M3 默认叠加色偏灰）；
+    // 日历本体共用同一 colors，其余角色从 M3 colorScheme 继承（Theme.kt 已按令牌映射）
+    val datePickerColors = DatePickerDefaults.colors(
+        containerColor = MaterialTheme.colorScheme.surface,
+    )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
@@ -160,8 +168,11 @@ fun ToolboxDatePickerDialog(
         dismissButton = {
             DialogTextAction(text = stringResource(R.string.toolbox_date_cancel), onDismiss)
         },
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        tonalElevation = 0.dp,
+        colors = datePickerColors,
     ) {
-        DatePicker(state = pickerState)
+        DatePicker(state = pickerState, colors = datePickerColors)
     }
 }
 
