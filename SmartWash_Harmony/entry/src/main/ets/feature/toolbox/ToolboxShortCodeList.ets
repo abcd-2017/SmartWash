@@ -38,6 +38,8 @@ struct ToolboxShortCodeList {
   @State isFirstError: boolean = false
   @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
+  // 追加加载失败态（对齐安卓 append Error → footer 文字重试）；重试经 paging.retry() 重拉同一页
+  @State appendError: boolean = false
   // onShown 首次即触发，首屏加载由 aboutToAppear 承担；加锁避免首屏重复请求
   private hasShown: boolean = false
   private paging: PagingController = new PagingController(
@@ -66,6 +68,7 @@ struct ToolboxShortCodeList {
         if (this.list.length > 0) {
           showToastSafety("没有更多数据了")
         }
+        this.appendError = false
         return false
       }
       if (page === 1) {
@@ -73,18 +76,23 @@ struct ToolboxShortCodeList {
         this.isFirstError = false
       }
       this.list.push(...records)
+      this.appendError = false
       return true
     }
     if (page === 1) {
       this.isFirstError = true
+      return false
     }
+    // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
+    this.appendError = true
     showToastSafety(res.message, ToolboxText.toolbox_error_load)
-    return false
+    throw new Error(ToolboxText.toolbox_error_load)
   }
 
   /** 整列表重置重拉（下拉刷新 + onShown 回列表刷新共用） */
   refreshList(): void {
     this.isRefreshing = false
+    this.appendError = false
     this.paging.reset()
     this.list = []
     this.fetchPage(1)
@@ -304,11 +312,11 @@ struct ToolboxShortCodeList {
                 }
               }, (vo: ShortCodeVo) => `${vo.id ?? 0}`)
 
-              // 尾部：加载中 / 失败重试（对齐安卓 append LoadState）
+              // 尾部：加载中 / 失败重试（对齐安卓 append LoadState：retry() 重拉失败页，页码不推进）
               ListItem() {
                 if (this.isLoadingMore) {
                   LoadingFooter({ isLoading: true })
-                } else if (this.isFirstError) {
+                } else if (this.appendError) {
                   Text(ToolboxText.toolbox_error_load)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontColor(DesignColor.DANGER_INK)
@@ -316,7 +324,7 @@ struct ToolboxShortCodeList {
                     .textAlign(TextAlign.Center)
                     .padding({ top: 12, bottom: 12 })
                     .onClick(() => {
-                      this.fetchPage(this.paging.currentPage() + 1)
+                      this.paging.retry()
                     })
                 }
               }
