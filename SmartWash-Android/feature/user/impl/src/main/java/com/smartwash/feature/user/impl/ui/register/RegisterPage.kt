@@ -59,6 +59,7 @@ import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientMid
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.ErrorLight
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.GlassBgCard
 import com.smartwash.common.ui.theme.GlassBgSubtle
 import com.smartwash.common.ui.theme.GlassBorderSubtle
@@ -244,7 +245,8 @@ fun RegisterPage(
                 Text(
                     text = stringResource(R.string.register),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleMedium,
+                    // 注册画板页头实测 22/600（= PageHeader 档，与清氧内页页头裁定一致）
+                    style = AppTextStyles.PageHeader,
                     color = Color.White,
                     textAlign = TextAlign.Center
                 )

@@ -220,7 +220,8 @@ fun UpdateUserInfoPage(
                         )
                         Text(
                             text = stringResource(R.string.fill_school_info),
-                            style = MaterialTheme.typography.titleMedium,
+                            // 画板实测副标题 16/24（bodyLarge 档），非 18/600
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -245,10 +246,10 @@ fun UpdateUserInfoPage(
                         .padding(AppDimens.cardPadding),
                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                 ) {
-                    // 字段标签 — captionStrong（12/16/500）
+                    // 字段标签 — 画板实测 12/400（caption 档 bodySmall），非 captionStrong 500
                     Text(
                         text = stringResource(R.string.search_school),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = AppColors.colorScheme.textSecondary
                     )
 
@@ -287,7 +288,7 @@ fun UpdateUserInfoPage(
                     // 学号标签 — 与上一输入框间距 24（spacedBy 16 + 上内边距 8）
                     Text(
                         text = stringResource(R.string.student_id),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = AppColors.colorScheme.textSecondary,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -296,13 +297,14 @@ fun UpdateUserInfoPage(
                     OutlinedTextField(
                         value = studentId,
                         onValueChange = { studentId = it; isStudentIdError = false },
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.student_id),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textTertiary
-                            )
-                        },
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.student_id),
+                    // §3.7：占位符字号与正文一致（16sp）+ textSecondary，非 12sp/textTertiary
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.colorScheme.textSecondary
+                )
+            },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
@@ -391,8 +393,9 @@ fun SearchSchoolInput(
             placeholder = {
                 Text(
                     text = stringResource(R.string.search_school),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    // §3.7：占位符字号与正文一致（16sp）+ textSecondary
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.colorScheme.textSecondary
                 )
             },
             modifier = Modifier
