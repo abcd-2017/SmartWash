@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 
@@ -28,6 +30,9 @@ fun InfoSection(
     icon: ImageVector?,
     iconContainerColor: Color? = null,
     iconTint: Color? = null,
+    // 画板实测：寄存柜信息/订单信息标题 18/600（SectionTitle 档）；
+    // 寄件「操作指引」卡为 14/500，传 typography.titleSmall 覆盖
+    titleStyle: TextStyle = AppTextStyles.SectionTitle,
     content: @Composable () -> Unit,
 ) {
     // 卡片规格 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
@@ -63,7 +68,7 @@ fun InfoSection(
                 }
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = titleStyle,
                     color = AppColors.colorScheme.textPrimary
                 )
             }

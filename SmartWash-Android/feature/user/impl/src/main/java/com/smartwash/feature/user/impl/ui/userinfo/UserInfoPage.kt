@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -355,25 +356,21 @@ fun UserInfoPage(
                         )
                     }
 
-                    // 数据卡片：三列（余额 + 优惠券 + 累计订单）
+                    // 数据卡片（画板实测 = 首页账户卡同款）：余额通栏在上
+                    // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线
                     GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                        contentPadding = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column {
                             // 余额（点击去充值；防抖已注入，关闭叠加）
                             Column(
                                 modifier = Modifier
-                                    .weight(1.35f)
+                                    .fillMaxWidth()
                                     .pressable(
                                         onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) },
                                         debounce = false,
-                                    ),
-                                horizontalAlignment = Alignment.Start
+                                    )
                             ) {
                                 Text(
                                     text = stringResource(R.string.wallet_balance),
@@ -387,67 +384,63 @@ fun UserInfoPage(
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
-                            // 分隔线（设计：1px hairline，高 40）
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(40.dp)
-                                    .background(AppColors.colorScheme.hairline)
-                            )
-                            // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .pressable(
-                                        onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) },
-                                        debounce = false,
-                                    ),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "${userInfo?.couponCount ?: 0}",
-                                    style = AppTextStyles.AmountMedium,
-                                    color = AppColors.colorScheme.textPrimary
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                // 优惠券（点击进优惠券页；防抖已注入，关闭叠加）
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .pressable(
+                                            onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) },
+                                            debounce = false,
+                                        ),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "${userInfo?.couponCount ?: 0}",
+                                        style = AppTextStyles.AmountMedium,
+                                        color = AppColors.colorScheme.textPrimary
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.coupon),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                }
+                                // 分隔线（设计：1px hairline，高 40）
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .height(40.dp)
+                                        .background(AppColors.colorScheme.hairline)
                                 )
-                                Text(
-                                    text = stringResource(R.string.coupon),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.textSecondary,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
-                            // 分隔线（设计：1px hairline，高 40）
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(40.dp)
-                                    .background(AppColors.colorScheme.hairline)
-                            )
-                            // 累计订单
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "${userInfo?.orderCount ?: 0}",
-                                    style = AppTextStyles.AmountMedium,
-                                    color = AppColors.colorScheme.textPrimary
-                                )
-                                Text(
-                                    text = stringResource(R.string.total_orders),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.textSecondary,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
+                                // 累计订单
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "${userInfo?.orderCount ?: 0}",
+                                        style = AppTextStyles.AmountMedium,
+                                        color = AppColors.colorScheme.textPrimary
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.total_orders),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textSecondary
+                                    )
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    // 画板实测：数据卡底→账户卡 16
+                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-                    // 账户卡片
+                    // 账户卡片（列表行卡：行 64 铺满，卡内边距仅水平 20 —— 画板卡高 = 行数 × 64）
                     GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
                     ) {
                         SettingRow(
                             icon = Icons.Default.CreditCard,
@@ -457,7 +450,8 @@ fun UserInfoPage(
                             trailing = {
                                 Text(
                                     text = if (userInfo?.campusCard != null) stringResource(R.string.bound) else stringResource(R.string.not_bound),
-                                    style = MaterialTheme.typography.labelMedium,
+                                    // 画板实测行尾值 12/400（caption 400 档）
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = if (userInfo?.campusCard != null) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -493,9 +487,10 @@ fun UserInfoPage(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 功能卡片
+                    // 功能卡片（列表行卡：内边距仅水平 20）
                     GroupCard(
-                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                        modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
                     ) {
                         SettingRow(
                             icon = Icons.Default.Inventory,
@@ -505,7 +500,8 @@ fun UserInfoPage(
                             trailing = {
                                 Text(
                                     text = stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0),
-                                    style = MaterialTheme.typography.labelMedium,
+                                    // 画板实测行尾值 12/400（caption 400 档）
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = AppColors.colorScheme.textSecondary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))

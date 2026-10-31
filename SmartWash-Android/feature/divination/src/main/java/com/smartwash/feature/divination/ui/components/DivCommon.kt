@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
@@ -300,7 +301,8 @@ fun DivGoldButton(
     Box(
         modifier = modifier
             .height(height)
-            .clip(RoundedCornerShape(height / 2))
+            // 画板实测（摇卦「掷爻按钮」/问卦「起卦按钮」）：52 高 + buttonRadius 14，非胶囊
+            .clip(RoundedCornerShape(AppDimens.buttonRadius))
             .background(
                 when {
                     // 禁用态退回 14% 金底（画板「已保存」口径，无描边）；解读画板主按钮同为 14% 金底

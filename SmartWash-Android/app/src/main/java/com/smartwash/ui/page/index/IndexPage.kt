@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -144,10 +145,12 @@ fun IndexPage(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    // 设计稿实测：账户卡底（y=328）→「洗衣服务」标题（y=344）间距 16
+                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     Text(
                         text = stringResource(R.string.laundry_service),
                         style = AppTextStyles.SectionTitle,
+                        color = AppColors.colorScheme.textPrimary,
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -181,7 +184,8 @@ fun IndexPage(
                     ) {
                         Text(
                             text = stringResource(R.string.in_progress_orders),
-                            style = AppTextStyles.SectionTitle
+                            style = AppTextStyles.SectionTitle,
+                            color = AppColors.colorScheme.textPrimary
                         )
                         // 行内「查看全部」— 16sp SemiBold primaryDark（green.700，规范 §10 绿色文字红线），
                         // 无 ripple，48dp 热区（D-I7）；文字右缘对齐页面 24 边距（设计稿实测 y=444 右缘 336）
@@ -234,9 +238,10 @@ fun IndexPage(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    // 设计稿实测：订单卡底（y=656）→ 服务须知（y=700）间距 44
+                    Spacer(modifier = Modifier.height(44.dp))
                     ServiceTips()
-                    Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 }
                 }
             }
@@ -363,13 +368,14 @@ private fun StatusHeroCard(
                 }
                 steps.forEachIndexed { index, _ ->
                     val isActive = index <= currentStep
-                    // 步进器令牌（规范 §5.1 stepper + 设计稿双主题画板实测）：激活点=primary / 未完成点=outline
+                    // 设计稿首页画板实测：hero 渐变底上激活点/已走过连线=白（#FFFFFF），
+                    // 未完成点/未走过连线=outline；primary 绿在绿渐变上不可见，禁用
                     Box(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
                             .background(
-                                selectedColor(if (isActive) AppColors.colorScheme.primary else AppColors.colorScheme.outline)
+                                selectedColor(if (isActive) Color.White else AppColors.colorScheme.outline)
                             )
                     )
                     if (index < steps.lastIndex) {
@@ -379,7 +385,7 @@ private fun StatusHeroCard(
                                 .height(2.dp)
                                 .background(
                                     selectedColor(
-                                        if (index < currentStep) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+                                        if (index < currentStep) Color.White else AppColors.colorScheme.outline
                                     )
                                 )
                         )
@@ -428,16 +434,15 @@ private fun AccountDataCard(
         shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // 设计稿首页画板实测：余额通栏在上（上16 + label 16 + 4 + 大字 44），下方券/单
+        // 两半格各居中、中间一根 1×40 发丝竖线——不是「余额 | 券 | 单」三列
+        Column {
             // 余额（主角）——按可用宽度分档缩字号，窄屏不折行不溢出
             BoxWithConstraints(
                 modifier = Modifier
-                    .weight(1.35f)
+                    .fillMaxWidth()
                     .pressable(onClick = rememberDebouncedClick(onClick = onRechargeClick), debounce = false)
-                    .padding(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
+                    .padding(top = 16.dp, start = 20.dp, end = 20.dp)
             ) {
                 val availableWidth = maxWidth
                 Column {
@@ -446,7 +451,7 @@ private fun AccountDataCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = AppColors.colorScheme.textSecondary
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.2f", balance)),
                         // 数据大字恒为 36sp（v0.4 §2.2 硬规则：一屏一个锚点级大字）。
@@ -462,65 +467,49 @@ private fun AccountDataCard(
                     )
                 }
             }
-            // 分隔线
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(40.dp)
-                    .background(AppColors.colorScheme.hairline)
-            )
-            // 优惠券
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "$couponCount",
-                    style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
-                    softWrap = false
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AccountStatCell(
+                    value = "$couponCount",
+                    label = stringResource(R.string.home_available_coupons)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_available_coupons),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary,
-                    maxLines = 1,
-                    softWrap = false
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(40.dp)
+                        .background(AppColors.colorScheme.hairline)
+                )
+                AccountStatCell(
+                    value = "$orderCount",
+                    label = stringResource(R.string.home_total_orders)
                 )
             }
-            // 分隔线
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(40.dp)
-                    .background(AppColors.colorScheme.hairline)
-            )
-            // 累计订单
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "$orderCount",
-                    style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.textPrimary,
-                    maxLines = 1,
-                    softWrap = false
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_total_orders),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary,
-                    maxLines = 1,
-                    softWrap = false
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+/** 账户卡底部半格：数值 18/600 tnum + 标签 12/400，水平居中；行盒紧邻无间距（设计稿实测 40 高） */
+@Composable
+private fun RowScope.AccountStatCell(value: String, label: String) {
+    Column(
+        modifier = Modifier.weight(1f),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            style = AppTextStyles.AmountMedium,
+            color = AppColors.colorScheme.textPrimary,
+            maxLines = 1,
+            softWrap = false
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.colorScheme.textSecondary,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }
 
@@ -534,7 +523,9 @@ private fun ServiceGrid(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
+            .padding(horizontal = AppDimens.pagePadding)
+            // 设计稿实测：服务图标盒首列 x=44（页边距 24 + 卡内缩进 20），整组内收 20
+            .padding(horizontal = AppDimens.cardPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ServiceEntry(

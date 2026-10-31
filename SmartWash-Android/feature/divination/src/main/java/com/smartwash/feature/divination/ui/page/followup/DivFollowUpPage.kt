@@ -261,7 +261,7 @@ private fun FollowUpInputBar(
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val fieldShape = RoundedCornerShape(12.dp)
@@ -273,7 +273,7 @@ private fun FollowUpInputBar(
                     // 画板输入框底：玄墨=墨面顶 #201D18 / 宣纸=纸面底 #EBE3D1（主题 bgColors 极值）
                     .background(c.bgColors[if (c.isDark) 0 else 2])
                     .border(BorderStroke(1.dp, c.line), fieldShape)
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 BasicTextField(

@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -121,8 +122,9 @@ fun PageHeader(
             // §7 禁 Material 交互组件（IconButton 自带 state layer 涟漪）：改自绘按压热区，
             // pressable 内置 indication = null + scale 0.97 按压反馈
             Box(
+                // 热区 48dp（设计稿「热区-返回」48×48；规范 §3.2 返回箭头豁免入容器但强制 48dp 触控热区）
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .pressable(onClick = debouncedBack),
                 contentAlignment = Alignment.Center,
             ) {
@@ -133,7 +135,8 @@ fun PageHeader(
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            // 画板实测：标题左缘 x=76（热区右缘 + 4），标题与箭头视觉间距 20
+            Spacer(modifier = Modifier.width(4.dp))
         }
         Text(
             text = title,
@@ -157,10 +160,15 @@ fun PageHeader(
  *
  * 阴影走 §2.4「CSS 阴影 ↔ Compose elevation 映射表」的 `AppElevation.level1`，
  * 与页面侧 `Surface(shadowElevation = level1)` 同一条路径 —— 全应用卡片阴影只有一个来源。
+ *
+ * [contentPadding] 默认四周 20（信息卡画法）；**列表行卡**（行自带 64dp 高铺满卡片，
+ * 画板实测卡高 = 行数 × 64，无纵向内边距）须传
+ * `PaddingValues(horizontal = AppDimens.cardPadding)`，否则纵向多出 40。
  */
 @Composable
 fun GroupCard(
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(AppDimens.cardPadding),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
@@ -171,7 +179,7 @@ fun GroupCard(
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
-            modifier = Modifier.padding(AppDimens.cardPadding),
+            modifier = Modifier.padding(contentPadding),
             content = content
         )
     }

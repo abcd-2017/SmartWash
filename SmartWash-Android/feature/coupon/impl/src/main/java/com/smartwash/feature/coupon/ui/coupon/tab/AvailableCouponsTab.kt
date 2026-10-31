@@ -127,7 +127,8 @@ fun CouponCard(
                 Text(
                     text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.primary
+                    // 同页票券卡金额画板实测 primaryDark（#1E8C5C），两 tab 同语义同令牌
+                    color = AppColors.colorScheme.primaryDark
                 )
             }
 
@@ -192,11 +193,11 @@ private fun ClaimAction(
     )
     val clickable = !claimed && !isClaiming
 
+    // 触控热区 48dp 外层承载（视觉胶囊 40 高，与画板「热区-复制」60×48 外扩同模式），
+    // 按压/防抖挂在外层，视觉层只负责底色与内容
     Box(
         modifier = Modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusMd))
-            .background(containerColor)
+            .height(48.dp)
             .then(
                 if (clickable) {
                     Modifier.pressable(
@@ -205,26 +206,34 @@ private fun ClaimAction(
                 } else {
                     Modifier
                 }
-            )
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
+            ),
+        contentAlignment = Alignment.Center,
     ) {
-        // 文字 ↔ 圆环交叉淡变；文字用 alpha 隐藏而非移除，保证按钮宽度不抖动
-        Crossfade(
-            targetState = claimed,
-            animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
-            label = "couponClaimLabel",
-        ) { isClaimed ->
-            Text(
-                text = stringResource(if (isClaimed) R.string.claimed else R.string.claim_now),
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.alpha(if (isClaiming) 0f else 1f)
-            )
-        }
-        if (isClaiming) {
-            ClaimingRing(color = Color.White)
+        Box(
+            modifier = Modifier
+                .height(40.dp)
+                .clip(RoundedCornerShape(AppDimens.radiusMd))
+                .background(containerColor)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            // 文字 ↔ 圆环交叉淡变；文字用 alpha 隐藏而非移除，保证按钮宽度不抖动
+            Crossfade(
+                targetState = claimed,
+                animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
+                label = "couponClaimLabel",
+            ) { isClaimed ->
+                Text(
+                    text = stringResource(if (isClaimed) R.string.claimed else R.string.claim_now),
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.alpha(if (isClaiming) 0f else 1f)
+                )
+            }
+            if (isClaiming) {
+                ClaimingRing(color = Color.White)
+            }
         }
     }
 }

@@ -472,7 +472,8 @@ private fun OrderRow(
                     color = badgeContent
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            // 设计稿实测：角标底→订单号行间距 8（与订单号→时间行一致）
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),

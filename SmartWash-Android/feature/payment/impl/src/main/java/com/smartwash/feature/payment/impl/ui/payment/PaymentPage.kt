@@ -205,15 +205,17 @@ fun PaymentPage(
                         Column {
                             Text(
                                 text = stringResource(R.string.payment_method),
-                                style = AppTextStyles.SectionTitle
+                                style = AppTextStyles.SectionTitle,
+                                color = AppColors.colorScheme.textPrimary
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                            // 选中态画板实测：primaryContainer 底（#F0FBF4/#17322B）+ 1px 描边 + level1 阴影
+                            // 选中态画板实测：primarySoft 底（浅 #E8F6EF / 深 #1D3229，规范 §2.1/§6.5，
+                            // 与图标盒浅绿 #F0FBF4 是两个令牌）+ 1px 描边 + level1 阴影
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = if (selectedPaymentMethod == "balance")
-                                    MaterialTheme.colorScheme.primaryContainer
+                                    AppColors.colorScheme.primarySoft
                                 else AppColors.colorScheme.surface,
                                 shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)

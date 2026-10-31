@@ -152,10 +152,11 @@ fun DivReadingPage(
                             // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
                             ActionCard(reading.action)
 
-                            // 主行动（画板：单个全宽胶囊 320×52、14% 金底 + 金/墨字）
+                            // 主行动（画板：单个全宽 320×52、r14、14% 金底 + 金字 14/600）
                             DivGoldButton(
                                 text = stringResource(R.string.div_reading_followup),
                                 soft = true,
+                                fontSize = 14.sp,
                                 modifier = Modifier
                                     .padding(start = 20.dp, end = 20.dp, top = 20.dp)
                                     .fillMaxWidth(),

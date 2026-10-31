@@ -53,11 +53,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.ButtonSpinner
 import androidx.compose.foundation.BorderStroke
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.InfoRow
@@ -236,7 +238,8 @@ fun PickupDeliveryPage(
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleMedium, color = AppColors.colorScheme.onWarningContainer)
+                                        // 画板实测注意事项标题 14/500（titleSmall 档），非 18sp 卡片标题
+                                        Text(stringResource(R.string.notes), style = MaterialTheme.typography.titleSmall, color = AppColors.colorScheme.onWarningContainer)
                                         Text(
                                             stringResource(R.string.notes_content),
                                             style = MaterialTheme.typography.bodySmall,
@@ -294,36 +297,20 @@ fun PickupDeliveryPage(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(20.dp))
+                                // 画板实测「寄件码」标题 18/600/字距 0.3，号码 DataLarge 在卡内；
+                                // 确认动作由底部操作栏承担（画板二维码卡内无按钮），不在此重复
                                 Text(
                                     text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
-                                    style = AppTextStyles.SectionTitle
+                                    style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                                    color = AppColors.colorScheme.textPrimary
                                 )
                                 Text(
                                     text = pickupCode,
                                     style = AppTextStyles.DataLarge,
                                     color = AppColors.colorScheme.primaryDark
                                 )
-                                Spacer(modifier = Modifier.height(20.dp))
-                                // 确认按钮未接 loading：请求期间按钮不禁用不禁用无反馈，
-                                // 用户会重复点确认。AppButton 内置禁用 + spinner（降级由桶 A 处理）
-                                AppButton(
-                                    text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.confirm_picked_up) else stringResource(R.string.confirm_delivered),
-                                    onClick = { showDialog = true },
-                                    loading = setOrderNextState is RequestState.Loading
-                                )
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
-                            style = AppTextStyles.SectionTitle,
-                            color = AppColors.colorScheme.textPrimary
-                        )
-                        Text(
-                            text = pickupCode,
-                            style = AppTextStyles.DataLarge,
-                            color = AppColors.colorScheme.primaryDark
-                        )
                     }
                 }
 
@@ -341,10 +328,14 @@ fun PickupDeliveryPage(
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-                // 操作指引（板实测：卡内无图标、标题 14/500 textPrimary；步骤号盒 20 r8
-                // iconContainerGreen、序号 12/400 浅 onPrimaryContainer/深 primary、
+                // 操作指引（板实测：卡内无图标、标题 14/500 textPrimary（titleSmall 覆盖默认 18/600）；
+                // 步骤号盒 20 r8 iconContainerGreen、序号 12/400 浅 onPrimaryContainer/深 primary、
                 // 文本 12/400 textPrimary、盒-文 8、行距 24 = 盒 20 + 行间 4）
-                InfoSection(title = stringResource(R.string.operation_guide), icon = null) {
+                InfoSection(
+                    title = stringResource(R.string.operation_guide),
+                    icon = null,
+                    titleStyle = MaterialTheme.typography.titleSmall
+                ) {
                     val steps = if (type == PickupDeliveryType.PICKUP.type) {
                         listOf(
                             stringResource(R.string.find_locker_format, "$lockerNumber"),
@@ -377,6 +368,8 @@ fun PickupDeliveryPage(
             PickupDeliveryActionBar(
                 primaryText = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.confirm_picked_up) else stringResource(R.string.confirm_delivered),
                 onPrimaryClick = { showDialog = true },
+                // 卡内确认按钮删除后，loading 反馈迁到主按钮：请求在途转菊花且不再响应点击
+                loading = setOrderNextState is RequestState.Loading,
                 onContactServiceClick = {
                     // 客服功能未立项，先以 Toast 兜底（与 PickupPage/OrderDetailPage D-OD12 约定一致）
                     Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
@@ -407,6 +400,7 @@ private fun PickupDeliveryActionBar(
     primaryText: String,
     onPrimaryClick: () -> Unit,
     onContactServiceClick: () -> Unit,
+    loading: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -430,20 +424,24 @@ private fun PickupDeliveryActionBar(
                 color = AppColors.colorScheme.primaryDark
             )
         }
-        // 主按钮 — 纯色 primary 胶囊，onPrimary 双主题成对
+        // 主按钮 — 纯色 primary 胶囊，onPrimary 双主题成对；请求在途转菊花并不再响应点击
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
-                .pressable(onClick = onPrimaryClick, debounce = false)
+                .pressable(onClick = { if (!loading) onPrimaryClick() }, debounce = false)
                 .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = primaryText,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
+            if (loading) {
+                ButtonSpinner(size = 20.dp, strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text(
+                    text = primaryText,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         }
     }
 }

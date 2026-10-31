@@ -196,6 +196,8 @@ fun DivCastPage(
             } else {
                 stringResource(R.string.div_cast_toss)
             },
+            // 画板实测按钮文字 14/600（非默认 18）
+            fontSize = 14.sp,
             enabled = !state.tossing && !state.saving && pendingYao == null,
             modifier = Modifier
                 .padding(horizontal = 76.dp, vertical = 14.dp)

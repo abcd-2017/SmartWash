@@ -128,7 +128,8 @@ fun DivAskPage(
         )
         Row(
             Modifier
-                .padding(horizontal = 16.dp)
+                // 玄墨画板页边距统一 20（问卦/卦历卡均在 x=20），非 16
+                .padding(horizontal = 20.dp)
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

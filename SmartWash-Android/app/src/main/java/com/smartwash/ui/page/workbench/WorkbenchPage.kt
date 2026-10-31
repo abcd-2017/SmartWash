@@ -133,10 +133,12 @@ fun WorkbenchPage(
                     style = AppTextStyles.RootTitle,
                     color = AppColors.colorScheme.textPrimary
                 )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                // 设计稿实测：大标题底→副标题 4
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.workbench_subtitle),
-                    style = MaterialTheme.typography.labelSmall,
+                    // 画板副标题 12/400（caption 400 档），非 captionStrong 500
+                    style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
             }
@@ -304,14 +306,18 @@ private fun DivinationEntryCard(
     modifier: Modifier = Modifier,
 ) {
     val div = DivColors.current
-    val shape = RoundedCornerShape(AppDimens.radiusXl)
+    // 画板实测圆角 16（= radiusLg 卡片唯一档，非 hero 20）
+    val shape = RoundedCornerShape(AppDimens.radiusLg)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .pressable(onClick = onClick)
             .background(
+                // 画板渐变三段色标 0 / 0.55 / 1（#201D18→#1A1917@55%→#151412）
                 brush = Brush.linearGradient(
-                    listOf(DivBgTopDark, DivBgMidDark, DivBgBottomDark)
+                    0f to DivBgTopDark,
+                    0.55f to DivBgMidDark,
+                    1f to DivBgBottomDark,
                 ),
                 shape = shape
             )
@@ -332,10 +338,10 @@ private fun DivinationEntryCard(
                 color = DivTextPrimaryDark
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-            // 设计稿两板副标题同为宣纸主文本 #EFE9DA（弱层级靠字号 12）
+            // 设计稿两板副标题同为宣纸主文本 #EFE9DA（弱层级靠字号 12，字重 400）
             Text(
                 text = stringResource(R.string.workbench_divination_subtitle),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = DivTextPrimaryDark
             )
         }

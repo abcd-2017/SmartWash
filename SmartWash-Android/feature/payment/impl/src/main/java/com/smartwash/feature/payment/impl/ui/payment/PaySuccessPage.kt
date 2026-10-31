@@ -198,7 +198,8 @@ fun PaySuccessPage(
                         // level1(1dp) 阴影；标题 18/600，卡内边距横 20 / 纵 24，行距 16，行字 12/400）
                         Text(
                             text = stringResource(R.string.order_info),
-                            style = AppTextStyles.SectionTitle
+                            style = AppTextStyles.SectionTitle,
+                            color = AppColors.colorScheme.textPrimary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -246,7 +247,8 @@ fun PaySuccessPage(
                         // 说明行 12/400 textSecondary）
                         Text(
                             text = stringResource(R.string.locker_info_section),
-                            style = AppTextStyles.SectionTitle
+                            style = AppTextStyles.SectionTitle,
+                            color = AppColors.colorScheme.textPrimary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
@@ -272,23 +274,24 @@ fun PaySuccessPage(
                                     iconSize = 20.dp
                                 )
                                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                                // 下沉 8 使首行与 36 图标盒中心对齐（画板实测图标盒中心 = 首行中心）
+                                // 下沉 8 使首行与 36 图标盒中心对齐（画板实测图标盒中心 = 首行中心）；
+                                // 行文字画板实测 14/400（bodyMedium 档），非 16sp
                                 Column(
                                     modifier = Modifier.padding(top = 8.dp),
                                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                                 ) {
                                     Text(
                                         stringResource(R.string.locker_info_title),
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
                                         stringResource(R.string.locker_deposited_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
                                         // 柜号空值兜底显示 "-"，不再误显示 "-1柜"（对齐鸿蒙 PaymentSuccess.ets 的空值语义）
                                         stringResource(R.string.go_to_locker_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
                                         stringResource(R.string.locker_process_tip),

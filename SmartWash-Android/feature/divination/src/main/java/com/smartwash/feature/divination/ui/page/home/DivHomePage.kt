@@ -104,9 +104,10 @@ fun DivHomePage(
             Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for),
             Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for),
         )
-        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+        // 画板实测：玉牌区外边距 20（玄墨页边距档）、横向牌距 8（8 + 2×156 = 320）、纵向 12
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
             methods.chunked(2).forEach { rowMethods ->
-                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
                     rowMethods.forEach { (method, nameRes, descRes, useForRes) ->
                         JadeTile(
                             name = stringResource(nameRes),

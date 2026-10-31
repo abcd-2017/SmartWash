@@ -272,7 +272,9 @@ fun SettingPage(
  * + radiusLg 16 + cardPadding 20 内边距。
  *
  * 上一版 groupBackground 灰底 + 无阴影属被禁的「灰底卡片 / 无阴影裸白卡」，已废弃。
- * 行内分隔线缩进随之由 20 交由卡片内边距承载，视觉与 UpdateUserInfo 字段分组卡一致。
+ * 内边距仅水平 20（画板实测：行内容与行分隔线同缩进 20）；纵向不加内边距——
+ * 行自带 64dp 高铺满卡片，卡高 = 行数 × 64，否则上下多出 20 与画板不符。
+ * 行内缩进统一由本内边距承载，行组件自身不得再叠 horizontal padding。
  */
 @Composable
 private fun SettingGroupCard(
@@ -287,7 +289,7 @@ private fun SettingGroupCard(
         border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         Column(
-            modifier = Modifier.padding(AppDimens.cardPadding),
+            modifier = Modifier.padding(horizontal = AppDimens.cardPadding),
             content = content
         )
     }
@@ -302,12 +304,13 @@ private fun SettingRow(
     trailing: @Composable () -> Unit = { IconChevron() },
     onClick: () -> Unit,
 ) {
+    // 水平缩进由分组卡内边距统一承载（画板：行内容与分隔线同缩进 20），
+    // 此处不再叠 horizontal padding，否则 24(页) + 20(卡) + 20(行) = 64 与画板 44 不符
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .pressable(onClick = onClick)
-            .padding(horizontal = AppDimens.cardPadding),
+            .pressable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // ib32 图标容器（32dp，12px圆角，彩色浅底 + 语义色前景图标）
