@@ -143,10 +143,11 @@ fun PickupPage(
                                 containerColor = AppColors.colorScheme.iconContainerBlue,
                                 iconTint = AppColors.colorScheme.iconForegroundBlue
                             )
-                            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                            // 画板实测：图标盒→校名 8；校名 14/20（titleSmall），非 18sp
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = orderList[0]?.schoolsVo?.schoolName ?: "",
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleSmall
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
@@ -206,12 +207,13 @@ private fun PickupOrderCard(
                 Column {
                     Text(
                         text = stringResource(R.string.order_no_format, order.orderNo),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        // 画板实测卡内次行 12/400（caption 400 档），非 captionStrong 500
+                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
-                        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.textSecondary
                     )
                 }
@@ -240,13 +242,10 @@ private fun PickupOrderCard(
                 )
                 Text(
                     text = pickupCode,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.colorScheme.primaryDark,
-                        fontFeatureSettings = "tnum",
-                        letterSpacing = 0.sp
-                    )
+                    // 取件码大字走 display 令牌（36/44/700 + tnum）——手写 bodySmall.copy(36sp)
+                    // 行高仍留 16 会挤压字形，也违反「禁止自创令牌值」
+                    style = AppTextStyles.DataLarge,
+                    color = AppColors.colorScheme.primaryDark,
                 )
             }
 

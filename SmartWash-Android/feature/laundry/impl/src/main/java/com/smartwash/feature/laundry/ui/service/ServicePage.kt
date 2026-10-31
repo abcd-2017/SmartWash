@@ -195,13 +195,14 @@ private fun SearchBar() {
                 imageVector = Icons.Rounded.Search,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.textTertiary
+                // 画板实测 #6B6E73 = textSecondary（非 textTertiary #A9AEA9）
+                tint = AppColors.colorScheme.textSecondary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.service_search_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textTertiary
+                color = AppColors.colorScheme.textSecondary
             )
         }
     }

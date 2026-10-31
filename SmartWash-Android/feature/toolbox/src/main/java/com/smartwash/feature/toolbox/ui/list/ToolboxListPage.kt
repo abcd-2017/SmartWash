@@ -382,7 +382,8 @@ private fun CopyPillButton(onClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.toolbox_action_copy),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.primary,
+                // 画板实测 #1E8C5C = primaryDark（非 primary #2D9B6A）
+                color = AppColors.colorScheme.primaryDark,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             )
         }
