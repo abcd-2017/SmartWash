@@ -14,8 +14,8 @@ import java.util.List;
 
 /**
  * 游戏库服务。
- * 管理端：上传（单 html / zip → MinIO 前缀）、分页、元数据编辑、CAS 上下架开关、物理删除 + 存储清理。
- * 用户端：enabled=1 按 sort 升序全量下发。
+ * 管理端：上传（单 html / zip → MinIO 前缀 + 缓存元数据）、分页、元数据编辑、CAS 上下架开关、物理删除 + 存储清理。
+ * 用户端：enabled=1 按 sort 升序全量下发（url 为 MinIO 对象直链，端上直拉）。
  */
 public interface GameConfigService extends IService<GameConfig> {
 

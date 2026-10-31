@@ -39,7 +39,7 @@ public class AdminGameVo {
     /** 包内入口相对路径（source_type=1） */
     private String entryPath;
 
-    /** 最终可玩地址 */
+    /** 最终可玩地址（MinIO 对象直链） */
     private String url;
 
     /** MinIO 对象键前缀（source_type=1） */

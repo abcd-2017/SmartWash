@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.game.entity.GameConfig;
 import com.smartwash.game.from.SearchGameFrom;
@@ -20,7 +21,6 @@ import com.smartwash.game.vo.GameVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -29,7 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.web.util.UriUtils;
+
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -39,7 +42,8 @@ import java.util.List;
  * 游戏库服务实现。
  * 缓存模式与 WorkbenchEntryServiceImpl 一致：读走 @Cacheable 的公共方法（经 self 自注入调用绕过 AOP 代理失效），
  * 写操作 @CacheEvict(allEntries) 全量失效；game_key 唯一性以 uk_game_key 唯一索引兜底并发。
- * 上传链路：校验 → 清旧前缀 → 解压/直写 MinIO → 建/更记录；删除链路：先清存储（fail-closed）再删记录。
+ * 上传链路：校验 → 清旧前缀 → 解压/直写 MinIO（带缓存元数据）→ 建/更记录；删除链路：先清存储（fail-closed）再删记录。
+ * 下发形态与头像先例一致：url 存 MinIO 对象直链（endpoint/bucket/对象键/入口），端上 WebView 直拉，服务侧零转发代码。
  */
 @Slf4j
 @Service
@@ -58,10 +62,6 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     /** MinIO 游戏对象根前缀 */
     private static final String OBJECT_ROOT = "game/";
 
-    /** 可玩地址域名前缀（拼 {base}/web/game/{gameKey}/）；生产必须注入 https 域名（环境红线：生产禁明文 HTTP） */
-    @Value("${game.public-base-url}")
-    private String publicBaseUrl;
-
     /** 自注入：@Cacheable 方法须经代理调用才生效，同类内部直调会绕过 AOP */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -69,6 +69,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
 
     private final GamePackageValidator packageValidator;
     private final GameObjectStorage objectStorage;
+    private final MinioConfig minioConfig;
 
     // ==================== 管理端：上传 ====================
 
@@ -111,7 +112,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             byte[] content = file.getBytes();
             removeOldPrefix(OBJECT_ROOT + gameKey + "/");
             String objectKey = OBJECT_ROOT + gameKey + "/index.html";
-            objectStorage.putObject(objectKey, content, GameContentTypes.TEXT_HTML);
+            objectStorage.putObject(objectKey, content, GameContentTypes.TEXT_HTML, GameObjectStorage.CACHE_CONTROL_IMMUTABLE);
             return buildPackageConfig(gameKey, from, "index.html", (long) content.length);
         } catch (java.io.IOException e) {
             log.error("游戏单文件读取失败, gameKey: {}", gameKey, e);
@@ -151,12 +152,13 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             for (Path path : walk.filter(Files::isRegularFile).toList()) {
                 String relative = tempDir.relativize(path).toString().replace('\\', '/');
                 byte[] content = Files.readAllBytes(path);
-                objectStorage.putObject(prefix + relative, content, GameContentTypes.forFilename(relative));
+                objectStorage.putObject(prefix + relative, content, GameContentTypes.forFilename(relative),
+                        GameObjectStorage.CACHE_CONTROL_IMMUTABLE);
             }
         }
     }
 
-    /** 组装上传包形态的记录（url 统一 {base}/web/game/{gameKey}/，转发默认回 entry_path） */
+    /** 组装上传包形态的记录（url = MinIO 对象直链，指向入口文件，与头像 uploadFile 同一构造方式） */
     private GameConfig buildPackageConfig(String gameKey, UploadGameFrom from, String entryPath, Long fileSize) {
         GameConfig config = new GameConfig()
                 .setGameKey(gameKey)
@@ -174,15 +176,21 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 .setEnabled(0)
                 .setSort(from.getSort() == null ? 100 : from.getSort())
                 .setRemark(StrUtil.isBlank(from.getRemark()) ? null : from.getRemark());
-        config.setUrl(buildPlayUrl(gameKey));
+        config.setUrl(buildPlayUrl(OBJECT_ROOT + gameKey + "/", entryPath));
         return config;
     }
 
-    private String buildPlayUrl(String gameKey) {
-        String base = publicBaseUrl.endsWith("/")
-                ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
-                : publicBaseUrl;
-        return base + "/web/game/" + gameKey + "/";
+    /**
+     * 可玩地址 = MinIO 对象直链：{endpoint}/{bucket}/{objectKey}{entryPath}，
+     * 对齐 MinioStorageServiceImpl.uploadFile 的 URL 构造（endpoint 直接拼接）；对象路径段 URL 编码兜底（zip 条目名可能含空格/中文）。
+     */
+    private String buildPlayUrl(String objectKey, String entryPath) {
+        String endpoint = minioConfig.getEndpoint();
+        String base = endpoint.endsWith("/")
+                ? endpoint.substring(0, endpoint.length() - 1)
+                : endpoint;
+        return base + "/" + minioConfig.getBucketName() + "/"
+                + UriUtils.encodePath(objectKey + entryPath, StandardCharsets.UTF_8);
     }
 
     // ==================== 管理端：分页 / 编辑 / 开关 / 删除 ====================

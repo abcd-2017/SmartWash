@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 /**
  * H5 游戏库与下发配置。
  * 管理端上传游戏包（单 html / zip，存 MinIO game/{gameKey}/ 前缀）并配置元数据，
- * 用户端经 /web/auth/game/list 下发启用项；公开转发 /web/game/{gameKey}/** 按对象键前缀流式回源。
+ * 用户端经 /web/auth/game/list 下发启用项；url 为 MinIO 对象直链（对齐头像先例），端上 WebView 直拉。
  * game_key 是端上与 URL 共同引用的业务唯一标识，创建后不可修改（改 key 等于换游戏）。
  */
 @Data
@@ -51,7 +51,7 @@ public class GameConfig implements Serializable {
     /** source_type=1：包内入口相对路径，默认 index.html */
     private String entryPath;
 
-    /** 最终可玩地址（构造规则：{public-base-url}/web/game/{gameKey}/，source_type=2 为外部 https 地址） */
+    /** 最终可玩地址：MinIO 对象直链（{endpoint}/{bucket}/{objectKey}{entryPath}，source_type=2 为外部 https 地址） */
     private String url;
 
     /** source_type=1：MinIO 对象键前缀 game/{gameKey}/ */

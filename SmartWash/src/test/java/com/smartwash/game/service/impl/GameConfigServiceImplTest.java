@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.game.entity.GameConfig;
 import com.smartwash.game.from.SearchGameFrom;
@@ -90,9 +91,11 @@ class GameConfigServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new GameConfigServiceImpl(new GamePackageValidator(), objectStorage);
+        MinioConfig minioConfig = new MinioConfig();
+        minioConfig.setEndpoint("http://minio.local:9000");
+        minioConfig.setBucketName("smartwash");
+        service = new GameConfigServiceImpl(new GamePackageValidator(), objectStorage, minioConfig);
         ReflectionTestUtils.setField(service, "baseMapper", gameMapper);
-        ReflectionTestUtils.setField(service, "publicBaseUrl", "https://demo.smartwash.cn");
         ReflectionTestUtils.setField(service, "self", service);
     }
 
@@ -137,7 +140,7 @@ class GameConfigServiceImplTest {
                 .setCategory("arcade")
                 .setSourceType(sourceType)
                 .setObjectKey(sourceType == 2 ? null : "game/" + gameKey + "/")
-                .setUrl("https://demo.smartwash.cn/web/game/" + gameKey + "/")
+                .setUrl("http://minio.local:9000/smartwash/game/" + gameKey + "/index.html")
                 .setEnabled(enabled)
                 .setSort(1)
                 .setUpdatedAt(LocalDateTime.of(2026, 10, 31, 12, 0));
@@ -157,12 +160,15 @@ class GameConfigServiceImplTest {
 
         AdminGameVo vo = service.upload(uploadFrom("snake"), htmlFile());
 
-        // 对象写入：键固定 game/snake/index.html，Content-Type 为 text/html
+        // 对象写入：键固定 game/snake/index.html，Content-Type 为 text/html，缓存元数据 immutable
         ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> mimeCaptor = ArgumentCaptor.forClass(String.class);
-        verify(objectStorage).putObject(keyCaptor.capture(), any(byte[].class), mimeCaptor.capture());
+        ArgumentCaptor<String> cacheCaptor = ArgumentCaptor.forClass(String.class);
+        verify(objectStorage).putObject(keyCaptor.capture(), any(byte[].class), mimeCaptor.capture(), cacheCaptor.capture());
         assertEquals("game/snake/index.html", keyCaptor.getValue());
         assertTrue(mimeCaptor.getValue().startsWith("text/html"));
+        assertEquals("public, max-age=31536000, immutable", cacheCaptor.getValue(),
+                "上传对象必须携带不可变缓存元数据（MinIO GET 时随响应头返回）");
         // 覆盖前清理旧前缀（幂等，对象不存在时由存储层静默）
         verify(objectStorage).removeObjectsByPrefix("game/snake/");
 
@@ -173,12 +179,13 @@ class GameConfigServiceImplTest {
         assertEquals("贪吃蛇", saved.getTitle());
         assertEquals("index.html", saved.getEntryPath());
         assertEquals("game/snake/", saved.getObjectKey());
-        assertEquals("https://demo.smartwash.cn/web/game/snake/", saved.getUrl());
+        assertEquals("http://minio.local:9000/smartwash/game/snake/index.html", saved.getUrl(),
+                "url 必须为指向入口文件的 MinIO 直链（与头像 uploadFile 同一构造方式）");
         assertEquals(0, saved.getEnabled(), "上传后默认不下发，上架由开关接口显式选择");
         assertEquals(3, saved.getSort());
         assertEquals(1, saved.getSourceType());
 
-        assertEquals("https://demo.smartwash.cn/web/game/snake/", vo.getUrl());
+        assertEquals("http://minio.local:9000/smartwash/game/snake/index.html", vo.getUrl());
     }
 
     @Test
@@ -225,11 +232,13 @@ class GameConfigServiceImplTest {
         service.upload(uploadFrom("g2048"), zip);
 
         // 解压出的 2 个文件都必须写入对象存储，键为相对路径
-        verify(objectStorage).putObject(eq("game/g2048/index.html"), any(byte[].class), startsWith("text/html"));
-        verify(objectStorage).putObject(eq("game/g2048/assets/main.js"), any(byte[].class), startsWith("application/javascript"));
+        verify(objectStorage).putObject(eq("game/g2048/index.html"), any(byte[].class), startsWith("text/html"), anyString());
+        verify(objectStorage).putObject(eq("game/g2048/assets/main.js"), any(byte[].class), startsWith("application/javascript"), anyString());
         ArgumentCaptor<GameConfig> savedCaptor = ArgumentCaptor.forClass(GameConfig.class);
         verify(gameMapper).insert(savedCaptor.capture());
         assertEquals("index.html", savedCaptor.getValue().getEntryPath());
+        assertEquals("http://minio.local:9000/smartwash/game/g2048/index.html", savedCaptor.getValue().getUrl(),
+                "zip 上传 url 必须指向探测出的入口对象直链");
         assertTrue(savedCaptor.getValue().getFileSize() > 0, "file_size 必须记录解压后总字节");
     }
 
@@ -241,7 +250,7 @@ class GameConfigServiceImplTest {
         GameServiceException ex = assertThrows(GameServiceException.class,
                 () -> service.upload(uploadFrom("snake"), zip));
         assertEquals(GameServiceException.BAD_REQUEST, ex.getCode());
-        verify(objectStorage, never()).putObject(anyString(), any(byte[].class), anyString());
+        verify(objectStorage, never()).putObject(anyString(), any(byte[].class), anyString(), anyString());
     }
 
     @Test
@@ -253,7 +262,7 @@ class GameConfigServiceImplTest {
                 () -> service.upload(uploadFrom("snake"), zip));
         assertEquals(GameServiceException.FORBIDDEN, ex.getCode());
         verify(objectStorage, never()).removeObjectsByPrefix(anyString());
-        verify(objectStorage, never()).putObject(anyString(), any(byte[].class), anyString());
+        verify(objectStorage, never()).putObject(anyString(), any(byte[].class), anyString(), anyString());
         verify(gameMapper, never()).insert(any(GameConfig.class));
     }
 
@@ -445,7 +454,7 @@ class GameConfigServiceImplTest {
         assertEquals("g2048", vo.getGameKey());
         assertEquals("2048", vo.getTitle());
         assertEquals("新", vo.getBadge());
-        assertEquals("https://demo.smartwash.cn/web/game/g2048/", vo.getUrl());
+        assertEquals("http://minio.local:9000/smartwash/game/g2048/index.html", vo.getUrl());
         assertEquals("arcade", vo.getCategory());
         // Vo 类型层面不含管理字段，这里确认 url/游戏标识等用户端关键字段完整
         assertTrue(vo.getGameKey() != null && vo.getUrl() != null);

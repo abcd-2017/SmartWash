@@ -28,7 +28,7 @@ public class WebGameListController {
 
     private final GameConfigService gameConfigService;
 
-    @Operation(summary = "游戏列表", description = "仅启用中（enabled=1）的游戏，按 sort 升序、id 升序，不分页；icon/color/category 为端上白名单枚举 key，未知值显示默认样式；url 为可直接加载的可玩地址")
+    @Operation(summary = "游戏列表", description = "仅启用中（enabled=1）的游戏，按 sort 升序、id 升序，不分页；icon/color/category 为端上白名单枚举 key，未知值显示默认样式；url 为可直接加载的可玩地址（MinIO 对象直链）")
     @GetMapping("/list")
     public Result<List<GameVo>> list() {
         return Result.ok(gameConfigService.listEnabledGames());

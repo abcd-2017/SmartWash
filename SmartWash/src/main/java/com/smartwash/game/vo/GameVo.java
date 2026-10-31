@@ -33,6 +33,6 @@ public class GameVo {
     /** 角标文案（如 新/热），空则不显示 */
     private String badge;
 
-    /** 最终可玩地址：{public-base-url}/web/game/{gameKey}/，端上 WebView 直接加载 */
+    /** 最终可玩地址：MinIO 对象直链（指向入口文件），端上 WebView 直接加载 */
     private String url;
 }

@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
  * 游戏库管理端控制器。
  * 路径前缀 /admin/game，需 ROLE_ADMIN（SecurityConfig 统一拦截）。
  * 写操作统一失效用户端下发缓存（gameList），保证端上拉到的列表即时更新。
- * 上传错误码语义：400 参数/包内容不合法、403 包内路径穿越、404 不存在、409 gameKey 并发冲突、413 体积超限。
+ * 上传错误码语义：400 参数/包内容不合法、403 包内路径穿越、404 不存在、409 gameKey 并发冲突、413 体积超限、500 存储故障。
  * 四端联动说明：本组为新增接口，Web 管理后台为消费方（游戏库页），Android/鸿蒙不消费。
  */
 @Tag(name = "游戏中心-管理端", description = "H5 游戏库上传/编辑/上下架/删除（ROLE_ADMIN）")
@@ -41,7 +41,7 @@ public class GameAdminController {
 
     private final GameConfigService gameConfigService;
 
-    @Operation(summary = "上传游戏", description = "multipart 文件（.html/.htm/.zip，≤10MB）+ 表单元数据；同 gameKey 重复上传 = 覆盖更新（URL 不变）；上传后默认不下发，需调开关接口上架；zip 防炸弹（≤200 文件、解压 ≤20MB）与 ZipSlip 防护")
+    @Operation(summary = "上传游戏", description = "multipart 文件（.html/.htm/.zip，≤10MB）+ 表单元数据；同 gameKey 重复上传 = 覆盖更新；url 落 MinIO 对象直链（指向入口文件）；上传后默认不下发，需调开关接口上架；zip 防炸弹（≤200 文件、解压 ≤20MB）与 ZipSlip 防护")
     @PostMapping("/upload")
     public Result<AdminGameVo> upload(@RequestPart("file") MultipartFile file,
                                       @Valid @ModelAttribute UploadGameFrom from) {
