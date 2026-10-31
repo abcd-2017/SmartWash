@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>像素数织</title>
+<style>
+  /*token:GAME-THEME.md §2（按需取用）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 0 2px; }
+  h1 { margin: 0; font-size: 26px; }
+  .sub { font-size: 13px; color: var(--g-muted); white-space: nowrap; }
+  /* 关卡选择 */
+  .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+  .levels::-webkit-scrollbar { display: none; }
+  .lv {
+    flex: 0 0 auto; min-width: 52px; min-height: 44px; padding: 4px 10px;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
+    background: var(--g-surface); color: var(--g-muted);
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  }
+  .lv small { font-size: 10px; font-weight: 500; color: var(--g-faint); max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); }
+  .lv.done { color: var(--g-primary-deep); }
+  .lv:disabled { opacity: .45; cursor: default; }
+  /* 状态条 */
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 11px; color: var(--g-muted); }
+  .stat .val { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  /* 棋盘 */
+  .board {
+    display: grid; gap: 1px; width: 100%;
+    background: var(--g-border); border-radius: var(--g-radius-inner);
+    padding: 5px; touch-action: none;
+    box-shadow: var(--g-shadow);
+  }
+  .cc { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0; background: var(--g-surface); border-radius: 3px 3px 0 0; padding: 2px 1px; }
+  .cc span, .rc b { font-size: 11px; font-weight: 700; color: var(--g-muted); line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .rc { display: flex; align-items: center; justify-content: flex-end; gap: 4px; background: var(--g-surface); border-radius: 3px 0 0 3px; padding: 0 5px 0 2px; overflow: hidden; }
+  .cc.done { background: var(--g-primary-soft); }
+  .cc.done span { color: var(--g-success); }
+  .rc.done { background: var(--g-primary-soft); }
+  .rc.done b { color: var(--g-success); }
+  .cell {
+    position: relative; aspect-ratio: 1; border-radius: 3px;
+    background: var(--g-surface); cursor: pointer;
+  }
+  .cell.fill { background: var(--g-primary); box-shadow: inset 0 2px 0 rgba(255,255,255,.18); }
+  .cell.mk { background: var(--g-surface2); }
+  .cell.mk::before, .cell.mk::after {
+    content: ""; position: absolute; left: 18%; top: calc(50% - 1.5px);
+    width: 64%; height: 3px; border-radius: 2px; background: var(--g-danger);
+  }
+  .cell.mk::before { transform: rotate(45deg); }
+  .cell.mk::after { transform: rotate(-45deg); }
+  .cell.edge-r { box-shadow: inset -3px 0 0 -1px var(--g-faint); }
+  .cell.fill.edge-r { box-shadow: inset 0 2px 0 rgba(255,255,255,.18), inset -3px 0 0 -1px var(--g-faint); }
+  .cell.edge-b { border-bottom: 2px solid var(--g-faint); border-radius: 0 0 3px 3px; }
+  .cell.err { animation: shake .4s; outline: 2px solid var(--g-danger); outline-offset: -2px; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+  /* 工具区 */
+  .msg { min-height: 20px; margin: 10px 2px 8px; font-size: 13px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); flex: 0 0 auto; }
+  .btn.toggle.off { background: var(--g-surface2); color: var(--g-muted); }
+  .btn.toggle.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .foot { margin: 14px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  /* 结算覆盖层 */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 4px; font-size: 22px; }
+  .panel .desc { margin: 0 0 14px; font-size: 13px; color: var(--g-muted); }
+  .reveal { display: grid; gap: 0; width: min(200px, 60vw); margin: 0 auto 14px; aspect-ratio: 1; }
+  .reveal i { border-radius: 1px; }
+  .reveal i.on { background: var(--g-primary); animation: pin .3s backwards ease-out; }
+  @keyframes pin { from { transform: scale(.2); } to { transform: scale(1); opacity: 1; } }
+  .panel .row2 { display: flex; gap: 8px; justify-content: center; }
+  .panel .btn { flex: 1; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>像素数织</h1><span class="sub" id="progress"></span></header>
+  <nav class="levels" id="levels" aria-label="关卡选择"></nav>
+  <div class="stats">
+    <div class="stat"><span class="label">当前关卡</span><span class="val" id="stLv">5×5</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stSteps">0</span></div>
+    <div class="stat"><span class="label">最佳步数</span><span class="val" id="stBest">—</span></div>
+    <div class="stat"><span class="label">纠错</span><span class="val" id="stErr">0</span></div>
+  </div>
+  <div class="board" id="board" aria-label="数织棋盘"></div>
+  <p class="msg" id="msg"></p>
+  <div class="tools">
+    <button class="btn" id="btnSubmit">提交完成</button>
+    <button class="btn ghost" id="btnClear">清空</button>
+    <button class="btn ghost toggle off" id="btnInstant" aria-pressed="false">即时纠错</button>
+  </div>
+  <p class="foot">点按填格 · 长按或右键标记叉 · 行列数字表示连续黑格段，段间至少空一格</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle"></h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="reveal" id="ovReveal"></div>
+    <div class="row2">
+      <button class="btn ghost" id="ovReplay">再玩一次</button>
+      <button class="btn" id="ovNext">下一关</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 关卡数据（原创像素图，行列提示由程序实时推导） ---------- */
+var PUZZLES=[
+  {name:"十字标",grid:["00100","00100","11111","00100","00100"]},
+  {name:"圣诞树",grid:["00100","01110","01110","11111","00100"]},
+  {name:"小房子",grid:["00100","01110","11111","11011","11011"]},
+  {name:"蝴蝶",grid:["10001","11011","11111","01110","00100"]},
+  {name:"爱心",grid:["011110","111111","111111","111111","011110","001100"]},
+  {name:"棒棒糖",grid:["001100","011110","111111","111111","001100","001100"]},
+  {name:"船锚",grid:["0011100","0010100","0010100","1111111","0010100","1010101","1100011"]},
+  {name:"猫头",grid:["1000001","1100011","1111111","1101011","1111111","0111110","0011100"]},
+  {name:"蘑菇",grid:["00111100","01111110","11011011","11111111","00011000","00011000","00111100","00111100"]},
+  {name:"小火箭",grid:["00011000","00111100","01111110","11011011","11011011","11111111","01111110","01011010"]},
+  {name:"帆船",grid:["0000100000","0000110000","0000111000","0000111100","0000111110","0000111111","0000100000","0011111100","0111111110","0101010101"]},
+  {name:"城堡",grid:["1100110011","1100110011","1111111111","1111111111","1001111001","1001111001","1111111111","1111111111","1100110011","1100110011"]}
+];
+/* ---------- 存档 ---------- */
+var KEY="sw.nonogram.v1";
+function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var save=loadSave();
+save.done=save.done||{};save.best=save.best||{};save.instant=!!save.instant;
+save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),PUZZLES.length-1);
+/* ---------- 状态 ---------- */
+var cur=save.lv,steps=0,errs=0,over=false;
+var cells=[],cellEls=[],rcEls=[],ccEls=[];
+var board=document.getElementById("board");
+var locked=false;//长按判定期间锁点按
+/* ---------- 工具 ---------- */
+function $(id){return document.getElementById(id)}
+function clueOf(line){var out=[],run=0,i;for(i=0;i<line.length;i++){if(line[i])run++;else if(run){out.push(run);run=0}}if(run)out.push(run);return out.length?out:[0]}
+function sol(i){return PUZZLES[i].grid.map(function(r){return r.split("").map(Number)})}
+/* ---------- 关卡渲染 ---------- */
+function build(){
+  var n=PUZZLES[cur].grid.length,S=sol(cur),x,y;
+  steps=0;errs=0;over=false;
+  cells=S.map(function(row){return row.map(function(){return 0})});//0空 1填 2叉
+  var rowClues=cells.map(function(row,y){return clueOf(S[y])});
+  var colClues=[];for(x=0;x<n;x++)colClues.push(clueOf(S.map(function(r){return r[x]})));
+  var maxRowLen=Math.max.apply(null,rowClues.map(function(c){return c.join(" ").length}));
+  var cw=Math.max(34,Math.min(64,maxRowLen*7+14));
+  board.style.gridTemplateColumns=cw+"px repeat("+n+",1fr)";
+  board.innerHTML="";
+  board.appendChild(document.createElement("div"));//左上角
+  ccEls=[];
+  for(x=0;x<n;x++){
+    var cc=document.createElement("div");cc.className="cc";
+    colClues[x].forEach(function(v){var s=document.createElement("span");s.textContent=v;cc.appendChild(s)});
+    board.appendChild(cc);ccEls.push(cc);
+  }
+  cellEls=[];rcEls=[];
+  for(y=0;y<n;y++){
+    var rc=document.createElement("div");rc.className="rc";
+    var b=document.createElement("b");b.textContent=rowClues[y].join(" ");rc.appendChild(b);
+    board.appendChild(rc);rcEls.push(rc);
+    for(x=0;x<n;x++){
+      var c=document.createElement("div");c.className="cell";c.dataset.x=x;c.dataset.y=y;
+      if(x%5===4&&x!==n-1)c.classList.add("edge-r");
+      if(y%5===4&&y!==n-1)c.classList.add("edge-b");
+      board.appendChild(c);cellEls.push(c);
+    }
+  }
+  $("stLv").textContent=n+"×"+n;
+  $("stSteps").textContent="0";$("stErr").textContent="0";
+  $("stBest").textContent=save.best[cur]!==undefined?save.best[cur]:"—";
+  renderLevels();refreshClues();say("点按填格，长按标记叉；先用大数字段定位，再排小块。");
+}
+function renderLevels(){
+  var el=$("levels");el.innerHTML="";
+  var doneCount=0;
+  PUZZLES.forEach(function(p,i){
+    if(save.done[i])doneCount++;
+    var b=document.createElement("button");b.className="lv";
+    b.innerHTML=(i+1)+"<small>"+(save.done[i]?p.name:save.best[i]!==undefined?"进行中…":"？？")+"</small>";
+    if(i===cur)b.classList.add("cur");
+    if(save.done[i])b.classList.add("done");
+    b.disabled=i>save.lv;
+    b.addEventListener("click",function(){if(i===cur&&!over)return;cur=i;persist();hideOverlay();build()});
+    el.appendChild(b);
+  });
+  $("progress").textContent="通关 "+doneCount+" / "+PUZZLES.length;
+}
+/* ---------- 行列满行核对（提示数字高亮） ---------- */
+function refreshClues(){
+  var n=PUZZLES[cur].grid.length,S=sol(cur),x,y;
+  for(y=0;y<n;y++){
+    var line=cells[y].map(function(v){return v===1?1:0});
+    var eq=clueOf(line).join(",")===clueOf(S[y]).join(",");
+    rcEls[y].classList.toggle("done",eq);
+  }
+  for(x=0;x<n;x++){
+    var col=cells.map(function(row){return row[x]===1?1:0});
+    var eqc=clueOf(col).join(",")===clueOf(S.map(function(r){return r[x]})).join(",");
+    ccEls[x].classList.toggle("done",eqc);
+  }
+}
+function say(t){$("msg").textContent=t}
+function elAt(x,y){return cellEls[y*PUZZLES[cur].grid.length+x]}
+/* ---------- 落子 ---------- */
+function setCell(x,y,v){
+  var n=PUZZLES[cur].grid.length;
+  if(x<0||y<0||x>=n||y>=n||over)return false;
+  if(cells[y][x]===v)return false;
+  if(v===1&&save.instant&&PUZZLES[cur].grid[y][x]==="0"){
+    //即时纠错：填在底图空处，闪红并回退，不判死
+    errs++;$("stErr").textContent=errs;
+    var el=elAt(x,y);el.classList.remove("err");void el.offsetWidth;el.classList.add("err");
+    say("这里与线索矛盾，已退回（即时纠错开启中）");
+    return false;
+  }
+  cells[y][x]=v;
+  if(v!==2){steps++;$("stSteps").textContent=steps}
+  drawCell(x,y);refreshClues();
+  return true;
+}
+function drawCell(x,y){
+  var el=elAt(x,y),v=cells[y][x];
+  el.classList.toggle("fill",v===1);
+  el.classList.toggle("mk",v===2);
+}
+/* ---------- 提交 ---------- */
+function submit(){
+  if(over)return;
+  var n=PUZZLES[cur].grid.length,S=sol(cur),x,y,wrong=0,missing=0;
+  for(y=0;y<n;y++)for(x=0;x<n;x++){
+    var want=S[y][x]===1,got=cells[y][x]===1;
+    if(got&&!want){wrong++;flashErr(x,y)}
+    if(!got&&want)missing++;
+  }
+  if(wrong===0&&missing===0){win();return}
+  say(wrong?("有 "+wrong+" 格与线索矛盾，找找高亮的位置"):("还差 "+missing+" 格，继续推导！"));
+}
+function flashErr(x,y){
+  var el=elAt(x,y);el.classList.remove("err");void el.offsetWidth;el.classList.add("err");
+  setTimeout(function(){el.classList.remove("err")},450);
+}
+/* ---------- 通关 ---------- */
+function win(){
+  over=true;
+  save.done[cur]=true;
+  if(save.best[cur]===undefined||steps<save.best[cur])save.best[cur]=steps;
+  if(cur+1<PUZZLES.length&&save.lv<cur+1)save.lv=cur+1;
+  persist();renderLevels();
+  $("stBest").textContent=save.best[cur];
+  //揭示像素画
+  var n=PUZZLES[cur].grid.length,S=sol(cur),rv=$("ovReveal"),x,y;
+  rv.style.gridTemplateColumns="repeat("+n+",1fr)";
+  rv.innerHTML="";
+  for(y=0;y<n;y++)for(x=0;x<n;x++){
+    var i=document.createElement("i");
+    if(S[y][x]){i.className="on";i.style.animationDelay=((x+y)*36)+"ms"}
+    rv.appendChild(i);
+  }
+  var best=save.best[cur];
+  $("ovTitle").textContent="完成 · "+PUZZLES[cur].name;
+  $("ovDesc").textContent=steps+" 步还原"+(best===steps?"（新纪录！）":"（最佳 "+best+" 步）");
+  $("ovNext").textContent=cur+1<PUZZLES.length?"下一关":"全部通关";
+  showOverlay();
+}
+function showOverlay(){$("overlay").classList.add("show")}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 指针交互：点按填格 / 长按画叉 / 拖动刷格 ---------- */
+var ptr={id:null,x:0,y:0,fired:false,paint:null,moved:false,timer:null};
+function cellFromPoint(clientX,clientY){
+  var n=PUZZLES[cur].grid.length;
+  var a=cellEls[0].getBoundingClientRect(),b=cellEls[1].getBoundingClientRect(),c=cellEls[n].getBoundingClientRect();
+  var w=b.left-a.left,h=c.top-a.top;
+  var x=Math.floor((clientX-a.left)/w),y=Math.floor((clientY-a.top)/h);
+  if(x<0||y<0||x>=n||y>=n)return null;return{x:x,y:y};
+}
+board.addEventListener("contextmenu",function(e){
+  e.preventDefault();
+  var p=cellFromPoint(e.clientX,e.clientY);if(!p||over)return;
+  setCell(p.x,p.y,cells[p.y][p.x]===2?0:2);
+});
+board.addEventListener("pointerdown",function(e){
+  if(over||ptr.id!==null||e.button===2)return;
+  var p=cellFromPoint(e.clientX,e.clientY);if(!p)return;
+  e.preventDefault();
+  ptr.id=e.pointerId;ptr.x=e.clientX;ptr.y=e.clientY;
+  ptr.fired=false;ptr.moved=false;ptr.paint=null;
+  ptr.timer=setTimeout(function(){//长按：标记叉（已填格不覆盖）
+    ptr.fired=true;
+    if(cells[p.y][p.x]!==1)setCell(p.x,p.y,cells[p.y][p.x]===2?0:2);
+  },340);
+});
+board.addEventListener("pointermove",function(e){
+  if(e.pointerId!==ptr.id)return;
+  var dx=e.clientX-ptr.x,dy=e.clientY-ptr.y;
+  if(!ptr.moved&&dx*dx+dy*dy>110){ptr.moved=true;clearTimeout(ptr.timer)}
+  if(!ptr.moved)return;
+  var p=cellFromPoint(e.clientX,e.clientY);if(!p)return;
+  if(ptr.paint===null)ptr.paint=cells[p.y][p.x]===1?0:1;//起始格决定刷入值
+  setCell(p.x,p.y,ptr.paint);
+});
+function ptrEnd(e){
+  if(e.pointerId!==ptr.id)return;
+  clearTimeout(ptr.timer);
+  if(!ptr.fired&&!ptr.moved&&ptr.id!==null){
+    var p=cellFromPoint(e.clientX,e.clientY);
+    if(p&&!over){
+      var v=cells[p.y][p.x];
+      setCell(p.x,p.y,v===1?0:(v===2?0:1));//空→填 填→空 叉→空
+    }
+  }
+  ptr.id=null;ptr.paint=null;ptr.fired=false;ptr.moved=false;
+}
+board.addEventListener("pointerup",ptrEnd);
+board.addEventListener("pointercancel",ptrEnd);
+/* ---------- 按钮 ---------- */
+$("btnSubmit").addEventListener("click",submit);
+$("btnClear").addEventListener("click",function(){
+  if(over)return;
+  cells=cells.map(function(row){return row.map(function(){return 0})});
+  cellEls.forEach(function(el){el.classList.remove("fill","mk")});
+  refreshClues();say("已清空，重新开始这一关。");
+});
+var bi=$("btnInstant");
+function syncInstant(){
+  bi.classList.toggle("on",save.instant);bi.classList.toggle("off",!save.instant);
+  bi.setAttribute("aria-pressed",save.instant?"true":"false");
+  bi.textContent=save.instant?"即时纠错 开":"即时纠错 关";
+}
+bi.addEventListener("click",function(){save.instant=!save.instant;persist();syncInstant();
+  say(save.instant?"即时纠错已开启：填错的格子会立刻退回。":"即时纠错已关闭：提交时统一核对。")});
+$("ovReplay").addEventListener("click",function(){hideOverlay();build()});
+$("ovNext").addEventListener("click",function(){
+  hideOverlay();
+  if(cur+1<PUZZLES.length){cur=cur+1;persist();build()}
+  else say("十二关全部通关，太厉害了！");
+});
+syncInstant();
+build();
+})();
+</script>
+</body>
+</html>

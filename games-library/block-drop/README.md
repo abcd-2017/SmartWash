@@ -1,0 +1,14 @@
+# 方块消除（gameKey：`block-drop`，category 建议：`puzzle`）
+
+- 玩法：8×8 棋盘，底部托盘每轮给 3 块随机多联方块（单格到 3×3，含旋转展开共 40 余种变体，按格数加权抽取）；拖入棋盘任意空位放置（无重力），填满整行或整列即消除得分：每行 10 分 × 行数，单次同时消 2 行起有连击加成（10/30/60/100/150…阶梯分）。放置的方块本身也按占格数计分。托盘 3 块用完后自动补 3 块；补牌时保证至少一块可放置。剩余方块全部放不下时游戏结束，localStorage 记录最高分（键 `sw.blockdrop.v1`）。
+- 操作：手指按住托盘方块拖到棋盘，松手放置；拖动时实时显示目标格预览（可放=绿、冲突=红），若该放置将点亮整行/列会以描边提前预告；触屏拖拽时方块悬浮于指尖上方 46px 避免遮挡。桌面端鼠标同样可玩。canvas 整块 `touch-action: none` 防页面滚动。
+- 说明：棋盘为 canvas 渲染（devicePixelRatio 适配），消除有闪光与连消飘字动效；方块 8 色素材走 `--g-bp1~8` CSS 变量（深色主题整体提亮），棋盘阴影走 `--g-bshade`，JS 侧颜色全部经 `PAL` 对象从 CSS 变量读取（恒白高光除外），主题推送时经 `__gOnTheme` 刷新调色板。机制参考 Block Blast 类玩法自研实现，未使用任何原型代码。
+
+## 自查清单
+
+- [x] 无外部请求：CSS/JS 全内联，零 CDN / 字体 / 图片（`grep -nE 'https?://'` 零命中）
+- [x] 触屏可完整游玩一遍：拖拽放置 + 预览 + 补牌 + 结束重开全流程触屏可达，指针捕获防拖丢
+- [x] localStorage（最高分）全部 try/catch 包裹，键名 `sw.blockdrop.v1`
+- [x] 375px 宽不溢出：canvas 随容器自适应（375 下格约 44px），监听 resize 重排
+- [x] 主题机制按 GAME-THEME.md §4/§5（D5 终版）：仅 `:root` + `[data-theme=dark]` 两块 CSS，`<head>` 运行时读桥，`__applySmartWashTheme` 推送生效并经 `__gOnTheme → palLoad()` 重绘 canvas；无 matchMedia、无切换按钮、无 `g-theme`
+- [x] `<script>` 提取过 `node --check`，无 console 残留，UTF-8 单文件约 17KB
