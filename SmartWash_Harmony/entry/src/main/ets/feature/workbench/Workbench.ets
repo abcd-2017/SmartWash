@@ -1,29 +1,74 @@
 // 工作台 — 底栏第 4 个 tab 根页（对齐安卓 ui/page/workbench/WorkbenchPage.kt，设计稿屏 15）
 //
 // 清氧页面里的一扇玄墨之窗：观象台特色卡 + 工具网格（占卜降为其中一个入口）。
-// 工具列表来自 api.ets 内置默认数据（后端工作台接口就绪后替换数据源，页面零改动）。
+// 工具列表来自服务端入口配置下发（GET /web/auth/workbench/entries，见 api.ets +
+// network/api/workbench.ets）：下发失败/空列表回落本地兜底列表；
+// 点击统一走深链分发（DeepLinkHandler.handleDeepLink，target 空 = 功能建设中）。
+// 观象台玄墨特色卡为端上固定品牌位，不参与服务端下发。
 //
 // 域目录约定（feature/README.md）：本文件为域内实现，仅经 api.ets 对外暴露契约。
 
+import { BizCode } from "../../network/HttpUtil"
+import { WorkbenchEntryVo, getWorkbenchEntries } from "../../network/api/workbench"
 import { RouteNames } from "../../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
 import { DivColor } from "../../constant/DivTheme"
 import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
-import { IconBox } from "../../view/common/AppComponents"
-import { WorkbenchAction, WorkbenchText, WorkbenchTint, WorkbenchTool, getWorkbenchTools } from "./api"
+import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
+import { IconBox, SkeletonBlock } from "../../view/common/AppComponents"
+import {
+  WorkbenchText,
+  WorkbenchTint,
+  WorkbenchTool,
+  getWorkbenchTools,
+  withUniqueKeys,
+  workbenchEntryVoToTool
+} from "./api"
 
 // 罗盘画布基准尺寸（vp）：安卓 64dp 画布按设计稿 66px 罗盘 SVG 等比换算
 const COMPASS_SIZE: number = 64
 
+// 骨架卡高度（vp）：对齐安卓骨架 SkeletonBlock 148dp，形状与真实网格一致
+const SKELETON_TILE_HEIGHT: number = 148
+
 @ComponentV2
 export struct Workbench {
-  @Local tools: WorkbenchTool[] = getWorkbenchTools()
+  // 服务端下发为空/失败时回落兜底列表；loading 期间网格区展示骨架屏
+  @Local tools: WorkbenchTool[] = []
+  @Local isLoading: boolean = true
   // 画布上下文：64vp 罗盘画布，开启抗锯齿
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
 
+  aboutToAppear(): void {
+    // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
+    this.loadEntries()
+  }
+
   /**
-   * 观象台特色卡点击（对齐安卓 WorkbenchPage.kt:104-107 navigate(DivRoute.Home)）。
+   * 拉取服务端入口配置；失败或空列表走本地兜底（静默降级，tab 根页不打断用户、不弹错——
+   * 兜底数据已可用，对齐安卓 WorkbenchViewModel.loadEntries）。
+   */
+  private async loadEntries(): Promise<void> {
+    this.isLoading = true
+    try {
+      const res = await getWorkbenchEntries()
+      if (res.code === BizCode.SUCCESS && res.data !== null && res.data.length > 0) {
+        this.tools = withUniqueKeys(res.data.map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
+          workbenchEntryVoToTool(vo, index)))
+      } else {
+        // 服务端未配置：视为成功但走兜底列表（不显示错误态）
+        this.tools = getWorkbenchTools()
+      }
+    } catch (err) {
+      // 失败：本地兜底（Error 态仅日志留痕，页面静默消费）
+      this.tools = getWorkbenchTools()
+    }
+    this.isLoading = false
+  }
+
+  /**
+   * 观象台特色卡点击（对齐安卓 WorkbenchPage.kt navigate(DivRoute.Home)）。
    * 观象台域 7 页已落地（#29），直接入栈。
    */
   private onDivinationCardClick(): void {
@@ -31,57 +76,55 @@ export struct Workbench {
   }
 
   /**
-   * 工具点击分流（对齐安卓 WorkbenchPage.kt:138-150）。
-   * 短链管理（#28）与观象台（#29）均为已落地真实页面，直接入栈；
-   * AI 工具工作台鸿蒙暂未实现，按 COMING_SOON 处理。
+   * 工具点击分发（对齐安卓 WorkbenchPage.kt onToolClick）：
+   * target 空 = 兜底占位项，提示「功能建设中」（不走深链链路，保持现有文案）；
+   * 已下发/已注册 target 统一交深链处理器（resolve → 导航/WebView/暂不支持 三态分发）。
    */
   private onToolClick(tool: WorkbenchTool): void {
-    switch (tool.action) {
-      case WorkbenchAction.DIVINATION_HOME:
-        pathStack.pushPathByName(RouteNames.DIV_HOME, null)
-        break
-      case WorkbenchAction.DIV_HISTORY:
-        pathStack.pushPathByName(RouteNames.DIV_HISTORY, null)
-        break
-      case WorkbenchAction.AI_ASSISTANT:
-        // TODO(#29): AI 工具工作台（安卓 PageConstant.AiWork）鸿蒙未实现，暂按建设中处理
-        showToastSafety(WorkbenchText.workbench_coming_soon)
-        break
-      case WorkbenchAction.TOOLBOX_SHORT_CODE:
-        // 短链管理（#28）：工具箱域三页已落地，点击进列表页
-        pathStack.pushPathByName(RouteNames.TOOLBOX_SHORT_CODE_LIST, null)
-        break
-      default:
-        showToastSafety(WorkbenchText.workbench_coming_soon)
-        break
+    if (tool.target.length === 0) {
+      showToastSafety(WorkbenchText.workbench_coming_soon)
+      return
     }
+    handleDeepLink(tool.target)
   }
 
-  /** 图标容器浅底色（对齐安卓 WorkbenchTint → scheme.iconContainer*） */
+  /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
   private containerColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
         return DesignColor.ICON_CONTAINER_GREEN
       case WorkbenchTint.BLUE:
         return DesignColor.ICON_CONTAINER_BLUE
+      case WorkbenchTint.ORANGE:
+        return DesignColor.ICON_CONTAINER_ORANGE
+      case WorkbenchTint.PINK:
+        return DesignColor.ICON_CONTAINER_PINK
       case WorkbenchTint.TEAL:
         return DesignColor.ICON_CONTAINER_TEAL
-      default:
+      case WorkbenchTint.PURPLE:
         return DesignColor.ICON_CONTAINER_PURPLE
+      default:
+        return DesignColor.ICON_CONTAINER_GREEN
     }
   }
 
-  /** 图标前景色（对齐安卓 WorkbenchTint → scheme.iconForeground*） */
+  /** 图标前景色（后端 color 白名单 → DesignColor.ICON_FOREGROUND_*，未知兜底 GREEN） */
   private iconColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
         return DesignColor.ICON_FOREGROUND_GREEN
       case WorkbenchTint.BLUE:
         return DesignColor.ICON_FOREGROUND_BLUE
+      case WorkbenchTint.ORANGE:
+        return DesignColor.ICON_FOREGROUND_ORANGE
+      case WorkbenchTint.PINK:
+        return DesignColor.ICON_FOREGROUND_PINK
       case WorkbenchTint.TEAL:
         return DesignColor.ICON_FOREGROUND_TEAL
-      default:
+      case WorkbenchTint.PURPLE:
         return DesignColor.ICON_FOREGROUND_PURPLE
+      default:
+        return DesignColor.ICON_FOREGROUND_GREEN
     }
   }
 
@@ -95,8 +138,31 @@ export struct Workbench {
   }
 
   /**
+   * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 CARD_SPACING，
+   * 对齐安卓两行 × 两列 SkeletonBlock）。
+   */
+  @Builder
+  ToolsSkeleton() {
+    Column({ space: DesignDimens.CARD_SPACING }) {
+      Row({ space: DesignDimens.CARD_SPACING }) {
+        SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS }).layoutWeight(1).height(SKELETON_TILE_HEIGHT)
+        SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS }).layoutWeight(1).height(SKELETON_TILE_HEIGHT)
+      }
+      .width('100%')
+
+      Row({ space: DesignDimens.CARD_SPACING }) {
+        SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS }).layoutWeight(1).height(SKELETON_TILE_HEIGHT)
+        SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS }).layoutWeight(1).height(SKELETON_TILE_HEIGHT)
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+  }
+
+  /**
    * 罗盘圆 — 玄墨金线几何母题（规范 §5：滚筒圆同一几何的观象台变体）。
-   * 对齐安卓 WorkbenchPage.kt:249-311 DivinationCompass：外环 26 / 虚线中环 18 / 内环 9
+   * 对齐安卓 WorkbenchPage.kt DivinationCompass：外环 26 / 虚线中环 18 / 内环 9
    * + 四向刻度 + 水波线 + 中心点；画布 64vp，圆心取画布中心。
    */
   @Builder
@@ -206,39 +272,63 @@ export struct Workbench {
     })
   }
 
-  /** 工具卡（设计稿 tile3）：白卡 + 44vp 语义图标容器 + 15fp 标题 + 13fp 描述 */
+  /**
+   * 工具卡（设计稿 tile3）：白卡 1px OUTLINE 描边 + level1 阴影 + 圆角 16
+   * + 44vp 语义图标容器 + 标题 + 描述；右上角 badge 角标（服务端下发文案：
+   * 清氧小胶囊 — RADIUS_FULL + PRIMARY_LIGHT 底 + PRIMARY 文字）。
+   * 触控目标 = 整卡（两列网格下远大于 48vp），按压无独立动效（遵循项目既有卡片习惯）。
+   */
   @Builder
   ToolTile(tool: WorkbenchTool) {
-    Column() {
-      IconBox({
-        icon: tool.icon,
-        containerColor: this.containerColor(tool.tint),
-        iconColor: this.iconColor(tool.tint)
+    Stack({ alignContent: Alignment.TopEnd }) {
+      Column() {
+        IconBox({
+          icon: tool.icon,
+          containerColor: this.containerColor(tool.tint),
+          iconColor: this.iconColor(tool.tint)
+        })
+
+        Text(tool.title)
+          .fontSize(DesignFontSize.BODY)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .margin({ top: DesignDimens.SPACE_SM })
+
+        Text(tool.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .margin({ top: DesignDimens.SPACE_XXS })
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+      .padding(DesignDimens.CARD_PADDING)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
+      .border({ width: 1, color: DesignColor.OUTLINE })
+      .backgroundColor(DesignColor.SURFACE)
+      .shadow({
+        radius: DesignElevation.LEVEL_1,
+        color: DesignColor.SHADOW_COLOR_CARD,
+        offsetX: 0,
+        offsetY: 2
       })
 
-      Text(tool.title)
-        .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ top: DesignDimens.SPACE_SM })
-
-      Text(tool.description)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .margin({ top: DesignDimens.SPACE_XXS })
+      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字（caption 档）
+      if (tool.badge.length > 0) {
+        Text(tool.badge)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.PRIMARY)
+          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .padding({
+            left: DesignDimens.SPACE_SM,
+            right: DesignDimens.SPACE_SM,
+            top: 2,
+            bottom: 2
+          })
+          .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+      }
     }
     .width('100%')
-    .alignItems(HorizontalAlign.Start)
-    .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
-    .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
-      offsetX: 0,
-      offsetY: 2
-    })
     .onClick(() => {
       this.onToolClick(tool)
     })
@@ -266,7 +356,7 @@ export struct Workbench {
           bottom: 16
         })
 
-        // 2. 观象台玄墨特色卡
+        // 2. 观象台玄墨特色卡（端上固定品牌位，不参与服务端下发）
         Column() {
           this.DivinationEntryCard()
         }
@@ -282,28 +372,32 @@ export struct Workbench {
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
 
-        // 4. 工具网格 — 2 列 tile3（奇数末行补位）
-        Column({ space: DesignDimens.CARD_SPACING }) {
-          ForEach(this.buildRows(), (row: WorkbenchTool[]) => {
-            Row({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(row, (tool: WorkbenchTool) => {
-                Column() {
-                  this.ToolTile(tool)
+        // 4. 工具网格 — 2 列 tile3（奇数末行补位）；加载中展示骨架屏（形状与真实网格一致）
+        if (this.isLoading) {
+          this.ToolsSkeleton()
+        } else {
+          Column({ space: DesignDimens.CARD_SPACING }) {
+            ForEach(this.buildRows(), (row: WorkbenchTool[]) => {
+              Row({ space: DesignDimens.CARD_SPACING }) {
+                ForEach(row, (tool: WorkbenchTool) => {
+                  Column() {
+                    this.ToolTile(tool)
+                  }
+                  .layoutWeight(1)
+                }, (tool: WorkbenchTool) => tool.entryKey)
+                // 接口返回奇数个工具时末行补位，保持两列网格
+                if (row.length === 1) {
+                  Column() {
+                  }
+                  .layoutWeight(1)
                 }
-                .layoutWeight(1)
-              }, (tool: WorkbenchTool) => tool.key)
-              // 接口返回奇数个工具时末行补位，保持两列网格
-              if (row.length === 1) {
-                Column() {
-                }
-                .layoutWeight(1)
               }
-            }
-            .width('100%')
-          }, (row: WorkbenchTool[], index: number) => index.toString())
+              .width('100%')
+            }, (row: WorkbenchTool[], index: number) => `${index}_${row.length}_${row.length > 0 ? row[0].entryKey : ''}`)
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         }
-        .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         // 5. 页脚弱提示（设计稿 margin 26/10 → 24/8）
         Text(WorkbenchText.workbench_footer)

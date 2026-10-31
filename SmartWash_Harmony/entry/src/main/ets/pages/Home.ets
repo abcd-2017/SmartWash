@@ -3,6 +3,7 @@ import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
 import { Workbench } from "../feature/workbench/Workbench"
 import { DesignColor } from "../constant/DesignSystem"
+import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 
 @Builder
 export function HomeBuilder() {
@@ -13,6 +14,37 @@ export function HomeBuilder() {
 struct Home {
   private controller: TabsController = new TabsController()
   @State currentIndex: number = 0
+
+  // ========== 深链消费时序（对齐安卓 MainActivity → pendingDeepLinkUri → NavHost 就绪后消费） ==========
+  // EntryAbility.onCreate/onNewWant 把 Want.uri 暂存到 AppStorage('pendingDeepLinkUri')，
+  // 本页作为消费点：
+  // - 冷启动：Index 分流到 Home 后 aboutToAppear 消费（此时 Navigation 已挂载完成——Home
+  //   分支仅在启动 loading + token/学校信息异步判定之后渲染，不存在栈未就绪的时序）；
+  // - 热启动：AppStorage 变更经 @StorageLink + @Watch 即时消费；
+  // - 未登录（Home 未挂载）：暂存不丢，登录/完善学校信息后 Index 分流到 Home 时补消费。
+  // 未登录放行（对齐安卓取舍）：消费点不做登录前置判断，需要登录的目标页由 401 统一兜底
+  // （清 token → 清内存登录态 → replace 登录页）。
+  @StorageLink('pendingDeepLinkUri') @Watch('onPendingDeepLinkChange') pendingDeepLinkUri: string = ''
+
+  aboutToAppear(): void {
+    this.consumePendingDeepLink()
+  }
+
+  /** @Watch 回调：热启动 onNewWant 更新暂存时触发 */
+  onPendingDeepLinkChange(): void {
+    this.consumePendingDeepLink()
+  }
+
+  /** 消费暂存深链：先清空再分发（防重复消费；置空写回再次触发的 @Watch 读到空串直接返回） */
+  private consumePendingDeepLink(): void {
+    const uri = this.pendingDeepLinkUri
+    if (uri.length === 0) {
+      return
+    }
+    this.pendingDeepLinkUri = ''
+    // handleDeepLink 内部全量兜底不抛异常（网络字典失败静默），此处不 await
+    handleDeepLink(uri)
+  }
 
   @Builder
   tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {

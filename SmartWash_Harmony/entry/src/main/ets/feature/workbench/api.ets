@@ -1,60 +1,139 @@
-// 工作台域契约 — 工具条目模型 / 点击行为枚举 / 内置默认数据 / 文案表
+// 工作台域契约 — 工具条目模型 / 白名单映射 / 服务端下发转换 / 内置兜底数据 / 文案表
 //
-// 依据差异分析 04-new-features.md §3.3（对齐安卓 ui/page/workbench/{WorkbenchTool.kt,WorkbenchViewModel.kt}）。
-// 按 feature/README.md 约定：本文件只放声明层（VO interface + 枚举 + 内置数据），
-// UI 组件与点击分流实现放域内 Workbench.ets。
-//
-// 数据源说明：安卓当前为内置假数据（WorkbenchViewModel.defaultTools()），后端工作台接口就绪后
-// 改为服务端下发顺序/文案/启停；本域 DEFAULT_WORKBENCH_TOOLS 即接口 VO 的客户端映射层，
-// 换数据源时页面零改动。
+// 对齐安卓 ui/page/workbench/{WorkbenchTool.kt,WorkbenchViewModel.kt}（服务端入口下发版）：
+// 数据源二选一——服务端下发（GET /web/auth/workbench/entries，经 network/api/workbench.ets）
+// 或本地兜底 DEFAULT_WORKBENCH_TOOLS；点击统一按 target 走深链分发（DeepLinkHandler.handleDeepLink）。
+// 按 feature/README.md 约定：本文件只放声明层（VO 映射 + 枚举 + 内置数据 + 文案），
+// UI 组件与点击分发实现放域内 Workbench.ets。
 
-/** 工具卡图标容器语义色组（规范 §2.1 六色浅底，与安卓 WorkbenchTint 的 GREEN/BLUE/TEAL/PURPLE 对应） */
+import { WorkbenchEntryVo } from '../../network/api/workbench'
+import { DEEPLINK_SCHEME } from '../../utils/deeplink/DeepLinkParser'
+
+/**
+ * 工具卡图标容器语义色组（规范 §2.1 六色浅底，与后端 color 白名单 key 一一对应，
+ * 对齐安卓 WorkbenchTint 六枚举）。
+ * 未知 color key 兜底 GREEN（契约：未知值显示默认样式）。
+ */
 export enum WorkbenchTint {
   GREEN,
   BLUE,
+  ORANGE,
+  PINK,
   TEAL,
   PURPLE
 }
 
 /**
- * 工具点击行为（对齐安卓 WorkbenchAction 四枚举）。
- * 前三个为已落地的真实页面，其余在接口就绪前占位。
+ * 后端 color key → 色组（green/blue/orange/pink/teal/purple，大小写不敏感，未知兜底 GREEN）。
+ * 对齐安卓 WorkbenchTint.fromKey。
  */
-export enum WorkbenchAction {
-  /** 观象台首页（玄墨特色卡与「洗衣黄历」无关，观象台专属入口） */
-  DIVINATION_HOME,
-  /** 我的卦历 → 观象台卦历库 */
-  DIV_HISTORY,
-  /** AI 助手 → AI 工具工作台 */
-  AI_ASSISTANT,
-  /**
-   * 工具箱短链 → 短链管理（#28 新增）。
-   * 与安卓差异：安卓工作台当前为 6 项假数据且无短链格（ToolboxRoute.kt:7-8 注释「当前无任何入口」），
-   * 两端接入点都是工作台；鸿蒙先行追加第 7 项，待安卓工作台接口/入口落地后按 key 对齐。
-   */
-  TOOLBOX_SHORT_CODE,
-  /** 功能建设中（等后端工作台接口） */
-  COMING_SOON
+export function workbenchTintFromKey(key: string | null | undefined): WorkbenchTint {
+  const normalized = key !== undefined && key !== null ? key.toLowerCase() : ''
+  switch (normalized) {
+    case 'blue':
+      return WorkbenchTint.BLUE
+    case 'orange':
+      return WorkbenchTint.ORANGE
+    case 'pink':
+      return WorkbenchTint.PINK
+    case 'teal':
+      return WorkbenchTint.TEAL
+    case 'purple':
+      return WorkbenchTint.PURPLE
+    default:
+      return WorkbenchTint.GREEN
+  }
 }
 
 /**
- * 工作台工具条目（对齐安卓 WorkbenchTool.kt:35-42）。
- * 当前为内置假数据；后端工作台接口就绪后 title/description 改服务端下发、
- * 跳转目标按 key 映射，本结构即接口 VO 的客户端映射层。
+ * 后端 icon 白名单 key → sys.symbol 图标映射（规范 §4.1：功能图标保持系统符号库）。
+ * 白名单：calendar/search/book/calculate/history/chat/link/default，未知 key 与 default
+ * 同样兜底为「工具格」图标（对齐安卓 Icons.Default.Apps）。
+ * 符号名已对照 SDK sysResource.js 核实存在（除 default 外均沿用既有工作台在用符号）。
+ */
+export function workbenchIconFromKey(key: string | null | undefined): Resource {
+  const normalized = key !== undefined && key !== null ? key.toLowerCase() : ''
+  switch (normalized) {
+    case 'calendar':
+      return $r('sys.symbol.calendar')
+    case 'search':
+      return $r('sys.symbol.magnifyingglass')
+    case 'book':
+      return $r('sys.symbol.book_pages')
+    case 'calculate':
+      return $r('sys.symbol.calculator')
+    case 'history':
+      return $r('sys.symbol.clock_arrow_2_circlepath')
+    case 'chat':
+      return $r('sys.symbol.ellipsis_message')
+    case 'link':
+      return $r('sys.symbol.link')
+    default:
+      return $r('sys.symbol.square_grid_2x2')
+  }
+}
+
+/**
+ * 工作台工具条目（后端 WorkbenchEntryVo 的客户端映射层，字段对齐安卓 WorkbenchTool）。
+ * 数据源二选一：服务端下发（title/description 为服务端文案）或本地兜底（WorkbenchText 文案表）。
+ * 点击按 target 走深链分发（DeepLinkHandler.handleDeepLink）；target 为空 = 功能建设中。
  */
 export interface WorkbenchTool {
-  /** 工具唯一键，后端接口就绪后按 key 映射跳转目标 */
-  key: string
-  /** 标题文案（取自 WorkbenchText，键对齐安卓 workbench_tool_* 资源名） */
+  /** 业务唯一标识（服务端下发 entryKey 或兜底 key），兼作网格稳定 key */
+  entryKey: string
+  /** 标题（已解析文案，非资源 id） */
   title: string
-  /** 描述文案（取自 WorkbenchText，键对齐安卓 workbench_tool_*_desc 资源名） */
+  /** 描述（已解析文案，非资源 id） */
   description: string
-  /** 语义图标 */
+  /** 语义图标（sys.symbol，白名单映射产物） */
   icon: Resource
-  /** 图标容器语义色组 */
+  /** 图标容器语义色组（白名单映射产物） */
   tint: WorkbenchTint
-  /** 点击行为 */
-  action: WorkbenchAction
+  /** 跳转 URI：smartwash://... 或 https://...；空串 = 功能建设中（点击提示） */
+  target: string
+  /** 角标文案（如 新/热），空串不显示 */
+  badge: string
+}
+
+/**
+ * 服务端入口 VO → 工具卡模型（严格模式：逐字段显式兜底，不依赖 class 直连 JSON）。
+ * entryKey 兼作网格稳定 key（空值防御回退 index key，对齐安卓 toTool）。
+ */
+export function workbenchEntryVoToTool(vo: WorkbenchEntryVo, index: number): WorkbenchTool {
+  const entryKey = vo.entryKey ?? ''
+  return {
+    entryKey: entryKey.length > 0 ? entryKey : `entry_${index}`,
+    title: vo.title ?? '',
+    description: vo.description ?? '',
+    icon: workbenchIconFromKey(vo.icon),
+    tint: workbenchTintFromKey(vo.color),
+    target: vo.target ?? '',
+    badge: vo.badge ?? ''
+  }
+}
+
+/**
+ * entryKey 稳定性防御（对齐安卓 withUniqueKeys）：服务端配置理论上唯一，但网格按 entryKey
+ * 作 ForEach key，重复会导致复用错乱——重复时追加序号去重，宁可展示也别错乱。
+ */
+export function withUniqueKeys(tools: Array<WorkbenchTool>): Array<WorkbenchTool> {
+  const seen = new Map<string, number>()
+  return tools.map((tool: WorkbenchTool): WorkbenchTool => {
+    const count = seen.get(tool.entryKey) ?? 0
+    seen.set(tool.entryKey, count + 1)
+    if (count === 0) {
+      return tool
+    }
+    return {
+      entryKey: `${tool.entryKey}_${count + 1}`,
+      title: tool.title,
+      description: tool.description,
+      icon: tool.icon,
+      tint: tool.tint,
+      target: tool.target,
+      badge: tool.badge
+    }
+  })
 }
 
 /**
@@ -85,71 +164,83 @@ export class WorkbenchText {
   static readonly workbench_coming_soon: string = "功能建设中，敬请期待"
 }
 
-
-// TODO(工作台接口): 接口就绪后移除内置列表，改为请求 /web 工作台配置（顺序、文案、启停由服务端下发）
-/** 内置默认工具列表（设计稿屏 15 定稿六项，对齐安卓 WorkbenchViewModel.defaultTools()） */
+/**
+ * 本地兜底工具列表（设计稿屏 15 六项 + 短链工具箱，对齐安卓 WorkbenchViewModel.defaultTools）。
+ * 服务端入口配置与端上兜底按 entryKey 对齐（后端 WorkbenchEntryVo 注释约定）；
+ * 跳转目标全部走深链（host 由 utils/deeplink/DeepLinkRegistry 注册，host 串就地书写并注释），
+ * target 空串 = 功能建设中。
+ */
 export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
   {
-    key: "laundry_calendar",
+    entryKey: "laundry_calendar",
     title: WorkbenchText.workbench_tool_calendar,
     description: WorkbenchText.workbench_tool_calendar_desc,
-    icon: $r('sys.symbol.calendar'),
+    icon: workbenchIconFromKey("calendar"),
     tint: WorkbenchTint.GREEN,
-    action: WorkbenchAction.COMING_SOON
+    target: "", // 洗衣黄历：功能建设中
+    badge: ""
   },
   {
-    key: "stain_recognition",
+    entryKey: "stain_recognition",
     title: WorkbenchText.workbench_tool_stain,
     description: WorkbenchText.workbench_tool_stain_desc,
-    icon: $r('sys.symbol.magnifyingglass'),
+    icon: workbenchIconFromKey("search"),
     tint: WorkbenchTint.BLUE,
-    action: WorkbenchAction.COMING_SOON
+    target: "", // 渍迹识别：功能建设中
+    badge: ""
   },
   {
-    key: "fabric_encyclopedia",
+    entryKey: "fabric_encyclopedia",
     title: WorkbenchText.workbench_tool_fabric,
     description: WorkbenchText.workbench_tool_fabric_desc,
-    icon: $r('sys.symbol.book_pages'),
+    icon: workbenchIconFromKey("book"),
     tint: WorkbenchTint.TEAL,
-    action: WorkbenchAction.COMING_SOON
+    target: "", // 面料百科：功能建设中
+    badge: ""
   },
   {
-    key: "cost_estimate",
+    entryKey: "cost_estimate",
     title: WorkbenchText.workbench_tool_estimate,
     description: WorkbenchText.workbench_tool_estimate_desc,
-    icon: $r('sys.symbol.calculator'),
+    icon: workbenchIconFromKey("calculate"),
     tint: WorkbenchTint.PURPLE,
-    action: WorkbenchAction.COMING_SOON
+    target: "", // 费用估算：功能建设中
+    badge: ""
   },
   {
-    key: "my_history",
+    entryKey: "my_history",
     title: WorkbenchText.workbench_tool_history,
     description: WorkbenchText.workbench_tool_history_desc,
-    icon: $r('sys.symbol.clock_arrow_2_circlepath'),
+    icon: workbenchIconFromKey("history"),
     tint: WorkbenchTint.PURPLE,
-    action: WorkbenchAction.DIV_HISTORY
+    target: `${DEEPLINK_SCHEME}://divination-history`, // host 由观象台注册（DeepLinkRegistry）
+    badge: ""
   },
   {
-    key: "ai_assistant",
+    entryKey: "ai_assistant",
     title: WorkbenchText.workbench_tool_ai,
     description: WorkbenchText.workbench_tool_ai_desc,
-    icon: $r('sys.symbol.ellipsis_message'),
+    icon: workbenchIconFromKey("chat"),
     tint: WorkbenchTint.GREEN,
-    action: WorkbenchAction.AI_ASSISTANT
+    // 与安卓差异：安卓 target=smartwash://ai-work（壳层 AiWork 页）；鸿蒙 AI 工具工作台未实现，
+    // host 不注册，target 留空走「功能建设中」提示（保持既有行为）
+    target: "",
+    badge: ""
   },
-  // 与安卓的差异说明：安卓工作台为 6 项假数据、无短链入口（ToolboxRoute.kt:7-8）；
-  // 本项为鸿蒙侧新增的第 7 格，待安卓工作台落地后两端按 key（toolbox_short_code）对齐。
+  // 与安卓的历史差异说明：安卓工作台此前为 6 项假数据、无短链入口；
+  // 本项为鸿蒙侧先行追加的第 7 格，安卓工作台服务端下发版已按 entryKey（toolbox_short_code）对齐。
   {
-    key: "toolbox_short_code",
+    entryKey: "toolbox_short_code",
     title: WorkbenchText.workbench_tool_short_code,
     description: WorkbenchText.workbench_tool_short_code_desc,
-    icon: $r('sys.symbol.link'),
+    icon: workbenchIconFromKey("link"),
     tint: WorkbenchTint.BLUE,
-    action: WorkbenchAction.TOOLBOX_SHORT_CODE
+    target: `${DEEPLINK_SCHEME}://toolbox-short-code`, // host 由工具箱注册（DeepLinkRegistry）
+    badge: ""
   }
 ]
 
-/** 取工具列表副本（避免调用方就地改写内置常量） */
+/** 取兜底工具列表副本（避免调用方就地改写内置常量） */
 export function getWorkbenchTools(): WorkbenchTool[] {
   return DEFAULT_WORKBENCH_TOOLS.slice()
 }

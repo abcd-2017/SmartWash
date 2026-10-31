@@ -36,4 +36,6 @@ export class RouteNames {
   static readonly TOOLBOX_SHORT_CODE_LIST: string = "ToolboxShortCodeList"
   static readonly TOOLBOX_SHORT_CODE_CREATE: string = "ToolboxShortCodeCreate"
   static readonly TOOLBOX_SHORT_CODE_DETAIL: string = "ToolboxShortCodeDetail"
+  // 内置浏览器页（深链 web 分支与运营位 H5 承载，对齐安卓 ShellRoute.WEB_VIEW）
+  static readonly WEB_PAGE: string = "WebPage"
 }

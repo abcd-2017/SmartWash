@@ -188,6 +188,13 @@
       "buildFunction": "DivHistoryBuilder",
       "data": {
       }
+    },
+    {
+      "name": "WebPage",
+      "pageSourceFile": "src/main/ets/pages/WebPage.ets",
+      "buildFunction": "WebPageBuilder",
+      "data": {
+      }
     }
   ]
 }
