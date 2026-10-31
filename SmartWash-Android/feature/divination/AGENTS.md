@@ -28,7 +28,8 @@ com.smartwash.feature.divination
 │   ├── DivRecordEntity.kt           # div_records 表（单用户，不关联 userId）
 │   └── DivRecordDao.kt              # 卦历 CRUD + Flow 观察
 ├── di/
-│   └── DivinationModule.kt          # Hilt 供给：DivinationDatabase + DivRecordDao + DivinationApi
+│   ├── DivinationModule.kt          # Hilt 供给：DivinationDatabase + DivRecordDao + DivinationApi
+│   └── DeepLinkModule.kt            # 深链贡献者（@IntoSet：divination/divination-history → DivRoute，模式同 InitTask 注册）
 ├── network/
 │   └── DivinationApi.kt             # Retrofit 接口（interpret/followUp，@RequireAuthorization）
 └── ui/

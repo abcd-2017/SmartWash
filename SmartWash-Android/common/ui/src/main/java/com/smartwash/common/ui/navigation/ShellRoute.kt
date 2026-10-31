@@ -17,7 +17,7 @@ object ShellRoute {
     /**
      * 内置浏览器页（壳层留守，注册于壳层 shellGraph，注册形态
      * "WebView?url={url}&title={title}"，url/title 均须 Uri.encode 编码）。
-     * 消费方：feature:deeplink 的 WebViewUrl 动作（深链 web 分支 / http(s) 直链）。
+     * 消费方：app 壳 DeepLinkHandler 的 WebViewUrl 动作（深链 web 分支 / http(s) 直链）。
      */
     const val WEB_VIEW = "WebView"
 }

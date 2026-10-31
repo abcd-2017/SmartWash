@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 深链模块用户可见文案（禁止代码硬编码） -->
-<resources>
-    <!-- 深链解析为 Unknown（非法/未注册 host）时的统一提示 -->
-    <string name="deeplink_unsupported">暂不支持该链接</string>
-</resources>

@@ -13,7 +13,8 @@ src/main/java/com/smartwash/feature/coupon/
 ├── CouponImplConstant.kt                # 模块内常量（APP_NAME）
 ├── CouponStatus.kt                      # 优惠券状态枚举（EXPIRED/ACTIVE/RECEIVE）
 ├── di/
-│   └── CouponModule.kt                  # Hilt 模块（@Binds CouponApi + 提供 CouponServiceApi）
+│   ├── CouponModule.kt                  # Hilt 模块（@Binds CouponApi + 提供 CouponServiceApi）
+│   └── DeepLinkModule.kt                # 深链贡献者（@IntoSet：coupon → CouponRoute，模式同 InitTask 注册）
 ├── network/
 │   ├── api/
 │   │   └── CouponServiceApi.kt          # Retrofit 接口（getAllCoupon/receiveCoupon/getCanUseCoupon/getAllCoupons）

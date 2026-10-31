@@ -24,7 +24,7 @@ sealed class PageConstant(val text: String, val description: String) {
 
     /**
      * 内置浏览器页（壳层留守页面，注册于壳层 shellGraph；深链 web 分支与运营位 H5 承载）。
-     * 路由值委托 [ShellRoute.WEB_VIEW]（common:ui 单一事实来源，feature:deeplink 同源跳转）；
+     * 路由值委托 [ShellRoute.WEB_VIEW]（common:ui 单一事实来源，壳层 DeepLinkHandler 同源跳转）；
      * 注册形态 "WebView?url={url}&title={title}"，url/title 均须 Uri.encode 编码。
      */
     data object WebView : PageConstant(ShellRoute.WEB_VIEW, "内置浏览器页")

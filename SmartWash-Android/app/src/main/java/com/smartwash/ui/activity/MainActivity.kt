@@ -37,11 +37,11 @@ import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.isReduceMotionEnabled
 import com.smartwash.common.utils.performHaptic
+import com.smartwash.deeplink.DeepLinkHandler
 import com.smartwash.feature.coupon.ui.couponGraph
-import com.smartwash.feature.deeplink.DeepLinkAction
-import com.smartwash.feature.deeplink.handler.DeepLinkHandler
 import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
@@ -68,8 +68,8 @@ import javax.inject.Inject
  * 单 Activity 壳（T8.1 拆路由后）：NavHost 只做聚合——壳层留守页面在
  * [shellGraph]，各 feature 域经 NavGraphBuilder.xxxGraph 扩展自注册
  * （路由常量单一事实来源在各域 api 模块）；壳层另持更新流程（[UpdateFlow]）、
- * 深链分发（[DeepLinkHandler]，Manifest 声明 smartwash:// scheme）与
- * 401/登录态事件收集三项壳职责。
+ * 深链分发（[DeepLinkHandler]，host 由各域贡献者注册、壳层自持注册表，
+ * Manifest 声明 smartwash:// scheme）与 401/登录态事件收集三项壳职责。
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

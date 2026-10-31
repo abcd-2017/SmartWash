@@ -12,7 +12,8 @@ com.smartwash.feature.user.impl
 ├── UserApiImpl.kt                # @Binds UserApi 实现（门面：isLogin/getUserInfo/loginEvents 桥接）
 ├── UserImplConstant.kt           # 模块内常量（TOKEN/USER_ROLE DataStore 键、SEND_CAPTCHA 倒计时）
 ├── di/
-│   └── UserImplModule.kt         # Hilt 模块（UserApi/TokenProvider/SessionEventNotifier 绑定 + UserAccountApi 供给 + SessionInitTask 注册）
+│   ├── UserImplModule.kt         # Hilt 模块（UserApi/TokenProvider/SessionEventNotifier 绑定 + UserAccountApi 供给 + SessionInitTask 注册）
+│   └── DeepLinkModule.kt         # 深链贡献者（@IntoSet：login/register/setting → UserRoute，模式同 InitTask 注册）
 ├── init/
 │   └── SessionInitTask.kt        # 阻塞高优先级 InitTask（priority=10），预热 token/role
 ├── network/

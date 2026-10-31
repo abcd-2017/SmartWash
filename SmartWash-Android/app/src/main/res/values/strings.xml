@@ -207,4 +207,8 @@
     <string name="webview_error_url_unsupported">仅支持打开网页链接</string>
     <string name="webview_error_load">页面加载失败，请检查网络后重试</string>
     <string name="webview_action_retry">重试</string>
+
+    <!-- ==================== 深链（壳层聚合，host 由各域贡献者注册） ==================== -->
+    <!-- 深链解析为 Unknown（非法/未注册 host）时的统一提示 -->
+    <string name="deeplink_unsupported">暂不支持该链接</string>
 </resources>

@@ -12,7 +12,8 @@
 src/main/java/com/smartwash/feature/payment/impl/
 ├── PaymentImplConstant.kt               # 模块内常量（APP_NAME）
 ├── di/
-│   └── PaymentApiModule.kt              # Hilt 模块（提供 PaymentApi / RechargeApi）
+│   ├── PaymentApiModule.kt              # Hilt 模块（提供 PaymentApi / RechargeApi）
+│   └── DeepLinkModule.kt                # 深链贡献者（@IntoSet：recharge/recharge-record → PaymentRoute，模式同 InitTask 注册）
 ├── network/
 │   ├── api/
 │   │   ├── PaymentApi.kt                # Retrofit 支付接口（POST /web/auth/payments/payment）

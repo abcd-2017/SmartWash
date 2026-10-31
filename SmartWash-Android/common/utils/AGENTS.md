@@ -12,6 +12,10 @@ com.smartwash.common.utils
 │   ├── PageData.kt           — 分页响应 {records, total, size, current}
 │   ├── HttpStatusCode.kt     — HTTP 业务状态码枚举
 │   └── RequestState.kt       — 异步状态密封类
+├── deeplink/                 — 深链解析契约（纯 Kotlin，零路由知识、零 feature 依赖）
+│   ├── DeepLinkAction.kt     — 解析结果密封类（NativeRoute/WebViewUrl/Unknown）
+│   ├── DeepLinkParser.kt     — 纯函数解析器：内建仅 http(s)/smartwash://web，其余 host 交 routeLookup
+│   └── DeepLinkContributor.kt— 贡献者契约（fun interface）：各域 impl @IntoSet 贡献 host → 路由工厂
 ├── AnimationUtils.kt       — 动效工具函数
 ├── AppConstant.kt          — 应用常量（APP_NAME, TOKEN_KEY 等）
 ├── BitmapUtil.kt           — ZXing 二维码生成
@@ -31,6 +35,9 @@ com.smartwash.common.utils
 - `PageData<T>` — 分页列表响应
 - `HttpStatusCode` — 业务码枚举（200/401/500 等）
 - `RequestState<T>` — sealed class: Idle / Loading / Success(data) / Error(exception)
+- `deeplink.DeepLinkParser` — 深链解析（全程不抛异常；host→路由知识经 routeLookup 注入）
+- `deeplink.DeepLinkAction` — 解析结果三态密封类
+- `deeplink.DeepLinkContributor` / `DeepLinkRouteFactory` — 贡献者契约（各域 impl `@Provides @IntoSet` 注册，模式同 common:init 的 InitTask）
 
 ## 依赖关系
 - **依赖**: Android SDK、DataStore、ZXing、Hilt（仅 @Singleton 标注）、androidx.annotation

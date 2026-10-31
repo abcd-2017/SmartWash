@@ -12,7 +12,8 @@
 src/main/java/com/smartwash/feature/laundry/
 ├── LaundryImplConstant.kt                   # 模块内常量（APP_NAME）
 ├── di/
-│   └── LaundryModule.kt                     # Hilt 模块（@Binds SchoolSearchSource + 提供 LaundryItemsApi/SchoolApi）
+│   ├── LaundryModule.kt                     # Hilt 模块（@Binds SchoolSearchSource + 提供 LaundryItemsApi/SchoolApi）
+│   └── DeepLinkModule.kt                    # 深链贡献者（@IntoSet：laundry → LaundryRoute，模式同 InitTask 注册）
 ├── network/
 │   ├── api/
 │   │   ├── LaundryItemsApi.kt               # Retrofit 洗衣项目接口（GET /web/laundryItems/all）

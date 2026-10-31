@@ -5,11 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.utils.deeplink.DeepLinkAction
+import com.smartwash.common.utils.deeplink.DeepLinkParser
 import com.smartwash.common.utils.model.RequestState
-import com.smartwash.feature.deeplink.DeepLinkAction
-import com.smartwash.feature.deeplink.DeepLinkHosts
-import com.smartwash.feature.deeplink.DeepLinkParser
-import com.smartwash.feature.deeplink.handler.DeepLinkHandler
+import com.smartwash.deeplink.DeepLinkHandler
 import com.smartwash.repository.WorkbenchEntryRepository
 import com.smartwash.network.api.WorkbenchEntryVo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -135,7 +134,7 @@ class WorkbenchViewModel @Inject constructor(
     /**
      * 本地兜底列表（设计稿屏 15 六项 + 短链工具箱）。
      * 服务端入口配置与端上兜底按 entryKey 对齐（后端 WorkbenchEntryVo 注释约定）；
-     * 跳转目标全部走深链（host 清单见 :feature:deeplink 的 DeepLinkHosts），
+     * 跳转目标全部走深链（host 由各域贡献者注册，host 串就地书写并注释对应贡献者），
      * target 空 = 功能建设中。
      */
     private fun defaultTools(): List<WorkbenchTool> {
@@ -180,7 +179,7 @@ class WorkbenchViewModel @Inject constructor(
                 description = context.getString(R.string.workbench_tool_history_desc),
                 icon = workbenchIconFromKey("history"),
                 tint = WorkbenchTint.PURPLE,
-                target = "$scheme://${DeepLinkHosts.DIVINATION_HISTORY}",
+                target = "$scheme://divination-history", // host 由观象台 DeepLinkModule 贡献
             ),
             WorkbenchTool(
                 entryKey = "ai_assistant",
@@ -188,7 +187,7 @@ class WorkbenchViewModel @Inject constructor(
                 description = context.getString(R.string.workbench_tool_ai_desc),
                 icon = workbenchIconFromKey("chat"),
                 tint = WorkbenchTint.BLUE,
-                target = "$scheme://${DeepLinkHosts.AI_WORK}",
+                target = "$scheme://ai-work", // host 由壳层 ShellDeepLinkModule 贡献
             ),
             WorkbenchTool(
                 entryKey = "toolbox_short_code",
@@ -196,7 +195,7 @@ class WorkbenchViewModel @Inject constructor(
                 description = context.getString(R.string.workbench_tool_short_code_desc),
                 icon = workbenchIconFromKey("link"),
                 tint = WorkbenchTint.BLUE,
-                target = "$scheme://${DeepLinkHosts.TOOLBOX_SHORT_CODE}",
+                target = "$scheme://toolbox-short-code", // host 由工具箱 DeepLinkModule 贡献
             ),
         )
     }
