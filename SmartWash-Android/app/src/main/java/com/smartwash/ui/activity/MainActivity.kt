@@ -43,6 +43,7 @@ import com.smartwash.common.utils.performHaptic
 import com.smartwash.deeplink.DeepLinkHandler
 import com.smartwash.feature.coupon.ui.couponGraph
 import com.smartwash.feature.divination.ui.divinationGraph
+import com.smartwash.feature.game.ui.gameGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
@@ -235,6 +236,9 @@ class MainActivity : ComponentActivity() {
                             divinationGraph(navController)
                             // 工具箱短链（独立路由；工作台入口走深链 smartwash://toolbox-short-code）
                             toolboxGraph(navController)
+                            // 游戏中心（独立路由；入口走深链 smartwash://game-center 与
+                            // 后端 workbench_entry 配置的工作台卡片，无底栏入口）
+                            gameGraph(navController)
                         }
                     }
                 }
