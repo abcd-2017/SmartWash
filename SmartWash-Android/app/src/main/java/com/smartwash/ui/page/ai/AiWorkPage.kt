@@ -46,7 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -97,6 +97,7 @@ fun AiWorkPage(
                 Text(
                     text = stringResource(R.string.ai_quick_tasks),
                     style = AppTextStyles.SectionTitle,
+                    color = AppColors.colorScheme.textPrimary,
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -150,16 +151,19 @@ fun AiWorkPage(
                 Text(
                     text = stringResource(R.string.ai_recent_work),
                     style = AppTextStyles.SectionTitle,
+                    color = AppColors.colorScheme.textPrimary,
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 GroupCard(
-                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                    modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                    // 画板实测滚筒顶距卡顶 32——列表卡用水平内边距画法，纵向由内容自控，
+                    // 否则 GroupCard 纵向 20 + 此处 32 = 52 与画板不符
+                    contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // GroupCard 自带 cardPadding(20)，横向不再重复内缩
                             .padding(top = 32.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -175,9 +179,10 @@ fun AiWorkPage(
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        // 设计稿「开始提问」：胶囊 r999、高 48、primaryContainer 底 + onPrimaryContainer 字（12/500）
+                        // 设计稿「开始提问」：radiusButton 14（画板实测非胶囊）、高 48、
+                        // primaryContainer 底 + onPrimaryContainer 字（12/500）
                         Surface(
-                            shape = RoundedCornerShape(AppDimens.radiusFull),
+                            shape = RoundedCornerShape(AppDimens.buttonRadius),
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.pressable(onClick = { focusRequester.requestFocus() }, debounce = false)
                         ) {
@@ -258,14 +263,8 @@ fun AiWorkPage(
                             .size(48.dp)
                             .pressable(onClick = { /* TODO: 接入 AI */ })
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        AppColors.colorScheme.primary,
-                                        AppColors.colorScheme.primaryDark
-                                    )
-                                )
-                            ),
+                            // 画板实测发送钮为纯色 primary（非渐变）
+                            .background(AppColors.colorScheme.primary),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

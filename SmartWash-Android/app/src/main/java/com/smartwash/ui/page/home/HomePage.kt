@@ -232,7 +232,8 @@ private fun BottomNavItem(
                 .size(24.dp)
                 .scale(scale)
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        // 设计稿底栏：图标与 label 间距 4.5 ≈ spaceXxs
+        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
@@ -248,6 +249,9 @@ private fun BottomNavItem(
  * 170ms 品牌色淡入 → 400ms 描边退场 → 600ms 终态。灰实心与品牌填充共用同一条
  * 带镂空路径（evenOdd），交叉淡变期间镂空始终是底色；勾边只沿外轮廓。
  * 路径解析用官方 androidx.core.graphics.PathParser（完整 SVG 语法）。
+ * 取消选中：不复播 600ms 时间线（勾边属选中入场专属）——时间线保持终态，
+ * 由 [deselectFade] 在灰/绿同一条实心路径上做 DURATION_MICRO_MS 交叉淡变收尾，
+ * 避免切 tab 时新旧两个图标同时跑全时序的拖沓感。
  * reduced motion：不勾边不动画，直接终态。
  */
 @Composable
@@ -270,14 +274,20 @@ private fun AnimatedBottomNavIcon(
     val pathLength = remember(pathMeasure) { pathMeasure.length }
 
     val progress = remember { Animatable(0f) }
+    // 取消选中淡变系数：0 = 正常时间线状态，1 = 已取消选中（灰实心终态）。
+    // 初值按首次组合的 isSelected 定（未选中的 tab 直接以灰实心起步，不跑淡变）
+    val deselectFade = remember { Animatable(if (isSelected) 0f else 1f) }
     LaunchedEffect(isSelected, reduceMotion) {
         if (reduceMotion) {
             progress.snapTo(if (isSelected) 1f else 0f)
+            deselectFade.snapTo(if (isSelected) 0f else 1f)
+        } else if (isSelected) {
+            deselectFade.snapTo(0f)
+            progress.snapTo(0f)
+            progress.animateTo(1f, tween(durationMillis = 600, easing = LinearEasing))
         } else {
-            progress.animateTo(
-                targetValue = if (isSelected) 1f else 0f,
-                animationSpec = tween(durationMillis = 600, easing = LinearEasing)
-            )
+            // progress 保持当前值不动，仅灰/绿交叉淡变（Canvas 按 deselectFade 分流绘制）
+            deselectFade.animateTo(1f, tween(durationMillis = DURATION_MICRO_MS, easing = LinearEasing))
         }
     }
 
@@ -305,21 +315,28 @@ private fun AnimatedBottomNavIcon(
                 totalProgress < 200f -> (totalProgress - 170f) / 30f
                 else -> 1f
             }
-            if (grayAlpha > 0f) {
-                drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
-            }
-            if (brandAlpha > 0f) {
-                drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
-            }
-            if (drawOnProgress > 0f && strokeAlpha > 0f) {
-                val segment = Path()
-                pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
-                drawPath(
-                    path = segment,
-                    color = brandColor.copy(alpha = strokeAlpha),
-                    // 描边宽同为 24 网格单位，随 scale 变换缩放到物理像素
-                    style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                )
+            if (deselectFade.value > 0f) {
+                // 取消选中：灰/绿交叉淡变（同一条 evenOdd 实心路径，§4.2⑤），无勾边；
+                // 灰 + 绿 alpha 恒为 1，不出现亮度凹陷
+                drawPath(path = solid, color = grayColor.copy(alpha = deselectFade.value), style = Fill)
+                drawPath(path = solid, color = brandColor.copy(alpha = 1f - deselectFade.value), style = Fill)
+            } else {
+                if (grayAlpha > 0f) {
+                    drawPath(path = solid, color = grayColor.copy(alpha = grayAlpha), style = Fill)
+                }
+                if (brandAlpha > 0f) {
+                    drawPath(path = solid, color = brandColor.copy(alpha = brandAlpha), style = Fill)
+                }
+                if (drawOnProgress > 0f && strokeAlpha > 0f) {
+                    val segment = Path()
+                    pathMeasure.getSegment(0f, pathLength * drawOnProgress, segment, startWithMoveTo = true)
+                    drawPath(
+                        path = segment,
+                        color = brandColor.copy(alpha = strokeAlpha),
+                        // 描边宽同为 24 网格单位，随 scale 变换缩放到物理像素
+                        style = Stroke(width = 2f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                }
             }
         }
     }
