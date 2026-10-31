@@ -135,8 +135,9 @@ fun DivChartPage(
                 // 画板：末行到事实卡间距 24
                 Spacer(Modifier.height(24.dp))
                 Row(
-                    Modifier.padding(start = 16.dp, end = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    // 画板实测：双迷你卡页边距 20/20、卡距 8（用神卡 20..176、规则卡 184..340）
+                    Modifier.padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     DivMiniCard(label = stringResource(R.string.div_liuyao_yongshen), modifier = Modifier.weight(1f)) {
                         val facts = state.liuYaoFacts
@@ -221,8 +222,9 @@ fun DivChartPage(
                 QimenGrid(chart = chart, modifier = Modifier.padding(horizontal = 20.dp))
                 Spacer(Modifier.height(12.dp))
                 Row(
-                    Modifier.padding(start = 16.dp, end = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    // 画板实测：双迷你卡页边距 20/20、卡距 8（用神卡 20..176、规则卡 184..340）
+                    Modifier.padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     DivMiniCard(label = stringResource(R.string.div_qimen_yongshen), modifier = Modifier.weight(1f)) {
                         Text(

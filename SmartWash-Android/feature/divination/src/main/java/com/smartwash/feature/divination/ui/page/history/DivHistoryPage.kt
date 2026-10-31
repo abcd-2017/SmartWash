@@ -64,10 +64,10 @@ fun DivHistoryPage(
         // 画板（玄墨/宣纸双板一致）：无返回页头标题左对齐 x20，标题下 10 进筛选行
         DivPageHeader(title = stringResource(R.string.div_history_title), alignStart = true)
 
-        // 术数筛选
+        // 术数筛选（画板实测：chips 行对称缩进 34/34——视觉 chip 首枚 x=34，非页边距 20）
         Row(
             Modifier
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 34.dp)
                 .fillMaxWidth(),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         ) {
