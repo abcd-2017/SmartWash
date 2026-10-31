@@ -60,11 +60,14 @@ object AppTextStyles {
         letterSpacing = 0.sp,
     )
 
-    /** 二级页页头（迁移 20→18 = font.title） */
+    /** 二级页页头（= font.titleLarge 22/28/600）。
+     *  v0.4 覆写表曾把本别名映射到 title 18，但 2026-10-31 逐板实测 7 块内页画板
+     *  （设置/订单详情/订单列表/充值记录/优惠券/取件/寄件/AI助手）页头均为 22/600/28，
+     *  别名行系文档笔误，按画板裁定映射到 titleLarge。 */
     val PageHeader = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        lineHeight = 24.sp,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.sp,
     )
 

@@ -11,7 +11,10 @@ val PrimaryContainer = Color(0xFFF0FBF4)
 val OnPrimaryContainer = Color(0xFF17322B)
 
 // 主色变体
-val PrimaryLight = Color(0xFFF0FBF4)    // 超浅绿，选中态背景（= primaryContainer，规范 §1.4 收敛 #F0FAF5→#F0FBF4）
+val PrimaryLight = Color(0xFFF0FBF4)    // 超浅绿（图标盒/票券底，画板逐值 #F0FBF4）
+val PrimarySoft = Color(0xFFE8F6EF)     // primarySoft 选中底（规范 §2.1；与图标盒 #F0FBF4 是两个绿，
+                                        // 支付画板选中卡实测 #E8F6EF，勿再合并）
+val OnPrimarySoft = Color(0xFF0B3625)   // primarySoft 上的深绿字（规范 §2.1）
 val PrimaryDark = Color(0xFF1E8C5C)     // 深绿，按下态
 
 // Hero 状态卡渐变起点（设计稿首页画板实测，规范 §1.3 gradient.hero：
@@ -106,6 +109,8 @@ val DarkOnPrimaryContainer = Color(0xFFF0FBF4)
 
 // 主色变体
 val DarkPrimaryLight = Color(0xFF17322B)     // 浅绿背景 → 深色模式用深绿底
+val DarkPrimarySoft = Color(0xFF1D3229)      // primarySoft 深色值（规范 §6.5）
+val DarkOnPrimarySoft = Color(0xFFB9E8CF)    // onPrimarySoft 深色值（规范 §6.5）
 val DarkPrimaryDark = Color(0xFF5BC894)      // 按下态稍亮（primaryDeep 深色值）
 
 // 次要色

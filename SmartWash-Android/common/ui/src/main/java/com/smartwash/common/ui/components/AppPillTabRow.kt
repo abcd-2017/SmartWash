@@ -1,6 +1,7 @@
 package com.smartwash.common.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -8,15 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.HapticEffect
@@ -55,11 +54,13 @@ fun AppPillTabRow(
     ) {
         tabs.forEachIndexed { index, title ->
             val selected = selectedIndex == index
+            // 设计稿「优惠券」画板实测：选中 = primary 实底 + 白字，未选中 = surface 白底
+            // + 1px outline 描边 + textSecondary（与订单列表筛选胶囊同语言）
             val containerColor = selectedColor(
-                if (selected) AppColors.colorScheme.primaryLight else Color.Transparent
+                if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface
             )
             val labelColor = selectedColor(
-                if (selected) AppColors.colorScheme.primary
+                if (selected) MaterialTheme.colorScheme.onPrimary
                 else AppColors.colorScheme.textSecondary
             )
             Box(
@@ -70,6 +71,14 @@ fun AppPillTabRow(
                     // 非按钮档 buttonRadius(14)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(containerColor)
+                    .then(
+                        if (!selected) Modifier.border(
+                            1.dp,
+                            AppColors.colorScheme.outline,
+                            RoundedCornerShape(AppDimens.radiusFull)
+                        )
+                        else Modifier
+                    )
                     .pressable(
                         onClick = {
                             view.performHaptic(HapticEffect.SELECTION)
@@ -77,13 +86,14 @@ fun AppPillTabRow(
                         },
                         debounce = false,
                     )
-                    .padding(horizontal = AppDimens.spaceMd, vertical = 8.dp),
+                    // 画板实测胶囊 40 高：labelSmall 行盒 16 + 上下 12
+                    .padding(horizontal = AppDimens.spaceMd, vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    // 画板实测 12/500（captionStrong 档），两态同字重不做字重动画
+                    style = MaterialTheme.typography.labelMedium,
                     color = labelColor,
                 )
             }
