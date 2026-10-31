@@ -257,12 +257,13 @@ const buildRowUpdatePayload = (row, overrides = {}) => ({
 });
 
 const handleToggleEnabled = async (row) => {
-  const prev = row.enabled;
-  const next = row.enabled === 1 ? 0 : 1;
+  // el-switch 触发 change 时 v-model 已同步更新为目标值（Element Plus 源码 UPDATE 先于 CHANGE emit），
+  // row.enabled 即用户意图值；prev 仅用于失败回滚；成功后无需再写 row.enabled
+  const prev = row.enabled === 1 ? 0 : 1;
+  const next = row.enabled;
   togglingId.value = row.id;
   try {
     await updateDeeplinkRoute(buildRowUpdatePayload(row, { enabled: next }));
-    row.enabled = next;
     ElMessage.success(next === 1 ? '已启用' : '已停用');
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
