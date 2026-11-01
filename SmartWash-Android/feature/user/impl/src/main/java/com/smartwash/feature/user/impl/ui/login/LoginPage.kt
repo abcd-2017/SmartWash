@@ -230,7 +230,6 @@ fun LoginPage(
                     phone = phone,
                     isPhoneError = isPhoneError,
                     contentColor = Color.White,
-                    label = stringResource(com.smartwash.common.ui.R.string.phone_number)
                 ) {
                     if (it.length <= 11) phone = it
                     // 实时校验：只在已显示错误后实时更新，避免输入中就报错
@@ -259,7 +258,6 @@ fun LoginPage(
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
                     contentColor = Color.White,
-                    label = stringResource(com.smartwash.common.ui.R.string.password),
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
