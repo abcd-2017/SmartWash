@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavHostController
 import com.smartwash.BuildConfig
+import com.smartwash.config.ServerConfig
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -129,9 +130,12 @@ private fun WebViewContent(
     // 网页历史回退可用性（onPageFinished 后刷新）
     var canGoBack by remember { mutableStateOf(false) }
 
-    // 主题桥白名单 host：后端 API + MinIO endpoint（BuildConfig 注入，Kotlin 侧零硬编码）
+    // 主题桥白名单 host：后端 API + MinIO endpoint。
+    // 2026-11-01：MinIO endpoint 改取运行期配置（ServerConfig，启动经 /web/config 拉取），
+    // 不再用编译期注入的 BuildConfig.MINIO_ENDPOINT——域名变更无需发版。
+    // 配置未就绪时（启动极早期）只含 API host，属可接受降级：游戏页由用户操作打开，此时配置早已就绪。
     val themeBridgeWhitelist = remember {
-        GameThemeBridgePolicy.whitelistHostsOf(BuildConfig.BASE_URL, BuildConfig.MINIO_ENDPOINT)
+        GameThemeBridgePolicy.whitelistHostsOf(BuildConfig.BASE_URL, ServerConfig.minioEndpoint)
     }
     // getTheme 返回的主题模式：仓库无应用内主题开关 → 'system'（见 resolveBridgeThemeMode 注释）
     val bridgeThemeMode = remember { GameThemeBridgePolicy.resolveBridgeThemeMode(inAppThemeMode = null) }
