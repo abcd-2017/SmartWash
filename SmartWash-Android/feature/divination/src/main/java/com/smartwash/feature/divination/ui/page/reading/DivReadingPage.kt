@@ -64,10 +64,11 @@ fun DivReadingPage(
     recordId: Long,
     viewModel: DivReadingViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val state by viewModel.uiState.collectAsState()
 
     DivinationScreen {
+        // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让加载/空态文案在浅色系统下不可见）
+        val c = DivColors.current
         DivPageHeader(
             title = stringResource(R.string.div_reading_title),
             onBack = { navController.popBackStack() },
