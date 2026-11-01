@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -56,21 +55,12 @@ fun PasswordInput(
     showVisibility: () -> Unit,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier,
-    // 可见字段标签（设计稿画板「t:密码标签」12/500，§7 表单必须有可见标签；null 保持旧行为）
-    label: String? = null,
+    // 占位文案（2026-11-01 还原设计稿：登录「密码」/ 注册「设置密码」；默认 password_hint）
+    hint: String? = null,
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (label != null) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = contentColor.copy(alpha = 0.92f)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
+        // 2026-11-01 用户拍板还原：设计稿 .gi 只有 placeholder（占位即字段名），无独立可见 label
         // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier
@@ -109,7 +99,7 @@ fun PasswordInput(
                         if (password.isEmpty()) {
                             // §3.7：占位符字号与正文一致
                             Text(
-                                text = stringResource(R.string.password_hint),
+                                text = hint ?: stringResource(R.string.password_hint),
                                 fontSize = 16.sp,
                                 lineHeight = 24.sp,
                                 color = contentColor.copy(alpha = 0.45f)

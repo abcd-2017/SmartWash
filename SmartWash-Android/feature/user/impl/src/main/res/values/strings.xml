@@ -30,8 +30,10 @@
     <string name="has_account">已有账号？</string>
     <string name="login_now">立即登录</string>
     <string name="verification_code">验证码</string>
-    <!-- 输入框示例占位符（注册画板「t:验证码」= 123456，同 common/ui phone_hint 模式） -->
-    <string name="verification_code_hint">123456</string>
+    <!-- 注册画板占位符即字段名（t:验证码） -->
+    <string name="verification_code_hint">验证码</string>
+    <!-- 注册画板密码占位为「设置密码」（登录为「密码」） -->
+    <string name="password_hint_register">设置密码</string>
     <string name="invalid_verification_code">请输入正确的验证码</string>
     <string name="get_verification_code">获取验证码</string>
     <string name="countdown_format">重新发送(%1$ds)</string>
@@ -120,6 +122,7 @@
     <string name="enabled">已开启</string>
     <string name="on">开</string>
     <string name="off">关</string>
+    <string name="disabled">已关闭</string>
 
     <!-- 权限管理页（2026-11-01 缺陷 5c 新增） -->
     <string name="permission_management">权限管理</string>

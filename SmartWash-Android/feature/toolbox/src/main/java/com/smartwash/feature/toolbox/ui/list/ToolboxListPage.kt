@@ -4,6 +4,9 @@ import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +45,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
@@ -64,10 +68,13 @@ import java.time.LocalDateTime
  * 我的短链列表页：Paging 3 分页（pagingFlow/PageData 模式）+ PullToRefreshBox 下拉刷新 +
  * 骨架屏/空态/错误提示（规范 §3.6）。条目点击进详情（字段随路由携带）。
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ToolboxListPage(
     navController: NavHostController,
+    // 一镜到底：NavHost 条目 scope（2026-11-01），供列表卡 sharedElement
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
     viewModel: ToolboxListViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -172,6 +179,8 @@ fun ToolboxListPage(
                                 pagingItems[index]?.let { vo ->
                                     ShortCodeCard(
                                         vo = vo,
+                                        animatedVisibilityScope = animatedVisibilityScope,
+                                        sharedTransitionScope = sharedTransitionScope,
                                         onClick = { navController.navigateToShortCodeDetail(vo) },
                                         onCopy = {
                                             // 复制短链（空缺回落短码）+ 提示，与详情页复制行为一致
@@ -239,11 +248,15 @@ private fun AppendLoadingRow() {
  * 图标盒 36（蓝·链接语义，icon 24）+ 短码（title 18/600 + tnum）+ 类型/可见性 chip +
  * 右列（点击数/有效期 caption 12/400 + 复制描边按钮），次行为目标链接预览（caption，单行省略）。
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ShortCodeCard(
     vo: ShortCodeVo,
     onClick: () -> Unit,
     onCopy: () -> Unit,
+    // 一镜到底：与详情页信息卡共享元素（key 用短码 id，两侧一致）
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     val now = remember { LocalDateTime.now() }
     val expiryState = ShortCodeRules.expiryStateOf(vo.expireAt, now)
@@ -252,10 +265,22 @@ private fun ShortCodeCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = onClick, scaleFactor = 0.97f),
+            // 一镜到底：列表卡与详情页信息卡共享边界，导航时平滑展开（2026-11-01）
+            .then(
+                if (animatedVisibilityScope != null && sharedTransitionScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "shortcode-card-${vo.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            )
+            .pressable(onClick = onClick, scaleFactor = 0.97f).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         // 画板实测：内边距左/上/右 20，底部 12 留给链接行

@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartwash.R
 import com.smartwash.common.ui.components.DrumMark
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
@@ -202,11 +203,9 @@ fun AiWorkPage(
 
         // 底部输入框（固定）——设计稿：白底条高 80（顶线 1px + 上下 16 + 输入框 48）
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().softCardShadow(),
             color = AppColors.colorScheme.surface,
-            // 固定输入条是浮层（§2.4 豁免档），但浮层压在滚动内容之上仍需投影分界；
-            // level1(1dp) 是规范允许的两种阴影之一，与顶线叠加只增强分层不改变形态
-            shadowElevation = AppElevation.level1
+            // 固定输入条是浮层（§2.4 豁免档），阴影按规范 §2.4 卡片档自绘（softCardShadow）
         ) {
             Column {
                 // 顶部 1px 分隔线（画板「顶线」outline）
@@ -289,11 +288,10 @@ private fun QuickTaskCard(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.pressable(onClick = { /* TODO */ }),
+        modifier = modifier.pressable(onClick = { /* TODO */ }).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
