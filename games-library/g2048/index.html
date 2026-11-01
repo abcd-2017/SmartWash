@@ -29,22 +29,21 @@
     overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 420px; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }
-  h1 { margin: 0; font-size: 34px; line-height: 1; color: var(--g-primary-deep); }
+  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
   .scores { display: flex; gap: 8px; }
   .score-box {
-    background: var(--g-primary); color: var(--g-on-primary); border-radius: 8px;
+    background: var(--g-primary); color: var(--g-on-primary); border-radius: 12px;
     min-width: 78px; padding: 5px 12px; text-align: center; line-height: 1.3;
   }
-  .score-box .label { display: block; font-size: 11px; opacity: .85; }
-  .score-box .val { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .score-box .label { display: block; font-size: 12px; opacity: .85; }
+  .score-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-  .hint { margin: 0; font-size: 13px; color: var(--g-muted); }
+  .hint { margin: 0; font-size: 14px; color: var(--g-muted); }
   .btn {
     min-height: 44px; padding: 0 18px;
     border: 0; border-radius: 10px;
     background: var(--g-primary); color: var(--g-on-primary);
-    font-size: 15px; font-weight: 600; font-family: inherit;
+    font-size: 16px; font-weight: 600; font-family: inherit;
     cursor: pointer;
   }
   .btn:active { opacity: .85; }
@@ -64,13 +63,13 @@
   }
   .cell {
     background: var(--g-cell);
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
   .tile {
     width: 100%; height: 100%;
-    border-radius: 8px;
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-variant-numeric: tabular-nums;
   }
@@ -104,8 +103,8 @@
   }
   .overlay.show { display: flex; animation: fadein .2s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .ov-title { margin: 0; font-size: 30px; font-weight: 800; color: var(--g-primary-deep); }
-  .ov-sub { margin: 0 0 12px; font-size: 15px; color: var(--g-muted); }
+  .ov-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--g-primary-deep); }
+  .ov-sub { margin: 0 0 12px; font-size: 14px; color: var(--g-muted); }
   .overlay .btn { min-width: 132px; }
   .foot { margin: 14px 0 0; font-size: 12px; color: var(--g-faint); text-align: center; }
 </style>
@@ -123,7 +122,6 @@ paint(B||"light");
 <body>
 <div class="wrap">
   <header>
-    <h1>2048</h1>
     <div class="scores">
       <div class="score-box"><span class="label">分数</span><span class="val" id="score">0</span></div>
       <div class="score-box"><span class="label">最高分</span><span class="val" id="best">0</span></div>

@@ -50,12 +50,11 @@
     overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 420px; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-  h1 { margin: 0; font-size: 26px; line-height: 1.15; color: var(--g-primary-deep); }
-  .sub { margin: 2px 0 0; font-size: 12px; color: var(--g-muted); }
-  .chips { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
-  .chip { flex: 1; min-width: 0; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 10px; padding: 5px 8px 6px; text-align: center; box-shadow: var(--g-shadow); }
-  .chip .lb { display: block; font-size: 11px; color: var(--g-muted); }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+  .sub { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .chips { display: flex; gap: 8px; align-items: stretch; margin-bottom: 16px; }
+  .chip { flex: 1; min-width: 0; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 12px; padding: 5px 8px 6px; text-align: center; box-shadow: var(--g-shadow); }
+  .chip .lb { display: block; font-size: 12px; color: var(--g-muted); }
   .chip .vl { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-text); line-height: 1.2; }
   .icon-btn {
     width: 44px; height: 44px; flex: 0 0 44px;
@@ -77,7 +76,7 @@
     flex: 1; min-height: 50px;
     border: 1px solid var(--g-border); border-radius: var(--g-radius-btn);
     background: var(--g-surface); color: var(--g-text);
-    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
     touch-action: manipulation; display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .ctrl-btn:active { background: var(--g-primary-soft); color: var(--g-on-soft); }
@@ -90,11 +89,11 @@
   }
   .overlay.show { display: flex; animation: rise .18s ease-out; }
   @keyframes rise { from { transform: translateY(6px); } to { transform: translateY(0); } }
-  .ov-title { margin: 0; font-size: 26px; font-weight: 800; color: var(--g-primary-deep); }
+  .ov-title { margin: 0; font-size: 22px; font-weight: 700; color: var(--g-primary-deep); }
   .ov-sub { margin: 0 0 6px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
   .ov-stats { display: flex; gap: 8px; margin: 2px 0 8px; }
-  .ov-stat { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 10px; padding: 6px 12px; min-width: 84px; }
-  .ov-stat .lb { display: block; font-size: 11px; color: var(--g-muted); }
+  .ov-stat { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: 12px; padding: 6px 12px; min-width: 84px; }
+  .ov-stat .lb { display: block; font-size: 12px; color: var(--g-muted); }
   .ov-stat .vl { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .badge { display: none; margin: 0 0 6px; padding: 4px 12px; border-radius: 999px; background: var(--g-warning); color: #FFF; font-size: 12px; font-weight: 700; }
   .badge.show { display: inline-block; }
@@ -102,7 +101,7 @@
     min-height: 46px; padding: 0 22px;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: var(--g-on-primary);
-    font-size: 15px; font-weight: 600; font-family: inherit;
+    font-size: 16px; font-weight: 600; font-family: inherit;
     cursor: pointer; touch-action: manipulation;
   }
   .btn:active { opacity: .85; }
@@ -132,10 +131,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div>
-      <h1>森林快跑</h1>
-      <p class="sub">跳过原木 · 滑铲过低枝 · 沿路捡松果</p>
-    </div>
+    <p class="sub">跳过原木 · 滑铲过低枝 · 沿路捡松果</p>
   </header>
   <div class="chips">
     <div class="chip"><span class="lb">得分</span><span class="vl" id="uiScore">0</span></div>

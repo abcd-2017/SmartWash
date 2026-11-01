@@ -67,6 +67,8 @@ private const val TAG = "SmartWashGameBridge"
  * WebViewPage 是通用容器（smartwash://web?url= 可装任意页），桥仅对白名单 host 生效：
  * - getTheme()：白名单内返回 App 当前主题模式（无应用内主题开关 → 'system'）；
  *   白名单外返回空串并记录（H5 端空串走 matchMedia 跟随系统，不报错）。
+ * - setChrome(mode)：白名单内把原生顶部 chrome 切到 [GameChrome] 的合法模式，
+ *   白名单外忽略并记录——通用容器不得让第三方 H5 改掉 App 的标题栏/状态栏。
  * - 主题变化/页面加载完成的主动推送由 [pushGameTheme] 负责，推送前同样过 host 白名单。
  *
  * getTheme 由 WebView 的 JS 桥线程调用（非 UI 线程），因此不直接读 WebView：
@@ -76,7 +78,9 @@ private const val TAG = "SmartWashGameBridge"
 internal class SmartWashGameBridge(
     private val whitelist: Set<String>,
     private val themeModeProvider: () -> String,
-    private val onHostRejected: (String?) -> Unit = { Log.w(TAG, "getTheme 拒绝非白名单来源: $it") },
+    private val onHostRejected: (String?) -> Unit = { Log.w(TAG, "桥调用拒绝非白名单来源: $it") },
+    /** chrome 模式切换回调（JS 桥线程 → UI 线程的 Compose 状态）；默认空实现供单测/非游戏页使用 */
+    private val onChromeChange: (String) -> Unit = {},
 ) {
 
     /** 当前页 host 快照（JS 桥线程读、UI 线程写） */
@@ -91,6 +95,21 @@ internal class SmartWashGameBridge(
             return ""
         }
         return themeModeProvider()
+    }
+
+    /**
+     * 切换原生顶部 chrome（H5 协议取值见 [GameChrome]：full / immersive / none；
+     * 其他值由调用方经 [GameChrome.normalize] 归一化）。
+     * 白名单外静默忽略——通用 WebView 容器不得被第三方页面改掉 App chrome。
+     */
+    @JavascriptInterface
+    fun setChrome(mode: String) {
+        val host = currentPageHost
+        if (!GameThemeBridgePolicy.isAllowedHost(host, whitelist)) {
+            onHostRejected(host)
+            return
+        }
+        onChromeChange(mode)
     }
 }
 

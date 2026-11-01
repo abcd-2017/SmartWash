@@ -25,6 +25,7 @@ import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
+import com.smartwash.ui.page.webview.GameChrome
 import com.smartwash.ui.page.webview.WebViewPage
 
 /**
@@ -77,9 +78,10 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
         AiWorkPage(onBack = { navController.popBackStack() })
     }
     // 内置浏览器页：url 必填（仅 http/https，非法值页面内展示错误态）、title 可选；
+    // chrome 可选（GameChrome：full/immersive/none，供游戏 H5 收起原生标题栏与状态栏）；
     // 字符串参数一律经 Uri.encode 编码（完整 URL 含 / ? & 等保留字），模式同 Toolbox 详情页
     composable(
-        route = "${PageConstant.WebView.text}?url={url}&title={title}",
+        route = "${PageConstant.WebView.text}?url={url}&title={title}&chrome={chrome}",
         arguments = listOf(
             navArgument("url") {
                 type = NavType.StringType
@@ -88,6 +90,10 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
             navArgument("title") {
                 type = NavType.StringType
                 defaultValue = ""
+            },
+            navArgument("chrome") {
+                type = NavType.StringType
+                defaultValue = GameChrome.FULL
             }
         )
     ) { entity ->
@@ -95,6 +101,7 @@ fun NavGraphBuilder.shellGraph(navController: NavHostController) {
             navController,
             url = entity.arguments?.getString("url").orEmpty(),
             title = entity.arguments?.getString("title").orEmpty(),
+            chrome = entity.arguments?.getString("chrome").orEmpty(),
         )
     }
 }

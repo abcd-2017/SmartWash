@@ -28,12 +28,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -54,10 +56,12 @@ import com.smartwash.common.ui.theme.AppColors
  * - 系统返回优先走网页历史（canGoBack 回退），历史为空才交还导航出栈；
  * - 加载进度为真实 ChromeClient 回调驱动的清氧细进度条（非伪造动画，无自主动效故无需
  *   reduced motion 降级）；
- * - 标题取路由参数，缺省「详情页」。
+ * - 标题取路由参数，缺省「详情页」；
+ * - chrome 模式（[GameChrome]）供游戏 H5 经桥/URL 参数收起原生标题栏与系统状态栏，
+ *   初值取路由参数 `chrome`（避免先闪一帧原生栏），运行期由桥调用切换。
  *
  * 路由：PageConstant.WebView（= ShellRoute.WEB_VIEW），注册形态
- * "WebView?url={url}&title={title}"，url/title 由调用方 Uri.encode 编码、
+ * "WebView?url={url}&title={title}&chrome={chrome}"，url/title 由调用方 Uri.encode 编码、
  * Navigation 解析后自动解码回原文。
  */
 @Composable
@@ -65,22 +69,31 @@ fun WebViewPage(
     navController: NavHostController,
     url: String,
     title: String,
+    chrome: String = GameChrome.FULL,
 ) {
     // url 白名单：仅 http/https 放行进 WebView（错误态兜底，不渲染 Web 容器）
     val isHttpUrl = url.startsWith("http://") || url.startsWith("https://")
+
+    // 原生 chrome 模式：初值取路由参数（加载前即定，无闪帧），运行期由游戏桥切换
+    var chromeMode by remember { mutableStateOf(GameChrome.normalize(chrome)) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        PageHeader(
-            title = title.ifBlank { stringResource(R.string.webview_default_title) },
-            onBack = { navController.navigateUp() },
-        )
+        // chrome=none 时整条标题返回栏收起（游戏自绘 chrome）；immersive 保留返回入口
+        if (GameChrome.shouldShowHeader(chromeMode)) {
+            PageHeader(
+                title = title.ifBlank { stringResource(R.string.webview_default_title) },
+                onBack = { navController.navigateUp() },
+            )
+        }
         if (isHttpUrl) {
             WebViewContent(
                 url = url,
+                chromeMode = chromeMode,
+                onChromeChange = { chromeMode = it },
                 modifier = Modifier
                     .fillMaxSize()
                     .navigationBarsPadding()
@@ -109,17 +122,22 @@ fun WebViewPage(
  * url 随路由条目固定，无需响应变化重建。
  *
  * 游戏 H5 主题桥（SmartWashGameBridge）挂载于本容器：
- * - 白名单 host（后端 API + MinIO endpoint，均取 BuildConfig 注入值）内 getTheme 生效；
+ * - 白名单 host（后端 API + MinIO endpoint，均取 BuildConfig 注入值）内 getTheme/setChrome 生效；
  * - 主题/uiMode 变化与 onPageFinished 双保险推送 window.__applySmartWashTheme(mode)；
- * - API 33+ 显式关闭算法加深（主题由 H5 自渲染，禁系统二次反色）。
+ * - API 33+ 显式关闭算法加深（主题由 H5 自渲染，禁系统二次反色）；
+ * - chrome 模式（标题栏/状态栏显隐）经 [GameChrome.apply] 作用于窗口，离开页面时复原，
+ *   避免把沉浸式状态带进后续页面。
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun WebViewContent(
     url: String,
+    chromeMode: String,
+    onChromeChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     // uiMode 变化经 LocalConfiguration 观察触发重推（Activity 因 uiMode 重建时由
     // 重建后的 onPageFinished 兜底，两种路径覆盖）
     val configuration = LocalConfiguration.current
@@ -139,10 +157,14 @@ private fun WebViewContent(
     }
     // getTheme 返回的主题模式：仓库无应用内主题开关 → 'system'（见 resolveBridgeThemeMode 注释）
     val bridgeThemeMode = remember { GameThemeBridgePolicy.resolveBridgeThemeMode(inAppThemeMode = null) }
+    // 桥回调经 rememberUpdatedState 取值：remember{桥} 只建一次，回调需始终读到最新组合
+    // （否则桥持有一份陈旧 lambda，chrome 切换会写不进当前状态）
+    val currentOnChromeChange by rememberUpdatedState(onChromeChange)
     val themeBridge = remember {
         SmartWashGameBridge(
             whitelist = themeBridgeWhitelist,
             themeModeProvider = { bridgeThemeMode },
+            onChromeChange = { currentOnChromeChange(GameChrome.normalize(it)) },
         ).apply {
             currentPageHost = GameThemeBridgePolicy.hostOf(url)
         }
@@ -231,6 +253,13 @@ private fun WebViewContent(
     // 导航条目离开时释放 WebView（销毁内部线程与 WebCore，防内存泄漏）
     DisposableEffect(Unit) {
         onDispose { webView.destroy() }
+    }
+
+    // chrome 模式生效/复原：进入页面按当前模式设置窗口，离开时一律复原为 FULL——
+    // 否则沉浸式（隐藏状态栏）会跟着导航带进下一个页面（如游戏中心返回后的工作台）
+    DisposableEffect(chromeMode) {
+        GameChrome.apply(context, view, chromeMode)
+        onDispose { GameChrome.apply(context, view, GameChrome.FULL) }
     }
 
     // 主题/uiMode 变化主动推送（H5 侧 window.__applySmartWashTheme 钩子）：

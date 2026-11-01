@@ -19,48 +19,47 @@
     overscroll-behavior:none;touch-action:manipulation;
   }
   .app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
-  header{display:flex;align-items:center;gap:10px}
-  h1{margin:0;font-size:20px;line-height:1.15;flex:1;text-align:center;color:var(--g-primary-deep)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
   .btn:active{opacity:.85}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .btn:disabled{opacity:.4;cursor:default}
-  .stage{position:relative;flex:1;min-height:260px;margin-top:10px;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface);overflow:hidden}
+  .stage{position:relative;flex:1;min-height:260px;margin-top:16px;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface);overflow:hidden}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
   .overlay{position:absolute;inset:0;z-index:5;background:var(--g-scrim);display:flex;align-items:center;justify-content:center;padding:16px}
   .panel{width:100%;max-width:370px;max-height:100%;overflow:auto;background:var(--g-surface);border:1px solid var(--g-border);border-radius:var(--g-radius);box-shadow:var(--g-shadow);padding:18px}
-  .rt{margin:0 0 4px;font-size:20px;font-weight:800}
+  .rt{margin:0 0 4px;font-size:22px;font-weight:700}
   .rs{margin:0 0 12px;font-size:12px;color:var(--g-muted)}
   .rhint{margin:12px 0 0;font-size:12px;color:var(--g-faint);line-height:1.6}
   .song{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;margin-top:8px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface2);font:inherit;color:var(--g-text);text-align:left;cursor:pointer}
   .song:active{transform:scale(.98)}
-  .sidx{font-size:15px;font-weight:800;color:var(--g-faint);font-variant-numeric:tabular-nums}
+  .sidx{font-size:16px;font-weight:700;color:var(--g-faint);font-variant-numeric:tabular-nums}
   .smain{flex:1;min-width:0}
   .smain b{display:block;font-size:16px}
   .smain small{display:block;margin-top:2px;font-size:12px;color:var(--g-muted)}
   .sbest{font-size:12px;font-weight:700;color:var(--g-muted);white-space:nowrap}
   .sbest.g-S{color:var(--g-warning)} .sbest.g-A{color:var(--g-primary-deep)} .sbest.g-B{color:var(--g-water)}
-  .grade{margin:6px 0 0;font-size:72px;line-height:1;text-align:center;font-weight:800;animation:btpop .4s ease-out}
+  .grade{margin:6px 0 0;font-size:36px;line-height:1;text-align:center;font-weight:700;animation:btpop .4s ease-out}
   @keyframes btpop{from{transform:scale(.55)}to{transform:scale(1)}}
   .grade.g-S{color:var(--g-warning)} .grade.g-A{color:var(--g-primary-deep)} .grade.g-B{color:var(--g-water)} .grade.g-C{color:var(--g-muted)}
   .rscore{margin:6px 0 0;text-align:center;font-size:14px;color:var(--g-muted)}
-  .rscore b{font-size:24px;color:var(--g-text);font-variant-numeric:tabular-nums}
-  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;background:var(--g-warning);color:var(--g-on-primary);font-size:11px;font-weight:800;vertical-align:2px}
+  .rscore b{font-size:22px;color:var(--g-text);font-variant-numeric:tabular-nums}
+  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:16px;background:var(--g-warning);color:var(--g-on-primary);font-size:12px;font-weight:700;vertical-align:2px}
   .rstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0}
-  .rstats span{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--g-surface2);font-size:13px;color:var(--g-muted)}
+  .rstats span{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--g-surface2);font-size:14px;color:var(--g-muted)}
   .rstats b{color:var(--g-text);font-variant-numeric:tabular-nums}
   .rbest{margin:10px 0 0;font-size:12px;color:var(--g-faint);text-align:center}
   .rbtns{display:flex;gap:10px;margin-top:14px}
   .rbtns .btn{flex:1}
   .pads{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-  .pad{position:relative;min-height:58px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font:inherit;font-size:17px;font-weight:700;cursor:pointer;touch-action:none;overflow:hidden}
+  .pad{position:relative;min-height:58px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font:inherit;font-size:16px;font-weight:700;cursor:pointer;touch-action:none;overflow:hidden}
   .pad i{position:absolute;left:0;right:0;bottom:0;height:5px}
   .pad[data-lane="0"] i{background:var(--g-primary)}
   .pad[data-lane="1"] i{background:var(--g-water)}
   .pad[data-lane="2"] i{background:var(--g-warning)}
   .pad[data-lane="3"] i{background:var(--g-danger)}
   .pad.on{transform:scale(.95);background:var(--g-surface2)}
-  .foot{margin:8px 0 0;font-size:11px;color:var(--g-faint);text-align:center}
+  .foot{margin:8px 0 0;font-size:12px;color:var(--g-faint);text-align:center}
 </style>
 <script>
 //主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
@@ -69,6 +68,7 @@ var R=document.documentElement,B=null;
 function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
 paint(B||"light");
 })();
 </script>
@@ -77,7 +77,6 @@ paint(B||"light");
 <div class="app">
   <header>
     <button class="btn ghost" id="menuBtn" type="button">选曲</button>
-    <h1>节拍点按</h1>
     <button class="btn" id="pauseBtn" type="button" disabled>暂停</button>
   </header>
   <div class="stage" id="stage">

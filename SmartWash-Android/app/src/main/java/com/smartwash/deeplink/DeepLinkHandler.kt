@@ -9,6 +9,7 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.deeplink.DeepLinkParser
 import com.smartwash.network.api.DeeplinkRouteDict
+import com.smartwash.ui.page.webview.GameChrome
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -96,15 +97,21 @@ class DeepLinkHandler @Inject constructor(
     }
 
     /**
-     * WebView 路由构造（注册形态 = ShellRoute.WEB_VIEW + "?url={url}&title={title}"，
+     * WebView 路由构造（注册形态 = ShellRoute.WEB_VIEW + "?url={url}&title={title}&chrome={chrome}"，
      * 单一事实来源在 common:ui 的 [ShellRoute]；url/title 必须经 Uri.encode 编码）。
+     * chrome 取 [GameChrome] 模式（默认 full），供游戏 H5 在加载前收起原生标题栏/状态栏。
      */
-    private fun buildWebViewRoute(url: String, title: String?): String {
+    private fun buildWebViewRoute(
+        url: String,
+        title: String?,
+        chrome: String = GameChrome.FULL,
+    ): String {
         val builder = StringBuilder(ShellRoute.WEB_VIEW)
             .append("?url=").append(Uri.encode(url))
         title?.takeIf { it.isNotBlank() }?.let {
             builder.append("&title=").append(Uri.encode(it))
         }
+        builder.append("&chrome=").append(GameChrome.normalize(chrome))
         return builder.toString()
     }
 
