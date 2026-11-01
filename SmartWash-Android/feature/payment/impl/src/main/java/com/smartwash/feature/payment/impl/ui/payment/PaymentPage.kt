@@ -551,7 +551,7 @@ private fun CheckMark(
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center
     ) {
-        SelectionDot(selected = isSelected, dotSize = 28.dp)
+        SelectionDot(selected = isSelected)
     }
 }
 

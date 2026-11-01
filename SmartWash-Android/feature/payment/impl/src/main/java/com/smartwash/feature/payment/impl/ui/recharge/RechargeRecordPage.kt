@@ -45,6 +45,7 @@ import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
@@ -246,10 +247,13 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            // 金额（2026-11-01 用户反馈：原 titleLarge 22sp 与左侧 14sp 类型字差 8sp，观感失衡）
+            // → 金额中字档 18sp（v0.4 AmountMedium，列表内价格的标准档），与类型字 14sp 保持 4sp 级差
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
-                // 画板实测：22/28/600（= titleLarge 档），金额启用 tabular 数字防跳动
-                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                // AppTextStyles.AmountMedium 自带 tnum（等宽防数字抖动）
+                style = AppTextStyles.AmountMedium,
                 color = AppColors.colorScheme.primaryDark
             )
         }
