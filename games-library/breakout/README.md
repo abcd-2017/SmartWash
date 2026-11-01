@@ -1,4 +1,4 @@
-# 打砖块（breakout）
+# 打砖块（gameKey：`breakout`，category 建议：`arcade`）
 
 - 玩法：球撞砖块得分（越靠上的砖分值越高），清空全部砖块进入下一关（砖更多、更硬），球落底扣 1 命共 3 命；最高分与最高关卡 localStorage 保存。
 - 操作：手指/鼠标左右拖动控制挡板（游戏区 touch-action:none），点按屏幕发球；右上角「暂停」按钮可随时暂停。
