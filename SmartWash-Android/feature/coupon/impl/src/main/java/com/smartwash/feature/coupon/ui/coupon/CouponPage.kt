@@ -350,7 +350,7 @@ fun UserCouponCard(
  * `.ticket3::before/::after` 14×14 圆、top 50% 居中、孔心落在卡左右边缘线上；
  * 此前误画为面额区右缘与卡顶/底交点的上下凹口，属结构性偏差）
  */
-private val TicketShape = object : Shape {
+internal val TicketShape = object : Shape {
     override fun createOutline(
         size: Size,
         layoutDirection: LayoutDirection,

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
@@ -60,6 +63,7 @@ import com.smartwash.common.utils.spinInfinite
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.coupon.CouponStatus
+import com.smartwash.feature.coupon.ui.coupon.TicketShape
 
 /** 领券进行中圆环直径 */
 private val ClaimingRingSize = 14.dp
@@ -106,9 +110,32 @@ fun CouponCard(
     isClaiming: Boolean,
     onClaimClick: () -> Unit,
 ) {
+    val outlineColor = AppColors.colorScheme.outline
+    // 2026-11-01 用户拍板：可领取卡（设计稿无画板）统一成屏 12 票券形态——
+    // 打孔 + 绿面额区 + 垂直虚线 + 右区，与已领取/过期 tab 同一卡片语言；领取按钮占状态字位
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                // 中间虚线 — 同票券：1dp 竖线、段 6 / 隔 4，上下 margin 12（x=88 face 右缘）
+                val dashWidth = 6.dp.toPx()
+                val dashGap = 4.dp.toPx()
+                val x = 88.dp.toPx()
+                val strokeWidth = 1.dp.toPx()
+                var y = 12.dp.toPx()
+                val maxY = size.height - 12.dp.toPx()
+                while (y < maxY) {
+                    drawLine(
+                        color = outlineColor,
+                        start = Offset(x, y),
+                        end = Offset(x, (y + dashWidth).coerceAtMost(maxY)),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    y += dashWidth + dashGap
+                }
+            },
+        shape = TicketShape,
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
@@ -116,41 +143,44 @@ fun CouponCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .height(88.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额
-            Column(
-                modifier = Modifier.width(80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
-                    style = AppTextStyles.AmountMedium,
-                    // 同页票券卡金额画板实测 primaryDark（#1E8C5C），两 tab 同语义同令牌
-                    color = AppColors.colorScheme.primaryDark
-                )
-            }
-
-            // 竖线分隔
+            // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（与票券同构）
             Box(
                 modifier = Modifier
-                    .width(0.5.dp)
-                    .height(48.dp)
-                    .background(AppColors.colorScheme.divider)
-            )
+                    .width(88.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
+                        style = AppTextStyles.AmountMedium,
+                        color = AppColors.colorScheme.primaryDark
+                    )
+                    Text(
+                        text = stringResource(R.string.coupon),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
 
-            // 右侧信息
+            // 右侧信息 — 票券语言：垂直居中 padding 16，标题/日期/门槛三行
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp)
+                    .padding(start = 16.dp, end = 8.dp)
             ) {
                 Text(
-                    // 标题与票券卡统一 14/500（原 titleMedium 18/600 两 tab 不一致）
                     text = coupon.title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = AppColors.colorScheme.textPrimary
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -164,14 +194,15 @@ fun CouponCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
-                if (isAvailable) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    ClaimAction(
-                        claimed = coupon.status == CouponStatus.RECEIVE.status,
-                        isClaiming = isClaiming,
-                        onClaimClick = onClaimClick,
-                    )
-                }
+            }
+
+            // 领取按钮 — 右缘垂直居中（票券状态字的位置），立即领取/已领取/领取中三态不变
+            Box(modifier = Modifier.padding(end = 12.dp)) {
+                ClaimAction(
+                    claimed = coupon.status == CouponStatus.RECEIVE.status,
+                    isClaiming = isClaiming,
+                    onClaimClick = onClaimClick,
+                )
             }
         }
     }
