@@ -44,11 +44,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.payment.impl.R
@@ -84,6 +92,11 @@ fun RechargePage(
     // 金额校验失败原因（null 为通过）：文案随原因细分，见 RechargeAmountError
     var amountError by remember { mutableStateOf<RechargeAmountError?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+
+    // 焦点管理（2026-11-01 修复）：点档位格收起键盘、点「自定义」格聚焦输入框，
+    // 消除"两边获取焦点状态竞态"（此前输入框聚焦时点档位，键盘不收、焦点状态互抢）
+    val focusManager = LocalFocusManager.current
+    val customInputFocusRequester = remember { FocusRequester() }
 
     val presetAmounts = listOf(10f, 20f, 50f, 100f, 200f)
     val rechargeState by rechargeViewModel.rechargeState.collectAsState()
@@ -157,8 +170,8 @@ fun RechargePage(
                     }
                 }
 
-                // 充值金额（2026-11-01 缺陷 8b：档位 + 自选收进标准卡 §3.1 唯一画法，
-                // 原灰底胶囊直接铺页面底对比弱、与支付方式卡层级语言不一）
+                // 充值金额（设计稿 .amount3：3 列网格 6 格 = 5 档 + 自定义；赠额随档入格，
+                // 选中态 = 1.5dp primary 描边 + primarySoft 底 + primaryDark 字）
                 item(key = "amount") {
                     Column {
                         Text(
@@ -174,32 +187,55 @@ fun RechargePage(
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                                // 画板实测：5 档单行等宽（间距 12），非 3 列两行
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    presetAmounts.forEach { amount ->
-                                        AmountCard(
-                                            amount = amount,
-                                            isSelected = selectedAmount == amount && !isCustomAmountSelected,
+                                // 3 列 × 2 行（设计稿 grid-template-columns:repeat(3,1fr)；gap 10）
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        presetAmounts.take(3).forEach { amount ->
+                                            AmountGridCell(
+                                                amount = amount,
+                                                bonus = AmountBonuses[amount] ?: 0f,
+                                                isSelected = selectedAmount == amount && !isCustomAmountSelected,
+                                                onClick = {
+                                                    selectedAmount = amount
+                                                    isCustomAmountSelected = false
+                                                    amountError = null
+                                                    focusManager.clearFocus()
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        presetAmounts.drop(3).forEach { amount ->
+                                            AmountGridCell(
+                                                amount = amount,
+                                                bonus = AmountBonuses[amount] ?: 0f,
+                                                isSelected = selectedAmount == amount && !isCustomAmountSelected,
+                                                onClick = {
+                                                    selectedAmount = amount
+                                                    isCustomAmountSelected = false
+                                                    amountError = null
+                                                    focusManager.clearFocus()
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                        // 第 6 格「自定义」：选中即聚焦下方输入框（消除与档位格的焦点竞态）
+                                        CustomAmountCell(
+                                            isSelected = isCustomAmountSelected,
                                             onClick = {
-                                                selectedAmount = amount
-                                                isCustomAmountSelected = false
+                                                isCustomAmountSelected = true
                                                 amountError = null
+                                                customInputFocusRequester.requestFocus()
                                             },
                                             modifier = Modifier.weight(1f)
                                         )
                                     }
                                 }
-                                // 赠额说明行（画板实测：胶囊行下 12，caption 档；赠额映射与档位一致）
+                                // 动态到账说明（替代原静态「充值多少送多少」干扰行）：按当前选中档展示
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = stringResource(R.string.recharge_bonus_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = AppColors.colorScheme.textSecondary
-                                )
-                                // 画板实测：自定义金额为独立 label + 48 高输入框（非第 6 个档位格）
+                                RechargeSummaryLine(selectedAmount, isCustomAmountSelected)
+                                // 自定义金额输入（选中「自定义」格后聚焦可输入）
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.custom_amount),
@@ -210,6 +246,7 @@ fun RechargePage(
                                 CustomAmountInput(
                                     value = customAmount,
                                     isSelected = isCustomAmountSelected,
+                                    focusRequester = customInputFocusRequester,
                                     onValueChange = { value ->
                                         if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
                                             customAmount = value
@@ -217,8 +254,7 @@ fun RechargePage(
                                                 selectedAmount = value.toFloatOrNull()
                                                 isCustomAmountSelected = true
                                             } else {
-                                                // 清空即清选中态（2026-11-01 缺陷 8c：原清空后
-                                                // 残留旧值，底部按钮金额与高亮都不回落）
+                                                // 清空即清选中态（2026-11-01 缺陷 8c）
                                                 selectedAmount = null
                                                 isCustomAmountSelected = false
                                             }
@@ -340,40 +376,125 @@ fun RechargePage(
     }
 }
 
+/**
+ * 金额档位格（设计稿 .amount3 单元格）：72dp 高 / r14 / 1dp outline 描边 / surface 底；
+ * 选中态 1.5dp primary 描边 + primarySoft 底 + primaryDark 字。赠额随档常驻（<em> 口径：
+ * 11sp/500/ongoingInk），不只在选中时出现——让用户未选中也能看到各档赠额。
+ */
 @Composable
-private fun AmountCard(
-    amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
+private fun AmountGridCell(
+    amount: Float,
+    bonus: Float,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    // 画板实测：档位胶囊 48 高 r14（buttonRadius）；
-    // 未选 surfaceVariant(#F5F6F3) + textPrimary，选中 primarySoft(#E8F6EF) + onPrimarySoft(#0B3625)
-    // + 1dp primary 描边（2026-11-01 缺陷 8b：灰底胶囊进白卡后与页面同灰调对比不足，加描边强化选中辨识）。
-    // 选中态颜色统一走公共 selectedColor（200ms 档弹簧，reduced motion 自动降级 180ms）
     val bgColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant
+        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surface
     )
     val textColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.onPrimarySoft else AppColors.colorScheme.textPrimary
+        if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary
     )
     val borderColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surfaceVariant
+        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
     )
     Surface(
         modifier = modifier
-            .height(48.dp)
+            .height(72.dp)
             .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
         color = bgColor,
-        border = BorderStroke(1.dp, borderColor)
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            // 金额 = 金额中字档（AmountMedium 18/600 tnum）；赠送信息由说明行承载，不再入格
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = stringResource(R.string.currency_format, "${amount.toInt()}"),
                 style = AppTextStyles.AmountMedium,
                 color = textColor
             )
+            if (bonus > 0f) {
+                Text(
+                    text = stringResource(R.string.recharge_bonus_format, "${bonus.toInt()}"),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.colorScheme.ongoingInk
+                )
+            }
         }
     }
+}
+
+/**
+ * 「自定义」格（设计稿 .amount3 第 6 格）：与档位格同尺寸同选中态语言，文案 12sp/500。
+ */
+@Composable
+private fun CustomAmountCell(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val bgColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surface
+    )
+    val textColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textSecondary
+    )
+    val borderColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+    )
+    Surface(
+        modifier = modifier
+            .height(72.dp)
+            .pressable(onClick = onClick, debounce = false),
+        shape = RoundedCornerShape(AppDimens.buttonRadius),
+        color = bgColor,
+        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.custom_amount_short),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+        }
+    }
+}
+
+/**
+ * 动态到账说明（设计稿 .amount3 下方 .s13 行）：按当前选中档展示
+ * 「充值 ¥50.00 · 到账 ¥52.00（含赠送 ¥2.00）」，到账金额加粗 + primaryDark。
+ * 替代原静态「充值多少送多少」提示行——静态罗列三档赠额既干扰视觉又无法回应当前选择。
+ */
+@Composable
+private fun RechargeSummaryLine(selectedAmount: Float?, isCustom: Boolean) {
+    val amount = selectedAmount ?: 0f
+    if (amount <= 0f) return
+    val bonus = if (isCustom) 0f else AmountBonuses[selectedAmount] ?: 0f
+    val total = amount + bonus
+    Text(
+        text = buildAnnotatedString {
+            append(
+                stringResource(R.string.recharge_summary_prefix, String.format("%.2f", amount))
+            )
+            withStyle(
+                SpanStyle(fontWeight = FontWeight.Bold, color = AppColors.colorScheme.primaryDark)
+            ) {
+                append(stringResource(R.string.currency_format, String.format("%.2f", total)))
+            }
+            if (bonus > 0f) {
+                append(
+                    stringResource(R.string.recharge_summary_bonus, String.format("%.2f", bonus))
+                )
+            }
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = AppColors.colorScheme.textSecondary
+    )
 }
 
 /**
@@ -387,6 +508,7 @@ private fun CustomAmountInput(
     value: String,
     isSelected: Boolean,
     onValueChange: (String) -> Unit,
+    focusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val bgColor = selectedColor(
@@ -406,7 +528,9 @@ private fun CustomAmountInput(
         TextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
             placeholder = {
                 Text(
                     stringResource(R.string.custom_amount_placeholder),
@@ -481,9 +605,12 @@ private fun PaymentMethodCard(
             modifier = Modifier.weight(1f)
         )
         // 圆形选中标记 — 画板实测 24（复用公共 SelectionDot 内圆弹簧长出）
-        SelectionDot(selected = isSelected, dotSize = 24.dp)
+        SelectionDot(selected = isSelected)
     }
 }
+
+/** 赠额映射（设计稿 .amount3 em：¥50 送 ¥2 / ¥100 送 ¥8 / ¥200 送 ¥20） */
+private val AmountBonuses = mapOf(50f to 2f, 100f to 8f, 200f to 20f)
 
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)
