@@ -153,11 +153,13 @@ fun DivReadingPage(
                             // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
                             ActionCard(reading.action)
 
-                            // 主行动（画板：单个全宽 320×52、r14、14% 金底 + 金字 14/600）
+                            // 主行动（画板 .actions .btn.gold：flex:1 / 高 44 / 字号 13 / 字距 4；
+                            // 画板另有「分 享」次位按钮，端上暂无分享实现，故只落「继续追问」）
                             DivGoldButton(
                                 text = stringResource(R.string.div_reading_followup),
                                 soft = true,
-                                fontSize = 14.sp,
+                                height = 44.dp,
+                                fontSize = 13.sp,
                                 modifier = Modifier
                                     .padding(start = 20.dp, end = 20.dp, top = 20.dp)
                                     .fillMaxWidth(),
