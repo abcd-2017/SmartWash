@@ -169,10 +169,10 @@
                 <el-icon class="upload-empty-icon"><UploadFilled /></el-icon>
                 <div class="upload-empty-text">拖拽文件到此处，或 <em>点击选择</em></div>
                 <div class="upload-empty-tip">支持 .html / .htm 单文件或 .zip 包，不超过 10MB</div>
-                <!-- 目录导入：games-library 标准结构（index.html + README.md），README 解析后自动填表 -->
+                <!-- 目录导入：games-library 标准结构（index.html + 可选 README.md），README 解析后自动填表 -->
                 <el-divider class="upload-empty-divider">或</el-divider>
                 <el-button size="small" @click.stop="handlePickDirectory">
-                  选择游戏目录导入（自动填表）
+                  选择游戏目录（自动填表）
                 </el-button>
                 <input
                   ref="dirInputRef"
@@ -591,7 +591,7 @@ const handleExceed = (files) => {
   }
 };
 
-// ---------- 目录导入（games-library 标准结构：index.html + README.md） ----------
+// ---------- 目录导入（games-library 标准结构：index.html + 可选 README.md） ----------
 
 const dirInputRef = ref(null);
 
@@ -600,25 +600,30 @@ const handlePickDirectory = () => {
 };
 
 // README 首行解析：`# 标题（gameKey：`x`，category 建议：`y`）`；
-// key 解析不到回退目录名，分类解析不到回落「其他」，不让自动化静默填错
+// 匹配不到的字段留空（gameKey 除外，回退目录名——规范约定目录名 = gameKey），不让自动化静默填错
 const parseGameReadme = (text, dirName) => {
   const heading = (text.split(/\r?\n/, 1)[0] || '').replace(/^#+\s*/, '');
-  const title = (heading.replace(/（[^）]*）\s*$/, '').trim() || dirName).slice(0, 32);
+  const title = heading
+    .replace(/（[^）]*）\s*$/, '')
+    .trim()
+    .slice(0, 32);
   const keyMatch = heading.match(
     new RegExp(`gameKey[：:]\\s*\`?(${GAME_KEY_PATTERN.source})\`?`, 'i')
   );
   const categoryMatch = heading.match(/category(?:\s*建议)?[：:]\s*`?([a-z]+)`?/i);
+  const category = categoryMatch?.[1];
   // 玩法行 → 描述（截到 128，与表单 maxlength 对齐）
   const playMatch = text.match(/^\s*[-*]?\s*\**\s*玩法[：:]\s*(.+)$/m);
   return {
     title,
     gameKey: keyMatch?.[1] || dirName,
-    category: categoryMatch?.[1] || 'other',
+    category: GAME_CATEGORY_OPTIONS.some((opt) => opt.value === category) ? category : '',
     description: (playMatch?.[1] || '').replace(/\*+/g, '').trim().slice(0, 128),
   };
 };
 
-// 选择目录：结构校验（忽略 .DS_Store 等隐藏文件）→ index.html 作为上传文件 → 解析 README 预填表单
+// 选择目录：仅接受根目录 index.html（+ 可选 README.md），忽略隐藏文件；
+// index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空）
 const handleDirImport = (event) => {
   const files = Array.from(event.target.files || []);
   event.target.value = ''; // 允许重复选择同一目录
@@ -627,18 +632,21 @@ const handleDirImport = (event) => {
   const relSegs = (file) => (file.webkitRelativePath || file.name).split('/');
   const dirName = relSegs(files[0])[0] || 'game';
   const visible = files.filter((file) => relSegs(file).every((seg) => !seg.startsWith('.')));
-  const names = visible
-    .map((file) => file.name)
-    .sort()
-    .join();
-  if (files.some((file) => relSegs(file).length > 2) || names !== 'README.md,index.html') {
-    ElMessage.error(
-      '目录须为「index.html + README.md」两个文件（忽略隐藏文件），其他结构请手动打包 .zip 上传'
-    );
+  // 结构：根目录只允许 index.html（必须）+ README.md（可选）；子目录或额外文件一律拒绝（多文件请打包 zip）
+  const rootFiles = visible.filter((file) => relSegs(file).length === 2);
+  const hasExtra =
+    visible.some((file) => relSegs(file).length > 2) ||
+    rootFiles.some((file) => !['index.html', 'README.md'].includes(file.name));
+  if (hasExtra) {
+    ElMessage.error('目录仅支持「index.html（+ 可选 README.md）」，含其他文件请打包 .zip 手动上传');
     return;
   }
-  const htmlFile = files.find((file) => file.name === 'index.html');
-  const readmeFile = visible.find((file) => file.name === 'README.md');
+  const htmlFile = rootFiles.find((file) => file.name === 'index.html');
+  if (!htmlFile) {
+    ElMessage.error('目录缺少 index.html 入口文件');
+    return;
+  }
+  const readmeFile = rootFiles.find((file) => file.name === 'README.md');
   const fileError = validateFile(htmlFile);
   if (fileError) {
     ElMessage.error(fileError);
@@ -648,21 +656,17 @@ const handleDirImport = (event) => {
   selectedFile.value = htmlFile;
   uploadFormRef.value?.validateField('file').catch(() => {});
 
+  // README 可选：无则字段留空（gameKey 仍取目录名），有则解析预填
+  if (!readmeFile) {
+    Object.assign(tempGame, { title: '', gameKey: dirName, category: '', description: '' });
+    keyEdited.value = true; // 导入的 key 不再被标题 watch 覆盖
+    return;
+  }
   readmeFile
     .text()
     .then((text) => {
-      const meta = parseGameReadme(text, dirName);
-      const whitelisted = GAME_CATEGORY_OPTIONS.some((opt) => opt.value === meta.category);
-      Object.assign(tempGame, {
-        title: meta.title,
-        gameKey: meta.gameKey,
-        category: whitelisted ? meta.category : 'other',
-        description: meta.description,
-      });
+      Object.assign(tempGame, parseGameReadme(text, dirName));
       keyEdited.value = true; // 导入的 key 不再被标题 watch 覆盖
-      if (!whitelisted) {
-        ElMessage.info(`分类「${meta.category}」不在可选范围，已回落为「其他」，可手动调整`);
-      }
     })
     .catch(() => {
       ElMessage.error('README 读取失败，请手动填写表单');
