@@ -72,6 +72,8 @@ internal fun UpdateFlow(
     updateEventBus: UpdateEventBus,
 ) {
     val updateState by updateViewModel.state.collectAsState()
+    // 「后台下载」标记：Downloaded/Error 等其余状态由 VM 复位，弹窗自然回弹
+    val backgroundDownload by updateViewModel.backgroundDownload.collectAsState()
 
     // 通知权限 launcher：用户点击「立即更新」时，若无权限则弹出系统授权请求
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -196,18 +198,24 @@ internal fun UpdateFlow(
             DownloadPreparingDialog()
         }
         is UpdateState.Downloading -> {
-            DownloadProgressDialog(
-                progress = currentState.progress,
-                downloadedBytes = currentState.downloadedBytes,
-                totalBytes = currentState.totalBytes.takeIf { it > 0 }
-                    ?: (updateViewModel.getLatestVersion()?.fileSize ?: 0L),
-                onCancel = {
-                    currentDownloadWorkId.value?.let { id ->
-                        try { workManager.cancelWorkById(UUID.fromString(id)) } catch (_: Exception) {}
-                    }
-                    updateViewModel.reset()
-                },
-            )
+            // 「后台下载」（2026-11-01 用户反馈）：用户选择后台后弹窗隐藏但 WorkManager 下载
+            // 继续（本组合的进度收集不中断），完成/失败时状态机自动回弹对应弹窗；
+            // 标记存 VM，旋转重建不丢
+            if (!backgroundDownload) {
+                DownloadProgressDialog(
+                    progress = currentState.progress,
+                    downloadedBytes = currentState.downloadedBytes,
+                    totalBytes = currentState.totalBytes.takeIf { it > 0 }
+                        ?: (updateViewModel.getLatestVersion()?.fileSize ?: 0L),
+                    onCancel = {
+                        currentDownloadWorkId.value?.let { id ->
+                            try { workManager.cancelWorkById(UUID.fromString(id)) } catch (_: Exception) {}
+                        }
+                        updateViewModel.reset()
+                    },
+                    onBackgroundDownload = updateViewModel::minimizeDownloadDialog,
+                )
+            }
         }
         is UpdateState.Downloaded -> {
             DownloadCompleteDialog(
