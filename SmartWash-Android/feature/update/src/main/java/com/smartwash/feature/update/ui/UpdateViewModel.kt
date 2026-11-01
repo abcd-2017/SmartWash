@@ -63,6 +63,14 @@ class UpdateViewModel @Inject constructor(
     /** 防重复触发检查 */
     private var isChecking = false
 
+    /**
+     * 后台下载标记（2026-11-01 用户反馈）：DownloadProgressDialog 点「后台下载」后置真，
+     * 弹窗隐藏但 WorkManager 下载继续（进度承接交给系统前台通知）；
+     * 完成/失败/取消时复位，让完成/错误弹窗正常回弹
+     */
+    private val _backgroundDownload = MutableStateFlow(false)
+    val backgroundDownload: StateFlow<Boolean> = _backgroundDownload.asStateFlow()
+
     /** 缓存最新版本信息，供下载使用 */
     private var latestVersion: AppVersionVo? = null
 
@@ -171,16 +179,23 @@ class UpdateViewModel @Inject constructor(
     }
 
     /**
-     * 下载完成回调
+     * 下载完成回调（后台下载时复位标记，完成弹窗正常回弹）
      */
     fun onDownloadComplete(file: File) {
+        _backgroundDownload.value = false
         _state.value = UpdateState.Downloaded(file)
+    }
+
+    /** 最小化下载弹窗转后台下载（下载不中断，进度由系统通知承接） */
+    fun minimizeDownloadDialog() {
+        _backgroundDownload.value = true
     }
 
     /**
      * 下载失败回调
      */
     fun onDownloadFailed(message: String) {
+        _backgroundDownload.value = false
         _state.value = UpdateState.Error(message, ErrorSource.Download)
     }
 
@@ -199,6 +214,7 @@ class UpdateViewModel @Inject constructor(
         latestVersion?.let { dismissedVersionCode = it.versionCode }
         _state.value = UpdateState.Idle
         _downloadUrl.value = null
+        _backgroundDownload.value = false
         isChecking = false
     }
 

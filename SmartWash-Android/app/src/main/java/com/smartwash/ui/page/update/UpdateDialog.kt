@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -38,6 +37,7 @@ import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.motionSpec
 import java.io.File
@@ -78,7 +78,7 @@ fun UpdateAvailableDialog(
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.new_version_available),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = AppTextStyles.CardTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -90,9 +90,9 @@ fun UpdateAvailableDialog(
                         version.versionName,
                         formatFileSize(version.fileSize)
                     ),
-                    style = MaterialTheme.typography.bodyLarge,
+                    // 版本号 + 文件大小含数字 → tnum（§2.2 硬规则）
+                    style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -100,7 +100,7 @@ fun UpdateAvailableDialog(
                 // 更新内容
                 Text(
                     text = stringResource(R.string.update_content),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -185,7 +185,7 @@ fun ForceUpdateRequiredDialog(
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.force_update_required),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = AppTextStyles.CardTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -236,7 +236,7 @@ fun DownloadPreparingDialog() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = stringResource(R.string.preparing_download),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = AppTextStyles.CardTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -257,6 +257,9 @@ fun DownloadPreparingDialog() {
  * 承载（WorkManager 真实进度驱动），替代历史上的 emoji + LinearProgressIndicator。
  * 下载进度每 1% 硬跳 → 弹簧平滑到目标值；reduced motion 经 motionSpec 降级为
  * 180ms 短过渡，不引入位移/缩放。
+ *
+ * 「后台下载」（2026-11-01 用户反馈）：隐藏弹窗但 WorkManager 下载继续，
+ * 进度承接交给系统前台通知；下载完成/失败时完成/错误弹窗自动回弹。
  */
 @Composable
 fun DownloadProgressDialog(
@@ -264,6 +267,7 @@ fun DownloadProgressDialog(
     downloadedBytes: Long,
     totalBytes: Long,
     onCancel: () -> Unit,
+    onBackgroundDownload: () -> Unit,
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress / 100f,
@@ -295,7 +299,7 @@ fun DownloadProgressDialog(
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.downloading_update),
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = AppTextStyles.CardTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(20.dp))
@@ -311,18 +315,29 @@ fun DownloadProgressDialog(
                 )
                 Text(
                     text = "${progress}%",
-                    // 百分比宽度随位数变化 → tabular numbers 等宽，消除数字抖动
-                    style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
+                    // 百分比宽度随位数变化 → 金额中字档自带 tnum 等宽，消除数字抖动
+                    style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
-                AppButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = onCancel,
-                    variant = AppButtonVariant.SECONDARY,
-                )
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AppButton(
+                        text = stringResource(R.string.background_download),
+                        onClick = onBackgroundDownload,
+                        modifier = Modifier.weight(1f),
+                        variant = AppButtonVariant.SECONDARY,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    AppButton(
+                        text = stringResource(R.string.cancel_download),
+                        onClick = onCancel,
+                        modifier = Modifier.weight(1f),
+                        variant = AppButtonVariant.SECONDARY,
+                        contentColor = AppColors.colorScheme.dangerInk
+                    )
+                }
             }
         }
     }
@@ -356,7 +371,7 @@ fun DownloadCompleteDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.download_complete),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = AppTextStyles.CardTitle,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -421,7 +436,7 @@ fun DownloadErrorDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.download_failed),
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = AppTextStyles.CardTitle,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
