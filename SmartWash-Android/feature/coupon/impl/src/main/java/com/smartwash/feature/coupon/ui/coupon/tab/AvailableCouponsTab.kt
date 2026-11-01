@@ -147,15 +147,16 @@ fun CouponCard(
                     .padding(start = 16.dp)
             ) {
                 Text(
+                    // 标题与票券卡统一 14/500（原 titleMedium 18/600 两 tab 不一致）
                     text = coupon.title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = AppColors.colorScheme.textPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${coupon.startTime.split(" ")[0]} - ${coupon.endTime.split(" ")[0]}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
