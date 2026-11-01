@@ -143,10 +143,8 @@ fun CouponCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(88.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（与票券同构）
+            // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（纵向贯通两行）
             Box(
                 modifier = Modifier
                     .width(88.dp)
@@ -169,11 +167,12 @@ fun CouponCard(
                 }
             }
 
-            // 右侧信息 — 票券语言：垂直居中 padding 16，标题/日期/门槛三行
+            // 右侧两行结构（2026-11-01 实机修正：88dp 单行塞不下「内容+按钮」，按钮独立成行）：
+            // 上 = 标题/日期/门槛三行；下 = 领取按钮右对齐
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp, end = 8.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
             ) {
                 Text(
                     text = coupon.title,
@@ -194,15 +193,17 @@ fun CouponCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
-            }
-
-            // 领取按钮 — 右缘垂直居中（票券状态字的位置），立即领取/已领取/领取中三态不变
-            Box(modifier = Modifier.padding(end = 12.dp)) {
-                ClaimAction(
-                    claimed = coupon.status == CouponStatus.RECEIVE.status,
-                    isClaiming = isClaiming,
-                    onClaimClick = onClaimClick,
-                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    ClaimAction(
+                        claimed = coupon.status == CouponStatus.RECEIVE.status,
+                        isClaiming = isClaiming,
+                        onClaimClick = onClaimClick,
+                    )
+                }
             }
         }
     }
@@ -242,11 +243,12 @@ private fun ClaimAction(
         contentAlignment = Alignment.Center,
     ) {
         Box(
+            // §3.3 小按钮档：36dp 高 / 12dp 圆角 / 横向 16（文字 13sp/600）
             modifier = Modifier
-                .height(40.dp)
+                .height(36.dp)
                 .clip(RoundedCornerShape(AppDimens.radiusMd))
                 .background(containerColor)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
             // 文字 ↔ 圆环交叉淡变；文字用 alpha 隐藏而非移除，保证按钮宽度不抖动
@@ -258,8 +260,8 @@ private fun ClaimAction(
                 Text(
                     text = stringResource(if (isClaimed) R.string.claimed else R.string.claim_now),
                     color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.alpha(if (isClaiming) 0f else 1f)
                 )
             }
