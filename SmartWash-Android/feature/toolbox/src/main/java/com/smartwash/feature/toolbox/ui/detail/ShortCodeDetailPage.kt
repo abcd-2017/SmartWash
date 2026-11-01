@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -15,6 +16,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -102,9 +105,13 @@ private val RENEW_EXIT_MS = DURATION_MICRO_MS * 7 / 10
  * 复制/浏览器打开（公开码直开 shortUrl，私有码经 resolve 取 target——计一次点击属预期）+
  * 续期（PUT expireAt）/ 删除（DELETE）+ 访问明细分页（/stats）。
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ShortCodeDetailPage(
     navController: NavHostController,
+    // 一镜到底：共享元素 scope（2026-11-01）
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    sharedTransitionScope: SharedTransitionScope? = null,
     viewModel: ShortCodeDetailViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -215,7 +222,18 @@ fun ShortCodeDetailPage(
             item(key = "info") {
                 val now = remember { LocalDateTime.now() }
                 val expiryState = ShortCodeRules.expiryStateOf(vo.expireAt, now)
-                GroupCard {
+                // 一镜到底：与列表卡共享边界（key 与列表侧一致）
+                val infoCardModifier = if (animatedVisibilityScope != null && sharedTransitionScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(key = "shortcode-card-${vo.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+                GroupCard(modifier = infoCardModifier) {
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_code),
                         value = vo.code,

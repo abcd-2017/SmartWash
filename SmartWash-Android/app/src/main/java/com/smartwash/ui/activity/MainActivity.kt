@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
+
 package com.smartwash.ui.activity
 
 import android.Manifest
@@ -10,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.background
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.fillMaxSize
@@ -206,6 +209,11 @@ class MainActivity : ComponentActivity() {
                         val currentRoute = backStackEntry?.destination?.route
                         val isAuthRoute = currentRoute == UserRoute.Login.text ||
                             currentRoute == UserRoute.Register.text
+                        // 共享元素转场容器（2026-11-01）：承载「短链 item → 详情页」一镜到底。
+                        // 仅当进出两侧存在相同 key 的 sharedElement 时才激活，不影响其余页面转场。
+                        SharedTransitionLayout {
+                        // 共享元素转场所需 scope（仅工具箱短链 item→详情使用）
+                        val sharedTransitionScope = this
                         NavHost(
                             navController = navController,
                             startDestination = UserRoute.Login.text,
@@ -235,10 +243,11 @@ class MainActivity : ComponentActivity() {
                             couponGraph(navController)
                             divinationGraph(navController)
                             // 工具箱短链（独立路由；工作台入口走深链 smartwash://toolbox-short-code）
-                            toolboxGraph(navController)
+                            toolboxGraph(navController, sharedTransitionScope)
                             // 游戏中心（独立路由；入口走深链 smartwash://game-center 与
                             // 后端 workbench_entry 配置的工作台卡片，无底栏入口）
                             gameGraph(navController)
+                        }
                         }
                     }
                 }
