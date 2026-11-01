@@ -81,7 +81,9 @@ public class MinioStorageServiceImpl implements FileStorageService {
             );
 
             // 拼接并返回访问 URL
-            String url = minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/" + objectName;
+            // 对外可访问 URL：必须用 publicEndpoint()（external-endpoint 优先），
+            // 原用 getEndpoint() 会拼出 Docker 内部地址（端上无法加载，头像/游戏直链全挂）
+            String url = minioConfig.publicEndpoint() + "/" + minioConfig.getBucketName() + "/" + objectName;
             log.info("文件上传成功: {}", url);
             return url;
         } catch (CustomExceptions e) {

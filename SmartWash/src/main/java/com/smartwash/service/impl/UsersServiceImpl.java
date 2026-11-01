@@ -169,7 +169,8 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
-        users.setAvatar(minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/default/avatar.png");
+        // 对外可访问 URL：原用 getEndpoint() 拼出内部地址，端上 AsyncImage 加载失败（头像一直不显示）
+        users.setAvatar(minioConfig.publicEndpoint() + "/" + minioConfig.getBucketName() + "/default/avatar.png");
         boolean result = save(users);
         log.info("用户注册成功, userId: {}, phone: {}", users.getUserId(), DesensitizedUtil.mobilePhone(userRegisterFrom.getPhoneNumber()));
         return result;
