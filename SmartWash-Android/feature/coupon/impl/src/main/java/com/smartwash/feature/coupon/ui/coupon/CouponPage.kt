@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
@@ -157,10 +157,11 @@ fun CouponPage(
                         else pagerState.animateScrollToPage(index)
                     }
                 },
-                modifier = Modifier.padding(vertical = 8.dp),
+                // 原型 seg3 行：页头下 16（PageHeader 已含 bottom 6，此处 12 凑足节奏）、列表区上 16 由卡间距承接
+                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Box(
                 modifier = Modifier
@@ -218,10 +219,12 @@ fun CouponPage(
 }
 
 /**
- * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态角标
- * 设计稿「优惠券」画板：卡 312×88、r16、描边 1px outline；
- * 阴影按规范 §2.4 卡片档 = AppElevation.level1（CSS 0 2px 12px rgba(20,40,30,.05) 的最近似档位）；
- * 可用态金额区白底（画板无填充）、历史态金额区为页面底色块；弱化态靠换灰，不做整体透明
+ * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态文字（对齐设计稿屏 12，2026-11-01 逐项对质）。
+ *
+ * 设计稿 .ticket3：卡 88 高、r16、描边 1px outline、**左右缘中点打孔 φ14**（face 与内容区
+ * 以 x=88 垂直虚线分隔，虚线上下留 12）；面额 num 20px→v0.4 AmountMedium 18sp + tnum、
+ * 单位 12/500 brand 绿；内容区 padding 16/20 且垂直居中；状态为无底纯文字右缘垂直居中
+ * （可用 brand / 过期 text-3）；过期态整卡 opacity .55 + face-exp 灰底（surface-2）。
  */
 @Composable
 fun UserCouponCard(
@@ -229,7 +232,8 @@ fun UserCouponCard(
     isHistorical: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val amountColor = if (isHistorical) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primaryDark
+    val amountColor = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primaryDark
+    val unitColor = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primary
     val titleColor = if (isHistorical) AppColors.colorScheme.textSecondary else AppColors.colorScheme.textPrimary
     val statusText = if (couponVo.isUsed) stringResource(R.string.used) else stringResource(R.string.expired)
 
@@ -239,14 +243,16 @@ fun UserCouponCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
+            // 原型过期态整卡 opacity .55（换灰 + 半透明双层弱化，此前只做换灰属对齐偏差）
+            .then(if (isHistorical) Modifier.alpha(0.55f) else Modifier)
             .drawBehind {
-                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下端避开打孔（φ12 @ x=88）
+                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下 margin 12
                 val dashWidth = 6.dp.toPx()
                 val dashGap = 4.dp.toPx()
                 val x = 88.dp.toPx()
                 val strokeWidth = 1.dp.toPx()
-                var y = 14.dp.toPx()
-                val maxY = size.height - 8.dp.toPx()
+                var y = 12.dp.toPx()
+                val maxY = size.height - 12.dp.toPx()
                 while (y < maxY) {
                     drawLine(
                         color = outlineColor,
@@ -267,64 +273,50 @@ fun UserCouponCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(88.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额区 — 金额 titleLarge(22/28/600)+tnum，单位 caption 12/400
+            // 左侧金额区 — 原型 ticket-face brand-soft 纯色（浅 #E8F6EF/深 #1D3229 = primaryContainer），
+            // 过期 ticket-face-exp = surface-2（卡内次级块档）；底色溢出打孔区域由 Surface outline 裁剪
             Box(
                 modifier = Modifier
                     .width(88.dp)
-                    .height(88.dp)
-                    .clip(TicketShape)
-                    .then(
-                        if (isHistorical) Modifier.background(AppColors.colorScheme.background)
-                        else Modifier
+                    .fillMaxHeight()
+                    .background(
+                        if (isHistorical) AppColors.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primaryContainer
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.0f", couponVo.couponVo.discount)),
-                        style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                        // 面额 = 金额中字档（v0.4 AmountMedium 18sp + tnum，语义即「券面额」；原 titleLarge 22 超档）
+                        style = AppTextStyles.AmountMedium,
                         color = amountColor
                     )
                     Text(
                         text = stringResource(com.smartwash.feature.coupon.R.string.coupon),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textSecondary,
-                        modifier = Modifier.padding(top = 2.dp)
+                        // 原型单位 11px/500 brand（过期 text-3）→ captionStrong 12/500
+                        style = MaterialTheme.typography.labelMedium,
+                        color = unitColor,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
 
-            // 右侧内容区 — 标题行（标题 + 状态角标）与标题垂直居中，行间距 4
+            // 右侧内容区 — 原型 padding 16/20 且 justify-content:center（垂直居中，此前顶对齐属偏差）
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 24.dp, top = 20.dp, end = 16.dp)
+                    .padding(start = 16.dp, end = 12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = couponVo.couponVo.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = titleColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // 状态角标 — 可用态 primaryContainer/onPrimaryContainer，弱化态 surfaceVariant/textSecondary
-                    Surface(
-                        shape = RoundedCornerShape(AppDimens.radiusFull),
-                        color = if (isHistorical) AppColors.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = if (isHistorical) statusText else stringResource(R.string.available),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isHistorical) AppColors.colorScheme.textSecondary
-                            else MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
-                    }
-                }
+                Text(
+                    text = couponVo.couponVo.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (couponVo.couponVo.threshold == 0f)
@@ -334,20 +326,29 @@ fun UserCouponCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.valid_until, "${couponVo.expiredAt}"),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
             }
+
+            // 状态 — 原型为无底纯文字右缘垂直居中（11px/600 brand / 过期 text-3）→ 12/600，非胶囊
+            Text(
+                text = if (isHistorical) statusText else stringResource(R.string.available),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                color = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primary,
+                modifier = Modifier.padding(end = 16.dp)
+            )
         }
     }
 }
 
 /**
- * 票券形状 — r16 圆角矩形 + 金额区右缘（88dp）与卡顶/底边相交处的 φ12 打孔凹口
- * 设计稿「优惠券」画板：上打孔/下打孔 ellipse 12×12，圆心落在卡边缘线上
+ * 票券形状 — r16 圆角矩形 + **左右缘中点打孔 φ14**（2026-11-01 对齐设计稿：
+ * `.ticket3::before/::after` 14×14 圆、top 50% 居中、孔心落在卡左右边缘线上；
+ * 此前误画为面额区右缘与卡顶/底交点的上下凹口，属结构性偏差）
  */
 private val TicketShape = object : Shape {
     override fun createOutline(
@@ -356,36 +357,37 @@ private val TicketShape = object : Shape {
         density: Density
     ): Outline {
         val cardRadius = with(density) { 16.dp.toPx() }
-        val notchRadius = with(density) { 6.dp.toPx() }
-        val notchX = with(density) { 88.dp.toPx() }
+        val notchRadius = with(density) { 7.dp.toPx() }
         val w = size.width
         val h = size.height
+        val midY = h / 2f
 
         val path = Path().apply {
-            // 顶边：左上圆角起点 → 上打孔凹口（凹进卡内）→ 右上圆角
+            // 顶边 → 右上圆角
             moveTo(cardRadius, 0f)
-            lineTo(notchX - notchRadius, 0f)
-            arcTo(
-                rect = Rect(notchX - notchRadius, -notchRadius, notchX + notchRadius, notchRadius),
-                startAngleDegrees = 180f,
-                sweepAngleDegrees = -180f,
-                forceMoveTo = false
-            )
             lineTo(w - cardRadius, 0f)
             arcTo(Rect(w - 2 * cardRadius, 0f, w, 2 * cardRadius), 270f, 90f, false)
-            // 右边 → 底边：右下圆角 → 下打孔凹口 → 左下圆角
-            lineTo(w, h - cardRadius)
-            arcTo(Rect(w - 2 * cardRadius, h - 2 * cardRadius, w, h), 0f, 90f, false)
-            lineTo(notchX + notchRadius, h)
+            // 右缘：向下到右孔上缘 → 右孔凹口（圆心 (w, midY)，经卡内侧半圆）→ 下半段
+            lineTo(w, midY - notchRadius)
             arcTo(
-                rect = Rect(notchX - notchRadius, h - notchRadius, notchX + notchRadius, h + notchRadius),
-                startAngleDegrees = 0f,
+                rect = Rect(w - notchRadius, midY - notchRadius, w + notchRadius, midY + notchRadius),
+                startAngleDegrees = -90f,
                 sweepAngleDegrees = -180f,
                 forceMoveTo = false
             )
+            lineTo(w, h - cardRadius)
+            arcTo(Rect(w - 2 * cardRadius, h - 2 * cardRadius, w, h), 0f, 90f, false)
+            // 底边 → 左下圆角
             lineTo(cardRadius, h)
             arcTo(Rect(0f, h - 2 * cardRadius, 2 * cardRadius, h), 90f, 90f, false)
-            // 左边 → 闭合左上圆角
+            // 左缘：向上到左孔下缘 → 左孔凹口（圆心 (0, midY)，经卡内侧半圆）→ 上半段 → 左上圆角闭合
+            lineTo(0f, midY + notchRadius)
+            arcTo(
+                rect = Rect(-notchRadius, midY - notchRadius, notchRadius, midY + notchRadius),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = -180f,
+                forceMoveTo = false
+            )
             lineTo(0f, cardRadius)
             arcTo(Rect(0f, 0f, 2 * cardRadius, 2 * cardRadius), 180f, 90f, false)
             close()
