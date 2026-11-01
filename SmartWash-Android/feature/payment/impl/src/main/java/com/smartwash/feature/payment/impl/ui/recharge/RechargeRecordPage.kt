@@ -254,7 +254,11 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                 text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
                 // AppTextStyles.AmountMedium 自带 tnum（等宽防数字抖动）
                 style = AppTextStyles.AmountMedium,
-                color = AppColors.colorScheme.primaryDark
+                color = AppColors.colorScheme.primaryDark,
+                // 2026-11-01：金额绝不换行——Row 内非 weight 子项按整行宽约束测量，
+                // 正常金额远小于可用宽；此处再显式限单行，作为极端字号下的兜底（宁截断不折行）
+                maxLines = 1,
+                overflow = TextOverflow.Clip
             )
         }
     }
