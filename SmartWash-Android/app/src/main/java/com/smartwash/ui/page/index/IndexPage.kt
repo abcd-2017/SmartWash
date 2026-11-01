@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -674,7 +675,9 @@ private fun OrderListItem(
             Text(
                 text = stringResource(R.string.order_no_format, orderVo.orderNo),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Text(

@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -440,13 +441,18 @@ private fun OrderRow(
             Text(
                 text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
+                // 2026-11-01 折行修复：右侧操作列占宽 ~113dp 挤压本列，长文本限单行省略（原会折行撑高卡片）
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = formatOrderTime(order.createdAt),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         // 右侧：金额顶部与角标对齐，下距 20 后接操作区 / 状态回显（设计稿实测间距）

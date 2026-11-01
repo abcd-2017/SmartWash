@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -213,12 +214,16 @@ private fun PickupOrderCard(
                         text = stringResource(R.string.order_no_format, order.orderNo),
                         // 画板实测卡内次行 12/400（caption 400 档），非 captionStrong 500
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textSecondary
+                        color = AppColors.colorScheme.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textSecondary
+                        color = AppColors.colorScheme.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Text(
@@ -250,6 +255,8 @@ private fun PickupOrderCard(
                     // 行高仍留 16 会挤压字形，也违反「禁止自创令牌值」
                     style = AppTextStyles.DataLarge,
                     color = AppColors.colorScheme.primaryDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
