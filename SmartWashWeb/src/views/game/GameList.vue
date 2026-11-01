@@ -155,12 +155,15 @@
                   <div class="picked-file-name">{{ selectedFile.name }}</div>
                   <div class="picked-file-size">{{ formatFileSize(selectedFile.size) }}</div>
                 </div>
+                <!-- icon 必须传组件（el-button 内部用 resolveDynamicComponent 解析，
+                     本仓库按需引入未全局注册图标，传字符串会渲染成空图标） -->
                 <el-button
                   size="small"
                   circle
                   type="danger"
                   plain
-                  icon="Close"
+                  :icon="Close"
+                  aria-label="移除文件"
                   class="picked-file-remove"
                   @click.stop="handleRemoveFile"
                 />
@@ -441,7 +444,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Document, UploadFilled, CircleCheckFilled } from '@element-plus/icons-vue';
+import { Document, UploadFilled, CircleCheckFilled, Close } from '@element-plus/icons-vue';
 import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame } from '@/api/game';
 import { formatTime, formatFileSize } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
