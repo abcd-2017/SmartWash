@@ -185,7 +185,8 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
      * 对齐 MinioStorageServiceImpl.uploadFile 的 URL 构造（endpoint 直接拼接）；对象路径段 URL 编码兜底（zip 条目名可能含空格/中文）。
      */
     private String buildPlayUrl(String objectKey, String entryPath) {
-        String endpoint = minioConfig.getEndpoint();
+        // 对外可访问 URL：原用 getEndpoint()（Docker 内部服务名），端上 WebView 打不开
+        String endpoint = minioConfig.publicEndpoint();
         String base = endpoint.endsWith("/")
                 ? endpoint.substring(0, endpoint.length() - 1)
                 : endpoint;
