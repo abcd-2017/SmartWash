@@ -53,6 +53,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.common.ui.components.AppInfoDialog
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.LoadingState
@@ -427,11 +428,10 @@ private fun AccountDataCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
-            .padding(top = 16.dp),
+            .padding(top = 16.dp).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
         // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         // 设计稿首页画板实测：余额通栏在上（上16 + label 16 + 4 + 大字 44），下方券/单
@@ -605,11 +605,10 @@ private fun OrderListCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
+            .padding(horizontal = AppDimens.pagePadding).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
         // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {

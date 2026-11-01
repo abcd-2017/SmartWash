@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -483,11 +484,10 @@ private fun ToolTile(
         WorkbenchTint.PURPLE -> scheme.iconContainerPurple to scheme.iconForegroundPurple
     }
     Surface(
-        modifier = modifier.pressable(onClick = onClick),
+        modifier = modifier.pressable(onClick = onClick).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = scheme.surface,
         // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, scheme.outline)
     ) {
         Box {

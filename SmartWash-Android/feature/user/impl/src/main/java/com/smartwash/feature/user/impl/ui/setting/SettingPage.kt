@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,7 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInfoDialog
@@ -182,7 +184,7 @@ fun SettingPage(
                     title = stringResource(R.string.haptic_feedback),
                     trailing = {
                         Text(
-                            text = stringResource(if (hapticEnabled) R.string.on else R.string.off),
+                            text = stringResource(if (hapticEnabled) R.string.enabled else R.string.disabled),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
@@ -271,7 +273,10 @@ fun SettingPage(
                 onClick = { showDialog = true },
                 variant = AppButtonVariant.SECONDARY,
                 contentColor = AppColors.colorScheme.dangerInk,
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
+                // 2026-11-01：surfaceVariant 底与页面底对比仅 1.05:1，真机实测按钮边界不可辨 → 补 1dp 描边
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.pagePadding)
+                    .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.buttonRadius))
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -330,10 +335,9 @@ private fun SettingGroupCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         Column(

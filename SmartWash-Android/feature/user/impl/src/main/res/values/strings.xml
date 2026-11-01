@@ -120,6 +120,7 @@
     <string name="enabled">已开启</string>
     <string name="on">开</string>
     <string name="off">关</string>
+    <string name="disabled">已关闭</string>
 
     <!-- 权限管理页（2026-11-01 缺陷 5c 新增） -->
     <string name="permission_management">权限管理</string>

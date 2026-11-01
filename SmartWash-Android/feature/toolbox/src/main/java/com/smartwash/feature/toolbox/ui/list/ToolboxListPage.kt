@@ -42,6 +42,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
@@ -252,10 +253,9 @@ private fun ShortCodeCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .pressable(onClick = onClick, scaleFactor = 0.97f),
+            .pressable(onClick = onClick, scaleFactor = 0.97f).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         // 画板实测：内边距左/上/右 20，底部 12 留给链接行

@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.ClickDebouncer
@@ -78,9 +80,9 @@ fun AvailableCouponsTab(
     itemClick: (Long) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = AppDimens.pagePadding),
+        modifier = Modifier.fillMaxSize(),
+        // 2026-11-01 阴影裁剪修复：容器级 horizontal padding 会把卡片钉在裁剪边界上 → contentPadding
+        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
         if (couponList.isEmpty()) {
@@ -134,10 +136,9 @@ fun CouponCard(
                     )
                     y += dashWidth + dashGap
                 }
-            },
+            }.softCardShadow(),
         shape = TicketShape,
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

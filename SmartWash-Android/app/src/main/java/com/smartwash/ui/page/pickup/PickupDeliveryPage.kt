@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,6 +59,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.ButtonSpinner
 import androidx.compose.foundation.BorderStroke
@@ -212,18 +214,17 @@ fun PickupDeliveryPage(
                     DetailLoadState.CONTENT -> Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
                             .padding(horizontal = AppDimens.pagePadding)
+                            .verticalScroll(rememberScrollState())
                     ) {
                         // 寄件注意事项
                         if (type == PickupDeliveryType.DELIVERY.type) {
                             Surface(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().softCardShadow(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = AppColors.colorScheme.warningContainer,
                                 // 规范 §2.4 卡片唯一画法：1px 描边 + level1 阴影，两者必须成对，
                                 // 只有描边无投影会被读成"被禁的裸白卡"（§3.1 禁止项）
-                                shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -253,11 +254,10 @@ fun PickupDeliveryPage(
 
                         // 二维码卡
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
                             // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(

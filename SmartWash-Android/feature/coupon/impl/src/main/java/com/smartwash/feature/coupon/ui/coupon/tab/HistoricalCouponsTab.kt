@@ -1,6 +1,7 @@
 package com.smartwash.feature.coupon.ui.coupon.tab
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,9 +20,8 @@ import com.smartwash.common.ui.theme.AppDimens
 @Composable
 fun HistoricalCouponsTab(historicalCoupons: List<UserCouponVo>) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = AppDimens.pagePadding),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
         if (historicalCoupons.isEmpty()) {

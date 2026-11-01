@@ -54,6 +54,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.navigation.NavController
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -210,10 +211,9 @@ private fun PermissionGroupCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
+            .padding(horizontal = AppDimens.pagePadding).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         Column(modifier = Modifier.padding(horizontal = AppDimens.cardPadding)) {

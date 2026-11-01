@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -153,7 +154,10 @@ fun PickupPage(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         LazyColumn(
-                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                            modifier = Modifier.fillMaxSize(),
+                            // 2026-11-01 阴影裁剪修复：容器级 horizontal padding 会把卡片钉在裁剪边界上，
+                            // 阴影被裁成硬边 → 改为 contentPadding（阴影在容器内完整绘制）
+                            contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
                         ) {
                             items(orderList.itemCount) { i ->
