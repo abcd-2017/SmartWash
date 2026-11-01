@@ -9,6 +9,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,6 +54,7 @@ import androidx.navigation.NavController
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SelectionDot
@@ -134,9 +136,8 @@ fun RechargePage(
             )
 
             LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = AppDimens.pagePadding),
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                 // 画板实测区块间距 24（余额→充值金额标题、输入框→支付方式）
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
             ) {
@@ -167,10 +168,9 @@ fun RechargePage(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
-                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
@@ -256,10 +256,9 @@ fun RechargePage(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().softCardShadow(),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Column {

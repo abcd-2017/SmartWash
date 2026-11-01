@@ -2,6 +2,7 @@ package com.smartwash.feature.toolbox.ui.create
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -88,9 +89,9 @@ fun ShortCodeCreatePage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppDimens.pagePadding)
                 .padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceLg)
+                .verticalScroll(rememberScrollState())
         ) {
             GroupCard {
                 // ---------- 目标链接 ----------

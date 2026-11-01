@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
@@ -167,9 +169,9 @@ fun LaundryPage(
             PageHeader(title = stringResource(R.string.book_locker), onBack = { navController.navigateUp() })
 
             LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = AppDimens.pagePadding)
+                modifier = Modifier.weight(1f),
+                // 2026-11-01 阴影裁剪修复：见 PickupPage 同项
+                contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
             ) {
                 // 投递柜选择
                 item {
@@ -182,10 +184,9 @@ fun LaundryPage(
                     // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边
                     // + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().softCardShadow(),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Row(
@@ -326,10 +327,9 @@ private fun LaundryTypeItem(
             .pressable(onClick = {
                 view.performHaptic(HapticEffect.SELECTION)
                 cardClick()
-            }),
+            }).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, borderColor)
     ) {
         Row(

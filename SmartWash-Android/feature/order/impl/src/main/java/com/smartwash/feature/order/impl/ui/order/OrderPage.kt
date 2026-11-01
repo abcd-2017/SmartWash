@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,6 +58,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppConfirmDialog
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
@@ -228,10 +230,9 @@ fun OrderPage(
 
                         LazyColumn(
                             state = listState,
+                            contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                             verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = AppDimens.pagePadding)
+                            modifier = Modifier.fillMaxSize()
                         ) {
                             items(
                                 items = listItems,
@@ -345,10 +346,9 @@ private fun MonthGroupCard(
     // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：纯白 surface 底 + 1px outline 描边 + level1(1dp) 阴影
     //（≈ CSS 0 2px 12px rgba(20,40,30,.05)）。旧实现「无阴影裸白卡」属规范明令禁止项。
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {
@@ -515,7 +515,8 @@ private fun OrderRow(
 }
 
 /**
- * 行内胶囊主按钮（设计稿实测：34dp 高、radiusFull、primary 底，文字 titleMedium 18/600 onPrimary 双主题成对）。
+ * 行内主按钮（2026-11-01 按钮统一：原 34dp 高配 18sp 字是"矮高+大字"错位组合，全应用唯一）。
+ * 统一到规范 §3.3 小按钮档：36dp 高 / 12dp 圆角 / 横 16 / 13sp·600，与优惠券 ClaimAction 一致；
  * 点击统一走防抖 + 中触感。
  */
 @Composable
@@ -523,16 +524,21 @@ private fun OrderActionPill(label: String, onClick: () -> Unit) {
     val view = currentView()
     Box(
         modifier = Modifier
-            .height(34.dp)
+            .height(36.dp)
             .pressable(onClick = rememberDebouncedClick {
                 view.performHaptic(HapticEffect.MEDIUM)
                 onClick()
             })
-            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull))
-            .padding(horizontal = 12.dp),
+            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusMd))
+            .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 

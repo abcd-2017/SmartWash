@@ -70,6 +70,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
 import com.smartwash.common.ui.components.AppCard
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AuthCtaButton
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.model.SchoolOption
@@ -169,10 +170,10 @@ fun UpdateUserInfoPage(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = AppDimens.pagePadding),
+                .statusBarsPadding(),
             // 底部预留固定 CTA 栏高度（提示 16 + 间距 16 + 按钮 48 + 底距 16 + 余量），滚动内容不被按钮遮挡
-            contentPadding = PaddingValues(bottom = 120.dp),
+            // 2026-11-01 阴影裁剪修复：水平边距并入 contentPadding
+            contentPadding = PaddingValues(start = AppDimens.pagePadding, end = AppDimens.pagePadding, bottom = 120.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item(key = "hero") {
@@ -234,10 +235,9 @@ fun UpdateUserInfoPage(
                 // 字段分组卡 — DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
                 // 描边 + 1dp 阴影（level1 ≈ CSS 0 2px 12px rgba(20,40,30,.05)）+ 圆角 16 + 内边距 20
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().softCardShadow(),
                     shape = RoundedCornerShape(AppDimens.radiusLg),
                     color = AppColors.colorScheme.surface,
-                    shadowElevation = AppElevation.level1,
                     border = BorderStroke(1.dp, AppColors.colorScheme.outline),
                 ) {
                 Column(

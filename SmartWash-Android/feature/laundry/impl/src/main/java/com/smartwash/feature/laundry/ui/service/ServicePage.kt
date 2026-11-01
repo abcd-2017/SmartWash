@@ -42,6 +42,7 @@ import com.smartwash.common.utils.model.RequestState
 import androidx.compose.material3.Icon
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
@@ -178,10 +179,9 @@ private fun ServiceListCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding),
+            .padding(horizontal = AppDimens.pagePadding).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column {

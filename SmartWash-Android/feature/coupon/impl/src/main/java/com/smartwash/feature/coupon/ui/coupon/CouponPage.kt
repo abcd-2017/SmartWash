@@ -52,6 +52,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.EmptyState
@@ -263,10 +264,9 @@ fun UserCouponCard(
                     )
                     y += dashWidth + dashGap
                 }
-            },
+            }.softCardShadow(),
         shape = TicketShape,
         color = surfaceColor,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, outlineColor)
     ) {
         Row(
