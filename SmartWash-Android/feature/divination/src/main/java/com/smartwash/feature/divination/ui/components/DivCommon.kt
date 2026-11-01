@@ -281,7 +281,7 @@ fun DivSectionTitle(
     }
 }
 
-/** 鎏金渐变主按钮：金渐变胶囊（52 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
+/** 鎏金渐变主按钮：金渐变胶囊（48 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
  *  soft=解读画板口径：14% 金底 + 金/墨字（玄墨金字/宣纸墨字，双板一致），用于次级仪式主行动 */
 @Composable
 fun DivGoldButton(
@@ -289,8 +289,8 @@ fun DivGoldButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    height: androidx.compose.ui.unit.Dp = 52.dp,
-    fontSize: TextUnit = 18.sp,
+    height: androidx.compose.ui.unit.Dp = 48.dp,
+    fontSize: TextUnit = 15.sp,
     soft: Boolean = false,
 ) {
     val c = DivColors.current
@@ -300,8 +300,8 @@ fun DivGoldButton(
     Box(
         modifier = modifier
             .height(height)
-            // 画板实测（摇卦「掷爻按钮」/问卦「起卦按钮」）：52 高 + buttonRadius 14，非胶囊
-            .clip(RoundedCornerShape(AppDimens.buttonRadius))
+            // 画板 .btn 实测：height 48px + border-radius 24px（48 高下的胶囊），文字 15px/600
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(
                 when {
                     // 禁用态退回 14% 金底（画板「已保存」口径，无描边）；解读画板主按钮同为 14% 金底
