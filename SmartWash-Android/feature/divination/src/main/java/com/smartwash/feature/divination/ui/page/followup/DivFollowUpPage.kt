@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
@@ -54,8 +51,9 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
 import com.smartwash.common.ui.components.WaveIcon
+import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.feature.divination.ui.components.DivPageHeader
-import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
@@ -79,7 +77,6 @@ fun DivFollowUpPage(
     recordId: Long,
     viewModel: DivFollowUpViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val state by viewModel.uiState.collectAsState()
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -91,11 +88,13 @@ fun DivFollowUpPage(
         }
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .imePadding(),
-    ) {
+    // 本页是观象台唯一未包 DivinationScreen 的页面：LocalDivinationColors 回落默认玄墨，
+    // 浅色系统下整页文字（页头/气泡/输入条提示）米白画浅底不可见，且无渐变底与安全区避让。
+    // 统一包根后主题、背景、状态栏/导航栏/IME 避让与其他六页一致。
+    DivinationScreen(scrollable = false) {
+        val c = DivColors.current
+        // 直接落在 DivinationScreen 的 ColumnScope 内（其 Column 已 fillMaxSize），
+        // LazyColumn 的 weight(1f) 方能约束在页头之下、输入条之上
         DivPageHeader(
             title = stringResource(R.string.div_followup_title),
             onBack = { navController.popBackStack() },
@@ -206,10 +205,10 @@ private fun ChatBubble(turn: DivFollowUpTurn) {
         Box(
             Modifier
                 .widthIn(max = if (isUser) 220.dp else 240.dp)
-                // 回复气泡即卡面（surface + 1px 描边 + r16，§3.1 卡片画法）：宣纸侧补 level1 轻阴影；
+                // 回复气泡即卡面（surface + 1px 描边 + r16，§3.1 卡片画法）：宣纸侧补柔和投影；
                 // 用户金底气泡按 §2.4「按钮/hero 类实色块不加投影」豁免
                 .then(
-                    if (isUser || c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+                    if (isUser || c.isDark) Modifier else Modifier.softCardShadow(cornerRadius = 16.dp)
                 )
                 .then(appear)
                 .clip(shape)

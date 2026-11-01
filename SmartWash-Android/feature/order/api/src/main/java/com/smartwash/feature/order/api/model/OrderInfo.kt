@@ -13,6 +13,10 @@ package com.smartwash.feature.order.api.model
  * 本类（模式同 user-api 的 UserInfo ← UserInfoVo）。
  *
  * 刻意不带 @Keep：本模型不直接参与 Gson 反序列化，保持 api 模块最小依赖面。
+ *
+ * 字段保持非空（UI 消费侧无需判空）：后端对未绑校园卡/学号的用户返回 null、订单列表
+ * 接口不返回 userVo、终态订单清空 pickupCode，这些真实空值由 order-impl 的
+ * OrderInfoVo.toModel 统一落安全默认值（空串 / 0 / id 落 -1）。
  */
 data class OrderInfo(
     val orderId: Long,

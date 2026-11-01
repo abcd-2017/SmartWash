@@ -58,11 +58,12 @@ fun DivHistoryPage(
     navController: NavHostController,
     viewModel: DivHistoryViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.records.collectAsState()
 
     DivinationScreen(scrollable = false) {
+        // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让空态文案在浅色系统下不可见）
+        val c = DivColors.current
         // 画板（玄墨/宣纸双板一致）：无返回页头标题左对齐 x20，标题下 10 进筛选行
         DivPageHeader(title = stringResource(R.string.div_history_title), alignStart = true)
 

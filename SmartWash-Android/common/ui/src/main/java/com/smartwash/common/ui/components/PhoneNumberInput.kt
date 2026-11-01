@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,21 +44,11 @@ fun PhoneNumberInput(
     phone: String,
     isPhoneError: Boolean,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    // 可见字段标签（设计稿画板「t:手机号标签」12/500，§7 表单必须有可见标签；null 保持旧行为）
-    label: String? = null,
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (label != null) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = contentColor.copy(alpha = 0.92f)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
+        // 2026-11-01 用户拍板还原：设计稿 .gi 只有 placeholder（占位即字段名），无独立可见 label
+        // （label + 占位同文案会重复，故移除）
         // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier

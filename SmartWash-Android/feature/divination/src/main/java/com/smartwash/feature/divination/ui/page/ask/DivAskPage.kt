@@ -53,6 +53,7 @@ import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.common.ui.theme.DivinationColorScheme
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.motionSpec
@@ -68,7 +69,6 @@ fun DivAskPage(
     methodId: String,
     viewModel: DivAskViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val state by viewModel.uiState.collectAsState()
     var showLinesDialog by remember { mutableStateOf(false) }
     var showNumbersDialog by remember { mutableStateOf(false) }
@@ -83,7 +83,9 @@ fun DivAskPage(
     }
 
     // 问事表单本体（供高风险分流页与表单之间的 Crossfade 复用）
-    val askForm: @Composable () -> Unit = {
+    // 颜色经参数传入：DivColors.current 必须在 DivinationScreen 之内读取，
+    // 在包根外读会拿到默认玄墨（浅色系统下问题输入框文字与提示不可见）
+    val askForm: @Composable (DivinationColorScheme) -> Unit = { c ->
         // 问题卡
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(14.dp)) {
@@ -257,6 +259,7 @@ fun DivAskPage(
     }
 
     DivinationScreen {
+        val c = DivColors.current
         DivPageHeader(
             title = stringResource(R.string.div_ask_title),
             onBack = { navController.popBackStack() },
@@ -275,7 +278,7 @@ fun DivAskPage(
                     onClear = { viewModel.onQuestionChange("") },
                 )
             } else {
-                askForm()
+                askForm(c)
             }
         }
     }
@@ -403,8 +406,6 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                 DivGoldButton(
                     text = stringResource(R.string.div_manual_confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    height = 52.dp,
-                    fontSize = 18.sp,
                     onClick = { onConfirm(lines) },
                 )
             }
@@ -441,8 +442,6 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     text = stringResource(R.string.div_manual_confirm),
                     enabled = valid,
                     modifier = Modifier.fillMaxWidth(),
-                    height = 52.dp,
-                    fontSize = 18.sp,
                     onClick = { onConfirm(first.toInt(), second.toInt()) },
                 )
             }

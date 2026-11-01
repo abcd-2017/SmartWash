@@ -68,6 +68,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import com.smartwash.common.ui.theme.GlassTextDisabled
+import com.smartwash.common.ui.components.softCardShadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -179,10 +180,9 @@ fun GroupCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
@@ -337,9 +337,13 @@ fun Modifier.dialogEnterMotion(): Modifier = composed {
  * 统一按钮 — 自绘实现，不使用 Material Button（其 state layer 颜色与形状不受
  * 令牌控制，规范 §7 禁止）。业务层一律经本组件消费，禁止直接使用 M3 交互组件。
  *
- * 规格（§3.3）：主 = 52dp 高 / 14dp 圆角 / 品牌渐变底 / 白字 15sp·600·ls 1sp；
+ * 规格（§3.3 + v0.4 覆写）：主 = 48dp 高 / 胶囊圆角（r999）/ 品牌渐变底 / 白字 15sp·600·ls 1sp；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色；文字 = 主色 13sp·600 无底无框。
  * 按压反馈 scale 0.97（pressable 内置 indication=null）。
+ *
+ * 几何定调（2026-11-01 用户拍板）：设计稿清氧 CTA 实测 48dp + 胶囊，与代码侧原 52dp + 14dp 圆角
+ * 分歧（见 .claude/ui-design-spec.md「v0.4 覆写」节）。现全应用统一取设计稿口径；23 处调用点
+ * 共用本组件，无单侧尺寸假设。
  *
  * [contentColor] 仅用于**同形态换语义色**的少数场景（如「退出登录」次按钮配 dangerInk，
  * §2.1 例外条款）：非 null 时替换文字与 spinner 色，容器形态与尺寸一律不变。
@@ -358,7 +362,8 @@ fun AppButton(
     // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
     val debouncedOnClick = rememberDebouncedClick { onClick() }
     val active = enabled && !loading
-    val shape = RoundedCornerShape(AppDimens.buttonRadius)
+    // 胶囊（r999）：设计稿 CTA 实测口径，与 48dp 高配套
+    val shape = RoundedCornerShape(AppDimens.radiusFull)
 
     if (variant == AppButtonVariant.TEXT) {
         // 文字色 0ms 硬切 → 弹簧过渡；reduced motion 自动降级 180ms（规范 7.8）
@@ -401,7 +406,7 @@ fun AppButton(
         return
     }
 
-    // 主/次按钮共用容器：高 52dp；主 = 135° primary→primaryDark 渐变，
+    // 主/次按钮共用容器：高 48dp（设计稿 CTA 实测）；主 = 135° primary→primaryDark 渐变，
     // 次 = surfaceVariant（§3.3 的 #F5F6F3 即浅色 surfaceVariant 令牌）
     val isPrimary = variant == AppButtonVariant.PRIMARY
 
@@ -451,7 +456,7 @@ fun AppButton(
         modifier = modifier
             .fillMaxWidth()
             .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
-            .height(52.dp)
+            .height(48.dp)
             .then(containerModifier),
         contentAlignment = Alignment.Center,
     ) {
@@ -470,9 +475,9 @@ fun AppButton(
             } else {
                 Text(
                     text = text,
-                    // v0.4 字阶：按钮文字 = title 档 18sp / SemiBold（与设计稿 CTA 标签一致，
-                    // 原 15sp 属 2026-10-06 版的正文档，v0.4 已取消该档）
-                    fontSize = 18.sp,
+                    // §3.3 按钮文字 15sp/600/ls 1sp（v0.4 字阶无 15sp 档，但 §3.3 按钮行为
+                    // 组件级规格、未被 v0.4 覆写表列入作废，故按 §3.3 取值）
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 1.sp,
                     color = animatedContentColor,

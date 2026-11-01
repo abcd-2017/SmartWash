@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,10 +40,12 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
@@ -103,9 +106,8 @@ fun RechargeRecordPage(
             ) { state ->
                 when (state) {
                     RecordListState.Content -> LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = AppDimens.pagePadding)
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
                     ) {
                         items(
                             count = records.itemCount,
@@ -180,10 +182,9 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
     // DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
     // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20（旧实现无阴影属禁止项）
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -246,11 +247,18 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            // 金额（2026-11-01 用户反馈：原 titleLarge 22sp 与左侧 14sp 类型字差 8sp，观感失衡）
+            // → 金额中字档 18sp（v0.4 AmountMedium，列表内价格的标准档），与类型字 14sp 保持 4sp 级差
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
-                // 画板实测：22/28/600（= titleLarge 档），金额启用 tabular 数字防跳动
-                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.primaryDark
+                // AppTextStyles.AmountMedium 自带 tnum（等宽防数字抖动）
+                style = AppTextStyles.AmountMedium,
+                color = AppColors.colorScheme.primaryDark,
+                // 2026-11-01：金额绝不换行——Row 内非 weight 子项按整行宽约束测量，
+                // 正常金额远小于可用宽；此处再显式限单行，作为极端字号下的兜底（宁截断不折行）
+                maxLines = 1,
+                overflow = TextOverflow.Clip
             )
         }
     }

@@ -41,6 +41,12 @@ class OrderPagingSource(
     }
 
     override fun getRefreshKey(state: PagingState<Int, OrderInfo>): Int? {
-        return state.anchorPosition
+        // 2026-11-01 闪退修复：原直接返回 anchorPosition（位置索引），而本源的 key 是**页码**——
+        // 刷新时拿位置当页码用，会重复加载已加载页（甚至算出负页），导致列表出现重复 id、
+        // LazyColumn key 冲突崩溃（短链列表下拉刷新必现）。改为由锚点位置反推页码。
+        return state.anchorPosition?.let { anchor ->
+            state.closestPageToPosition(anchor)?.prevKey?.plus(1)
+                ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
+        }
     }
 }

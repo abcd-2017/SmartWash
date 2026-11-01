@@ -71,7 +71,6 @@ fun DivCastPage(
     categoryId: String,
     viewModel: DivCastViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val view = currentView()
     val state by viewModel.uiState.collectAsState()
     val reduceMotion = LocalReduceMotion.current
@@ -104,6 +103,9 @@ fun DivCastPage(
     // 2026-11-01 缺陷 7c：小屏/大字体下固定堆叠 ≈640dp 溢出裁切——改「滚动内容区（weight 1f）
     // + 按钮固定贴底」，高屏视觉与画板一致，矮屏内容可滚动不再裁切
     DivinationScreen(scrollable = false) {
+        // 颜色必须在 DivinationScreen 之内读取（LocalDivinationColors 默认恒为玄墨，
+        // 包根外读会让页标题/进度在浅色系统下变成米白画浅底——「只看得见按钮」即此因）
+        val c = DivColors.current
         Column(Modifier.fillMaxSize()) {
             Column(
                 Modifier
@@ -210,8 +212,7 @@ fun DivCastPage(
                 } else {
                     stringResource(R.string.div_cast_toss)
                 },
-                // 画板实测按钮文字 14/600（非默认 18）
-                fontSize = 14.sp,
+                // 画板 .btn.gold：48 高 + 胶囊 + 文字 15/600（取组件默认，不再单侧覆盖）
                 enabled = !state.tossing && !state.saving && pendingYao == null,
                 modifier = Modifier
                     .padding(horizontal = 76.dp, vertical = 14.dp)

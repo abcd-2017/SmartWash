@@ -7,11 +7,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -40,11 +43,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.ClickDebouncer
@@ -60,6 +65,7 @@ import com.smartwash.common.utils.spinInfinite
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.coupon.CouponStatus
+import com.smartwash.feature.coupon.ui.coupon.TicketShape
 
 /** 领券进行中圆环直径 */
 private val ClaimingRingSize = 14.dp
@@ -74,9 +80,9 @@ fun AvailableCouponsTab(
     itemClick: (Long) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = AppDimens.pagePadding),
+        modifier = Modifier.fillMaxSize(),
+        // 2026-11-01 阴影裁剪修复：容器级 horizontal padding 会把卡片钉在裁剪边界上 → contentPadding
+        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
         if (couponList.isEmpty()) {
@@ -106,56 +112,81 @@ fun CouponCard(
     isClaiming: Boolean,
     onClaimClick: () -> Unit,
 ) {
+    val outlineColor = AppColors.colorScheme.outline
+    // 2026-11-01 用户拍板：可领取卡（设计稿无画板）统一成屏 12 票券形态——
+    // 打孔 + 绿面额区 + 垂直虚线 + 右区，与已领取/过期 tab 同一卡片语言；领取按钮占状态字位
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                // 中间虚线 — 同票券：1dp 竖线、段 6 / 隔 4，上下 margin 12（x=88 face 右缘）
+                val dashWidth = 6.dp.toPx()
+                val dashGap = 4.dp.toPx()
+                val x = 88.dp.toPx()
+                val strokeWidth = 1.dp.toPx()
+                var y = 12.dp.toPx()
+                val maxY = size.height - 12.dp.toPx()
+                while (y < maxY) {
+                    drawLine(
+                        color = outlineColor,
+                        start = Offset(x, y),
+                        end = Offset(x, (y + dashWidth).coerceAtMost(maxY)),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                    y += dashWidth + dashGap
+                }
+            }.softCardShadow(),
+        shape = TicketShape,
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额
-            Column(
-                modifier = Modifier.width(80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
-                    style = AppTextStyles.AmountMedium,
-                    // 同页票券卡金额画板实测 primaryDark（#1E8C5C），两 tab 同语义同令牌
-                    color = AppColors.colorScheme.primaryDark
-                )
-            }
-
-            // 竖线分隔
+            // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（纵向贯通两行）
             Box(
                 modifier = Modifier
-                    .width(0.5.dp)
-                    .height(48.dp)
-                    .background(AppColors.colorScheme.divider)
-            )
+                    .width(88.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
+                        style = AppTextStyles.AmountMedium,
+                        color = AppColors.colorScheme.primaryDark
+                    )
+                    Text(
+                        text = stringResource(R.string.coupon),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
 
-            // 右侧信息
+            // 右侧两行结构（2026-11-01 实机修正：88dp 单行塞不下「内容+按钮」，按钮独立成行）：
+            // 上 = 标题/日期/门槛三行；下 = 领取按钮右对齐
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
             ) {
                 Text(
                     text = coupon.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = AppColors.colorScheme.textPrimary
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.colorScheme.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "${coupon.startTime.split(" ")[0]} - ${coupon.endTime.split(" ")[0]}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary
+                    color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -163,8 +194,11 @@ fun CouponCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )
-                if (isAvailable) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     ClaimAction(
                         claimed = coupon.status == CouponStatus.RECEIVE.status,
                         isClaiming = isClaiming,
@@ -210,11 +244,12 @@ private fun ClaimAction(
         contentAlignment = Alignment.Center,
     ) {
         Box(
+            // §3.3 小按钮档：36dp 高 / 12dp 圆角 / 横向 16（文字 13sp/600）
             modifier = Modifier
-                .height(40.dp)
+                .height(36.dp)
                 .clip(RoundedCornerShape(AppDimens.radiusMd))
                 .background(containerColor)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
             // 文字 ↔ 圆环交叉淡变；文字用 alpha 隐藏而非移除，保证按钮宽度不抖动
@@ -226,8 +261,8 @@ private fun ClaimAction(
                 Text(
                     text = stringResource(if (isClaimed) R.string.claimed else R.string.claim_now),
                     color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.alpha(if (isClaiming) 0f else 1f)
                 )
             }

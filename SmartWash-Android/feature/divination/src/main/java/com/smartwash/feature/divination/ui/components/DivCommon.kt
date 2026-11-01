@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -40,7 +39,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
@@ -282,7 +281,7 @@ fun DivSectionTitle(
     }
 }
 
-/** 鎏金渐变主按钮：金渐变胶囊（52 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
+/** 鎏金渐变主按钮：金渐变胶囊（48 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
  *  soft=解读画板口径：14% 金底 + 金/墨字（玄墨金字/宣纸墨字，双板一致），用于次级仪式主行动 */
 @Composable
 fun DivGoldButton(
@@ -290,8 +289,8 @@ fun DivGoldButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    height: androidx.compose.ui.unit.Dp = 52.dp,
-    fontSize: TextUnit = 18.sp,
+    height: androidx.compose.ui.unit.Dp = 48.dp,
+    fontSize: TextUnit = 15.sp,
     soft: Boolean = false,
 ) {
     val c = DivColors.current
@@ -301,8 +300,8 @@ fun DivGoldButton(
     Box(
         modifier = modifier
             .height(height)
-            // 画板实测（摇卦「掷爻按钮」/问卦「起卦按钮」）：52 高 + buttonRadius 14，非胶囊
-            .clip(RoundedCornerShape(AppDimens.buttonRadius))
+            // 画板 .btn 实测：height 48px + border-radius 24px（48 高下的胶囊），文字 15px/600
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(
                 when {
                     // 禁用态退回 14% 金底（画板「已保存」口径，无描边）；解读画板主按钮同为 14% 金底
@@ -337,7 +336,7 @@ fun DivGoldButton(
 }
 
 /** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径）+ 宣纸侧轻阴影。
- *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [AppElevation.level1](1dp)；
+ *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [softCardShadow]；
  *  玄墨深色卡按 §2.4「深色卡不加投影」豁免（层级由深色自身 + 金线描边承担）。 */
 @Composable
 fun DivCard(
@@ -353,8 +352,10 @@ fun DivCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影
-                if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影（玄墨深色卡按 §2.4 豁免）。
+                // 用自绘 softCardShadow 而非 elevation：1dp elevation 的硬边几何阴影实测峰值 Δ28，
+                // 比 1dp 描边（Δ14）还深，读作"深色粗边"而非柔和投影（规范 §2.4 映射表实测不成立）
+                if (c.isDark) Modifier else Modifier.softCardShadow(cornerRadius = 16.dp)
             )
             .clip(shape)
             .background(background ?: c.surface)
