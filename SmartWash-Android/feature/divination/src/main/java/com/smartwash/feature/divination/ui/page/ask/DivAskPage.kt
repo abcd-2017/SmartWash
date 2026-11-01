@@ -406,8 +406,6 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                 DivGoldButton(
                     text = stringResource(R.string.div_manual_confirm),
                     modifier = Modifier.fillMaxWidth(),
-                    height = 52.dp,
-                    fontSize = 18.sp,
                     onClick = { onConfirm(lines) },
                 )
             }
@@ -444,8 +442,6 @@ private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) 
                     text = stringResource(R.string.div_manual_confirm),
                     enabled = valid,
                     modifier = Modifier.fillMaxWidth(),
-                    height = 52.dp,
-                    fontSize = 18.sp,
                     onClick = { onConfirm(first.toInt(), second.toInt()) },
                 )
             }
