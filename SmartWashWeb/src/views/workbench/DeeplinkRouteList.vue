@@ -61,6 +61,7 @@
               :active-value="1"
               :inactive-value="0"
               :loading="togglingId === row.id"
+              :aria-label="`${row.host} 启停`"
               @change="handleToggleEnabled(row)"
             />
           </template>
