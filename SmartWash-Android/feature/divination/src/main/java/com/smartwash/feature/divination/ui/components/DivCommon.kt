@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -40,7 +39,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
@@ -337,7 +336,7 @@ fun DivGoldButton(
 }
 
 /** 发丝线卡片：surface 底 + 1px 12% 金发丝描边（画板双板统一口径）+ 宣纸侧轻阴影。
- *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [AppElevation.level1](1dp)；
+ *  规范 §2.4/§3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，Compose 取 [softCardShadow]；
  *  玄墨深色卡按 §2.4「深色卡不加投影」豁免（层级由深色自身 + 金线描边承担）。 */
 @Composable
 fun DivCard(
@@ -353,8 +352,10 @@ fun DivCard(
         modifier = modifier
             .fillMaxWidth()
             .then(
-                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影
-                if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape)
+                // 阴影必须在 clip 之前，否则被裁掉；仅宣纸侧加投影（玄墨深色卡按 §2.4 豁免）。
+                // 用自绘 softCardShadow 而非 elevation：1dp elevation 的硬边几何阴影实测峰值 Δ28，
+                // 比 1dp 描边（Δ14）还深，读作"深色粗边"而非柔和投影（规范 §2.4 映射表实测不成立）
+                if (c.isDark) Modifier else Modifier.softCardShadow(cornerRadius = 16.dp)
             )
             .clip(shape)
             .background(background ?: c.surface)
