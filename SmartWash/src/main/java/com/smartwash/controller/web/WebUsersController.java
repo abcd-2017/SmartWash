@@ -3,6 +3,7 @@ package com.smartwash.controller.web;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.DefaultConstant;
+import com.smartwash.config.MinioConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,8 @@ public class WebUsersController {
     private IUsersService usersService;
     @Autowired
     private FileStorageService fileStorageService;
+    @Autowired
+    private MinioConfig minioConfig;
 
     @Operation(summary = "更新用户信息", description = "更新当前用户的学校和学号信息")
     @PostMapping("/auth/user/updateUserInfo")
@@ -131,14 +134,14 @@ public class WebUsersController {
             fileStorageService.deleteFile(user.getAvatar());
         }
 
-        // 上传新头像
-        String avatarUrl = fileStorageService.uploadFile(file, "avatar");
+        // 上传新头像：DB 存对象键（端点变更不必刷库），响应仍返回绝对 URL 供端上立即展示
+        String avatarObjectKey = fileStorageService.uploadFile(file, "avatar");
 
         // 更新用户头像
-        user.setAvatar(avatarUrl);
+        user.setAvatar(avatarObjectKey);
         usersService.updateById(user);
 
-        return Result.ok(avatarUrl);
+        return Result.ok(minioConfig.urlOf(avatarObjectKey));
     }
 
     /**

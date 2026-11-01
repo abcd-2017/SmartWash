@@ -13,14 +13,16 @@ public interface FileStorageService {
      *
      * @param file      待上传的文件
      * @param directory 目标目录（如 "avatar"、"order" 等）
-     * @return 文件的访问 URL
+     * @return 对象键（如 {@code avatar/uuid.png}）。刻意不返回绝对 URL：
+     *         端点变更不应迫使刷库，对外直链由 {@link com.smartwash.config.MinioConfig#urlOf} 拼装
      */
     String uploadFile(MultipartFile file, String directory);
 
     /**
-     * 根据文件 URL 删除文件
+     * 根据对象键删除文件
      *
-     * @param fileUrl 文件的完整访问 URL
+     * @param objectName 对象键；兼容传入存量的绝对 URL（内部经
+     *                   {@link com.smartwash.config.MinioConfig#toObjectKey} 还原）
      */
-    void deleteFile(String fileUrl);
+    void deleteFile(String objectName);
 }

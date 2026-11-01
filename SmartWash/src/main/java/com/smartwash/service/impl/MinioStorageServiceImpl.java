@@ -14,8 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -80,12 +78,10 @@ public class MinioStorageServiceImpl implements FileStorageService {
                             .build()
             );
 
-            // 拼接并返回访问 URL
-            // 对外可访问 URL：必须用 publicEndpoint()（external-endpoint 优先），
-            // 原用 getEndpoint() 会拼出 Docker 内部地址（端上无法加载，头像/游戏直链全挂）
-            String url = minioConfig.publicEndpoint() + "/" + minioConfig.getBucketName() + "/" + objectName;
-            log.info("文件上传成功: {}", url);
-            return url;
+            // 返回对象键而非绝对 URL：端点变更不必刷库（见 MinioConfig.urlOf）。
+            // 日志同时打出对外直链，便于排查端上加载问题
+            log.info("文件上传成功: {} -> {}", objectName, minioConfig.urlOf(objectName));
+            return objectName;
         } catch (CustomExceptions e) {
             throw e;
         } catch (Exception e) {
@@ -101,15 +97,10 @@ public class MinioStorageServiceImpl implements FileStorageService {
         }
 
         try {
-            // 从 URL 中提取 objectName
-            String prefix = minioConfig.getEndpoint() + "/" + minioConfig.getBucketName() + "/";
-            if (!fileUrl.startsWith(prefix)) {
-                log.warn("文件 URL 格式不正确，无法提取 objectName: {}", fileUrl);
-                return;
-            }
-            String objectName = URLDecoder.decode(
-                    fileUrl.substring(prefix.length()), StandardCharsets.UTF_8
-            );
+            // 统一还原为对象键：兼容存量绝对 URL，且不再依赖「用哪个端点拼的」——
+            // 原实现按 getEndpoint()（内部地址）匹配，一旦配置 external-endpoint 就会匹配失败，
+            // 静默走 warn 分支导致旧对象永远删不掉（泄漏）
+            String objectName = minioConfig.toObjectKey(fileUrl);
 
             minioClient.removeObject(
                     RemoveObjectArgs.builder()

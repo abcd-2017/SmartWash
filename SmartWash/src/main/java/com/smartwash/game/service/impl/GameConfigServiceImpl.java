@@ -29,10 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.web.util.UriUtils;
 
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -43,7 +41,7 @@ import java.util.List;
  * 缓存模式与 WorkbenchEntryServiceImpl 一致：读走 @Cacheable 的公共方法（经 self 自注入调用绕过 AOP 代理失效），
  * 写操作 @CacheEvict(allEntries) 全量失效；game_key 唯一性以 uk_game_key 唯一索引兜底并发。
  * 上传链路：校验 → 清旧前缀 → 解压/直写 MinIO（带缓存元数据）→ 建/更记录；删除链路：先清存储（fail-closed）再删记录。
- * 下发形态与头像先例一致：url 存 MinIO 对象直链（endpoint/bucket/对象键/入口），端上 WebView 直拉，服务侧零转发代码。
+ * 下发形态与头像先例一致：只落对象键，可玩地址读时拼 MinIO 直链（endpoint/bucket/对象键/入口），端上 WebView 直拉，服务侧零转发代码。
  */
 @Slf4j
 @Service
@@ -158,7 +156,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         }
     }
 
-    /** 组装上传包形态的记录（url = MinIO 对象直链，指向入口文件，与头像 uploadFile 同一构造方式） */
+    /** 组装上传包形态的记录（只落 objectKey + entryPath，可玩地址读时拼装，见 playUrlOf） */
     private GameConfig buildPackageConfig(String gameKey, UploadGameFrom from, String entryPath, Long fileSize) {
         GameConfig config = new GameConfig()
                 .setGameKey(gameKey)
@@ -176,22 +174,23 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 .setEnabled(0)
                 .setSort(from.getSort() == null ? 100 : from.getSort())
                 .setRemark(StrUtil.isBlank(from.getRemark()) ? null : from.getRemark());
-        config.setUrl(buildPlayUrl(OBJECT_ROOT + gameKey + "/", entryPath));
+        // 不再落库 url：objectKey + entryPath 已持久化，可玩地址读时拼装（端点变更不必刷库）
         return config;
     }
 
     /**
-     * 可玩地址 = MinIO 对象直链：{endpoint}/{bucket}/{objectKey}{entryPath}，
-     * 对齐 MinioStorageServiceImpl.uploadFile 的 URL 构造（endpoint 直接拼接）；对象路径段 URL 编码兜底（zip 条目名可能含空格/中文）。
+     * 可玩地址读时拼装：source_type=1 由 object_key + entry_path 推导；
+     * source_type=2 为外部 https 地址，原样下发（不可当对象键重写）。
      */
-    private String buildPlayUrl(String objectKey, String entryPath) {
-        // 对外可访问 URL：原用 getEndpoint()（Docker 内部服务名），端上 WebView 打不开
-        String endpoint = minioConfig.publicEndpoint();
-        String base = endpoint.endsWith("/")
-                ? endpoint.substring(0, endpoint.length() - 1)
-                : endpoint;
-        return base + "/" + minioConfig.getBucketName() + "/"
-                + UriUtils.encodePath(objectKey + entryPath, StandardCharsets.UTF_8);
+    private String playUrlOf(GameConfig config) {
+        if (config.getSourceType() != null && config.getSourceType() == SOURCE_TYPE_EXTERNAL) {
+            return config.getUrl();
+        }
+        String objectKey = config.getObjectKey();
+        if (StrUtil.isBlank(objectKey)) {
+            return StrUtil.nullToEmpty(config.getUrl());
+        }
+        return minioConfig.urlOf(objectKey + StrUtil.nullToEmpty(config.getEntryPath()));
     }
 
     // ==================== 管理端：分页 / 编辑 / 开关 / 删除 ====================
@@ -334,12 +333,14 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     private AdminGameVo buildAdminVo(GameConfig config) {
         AdminGameVo vo = new AdminGameVo();
         BeanUtils.copyProperties(config, vo);
+        vo.setUrl(playUrlOf(config));
         return vo;
     }
 
     private GameVo buildVo(GameConfig config) {
         GameVo vo = new GameVo();
         BeanUtils.copyProperties(config, vo);
+        vo.setUrl(playUrlOf(config));
         return vo;
     }
 }

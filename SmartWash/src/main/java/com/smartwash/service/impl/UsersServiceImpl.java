@@ -37,8 +37,19 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements IUsersService {
+    /** 默认头像对象键，与 MinioStorageServiceImpl.initDefaultAvatar 写入的对象名一致 */
+    private static final String DEFAULT_AVATAR_OBJECT_KEY = "default/avatar.png";
+
     private final ISchoolsService schoolsService;
     private final MinioConfig minioConfig;
+
+    /**
+     * 头像存量值可能是绝对 URL（历史实现把端点拼进了 DB），统一还原对象键后拼当前端点。
+     * 换服务器/换域名只需改配置，不必刷库。
+     */
+    private String avatarUrlOf(String stored) {
+        return minioConfig.urlOf(minioConfig.toObjectKey(stored));
+    }
 
     @Override
     public Page<UserVo> getAllUsers(SearchUserFrom usersFrom) {
@@ -63,6 +74,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
             UserVo userVo = new UserVo();
             userVo.setSchools(schoolMap.get(it.getSchoolId()));
             BeanUtils.copyProperties(it, userVo);
+            userVo.setAvatar(avatarUrlOf(it.getAvatar()));
             return userVo;
         }).toList());
 
@@ -169,8 +181,8 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         users.setPhoneNumber(userRegisterFrom.getPhoneNumber());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         users.setPassword(encoder.encode(userRegisterFrom.getPassword()));
-        // 对外可访问 URL：原用 getEndpoint() 拼出内部地址，端上 AsyncImage 加载失败（头像一直不显示）
-        users.setAvatar(minioConfig.publicEndpoint() + "/" + minioConfig.getBucketName() + "/default/avatar.png");
+        // 存对象键而非绝对 URL：端点变更不必刷库（对外直链在 Vo 装配时拼，见 avatarUrlOf）
+        users.setAvatar(DEFAULT_AVATAR_OBJECT_KEY);
         boolean result = save(users);
         log.info("用户注册成功, userId: {}, phone: {}", users.getUserId(), DesensitizedUtil.mobilePhone(userRegisterFrom.getPhoneNumber()));
         return result;
@@ -204,6 +216,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         }
         UserInfoVo userInfoVo = new UserInfoVo();
         BeanUtils.copyProperties(users, userInfoVo);
+        userInfoVo.setAvatar(avatarUrlOf(users.getAvatar()));
         userInfoVo.setPhoneNumber(DesensitizedUtil.mobilePhone(users.getPhoneNumber()));
         userInfoVo.setBalance(users.getBalance() != null ? users.getBalance() : BigDecimal.ZERO);
         SchoolsVo schoolsVo = new SchoolsVo();
