@@ -96,6 +96,19 @@ class UserApiImpl @Inject constructor(
         cachedUserInfo = null
     }
 
+    override suspend fun refreshUserInfo(): UserInfo? {
+        // 强制走网络：服务端侧余额/资料变更（充值到账等）后一步拿最新值并回填缓存，
+        // 首页/用户中心的下一次 getUserInfo 直接命中新值；失败保持旧缓存不动
+        if (!isLogin()) return null
+        return try {
+            userRepository.getUserInfo().toUserInfo().also { cachedUserInfo = it }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /**
      * 网络层 VO → 对外领域模型（user-api 的 UserInfo）。
      *

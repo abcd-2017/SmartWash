@@ -3,6 +3,8 @@ package com.smartwash.feature.divination.ui.page.history
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,11 +66,14 @@ fun DivHistoryPage(
         // 画板（玄墨/宣纸双板一致）：无返回页头标题左对齐 x20，标题下 10 进筛选行
         DivPageHeader(title = stringResource(R.string.div_history_title), alignStart = true)
 
-        // 术数筛选（画板实测：chips 行对称缩进 34/34——视觉 chip 首枚 x=34，非页边距 20）
+        // 术数筛选（2026-11-01 缺陷 7d：五枚 chip 总宽 302dp+，360dp 屏 34dp 缩进下末枚
+        // 「六壬」被剩余约束压窄换行——回归 a1c845c；改回 20 缩进 + 横向滚动 + 单行限高，
+        // 与问卦页领域 chips 行同款（DivAskPage），窄屏滚动可见不折行）
         Row(
             Modifier
-                .padding(horizontal = 34.dp)
-                .fillMaxWidth(),
+                .padding(horizontal = 20.dp)
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
         ) {
             DivCategoryChip(

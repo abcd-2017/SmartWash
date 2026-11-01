@@ -41,6 +41,11 @@ class RechargeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 rechargeRepository.userRecharge(UserRecharge(amount, rechargeType))
+                // 充值成功即强刷用户信息（2026-11-01 缺陷 8d）：后端充值接口不回传新余额，
+                // 且 UserApiImpl 内存缓存需显式刷新——否则本页与首页/用户中心的余额
+                // 全部停留在旧值，直到重新登录。刷新失败不阻塞成功反馈（下次进页面重试）
+                runCatching { userApi.refreshUserInfo() }
+                    .onSuccess { refreshed -> refreshed?.let { _balance.value = it.balance } }
                 _rechargeState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e

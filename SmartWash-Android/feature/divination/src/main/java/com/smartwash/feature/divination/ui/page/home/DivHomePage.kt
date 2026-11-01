@@ -2,7 +2,9 @@ package com.smartwash.feature.divination.ui.page.home
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,6 +43,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
+import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.feature.divination.ui.components.CompassDial
 import com.smartwash.feature.divination.ui.components.DivCard
 import com.smartwash.feature.divination.ui.components.DivFooterNote
@@ -51,6 +61,8 @@ import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.sin
 
 /** 四元组辅助类（替代 Triple，支持 4 个参数） */
 private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
@@ -68,10 +80,15 @@ fun DivHomePage(
     val records by viewModel.recentRecords.collectAsState()
     val view = currentView()
 
-    Column {
+    // 2026-11-01 缺陷 7a：本页是观象台唯一未包 DivinationScreen 的页面——状态栏裸顶（时辰被挡）、
+    // LocalDivinationColors 落到默认玄墨（浅色系统下米白字画浅底）、导航栏/IME 也无避让。
+    // 统一包根：主题覆盖 + 宣纸/玄墨渐变背景 + 底部安全区，顶部 statusBarsPadding 对齐 DivPageHeader 惯例
+    DivinationScreen {
         TianXiangHeader(
             text = uiState.tianXiang.ifEmpty { "—" },
-            modifier = Modifier.padding(top = 12.dp),
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(top = 12.dp),
         )
         Column(Modifier.padding(horizontal = 20.dp)) {
             Text(
@@ -97,31 +114,39 @@ fun DivHomePage(
             CompassDial(modifier = Modifier.size(104.dp))
         }
 
-        // 四术玉牌
-        val methods = listOf(
-            Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_use_for),
+        // 四术玉牌（2026-11-01 缺陷 7b：原 2×2 等权平铺无层级，原型与设计方案口径为
+        // 「六爻默认第一、加大」+ 每术定制线描 glyph + 鎏金渐变描边）——
+        // 六爻升全宽主入口（推荐 tag + 加大 glyph），梅花/奇门/六壬三牌次行等分
+        val liuyaoInfo = Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_use_for)
+        val otherMethods = listOf(
             Quad(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, R.string.div_method_meihua_use_for),
             Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for),
             Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for),
         )
-        // 画板实测：玉牌区外边距 20（玄墨页边距档）、横向牌距 8（8 + 2×156 = 320）、纵向 12
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-            methods.chunked(2).forEach { rowMethods ->
-                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                    rowMethods.forEach { (method, nameRes, descRes, useForRes) ->
-                        JadeTile(
-                            name = stringResource(nameRes),
-                            desc = stringResource(descRes),
-                            useFor = stringResource(useForRes),
-                            tag = if (method == DivMethod.LIU_YAO) stringResource(R.string.div_method_liuyao_tag) else null,
-                            onClick = {
-                                view.performHaptic(HapticEffect.LIGHT)
-                                navController.navigate("${DivRoute.Ask.text}?method=${method.id}")
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    if (rowMethods.size == 1) Spacer(Modifier.weight(1f))
+            JadeFeaturedTile(
+                method = liuyaoInfo.first,
+                name = stringResource(liuyaoInfo.second),
+                desc = stringResource(liuyaoInfo.third),
+                useFor = stringResource(liuyaoInfo.fourth),
+                tag = stringResource(R.string.div_method_liuyao_tag),
+                onClick = {
+                    view.performHaptic(HapticEffect.LIGHT)
+                    navController.navigate("${DivRoute.Ask.text}?method=${liuyaoInfo.first.id}")
+                },
+            )
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                otherMethods.forEach { (method, nameRes, descRes, _) ->
+                    JadeTile(
+                        method = method,
+                        name = stringResource(nameRes),
+                        desc = stringResource(descRes),
+                        onClick = {
+                            view.performHaptic(HapticEffect.LIGHT)
+                            navController.navigate("${DivRoute.Ask.text}?method=${method.id}")
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -239,30 +264,44 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
     }
 }
 
-/** 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（自绘卡：宣纸侧按 §2.4 补 level1 轻阴影，玄墨侧豁免） */
+/**
+ * 四术主入口（六爻专用，2026-11-01 缺陷 7b）：全宽加大牌 —— 定制线描 glyph + 竖排术名 +
+ * 一句话定位 + 适用问题 + 推荐 tag，鎏金渐变描边（原型 .jade::before 135° gold-line→gold-hair）。
+ */
 @Composable
-private fun JadeTile(
+private fun JadeFeaturedTile(
+    method: DivMethod,
     name: String,
     desc: String,
-    useFor: String?,
-    tag: String?,
+    useFor: String,
+    tag: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
     val shape = RoundedCornerShape(16.dp)
-    // 玉牌四牌并排且 navigate 无 launchSingleTop：连点会双推 Ask 页，按压反馈与防抖由 pressable 一套承载
     Box(
-        modifier
-            .height(156.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .height(132.dp)
             .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
             .clip(shape)
             .background(c.surface)
+            // 鎏金渐变描边：Compose border 支持 Brush（135° 对角 = 默认 linearGradient 方向）
+            .border(1.dp, Brush.linearGradient(listOf(c.goldLine, c.goldHair)), shape)
             .pressable(onClick = onClick),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textSecondary)
-            if (useFor != null) {
+        Row(
+            Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+                .height(132.dp - 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MethodGlyph(method = method, size = 44.dp, tint = c.gold)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textPrimary)
                 Spacer(Modifier.height(4.dp))
                 Text(useFor, fontSize = 12.sp, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -281,15 +320,144 @@ private fun JadeTile(
                 )
             }
         }
-        if (tag != null) {
-            Text(
-                text = tag,
-                fontSize = 12.sp,
-                color = c.goldText.copy(alpha = 0.75f),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 15.dp),
-            )
+        Text(
+            text = tag,
+            fontSize = 12.sp,
+            color = c.goldText.copy(alpha = 0.75f),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, bottom = 12.dp),
+        )
+    }
+}
+
+/**
+ * 四术次入口（梅花/奇门/六壬）：glyph + 竖排术名 + 一句话定位（两行截断），
+ * 同鎏金渐变描边；高度收窄与主入口拉开层级。
+ */
+@Composable
+private fun JadeTile(
+    method: DivMethod,
+    name: String,
+    desc: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = DivColors.current
+    val shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier
+            .height(128.dp)
+            .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
+            .clip(shape)
+            .background(c.surface)
+            .border(1.dp, Brush.linearGradient(listOf(c.goldLine, c.goldHair)), shape)
+            .pressable(onClick = onClick),
+    ) {
+        MethodGlyph(
+            method = method,
+            size = 36.dp,
+            tint = c.gold,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(12.dp),
+        )
+        // 竖排术名：writing-mode 语义用逐字换行实现（画板：18/600、行距 26、右上内缩 14/2）
+        Column(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 14.dp, end = 2.dp)
+        ) {
+            name.forEach { ch ->
+                Text(
+                    text = ch.toString(),
+                    style = divSerif(18.sp, FontWeight.SemiBold, 0.sp).copy(lineHeight = 26.sp),
+                    color = c.textPrimary,
+                )
+            }
+        }
+        Text(
+            text = desc,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = c.textSecondary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
+        )
+    }
+}
+
+/**
+ * 四术定制线描 glyph（2026-11-01 缺陷 7b，原型 DivHome 屏 40×40 线描图标的 Canvas 等价）：
+ * 六爻=方孔铜钱 / 梅花=五瓣梅花环 / 奇门=九宫格 / 六壬=三层盘环。
+ * 造型规范 §4.2：24 栅格、2dp 描边、round 端点与转角；纯几何线描，无位图。
+ */
+@Composable
+private fun MethodGlyph(
+    method: DivMethod,
+    size: androidx.compose.ui.unit.Dp,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(size)) {
+        val stroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
+        val cx = this.size.width / 2
+        val cy = this.size.height / 2
+        // 统一换算：24 栅格 → 实际画布（glyph 以中心 12,12 / 半径 10 基准设计）
+        val unit = this.size.width / 24f
+        fun p(v: Float) = v * unit
+        when (method) {
+            DivMethod.LIU_YAO -> {
+                // 方孔铜钱：外圆 + 方孔（round 转角小方）
+                drawCircle(tint, radius = p(10f), center = Offset(cx, cy), style = stroke)
+                drawRoundRect(
+                    color = tint,
+                    topLeft = Offset(cx - p(3.5f), cy - p(3.5f)),
+                    size = Size(p(7f), p(7f)),
+                    cornerRadius = CornerRadius(p(1f), p(1f)),
+                    style = stroke,
+                )
+            }
+            DivMethod.MEI_HUA -> {
+                // 五瓣梅花环：5 小圆 + 中心点
+                repeat(5) { i ->
+                    val angle = Math.toRadians((i * 72 - 90).toDouble())
+                    val px = cx + p(5.5f) * cos(angle).toFloat()
+                    val py = cy + p(5.5f) * sin(angle).toFloat()
+                    drawCircle(tint, radius = p(3.2f), center = Offset(px, py), style = stroke)
+                }
+                drawCircle(tint, radius = p(1.2f), center = Offset(cx, cy))
+            }
+            DivMethod.QI_MEN -> {
+                // 九宫格：外方（圆角）+ 十字分割
+                drawRoundRect(
+                    color = tint,
+                    topLeft = Offset(cx - p(9f), cy - p(9f)),
+                    size = Size(p(18f), p(18f)),
+                    cornerRadius = CornerRadius(p(2f), p(2f)),
+                    style = stroke,
+                )
+                listOf(-3f, 3f).forEach { v ->
+                    drawLine(tint, Offset(cx + p(v), cy - p(9f)), Offset(cx + p(v), cy + p(9f)), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                    drawLine(tint, Offset(cx - p(9f), cy + p(v)), Offset(cx + p(9f), cy + p(v)), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                }
+            }
+            DivMethod.LIU_REN -> {
+                // 三层盘环：三重同心圆 + 中环四向刻度点
+                drawCircle(tint, radius = p(10f), center = Offset(cx, cy), style = stroke)
+                drawCircle(tint, radius = p(6.5f), center = Offset(cx, cy), style = stroke)
+                drawCircle(tint, radius = p(3f), center = Offset(cx, cy), style = stroke)
+                listOf(0f to -1f, 0f to 1f, -1f to 0f, 1f to 0f).forEach { (dx, dy) ->
+                    drawCircle(
+                        tint,
+                        radius = p(0.9f),
+                        center = Offset(cx + dx * p(4.75f), cy + dy * p(4.75f)),
+                    )
+                }
+            }
         }
     }
 }

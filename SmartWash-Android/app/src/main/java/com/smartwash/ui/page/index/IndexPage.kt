@@ -156,7 +156,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(12.dp))
                     ServiceGrid(
                         onBookingClick = {
-                            navController.navigate(LaundryRoute.Laundry.text) {
+                            navController.navigate(LaundryRoute.Laundry.build(-1L)) {
                                 launchSingleTop = true
                             }
                         },
@@ -523,9 +523,8 @@ private fun ServiceGrid(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding)
-            // 设计稿实测：服务图标盒首列 x=44（页边距 24 + 卡内缩进 20），整组内收 20
-            .padding(horizontal = AppDimens.cardPadding),
+            // 设计稿：网格直接铺满 24dp 页边距内容盒（grid 4 等分 + gap 12），首尾两列贴边，无额外内缩
+            .padding(horizontal = AppDimens.pagePadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         ServiceEntry(

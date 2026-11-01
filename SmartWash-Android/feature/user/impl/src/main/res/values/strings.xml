@@ -114,13 +114,30 @@
     <string name="general">通用</string>
     <string name="divination">观象台</string>
     <string name="haptic_feedback">触感反馈</string>
-    <string name="interpretation_model">解读模型</string>
-    <string name="interpretation_model_glm">GLM-4.7</string>
     <string name="privacy_disclaimer">隐私与免责声明</string>
+    <string name="privacy_disclaimer_content">本应用收集的信息与用途：\n\n· 手机号与学号：仅用于账号注册、登录与校内身份识别；\n· 学校与校园卡信息：用于寄存柜投递、取件与计费；\n· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\n· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\n· 设备标识与崩溃日志：仅用于问题排查与热更新。\n\n以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。</string>
     <string name="about_smartwash">关于 SmartWash</string>
     <string name="enabled">已开启</string>
     <string name="on">开</string>
     <string name="off">关</string>
+
+    <!-- 权限管理页（2026-11-01 缺陷 5c 新增） -->
+    <string name="permission_management">权限管理</string>
+    <string name="permission_notification">通知权限</string>
+    <string name="permission_notification_desc">APK 下载进度与更新提醒（Android 13+ 需授权）</string>
+    <string name="permission_install">安装未知应用</string>
+    <string name="permission_install_desc">应用内热更新安装 APK 包（需在系统页允许）</string>
+    <string name="permission_internet">网络访问</string>
+    <string name="permission_internet_desc">与服务端同步订单、余额与洗衣项目（安装即授予）</string>
+    <string name="permission_foreground_service">后台下载服务</string>
+    <string name="permission_foreground_service_desc">更新包下载期间保持前台传输（安装即授予）</string>
+    <string name="permission_granted">已授权</string>
+    <string name="permission_denied">未授权</string>
+    <string name="permission_action_request">去授权</string>
+    <string name="permission_action_system_settings">去系统设置</string>
+    <string name="permission_request_denied_hint">授权被拒绝且不再询问，请到系统设置中手动开启</string>
+    <string name="permission_footer">权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。</string>
+    <string name="permission_notification_rationale">通知权限用于接收更新下载进度，是否现在授权？</string>
 
     <!-- 用户中心 v3 新增 -->
     <string name="wallet_balance">钱包余额</string>
@@ -128,7 +145,6 @@
     <string name="bound">已绑定</string>
     <string name="school_dorm_info">学校与宿舍信息</string>
     <string name="shipping_address">收货地址</string>
-    <string name="divination_calendar">观象台 · 卦历</string>
     <string name="my_orders">我的订单</string>
     <string name="my_orders_count_format">%d 单</string>
 

@@ -41,6 +41,16 @@ interface UserApi {
     fun invalidateUserInfoCache()
 
     /**
+     * 强制走网络重新拉取用户信息并刷新缓存（2026-11-01 充值链路新增）。
+     *
+     * 适用场景：服务端侧发生了本端不可见的余额/资料变更（充值到账、订单扣费），
+     * 仅失效缓存再读的时序不可控时，用本方法一步拿到最新值；成功时同步更新
+     * 内存缓存（首页/用户中心的下一次 getUserInfo 即为新值），失败返回 null
+     * （缓存保持原值不动）。
+     */
+    suspend fun refreshUserInfo(): UserInfo?
+
+    /**
      * 登录态变化广播（登录成功 / 登出），桥接 user-impl 的 SessionEventBus。
      *
      * - 特意选用 SharedFlow 而非 StateFlow：登录态变化是离散事件而非连续状态，

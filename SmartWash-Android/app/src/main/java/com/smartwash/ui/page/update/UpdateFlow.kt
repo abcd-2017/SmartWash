@@ -7,10 +7,19 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -31,9 +41,11 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.smartwash.R
-import com.smartwash.common.ui.components.SettingRow
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.ClickDebouncer
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.update.event.UpdateEvent
 import com.smartwash.feature.update.event.UpdateEventBus
@@ -268,20 +280,45 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
             else -> {}
         }
     }
-    SettingRow(
-        icon = Icons.Default.SystemUpdate,
-        title = stringResource(R.string.check_update),
-        subtitle = stringResource(R.string.check_update_desc, updateViewModel.getCurrentVersionName()),
-        trailing = {
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.height(16.dp),
-                tint = AppColors.colorScheme.textSecondary
-            )
-        },
-        onClick = { updateViewModel.checkForUpdate(silent = false) }
-    )
+    // 行样式对齐 SettingPage 私有 SettingRow 口径（2026-11-01 缺陷 5a）：此前用 common:ui 的
+    // SettingRow（56dp 高 + 自带 20dp 水平 padding），放进设置页「自带 20dp 内边距」的分组卡后
+    // 内容缩进 40dp、行高 56 与相邻 64 行错位。此处改为同口径行——与 SettingPage 私有行保持
+    // 同步：64dp 高 / 32dp 图标盒 12dp 圆角 / bodyMedium 标题 / 行自身零水平 padding；
+    // 版本号收进行尾（对齐「关于」行尾注形态，双行副标题与 64dp 行高压不下）。
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .pressable(onClick = { updateViewModel.checkForUpdate(silent = false) }),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconBox(
+            icon = Icons.Default.SystemUpdate,
+            size = 32.dp,
+            iconSize = 20.dp,
+            containerColor = AppColors.colorScheme.iconContainerTeal,
+            iconTint = AppColors.colorScheme.iconForegroundGreen
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = stringResource(R.string.check_update),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.colorScheme.textPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = stringResource(R.string.version_short, updateViewModel.getCurrentVersionName()),
+            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+            color = AppColors.colorScheme.textSecondary
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Icon(
+            Icons.Default.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = AppColors.colorScheme.textTertiary
+        )
+    }
 }
 
 /**

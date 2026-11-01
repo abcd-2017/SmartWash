@@ -1,12 +1,9 @@
 package com.smartwash.feature.laundry.ui.laundry
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -30,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -68,11 +65,9 @@ import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
-import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
-import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
@@ -83,6 +78,8 @@ import com.smartwash.feature.payment.api.PaymentRoute
 @Composable
 fun LaundryPage(
     navController: NavHostController,
+    // 路由可选参数：服务页套餐行跳入时预选该套餐（-1 = 不指定，见 LaundryRoute.Laundry）
+    defaultItemId: Long = -1L,
     laundryViewModel: LaundryViewModel = hiltViewModel(),
 ) {
     val getLaundryItemState by laundryViewModel.getLaundryItemState.collectAsState()
@@ -98,6 +95,17 @@ fun LaundryPage(
     val userInfo by laundryViewModel.userInfo.collectAsState()
 
     LaunchedEffect(Unit) { laundryViewModel.getLaundryItem() }
+
+    // 套餐列表就绪后落地路由预选（仅首次，用户手动改选后不再覆盖）
+    LaunchedEffect(laundryItems, defaultItemId) {
+        if (defaultItemId > 0 && selectItemId == -1L) {
+            val item = laundryItems.firstOrNull { it.itemId == defaultItemId }
+            if (item != null) {
+                selectItemId = item.itemId
+                totalPrice = item.basePrice
+            }
+        }
+    }
 
     // 原写法把 Toast / reset 放在 when 渲染分支里（组合期副作用），重组会重复弹；
     // 收进以状态为键的 LaunchedEffect，只在状态真正到达时执行一次
@@ -243,7 +251,7 @@ fun LaundryPage(
                         title = item.itemName,
                         description = item.description,
                         isSelected = selectItemId == item.itemId,
-                        price = stringResource(R.string.currency_format, item.basePrice.toString())
+                        price = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice))
                     ) {
                         selectItemId = item.itemId
                         totalPrice = item.basePrice
@@ -253,84 +261,27 @@ fun LaundryPage(
                 }
             }
 
-            // 底部栏（半透明 + 顶部渐变分割线）；固定 CTA 栏需避开手势条（规范 §4 安全区）
-            Surface(
+            // 底部 CTA 栏 — 对齐支付页固定按钮形态：0.5dp 分隔线（§2.4 浮层边缘豁免）+ 全宽 AppButton，
+            // 金额内嵌按钮文案（原左置 36sp DataLarge 与按钮构成双锚点且 160dp 定宽不符 §3.3/§1.2）
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding(),
-                color = AppColors.colorScheme.surface.copy(alpha = 0.9f),
-                tonalElevation = 0.dp
+                    .background(AppColors.colorScheme.surface)
             ) {
-                Column {
-                    // 顶部渐变分割线
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        AppColors.colorScheme.outline.copy(alpha = 0.3f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                    )
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.cardPadding)
-                            .padding(bottom = 12.dp)
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.estimated_cost),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textSecondary
-                            )
-                            // 预估费用随套餐 0ms 跳变 → 交叉淡变（纯淡入淡出，无位移/缩放）；
-                            // reduced motion 降级为 180ms 纯淡入淡出（规范 §8）。
-                            // 注意：transitionSpec 是非 composable 上下文，reduced motion 判定必须在组合期取
-                            val reduceMotion = LocalReduceMotion.current
-                            val priceEnterSpec = if (reduceMotion) {
-                                tween<Float>(CROSSFADE_ALT_MS)
-                            } else {
-                                enterTween<Float>(DURATION_MICRO_MS)
-                            }
-                            val priceExitSpec = if (reduceMotion) {
-                                tween<Float>(CROSSFADE_ALT_MS)
-                            } else {
-                                // 退场取进入的 60%（动效语言 v0.4）；按 README「禁止页面魔法值」走 vocabulary 常量
-                                exitTween<Float>(DURATION_MICRO_MS * 6 / 10)
-                            }
-                            AnimatedContent(
-                                targetState = totalPrice,
-                                transitionSpec = {
-                                    fadeIn(priceEnterSpec) togetherWith fadeOut(priceExitSpec)
-                                },
-                                label = "totalPrice"
-                            ) { price ->
-                                Text(
-                                    text = stringResource(R.string.currency_format, price.toString()),
-                                    style = AppTextStyles.DataLarge,
-                                    // 金额主色对齐支付页惯例：primaryDark（green.700/#1E8C5C·浅 / #5BC894·深）
-                                    color = AppColors.colorScheme.primaryDark
-                                )
-                            }
-                        }
-                        AppButton(
-                            text = stringResource(R.string.confirm_booking),
-                            onClick = {
-                                if (selectItemId == -1L) showDialog = true
-                                else laundryViewModel.reservationLaundry(selectItemId, totalPrice)
-                            },
-                            modifier = Modifier.width(160.dp),
-                            loading = reservationState is RequestState.Loading
-                        )
-                    }
-                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
+                AppButton(
+                    text = if (selectItemId == -1L) stringResource(R.string.confirm_booking)
+                    else stringResource(R.string.confirm_booking_format, String.format("%.2f", totalPrice)),
+                    onClick = {
+                        if (selectItemId == -1L) showDialog = true
+                        else laundryViewModel.reservationLaundry(selectItemId, totalPrice)
+                    },
+                    loading = reservationState is RequestState.Loading,
+                    // 对齐支付页画板实测：左右 24、上 16、下 20，navigationBarsPadding 避让手势条（规范 §4）
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 20.dp)
+                )
             }
         }
         }
@@ -358,13 +309,13 @@ private fun LaundryTypeItem(
         animationSpec = defaultSpring(),
         label = "borderColor"
     )
-    // 指示器容器底色：原 if/else 瞬跳 → 统一走 selectedColor（200ms 档弹簧，reduced motion 降级 180ms）
+    // 指示器容器底色：随选中态走 selectedColor 弹簧过渡（200ms 档，reduced motion 降级 180ms）。
+    // 此前该动画色声明后未接线，容器仍 0ms 硬切，与卡片 200ms 渐变不同步造成单选框「抽动」
     val indicatorColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primary.copy(alpha = 0.15f)
-        else AppColors.colorScheme.divider
+        if (isSelected) AppColors.colorScheme.primaryLight
+        else AppColors.colorScheme.surfaceVariant
     )
 
-    val interactionSource = remember { MutableInteractionSource() }
     // 卡片规格：radiusLg 16 + 1px outline 描边 + 阴影 level1（规范 §2.4 卡片档）。
     // 选中强调由 primaryLight 底 + primary 描边承担，描边宽度不再随选中变化（原 0.5/1/1.5dp
     // 三档与弹簧过渡未接入绘制，属死代码，一并移除——视觉与时序均无变化）
@@ -392,15 +343,12 @@ private fun LaundryTypeItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(8f)
             ) {
-                // 选中指示器 — 36dp 盒 + radiusSmall，选中底 primaryLight（规范选中底语义色）
+                // 选中指示器 — 36dp 盒 + radiusSmall，底色走 indicatorColor 弹簧过渡（与卡片同步渐变）
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(AppDimens.radiusSmall))
-                        .background(
-                            if (isSelected) AppColors.colorScheme.primaryLight
-                            else AppColors.colorScheme.surfaceVariant
-                        ),
+                        .background(indicatorColor),
                     contentAlignment = Alignment.Center
                 ) {
                     // 勾选图标 ↔ 灰圆点瞬换 → 交叉淡变（180ms 降级档，纯淡入淡出）
@@ -428,10 +376,11 @@ private fun LaundryTypeItem(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    // 字重 Bold ↔ Normal 切换会改变文本宽度引发布局抖动 → 两态统一走 titleLarge 令牌字重
+                    // 套餐卡标题：v0.4 `CardTitle`（title 18sp/600）——原 titleLarge 22sp 是状态大字/页头档，
+                    // 用在列表卡上比规范高两档（调研 2026-11-01 缺陷 2a）；两态统一 600 字重避免宽度抖动
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleLarge
+                        style = AppTextStyles.CardTitle
                     )
                     Text(
                         text = description,

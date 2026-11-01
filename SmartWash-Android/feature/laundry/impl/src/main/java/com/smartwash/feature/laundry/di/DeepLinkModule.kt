@@ -28,7 +28,7 @@ object LaundryDeepLinkModule {
     @IntoSet
     fun provideLaundryDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "laundry" to DeepLinkRouteFactory { _, _ -> LaundryRoute.Laundry.text },
+            "laundry" to DeepLinkRouteFactory { _, _ -> LaundryRoute.Laundry.build(-1L) },
         )
     }
 }

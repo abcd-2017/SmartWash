@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -66,6 +68,8 @@ fun AppPillTabRow(
             Box(
                 modifier = Modifier
                     // Tab 快速连切是合法操作，关闭防抖；pressable 内置 indication = null（禁 ripple）
+                    // 选中态语义（a11y）：TalkBack 播报「已选中」
+                    .semantics { this.selected = selected }
                     .padding(end = AppDimens.spaceXs)
                     // 选中胶囊 — 规范 §3.x 分段控件为胶囊形，取 radiusFull（999），
                     // 非按钮档 buttonRadius(14)
@@ -86,8 +90,9 @@ fun AppPillTabRow(
                         },
                         debounce = false,
                     )
-                    // 画板实测胶囊 40 高：labelSmall 行盒 16 + 上下 12
-                    .padding(horizontal = AppDimens.spaceMd, vertical = 12.dp),
+                    // 设计稿 .seg3 胶囊 34 高：labelMedium 行盒 16 + 上下 9
+                    // （2026-11-01 对齐 redesigned_pages.html:140-145，原 40 高偏大）
+                    .padding(horizontal = AppDimens.spaceMd, vertical = 9.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

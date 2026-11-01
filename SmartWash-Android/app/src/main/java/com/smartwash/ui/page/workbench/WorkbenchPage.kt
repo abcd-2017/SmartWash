@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,6 +54,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -187,6 +191,31 @@ fun WorkbenchPage(
                         }
                     }
                 }
+            }
+        } else if (entriesState is RequestState.Error) {
+            // 真实错误态（2026-11-01 缺陷 6：原失败静默回落本地假列表）——说明 + 重试
+            item(key = "wb_tools_error") {
+                EmptyState(
+                    icon = Icons.Rounded.Apps,
+                    message = (entriesState as RequestState.Error).getMessage(context),
+                    modifier = Modifier.fillMaxWidth(),
+                    action = {
+                        AppButton(
+                            text = stringResource(R.string.workbench_retry),
+                            onClick = { workbenchViewModel.loadEntries() },
+                            variant = AppButtonVariant.SECONDARY
+                        )
+                    }
+                )
+            }
+        } else if (tools.isEmpty()) {
+            // 真实空态（后端未配置 workbench_entry）：引导文案，无行动按钮
+            item(key = "wb_tools_empty") {
+                EmptyState(
+                    icon = Icons.Rounded.Apps,
+                    message = stringResource(R.string.workbench_entries_empty),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         } else {
             // 工具网格 — 两列 tile3（白卡唯一画法 + 44dp 语义图标容器 + 角标胶囊）。

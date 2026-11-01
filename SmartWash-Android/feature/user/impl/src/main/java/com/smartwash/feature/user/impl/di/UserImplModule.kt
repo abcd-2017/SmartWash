@@ -1,10 +1,12 @@
 package com.smartwash.feature.user.impl.di
 
 import com.smartwash.common.network.SessionEventNotifier
+import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.common.network.TokenProvider
 import com.smartwash.common.init.InitTask
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.UserApiImpl
+import com.smartwash.feature.user.impl.init.HapticSettingsInitTask
 import com.smartwash.feature.user.impl.init.SessionInitTask
 import com.smartwash.feature.user.impl.network.api.UserAccountApi
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -63,4 +65,10 @@ object SessionInitModule {
     @IntoSet
     fun provideSessionInitTask(sessionManager: SessionManager): InitTask =
         SessionInitTask(sessionManager)
+
+    /** 触感反馈开关预热（设置页真实开关的启动加载，见 HapticSettingsInitTask） */
+    @Provides
+    @IntoSet
+    fun provideHapticSettingsInitTask(prefs: SharePreferenceUtils): InitTask =
+        HapticSettingsInitTask(prefs)
 }

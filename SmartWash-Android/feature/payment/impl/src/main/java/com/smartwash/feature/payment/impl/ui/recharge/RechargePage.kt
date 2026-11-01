@@ -24,9 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Message
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -74,7 +73,8 @@ import com.smartwash.common.utils.selectedColor
 fun RechargePage(
     navController: NavController, rechargeViewModel: RechargeViewModel = hiltViewModel()
 ) {
-    var selectedAmount by remember { mutableStateOf<Float?>(null) }
+    // 默认选中第一档（2026-11-01 缺陷 8c：原初始全空导致页面无任何高亮项）
+    var selectedAmount by remember { mutableStateOf<Float?>(10f) }
     var customAmount by remember { mutableStateOf("") }
     var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
     var isCustomAmountSelected by remember { mutableStateOf(false) }
@@ -156,7 +156,8 @@ fun RechargePage(
                     }
                 }
 
-                // 充值金额
+                // 充值金额（2026-11-01 缺陷 8b：档位 + 自选收进标准卡 §3.1 唯一画法，
+                // 原灰底胶囊直接铺页面底对比弱、与支付方式卡层级语言不一）
                 item(key = "amount") {
                     Column {
                         Text(
@@ -165,53 +166,68 @@ fun RechargePage(
                             color = AppColors.colorScheme.textPrimary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        // 画板实测：5 档单行等宽（间距 12），非 3 列两行
-                        Row(
+                        Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            shape = RoundedCornerShape(AppDimens.radiusLg),
+                            color = AppColors.colorScheme.surface,
+                            shadowElevation = AppElevation.level1,
+                            border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
-                            presetAmounts.forEach { amount ->
-                                AmountCard(
-                                    amount = amount,
-                                    isSelected = selectedAmount == amount && !isCustomAmountSelected,
-                                    onClick = {
-                                        selectedAmount = amount
-                                        isCustomAmountSelected = false
-                                        amountError = null
-                                    },
-                                    modifier = Modifier.weight(1f)
+                            Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+                                // 画板实测：5 档单行等宽（间距 12），非 3 列两行
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    presetAmounts.forEach { amount ->
+                                        AmountCard(
+                                            amount = amount,
+                                            isSelected = selectedAmount == amount && !isCustomAmountSelected,
+                                            onClick = {
+                                                selectedAmount = amount
+                                                isCustomAmountSelected = false
+                                                amountError = null
+                                            },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                                // 赠额说明行（画板实测：胶囊行下 12，caption 档；赠额映射与档位一致）
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = stringResource(R.string.recharge_bonus_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                                // 画板实测：自定义金额为独立 label + 48 高输入框（非第 6 个档位格）
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.custom_amount),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CustomAmountInput(
+                                    value = customAmount,
+                                    isSelected = isCustomAmountSelected,
+                                    onValueChange = { value ->
+                                        if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                                            customAmount = value
+                                            if (value.isNotEmpty()) {
+                                                selectedAmount = value.toFloatOrNull()
+                                                isCustomAmountSelected = true
+                                            } else {
+                                                // 清空即清选中态（2026-11-01 缺陷 8c：原清空后
+                                                // 残留旧值，底部按钮金额与高亮都不回落）
+                                                selectedAmount = null
+                                                isCustomAmountSelected = false
+                                            }
+                                            amountError = null
+                                        }
+                                    }
                                 )
                             }
                         }
-                        // 赠额说明行（画板实测：胶囊行下 12，caption 档；赠额映射与档位一致）
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = stringResource(R.string.recharge_bonus_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                        // 画板实测：自定义金额为独立 label + 48 高输入框（非第 6 个档位格）
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.custom_amount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CustomAmountInput(
-                            value = customAmount,
-                            onValueChange = { value ->
-                                if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
-                                    customAmount = value
-                                    if (value.isNotEmpty()) {
-                                        selectedAmount = value.toFloatOrNull()
-                                        isCustomAmountSelected = true
-                                    }
-                                    amountError = null
-                                }
-                            }
-                        )
-                    }
                     // 错误提示 0ms 出现/消失导致布局跳变 → 淡入 + 纵向展开/收起
                     AnimatedVisibility(
                         visible = amountError != null,
@@ -227,6 +243,7 @@ fun RechargePage(
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
+                    }
                     }
                 }
 
@@ -328,8 +345,9 @@ fun RechargePage(
 private fun AmountCard(
     amount: Float, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    // 画板实测：档位胶囊 48 高 r14（buttonRadius）、无描边无阴影；
-    // 未选 surfaceVariant(#F5F6F3) + textPrimary，选中 primarySoft(#E8F6EF) + onPrimarySoft(#0B3625)。
+    // 画板实测：档位胶囊 48 高 r14（buttonRadius）；
+    // 未选 surfaceVariant(#F5F6F3) + textPrimary，选中 primarySoft(#E8F6EF) + onPrimarySoft(#0B3625)
+    // + 1dp primary 描边（2026-11-01 缺陷 8b：灰底胶囊进白卡后与页面同灰调对比不足，加描边强化选中辨识）。
     // 选中态颜色统一走公共 selectedColor（200ms 档弹簧，reduced motion 自动降级 180ms）
     val bgColor = selectedColor(
         if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant
@@ -337,12 +355,16 @@ private fun AmountCard(
     val textColor = selectedColor(
         if (isSelected) AppColors.colorScheme.onPrimarySoft else AppColors.colorScheme.textPrimary
     )
+    val borderColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surfaceVariant
+    )
     Surface(
         modifier = modifier
             .height(48.dp)
             .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
-        color = bgColor
+        color = bgColor,
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             // 金额 = 金额中字档（AmountMedium 18/600 tnum）；赠送信息由说明行承载，不再入格
@@ -356,21 +378,31 @@ private fun AmountCard(
 }
 
 /**
- * 自定义金额输入（画板实测：独立 48 高输入框 r12 surfaceVariant 底、占位 16/400 textSecondary；
- * 输入正文 16sp 符合 §3.7 输入控件标准）
+ * 自定义金额输入（画板实测：独立 48 高输入框 r12、占位 16/400 textSecondary；
+ * 输入正文 16sp 符合 §3.7 输入控件标准）。
+ * isSelected（2026-11-01 缺陷 8c）：选中自选金额时输入框同步高亮
+ * （primarySoft 底 + primary 描边），与档位胶囊互斥高亮，页面始终有明确选中项。
  */
 @Composable
 private fun CustomAmountInput(
     value: String,
+    isSelected: Boolean,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val bgColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant
+    )
+    val borderColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surfaceVariant
+    )
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp),
         shape = RoundedCornerShape(AppDimens.radiusMd),
-        color = AppColors.colorScheme.surfaceVariant
+        color = bgColor,
+        border = BorderStroke(1.dp, borderColor)
     ) {
         TextField(
             value = value,
@@ -407,7 +439,9 @@ private fun PaymentMethodCard(
             .padding(horizontal = 20.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 画板实测：图标盒走六色浅底令牌（微信=绿 #F0FBF4 / 支付宝=蓝 #EEF2FB）+ 对应前景色，非品牌色透明度
+        // 官方品牌图标（2026-11-01 缺陷 8a）：原微信=Message/支付宝=Payment 通用 Material 图标
+        // 违反规范 §4.4「第三方品牌图标不得换成通用组件」红线，替换为官方矢量（Simple Icons，CC0）；
+        // 着色用官方品牌色（红线豁免：品牌色不得换），容器仍走六色浅底令牌
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -421,15 +455,18 @@ private fun PaymentMethodCard(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = when (method) {
-                    PaymentMethod.WECHAT -> Icons.AutoMirrored.Default.Message
-                    PaymentMethod.ALIPAY -> Icons.Default.Payment
-                },
+                painter = painterResource(
+                    when (method) {
+                        PaymentMethod.WECHAT -> R.drawable.ic_wechat
+                        PaymentMethod.ALIPAY -> R.drawable.ic_alipay
+                    }
+                ),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
                 tint = when (method) {
-                    PaymentMethod.WECHAT -> AppColors.colorScheme.iconForegroundGreen
-                    PaymentMethod.ALIPAY -> AppColors.colorScheme.iconForegroundBlue
+                    // 官方品牌色：微信 #09BB07 / 支付宝 #1677FF（Simple Icons 口径）
+                    PaymentMethod.WECHAT -> WeChatBrandGreen
+                    PaymentMethod.ALIPAY -> AlipayBrandBlue
                 }
             )
         }
@@ -452,6 +489,10 @@ private fun PaymentMethodCard(
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)
 }
+
+/** 官方品牌色（规范 §10 红线豁免：第三方品牌图标与品牌色不得换；充值页/记录页共用） */
+internal val WeChatBrandGreen = Color(0xFF09BB07)
+internal val AlipayBrandBlue = Color(0xFF1677FF)
 
 /** 金额校验失败原因 → 文案（校验规则见 [RechargeAmountValidator]） */
 @Composable

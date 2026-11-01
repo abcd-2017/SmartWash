@@ -9,13 +9,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +25,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,6 +60,7 @@ import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
+import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -81,7 +79,6 @@ import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
-import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
@@ -153,47 +150,13 @@ fun OrderPage(
 
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
-            // 状态筛选胶囊条（设计稿实测：34dp 高、胶囊形；未选中 surface 底 + 1px outline 描边，
-            // 选中 primary 底无边框；文字 labelSmall 12/500，选中 onPrimary / 未选中 textSecondary 双主题成对）
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = AppDimens.pagePadding),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
-            ) {
-                ShowOrderStatus.entries.forEachIndexed { index, entry ->
-                    val isSelected = index == selectedPillIndex
-                    // 选中底色 / 文字色走公共 selectedColor（200ms 档弹簧；reduced motion 自动降级 180ms 纯颜色过渡）
-                    val pillColor = selectedColor(
-                        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.surface
-                    )
-                    val labelColor = selectedColor(
-                        if (isSelected) MaterialTheme.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
-                    )
-                    Surface(
-                        modifier = Modifier
-                            .height(34.dp)
-                            .pressable(onClick = { selectedPillIndex = index }, debounce = false),
-                        shape = RoundedCornerShape(AppDimens.radiusFull),
-                        color = pillColor,
-                        border = if (isSelected) null else BorderStroke(1.dp, AppColors.colorScheme.outline)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .padding(horizontal = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(entry.descriptionRes),
-                                color = labelColor,
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-            }
+            // 状态筛选胶囊条 — 统一走公共 AppPillTabRow（2026-11-01 缺陷 9：此前页内自绘 8dp 内边距 +
+            // labelSmall 12sp 挤压文字，且与券页/游戏中心三套胶囊参数漂移；设计稿 .seg3 即胶囊形态）
+            AppPillTabRow(
+                tabs = ShowOrderStatus.entries.map { stringResource(it.descriptionRes) },
+                selectedIndex = selectedPillIndex,
+                onSelect = { selectedPillIndex = it }
+            )
 
             Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 

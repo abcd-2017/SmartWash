@@ -1,14 +1,19 @@
 package com.smartwash.feature.divination.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -99,25 +104,33 @@ fun MeiHuaTripleCards(chart: MeiHuaChart, modifier: Modifier = Modifier) {
                         }
                     }
                     Spacer(Modifier.height(10.dp))
+                    // 体用 chip（2026-11-01 缺陷 7c）：原文本+padding≈96dp 超卡宽（≈88dp）被挤换行，
+                    // 限两行居中 + 收横 padding，换行时胶囊随内容长高不再溢出
                     if (card.chipGold) {
                         Text(
                             card.chip,
                             fontSize = 10.sp,
+                            lineHeight = 13.sp,
                             color = c.gold,
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(c.goldSoft)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
                         )
                     } else {
                         Text(
                             card.chip,
                             fontSize = 10.sp,
+                            lineHeight = 13.sp,
                             color = c.textSecondary,
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(c.surface2)
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
                         )
                     }
                 }
@@ -138,12 +151,17 @@ fun QimenGrid(chart: QiMenChart, modifier: Modifier = Modifier) {
     )
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
         layout.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            // IntrinsicSize.Min：行内各宫取最高者等高（2026-11-01 缺陷 7c——原固定 116dp
+            // 在大字体下五层文本压到角标字上，字叠字；改自适应后行内仍整齐）
+            Row(
+                Modifier.height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
                 row.forEach { gong ->
                     PalaceCell(
                         chart = chart,
                         gong = gong,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
                 }
             }
@@ -157,10 +175,13 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
     val isCenter = gong == 5
     Box(
         modifier
-            .height(116.dp)
+            // 原 116dp 固定高 → min 高自适应（IntrinsicSize.Min 拉齐同行）
+            .heightIn(min = 124.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (isCenter) c.surface2 else c.surface)
-            .background(c.goldHair, RoundedCornerShape(10.dp))
+            // 修笔误（2026-11-01 缺陷 7c）：原第二个 background 把整格涂满 goldHair（糊金），
+            // 本意是金线描边 → border
+            .border(1.dp, c.goldHair, RoundedCornerShape(10.dp))
             .padding(8.dp)
     ) {
         if (isCenter) {
@@ -190,16 +211,8 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
                     Text(chart.diPan[gong] ?: "", style = divSerif(12.5.sp, FontWeight.Normal, 0.sp), color = c.textSecondary)
                 }
             }
-            // 暗干角标
-            Text(
-                text = "暗·${chart.anGan[gong] ?: ""}",
-                fontSize = 9.sp,
-                color = c.textTertiary,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .alpha(0.75f),
-            )
-            // 空亡 / 驿马 badge
+            // 空亡 / 驿马 badge（2026-11-01 缺陷 7c：原 TopEnd 与 TopStart 八神在窄屏相撞，
+            // 且与宫格内容横向重叠——移到八神下方随内容流排布，单行截断）
             val badges = buildList {
                 if (gong in chart.kongWangGong) add("空亡")
                 if (gong == chart.maGong) add("驿马")
@@ -208,24 +221,42 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
                 Text(
                     text = badges.joinToString("·"),
                     fontSize = 9.sp,
+                    maxLines = 1,
                     color = c.sealHi,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .padding(top = 2.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(c.hair)
                         .padding(horizontal = 5.dp, vertical = 1.dp),
                 )
             }
         }
-        // 宫名
-        Text(
-            text = GONG_NAMES[gong] ?: "",
-            fontSize = 9.sp,
-            color = c.textTertiary,
-            modifier = Modifier
+        // 底部行：宫名（左）+ 暗干（右）同行合并——原两处绝对定位角标在大字体下与内容重叠
+        Row(
+            Modifier
                 .align(Alignment.BottomStart)
-                .alpha(0.85f),
-        )
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = GONG_NAMES[gong] ?: "",
+                fontSize = 9.sp,
+                maxLines = 1,
+                color = c.textTertiary,
+                modifier = Modifier.alpha(0.85f),
+            )
+            Spacer(Modifier.weight(1f))
+            if (!isCenter) {
+                Text(
+                    text = "暗·${chart.anGan[gong] ?: ""}",
+                    fontSize = 9.sp,
+                    maxLines = 1,
+                    color = c.textTertiary,
+                    modifier = Modifier.alpha(0.75f),
+                )
+            }
+        }
     }
 }
 
@@ -234,7 +265,11 @@ private fun PalaceCell(chart: QiMenChart, gong: Int, modifier: Modifier = Modifi
 fun LiurenPan(chart: LiuRenChart, modifier: Modifier = Modifier) {
     val c = DivColors.current
     val textMeasurer = rememberTextMeasurer()
-    androidx.compose.foundation.Canvas(modifier.size(228.dp)) {
+    // 2026-11-01 缺陷 7c：调用方传 horizontal padding 后 Canvas 228dp 在 Column（Start 对齐）
+    // 中偏左不居中 → fillMaxWidth + wrapContentSize 居中
+    androidx.compose.foundation.Canvas(
+        modifier.fillMaxWidth().wrapContentSize(Alignment.Center).size(228.dp)
+    ) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val rOuter = size.minDimension / 2f
         val rInner = rOuter * 0.54f

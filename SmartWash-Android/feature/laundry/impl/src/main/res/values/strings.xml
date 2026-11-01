@@ -9,7 +9,6 @@
     <!-- 服务 tab 页 -->
     <string name="laundry_service">洗护分类</string>
     <string name="service_page_subtitle">选择您需要的洗护服务</string>
-    <string name="service_reserve">预约 ›</string>
     <string name="currency_format">¥%s</string>
 
     <!-- 洗衣预约页 -->
@@ -17,8 +16,8 @@
     <string name="delivery_locker">投递柜</string>
     <string name="change">更换</string>
     <string name="laundry_package">洗护套餐</string>
-    <string name="estimated_cost">预估费用</string>
     <string name="confirm_booking">确认预约</string>
+    <string name="confirm_booking_format">确认预约 · %s</string>
     <string name="please_select_package">请选择套餐</string>
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
 
@@ -28,7 +27,6 @@
 
     <!-- 服务页补充 -->
     <string name="service_tips">服务时间 07:00 – 22:00 · 节假日正常营业</string>
-    <string name="service_search_hint">搜索洗护套餐…</string>
     <!-- 服务页请求失败空态的重试按钮 -->
     <string name="service_retry">重试</string>
     <string name="service_promo_title">新用户专享</string>

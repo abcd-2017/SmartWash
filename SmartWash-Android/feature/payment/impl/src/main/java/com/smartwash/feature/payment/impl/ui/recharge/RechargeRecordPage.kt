@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -51,6 +51,23 @@ import com.smartwash.common.utils.motionSpec
 
 /** 充值记录页三态：列表 / 空态 / 首载加载 */
 private enum class RecordListState { Content, Empty, Loading }
+
+/**
+ * 充值时间展示格式化（2026-11-01 缺陷 8e）：
+ * 后端已补 `@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")`（原 LocalDateTime 默认 ISO 序列化）；
+ * 端上防御性兼容两种入参——已是空格分隔串则原样展示，ISO（含 T）则转为 `yyyy-MM-dd HH:mm`。
+ * 解析失败原样返回，不吞数据。
+ */
+internal fun formatRechargeTime(raw: String): String {
+    if (raw.isBlank()) return raw
+    if (!raw.contains('T')) return raw
+    return try {
+        val parsed = java.time.LocalDateTime.parse(raw.take(19))
+        parsed.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+    } catch (_: Exception) {
+        raw
+    }
+}
 
 @Composable
 fun RechargeRecordPage(
@@ -189,16 +206,19 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = when (record.rechargeType) {
-                        "1" -> Icons.AutoMirrored.Filled.Chat
-                        "2" -> Icons.Default.Payment
-                        else -> Icons.Default.AccountBalanceWallet
-                    },
+                    painter = painterResource(
+                        when (record.rechargeType) {
+                            "1" -> R.drawable.ic_wechat
+                            "2" -> R.drawable.ic_alipay
+                            else -> R.drawable.ic_wechat // 余额充值历史数据无品牌语义，占位同微信
+                        }
+                    ),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
                     tint = when (record.rechargeType) {
-                        "1" -> AppColors.colorScheme.iconForegroundGreen
-                        "2" -> AppColors.colorScheme.iconForegroundBlue
+                        // 官方品牌色（2026-11-01 缺陷 8a，红线豁免：品牌色不得换）
+                        "1" -> WeChatBrandGreen
+                        "2" -> AlipayBrandBlue
                         else -> AppColors.colorScheme.primary
                     }
                 )
@@ -216,9 +236,14 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = record.rechargeTime,
+                    // 时间格式化（2026-11-01 缺陷 8e）：后端历史上以 ISO 串直出（LocalDateTime
+                    // 缺 @JsonFormat，后端已补 yyyy-MM-dd HH:mm:ss），端上做防御性兼容转换并限单行，
+                    // 消除「2026-10-31T21:33:12」原样展示与挤压折行
+                    text = formatRechargeTime(record.rechargeTime),
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textSecondary
+                    color = AppColors.colorScheme.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             Text(

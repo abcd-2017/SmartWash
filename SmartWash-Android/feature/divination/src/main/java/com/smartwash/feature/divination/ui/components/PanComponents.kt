@@ -87,16 +87,18 @@ private fun YaoBar(
             repeat(6) { Segment(Modifier.weight(1f)) }
         }
     } else {
+        // 阴爻两组四段（2026-11-01 缺陷 7c）：原固定 15dp×4 在 100dp 槽内左对齐，
+        // 与阳爻满槽不居中错位 → 改 4 段等分权重 + 中缝权重 3，随槽宽自适应且居中
         Row(
             modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Segment(Modifier.width(15.dp))
-            Segment(Modifier.width(15.dp))
-            Spacer(Modifier.width(6.dp))
-            Segment(Modifier.width(15.dp))
-            Segment(Modifier.width(15.dp))
+            Segment(Modifier.weight(3f))
+            Segment(Modifier.weight(3f))
+            Spacer(Modifier.weight(2f))
+            Segment(Modifier.weight(3f))
+            Segment(Modifier.weight(3f))
         }
     }
 }
@@ -144,14 +146,15 @@ fun LiuYaoRow(
             modifier = Modifier.width(44.dp),
         )
         Spacer(Modifier.width(12.dp))
-        // 爻象（阳爻六段 / 阴爻两组）
-        Box(Modifier.width(100.dp)) {
+        // 爻象（阳爻六段 / 阴爻两组）——2026-11-01 缺陷 7c：固定 100dp 槽在 360dp 屏把
+        // 纳甲区压到 126dp 以下截断，改权重自适应（六神/世应保留固定轨）
+        Box(Modifier.weight(1f)) {
             YaoBar(yang = row.yao.isYang, moving = moving, progress = revealed)
         }
         Spacer(Modifier.width(6.dp))
         // 六亲 · 纳甲（动爻整串鎏金·玄墨侧；标记延迟 80ms 弹簧缩放盖上）
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.2f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

@@ -2,7 +2,6 @@ package com.smartwash.feature.game.ui.center
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SportsEsports
@@ -31,17 +29,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
@@ -50,7 +47,6 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
-import com.smartwash.common.utils.selectedColor
 import com.smartwash.feature.game.GameCategory
 import com.smartwash.feature.game.GameTint
 import com.smartwash.feature.game.R
@@ -148,8 +144,8 @@ fun GameCenterPage(
 
 /**
  * 分类筛选 chips 行（全部 + 四分类，OTHER 不设 chip 仅在「全部」下展示）：
- * 横向滚动不换行压缩；选中态 = 品牌底白字（onPrimary 令牌，深色提亮），
- * 未选中 = 白底描边；`semantics { selected }` 提供选中态语义（a11y）。
+ * 2026-11-01 缺陷 9 统一——自绘 chips 迁移到公共 [AppPillTabRow]（设计稿 .seg3 胶囊形态，
+ * 34dp 高 / 16dp 横内边距 / 12sp·500），选中态语义与触觉由公共组件承担。
  */
 @Composable
 private fun GameCategoryChipsRow(
@@ -157,26 +153,16 @@ private fun GameCategoryChipsRow(
     onSelect: (GameCategory?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = AppDimens.pagePadding),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
-    ) {
-        GameCategoryChip(
-            label = stringResource(R.string.game_category_all),
-            selected = selected == null,
-            onClick = { onSelect(null) },
-        )
-        GameCategory.CHIP_ORDER.forEach { category ->
-            GameCategoryChip(
-                label = categoryChipLabel(category),
-                selected = selected == category,
-                onClick = { onSelect(category) },
-            )
-        }
+    val tabs = buildList {
+        add(stringResource(R.string.game_category_all))
+        GameCategory.CHIP_ORDER.forEach { add(categoryChipLabel(it)) }
     }
+    AppPillTabRow(
+        tabs = tabs,
+        selectedIndex = if (selected == null) 0 else GameCategory.CHIP_ORDER.indexOf(selected) + 1,
+        onSelect = { index -> onSelect(if (index == 0) null else GameCategory.CHIP_ORDER[index - 1]) },
+        modifier = modifier,
+    )
 }
 
 /** 分类 chip 文案（全部之外的固定四类映射；OTHER 无 chip 无文案） */
@@ -187,49 +173,6 @@ private fun categoryChipLabel(category: GameCategory): String = when (category) 
     GameCategory.WORD -> stringResource(R.string.game_category_word)
     GameCategory.BOARD -> stringResource(R.string.game_category_board)
     GameCategory.OTHER -> ""
-}
-
-/**
- * 单个分类 chip（语言对齐工具箱 ToolboxSelectableChip：pressable 自绘、无 Material
- * ripple/state layer，规范 §7）：选中切换经 [selectedColor] 200ms 档过渡，
- * reduced motion 自动降级。
- */
-@Composable
-private fun GameCategoryChip(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val scheme = AppColors.colorScheme
-    // 选中底色 / 文字色 / 描边色统一走公共 selectedColor（reduced motion 自动降级瞬切）
-    val containerColor = selectedColor(
-        if (selected) scheme.primary else MaterialTheme.colorScheme.surface
-    )
-    val contentColor = selectedColor(
-        if (selected) scheme.onPrimary else scheme.textSecondary
-    )
-    // 描边常驻 1dp、颜色在 outline ↔ 透明间过渡：选中切换不让描边整条消失/出现
-    val borderColor = selectedColor(
-        if (selected) Color.Transparent else scheme.outline
-    )
-    Surface(
-        modifier = Modifier
-            // 选中态语义（a11y）：TalkBack 播报「已选中」
-            .semantics { this.selected = selected }
-            .pressable(onClick = onClick, debounce = false),
-        shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = containerColor,
-        border = BorderStroke(1.dp, borderColor),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变（对齐工具箱 chip）
-            fontWeight = FontWeight.SemiBold,
-            color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
-        )
-    }
 }
 
 /**

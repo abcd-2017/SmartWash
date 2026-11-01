@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -26,7 +27,8 @@ import com.smartwash.feature.payment.impl.ui.recharge.RechargeRecordPage
  * 支付域路由聚合（T8.1）：本域 4 页面的 composable 注册自 app 壳 MainActivity
  * NavHost 迁入，宿主侧一行 [paymentGraph] 完成聚合。路由常量取 payment-api 的
  * [PaymentRoute]（单一事实来源）。本域 4 页面统一走「底部上滑 + 淡入」转场，
- * 进入用卡片级减速 tween、退出用进入时长 67% 的加速 tween；reduceMotion 时位移归零，
+ * 进入用卡片级减速 tween、退出用进入时长 67% 的加速 tween；pop 返回按层级方向反转
+ * （自下滑出 / 自上淡入回位，MD hierarchy-motion）；reduceMotion 时位移归零，
  * 只保留 180ms 淡入淡出（规范 §8）。
  */
 fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion: Boolean) {
@@ -34,8 +36,9 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
         PaymentRoute.Recharge.text,
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
-        popEnterTransition = { slideEnter(reduceMotion) },
-        popExitTransition = { slideExit(reduceMotion) },
+        // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
+        popEnterTransition = { slideEnterFromTop(reduceMotion) },
+        popExitTransition = { slideExitToBottom(reduceMotion) },
     ) {
         RechargePage(navController)
     }
@@ -43,8 +46,9 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
         PaymentRoute.RechargeRecord.text,
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
-        popEnterTransition = { slideEnter(reduceMotion) },
-        popExitTransition = { slideExit(reduceMotion) },
+        // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
+        popEnterTransition = { slideEnterFromTop(reduceMotion) },
+        popExitTransition = { slideExitToBottom(reduceMotion) },
     ) {
         RechargeRecordPage(navController)
     }
@@ -58,8 +62,9 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
         ),
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
-        popEnterTransition = { slideEnter(reduceMotion) },
-        popExitTransition = { slideExit(reduceMotion) },
+        // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
+        popEnterTransition = { slideEnterFromTop(reduceMotion) },
+        popExitTransition = { slideExitToBottom(reduceMotion) },
     ) { entity ->
         PaymentPage(navController, entity.arguments?.getLong("orderId"))
     }
@@ -73,8 +78,9 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
         ),
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
-        popEnterTransition = { slideEnter(reduceMotion) },
-        popExitTransition = { slideExit(reduceMotion) },
+        // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
+        popEnterTransition = { slideEnterFromTop(reduceMotion) },
+        popExitTransition = { slideExitToBottom(reduceMotion) },
     ) { entity ->
         PaySuccessPage(navController, entity.arguments?.getLong("orderId") ?: -1)
     }
@@ -92,6 +98,28 @@ private fun slideEnter(reduceMotion: Boolean): EnterTransition =
             initialOffsetY = { it / 3 },
             animationSpec = enterTween(DURATION_CARD_MS)
         ) + fadeIn(animationSpec = enterTween(DURATION_CARD_MS))
+    }
+
+/** pop 返回入场：自顶部淡入回位（前进「自下而上」的镜像，浅层页自上滑回） */
+private fun slideEnterFromTop(reduceMotion: Boolean): EnterTransition =
+    if (reduceMotion) {
+        fadeIn(animationSpec = tween(CROSSFADE_ALT_MS))
+    } else {
+        slideInVertically(
+            initialOffsetY = { -it / 3 },
+            animationSpec = enterTween(DURATION_CARD_MS)
+        ) + fadeIn(animationSpec = enterTween(DURATION_CARD_MS))
+    }
+
+/** pop 返回离场：向底部滑出 + 加速淡出（前进离场的镜像，位移表达「回到浅层」） */
+private fun slideExitToBottom(reduceMotion: Boolean): ExitTransition =
+    if (reduceMotion) {
+        fadeOut(animationSpec = tween(CROSSFADE_ALT_MS))
+    } else {
+        slideOutVertically(
+            targetOffsetY = { it / 3 },
+            animationSpec = exitTween(DURATION_MICRO_MS)
+        ) + fadeOut(animationSpec = exitTween(DURATION_MICRO_MS))
     }
 
 /** 退出：淡出（进入时长的 67%，加速 tween）；reduceMotion 时 180ms 淡出 */

@@ -19,6 +19,7 @@ import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.ui.login.LoginPage
+import com.smartwash.feature.user.impl.ui.permission.PermissionManagementPage
 import com.smartwash.feature.user.impl.ui.register.RegisterPage
 import com.smartwash.feature.user.impl.ui.setting.SettingPage
 import com.smartwash.feature.user.impl.ui.update_userinfo.UpdateUserInfoPage
@@ -68,6 +69,9 @@ fun NavGraphBuilder.userGraph(
     }
     composable(UserRoute.Setting.text) {
         SettingPage(navController, checkUpdateContent)
+    }
+    composable(UserRoute.PermissionManagement.text) {
+        PermissionManagementPage(navController)
     }
 }
 
