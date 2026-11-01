@@ -1,14 +1,17 @@
 package com.smartwash.feature.laundry.ui.laundry
 
 import android.widget.Toast
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -42,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -54,6 +58,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppInfoDialog
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
@@ -62,7 +67,6 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
@@ -167,9 +171,9 @@ fun LaundryPage(
             PageHeader(title = stringResource(R.string.book_locker), onBack = { navController.navigateUp() })
 
             LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = AppDimens.pagePadding)
+                modifier = Modifier.weight(1f),
+                // 2026-11-01 阴影裁剪修复：见 PickupPage 同项
+                contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
             ) {
                 // 投递柜选择
                 item {
@@ -182,10 +186,9 @@ fun LaundryPage(
                     // 卡片规格对齐同页组「洗衣服务」画板实测：radiusLg 16 + 1px outline 描边
                     // + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().softCardShadow(),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                         color = AppColors.colorScheme.surface,
-                        shadowElevation = AppElevation.level1,
                         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                     ) {
                         Row(
@@ -315,6 +318,16 @@ private fun LaundryTypeItem(
         if (isSelected) AppColors.colorScheme.primaryLight
         else AppColors.colorScheme.surfaceVariant
     )
+    // 指示器圆环色：选中 primary / 未选中 outline（空心环语义）
+    val indicatorRingColor = selectedColor(
+        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+    )
+    // 勾的缩放：选中 1 / 未选中 0（弹簧，reduced motion 经 motionSpec 降级）
+    val checkScale by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = motionSpec(defaultSpring()),
+        label = "checkScale"
+    )
 
     // 卡片规格：radiusLg 16 + 1px outline 描边 + 阴影 level1（规范 §2.4 卡片档）。
     // 选中强调由 primaryLight 底 + primary 描边承担，描边宽度不再随选中变化（原 0.5/1/1.5dp
@@ -326,10 +339,9 @@ private fun LaundryTypeItem(
             .pressable(onClick = {
                 view.performHaptic(HapticEffect.SELECTION)
                 cardClick()
-            }),
+            }).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = bgColor,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, borderColor)
     ) {
         Row(
@@ -341,9 +353,11 @@ private fun LaundryTypeItem(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(8f)
+                modifier = Modifier.weight(1f)
             ) {
-                // 选中指示器 — 36dp 盒 + radiusSmall，底色走 indicatorColor 弹簧过渡（与卡片同步渐变）
+                // 选中指示器 — 36dp 盒 + radiusSmall，底色走 indicatorColor 弹簧过渡（与卡片同步渐变）。
+                // 2026-11-01：未选中态由「灰实心点」改为空心圆环（原实心点观感突兀）；
+                // 两态统一 20dp 尺寸——原选中勾 20dp ↔ 未选中灰点 12dp 的尺寸跳变正是切换「抽搐」的根因
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -351,37 +365,35 @@ private fun LaundryTypeItem(
                         .background(indicatorColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    // 勾选图标 ↔ 灰圆点瞬换 → 交叉淡变（180ms 降级档，纯淡入淡出）
-                    Crossfade(
-                        targetState = isSelected,
-                        animationSpec = tween(CROSSFADE_ALT_MS),
-                        label = "checkIndicator"
-                    ) { selected ->
-                        if (selected) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = AppColors.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .clip(CircleShape)
-                                    .background(AppColors.colorScheme.textTertiary)
-                            )
-                        }
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .border(1.5.dp, indicatorRingColor, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(12.dp)
+                                .graphicsLayer {
+                                    scaleX = checkScale
+                                    scaleY = checkScale
+                                },
+                            tint = AppColors.colorScheme.primary
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    // 套餐卡标题：v0.4 `CardTitle`（title 18sp/600）——原 titleLarge 22sp 是状态大字/页头档，
-                    // 用在列表卡上比规范高两档（调研 2026-11-01 缺陷 2a）；两态统一 600 字重避免宽度抖动
+                    // 套餐卡标题（2026-11-01 用户反馈）：18sp 仍偏大、与下方描述差距过大 → 降 16sp/500；
+                    // 标题与描述间补 4dp（原为 0，两行贴死更显标题沉重）
                     Text(
                         text = title,
-                        style = AppTextStyles.CardTitle
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = description,
                         style = MaterialTheme.typography.bodySmall,
@@ -389,12 +401,15 @@ private fun LaundryTypeItem(
                     )
                 }
             }
-            Row(modifier = Modifier.weight(2f), horizontalArrangement = Arrangement.End) {
+            // 金额（2026-11-01）：原 weight(2f) 只分到 54dp，¥29.90（约 60dp）必然折行 →
+            // 改自然宽度右对齐 + 限单行；左侧信息列 weight(1f) 吸收余量
+            Row(modifier = Modifier, horizontalArrangement = Arrangement.End) {
                 Text(
                     text = price,
                     // 价格色对齐服务页画板实测：green.700（浅 #1E8C5C / 深 #5BC894）
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.primaryDark
+                    color = AppColors.colorScheme.primaryDark,
+                    maxLines = 1
                 )
             }
         }

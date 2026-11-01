@@ -57,6 +57,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.components.AppInfoDialog
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.InfoSection
 import com.smartwash.common.ui.components.LoadingState
@@ -136,11 +137,10 @@ fun OrderDetailPage(
 
                         // 进度时间线（规范 §3.4）；卡片规格对齐 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
                             // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             // 卡内边距统一 20（v0.4 §2.3），标题→节点带 6

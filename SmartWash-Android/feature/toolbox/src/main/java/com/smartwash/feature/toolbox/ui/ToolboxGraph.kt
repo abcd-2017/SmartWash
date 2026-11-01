@@ -1,6 +1,8 @@
 package com.smartwash.feature.toolbox.ui
 
 import android.net.Uri
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -18,9 +20,19 @@ import com.smartwash.feature.toolbox.ui.list.ToolboxListPage
  * MainActivity NavHost，宿主侧一行 [toolboxGraph] 完成聚合。路由常量取模块内
  * [ToolboxRoute]（单一事实来源）。当前无工作台入口，接入见对接文档 TODO 节。
  */
-fun NavGraphBuilder.toolboxGraph(navController: NavHostController) {
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun NavGraphBuilder.toolboxGraph(
+    navController: NavHostController,
+    // 一镜到底：共享元素 scope（2026-11-01）
+    sharedTransitionScope: SharedTransitionScope,
+) {
     composable(ToolboxRoute.List.text) {
-        ToolboxListPage(navController)
+        // 一镜到底：NavHost 条目 scope 下传，供列表卡 sharedElement（2026-11-01）
+        ToolboxListPage(
+            navController,
+            animatedVisibilityScope = this,
+            sharedTransitionScope = sharedTransitionScope,
+        )
     }
     composable(ToolboxRoute.Create.text) {
         ShortCodeCreatePage(navController)
@@ -76,7 +88,12 @@ fun NavGraphBuilder.toolboxGraph(navController: NavHostController) {
             },
         )
     ) {
-        ShortCodeDetailPage(navController)
+        // 一镜到底：NavHost 条目 scope 下传，供详情卡 sharedElement（2026-11-01）
+        ShortCodeDetailPage(
+            navController,
+            animatedVisibilityScope = this,
+            sharedTransitionScope = sharedTransitionScope,
+        )
     }
 }
 

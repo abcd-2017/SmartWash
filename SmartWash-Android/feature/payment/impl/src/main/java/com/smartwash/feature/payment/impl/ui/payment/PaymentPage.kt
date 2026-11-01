@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -57,6 +58,7 @@ import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.coupon.api.model.UsableCoupon
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.LoadingState
@@ -158,10 +160,9 @@ fun PaymentPage(
                         // 应付金额卡片（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
                         // 描边 + level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20）
                         Surface(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
                             color = AppColors.colorScheme.surface,
-                            shadowElevation = AppElevation.level1,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
@@ -212,12 +213,11 @@ fun PaymentPage(
                             // 选中态画板实测：primarySoft 底（浅 #E8F6EF / 深 #1D3229，规范 §2.1/§6.5，
                             // 与图标盒浅绿 #F0FBF4 是两个令牌）+ 1px 描边 + level1 阴影
                             Surface(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().softCardShadow(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = if (selectedPaymentMethod == "balance")
                                     AppColors.colorScheme.primarySoft
                                 else AppColors.colorScheme.surface,
-                                shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -283,10 +283,9 @@ fun PaymentPage(
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .pressable(onClick = { showBottomSheet = true }, debounce = false),
+                                    .pressable(onClick = { showBottomSheet = true }, debounce = false).softCardShadow(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = AppColors.colorScheme.surface,
-                                shadowElevation = AppElevation.level1,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
                                 Row(
@@ -402,9 +401,8 @@ fun PaymentPage(
             },
         ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = AppDimens.pagePadding)
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
             ) {
                 item {
                     Row(
@@ -553,7 +551,7 @@ private fun CheckMark(
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center
     ) {
-        SelectionDot(selected = isSelected, dotSize = 28.dp)
+        SelectionDot(selected = isSelected)
     }
 }
 
@@ -567,10 +565,9 @@ private fun UserCouponItem(
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxWidth()
-            .pressable(onClick = itemClick, debounce = false),
+            .pressable(onClick = itemClick, debounce = false).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
@@ -614,10 +611,9 @@ private fun NoCouponItem(
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxWidth()
-            .pressable(onClick = itemClick, debounce = false),
+            .pressable(onClick = itemClick, debounce = false).softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(

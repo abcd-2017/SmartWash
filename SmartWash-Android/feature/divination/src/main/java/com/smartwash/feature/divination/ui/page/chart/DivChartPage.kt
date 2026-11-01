@@ -52,12 +52,13 @@ fun DivChartPage(
     animateEntry: Boolean,
     viewModel: DivChartViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val state by viewModel.uiState.collectAsState()
     val record = state.record
     val bundle = state.bundle
 
     DivinationScreen {
+        // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让声明行/事实卡在浅色系统下不可见）
+        val c = DivColors.current
         if (state.loading) {
             Spacer(Modifier.height(120.dp))
             Row(
@@ -271,12 +272,17 @@ fun DivChartPage(
         }
 
         Spacer(Modifier.height(16.dp))
+        // 画板 ChartLiuyao：底部「求 解 读」为 36px 小胶囊（.btn.gold 覆写 height:36px /
+        // font-size:12.5px / padding 0 20px），非通栏大按钮；「已存入卦历」为本地状态位，
+        // 同档收敛保持底行两枚等高（ChartMeihua 画板为通栏 .btn，以 Liuyao 口径统一）
         Row(
             Modifier.padding(start = 16.dp, end = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             DivGoldButton(
                 text = stringResource(R.string.div_chart_interpret),
+                height = 36.dp,
+                fontSize = 12.sp,
                 modifier = Modifier.weight(1f),
                 onClick = {
                     navController.navigate("${DivRoute.Reading.text}/$recordId")
@@ -284,6 +290,8 @@ fun DivChartPage(
             )
             DivGoldButton(
                 text = stringResource(R.string.div_chart_saved),
+                height = 36.dp,
+                fontSize = 12.sp,
                 enabled = false,
                 modifier = Modifier.weight(1f),
                 onClick = {},

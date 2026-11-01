@@ -5,12 +5,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -25,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -51,7 +52,7 @@ import com.smartwash.feature.divination.ui.components.DivSectionTitle
 import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.ui.components.TianXiangHeader
 import com.smartwash.feature.divination.ui.components.divSerif
-import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.HapticEffect
@@ -75,7 +76,6 @@ fun DivHomePage(
     navController: NavHostController,
     viewModel: DivHomeViewModel = hiltViewModel(),
 ) {
-    val c = DivColors.current
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.recentRecords.collectAsState()
     val view = currentView()
@@ -83,7 +83,12 @@ fun DivHomePage(
     // 2026-11-01 缺陷 7a：本页是观象台唯一未包 DivinationScreen 的页面——状态栏裸顶（时辰被挡）、
     // LocalDivinationColors 落到默认玄墨（浅色系统下米白字画浅底）、导航栏/IME 也无避让。
     // 统一包根：主题覆盖 + 宣纸/玄墨渐变背景 + 底部安全区，顶部 statusBarsPadding 对齐 DivPageHeader 惯例
+    //
+    // 颜色必须在 DivinationScreen 之内读取：LocalDivinationColors 是 staticCompositionLocalOf，
+    // 默认值恒为玄墨（DarkDivinationColors）。在包根之外读会拿到米白主文本画在宣纸底上
+    // （对比度 1.09:1，等于不可见）——观象台标题/今日一签标题「看不见」即此因。
     DivinationScreen {
+        val c = DivColors.current
         TianXiangHeader(
             text = uiState.tianXiang.ifEmpty { "—" },
             modifier = Modifier
@@ -92,8 +97,9 @@ fun DivHomePage(
         )
         Column(Modifier.padding(horizontal = 20.dp)) {
             Text(
+                // 画板 .lg-title：衬线 600 / 字距 4px（原 0 字距下标题过密、辨识度低）
                 text = stringResource(R.string.div_title),
-                style = divSerif(22.sp, FontWeight.SemiBold, 0.sp),
+                style = divSerif(22.sp, FontWeight.SemiBold, 4.sp),
                 color = c.textPrimary,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -114,39 +120,35 @@ fun DivHomePage(
             CompassDial(modifier = Modifier.size(104.dp))
         }
 
-        // 四术玉牌（2026-11-01 缺陷 7b：原 2×2 等权平铺无层级，原型与设计方案口径为
-        // 「六爻默认第一、加大」+ 每术定制线描 glyph + 鎏金渐变描边）——
-        // 六爻升全宽主入口（推荐 tag + 加大 glyph），梅花/奇门/六壬三牌次行等分
-        val liuyaoInfo = Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_use_for)
-        val otherMethods = listOf(
-            Quad(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, R.string.div_method_meihua_use_for),
-            Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for),
-            Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for),
+        // 四术玉牌（2026-11-01 缺陷 7b）：原型 .jade-grid 口径 = 2×2 等分网格（gap 14）、
+        // 每术定制线描 glyph + 竖排术名 + 一句话定位 + 鎏金渐变描边，六爻居首（左上）+ 推荐 tag + 加大 glyph。
+        //
+        // 上一版把六爻拉成通栏主牌、其余三牌挤在一行：360dp 屏次牌仅 ~101dp 宽，
+        // 12sp 定位文案（约 108dp）必然折成 3–4 行溢出 128dp 定高 → 文字互相叠压，观感很脏。
+        // 现回归原型 2×2：单牌 ~154dp、内容宽 ~122dp，文案两行刚好放下，四牌同构同行高一致。
+        val jadeEntries = listOf(
+            Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_tag),
+            Quad(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, null),
+            Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, null),
+            Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, null),
         )
-        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
-            JadeFeaturedTile(
-                method = liuyaoInfo.first,
-                name = stringResource(liuyaoInfo.second),
-                desc = stringResource(liuyaoInfo.third),
-                useFor = stringResource(liuyaoInfo.fourth),
-                tag = stringResource(R.string.div_method_liuyao_tag),
-                onClick = {
-                    view.performHaptic(HapticEffect.LIGHT)
-                    navController.navigate("${DivRoute.Ask.text}?method=${liuyaoInfo.first.id}")
-                },
-            )
-            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-                otherMethods.forEach { (method, nameRes, descRes, _) ->
-                    JadeTile(
-                        method = method,
-                        name = stringResource(nameRes),
-                        desc = stringResource(descRes),
-                        onClick = {
-                            view.performHaptic(HapticEffect.LIGHT)
-                            navController.navigate("${DivRoute.Ask.text}?method=${method.id}")
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            jadeEntries.chunked(2).forEach { rowEntries ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    rowEntries.forEach { (method, nameRes, descRes, tagRes) ->
+                        JadeEntryTile(
+                            method = method,
+                            name = stringResource(nameRes),
+                            desc = stringResource(descRes),
+                            tag = tagRes?.let { stringResource(it) },
+                            featured = tagRes != null,
+                            onClick = {
+                                view.performHaptic(HapticEffect.LIGHT)
+                                navController.navigate("${DivRoute.Ask.text}?method=${method.id}")
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
@@ -167,15 +169,17 @@ fun DivHomePage(
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
+                            // 画板 .sign-card .t .name：衬线 18px / 字距 4px
                             text = stringResource(R.string.div_sign_card_title, sign.hexagramName),
-                            style = divSerif(18.sp, FontWeight.SemiBold, 0.sp),
+                            style = divSerif(18.sp, FontWeight.SemiBold, 4.sp),
                             color = c.textPrimary,
                         )
                         Text(
                             text = sign.subLine + " —— " + stringResource(R.string.div_sign_card_source),
                             fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             color = c.textSecondary,
-                            modifier = Modifier.padding(top = 2.dp),
+                            modifier = Modifier.padding(top = 4.dp),
                         )
                     }
                     Text("›", color = c.goldText.copy(alpha = 0.6f), fontSize = 16.sp)
@@ -265,128 +269,80 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
 }
 
 /**
- * 四术主入口（六爻专用，2026-11-01 缺陷 7b）：全宽加大牌 —— 定制线描 glyph + 竖排术名 +
- * 一句话定位 + 适用问题 + 推荐 tag，鎏金渐变描边（原型 .jade::before 135° gold-line→gold-hair）。
+ * 四术玉牌（原型 .jade / .jade-grid）：2×2 等分网格中的单牌 ——
+ * 定制线描 glyph（左上）+ 竖排术名（右上）+ 一句话定位（两行）+ 推荐 tag（紧随定位，仅六爻）。
+ *
+ * 层级：六爻为首选术，用「鎏金渐变描边 + 推荐 tag + glyph 40dp」加大；
+ * 其余三牌用 12% 金发丝描边 + glyph 34dp，同一网格内主次分明而不靠尺寸割裂。
+ *
+ * 结构约定：tag 位四牌同构预留固定高度（无 tag 留空），牌高由内容撑开（heightIn min 兜底），
+ * 同一行两牌行高必然一致；窄屏/大字号下文案折行时牌高随之增长，不裁切、不叠压。
  */
 @Composable
-private fun JadeFeaturedTile(
+private fun JadeEntryTile(
     method: DivMethod,
     name: String,
     desc: String,
-    useFor: String,
-    tag: String,
+    tag: String?,
+    featured: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
     val shape = RoundedCornerShape(16.dp)
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .height(132.dp)
-            .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
+            .heightIn(min = 148.dp)
+            // 规范 §2.4 卡片唯一画法 = 1px 描边 + 柔和投影；玄墨深色卡按 §2.4 豁免投影
+            .then(if (c.isDark) Modifier else Modifier.softCardShadow(cornerRadius = 16.dp))
             .clip(shape)
             .background(c.surface)
-            // 鎏金渐变描边：Compose border 支持 Brush（135° 对角 = 默认 linearGradient 方向）
-            .border(1.dp, Brush.linearGradient(listOf(c.goldLine, c.goldHair)), shape)
-            .pressable(onClick = onClick),
+            // 鎏金渐变描边：Compose border 支持 Brush（135° 对角 = 默认 linearGradient 方向）；
+            // 次牌降为 12% 金发丝线，避免四牌金框并列过吵
+            .then(
+                if (featured) {
+                    Modifier.border(1.dp, Brush.linearGradient(listOf(c.goldLine, c.goldHair)), shape)
+                } else {
+                    Modifier.border(1.dp, c.hair, shape)
+                }
+            )
+            .pressable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
-        Row(
-            Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-                .height(132.dp - 32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            MethodGlyph(method = method, size = 44.dp, tint = c.gold)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(desc, fontSize = 12.sp, lineHeight = 18.sp, color = c.textPrimary)
-                Spacer(Modifier.height(4.dp))
-                Text(useFor, fontSize = 12.sp, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            MethodGlyph(method = method, size = if (featured) 40.dp else 34.dp, tint = c.gold)
+            Spacer(Modifier.weight(1f))
+            // 竖排术名：writing-mode 语义用逐字换行实现（画板：18/600、行距 26、右上内缩 2）
+            Column(horizontalAlignment = Alignment.End) {
+                name.forEach { ch ->
+                    Text(
+                        text = ch.toString(),
+                        style = divSerif(18.sp, FontWeight.SemiBold, 0.sp).copy(lineHeight = 26.sp),
+                        color = c.textPrimary,
+                    )
+                }
             }
         }
-        // 竖排术名：writing-mode 语义用逐字换行实现（画板：18/600、行距 26、右上内缩 14/2）
-        Column(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 14.dp, end = 2.dp)
-        ) {
-            name.forEach { ch ->
-                Text(
-                    text = ch.toString(),
-                    style = divSerif(18.sp, FontWeight.SemiBold, 0.sp).copy(lineHeight = 26.sp),
-                    color = c.textPrimary,
-                )
-            }
-        }
-        Text(
-            text = tag,
-            fontSize = 12.sp,
-            color = c.goldText.copy(alpha = 0.75f),
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 16.dp, bottom = 12.dp),
-        )
-    }
-}
-
-/**
- * 四术次入口（梅花/奇门/六壬）：glyph + 竖排术名 + 一句话定位（两行截断），
- * 同鎏金渐变描边；高度收窄与主入口拉开层级。
- */
-@Composable
-private fun JadeTile(
-    method: DivMethod,
-    name: String,
-    desc: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val c = DivColors.current
-    val shape = RoundedCornerShape(16.dp)
-    Box(
-        modifier
-            .height(128.dp)
-            .then(if (c.isDark) Modifier else Modifier.shadow(AppElevation.level1, shape))
-            .clip(shape)
-            .background(c.surface)
-            .border(1.dp, Brush.linearGradient(listOf(c.goldLine, c.goldHair)), shape)
-            .pressable(onClick = onClick),
-    ) {
-        MethodGlyph(
-            method = method,
-            size = 36.dp,
-            tint = c.gold,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(12.dp),
-        )
-        // 竖排术名：writing-mode 语义用逐字换行实现（画板：18/600、行距 26、右上内缩 14/2）
-        Column(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 14.dp, end = 2.dp)
-        ) {
-            name.forEach { ch ->
-                Text(
-                    text = ch.toString(),
-                    style = divSerif(18.sp, FontWeight.SemiBold, 0.sp).copy(lineHeight = 26.sp),
-                    color = c.textPrimary,
-                )
-            }
-        }
+        Spacer(Modifier.height(8.dp))
         Text(
             text = desc,
             fontSize = 12.sp,
             lineHeight = 16.sp,
             color = c.textSecondary,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
         )
+        Spacer(Modifier.height(6.dp))
+        // tag 位固定高度：四牌同构，无 tag 留空（同一行两牌行高必然一致）
+        Box(Modifier.height(16.dp)) {
+            if (tag != null) {
+                Text(
+                    text = tag,
+                    fontSize = 11.sp,
+                    letterSpacing = 2.sp,
+                    color = c.goldText.copy(alpha = 0.75f),
+                )
+            }
+        }
     }
 }
 

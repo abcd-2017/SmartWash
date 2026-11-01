@@ -334,7 +334,6 @@ fun RegisterPage(
                     phone = phone,
                     isPhoneError = isPhoneError,
                     contentColor = Color.White,
-                    label = stringResource(com.smartwash.common.ui.R.string.phone_number)
                 ) {
                     if (it.length <= 11) phone = it
                     // 只在输入完成（11位）或清空时验证
@@ -357,7 +356,6 @@ fun RegisterPage(
 
                 // 验证码行
                 VerificationCodeRow(
-                    label = stringResource(R.string.verification_code),
                     verificationCode = verificationCode,
                     isVerificationCodeError = isVerificationCodeError,
                     countDown = countDown,
@@ -409,7 +407,8 @@ fun RegisterPage(
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
                     contentColor = Color.White,
-                    label = stringResource(com.smartwash.common.ui.R.string.password),
+                    // 设计稿注册画板密码占位为「设置密码」（登录为「密码」）
+                    hint = stringResource(R.string.password_hint_register),
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
@@ -486,23 +485,12 @@ private fun VerificationCodeRow(
     countDown: Int,
     captchaState: RequestState,
     focusRequester: FocusRequester = FocusRequester(),
-    // 可见字段标签（对齐登录画板「t:手机号/密码标签」12/500 模式，§7 表单必须有可见标签）
-    label: String? = null,
     onValueChange: (String) -> Unit,
     onSendCaptcha: () -> Unit,
     contentColor: Color = Color.White
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (label != null) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = contentColor.copy(alpha = 0.92f)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
+        // 2026-11-01 用户拍板还原：设计稿 .gi 只有 placeholder（占位即字段名「验证码」），无独立可见 label
         // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432 同款，D-R4）
         // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(

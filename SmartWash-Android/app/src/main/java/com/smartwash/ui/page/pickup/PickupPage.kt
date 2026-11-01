@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -153,7 +155,10 @@ fun PickupPage(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         LazyColumn(
-                            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+                            modifier = Modifier.fillMaxSize(),
+                            // 2026-11-01 阴影裁剪修复：容器级 horizontal padding 会把卡片钉在裁剪边界上，
+                            // 阴影被裁成硬边 → 改为 contentPadding（阴影在容器内完整绘制）
+                            contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
                         ) {
                             items(orderList.itemCount) { i ->
@@ -209,12 +214,16 @@ private fun PickupOrderCard(
                         text = stringResource(R.string.order_no_format, order.orderNo),
                         // 画板实测卡内次行 12/400（caption 400 档），非 captionStrong 500
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textSecondary
+                        color = AppColors.colorScheme.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = stringResource(R.string.locker_label_format, "${order.lockersVo.lockerNumber}"),
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textSecondary
+                        color = AppColors.colorScheme.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Text(
@@ -246,6 +255,8 @@ private fun PickupOrderCard(
                     // 行高仍留 16 会挤压字形，也违反「禁止自创令牌值」
                     style = AppTextStyles.DataLarge,
                     color = AppColors.colorScheme.primaryDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 

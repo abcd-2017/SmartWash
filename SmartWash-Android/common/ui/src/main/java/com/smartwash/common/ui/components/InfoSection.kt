@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.AppElevation
@@ -38,11 +39,10 @@ fun InfoSection(
     // 卡片规格 v0.4 §3.1 / §2.4：radiusLg 16 + 1px outline 描边 + level1 阴影
     // （订单详情页与取件/寄件页共用本组件，描边与阴影在此一处收敛）
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().softCardShadow(),
         shape = RoundedCornerShape(AppDimens.radiusLg),
         color = AppColors.colorScheme.surface,
         // 规范 §2.4：卡片 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05) → level1
-        shadowElevation = AppElevation.level1,
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Column(
