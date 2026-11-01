@@ -169,6 +169,19 @@
                 <el-icon class="upload-empty-icon"><UploadFilled /></el-icon>
                 <div class="upload-empty-text">拖拽文件到此处，或 <em>点击选择</em></div>
                 <div class="upload-empty-tip">支持 .html / .htm 单文件或 .zip 包，不超过 10MB</div>
+                <!-- 目录导入：games-library 标准结构（index.html + README.md），README 解析后自动填表 -->
+                <el-divider class="upload-empty-divider">或</el-divider>
+                <el-button size="small" @click.stop="handlePickDirectory">
+                  选择游戏目录导入（自动填表）
+                </el-button>
+                <input
+                  ref="dirInputRef"
+                  class="dir-input"
+                  type="file"
+                  webkitdirectory
+                  multiple
+                  @change="handleDirImport"
+                />
               </div>
             </el-upload>
           </el-form-item>
@@ -578,6 +591,84 @@ const handleExceed = (files) => {
   }
 };
 
+// ---------- 目录导入（games-library 标准结构：index.html + README.md） ----------
+
+const dirInputRef = ref(null);
+
+const handlePickDirectory = () => {
+  dirInputRef.value?.click();
+};
+
+// README 首行解析：`# 标题（gameKey：`x`，category 建议：`y`）`；
+// key 解析不到回退目录名，分类解析不到回落「其他」，不让自动化静默填错
+const parseGameReadme = (text, dirName) => {
+  const heading = (text.split(/\r?\n/, 1)[0] || '').replace(/^#+\s*/, '');
+  const title = (heading.replace(/（[^）]*）\s*$/, '').trim() || dirName).slice(0, 32);
+  const keyMatch = heading.match(
+    new RegExp(`gameKey[：:]\\s*\`?(${GAME_KEY_PATTERN.source})\`?`, 'i')
+  );
+  const categoryMatch = heading.match(/category(?:\s*建议)?[：:]\s*`?([a-z]+)`?/i);
+  // 玩法行 → 描述（截到 128，与表单 maxlength 对齐）
+  const playMatch = text.match(/^\s*[-*]?\s*\**\s*玩法[：:]\s*(.+)$/m);
+  return {
+    title,
+    gameKey: keyMatch?.[1] || dirName,
+    category: categoryMatch?.[1] || 'other',
+    description: (playMatch?.[1] || '').replace(/\*+/g, '').trim().slice(0, 128),
+  };
+};
+
+// 选择目录：结构校验（忽略 .DS_Store 等隐藏文件）→ index.html 作为上传文件 → 解析 README 预填表单
+const handleDirImport = (event) => {
+  const files = Array.from(event.target.files || []);
+  event.target.value = ''; // 允许重复选择同一目录
+  if (!files.length) return;
+
+  const relSegs = (file) => (file.webkitRelativePath || file.name).split('/');
+  const dirName = relSegs(files[0])[0] || 'game';
+  const visible = files.filter((file) => relSegs(file).every((seg) => !seg.startsWith('.')));
+  const names = visible
+    .map((file) => file.name)
+    .sort()
+    .join();
+  if (files.some((file) => relSegs(file).length > 2) || names !== 'README.md,index.html') {
+    ElMessage.error(
+      '目录须为「index.html + README.md」两个文件（忽略隐藏文件），其他结构请手动打包 .zip 上传'
+    );
+    return;
+  }
+  const htmlFile = files.find((file) => file.name === 'index.html');
+  const readmeFile = visible.find((file) => file.name === 'README.md');
+  const fileError = validateFile(htmlFile);
+  if (fileError) {
+    ElMessage.error(fileError);
+    return;
+  }
+
+  selectedFile.value = htmlFile;
+  uploadFormRef.value?.validateField('file').catch(() => {});
+
+  readmeFile
+    .text()
+    .then((text) => {
+      const meta = parseGameReadme(text, dirName);
+      const whitelisted = GAME_CATEGORY_OPTIONS.some((opt) => opt.value === meta.category);
+      Object.assign(tempGame, {
+        title: meta.title,
+        gameKey: meta.gameKey,
+        category: whitelisted ? meta.category : 'other',
+        description: meta.description,
+      });
+      keyEdited.value = true; // 导入的 key 不再被标题 watch 覆盖
+      if (!whitelisted) {
+        ElMessage.info(`分类「${meta.category}」不在可选范围，已回落为「其他」，可手动调整`);
+      }
+    })
+    .catch(() => {
+      ElMessage.error('README 读取失败，请手动填写表单');
+    });
+};
+
 // 移除已选文件：清空后触发 file 项校验，让「请选择游戏文件」提示即时出现
 const handleRemoveFile = () => {
   uploadRef.value?.clearFiles();
@@ -900,6 +991,21 @@ onMounted(() => {
 }
 
 .upload-empty-tip {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* 目录导入：隐藏 input + 分隔线 */
+.dir-input {
+  display: none;
+}
+
+.upload-empty-divider {
+  width: 70%;
+  margin: 8px 0;
+}
+
+.upload-empty-divider :deep(.el-divider__text) {
   font-size: 12px;
   color: #94a3b8;
 }
