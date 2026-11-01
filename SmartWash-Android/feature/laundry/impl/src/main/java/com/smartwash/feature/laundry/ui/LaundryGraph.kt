@@ -2,7 +2,9 @@ package com.smartwash.feature.laundry.ui
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.laundry.ui.laundry.LaundryPage
 import com.smartwash.feature.laundry.ui.service.ServicePage
@@ -15,5 +17,19 @@ import com.smartwash.feature.laundry.ui.service.ServicePage
  */
 fun NavGraphBuilder.laundryGraph(navController: NavHostController) {
     composable(LaundryRoute.Service.text) { ServicePage(navController) }
-    composable(LaundryRoute.Laundry.text) { LaundryPage(navController) }
+    composable(
+        route = LaundryRoute.Laundry.text,
+        arguments = listOf(
+            // 可选参数：服务页套餐行点击跳入时指定默认选中套餐（-1 = 不指定）
+            navArgument(LaundryRoute.Laundry.ARG_ITEM_ID) {
+                type = NavType.LongType
+                defaultValue = -1L
+            }
+        )
+    ) { backStackEntry ->
+        LaundryPage(
+            navController = navController,
+            defaultItemId = backStackEntry.arguments?.getLong(LaundryRoute.Laundry.ARG_ITEM_ID) ?: -1L
+        )
+    }
 }

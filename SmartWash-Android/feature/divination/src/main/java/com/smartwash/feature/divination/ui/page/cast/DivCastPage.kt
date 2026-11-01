@@ -2,10 +2,13 @@ package com.smartwash.feature.divination.ui.page.cast
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -97,130 +100,142 @@ fun DivCastPage(
         }
     }
 
-    // 画板口径：固定布局（节点区定高 + 底部弹性留白），按钮贴底
+    // 画板口径：固定布局（节点区定高 + 底部弹性留白），按钮贴底。
+    // 2026-11-01 缺陷 7c：小屏/大字体下固定堆叠 ≈640dp 溢出裁切——改「滚动内容区（weight 1f）
+    // + 按钮固定贴底」，高屏视觉与画板一致，矮屏内容可滚动不再裁切
     DivinationScreen(scrollable = false) {
-        Text(
-            text = stringResource(R.string.div_cast_title),
-            style = divSerif(14.sp, FontWeight.Medium, 4.sp, 20.sp),
-            color = c.textSecondary,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(top = 10.dp),
-        )
-        Text(
-            text = stringResource(R.string.div_cast_progress, tossCount.coerceAtMost(6)),
-            fontSize = 12.sp,
-            letterSpacing = 3.sp,
-            lineHeight = 16.sp,
-            color = c.goldText.copy(alpha = 0.75f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp, bottom = 20.dp),
-        )
-
-        // 三币
-        CoinTossRow(
-            faces = faces,
-            tossId = tossId,
-            reduceMotion = reduceMotion,
-            onSettled = {
-                // 币落定【同帧】触觉；动爻（老阴/老阳）用双连击反馈（§7.7 口径）
-                val yao = pendingYao
-                if (yao != null) {
-                    view.performHaptic(if (yao.isMoving) HapticEffect.DOUBLE_TICK else HapticEffect.LIGHT)
-                    viewModel.commitToss(yao)
-                    pendingYao = null
-                }
-            },
-        )
-
-        // 画板：铜钱底到节点区顶间距 48
-        Spacer(Modifier.height(48.dp))
-
-        // 子午线：六节点，自上爻(顶)到初爻(底)；中列（120dp）中心即全屏中心
-        val positions = listOf("上爻", "五爻", "四爻", "三爻", "二爻", "初爻")
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 48.dp)
-        ) {
-            // 中线：20% 金（画板口径）
-            Box(
-                Modifier
-                    .align(Alignment.Center)
-                    .width(1.dp)
-                    .height(300.dp)
-                    .background(c.gold.copy(alpha = 0.2f))
-            )
+        Column(Modifier.fillMaxSize()) {
             Column(
                 Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
             ) {
-                positions.forEachIndexed { displayIndex, posLabel ->
-                    // displayIndex 0=上爻(index5) … 5=初爻(index0)
-                    val lineIndex = 5 - displayIndex
-                    val committed = state.lines.getOrNull(lineIndex)
-                    val isPending = pendingYao != null && lineIndex == state.lines.size
-                    val yaoCode = committed ?: (if (isPending) pendingYao?.code else null)
-                    MeridianNode(
-                        positionLabel = posLabel,
-                        symbol = yaoCode?.let {
-                            if (it == 1 || it == 3) "▅▅▅▅▅▅" else "▅▅  ▅▅"
-                        },
-                        nameLabel = yaoCode?.let {
-                            when (it) {
-                                1 -> "少阳"
-                                2 -> "少阴"
-                                3 -> "老阳 · 动"
-                                else -> "老阴 · 动"
-                            }
-                        },
-                        isMoving = yaoCode != null && yaoCode > 2,
-                        done = yaoCode != null,
+                Text(
+                    text = stringResource(R.string.div_cast_title),
+                    style = divSerif(14.sp, FontWeight.Medium, 4.sp, 20.sp),
+                    color = c.textSecondary,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(top = 10.dp),
+                )
+                Text(
+                    text = stringResource(R.string.div_cast_progress, tossCount.coerceAtMost(6)),
+                    fontSize = 12.sp,
+                    letterSpacing = 3.sp,
+                    lineHeight = 16.sp,
+                    color = c.goldText.copy(alpha = 0.75f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp, bottom = 20.dp),
+                )
+
+                // 三币
+                CoinTossRow(
+                    faces = faces,
+                    tossId = tossId,
+                    reduceMotion = reduceMotion,
+                    onSettled = {
+                        // 币落定【同帧】触觉；动爻（老阴/老阳）用双连击反馈（§7.7 口径）
+                        val yao = pendingYao
+                        if (yao != null) {
+                            view.performHaptic(if (yao.isMoving) HapticEffect.DOUBLE_TICK else HapticEffect.LIGHT)
+                            viewModel.commitToss(yao)
+                            pendingYao = null
+                        }
+                    },
+                )
+
+                // 画板：铜钱底到节点区顶间距 48
+                Spacer(Modifier.height(48.dp))
+
+                // 子午线：六节点，自上爻(顶)到初爻(底)；中列（120dp）中心即全屏中心
+                val positions = listOf("上爻", "五爻", "四爻", "三爻", "二爻", "初爻")
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        // 画板 48 → 36（2026-11-01 缺陷 7c）：保留对称居中的前提下给右侧爻名区
+                        // 让出 24dp，消除「老阳 · 动」12sp 在 62dp 剩余宽下的截断
+                        .padding(horizontal = 36.dp)
+                ) {
+                    // 中线：20% 金（画板口径）
+                    Box(
+                        Modifier
+                            .align(Alignment.Center)
+                            .width(1.dp)
+                            .height(300.dp)
+                            .background(c.gold.copy(alpha = 0.2f))
                     )
-                }
-            }
-        }
-
-        // 节点区到底部按钮的弹性留白（画板 800 基准：节点区下留白，按钮贴底）
-        Spacer(Modifier.weight(1f))
-
-        // 掷爻 / 成卦
-        DivGoldButton(
-            text = if (viewModel.isComplete()) {
-                stringResource(R.string.div_cast_done)
-            } else {
-                stringResource(R.string.div_cast_toss)
-            },
-            // 画板实测按钮文字 14/600（非默认 18）
-            fontSize = 14.sp,
-            enabled = !state.tossing && !state.saving && pendingYao == null,
-            modifier = Modifier
-                .padding(horizontal = 76.dp, vertical = 14.dp)
-                .fillMaxWidth(),
-            onClick = {
-                if (viewModel.isComplete()) {
-                    view.performHaptic(HapticEffect.SUCCESS)
-                    viewModel.completeChart(question, com.smartwash.feature.divination.core.DivCategory.fromId(categoryId)) { id ->
-                        navController.navigate("${DivRoute.Chart.text}/$id?animate=true") {
-                            popUpTo(DivRoute.Home.text)
+                    Column(
+                        Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                    ) {
+                        positions.forEachIndexed { displayIndex, posLabel ->
+                            // displayIndex 0=上爻(index5) … 5=初爻(index0)
+                            val lineIndex = 5 - displayIndex
+                            val committed = state.lines.getOrNull(lineIndex)
+                            val isPending = pendingYao != null && lineIndex == state.lines.size
+                            val yaoCode = committed ?: (if (isPending) pendingYao?.code else null)
+                            MeridianNode(
+                                positionLabel = posLabel,
+                                symbol = yaoCode?.let {
+                                    if (it == 1 || it == 3) "▅▅▅▅▅▅" else "▅▅  ▅▅"
+                                },
+                                nameLabel = yaoCode?.let {
+                                    when (it) {
+                                        1 -> "少阳"
+                                        2 -> "少阴"
+                                        3 -> "老阳 · 动"
+                                        else -> "老阴 · 动"
+                                    }
+                                },
+                                isMoving = yaoCode != null && yaoCode > 2,
+                                done = yaoCode != null,
+                            )
                         }
                     }
-                } else {
-                    // t=0：三币同步起跳（预生成结果，动画只呈现）
-                    // reduced-motion 由 CoinTossRow 内部直接定格结果面并回调 onSettled（保留落定触觉）
-                    val yao = viewModel.nextToss()
-                    pendingYao = yao
-                    facesMask = coinFacesMask(yao)
-                    viewModel.setTossing(true)
-                    tossId++
                 }
-            },
-        )
+
+                // 节点区下留白（原 weight(1f) 弹性留白移入滚动区为固定值，画板 800 基准取 24）
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // 掷爻 / 成卦
+            DivGoldButton(
+                text = if (viewModel.isComplete()) {
+                    stringResource(R.string.div_cast_done)
+                } else {
+                    stringResource(R.string.div_cast_toss)
+                },
+                // 画板实测按钮文字 14/600（非默认 18）
+                fontSize = 14.sp,
+                enabled = !state.tossing && !state.saving && pendingYao == null,
+                modifier = Modifier
+                    .padding(horizontal = 76.dp, vertical = 14.dp)
+                    .fillMaxWidth(),
+                onClick = {
+                    if (viewModel.isComplete()) {
+                        view.performHaptic(HapticEffect.SUCCESS)
+                        viewModel.completeChart(question, com.smartwash.feature.divination.core.DivCategory.fromId(categoryId)) { id ->
+                            navController.navigate("${DivRoute.Chart.text}/$id?animate=true") {
+                                popUpTo(DivRoute.Home.text)
+                            }
+                        }
+                    } else {
+                        // t=0：三币同步起跳（预生成结果，动画只呈现）
+                        // reduced-motion 由 CoinTossRow 内部直接定格结果面并回调 onSettled（保留落定触觉）
+                        val yao = viewModel.nextToss()
+                        pendingYao = yao
+                        facesMask = coinFacesMask(yao)
+                        viewModel.setTossing(true)
+                        tossId++
+                    }
+                },
+            )
+        }
 
         if (showQuitDialog) {
             AppConfirmDialog(

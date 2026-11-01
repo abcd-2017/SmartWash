@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F5F6F3">
+<title>扫雷</title>
+<style>
+  /*token:GAME-THEME.md*/
+  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#C9526B;--g-scrim:#F5F6F3E6;--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:#141614E6;--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;color-scheme:dark }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg);
+    color: var(--g-text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px 6px 28px;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 460px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; max-width: 442px; margin: 0 auto 10px; padding: 0 2px; }
+  h1 { margin: 0; font-size: 28px; }
+  .sub { font-size: 13px; color: var(--g-muted); }
+  .stats { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 442px; margin: 0 auto 10px; }
+  .stat {
+    background: var(--g-surface2); border-radius: 8px;
+    padding: 4px 10px; min-width: 86px; text-align: center; line-height: 1.3;
+  }
+  .stat .label { display: block; font-size: 11px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .btn {
+    min-height: 44px; min-width: 64px; padding: 0 16px;
+    border: 0; border-radius: 10px;
+    background: var(--g-primary); color: #fff;
+    font-size: 15px; font-weight: 600; font-family: inherit;
+    cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .stage { position: relative; width: 100%; max-width: 442px; margin: 0 auto; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 2px;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 6px;
+    background: var(--g-faint);
+    border-radius: 10px;
+    touch-action: none;
+  }
+  .cell {
+    position: relative;
+    border-radius: 4px;
+    background: linear-gradient(160deg, var(--g-cell1), var(--g-cell2));
+    box-shadow: inset 0 1px 0 var(--g-cellhi), inset 0 -2px 0 var(--g-celllo);
+    display: flex; align-items: center; justify-content: center;
+    font-size: clamp(14px, 5vw, 23px);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .cell:active { filter: brightness(.93); }
+  .cell.open {
+    background: var(--g-open);
+    box-shadow: inset 0 0 0 1px var(--g-openln);
+    cursor: default;
+  }
+  .cell.open:active { filter: none; }
+  .cell.boom { background: var(--g-danger); }
+  .cell svg { pointer-events: none; }
+  .n1 { color: var(--g-n1); }
+  .n2 { color: var(--g-n2); }
+  .n3 { color: var(--g-n3); }
+  .n4 { color: var(--g-n4); }
+  .n5 { color: var(--g-n5); }
+  .n6 { color: var(--g-n6); }
+  .n7 { color: var(--g-n7); }
+  .n8 { color: var(--g-n8); }
+  .cell.wrong { background: var(--g-open); box-shadow: inset 0 0 0 1px var(--g-openln); }
+  .cell.wrong svg { opacity: .4; }
+  .cell.wrong::after {
+    content: "✕";
+    position: absolute;
+    color: var(--g-danger);
+    font-size: clamp(16px, 5.5vw, 26px);
+    font-weight: 900;
+  }
+  .overlay {
+    position: absolute; inset: 0;
+    border-radius: 10px;
+    background: var(--g-scrim);
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 16px; text-align: center;
+  }
+  .overlay.show { display: flex; animation: fadein .2s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .ov-title { margin: 0; font-size: 28px; font-weight: 800; }
+  .ov-sub { margin: 0 0 12px; font-size: 15px; color: var(--g-muted); }
+  .overlay .btn { min-width: 132px; }
+  .foot { margin: 12px 0 0; font-size: 12px; color: var(--g-faint); text-align: center; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>扫雷</h1>
+    <span class="sub">9×9 · 10 雷</span>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">剩余雷数</span><span class="val" id="mines">10</span></div>
+    <button class="btn" id="newBtn">新局</button>
+    <div class="stat"><span class="label">用时</span><span class="val" id="time">0</span></div>
+  </div>
+  <div class="stage">
+    <div class="board" id="board"></div>
+    <div class="overlay" id="overlay">
+      <p class="ov-title" id="ovTitle"></p>
+      <p class="ov-sub" id="ovSub"></p>
+      <button class="btn" id="ovBtn">再来一局</button>
+    </div>
+  </div>
+  <p class="foot">点按翻开 · 长按 / 右键插旗 · 首次点击必有安全区</p>
+</div>
+<script>
+"use strict";
+(() => {
+  const N = 9;
+  const MINES = 10;
+  const PRESS_MS = 400;   // 长按插旗时长（ms）
+  const MOVE_CANCEL = 12; // 手指移动超过该距离取消长按（px）
+
+  const boardEl = document.getElementById("board");
+  const minesEl = document.getElementById("mines");
+  const timeEl = document.getElementById("time");
+  const overlayEl = document.getElementById("overlay");
+  const ovTitle = document.getElementById("ovTitle");
+  const ovSub = document.getElementById("ovSub");
+  const ovBtn = document.getElementById("ovBtn");
+
+  // 旗 / 雷图形：内联 SVG（fill/stroke 走主题变量），零外部资源
+  const FLAG_SVG = '<svg viewBox="0 0 24 24" width="60%" height="60%"><path d="M7 4 16 7.5 7 11Z" fill="var(--g-danger)"/><path d="M7 21V3.5" stroke="var(--g-muted)" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  const MINE_SVG = '<svg viewBox="0 0 24 24" width="64%" height="64%"><g stroke="var(--g-text)" stroke-width="2" stroke-linecap="round" fill="none"><path d="M12 2.5v19M2.5 12h19M5.3 5.3l13.4 13.4M18.7 5.3 5.3 18.7"/></g><circle cx="12" cy="12" r="5.6" fill="var(--g-text)"/><circle cx="10" cy="10" r="1.7" fill="#eceff1" opacity=".85"/></svg>';
+
+  let mines = [], open = [], flags = [], counts = [];
+  let cellsArr = [];
+  let placed = false, finished = false, openCount = 0, flagCount = 0;
+  let startAt = 0, timerId = null;
+
+  const idx = (r, c) => r * N + c;
+
+  function buildCells() {
+    boardEl.innerHTML = "";
+    cellsArr = [];
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const d = document.createElement("div");
+        d.className = "cell";
+        d.dataset.r = r;
+        d.dataset.c = c;
+        boardEl.appendChild(d);
+        cellsArr.push(d);
+      }
+    }
+  }
+
+  function neighbors(r, c, fn) {
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < N && nc >= 0 && nc < N) fn(nr, nc);
+      }
+    }
+  }
+
+  function elapsedSec() {
+    return Math.min(999, ((Date.now() - startAt) / 1000) | 0);
+  }
+  function startTimer() {
+    startAt = Date.now();
+    timerId = setInterval(() => { timeEl.textContent = elapsedSec(); }, 250);
+  }
+  function stopTimer() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+  }
+
+  function reset() {
+    mines = []; open = []; flags = []; counts = [];
+    for (let r = 0; r < N; r++) {
+      mines.push(new Array(N).fill(false));
+      open.push(new Array(N).fill(false));
+      flags.push(new Array(N).fill(false));
+      counts.push(new Array(N).fill(0));
+    }
+    placed = false;
+    finished = false;
+    openCount = 0;
+    flagCount = 0;
+    stopTimer();
+    timeEl.textContent = "0";
+    minesEl.textContent = MINES;
+    buildCells();
+    overlayEl.classList.remove("show");
+  }
+
+  // 布雷：首点及其邻域必无雷（首点保护）
+  function placeMines(sr, sc) {
+    const banned = new Set([idx(sr, sc)]);
+    neighbors(sr, sc, (r, c) => banned.add(idx(r, c)));
+    let n = 0;
+    while (n < MINES) {
+      const p = (Math.random() * N * N) | 0;
+      if (banned.has(p) || mines[(p / N) | 0][p % N]) continue;
+      mines[(p / N) | 0][p % N] = true;
+      n++;
+    }
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        let m = 0;
+        neighbors(r, c, (nr, nc) => { if (mines[nr][nc]) m++; });
+        counts[r][c] = m;
+      }
+    }
+    placed = true;
+    startTimer();
+  }
+
+  function paint(r, c) {
+    const el = cellsArr[idx(r, c)];
+    if (open[r][c]) {
+      const k = counts[r][c];
+      el.className = "cell open" + (k ? " n" + k : "");
+      el.textContent = k ? k : "";
+    } else if (flags[r][c]) {
+      el.className = "cell flag";
+      el.innerHTML = FLAG_SVG;
+    } else {
+      el.className = "cell";
+      el.innerHTML = "";
+    }
+  }
+
+  function reveal(r, c) {
+    if (finished || open[r][c] || flags[r][c]) return;
+    if (!placed) placeMines(r, c);
+    if (mines[r][c]) return lose(r, c);
+    // 空格泛洪展开
+    const stack = [[r, c]];
+    while (stack.length) {
+      const top = stack.pop();
+      const cr = top[0], cc = top[1];
+      if (open[cr][cc] || flags[cr][cc]) continue;
+      open[cr][cc] = true;
+      openCount++;
+      paint(cr, cc);
+      if (counts[cr][cc] === 0) {
+        neighbors(cr, cc, (nr, nc) => { if (!open[nr][nc]) stack.push([nr, nc]); });
+      }
+    }
+    if (openCount === N * N - MINES) winGame();
+  }
+
+  function toggleFlag(r, c) {
+    if (finished || open[r][c]) return;
+    flags[r][c] = !flags[r][c];
+    flagCount += flags[r][c] ? 1 : -1;
+    minesEl.textContent = MINES - flagCount;
+    paint(r, c);
+  }
+
+  function lose(br, bc) {
+    finished = true;
+    stopTimer();
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const el = cellsArr[idx(r, c)];
+        if (mines[r][c]) {
+          el.className = "cell open" + (r === br && c === bc ? " boom" : "");
+          el.innerHTML = MINE_SVG;
+        } else if (flags[r][c]) {
+          el.className = "cell wrong";
+          el.innerHTML = FLAG_SVG;
+        }
+      }
+    }
+    timeEl.textContent = elapsedSec();
+    ovTitle.textContent = "踩到雷了";
+    ovSub.textContent = "用时 " + elapsedSec() + " 秒";
+    ovBtn.textContent = "再来一局";
+    overlayEl.classList.add("show");
+  }
+
+  function winGame() {
+    finished = true;
+    stopTimer();
+    // 剩余雷自动插旗
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        if (mines[r][c] && !flags[r][c]) {
+          flags[r][c] = true;
+          flagCount++;
+          paint(r, c);
+        }
+      }
+    }
+    minesEl.textContent = MINES - flagCount;
+    timeEl.textContent = elapsedSec();
+    ovTitle.textContent = "扫雷成功！";
+    ovSub.textContent = "用时 " + elapsedSec() + " 秒";
+    ovBtn.textContent = "再来一局";
+    overlayEl.classList.add("show");
+  }
+
+  // —— 触屏：长按约 400ms 插旗；点按由 click 翻开 ——
+  let pressTimer = null, lpFired = false, pressStart = null, touchCell = null;
+
+  function cancelPress() {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  }
+
+  boardEl.addEventListener("touchstart", (e) => {
+    const el = e.target.closest(".cell");
+    if (!el || finished) return;
+    lpFired = false;
+    touchCell = el;
+    const t = e.changedTouches[0];
+    pressStart = { x: t.clientX, y: t.clientY };
+    cancelPress();
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      lpFired = true;
+      toggleFlag(+el.dataset.r, +el.dataset.c);
+    }, PRESS_MS);
+  }, { passive: true });
+
+  boardEl.addEventListener("touchmove", (e) => {
+    if (!pressStart) return;
+    const t = e.changedTouches[0];
+    if (Math.abs(t.clientX - pressStart.x) > MOVE_CANCEL || Math.abs(t.clientY - pressStart.y) > MOVE_CANCEL) {
+      cancelPress();
+    }
+  }, { passive: true });
+
+  boardEl.addEventListener("touchend", (e) => {
+    cancelPress();
+    if (lpFired) {
+      e.preventDefault(); // 长按已插旗，拦截合成 click 防止误翻开
+      lpFired = false;
+    }
+    pressStart = null;
+    touchCell = null;
+  }, { passive: false });
+
+  boardEl.addEventListener("touchcancel", () => {
+    cancelPress();
+    pressStart = null;
+    touchCell = null;
+  });
+
+  // 桌面右键插旗；安卓长按附带的 contextmenu 在此去重
+  boardEl.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const el = e.target.closest(".cell");
+    if (!el || finished) return;
+    if (touchCell === el) {
+      // 同一次触屏长按序列：浏览器附带的 contextmenu，避免重复插旗
+      cancelPress();
+      if (!lpFired) {
+        lpFired = true;
+        toggleFlag(+el.dataset.r, +el.dataset.c);
+      }
+      return;
+    }
+    toggleFlag(+el.dataset.r, +el.dataset.c);
+  });
+
+  boardEl.addEventListener("click", (e) => {
+    const el = e.target.closest(".cell");
+    if (!el) return;
+    reveal(+el.dataset.r, +el.dataset.c);
+  });
+
+  document.getElementById("newBtn").addEventListener("click", (e) => { reset(); e.currentTarget.blur(); });
+  ovBtn.addEventListener("click", (e) => { reset(); e.currentTarget.blur(); });
+
+  reset();
+})();
+</script>
+</body>
+</html>

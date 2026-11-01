@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -513,14 +512,6 @@ fun UserInfoPage(
                                 )
                             },
                             onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
-                        )
-                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
-                        SettingRow(
-                            icon = Icons.Default.Schedule,
-                            containerColor = AppColors.colorScheme.iconContainerPurple,
-                            iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
-                            label = stringResource(R.string.divination_calendar),
-                            onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(

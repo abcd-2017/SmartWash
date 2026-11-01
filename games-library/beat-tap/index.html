@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>节拍点按</title>
+<style>
+  /* token:GAME-THEME.md §2 (D5 终版:仅 :root 浅色 + [data-theme=dark] 深色,桥唯一控制) */
+  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:#F5F6F3E6;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;color-scheme:light}
+  [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:#141614E6;--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
+  [hidden]{display:none!important}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+    background:var(--g-bg);color:var(--g-text);
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;touch-action:manipulation;
+  }
+  .app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding:10px 12px calc(8px + env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;gap:10px}
+  h1{margin:0;font-size:20px;line-height:1.15;flex:1;text-align:center;color:var(--g-primary-deep)}
+  .btn{min-height:44px;padding:0 16px;border:0;border-radius:var(--g-radius-btn);background:var(--g-primary);color:var(--g-on-primary);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .btn:active{opacity:.85}
+  .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .stage{position:relative;flex:1;min-height:260px;margin-top:10px;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface);overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .overlay{position:absolute;inset:0;z-index:5;background:var(--g-scrim);display:flex;align-items:center;justify-content:center;padding:16px}
+  .panel{width:100%;max-width:370px;max-height:100%;overflow:auto;background:var(--g-surface);border:1px solid var(--g-border);border-radius:var(--g-radius);box-shadow:var(--g-shadow);padding:18px}
+  .rt{margin:0 0 4px;font-size:20px;font-weight:800}
+  .rs{margin:0 0 12px;font-size:12px;color:var(--g-muted)}
+  .rhint{margin:12px 0 0;font-size:12px;color:var(--g-faint);line-height:1.6}
+  .song{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;margin-top:8px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface2);font:inherit;color:var(--g-text);text-align:left;cursor:pointer}
+  .song:active{transform:scale(.98)}
+  .sidx{font-size:15px;font-weight:800;color:var(--g-faint);font-variant-numeric:tabular-nums}
+  .smain{flex:1;min-width:0}
+  .smain b{display:block;font-size:16px}
+  .smain small{display:block;margin-top:2px;font-size:12px;color:var(--g-muted)}
+  .sbest{font-size:12px;font-weight:700;color:var(--g-muted);white-space:nowrap}
+  .sbest.g-S{color:var(--g-warning)} .sbest.g-A{color:var(--g-primary-deep)} .sbest.g-B{color:var(--g-water)}
+  .grade{margin:6px 0 0;font-size:72px;line-height:1;text-align:center;font-weight:800;animation:btpop .4s ease-out}
+  @keyframes btpop{from{transform:scale(.55)}to{transform:scale(1)}}
+  .grade.g-S{color:var(--g-warning)} .grade.g-A{color:var(--g-primary-deep)} .grade.g-B{color:var(--g-water)} .grade.g-C{color:var(--g-muted)}
+  .rscore{margin:6px 0 0;text-align:center;font-size:14px;color:var(--g-muted)}
+  .rscore b{font-size:24px;color:var(--g-text);font-variant-numeric:tabular-nums}
+  .newrec{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:99px;background:var(--g-warning);color:var(--g-on-primary);font-size:11px;font-weight:800;vertical-align:2px}
+  .rstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0}
+  .rstats span{display:flex;justify-content:space-between;padding:8px 10px;border-radius:10px;background:var(--g-surface2);font-size:13px;color:var(--g-muted)}
+  .rstats b{color:var(--g-text);font-variant-numeric:tabular-nums}
+  .rbest{margin:10px 0 0;font-size:12px;color:var(--g-faint);text-align:center}
+  .rbtns{display:flex;gap:10px;margin-top:14px}
+  .rbtns .btn{flex:1}
+  .pads{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .pad{position:relative;min-height:58px;border:1px solid var(--g-border);border-radius:var(--g-radius-btn);background:var(--g-surface);color:var(--g-text);font:inherit;font-size:17px;font-weight:700;cursor:pointer;touch-action:none;overflow:hidden}
+  .pad i{position:absolute;left:0;right:0;bottom:0;height:5px}
+  .pad[data-lane="0"] i{background:var(--g-primary)}
+  .pad[data-lane="1"] i{background:var(--g-water)}
+  .pad[data-lane="2"] i{background:var(--g-warning)}
+  .pad[data-lane="3"] i{background:var(--g-danger)}
+  .pad.on{transform:scale(.95);background:var(--g-surface2)}
+  .foot{margin:8px 0 0;font-size:11px;color:var(--g-faint);text-align:center}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <button class="btn ghost" id="menuBtn" type="button">选曲</button>
+    <h1>节拍点按</h1>
+    <button class="btn" id="pauseBtn" type="button" disabled>暂停</button>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="节拍游戏区"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="panel" id="vMenu">
+        <p class="rt">选择曲目</p>
+        <p class="rs">音乐由 WebAudio 现场合成 · 建议佩戴耳机</p>
+        <div id="songList"></div>
+        <p class="rhint">音符落至横线时点击对应轨道：±60ms Perfect · ±120ms Good，越连越高分。</p>
+      </div>
+      <div class="panel" id="vPause" hidden>
+        <p class="rt">已暂停</p>
+        <p class="rs">节拍不会跑，随时回来。</p>
+        <div class="rbtns">
+          <button class="btn ghost" id="btnMenu2" type="button">返回选曲</button>
+          <button class="btn" id="btnResume" type="button">继续</button>
+        </div>
+      </div>
+      <div class="panel" id="vResult" hidden>
+        <p class="rt" style="text-align:center">演奏结束</p>
+        <div class="grade" id="resGrade">S</div>
+        <p class="rscore"><b id="resScore">0</b> 分<span class="newrec" id="resNew" hidden>新纪录</span></p>
+        <div class="rstats" id="resStats"></div>
+        <p class="rbest" id="resBest"></p>
+        <div class="rbtns">
+          <button class="btn ghost" id="btnMenu3" type="button">返回选曲</button>
+          <button class="btn" id="btnRetry" type="button">再来一次</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pads">
+    <button class="pad" data-lane="0" type="button"><span>D</span><i></i></button>
+    <button class="pad" data-lane="1" type="button"><span>F</span><i></i></button>
+    <button class="pad" data-lane="2" type="button"><span>J</span><i></i></button>
+    <button class="pad" data-lane="3" type="button"><span>K</span><i></i></button>
+  </div>
+  <p class="foot">±60ms Perfect · ±120ms Good · 空格暂停 · 键盘 D F J K</p>
+</div>
+<script>
+"use strict";
+(() => {
+  // ===== 常量 =====
+  const KEY = "sw_h5_beattap_records";
+  const WIN_P = 60, WIN_G = 120;        // 判定窗口 ms:±60 Perfect / ±120 Good
+  const APPROACH = 1500;                // 音符可见下落时长 ms
+  const LANE_KEYS = ["D","F","J","K"];
+  const LANE_OFF = [0,5,7,10];          // 轨道固定音高(五声音阶)
+  const CHORDS = [0,-4,3,-2];           // Am F C G
+  const FONT = "system-ui,sans-serif";
+
+  // ===== 曲目(BPM 程序化生成固定谱:种子固定 → 谱面固定) =====
+  const SONGS = [
+    {id:"dew",  name:"晨露",     bpm:96,  bars:20, seed:8128,  base:57, grid:8,  tiers:[0.10,0.22,0.30,0.38], diff:"轻松"},
+    {id:"fizz", name:"午后气泡", bpm:118, bars:24, seed:2718,  base:62, grid:8,  tiers:[0.14,0.28,0.38,0.48], diff:"进阶"},
+    {id:"neon", name:"霓虹疾走", bpm:140, bars:28, seed:90125, base:64, grid:16, tiers:[0.08,0.15,0.21,0.28], diff:"狂热"}
+  ];
+
+  // ===== DOM =====
+  const $ = id => document.getElementById(id);
+  const cv = $("cv"), ctx = cv.getContext("2d");
+  const overlay = $("overlay"), vMenu = $("vMenu"), vPause = $("vPause"), vResult = $("vResult");
+  const songListEl = $("songList");
+  const resGrade = $("resGrade"), resScore = $("resScore"), resNew = $("resNew");
+  const resStats = $("resStats"), resBest = $("resBest");
+  const menuBtn = $("menuBtn"), pauseBtn = $("pauseBtn");
+  const btnResume = $("btnResume"), btnMenu2 = $("btnMenu2"), btnMenu3 = $("btnMenu3"), btnRetry = $("btnRetry");
+  const padEls = [...document.querySelectorAll(".pad")];
+
+  // ===== 主题调色板:canvas 颜色全部读 CSS 变量 (GAME-THEME.md §3) =====
+  const PAL = {};
+  const PAL_MAP = {field:"--g-surface", laneAlt:"--g-bg", border:"--g-border", line:"--g-primary-deep",
+    text:"--g-text", muted:"--g-muted", faint:"--g-faint", perfect:"--g-primary-deep",
+    good:"--g-water", danger:"--g-danger", primary:"--g-primary", warning:"--g-warning"};
+  function palLoad(){
+    const s = getComputedStyle(document.documentElement);
+    for(const k in PAL_MAP){ const v = s.getPropertyValue(PAL_MAP[k]).trim(); if(v) PAL[k] = v; }
+    PAL.lane = ["--g-primary","--g-water","--g-warning","--g-danger"].map(t => s.getPropertyValue(t).trim());
+  }
+  window.__gOnTheme = function(){ palLoad(); draw(); };
+  palLoad();
+
+  // ===== 谱面生成(mulberry32 固定种子) =====
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function buildChart(def){
+    const rnd = mulberry32(def.seed);
+    const beat = 60000 / def.bpm, barLen = beat * 4, slots = def.grid, slotLen = barLen / slots;
+    const notes = [], events = [];
+    const lastT = [-9e9,-9e9,-9e9,-9e9];
+    for(let bar = 0; bar < def.bars; bar++){
+      const t0 = bar * barLen;
+      const tier = Math.min(3, Math.floor(bar / Math.max(1, def.bars - 2) * 4));
+      // 鼓组
+      events.push({t:t0, k:0}, {t:t0 + 2*beat, k:0});
+      if(tier >= 1){
+        events.push({t:t0 + beat, k:1}, {t:t0 + 3*beat, k:1});
+        if(rnd() < 0.35) events.push({t:t0 + 3.5*beat, k:1});
+      }
+      for(let s = 0; s < slots; s += 2) events.push({t:t0 + s*slotLen, k:2, o:tier >= 2 && s === slots - 2 && rnd() < 0.5});
+      // 贝斯(和弦进行)
+      const root = def.base - 12 + CHORDS[bar % 4];
+      if(tier === 0){
+        events.push({t:t0, k:3, m:root, d:beat*1.7}, {t:t0 + 2*beat, k:3, m:root, d:beat*1.7});
+      }else{
+        for(let b = 0; b < 8; b++) events.push({t:t0 + b*beat/2, k:3, m:root + (b % 2 && rnd() < 0.35 ? 12 : 0), d:beat*0.42});
+      }
+      // 音符(即旋律)
+      for(let s = 0; s < slots; s++){
+        if(rnd() >= def.tiers[tier]) continue;
+        const t = Math.round(t0 + s * slotLen);
+        let lane = (rnd() * 4) | 0;
+        if(t - lastT[lane] < 170) lane = (lane + 1 + ((rnd() * 3) | 0)) % 4;
+        if(t - lastT[lane] < 170) continue;
+        const m = def.base + LANE_OFF[lane] + (tier >= 2 && rnd() < 0.25 ? 12 : 0);
+        notes.push({t, lane, m, judged:false});
+        events.push({t, k:4, m});
+        lastT[lane] = t;
+        if(tier >= 2 && s % 4 === 0 && rnd() < 0.22){
+          const l2 = (lane + 1 + ((rnd() * 3) | 0)) % 4;
+          if(t - lastT[l2] >= 170){
+            const m2 = def.base + LANE_OFF[l2];
+            notes.push({t, lane:l2, m:m2, judged:false});
+            events.push({t, k:4, m:m2});
+            lastT[l2] = t;
+          }
+        }
+      }
+    }
+    notes.sort((a,b) => a.t - b.t);
+    events.sort((a,b) => a.t - b.t);
+    const end = notes.length ? notes[notes.length-1].t + 1400 : def.bars * barLen;
+    return {def, notes, events, end, duration:end + 600};
+  }
+  const charts = new Array(SONGS.length).fill(null);
+
+  // ===== WebAudio 合成(振荡器 + 噪声 + 包络,零外部音频) =====
+  let actx = null, master = null, noiseBuf = null, audioFailed = false;
+  function ensureAudio(){
+    if(audioFailed) return;
+    if(!actx){
+      try{
+        const AC = window.AudioContext || window.webkitAudioContext;
+        actx = new AC();
+        master = actx.createGain(); master.gain.value = 0.9;
+        const comp = actx.createDynamicsCompressor();
+        master.connect(comp); comp.connect(actx.destination);
+        const len = actx.sampleRate | 0;
+        noiseBuf = actx.createBuffer(1, len, actx.sampleRate);
+        const ch = noiseBuf.getChannelData(0);
+        for(let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+      }catch(e){ audioFailed = true; return; }
+    }
+    if(actx.state === "suspended") actx.resume().catch(() => {});
+  }
+  const midi = m => 440 * Math.pow(2, (m - 69) / 12);
+  function kick(at){
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(150, at);
+    o.frequency.exponentialRampToValueAtTime(48, at + 0.11);
+    g.gain.setValueAtTime(0.85, at);
+    g.gain.exponentialRampToValueAtTime(0.001, at + 0.18);
+    o.connect(g); g.connect(master);
+    o.start(at); o.stop(at + 0.2);
+  }
+  function snare(at){
+    const s = actx.createBufferSource(); s.buffer = noiseBuf;
+    const f = actx.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1900; f.Q.value = 0.8;
+    const g = actx.createGain();
+    g.gain.setValueAtTime(0.5, at);
+    g.gain.exponentialRampToValueAtTime(0.001, at + 0.14);
+    s.connect(f); f.connect(g); g.connect(master);
+    s.start(at); s.stop(at + 0.16);
+    const o = actx.createOscillator(), g2 = actx.createGain();
+    o.type = "triangle"; o.frequency.value = 185;
+    g2.gain.setValueAtTime(0.28, at);
+    g2.gain.exponentialRampToValueAtTime(0.001, at + 0.08);
+    o.connect(g2); g2.connect(master);
+    o.start(at); o.stop(at + 0.1);
+  }
+  function hat(at, open){
+    const s = actx.createBufferSource(); s.buffer = noiseBuf;
+    const f = actx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7200;
+    const g = actx.createGain(), d = open ? 0.22 : 0.045;
+    g.gain.setValueAtTime(open ? 0.2 : 0.15, at);
+    g.gain.exponentialRampToValueAtTime(0.001, at + d);
+    s.connect(f); f.connect(g); g.connect(master);
+    s.start(at); s.stop(at + d + 0.02);
+  }
+  function bass(at, m, dur){
+    const o = actx.createOscillator(), g = actx.createGain(), fl = actx.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = midi(m);
+    fl.type = "lowpass"; fl.frequency.value = 620; fl.Q.value = 1;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(0.3, at + 0.015);
+    g.gain.setValueAtTime(0.24, at + Math.max(0.03, dur - 0.05));
+    g.gain.exponentialRampToValueAtTime(0.001, at + dur + 0.05);
+    o.connect(fl); fl.connect(g); g.connect(master);
+    o.start(at); o.stop(at + dur + 0.08);
+  }
+  function pluck(at, m){
+    const o = actx.createOscillator(), g = actx.createGain(), fl = actx.createBiquadFilter();
+    o.type = "triangle"; o.frequency.value = midi(m);
+    fl.type = "lowpass"; fl.frequency.value = 2600;
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(0.27, at + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, at + 0.3);
+    o.connect(fl); fl.connect(g); g.connect(master);
+    o.start(at); o.stop(at + 0.35);
+  }
+  function blip(f, at, d, g0){
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(g0, at);
+    g.gain.exponentialRampToValueAtTime(0.001, at + d);
+    o.connect(g); g.connect(master);
+    o.start(at); o.stop(at + d + 0.02);
+  }
+  function tickFeedback(kind){
+    if(!actx || actx.state !== "running") return;
+    const t = actx.currentTime;
+    if(kind === "p"){ blip(1318.5, t, 0.05, 0.16); blip(1760, t + 0.012, 0.05, 0.12); }
+    else if(kind === "g"){ blip(880, t, 0.06, 0.15); }
+    else { blip(196, t, 0.05, 0.08); }
+  }
+  function playEvent(ev, at){
+    if(ev.k === 0) kick(at);
+    else if(ev.k === 1) snare(at);
+    else if(ev.k === 2) hat(at, ev.o);
+    else if(ev.k === 3) bass(at, ev.m, ev.d / 1000);
+    else pluck(at, ev.m);
+  }
+
+  // ===== 游戏状态 =====
+  let state = "menu";          // menu | playing | paused | over
+  let song = null, curIdx = 0, evCursor = 0;
+  let score = 0, combo = 0, maxCombo = 0, cnt = {p:0, g:0, m:0};
+  let startAt = 0, usePerf = false, perfStart = 0, perfPauseAt = 0;
+  let floats = [], rings = [], padFlash = [0,0,0,0], comboPulse = 0;
+  let cw = 360, chh = 480, dpr = 1;
+  let lastT = performance.now();
+
+  const lineY = () => chh - Math.max(84, chh * 0.16);
+  function songTime(){
+    if(usePerf || !actx) return performance.now() - perfStart;
+    return (actx.currentTime - startAt) * 1000;
+  }
+
+  // ===== 音乐调度器(lookahead,挂起时音频时钟冻结 → 天然暂停) =====
+  function pump(){
+    if(!actx || !song || state === "menu") return;
+    const horizon = actx.currentTime + 0.16, evs = song.events;
+    while(evCursor < evs.length && startAt + evs[evCursor].t / 1000 < horizon){
+      playEvent(evs[evCursor], startAt + evs[evCursor].t / 1000);
+      evCursor++;
+    }
+  }
+  setInterval(pump, 30);
+
+  // ===== 存档(localStorage,try/catch) =====
+  function getRecords(){
+    try{ return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; }catch(e){ return {}; }
+  }
+  function saveRecords(r){
+    try{ localStorage.setItem(KEY, JSON.stringify(r)); }catch(e){}
+  }
+
+  // ===== 覆盖层视图 =====
+  function showView(name){
+    overlay.hidden = false;
+    vMenu.hidden = name !== "menu";
+    vPause.hidden = name !== "pause";
+    vResult.hidden = name !== "result";
+  }
+  function hideOverlay(){ overlay.hidden = true; }
+  function buildMenu(){
+    const recs = getRecords();
+    songListEl.innerHTML = SONGS.map((s, i) => {
+      const r = recs[s.id];
+      const dur = Math.round((charts[i] ? charts[i].end : s.bars * 4 * 60000 / s.bpm) / 1000);
+      const cls = r ? " g-" + r.grade : "";
+      return `<button type="button" class="song" data-i="${i}">` +
+        `<span class="sidx">0${i+1}</span>` +
+        `<span class="smain"><b>${s.name}</b><small>${s.bpm} BPM · 约${dur}秒 · ${s.diff}</small></span>` +
+        `<span class="sbest${cls}">${r ? r.score + " · " + r.grade : "未挑战"}</span></button>`;
+    }).join("");
+    songListEl.querySelectorAll(".song").forEach(b => b.addEventListener("click", () => startSong(+b.dataset.i)));
+  }
+
+  // ===== 流程 =====
+  function startSong(i){
+    curIdx = i;
+    if(!charts[i]) charts[i] = buildChart(SONGS[i]);
+    song = charts[i];
+    song.notes.forEach(n => { n.judged = false; });
+    score = 0; combo = 0; maxCombo = 0; cnt = {p:0, g:0, m:0};
+    floats = []; rings = []; padFlash = [0,0,0,0]; comboPulse = 0; evCursor = 0;
+    ensureAudio();
+    if(actx){ usePerf = false; startAt = actx.currentTime + 0.15; }
+    else{ usePerf = true; perfStart = performance.now() + 150; perfPauseAt = 0; }
+    state = "playing";
+    pauseBtn.disabled = false;
+    hideOverlay();
+  }
+  function pauseGame(){
+    if(state !== "playing") return;
+    state = "paused";
+    if(actx) actx.suspend().catch(() => {});
+    else perfPauseAt = performance.now();
+    showView("pause");
+  }
+  function resumeGame(){
+    if(state !== "paused") return;
+    ensureAudio();
+    if(actx) actx.resume().catch(() => {});
+    else if(perfPauseAt){ perfStart += performance.now() - perfPauseAt; perfPauseAt = 0; }
+    state = "playing";
+    hideOverlay();
+  }
+  function toMenu(){
+    state = "menu"; song = null;
+    if(actx) actx.suspend().catch(() => {});
+    pauseBtn.disabled = true;
+    buildMenu();
+    showView("menu");
+  }
+  function finish(){
+    if(state !== "playing") return;
+    state = "over";
+    const total = cnt.p + cnt.g + cnt.m;
+    const acc = total ? (300 * cnt.p + 150 * cnt.g) / (300 * total) : 0;
+    const grade = acc >= 0.95 ? "S" : acc >= 0.85 ? "A" : acc >= 0.7 ? "B" : "C";
+    let isNew = false, best = null;
+    try{
+      const recs = getRecords();
+      const prev = recs[song.def.id] || null;
+      if(!prev || score > prev.score){
+        recs[song.def.id] = {score, grade};
+        saveRecords(recs);
+        isNew = true;
+      }
+      best = getRecords()[song.def.id] || null;
+    }catch(e){}
+    resGrade.textContent = grade;
+    resGrade.className = "grade g-" + grade;
+    resScore.textContent = String(score);
+    resNew.hidden = !isNew;
+    resStats.innerHTML =
+      `<span>Perfect<b>${cnt.p}</b></span><span>Good<b>${cnt.g}</b></span>` +
+      `<span>Miss<b>${cnt.m}</b></span><span>最大连击<b>${maxCombo}</b></span>` +
+      `<span>准确率<b>${Math.round(acc * 100)}%</b></span><span>音符数<b>${total}</b></span>`;
+    resBest.textContent = (best ? `本曲最佳 ${best.score} · ${best.grade}` : "") +
+      (total && cnt.m === 0 ? " · FULL COMBO" : "");
+    showView("result");
+  }
+
+  // ===== 判定 =====
+  function hitLane(lane){
+    padFlash[lane] = 1;
+    if(state !== "playing") return;
+    const st = songTime();
+    let bestN = null, bd = 1e9;
+    for(const n of song.notes){
+      if(n.t > st + WIN_G) break;
+      if(n.judged || n.lane !== lane) continue;
+      const d = Math.abs(n.t - st);
+      if(d < bd){ bd = d; bestN = n; }
+    }
+    if(!bestN){ tickFeedback("w"); return; }        // 空击:仅音效,不惩罚
+    bestN.judged = true;
+    const per = bd <= WIN_P;
+    if(per) cnt.p++; else cnt.g++;
+    combo++;
+    if(combo > maxCombo) maxCombo = combo;
+    score += per ? 300 + Math.min(combo, 50) * 2 : 150 + Math.min(combo, 50);
+    rings.push({lane, life:1});
+    floats.push({x:laneX(lane), y:lineY() - 28, text:per ? "PERFECT" : "GOOD", col:per ? PAL.perfect : PAL.good, life:1});
+    if(combo % 25 === 0) floats.push({x:cw/2, y:chh*0.32, text:combo + " COMBO", col:PAL.warning, life:1.3});
+    comboPulse = 1;
+    tickFeedback(per ? "p" : "g");
+  }
+  const laneX = lane => cw / 4 * lane + cw / 8;
+
+  // ===== 效果更新(dt) =====
+  function updFx(dt){
+    for(let i = 0; i < 4; i++) padFlash[i] = Math.max(0, padFlash[i] - dt * 5);
+    comboPulse = Math.max(0, comboPulse - dt * 4);
+    floats = floats.filter(f => { f.y -= dt * 55; f.life -= dt * 1.3; return f.life > 0; });
+    rings = rings.filter(r => { r.life -= dt * 2.4; return r.life > 0; });
+  }
+
+  // ===== 渲染 =====
+  function rr(x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function draw(){
+    const w = cw, h = chh, lw = w / 4, ly = lineY();
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = PAL.field; ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.5; ctx.fillStyle = PAL.laneAlt;
+    ctx.fillRect(0, 0, lw, h); ctx.fillRect(lw*2, 0, lw, h);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = PAL.border;
+    for(let i = 1; i < 4; i++) ctx.fillRect(i * lw - 0.5, 0, 1, h);
+    if(state === "menu"){
+      const t = performance.now() / 1000;
+      for(let i = 0; i < 4; i++){
+        ctx.globalAlpha = 0.3 + 0.25 * (1 + Math.sin(t * 2 + i * 1.4)) / 2;
+        ctx.fillStyle = PAL.lane[i];
+        ctx.beginPath(); ctx.arc(laneX(i), ly, 13, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    const st = songTime();
+    ctx.fillStyle = PAL.primary;
+    ctx.fillRect(0, 0, w * Math.max(0, Math.min(1, st / song.duration)), 3);
+    ctx.globalAlpha = 0.3; ctx.fillStyle = PAL.line; ctx.fillRect(0, ly - 30, w, 30);
+    ctx.globalAlpha = 1; ctx.fillStyle = PAL.line; ctx.fillRect(0, ly - 2, w, 3.5);
+    ctx.textAlign = "center";
+    for(let i = 0; i < 4; i++){
+      if(padFlash[i] > 0){
+        ctx.globalAlpha = padFlash[i] * 0.28; ctx.fillStyle = PAL.lane[i];
+        ctx.fillRect(i * lw + 1, 0, lw - 2, ly); ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = PAL.faint; ctx.font = "600 12px " + FONT;
+      ctx.fillText(LANE_KEYS[i], laneX(i), ly + 22);
+    }
+    const size = Math.min(64, lw * 0.7);
+    for(const n of song.notes){
+      if(n.judged) continue;
+      const frac = (n.t - st) / APPROACH;
+      if(frac > 1) break;
+      if(frac < -0.13) continue;
+      const y = ly - frac * (ly + size);
+      const x = laneX(n.lane) - size / 2;
+      ctx.fillStyle = PAL.lane[n.lane];
+      rr(x, y - size / 2, size, size, 10); ctx.fill();
+      ctx.fillStyle = "#FFF";   // 恒白音符字符(GAME-THEME.md §2 允许)
+      ctx.font = "800 " + Math.round(size * 0.42) + "px " + FONT;
+      ctx.textBaseline = "middle";
+      ctx.fillText(LANE_KEYS[n.lane], laneX(n.lane), y + 1);
+      ctx.textBaseline = "alphabetic";
+    }
+    for(const r of rings){
+      ctx.globalAlpha = Math.max(0, r.life) * 0.8;
+      ctx.strokeStyle = PAL.lane[r.lane]; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(laneX(r.lane), ly, 18 + (1 - r.life) * 44, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.lineWidth = 1;
+    }
+    ctx.font = "800 15px " + FONT;
+    for(const f of floats){
+      ctx.globalAlpha = Math.max(0, Math.min(1, f.life));
+      ctx.fillStyle = f.col; ctx.textAlign = "center";
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+    if(combo >= 2){
+      const s = 1 + comboPulse * 0.18;
+      ctx.fillStyle = PAL.perfect; ctx.font = "800 " + Math.round(34 * s) + "px " + FONT;
+      ctx.fillText(String(combo), w / 2, h * 0.2);
+      ctx.fillStyle = PAL.muted; ctx.font = "600 11px " + FONT;
+      ctx.fillText("COMBO", w / 2, h * 0.2 + 17);
+    }
+    ctx.textAlign = "left";
+    ctx.fillStyle = PAL.muted; ctx.font = "600 11px " + FONT;
+    ctx.fillText(song.def.name + " · " + song.def.bpm + " BPM", 14, 22);
+    ctx.textAlign = "right";
+    ctx.fillStyle = PAL.muted; ctx.font = "600 11px " + FONT;
+    ctx.fillText("分数", w - 14, 22);
+    ctx.fillStyle = PAL.text; ctx.font = "800 22px " + FONT;
+    ctx.fillText(String(score), w - 14, 46);
+    ctx.textAlign = "center";
+    if(st < song.notes[0].t - 300){
+      ctx.fillStyle = PAL.muted; ctx.font = "600 13px " + FONT;
+      ctx.fillText("音符落至横线时 点击对应轨道", w / 2, h * 0.42);
+    }
+  }
+
+  // ===== 输入 =====
+  padEls.forEach(b => {
+    const lane = +b.dataset.lane;
+    b.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      b.classList.add("on");
+      ensureAudio();
+      hitLane(lane);
+    });
+    const off = () => b.classList.remove("on");
+    b.addEventListener("pointerup", off);
+    b.addEventListener("pointercancel", off);
+    b.addEventListener("pointerleave", off);
+  });
+  cv.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    ensureAudio();
+    if(state === "paused"){ resumeGame(); return; }
+    if(state !== "playing") return;
+    const r = cv.getBoundingClientRect();
+    const lane = Math.max(0, Math.min(3, Math.floor((e.clientX - r.left) / r.width * 4)));
+    hitLane(lane);
+  });
+  document.addEventListener("keydown", e => {
+    if(e.repeat) return;
+    const li = LANE_KEYS.indexOf(e.key.toUpperCase());
+    if(li >= 0){ ensureAudio(); hitLane(li); return; }
+    if(e.code === "Space"){
+      e.preventDefault();
+      if(state === "playing") pauseGame();
+      else if(state === "paused") resumeGame();
+    }else if(e.code === "Escape" && state !== "menu"){ toMenu(); }
+  });
+  menuBtn.addEventListener("click", toMenu);
+  pauseBtn.addEventListener("click", () => { if(state === "playing") pauseGame(); else if(state === "paused") resumeGame(); });
+  btnResume.addEventListener("click", resumeGame);
+  btnMenu2.addEventListener("click", toMenu);
+  btnMenu3.addEventListener("click", toMenu);
+  btnRetry.addEventListener("click", () => startSong(curIdx));
+
+  // 切后台自动暂停(音频挂起)
+  document.addEventListener("visibilitychange", () => {
+    if(document.hidden && state === "playing") pauseGame();
+  });
+
+  // ===== 画布尺寸 =====
+  function fit(){
+    const r = cv.getBoundingClientRect();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cw = Math.max(200, r.width); chh = Math.max(240, r.height);
+    cv.width = Math.round(cw * dpr); cv.height = Math.round(chh * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", fit);
+
+  // ===== 主循环(dt 效果 + 时钟驱动音符) =====
+  function loop(now){
+    requestAnimationFrame(loop);
+    let dt = (now - lastT) / 1000; lastT = now;
+    if(!(dt > 0)) dt = 0.016;
+    if(dt > 0.1) dt = 0.1;
+    if(state === "playing"){
+      const st = songTime();
+      for(const n of song.notes){
+        if(!n.judged && st - n.t > WIN_G){
+          n.judged = true; cnt.m++; combo = 0;
+          floats.push({x:laneX(n.lane), y:lineY() + 26, text:"MISS", col:PAL.danger, life:1});
+        }
+      }
+      if(st >= song.end) finish();
+      updFx(dt);
+    }else if(state === "over" || state === "paused"){
+      updFx(dt * 0.4);
+    }
+    draw();
+  }
+
+  // ===== 启动 =====
+  buildMenu();
+  showView("menu");
+  fit();
+  requestAnimationFrame(loop);
+
+  // QA 钩子(自动化测试用,不影响玩法)
+  window.__bt = {
+    start: i => { startSong(i === undefined ? 0 : i); return {notes:song.notes.length, events:song.events.length, end:song.end}; },
+    hit: hitLane, time: () => Math.round(songTime()),
+    state: () => state, score: () => score
+  };
+})();
+</script>
+</body>
+</html>

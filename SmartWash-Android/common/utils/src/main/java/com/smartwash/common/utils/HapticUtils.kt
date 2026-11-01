@@ -26,11 +26,28 @@ enum class HapticEffect {
 /** 双连击两下之间的间隔（毫秒）——够快才成"连击"，够慢才分辨得出两下 */
 private const val DOUBLE_TICK_GAP_MS = 70L
 
+/**
+ * 触感反馈全局开关（设置页「触感反馈」行持久化，默认开启）。
+ *
+ * 内存态供 [View.performHaptic] 同步热路径读取——点击时刻无法挂起读 DataStore，
+ * 持久化初值由 user:impl 的 HapticSettingsInitTask 启动异步加载，
+ * 设置页切换时同步改内存 + 异步落盘。
+ */
+object HapticSettings {
+    /** DataStore 存储键（非用户可见常量，归本对象持有） */
+    const val STORAGE_KEY = "haptic_feedback_enabled"
+
+    @Volatile
+    var enabled: Boolean = true
+}
+
 @Composable
 @ReadOnlyComposable
 fun currentView(): View = LocalView.current
 
 fun View.performHaptic(effect: HapticEffect) {
+    // 全局开关关闭时静默返回（设置页「触感反馈」= 关）
+    if (!HapticSettings.enabled) return
     when (effect) {
         HapticEffect.LIGHT -> performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
         HapticEffect.MEDIUM -> performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)

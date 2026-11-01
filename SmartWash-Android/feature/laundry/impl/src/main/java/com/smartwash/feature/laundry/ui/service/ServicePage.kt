@@ -14,14 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DryCleaning
 import androidx.compose.material.icons.rounded.LocalLaundryService
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -99,15 +97,11 @@ fun ServicePage(
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // 搜索胶囊
-                    item {
-                        SearchBar()
-                    }
-
                 // 洗护分类标题
                 item {
-                    // 画板实测：搜索胶囊底(80) → 标题顶(116) = 36
-                    Spacer(modifier = Modifier.height(36.dp))
+                    // 原搜索胶囊为纯静态装饰（无输入无过滤，调研 2026-11-01）已移除；
+                    // 首个内容块顶距取原「搜索胶囊顶距 8 + 胶囊 48 + 间距 36」的剩余节奏
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.laundry_service),
                         style = AppTextStyles.SectionTitle,
@@ -117,11 +111,14 @@ fun ServicePage(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                    // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 v3 §3.4）
+                    // 服务项目列表 — 单张卡片包裹，内部以 0.5dp 发丝线分隔（规范 v3 §3.4）；
+                    // 行点击跳预约页并携带该套餐 id 作为默认选中（调研 2026-11-01 缺陷 3c）
                     item {
                         ServiceListCard(
                             items = laundryItems,
-                            onReserve = { navController.navigate(LaundryRoute.Laundry.text) }
+                            onReserve = { itemId ->
+                                navController.navigate(LaundryRoute.Laundry.build(itemId))
+                            }
                         )
                     }
 
@@ -169,53 +166,14 @@ private fun ServiceErrorState(
 }
 
 /**
- * 搜索胶囊 — 48dp 高（画板实测），胶囊圆角（radiusFull），
- * 白底 + 1px 描边 + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）。
- */
-@Composable
-private fun SearchBar() {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = AppDimens.pagePadding)
-            .padding(top = 8.dp),
-        shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Search,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                // 画板实测 #6B6E73 = textSecondary（非 textTertiary #A9AEA9）
-                tint = AppColors.colorScheme.textSecondary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.service_search_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
-            )
-        }
-    }
-}
-
-/**
  * 服务项目列表卡片 — 白底 + 1px 描边 + 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法）。
- * 36dp 图标容器（四色 iconTile）+ 等宽价格 + 预约胶囊（画板实测 60×24）。
+ * 36dp 图标容器（四色 iconTile）+ 等宽价格；卡片为纯信息展示（用户拍板 2026-11-01），
+ * 预约动线由整行点击承担（行尾 chevron 提供可点暗示），点击携带套餐 id 跳预约页预选。
  */
 @Composable
 private fun ServiceListCard(
     items: List<LaundryItem>,
-    onReserve: () -> Unit
+    onReserve: (Long) -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -246,7 +204,7 @@ private fun ServiceListCard(
 @Composable
 private fun ServiceItemRow(
     item: LaundryItem,
-    onReserve: () -> Unit
+    onReserve: (Long) -> Unit
 ) {
     val view = currentView()
     Row(
@@ -256,7 +214,7 @@ private fun ServiceItemRow(
                 // 点击因果明确的时刻补触觉（规范 §7.7）；清单原写 HapticEffect.CLICK，
                 // 枚举中无此项，取语义最近的 LIGHT（一般交互轻触）
                 view.performHaptic(HapticEffect.LIGHT)
-                onReserve()
+                onReserve(item.itemId)
             })
             // 画板实测行体 74 = 上 15 + 内容 52 + 下 7（卡高 296 = 4×74）；
             // 图标盒/名称/价格同顶（画板 y 均 167），非垂直居中
@@ -294,30 +252,15 @@ private fun ServiceItemRow(
                 color = AppColors.colorScheme.primaryDark
             )
             Spacer(modifier = Modifier.height(4.dp))
-            ReservePill()
+            // 原 60×24「预约 ›」胶囊已按用户拍板移除（套餐卡回归纯信息展示）；
+            // 整行仍可点（点击携带套餐 id 预选），行尾 chevron 保留可点暗示
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = AppColors.colorScheme.textTertiary
+            )
         }
-    }
-}
-
-/**
- * 预约胶囊 — 60×24（画板实测），radiusFull，
- * primaryLight 底 + onPrimaryContainer 文字（浅 #F0FBF4/#17322B、深 #17322B/#F0FBF4）；
- * labelMedium = captionStrong 12/16/500。触控热区由整行 pressable 承担（行体 74dp ≥ 48dp）。
- */
-@Composable
-private fun ReservePill() {
-    Box(
-        modifier = Modifier
-            .size(width = 60.dp, height = 24.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(AppColors.colorScheme.primaryLight),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = stringResource(R.string.service_reserve),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
     }
 }
 

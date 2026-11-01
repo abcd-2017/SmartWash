@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>记忆翻牌</title>
+<style>
+  /*token:GAME-THEME.md §2（按需取用）+ 卡面/牌背素材 token*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-gap:16px;--g-card:#FFFFFF;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-card:#262A27;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
+  h1 { margin: 0; font-size: 26px; }
+  .sub { font-size: 13px; color: var(--g-muted); }
+  .levels { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+  .levels::-webkit-scrollbar { display: none; }
+  .lv {
+    flex: 0 0 auto; min-width: 56px; min-height: 44px; padding: 4px 10px;
+    border: 1px solid var(--g-border); border-radius: var(--g-radius-inner);
+    background: var(--g-surface); color: var(--g-muted);
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  }
+  .lv small { font-size: 10px; font-weight: 500; color: var(--g-faint); }
+  .lv.cur { border-color: var(--g-primary); color: var(--g-primary-deep); background: var(--g-primary-soft); }
+  .lv.done { color: var(--g-primary-deep); }
+  .lv:disabled { opacity: .45; cursor: default; }
+  .stats { display: flex; gap: 8px; margin-bottom: 12px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 11px; color: var(--g-muted); }
+  .stat .val { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  /* 牌阵 */
+  .grid { display: grid; gap: 10px; margin-bottom: 4px; }
+  .card {
+    position: relative; aspect-ratio: 3 / 4; padding: 0;
+    border: 0; background: transparent; cursor: pointer;
+    perspective: 600px; -webkit-touch-callout: none;
+  }
+  .card .in {
+    position: absolute; inset: 0;
+    transform-style: preserve-3d; transition: transform .38s cubic-bezier(.4,.1,.2,1.2);
+  }
+  .card.flip .in { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border-radius: var(--g-radius-inner);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--g-shadow);
+  }
+  .face.back { background: var(--g-primary-soft); color: var(--g-primary); }
+  .face.back svg { width: 62%; height: 62%; }
+  .face.front { background: var(--g-card); transform: rotateY(180deg); border: 1px solid var(--g-border); }
+  .face.front svg { width: 64%; height: 64%; }
+  .card:active .in { transform: scale(.96); }
+  .card.flip:active .in { transform: rotateY(180deg) scale(.98); }
+  .card.done { pointer-events: none; }
+  .card.done .face.front { border-color: var(--g-success); animation: pulse .45s; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--g-primary-soft); } 50% { box-shadow: 0 0 0 6px var(--g-primary-soft); } 100% { box-shadow: var(--g-shadow); } }
+  .msg { min-height: 20px; margin: 10px 2px 8px; font-size: 13px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .row2 { display: flex; gap: 8px; }
+  .panel .btn { flex: 1; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>记忆翻牌</h1><span class="sub">翻两张 · 配对全部点亮</span></header>
+  <nav class="levels" id="levels" aria-label="关卡选择"></nav>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">用时</span><span class="val" id="stTime">0s</span></div>
+    <div class="stat"><span class="label">最佳步数</span><span class="val" id="stBest">—</span></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="msg" id="msg"></p>
+  <div class="tools"><button class="btn ghost" id="btnRestart">重开本关</button></div>
+  <p class="foot">图案一致即配对成功 · 配错的两张会自动盖回 · 步数越少越好</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">配对完成！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="row2">
+      <button class="btn ghost" id="ovReplay">再来一次</button>
+      <button class="btn" id="ovNext">下一关</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 原创 12 图案（内联 SVG，颜色走 CSS 变量随主题） ---------- */
+var GLYPHS=[
+  {n:"太阳",c:"--g-warning",s:'<circle cx="32" cy="32" r="11" fill="currentColor"/><g stroke="currentColor" stroke-width="4" stroke-linecap="round"><line x1="32" y1="7" x2="32" y2="15"/><line x1="32" y1="49" x2="32" y2="57"/><line x1="7" y1="32" x2="15" y2="32"/><line x1="49" y1="32" x2="57" y2="32"/><line x1="14.2" y1="14.2" x2="19.8" y2="19.8"/><line x1="44.2" y1="44.2" x2="49.8" y2="49.8"/><line x1="49.8" y1="14.2" x2="44.2" y2="19.8"/><line x1="19.8" y1="44.2" x2="14.2" y2="49.8"/></g>'},
+  {n:"月亮",c:"--g-water",s:'<circle cx="30" cy="32" r="20" fill="currentColor"/><circle cx="41" cy="26" r="17" fill="var(--g-card)"/>'},
+  {n:"星星",c:"--g-warning",s:'<polygon points="32,10 37.5,24.4 52.9,25.2 40.9,34.9 44.9,49.8 32,41.4 19.1,49.8 23.1,34.9 11.1,25.2 26.5,24.4" fill="currentColor"/>'},
+  {n:"爱心",c:"--g-danger",s:'<circle cx="24" cy="25" r="12" fill="currentColor"/><circle cx="40" cy="25" r="12" fill="currentColor"/><polygon points="13.5,31 50.5,31 32,52" fill="currentColor"/>'},
+  {n:"云朵",c:"--g-water",s:'<circle cx="22" cy="37" r="10" fill="currentColor"/><circle cx="33" cy="30" r="13" fill="currentColor"/><circle cx="45" cy="38" r="9" fill="currentColor"/><rect x="14" y="38" width="39" height="11" rx="5.5" fill="currentColor"/>'},
+  {n:"水滴",c:"--g-water",s:'<path d="M32 9C24 21 15 31 15 41a17 17 0 0 0 34 0C49 31 40 21 32 9Z" fill="currentColor"/>'},
+  {n:"松树",c:"--g-primary",s:'<polygon points="32,7 15,32 24,32 11,51 53,51 40,32 49,32" fill="currentColor"/><rect x="28" y="51" width="8" height="6" rx="2" fill="currentColor"/>'},
+  {n:"花朵",c:"--g-danger",s:'<circle cx="32" cy="19" r="8.5" fill="currentColor"/><circle cx="43.5" cy="27.5" r="8.5" fill="currentColor"/><circle cx="39" cy="41" r="8.5" fill="currentColor"/><circle cx="25" cy="41" r="8.5" fill="currentColor"/><circle cx="20.5" cy="27.5" r="8.5" fill="currentColor"/><circle cx="32" cy="32" r="6.5" fill="var(--g-card)"/>'},
+  {n:"小鱼",c:"--g-primary-deep",s:'<ellipse cx="27" cy="32" rx="16" ry="10.5" fill="currentColor"/><polygon points="41,32 55,21 55,43" fill="currentColor"/><circle cx="19.5" cy="29" r="2.6" fill="var(--g-card)"/>'},
+  {n:"小鸟",c:"--g-primary-deep",s:'<circle cx="28" cy="34" r="13" fill="currentColor"/><circle cx="41" cy="23" r="8" fill="currentColor"/><polygon points="48,20 58,24 48,28" fill="currentColor"/><circle cx="43.5" cy="21" r="2" fill="var(--g-card)"/><circle cx="24" cy="35" r="5" fill="var(--g-card)"/><line x1="24" y1="47" x2="24" y2="53" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="33" y1="47" x2="33" y2="53" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>'},
+  {n:"蘑菇",c:"--g-primary",s:'<path d="M12 35a20 20 0 0 1 40 0Z" fill="currentColor"/><rect x="25" y="35" width="14" height="15" rx="5" fill="currentColor"/><circle cx="24" cy="27" r="3.5" fill="var(--g-card)"/><circle cx="38" cy="23" r="3" fill="var(--g-card)"/><circle cx="34" cy="31" r="2.4" fill="var(--g-card)"/>'},
+  {n:"雪花",c:"--g-water",s:'<g stroke="currentColor" stroke-width="4.5" stroke-linecap="round"><line x1="32" y1="10" x2="32" y2="54"/><line x1="14.7" y1="21" x2="49.3" y2="43"/><line x1="49.3" y1="21" x2="14.7" y2="43"/></g>'}
+];
+var BACK='<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="19" cy="20" r="6" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="42" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="49" cy="31" r="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M32 26c-5.5 7.5-10 13-10 18.5a10 10 0 0 0 20 0C42 39 37.5 33.5 32 26Z" fill="currentColor"/></svg>';
+/* ---------- 关表：对数与列数（N×2 牌阵） ---------- */
+var LEVELS=[{p:3,cols:3},{p:4,cols:4},{p:6,cols:4},{p:8,cols:4},{p:10,cols:5},{p:12,cols:6}];
+/* ---------- 存档 ---------- */
+var KEY="sw.memory.v1";
+function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var save=loadSave();
+save.best=save.best||{};
+save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
+/* ---------- 状态 ---------- */
+var cur=save.lv,deck=[],open=[],lock=false,moves=0,matched=0,timer=null,sec=0,started=false,over=false;
+var grid=document.getElementById("grid");
+function $(id){return document.getElementById(id)}
+function fmt(t){return t>=60?Math.floor(t/60)+"m"+(t%60)+"s":t+"s"}
+/* ---------- 关卡 ---------- */
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function build(){
+  var cfg=LEVELS[cur];
+  over=false;moves=0;matched=0;open=[];lock=false;sec=0;started=false;
+  clearInterval(timer);timer=null;
+  $("stMoves").textContent="0";$("stTime").textContent="0s";
+  $("stBest").textContent=save.best[cur]?save.best[cur].m+"步":"—";
+  //随机抽 N 种图案，成对洗入牌阵
+  var pool=shuffle(GLYPHS.map(function(g,i){return i})).slice(0,cfg.p);
+  deck=shuffle(pool.concat(pool));
+  grid.style.gridTemplateColumns="repeat("+cfg.cols+",1fr)";
+  grid.innerHTML="";
+  deck.forEach(function(gi,pos){
+    var g=GLYPHS[gi];
+    var b=document.createElement("button");
+    b.className="card";b.dataset.g=gi;
+    b.setAttribute("aria-label","卡牌");
+    b.innerHTML='<div class="in"><div class="face back">'+BACK+'</div><div class="face front" style="color:var('+g.c+')"><svg viewBox="0 0 64 64" aria-hidden="true">'+g.s+'</svg></div></div>';
+    b.addEventListener("click",function(){tap(b,gi)});
+    grid.appendChild(b);
+  });
+  $("stLv").textContent=(cur+1)+"/"+LEVELS.length;
+  renderLevels();
+  say(cfg.p+" 对图案，翻开两张相同的即配对成功。");
+}
+function renderLevels(){
+  var el=$("levels");el.innerHTML="";
+  LEVELS.forEach(function(cfg,i){
+    var b=document.createElement("button");b.className="lv";
+    b.innerHTML="第"+(i+1)+"关<small>"+cfg.p+"对"+(save.best[i]?" · "+save.best[i].m+"步":"")+"</small>";
+    if(i===cur)b.classList.add("cur");
+    if(save.best[i])b.classList.add("done");
+    b.disabled=i>save.lv;
+    b.addEventListener("click",function(){if(i===cur&&!over)return;cur=i;persist();hideOverlay();build()});
+    el.appendChild(b);
+  });
+}
+function say(t){$("msg").textContent=t}
+/* ---------- 翻牌 ---------- */
+function tap(el,gi){
+  if(over||lock)return;
+  if(el.classList.contains("flip"))return;
+  if(!started){started=true;timer=setInterval(function(){sec++;$("stTime").textContent=fmt(sec)},1000)}
+  el.classList.add("flip");
+  open.push({el:el,g:gi});
+  if(open.length<2)return;
+  moves++;$("stMoves").textContent=moves;
+  var a=open[0],b2=open[1];
+  open=[];
+  if(a.g===b2.g){
+    a.el.classList.add("done");b2.el.classList.add("done");
+    matched++;
+    say(matched===LEVELS[cur].p?"全部配对！":"配对成功，继续！");
+    if(matched===LEVELS[cur].p)win();
+  }else{
+    lock=true;
+    setTimeout(function(){
+      a.el.classList.remove("flip");b2.el.classList.remove("flip");
+      lock=false;
+    },750);
+    say("不一样，记住它们的位置。");
+  }
+}
+/* ---------- 通关 ---------- */
+function win(){
+  over=true;clearInterval(timer);timer=null;
+  var prev=save.best[cur],record="";
+  if(!prev||moves<prev.m||sec<prev.t){
+    save.best[cur]={m:prev?Math.min(prev.m,moves):moves,t:prev?Math.min(prev.t,sec):sec};
+    record=(!prev||moves<prev.m)?"（新纪录！）":"";
+    persist();renderLevels();
+    $("stBest").textContent=save.best[cur].m+"步";
+  }
+  var min=LEVELS[cur].p;
+  $("ovTitle").textContent="配对完成！";
+  $("ovDesc").innerHTML="用时 <b>"+fmt(sec)+"</b> · 步数 <b>"+moves+"</b>"+record+"<br>理论最少 "+min+" 步"+(prev?" · 最佳 "+save.best[cur].m+"步 / "+fmt(save.best[cur].t):"");
+  $("ovNext").textContent=cur+1<LEVELS.length?"下一关":"全部通关";
+  $("overlay").classList.add("show");
+}
+function hideOverlay(){$("overlay").classList.remove("show")}
+$("btnRestart").addEventListener("click",build);
+$("ovReplay").addEventListener("click",function(){hideOverlay();build()});
+$("ovNext").addEventListener("click",function(){
+  hideOverlay();
+  if(cur+1<LEVELS.length){cur=cur+1;persist();build()}
+  else say("六关全部通关，记忆大师！");
+});
+build();
+})();
+</script>
+</body>
+</html>

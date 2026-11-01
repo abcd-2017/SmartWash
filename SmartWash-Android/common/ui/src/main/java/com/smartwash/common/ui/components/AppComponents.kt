@@ -115,14 +115,22 @@ fun PageHeader(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = AppDimens.pagePadding, vertical = 12.dp),
+            // 设计稿内页页头：箭头图形左缘 24、状态栏下顶距 14。旧实现整行 24dp 边距 + 48dp 热区内缩 12，
+            // 使图形左缘落到 36、顶距 24（观感「偏右下」）；改为行首让位 12dp，图形落在 24，热区仍 48dp
+            .padding(
+                start = if (onBack != null) 12.dp else AppDimens.pagePadding,
+                end = AppDimens.pagePadding,
+                top = 2.dp,
+                bottom = 6.dp
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (onBack != null) {
             // §7 禁 Material 交互组件（IconButton 自带 state layer 涟漪）：改自绘按压热区，
             // pressable 内置 indication = null + scale 0.97 按压反馈
             Box(
-                // 热区 48dp（设计稿「热区-返回」48×48；规范 §3.2 返回箭头豁免入容器但强制 48dp 触控热区）
+                // 热区 48dp（规范 §3.2 返回箭头豁免入容器但强制 48dp 触控热区）：
+                // 行首 12 + 热区 48 → 图形居中落 [24,46]，向左越出行边距的部分是纯热区
                 modifier = Modifier
                     .size(48.dp)
                     .pressable(onClick = debouncedBack),
@@ -135,8 +143,7 @@ fun PageHeader(
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
-            // 画板实测：标题左缘 x=76（热区右缘 + 4），标题与箭头视觉间距 20
-            Spacer(modifier = Modifier.width(4.dp))
+            // 标题紧随热区（左缘 60）：与箭头图形右缘 46 的视觉间距 14，对齐设计稿的 12
         }
         Text(
             text = title,

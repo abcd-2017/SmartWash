@@ -133,7 +133,7 @@
 
     <!-- ==================== 应用更新（弹窗 UI 留壳层，T3.1） ==================== -->
     <string name="check_update">检查更新</string>
-    <string name="check_update_desc">当前版本 %s</string>
+    <string name="version_short">v%s</string>
     <string name="already_latest">当前已是最新版本</string>
     <string name="new_version_available">发现新版本</string>
     <string name="update_version_format" formatted="false">v%s (%s)</string>
@@ -183,24 +183,12 @@
     <string name="workbench_divination_name">观象台</string>
     <string name="workbench_divination_subtitle">六爻 · 梅花 · 奇门 · 大六壬</string>
     <string name="workbench_all_tools">全部工具</string>
-    <string name="workbench_tool_calendar">洗衣黄历</string>
-    <string name="workbench_tool_calendar_desc">今天宜洗什么颜色</string>
-    <string name="workbench_tool_stain">渍迹识别</string>
-    <string name="workbench_tool_stain_desc">拍照认污渍类型</string>
-    <string name="workbench_tool_fabric">面料百科</string>
-    <string name="workbench_tool_fabric_desc">什么面料怎么洗</string>
-    <string name="workbench_tool_estimate">费用估算</string>
-    <string name="workbench_tool_estimate_desc">洗之前先算个账</string>
-    <string name="workbench_tool_history">我的卦历</string>
-    <string name="workbench_tool_history_desc">起过的卦都在这里</string>
-    <string name="workbench_tool_ai">AI 助手</string>
-    <string name="workbench_tool_ai_desc">洗护问题随口问</string>
-    <string name="workbench_tool_short_code">短链工具箱</string>
-    <string name="workbench_tool_short_code_desc">短链、活码随手建</string>
     <string name="workbench_footer">工具会陆续加进来</string>
     <string name="workbench_coming_soon">功能建设中，敬请期待</string>
     <!-- 服务端入口配置拉取失败时的静默兜底留痕（RequestState.Error 消费方备用） -->
-    <string name="workbench_entries_fallback">工具列表加载失败，已显示默认工具</string>
+    <string name="workbench_entries_error">工具列表加载失败，请检查网络后重试</string>
+    <string name="workbench_entries_empty">工具还在准备中，稍后再来看看</string>
+    <string name="workbench_retry">重试</string>
 
     <!-- ==================== 内置浏览器页（壳层留守，深链 web 分支承载） ==================== -->
     <string name="webview_default_title">详情页</string>

@@ -419,7 +419,9 @@ fun DivCategoryChip(
                 text = text,
                 fontSize = 12.sp,
                 color = textColor,
-                // 字重无插值能力，保留瞬时切换作为"选中"的状态可读性
+                // 字重无插值能力，保留瞬时切换作为"选中"的状态可读性；
+                // 单行限高（2026-11-01 缺陷 7d）：窄屏被压缩时换行比截断更难看，外层已横滚
+                maxLines = 1,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             )
             if (checkScale > 0f) {

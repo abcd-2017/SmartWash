@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>五子棋 · 人机对弈</title>
+<style>
+/*token:GAME-THEME.md*/
+:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-primary-deep:#1E8C5C;--g-danger:#C9526B;--g-shadow:0 10px 24px rgba(20,40,30,.10);--g-bd1:#F6DCAB;--g-bd2:#ECCF92;--g-line:#7A5B34;--g-star:#5A4325;color-scheme:light}
+:root[data-theme=dark]{--g-bg:#141614;--g-surface:#1D201E;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-primary-deep:#5BC894;--g-danger:#DB7186;--g-shadow:0 10px 24px rgba(0,0,0,.45);--g-bd1:#4A3D26;--g-bd2:#3A2F1D;--g-line:#9A845C;--g-star:#B49C6E;color-scheme:dark}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:none}
+header{width:100%;max-width:460px;padding:10px 14px 0;text-align:center}
+header h1{font-size:19px;font-weight:600}
+#record{font-size:13px;color:var(--g-muted);margin-top:3px}
+#status{font-size:15px;font-weight:600;color:var(--g-primary-deep);margin-top:8px;min-height:22px}
+#stage{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;touch-action:none}
+canvas{display:block;border-radius:10px;box-shadow:var(--g-shadow)}
+footer{display:flex;gap:16px;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+.btn{min-width:110px;min-height:46px;border:0;border-radius:12px;background:var(--g-primary);color:#fff;font-size:16px;font-weight:600;padding:0 20px;cursor:pointer;font-family:inherit}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.4}
+.btn.alt{background:var(--g-surface);border:1px solid var(--g-border);color:var(--g-text)}
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<header>
+  <h1>五子棋 · 人机对弈</h1>
+  <div id="record">战绩 胜 0 / 负 0 / 和 0</div>
+  <div id="status">你执黑先行，点击棋盘落子</div>
+</header>
+<div id="stage">
+  <canvas id="cv"></canvas>
+</div>
+<footer>
+  <button id="btnUndo" class="btn">悔棋</button>
+  <button id="btnNew" class="btn alt">重新开局</button>
+</footer>
+<script>
+(function(){
+'use strict';
+var N=15,HUMAN=1,AI=2;
+var DX=[[1,0],[0,1],[1,1],[1,-1]];
+var cv=document.getElementById('cv');
+var ctx=cv.getContext('2d');
+var stage=document.getElementById('stage');
+var elStatus=document.getElementById('status');
+var elRecord=document.getElementById('record');
+var btnUndo=document.getElementById('btnUndo');
+var btnNew=document.getElementById('btnNew');
+
+var size=360,pad=16,cell=24,dpr=1;
+//调色板:GAME-THEME.md D2/D3(__gOnTheme刷新重绘)
+var PAL={};
+function palLoad(){var s=getComputedStyle(document.documentElement);'bd1 bd2 line star danger'.split(' ').forEach(function(k){PAL[k]=s.getPropertyValue('--g-'+k).trim()})}
+window.__gOnTheme=function(){palLoad();render()};
+palLoad();
+var board=[];
+var history=[];
+var gameOver=false;
+var aiThinking=false;
+var anim=null,animRaf=0;
+var rec={w:0,l:0,d:0};
+
+for(var z=0;z<N*N;z++)board.push(0);
+try{
+  var raw=localStorage.getItem('gomoku.record');
+  if(raw){
+    var o=JSON.parse(raw);
+    if(o&&typeof o==='object'){
+      rec.w=o.w|0;rec.l=o.l|0;rec.d=o.d|0;
+    }
+  }
+}catch(e){}
+function saveRecord(){try{localStorage.setItem('gomoku.record',JSON.stringify(rec));}catch(e){}}
+function renderRecord(){elRecord.textContent='战绩 胜 '+rec.w+' / 负 '+rec.l+' / 和 '+rec.d;}
+function setStatus(t){elStatus.textContent=t;}
+function inb(i,j){return i>=0&&i<N&&j>=0&&j<N;}
+
+function resize(){
+  var sw=stage.clientWidth-8,sh=stage.clientHeight-8;
+  size=Math.max(240,Math.min(sw,sh,432));
+  if(!(size>0))return;
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.style.width=size+'px';
+  cv.style.height=size+'px';
+  cv.width=Math.round(size*dpr);
+  cv.height=Math.round(size*dpr);
+  pad=Math.round(size*0.048);
+  cell=(size-2*pad)/(N-1);
+  render();
+}
+function render(now){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+  var g=ctx.createLinearGradient(0,0,size,size);
+  g.addColorStop(0,PAL.bd1);
+  g.addColorStop(1,PAL.bd2);
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,size,size);
+  ctx.fillStyle='rgba(180,140,80,.08)';
+  for(var k=0;k<5;k++){ctx.fillRect(0,size*(0.1+k*0.17),size,size*0.045);}
+  ctx.strokeStyle=PAL.line;
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  for(var i=0;i<N;i++){
+    var p=pad+i*cell;
+    ctx.moveTo(pad,p);ctx.lineTo(pad+(N-1)*cell,p);
+    ctx.moveTo(p,pad);ctx.lineTo(p,pad+(N-1)*cell);
+  }
+  ctx.stroke();
+  ctx.lineWidth=2;
+  ctx.strokeRect(pad,pad,(N-1)*cell,(N-1)*cell);
+  ctx.fillStyle=PAL.star;
+  var stars=[[3,3],[3,11],[11,3],[11,11],[7,7]];
+  for(var s=0;s<stars.length;s++){
+    ctx.beginPath();
+    ctx.arc(pad+stars[s][1]*cell,pad+stars[s][0]*cell,Math.max(2,cell*0.09),0,Math.PI*2);
+    ctx.fill();
+  }
+  var animating=false,scale=1;
+  if(now&&anim&&now-anim.t0<180){
+    animating=true;
+    var t=(now-anim.t0)/180;
+    t=t*(2-t);
+    scale=0.55+0.45*t;
+  }
+  for(var r=0;r<history.length;r++){
+    var m=history[r];
+    var sc=(animating&&r===history.length-1)?scale:1;
+    drawStone(m.i,m.j,m.color,sc);
+  }
+  if(!animating&&history.length>0){
+    var last=history[history.length-1];
+    ctx.beginPath();
+    ctx.arc(pad+last.j*cell,pad+last.i*cell,Math.max(2.5,cell*0.12),0,Math.PI*2);
+    ctx.fillStyle=PAL.danger;
+    ctx.fill();
+  }
+}
+function drawStone(i,j,color,scale){
+  var x=pad+j*cell,y=pad+i*cell,r=cell*0.45*scale;
+  if(r<=0)return;
+  var g=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.12,x,y,r);
+  if(color===HUMAN){g.addColorStop(0,'#6a6a6a');g.addColorStop(1,'#101010');}
+  else{g.addColorStop(0,'#ffffff');g.addColorStop(1,'#cfcfcf');}
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=g;ctx.fill();
+  if(color!==HUMAN){ctx.strokeStyle='rgba(90,80,60,.55)';ctx.lineWidth=1;ctx.stroke();}
+  ctx.beginPath();ctx.arc(x-r*0.3,y-r*0.35,r*0.18,0,Math.PI*2);
+  ctx.fillStyle=color===HUMAN?'rgba(255,255,255,.16)':'rgba(255,255,255,.9)';
+  ctx.fill();
+}
+function startAnim(){
+  if(animRaf)return;
+  function step(now){
+    if(anim&&now-anim.t0<180){
+      render(now);
+      animRaf=requestAnimationFrame(step);
+    }else{
+      animRaf=0;
+      render();
+    }
+  }
+  animRaf=requestAnimationFrame(step);
+}
+
+function lineScore(cnt,open){
+  if(cnt>=5)return 10000000;
+  if(cnt===4)return open===2?1000000:(open===1?50000:0);
+  if(cnt===3)return open===2?30000:(open===1?3000:0);
+  if(cnt===2)return open===2?2500:(open===1?300:0);
+  if(cnt===1)return open===2?60:(open===1?10:0);
+  return 0;
+}
+function evalPoint(i,j,color){
+  var total=0;
+  for(var d=0;d<4;d++){
+    var dx=DX[d][0],dy=DX[d][1];
+    var cnt=1,open=0,k,ii,jj;
+    k=1;ii=i+dx*k;jj=j+dy*k;
+    while(inb(ii,jj)&&board[ii*N+jj]===color){cnt++;k++;ii=i+dx*k;jj=j+dy*k;}
+    if(inb(ii,jj)&&board[ii*N+jj]===0)open++;
+    k=1;ii=i-dx*k;jj=j-dy*k;
+    while(inb(ii,jj)&&board[ii*N+jj]===color){cnt++;k++;ii=i-dx*k;jj=j-dy*k;}
+    if(inb(ii,jj)&&board[ii*N+jj]===0)open++;
+    total+=lineScore(cnt,open);
+  }
+  return total;
+}
+function hasNeighbor(i,j,rad){
+  for(var di=-rad;di<=rad;di++){
+    for(var dj=-rad;dj<=rad;dj++){
+      if(di===0&&dj===0)continue;
+      var ii=i+di,jj=j+dj;
+      if(inb(ii,jj)&&board[ii*N+jj]!==0)return true;
+    }
+  }
+  return false;
+}
+function bestMove(){
+  if(history.length===0)return{i:7,j:7};
+  var cands=[];
+  for(var i=0;i<N;i++){
+    for(var j=0;j<N;j++){
+      if(board[i*N+j]===0&&hasNeighbor(i,j,2))cands.push({i:i,j:j});
+    }
+  }
+  if(cands.length===0)return{i:7,j:7};
+  var bestS=-1,pick=cands[0];
+  for(var c=0;c<cands.length;c++){
+    var m=cands[c];
+    var atk=evalPoint(m.i,m.j,AI);
+    if(atk>=10000000)return m;
+    var def=evalPoint(m.i,m.j,HUMAN);
+    var s=atk+def*1.05+((7-Math.abs(m.i-7))+(7-Math.abs(m.j-7)))*2+Math.random()*8;
+    if(s>bestS){bestS=s;pick=m;}
+  }
+  return pick;
+}
+function checkWin(i,j,color){
+  for(var d=0;d<4;d++){
+    var dx=DX[d][0],dy=DX[d][1];
+    var cnt=1,k=1,ii=i+dx,jj=j+dy;
+    while(inb(ii,jj)&&board[ii*N+jj]===color){cnt++;k++;ii=i+dx*k;jj=j+dy*k;}
+    k=1;ii=i-dx;jj=j-dy;
+    while(inb(ii,jj)&&board[ii*N+jj]===color){cnt++;k++;ii=i-dx*k;jj=j-dy*k;}
+    if(cnt>=5)return true;
+  }
+  return false;
+}
+
+function place(i,j,color){
+  board[i*N+j]=color;
+  history.push({i:i,j:j,color:color});
+  anim={i:i,j:j,t0:performance.now()};
+  startAnim();
+}
+function finish(result){
+  gameOver=true;
+  if(result==='w'){rec.w++;setStatus('你赢了！恭喜！');}
+  else if(result==='l'){rec.l++;setStatus('AI 获胜，再接再厉');}
+  else{rec.d++;setStatus('和棋，棋盘已下满');}
+  saveRecord();
+  renderRecord();
+  updateButtons();
+}
+function updateButtons(){
+  btnUndo.disabled=gameOver||aiThinking||history.length===0;
+  btnNew.disabled=aiThinking;
+}
+function aiTurn(){
+  aiThinking=true;
+  setStatus('AI 思考中…');
+  updateButtons();
+  setTimeout(function(){
+    var m=bestMove();
+    if(m){
+      place(m.i,m.j,AI);
+      if(checkWin(m.i,m.j,AI))finish('l');
+      else if(history.length>=N*N)finish('d');
+      else setStatus('轮到你落子（执黑）');
+    }
+    aiThinking=false;
+    updateButtons();
+  },300+Math.random()*250);
+}
+cv.addEventListener('pointerdown',function(e){
+  if(gameOver||aiThinking)return;
+  var rect=cv.getBoundingClientRect();
+  var px=e.clientX-rect.left,py=e.clientY-rect.top;
+  var j=Math.round((px-pad)/cell),i=Math.round((py-pad)/cell);
+  if(!inb(i,j))return;
+  var dx=px-(pad+j*cell),dy=py-(pad+i*cell);
+  var lim=cell*0.85;
+  if(dx*dx+dy*dy>lim*lim)return;
+  if(board[i*N+j]!==0)return;
+  place(i,j,HUMAN);
+  if(checkWin(i,j,HUMAN)){finish('w');return;}
+  if(history.length>=N*N){finish('d');return;}
+  aiTurn();
+});
+btnUndo.addEventListener('click',function(){
+  if(gameOver||aiThinking||history.length===0)return;
+  var n=Math.min(2,history.length);
+  for(var k=0;k<n;k++){
+    var m=history.pop();
+    board[m.i*N+m.j]=0;
+  }
+  anim=null;
+  setStatus('已悔棋，轮到你落子（执黑）');
+  render();
+  updateButtons();
+});
+btnNew.addEventListener('click',function(){
+  if(aiThinking)return;
+  for(var i=0;i<N*N;i++)board[i]=0;
+  history.length=0;
+  gameOver=false;
+  anim=null;
+  setStatus('你执黑先行，点击棋盘落子');
+  render();
+  updateButtons();
+});
+stage.addEventListener('contextmenu',function(e){e.preventDefault();});
+window.addEventListener('resize',resize);
+window.addEventListener('load',resize);
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden)render();
+});
+renderRecord();
+resize();
+})();
+</script>
+</body>
+</html>

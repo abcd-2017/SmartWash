@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>月面轻降</title>
+<style>
+  /*token:GAME-THEME.md§2*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:#F5F6F3E6;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-sky1:#D9EEF6;--g-sky2:#F2F6F4;--g-water:#4A9FD4;--g-moon:#D8D3C4;--g-moon2:#C6BFA9;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:#141614E6;--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-sky1:#1B242E;--g-sky2:#141614;--g-water:#6BB4DE;--g-moon:#3B3E36;--g-moon2:#2F322B;color-scheme:dark }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh;
+    display: flex; justify-content: center;
+    padding: 14px 12px 24px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 420px; position: relative; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .eyebrow { margin: 0 0 3px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--g-faint); }
+  h1 { margin: 0; font-size: 28px; line-height: 1; color: var(--g-primary-deep); }
+  .boxes { display: flex; gap: 8px; }
+  .box { background: var(--g-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
+  .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
+  .box .label { display: block; font-size: 11px; opacity: .8; }
+  .box b { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stage { position: relative; width: min(100%, calc((100vh - 320px) * .75)); margin: 0 auto; }
+  @supports (height: 100dvh) { .stage { width: min(100%, calc((100dvh - 320px) * .75)); } }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 3 / 4;
+    border-radius: var(--g-radius-inner);
+    box-shadow: var(--g-shadow);
+    touch-action: none;
+  }
+  .overlay {
+    position: absolute; inset: 0; border-radius: var(--g-radius);
+    background: var(--g-scrim);
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 18px; text-align: center;
+  }
+  .overlay.show { display: flex; animation: fadein .18s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .card { width: 100%; max-width: 310px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 18px 16px; }
+  .ov-kicker { margin: 0 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: var(--g-faint); }
+  .card h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.2; color: var(--g-text); }
+  .ov-text { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--g-muted); }
+  .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
+  .ov-stats .st { background: var(--g-surface2); border-radius: 10px; padding: 7px 4px; }
+  .ov-stats b { display: block; font-size: 16px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
+  .ov-stats span { font-size: 10px; color: var(--g-muted); }
+  .ov-btns { display: grid; gap: 8px; }
+  .step { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 0 0 8px; }
+  .step .sel { font-size: 17px; font-weight: 800; min-width: 86px; color: var(--g-text); }
+  .cfg { font-size: 12px; color: var(--g-muted); margin: 0 0 12px; }
+  .btn {
+    min-height: 48px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: var(--g-on-primary);
+    font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
+  .btn.sq { min-width: 48px; padding: 0; font-size: 22px; line-height: 1; }
+  .btn:active { opacity: .85; }
+  .btn:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
+  .pads { display: flex; gap: 10px; margin: 12px 0 0; }
+  .pad {
+    flex: 1; min-height: 64px; border: 1px solid var(--g-border); border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
+    touch-action: none;
+  }
+  .pad.main { background: var(--g-primary); border-color: var(--g-primary); color: var(--g-on-primary); font-size: 18px; }
+  .pad:active { opacity: .82; }
+  .pad:focus-visible { outline: 2px solid var(--g-primary); outline-offset: 2px; }
+  .toolbar { display: flex; gap: 10px; margin: 10px 0 0; }
+  .toolbar .btn { flex: 1; min-height: 48px; }
+  .toolbar .btn.ghost { background: var(--g-surface); border: 1px solid var(--g-border); color: var(--g-text); }
+  .foot { margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--g-faint); text-align: center; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">MOON DESCENT</p>
+      <h1>月面轻降</h1>
+    </div>
+    <div class="boxes">
+      <div class="box"><span class="label">当前站台</span><b id="hudLv">1</b></div>
+      <div class="box alt"><span class="label">单站最佳</span><b id="hudBest">0</b></div>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="月面着陆飞行画面"></canvas>
+  </div>
+  <div class="overlay" id="ov">
+    <div class="card">
+      <p class="ov-kicker" id="ovK"></p>
+      <h2 id="ovT"></h2>
+      <p class="ov-text" id="ovX"></p>
+      <div id="ovMid"></div>
+      <div class="ov-stats" id="ovS"></div>
+      <div class="ov-btns" id="ovB"></div>
+    </div>
+  </div>
+  <div class="pads">
+    <button class="pad" id="padL">‹ 左转</button>
+    <button class="pad main" id="padF">点火</button>
+    <button class="pad" id="padR">右转 ›</button>
+  </div>
+  <div class="toolbar">
+    <button class="btn ghost" id="btnPause">暂停</button>
+    <button class="btn ghost" id="btnMenu">选站</button>
+  </div>
+  <p class="foot">按住屏幕或「点火」喷射减速 · 垂直 ≤46 · 水平 ≤30 · 倾角 ≤28° 落在平台内</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 常量与工具 ---------- */
+var MW=480,MH=640;
+var THR=64,ROT=2.6,BURN=10;
+var SAFE_VY=46,SAFE_VX=30,SAFE_A=0.5;
+var K_LV="g_moonlander_level",K_BEST="g_moonlander_best";
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
+function lsNum(k,d){var v=parseInt(lsGet(k),10);return isFinite(v)?v:d}
+function clamp(v,a,b){return v<a?a:(v>b?b:v)}
+function mulberry(seed){seed=seed|0;return function(){seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- 调色板:CSS变量 → canvas ---------- */
+var PAL={},skyGrad=null;
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL.bg=v("--g-bg");PAL.surface=v("--g-surface");PAL.surface2=v("--g-surface2");
+  PAL.primary=v("--g-primary");PAL.primaryDeep=v("--g-primary-deep");PAL.primarySoft=v("--g-primary-soft");
+  PAL.onPrimary=v("--g-on-primary");PAL.text=v("--g-text");PAL.muted=v("--g-muted");PAL.faint=v("--g-faint");
+  PAL.border=v("--g-border");PAL.danger=v("--g-danger");PAL.success=v("--g-success");PAL.warning=v("--g-warning");
+  PAL.sky1=v("--g-sky1");PAL.sky2=v("--g-sky2");PAL.water=v("--g-water");PAL.moon=v("--g-moon");PAL.moon2=v("--g-moon2");
+  skyGrad=null;
+}
+window.__gOnTheme=function(){palLoad()};
+
+/* ---------- DOM ---------- */
+function $(id){return document.getElementById(id)}
+var cv=$("cv"),ctx=cv.getContext("2d"),ov=$("ov");
+var hudLv=$("hudLv"),hudBest=$("hudBest");
+var ovK=$("ovK"),ovT=$("ovT"),ovX=$("ovX"),ovMid=$("ovMid"),ovS=$("ovS"),ovB=$("ovB");
+
+/* ---------- 状态 ---------- */
+var S={
+  phase:"menu",paused:false,       // menu|running|over
+  level:1,selLevel:1,unlocked:1,best:0,
+  ship:null,fuel:100,fuelMax:100,
+  pts:[],padX:240,padW:160,padY:566,
+  grav:26,windAmp:2,windPh:0,
+  t:0,windNow:0,
+  stars:[],craters:[],
+  trail:[],parts:[],resultOk:true,everFly:false
+};
+
+/* ---------- 关卡生成 ---------- */
+function levelCfg(L){
+  return{
+    grav:26+Math.min(2*(L-1),20),
+    windAmp:Math.min(2+1.5*(L-1),16),
+    padW:Math.max(160-9*(L-1),66),
+    fuel:Math.max(70,100-2*(L-1)),
+    drift:Math.min(8+3*L,38)
+  };
+}
+function genLevel(L){
+  var c=levelCfg(L),rnd=mulberry(L*7919+1013);
+  S.grav=c.grav;S.windAmp=c.windAmp;S.padW=c.padW;S.fuelMax=c.fuel;S.fuel=c.fuel;
+  S.padX=90+rnd()*(MW-180);S.padY=566;
+  S.windPh=rnd()*6.28;
+  //地形:起伏丘陵 + 平台区压平到 padY+10
+  var pts=[],inner=S.padW/2,widen=inner+30,i,x,raw;
+  for(x=0;x<=MW;x+=12){
+    raw=576-(18*Math.sin(x*.013+L*1.7)+12*Math.sin(x*.031+L*.6)+6*Math.sin(x*.057+L*2.9));
+    raw=Math.min(604,Math.max(540,raw));
+    var dx=Math.abs(x-S.padX),y=raw;
+    if(dx<=inner)y=S.padY+10;
+    else if(dx<=widen){var q=(widen-dx)/(widen-inner);y=(S.padY+10)+(raw-(S.padY+10))*(1-q)}
+    pts.push({x:x,y:y});
+  }
+  S.pts=pts;
+  S.stars=[];
+  for(i=0;i<70;i++)S.stars.push({x:rnd()*MW,y:rnd()*400,s:rnd()});
+  S.craters=[];
+  for(i=0;i<8;i++){
+    var cx=20+rnd()*(MW-40);
+    S.craters.push({x:cx,y:terrainYAt(cx)+6,r:4+rnd()*8});
+  }
+  S.ship={x:40+rnd()*(MW-80),y:70,vx:(rnd()-.5)*c.drift,vy:12,a:(rnd()-.5)*.2,va:0};
+  S.t=0;S.windNow=0;S.trail=[];S.parts=[];S.everFly=false;S.resultOk=true;
+}
+function terrainYAt(x){
+  var pts=S.pts;
+  if(!pts.length)return 576;
+  var i=clamp(x/12,0,pts.length-1),i0=Math.floor(i),i1=Math.min(pts.length-1,i0+1),f=i-i0;
+  return pts[i0].y*(1-f)+pts[i1].y*f;
+}
+
+/* ---------- 粒子 ---------- */
+function spawnPart(x,y,vx,vy,life,color,r){S.parts.push({x:x,y:y,vx:vx,vy:vy,life:life,max:life,color:color,r:r})}
+function updParts(dt){
+  for(var i=S.parts.length-1;i>=0;i--){
+    var p=S.parts[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=120*dt;p.life-=dt;
+    if(p.life<=0)S.parts.splice(i,1);
+  }
+}
+function explode(x,y){
+  var cols=[PAL.danger,PAL.warning,PAL.text];
+  for(var i=0;i<30;i++){
+    var a=Math.random()*6.28,sp=40+Math.random()*150;
+    spawnPart(x,y,Math.cos(a)*sp,Math.sin(a)*sp-40,.5+Math.random()*.6,cols[i%3],2+Math.random()*2.5);
+  }
+}
+function dust(x,y){
+  for(var i=0;i<12;i++){
+    var dir=i%2?1:-1;
+    spawnPart(x+dir*10,y,dir*(20+Math.random()*50),-Math.random()*30,.5+Math.random()*.4,PAL.moon2,1.5+Math.random()*2);
+  }
+}
+
+/* ---------- 物理 ---------- */
+var ctl={fire:false,rot:0};
+function physStep(dt){
+  var sh=S.ship;
+  S.t+=dt;
+  S.windNow=S.windAmp*(Math.sin(S.t*.9+S.windPh)*.65+Math.sin(S.t*2.3+S.windPh*1.9)*.35);
+  var tgt=ctl.rot*ROT;
+  sh.va+=(tgt-sh.va)*Math.min(1,dt*9);
+  sh.a=clamp(sh.a+sh.va*dt,-1.05,1.05);
+  var thrusting=ctl.fire&&S.fuel>0;
+  if(thrusting){
+    sh.vx+=-Math.sin(sh.a)*THR*dt;
+    sh.vy+=-Math.cos(sh.a)*THR*dt;
+    S.fuel=Math.max(0,S.fuel-BURN*dt);
+    if(Math.random()<.75){
+      spawnPart(sh.x-Math.sin(sh.a)*16+(Math.random()-.5)*5,sh.y+Math.cos(sh.a)*18,
+        sh.vx*.3-Math.sin(sh.a)*55+(Math.random()-.5)*30,sh.vy*.3+40+Math.random()*40,
+        .35+Math.random()*.35,PAL.warning,1.6+Math.random()*1.6);
+    }
+  }
+  sh.vx+=S.windNow*dt;
+  sh.vy+=S.grav*dt;
+  sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;
+  S.trail.push({x:sh.x,y:sh.y});
+  if(S.trail.length>60)S.trail.shift();
+  //边界
+  if(sh.x<10){crash("飞出空域：侧向漂移出左边界");return}
+  if(sh.x>MW-10){crash("飞出空域：侧向漂移出右边界");return}
+  if(sh.y<-80){crash("飞出空域：向上脱离了下降走廊");return}
+  //接触判定
+  var feetY=sh.y+16,gy=terrainYAt(sh.x),onPad=Math.abs(sh.x-S.padX)<=S.padW/2-2;
+  if(onPad&&feetY>=S.padY){
+    var vy=sh.vy,vxs=Math.abs(sh.vx),aa=Math.abs(sh.a);
+    if(vy<=SAFE_VY&&vxs<=SAFE_VX&&aa<=SAFE_A)touchdown(vy,vxs,aa);
+    else if(vy>SAFE_VY)crash("触地垂直速度 "+vy.toFixed(0)+" 过大（上限 46）");
+    else if(vxs>SAFE_VX)crash("触地水平速度 "+vxs.toFixed(0)+" 过大（上限 30）");
+    else crash("触地倾角 "+Math.round(aa*57.3)+"° 过大（上限 28°）");
+  }else if(!onPad&&feetY>=gy-1){
+    crash("偏离着陆平台，砸在了月面上");
+  }
+}
+function touchdown(vy,vxs,aa){
+  S.resultOk=true;S.phase="over";
+  dust(S.ship.x,S.padY);
+  var sc=400+Math.round(S.fuel*4+Math.max(0,SAFE_VY-vy)*8+Math.max(0,SAFE_VX-vxs)*3+(S.level-1)*60);
+  var newUn=false;
+  if(S.level+1>S.unlocked){S.unlocked=S.level+1;lsSet(K_LV,S.unlocked);newUn=true}
+  if(sc>S.best){S.best=sc;lsSet(K_BEST,S.best)}
+  syncHud();
+  showOv({kicker:"TOUCHDOWN",title:"着陆成功 · 第 "+S.level+" 站",
+    text:newUn?"解锁第 "+(S.level+1)+" 站：平台更窄、横风更急，重力也在爬升。":"动作干净利落，试试更高分的软着陆。",
+    stats:[["触地垂直",vy.toFixed(1)],["触地水平",vxs.toFixed(1)],["倾角",Math.round(aa*57.3)+"°"],["剩余燃料",S.fuel.toFixed(0)],["得分",sc],["单站最佳",S.best]],
+    btns:[["下一站","primary",function(){startLevel(S.level+1)}],["重飞本站","ghost",function(){startLevel(S.level)}],["选站","ghost",function(){showMenu()}]]});
+}
+function crash(reason){
+  S.resultOk=false;S.phase="over";
+  explode(S.ship.x,Math.min(S.ship.y,MH-30));
+  syncHud();
+  showOv({kicker:"CRASH",title:"着陆失败",
+    text:reason+"。参考阈值：垂直 ≤46 · 水平 ≤30 · 倾角 ≤28°。",
+    btns:[["重试本站","primary",function(){startLevel(S.level)}],["选站","ghost",function(){showMenu()}]]});
+}
+
+/* ---------- 模式流程 ---------- */
+function startLevel(L){
+  S.level=clamp(L,1,999);
+  genLevel(S.level);
+  S.paused=false;S.phase="running";
+  ctl.fire=false;ctl.rot=0;
+  hideOv();syncHud();
+}
+function showMenu(){
+  S.paused=false;
+  S.selLevel=clamp(S.selLevel,1,S.unlocked);
+  var c=levelCfg(S.selLevel);
+  showOv({kicker:"MOON DESCENT",title:"月面轻降",
+    text:"按住屏幕或「点火」喷射减速，‹ › 修正姿态；垂直 ≤46、水平 ≤30、倾角 ≤28° 落在平台内。",
+    mid:'step',
+    stats:[["最高解锁",S.unlocked+" 站"],["单站最佳",S.best]],
+    btns:[["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)}]]});
+  renderStepper(c);
+}
+function renderStepper(c){
+  ovMid.innerHTML='<div class="step"><button class="btn ghost sq" id="stPrev">‹</button><div class="sel" id="stSel">第 '+S.selLevel+' 站</div><button class="btn ghost sq" id="stNext">›</button></div><p class="cfg" id="stCfg">平台宽 '+c.padW+' · 重力 '+c.grav+' · 横风 '+c.windAmp+'</p>';
+  $("stPrev").addEventListener("click",function(){if(S.selLevel>1){S.selLevel--;refreshMenu()}});
+  $("stNext").addEventListener("click",function(){if(S.selLevel<S.unlocked){S.selLevel++;refreshMenu()}});
+}
+function refreshMenu(){
+  var c=levelCfg(S.selLevel);
+  $("stSel").textContent="第 "+S.selLevel+" 站";
+  $("stCfg").textContent="平台宽 "+c.padW+" · 重力 "+c.grav+" · 横风 "+c.windAmp;
+  ovB.innerHTML="";
+  [["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)}]].forEach(function(b){
+    var el=document.createElement("button");
+    el.className="btn "+b[1];el.textContent=b[0];
+    el.addEventListener("click",b[2]);ovB.appendChild(el);
+  });
+}
+function showOv(o){
+  ovK.textContent=o.kicker||"";
+  ovT.textContent=o.title||"";
+  ovX.textContent=o.text||"";
+  ovMid.innerHTML="";
+  var st=o.stats||[];
+  ovS.style.display=st.length?"grid":"none";
+  ovS.innerHTML=st.map(function(s){return '<div class="st"><b>'+s[1]+"</b><span>"+s[0]+"</span></div>"}).join("");
+  ovB.innerHTML="";
+  (o.btns||[]).forEach(function(b){
+    var el=document.createElement("button");
+    el.className="btn"+(b[1]?" "+b[1]:"");
+    el.textContent=b[0];
+    el.addEventListener("click",b[2]);
+    ovB.appendChild(el);
+  });
+  ov.classList.add("show");
+}
+function hideOv(){ov.classList.remove("show")}
+function pauseGame(){
+  if(S.phase!=="running"||S.paused)return;
+  S.paused=true;
+  showOv({kicker:"PAUSED",title:"已暂停",text:"切出页面会自动暂停，回来点继续即可。",
+    btns:[["继续","primary",function(){S.paused=false;hideOv()}],["选站","ghost",function(){showMenu()}]]});
+}
+
+/* ---------- 输入 ---------- */
+var touchFire=false,heldL=false,heldR=false,keys={};
+function bindPad(el,down,up){
+  el.addEventListener("pointerdown",function(e){e.preventDefault();down();try{el.setPointerCapture(e.pointerId)}catch(err){}});
+  var end=function(e){e.preventDefault();up()};
+  el.addEventListener("pointerup",end);
+  el.addEventListener("pointercancel",end);
+}
+bindPad($("padL"),function(){heldL=true},function(){heldL=false});
+bindPad($("padR"),function(){heldR=true},function(){heldR=false});
+bindPad($("padF"),function(){touchFire=true},function(){touchFire=false});
+cv.addEventListener("pointerdown",function(e){
+  if(S.phase==="running"&&!S.paused){touchFire=true}
+  e.preventDefault();
+  try{cv.setPointerCapture(e.pointerId)}catch(err){}
+});
+cv.addEventListener("pointerup",function(){touchFire=false});
+cv.addEventListener("pointercancel",function(){touchFire=false});
+cv.addEventListener("contextmenu",function(e){e.preventDefault()});
+document.addEventListener("keydown",function(e){
+  keys[e.code]=true;
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code)>=0)e.preventDefault();
+});
+document.addEventListener("keyup",function(e){keys[e.code]=false});
+window.addEventListener("blur",function(){keys={};touchFire=false;heldL=false;heldR=false});
+$("btnPause").addEventListener("click",pauseGame);
+$("btnMenu").addEventListener("click",function(){
+  if(S.phase==="running"&&!S.paused){pauseGame()}else{showMenu()}
+});
+function readCtl(){
+  var kr=(keys.ArrowRight||keys.KeyD)?1:0,kl=(keys.ArrowLeft||keys.KeyA)?1:0;
+  ctl.rot=(heldR?1:0)-(heldL?1:0)||kr-kl;
+  ctl.fire=touchFire||!!(keys.Space||keys.ArrowUp||keys.KeyW);
+}
+
+/* ---------- 绘制 ---------- */
+var SC=1;
+function resize(){
+  var r=cv.getBoundingClientRect();
+  var dpr=Math.max(1,Math.min(2.5,window.devicePixelRatio||1));
+  cv.width=Math.max(1,Math.round(r.width*dpr));
+  cv.height=Math.max(1,Math.round(r.height*dpr));
+  SC=r.width/MW;
+  ctx.setTransform(dpr*SC,0,0,dpr*SC,0,0);
+}
+function rrect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+function drawScene(){
+  if(!skyGrad){
+    skyGrad=ctx.createLinearGradient(0,0,0,MH);
+    skyGrad.addColorStop(0,PAL.sky1);skyGrad.addColorStop(1,PAL.sky2);
+  }
+  ctx.fillStyle=skyGrad;ctx.fillRect(0,0,MW,MH);
+  //星空
+  ctx.fillStyle=PAL.faint;
+  for(var i=0;i<S.stars.length;i++){
+    var st=S.stars[i];
+    ctx.globalAlpha=.25+.55*st.s;
+    ctx.fillRect(st.x,st.y,st.s>.75?2:1.4,st.s>.75?2:1.4);
+  }
+  ctx.globalAlpha=1;
+  //远处的地球
+  ctx.fillStyle=PAL.water;
+  ctx.beginPath();ctx.arc(428,62,13,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.55)";
+  ctx.beginPath();ctx.arc(424,57,4.5,0,Math.PI*2);ctx.fill();
+  //月面
+  ctx.fillStyle=PAL.moon;
+  ctx.beginPath();ctx.moveTo(0,MH);
+  for(var j=0;j<S.pts.length;j++)ctx.lineTo(S.pts[j].x,S.pts[j].y);
+  ctx.lineTo(MW,MH);ctx.closePath();ctx.fill();
+  ctx.fillStyle=PAL.moon2;
+  for(j=0;j<S.craters.length;j++){
+    var cr=S.craters[j];
+    ctx.beginPath();ctx.ellipse(cr.x,cr.y,cr.r,cr.r*.4,0,0,Math.PI*2);ctx.fill();
+  }
+  //着陆平台
+  ctx.fillStyle=PAL.primary;
+  rrect(S.padX-S.padW/2,S.padY,S.padW,10,3);ctx.fill();
+  ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=1.5;
+  rrect(S.padX-S.padW/2,S.padY,S.padW,10,3);ctx.stroke();
+  ctx.fillStyle=PAL.onPrimary;
+  ctx.font="800 10px system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("PAD",S.padX,S.padY+5.5);
+  var blink=.4+.6*Math.abs(Math.sin(S.t*4));
+  ctx.globalAlpha=S.phase==="menu"?.8:blink;
+  ctx.fillStyle=PAL.warning;
+  ctx.beginPath();ctx.arc(S.padX-S.padW/2+7,S.padY-4,3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(S.padX+S.padW/2-7,S.padY-4,3,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+function drawTrail(){
+  ctx.fillStyle=PAL.faint;
+  for(var i=0;i<S.trail.length;i++){
+    ctx.globalAlpha=.05+.3*(i/S.trail.length);
+    ctx.beginPath();ctx.arc(S.trail[i].x,S.trail[i].y,1.5,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawParts(){
+  for(var i=0;i<S.parts.length;i++){
+    var p=S.parts[i];
+    ctx.globalAlpha=Math.max(0,p.life/p.max);
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+}
+function drawShip(){
+  if(S.phase==="over"&&!S.resultOk)return;
+  var sh=S.ship,thrusting=ctl.fire&&S.fuel>0&&S.phase==="running"&&!S.paused;
+  ctx.save();
+  ctx.translate(sh.x,sh.y);ctx.rotate(sh.a);
+  ctx.strokeStyle=PAL.muted;ctx.lineWidth=2.5;ctx.lineCap="round";
+  ctx.beginPath();ctx.moveTo(-8,7);ctx.lineTo(-14,16);ctx.moveTo(8,7);ctx.lineTo(14,16);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-17,16);ctx.lineTo(-11,16);ctx.moveTo(11,16);ctx.lineTo(17,16);ctx.stroke();
+  if(thrusting){
+    var len=12+Math.random()*10;
+    ctx.fillStyle=PAL.warning;
+    ctx.beginPath();ctx.moveTo(-4.5,15);ctx.lineTo(4.5,15);ctx.lineTo(0,15+len);ctx.closePath();ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,.85)";
+    ctx.beginPath();ctx.moveTo(-2,15);ctx.lineTo(2,15);ctx.lineTo(0,15+len*.55);ctx.closePath();ctx.fill();
+  }
+  ctx.fillStyle=PAL.surface;ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=2;
+  rrect(-13,-14,26,26,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle=PAL.primarySoft;
+  ctx.beginPath();ctx.arc(0,-3,5,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=PAL.primaryDeep;ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(0,-3,5,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle=PAL.muted;
+  ctx.fillRect(-5,11,10,4);
+  ctx.restore();
+}
+function drawHud(){
+  if(S.phase==="menu")return;
+  var sh=S.ship;
+  //燃料条
+  var pct=S.fuelMax>0?S.fuel/S.fuelMax:0;
+  ctx.fillStyle=PAL.surface2;
+  rrect(60,11,250,10,5);ctx.fill();
+  ctx.strokeStyle=PAL.border;ctx.lineWidth=1;
+  rrect(60,11,250,10,5);ctx.stroke();
+  ctx.fillStyle=pct>.35?PAL.primary:(pct>.15?PAL.warning:PAL.danger);
+  if(pct>0){rrect(61,12,248*pct,8,4);ctx.fill()}
+  ctx.fillStyle=PAL.text;ctx.font="700 12px system-ui,sans-serif";
+  ctx.textAlign="left";ctx.textBaseline="middle";
+  ctx.fillText("燃料",14,16.5);
+  //横风
+  var wAbs=Math.abs(S.windNow);
+  ctx.textAlign="right";
+  ctx.fillStyle=wAbs>8?PAL.warning:PAL.muted;
+  ctx.fillText("横风 "+wAbs.toFixed(0),466,16.5);
+  ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=2;
+  var dir=S.windNow>=0?1:-1,wx=430;
+  ctx.beginPath();ctx.moveTo(wx-dir*11,27);ctx.lineTo(wx+dir*11,27);
+  ctx.moveTo(wx+dir*11,27);ctx.lineTo(wx+dir*6,23.5);
+  ctx.moveTo(wx+dir*11,27);ctx.lineTo(wx+dir*6,30.5);ctx.stroke();
+  //遥测
+  var feetY=sh.y+16,alt=Math.max(0,Math.round(S.padY-feetY));
+  var vy=S.ship.vy,vxs=Math.abs(sh.vx),deg=Math.round(Math.abs(sh.a)*57.3);
+  ctx.textAlign="left";
+  ctx.font="700 13px system-ui,sans-serif";
+  ctx.fillStyle=PAL.text;
+  ctx.fillText("高度 "+alt,14,50);
+  ctx.fillStyle=vy<=SAFE_VY?PAL.success:(vy<=SAFE_VY+6?PAL.warning:PAL.danger);
+  ctx.fillText("垂直 "+vy.toFixed(0),14,69);
+  ctx.fillStyle=vxs<=SAFE_VX?PAL.success:PAL.danger;
+  ctx.fillText("水平 "+vxs.toFixed(0),14,88);
+  ctx.fillStyle=deg<=28?PAL.success:PAL.danger;
+  ctx.fillText("倾角 "+deg+"°",14,107);
+  //平台方向提示
+  if(S.phase==="running"&&Math.abs(sh.x-S.padX)>170){
+    ctx.textAlign="center";ctx.fillStyle=PAL.muted;
+    ctx.fillText(S.padX>sh.x?"平台在右侧 ›":"‹ 平台在左侧",MW/2,MH-14);
+  }
+}
+function draw(){
+  ctx.clearRect(0,0,MW,MH);
+  drawScene();
+  drawTrail();
+  drawParts();
+  drawShip();
+  drawHud();
+}
+
+/* ---------- HUD 同步 ---------- */
+var lastLv="",lastBest="";
+function syncHud(){
+  var lv=String(S.level);
+  if(lv!==lastLv){hudLv.textContent=lv;lastLv=lv}
+  var bt=String(S.best);
+  if(bt!==lastBest){hudBest.textContent=bt;lastBest=bt}
+}
+
+/* ---------- 主循环 ---------- */
+var lastT=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!lastT)lastT=now;
+  var dt=Math.min(.05,(now-lastT)/1000);
+  lastT=now;
+  if(S.phase==="running"&&!S.paused){
+    readCtl();
+    var h=dt/2;
+    physStep(h);
+    if(S.phase==="running")physStep(h);
+  }else{
+    ctl.fire=false;ctl.rot=0;
+    if(S.phase==="menu"||S.phase==="over")S.t+=dt*.5;
+  }
+  updParts(dt);
+  syncHud();
+  draw();
+}
+
+/* ---------- 生命周期 ---------- */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden&&S.phase==="running"&&!S.paused)pauseGame();
+});
+window.addEventListener("resize",resize);
+window.addEventListener("orientationchange",resize);
+
+palLoad();
+S.unlocked=Math.max(1,lsNum(K_LV,1));
+S.best=lsNum(K_BEST,0);
+S.selLevel=S.unlocked;
+genLevel(S.unlocked);
+S.level=S.unlocked;
+showMenu();
+syncHud();
+resize();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

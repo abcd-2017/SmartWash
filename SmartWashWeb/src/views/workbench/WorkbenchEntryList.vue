@@ -39,16 +39,20 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="图标 / 色组" min-width="160">
+        <el-table-column label="图标 / 色组" min-width="120">
           <template #default="{ row }">
             <div class="icon-color-cell">
-              <!-- 端上按 icon/color key 白名单映射，这里直接展示 key 便于两端对齐 -->
-              <el-tag size="small">{{ row.icon || 'default' }}</el-tag>
-              <span
-                class="color-dot"
-                :style="{ backgroundColor: workbenchEntryColorHex(row.color) }"
-              />
-              <el-tag size="small" type="info">{{ row.color || '-' }}</el-tag>
+              <!-- 端上按 icon/color key 白名单映射：展示中文文案便于核对，title 悬浮保留原始 key 便于两端对齐 -->
+              <el-tag size="small" :title="row.icon || 'default'">
+                {{ workbenchEntryIconText(row.icon) }}
+              </el-tag>
+              <span class="color-line" :title="row.color || '-'">
+                <span
+                  class="color-dot"
+                  :style="{ backgroundColor: workbenchEntryColorHex(row.color) }"
+                />
+                <span class="color-text">{{ workbenchEntryColorText(row.color) }}</span>
+              </span>
             </div>
           </template>
         </el-table-column>
@@ -79,6 +83,7 @@
               :active-value="1"
               :inactive-value="0"
               :loading="togglingId === row.id"
+              :aria-label="`${row.title || row.entryKey} 启停`"
               @change="handleToggleEnabled(row)"
             />
           </template>
@@ -272,6 +277,8 @@ import { useConfirm } from '@/composables/useConfirm';
 import {
   WORKBENCH_ENTRY_ICON_OPTIONS,
   WORKBENCH_ENTRY_COLOR_OPTIONS,
+  workbenchEntryIconText,
+  workbenchEntryColorText,
   workbenchEntryColorHex,
 } from '@/constants/dict';
 
@@ -544,19 +551,33 @@ const handleDelete = async (row) => {
   font-size: 12px;
 }
 
+/* 图标 + 色组两行单元格：固定左对齐，行间节奏与标题列一致 */
 .icon-color-cell {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
-/* 色块圆点（表格与下拉选项共用） */
+/* 色组行：色点 + 中文文案 */
+.color-line {
+  display: flex;
+  align-items: center;
+}
+
+.color-text {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* 色块圆点（表格与下拉选项共用）：margin 负责与文字的间距，vertical-align 供下拉内联上下文对齐 */
 .color-dot {
   display: inline-block;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
+  margin-right: 6px;
   vertical-align: -1px;
 }
 

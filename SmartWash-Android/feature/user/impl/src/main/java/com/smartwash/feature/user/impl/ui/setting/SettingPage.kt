@@ -1,6 +1,8 @@
 package com.smartwash.feature.user.impl.ui.setting
 
-import android.widget.Toast
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -21,14 +23,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,8 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -56,6 +63,7 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import androidx.compose.runtime.collectAsState
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
@@ -85,8 +93,35 @@ fun SettingPage(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val view = currentView()
+    // 消息通知行真实授权态（2026-11-01 缺陷 5b）：组合期查一次 + ON_RESUME 重查
+    // （用户从权限页/系统设置返回后刷新；申请动作统一收口在权限管理页）
+    var notificationGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                notificationGranted =
+                    Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                        ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    // 触感反馈真实开关（SettingViewModel 持久化 + HapticSettings 内存态）
+    val hapticEnabled by settingViewModel.hapticEnabled.collectAsState()
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -118,6 +153,8 @@ fun SettingPage(
             )
             Spacer(modifier = Modifier.height(8.dp))
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
+                // 消息通知（真实授权态，2026-11-01 缺陷 5b）：行尾显示系统实际授予情况，
+                // 点击进权限管理页（申请 / 跳系统设置都在那里收口）
                 SettingRow(
                     icon = Icons.Default.Notifications,
                     containerColor = AppColors.colorScheme.iconContainerOrange,
@@ -125,16 +162,19 @@ fun SettingPage(
                     title = stringResource(R.string.push_notification),
                     trailing = {
                         Text(
-                            text = stringResource(R.string.enabled),
+                            text = stringResource(
+                                if (notificationGranted) R.string.enabled else R.string.permission_denied
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         IconChevron()
                     },
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    onClick = { navController.navigate(UserRoute.PermissionManagement.text) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+                // 触感反馈（真实开关，2026-11-01 缺陷 5b）：内存态即时生效 + DataStore 异步落盘
                 SettingRow(
                     icon = Icons.Default.TouchApp,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
@@ -142,14 +182,19 @@ fun SettingPage(
                     title = stringResource(R.string.haptic_feedback),
                     trailing = {
                         Text(
-                            text = stringResource(R.string.on),
+                            text = stringResource(if (hapticEnabled) R.string.on else R.string.off),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         IconChevron()
                     },
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    onClick = {
+                        val newValue = !hapticEnabled
+                        settingViewModel.setHapticEnabled(newValue)
+                        // 开启瞬间给一次确认触感（因果明确的时刻，规范 §7.7）
+                        if (newValue) view.performHaptic(HapticEffect.LIGHT)
+                    }
                 )
             }
 
@@ -163,30 +208,15 @@ fun SettingPage(
             )
             Spacer(modifier = Modifier.height(8.dp))
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                SettingRow(
-                    icon = Icons.Default.Security,
-                    containerColor = AppColors.colorScheme.iconContainerPurple,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
-                    title = stringResource(R.string.interpretation_model),
-                    trailing = {
-                        Text(
-                            text = stringResource(R.string.interpretation_model_glm),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = AppColors.colorScheme.textSecondary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconChevron()
-                    },
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
-                )
-                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+                // 「解读模型」假数据行已移除（2026-11-01 缺陷 5b）：端上无模型选择能力，
+                // 硬编码型号属虚假展示；解读模型由服务端网关统一调度
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
                     iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
                     title = stringResource(R.string.privacy_disclaimer),
                     trailing = { IconChevron() },
-                    onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                    onClick = { showPrivacyDialog = true }
                 )
             }
 
@@ -205,6 +235,15 @@ fun SettingPage(
                 if (checkUpdateContent != null) {
                     HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 }
+                SettingRow(
+                    icon = Icons.Default.AdminPanelSettings,
+                    containerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                    title = stringResource(R.string.permission_management),
+                    trailing = { IconChevron() },
+                    onClick = { navController.navigate(UserRoute.PermissionManagement.text) }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
                     icon = Icons.Default.Info,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
@@ -262,6 +301,15 @@ fun SettingPage(
             title = stringResource(R.string.about_smartwash),
             message = stringResource(R.string.app_version, versionName),
             onDismiss = { showAboutDialog = false }
+        )
+    }
+
+    // 隐私与免责声明（2026-11-01 缺陷 5b）：原行点击仅 Toast，现展示真实全文
+    if (showPrivacyDialog) {
+        AppInfoDialog(
+            title = stringResource(R.string.privacy_disclaimer),
+            message = stringResource(R.string.privacy_disclaimer_content),
+            onDismiss = { showPrivacyDialog = false }
         )
     }
 }

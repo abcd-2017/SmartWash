@@ -1,5 +1,6 @@
 package com.smartwash.vo.recharge_records;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.smartwash.vo.users.UserVo;
 import lombok.Data;
 
@@ -14,6 +15,8 @@ public class RechargeRecordsVo {
 
     private BigDecimal amount;
 
+    /** 对齐同库 OrdersVo/CouponVo 口径：三端展示用 yyyy-MM-dd HH:mm:ss，默认 ISO 带 T 不可直出 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime rechargeTime;
 
     private String rechargeType;

@@ -26,4 +26,7 @@ sealed class UserRoute(val text: String) {
 
     /** 设置页（PageConstant.Setting，含登出入口） */
     data object Setting : UserRoute("Setting")
+
+    /** 权限管理页（设置页跳入：查看/申请应用权限、跳系统设置对应页） */
+    data object PermissionManagement : UserRoute("PermissionManagement")
 }
