@@ -27,6 +27,18 @@ public class MinioConfig {
     /** APK 下载专用的 MinIO 桶名称（与上传用的 bucket 分开） */
     private String apkBucketName;
 
+    /**
+     * 对外可访问端点：优先 external-endpoint（公网/预签名用），未配置时回退 endpoint。
+     * 所有拼给端上直链的 URL（游戏可玩地址、头像）必须用本方法，禁止直接用 getEndpoint()
+     * ——endpoint 是内部通信地址（如 Docker 服务名），端上无法解析。
+     */
+    public String publicEndpoint() {
+        if (externalEndpoint != null && !externalEndpoint.isBlank()) {
+            return externalEndpoint;
+        }
+        return endpoint;
+    }
+
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
