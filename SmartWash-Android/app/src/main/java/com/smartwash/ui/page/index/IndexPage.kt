@@ -131,6 +131,11 @@ fun IndexPage(
                         orderList = orderList,
                         onOrderClick = { orderId ->
                             navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                        },
+                        onBookingClick = {
+                            navController.navigate(LaundryRoute.Laundry.build(-1L)) {
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }
@@ -276,11 +281,15 @@ private fun orderProgress(status: String): Float = when (status) {
 /**
  * 首页 Hero 卡 — 品牌渐变底 + 真实订单状态驱动（规范 v3 §3.1）。
  * 显示当前订单状态、进度条，全页唯一视觉锚点。
+ * 有进行中订单时整卡可点进详情（onOrderClick 原为传入未接线的死参数）；
+ * 无订单时空态收起进度条（无单时进度条是假数据），改出规范 §3.1 Hero 卡变体的
+ * 白色 CTA 胶囊引导预约（§3.6 空态必须给行动按钮）。
  */
 @Composable
 private fun StatusHeroCard(
     orderList: List<OrderBrief>,
     onOrderClick: (Long) -> Unit,
+    onBookingClick: () -> Unit,
 ) {
     val currentOrder = orderList.firstOrNull()
     val orderStatus = currentOrder?.let { OrderStatus.fromStatus(it.status) }
@@ -305,6 +314,13 @@ private fun StatusHeroCard(
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding)
             .padding(top = 8.dp)
+            .then(
+                if (currentOrder != null) {
+                    Modifier.pressable(onClick = { onOrderClick(currentOrder.orderId) })
+                } else {
+                    Modifier
+                }
+            )
             .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
             .padding(20.dp)
@@ -347,66 +363,88 @@ private fun StatusHeroCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+            if (currentOrder != null) {
+                Spacer(modifier = Modifier.height(AppDimens.spaceXl))
 
-            // 步骤标签 — stringResource 资源化，进度点行与标签行共用（D-I2 硬编码清理）
-            val steps = listOf(
-                stringResource(R.string.step_received),
-                stringResource(R.string.step_washing),
-                stringResource(R.string.step_dried),
-                stringResource(R.string.step_pickup)
-            )
+                // 步骤标签 — stringResource 资源化，进度点行与标签行共用（D-I2 硬编码清理）
+                val steps = listOf(
+                    stringResource(R.string.step_received),
+                    stringResource(R.string.step_washing),
+                    stringResource(R.string.step_dried),
+                    stringResource(R.string.step_pickup)
+                )
 
-            // 进度条
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val currentStep = when (orderStatus) {
-                    OrderStatus.WASHING -> 1
-                    OrderStatus.DRIED -> 2
-                    OrderStatus.READY_FOR_PICKUP -> 3
-                    else -> 0
-                }
-                steps.forEachIndexed { index, _ ->
-                    val isActive = index <= currentStep
-                    // 设计稿首页画板实测：hero 渐变底上激活点/已走过连线=白（#FFFFFF），
-                    // 未完成点/未走过连线=outline；primary 绿在绿渐变上不可见，禁用
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                selectedColor(if (isActive) Color.White else AppColors.colorScheme.outline)
-                            )
-                    )
-                    if (index < steps.lastIndex) {
+                // 进度条
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val currentStep = when (orderStatus) {
+                        OrderStatus.WASHING -> 1
+                        OrderStatus.DRIED -> 2
+                        OrderStatus.READY_FOR_PICKUP -> 3
+                        else -> 0
+                    }
+                    steps.forEachIndexed { index, _ ->
+                        val isActive = index <= currentStep
+                        // 设计稿首页画板实测：hero 渐变底上激活点/已走过连线=白（#FFFFFF），
+                        // 未完成点/未走过连线=outline；primary 绿在绿渐变上不可见，禁用
                         Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .height(2.dp)
+                                .size(8.dp)
+                                .clip(CircleShape)
                                 .background(
-                                    selectedColor(
-                                        if (index < currentStep) Color.White else AppColors.colorScheme.outline
-                                    )
+                                    selectedColor(if (isActive) Color.White else AppColors.colorScheme.outline)
                                 )
+                        )
+                        if (index < steps.lastIndex) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(2.dp)
+                                    .background(
+                                        selectedColor(
+                                            if (index < currentStep) Color.White else AppColors.colorScheme.outline
+                                        )
+                                    )
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    steps.forEachIndexed { index, label ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White,
+                            modifier = Modifier.weight(1f),
+                            textAlign = when (index) {
+                                0 -> androidx.compose.ui.text.style.TextAlign.Start
+                                3 -> androidx.compose.ui.text.style.TextAlign.End
+                                else -> androidx.compose.ui.text.style.TextAlign.Center
+                            }
                         )
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                steps.forEachIndexed { index, label ->
+            } else {
+                // 空态 CTA — 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字，
+                // 几何取 §3.3 小按钮档（高 36 / 横向 16），与订单行 OrderActionPill 同规格
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+                Box(
+                    modifier = Modifier
+                        .pressable(onClick = onBookingClick)
+                        .background(Color.White, RoundedCornerShape(AppDimens.radiusFull))
+                        .padding(horizontal = AppDimens.spaceMd, vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White,
-                        modifier = Modifier.weight(1f),
-                        textAlign = when (index) {
-                            0 -> androidx.compose.ui.text.style.TextAlign.Start
-                            3 -> androidx.compose.ui.text.style.TextAlign.End
-                            else -> androidx.compose.ui.text.style.TextAlign.Center
-                        }
+                        text = stringResource(R.string.service_booking),
+                        // 白底上用深绿 #1E8C5C（on 白 ≥4.5:1，绿色文字走 green.700 红线档）；
+                        // 文字 13sp/600 与订单行 OrderActionPill（§3.3 小按钮档）同规格
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.colorScheme.primaryDark
                     )
                 }
             }
