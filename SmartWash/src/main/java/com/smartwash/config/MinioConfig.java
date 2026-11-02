@@ -5,6 +5,10 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.util.UriUtils;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * MinIO 对象存储配置类
@@ -37,6 +41,46 @@ public class MinioConfig {
             return externalEndpoint;
         }
         return endpoint;
+    }
+
+    /**
+     * 由对象键拼对外直链（游戏可玩地址、头像共用同一构造口径）。
+     * 对象键与部署地址解耦：换服务器/换域名只需改配置，不必刷库。
+     * 路径段做 URL 编码兜底（游戏包 zip 条目名可能含空格/中文）。
+     */
+    public String urlOf(String objectName) {
+        if (objectName == null || objectName.isBlank()) {
+            return "";
+        }
+        String base = publicEndpoint();
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        String key = objectName.startsWith("/") ? objectName.substring(1) : objectName;
+        return base + "/" + bucketName + "/" + UriUtils.encodePath(key, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 把存量值还原为对象键。
+     *
+     * <p>历史实现把对外端点拼进了 DB（{@code users.avatar} / {@code game_config.url}），
+     * 换域名后这批数据全部失效。端点可能已变更，故按 {@code /{bucket}/} 定位而非按已知端点前缀匹配；
+     * 已是对象键的值原样返回，绝对 URL 则解出并 URL 解码为真实对象键（与 {@link #urlOf} 互为逆运算）。</p>
+     */
+    public String toObjectKey(String stored) {
+        if (stored == null) {
+            return null;
+        }
+        String trimmed = stored.trim();
+        if (trimmed.isEmpty() || (!trimmed.startsWith("http://") && !trimmed.startsWith("https://"))) {
+            return trimmed;
+        }
+        String marker = "/" + bucketName + "/";
+        int idx = trimmed.indexOf(marker);
+        if (idx < 0) {
+            return trimmed;
+        }
+        return URLDecoder.decode(trimmed.substring(idx + marker.length()), StandardCharsets.UTF_8);
     }
 
     @Bean

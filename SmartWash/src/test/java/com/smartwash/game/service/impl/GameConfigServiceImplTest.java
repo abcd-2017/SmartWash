@@ -130,6 +130,7 @@ class GameConfigServiceImplTest {
         return new MockMultipartFile("file", "snake.zip", "application/zip", bos.toByteArray());
     }
 
+    /** 构造存量记录：url 为历史落库的绝对直链（读时不再使用，仅作 legacy 数据形态） */
     private GameConfig record(Long id, String gameKey, Integer enabled, Integer sourceType) {
         return new GameConfig()
                 .setId(id)
@@ -139,6 +140,7 @@ class GameConfigServiceImplTest {
                 .setColor("teal")
                 .setCategory("arcade")
                 .setSourceType(sourceType)
+                .setEntryPath("index.html")
                 .setObjectKey(sourceType == 2 ? null : "game/" + gameKey + "/")
                 .setUrl("http://minio.local:9000/smartwash/game/" + gameKey + "/index.html")
                 .setEnabled(enabled)
@@ -179,8 +181,7 @@ class GameConfigServiceImplTest {
         assertEquals("贪吃蛇", saved.getTitle());
         assertEquals("index.html", saved.getEntryPath());
         assertEquals("game/snake/", saved.getObjectKey());
-        assertEquals("http://minio.local:9000/smartwash/game/snake/index.html", saved.getUrl(),
-                "url 必须为指向入口文件的 MinIO 直链（与头像 uploadFile 同一构造方式）");
+        assertNull(saved.getUrl(), "可玩地址不再落库：由 objectKey + entryPath 读时拼装，端点变更不必刷库");
         assertEquals(0, saved.getEnabled(), "上传后默认不下发，上架由开关接口显式选择");
         assertEquals(3, saved.getSort());
         assertEquals(1, saved.getSourceType());
@@ -237,8 +238,7 @@ class GameConfigServiceImplTest {
         ArgumentCaptor<GameConfig> savedCaptor = ArgumentCaptor.forClass(GameConfig.class);
         verify(gameMapper).insert(savedCaptor.capture());
         assertEquals("index.html", savedCaptor.getValue().getEntryPath());
-        assertEquals("http://minio.local:9000/smartwash/game/g2048/index.html", savedCaptor.getValue().getUrl(),
-                "zip 上传 url 必须指向探测出的入口对象直链");
+        assertNull(savedCaptor.getValue().getUrl(), "zip 上传同样不再落库 url，读时拼装");
         assertTrue(savedCaptor.getValue().getFileSize() > 0, "file_size 必须记录解压后总字节");
     }
 

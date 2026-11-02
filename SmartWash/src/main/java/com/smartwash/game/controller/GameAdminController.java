@@ -41,7 +41,7 @@ public class GameAdminController {
 
     private final GameConfigService gameConfigService;
 
-    @Operation(summary = "上传游戏", description = "multipart 文件（.html/.htm/.zip，≤10MB）+ 表单元数据；同 gameKey 重复上传 = 覆盖更新；url 落 MinIO 对象直链（指向入口文件）；上传后默认不下发，需调开关接口上架；zip 防炸弹（≤200 文件、解压 ≤20MB）与 ZipSlip 防护")
+    @Operation(summary = "上传游戏", description = "multipart 文件（.html/.htm/.zip，≤10MB）+ 表单元数据；同 gameKey 重复上传 = 覆盖更新；可玩地址读时拼 MinIO 直链（指向入口文件）；上传后默认不下发，需调开关接口上架；zip 防炸弹（≤200 文件、解压 ≤20MB）与 ZipSlip 防护")
     @PostMapping("/upload")
     public Result<AdminGameVo> upload(@RequestPart("file") MultipartFile file,
                                       @Valid @ModelAttribute UploadGameFrom from) {

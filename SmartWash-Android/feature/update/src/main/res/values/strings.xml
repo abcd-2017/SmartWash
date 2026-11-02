@@ -4,4 +4,16 @@
 <resources>
     <string name="update_check_failed">检查更新失败</string>
     <string name="download_url_empty">获取下载地址失败，请重试</string>
+
+    <!-- 下载通知文案（2026-11-02 自壳层迁入：通知由本模块 Worker 直接发出，
+         此前硬编码在 ApkDownloadWorker 内，违反「用户可见文本一律入 strings.xml」） -->
+    <string name="download_channel_name">应用更新下载</string>
+    <string name="download_channel_desc">显示 APK 更新包的下载进度</string>
+    <string name="download_notification_title">正在下载 SmartWash 更新</string>
+    <string name="download_notification_progress">%1$s / %2$s</string>
+    <string name="download_notification_complete">更新包下载完成</string>
+    <string name="download_notification_complete_tap">点击安装 SmartWash %s</string>
+    <string name="download_notification_failed">下载失败</string>
+    <string name="download_notification_failed_detail">%1$s，点击重试</string>
+    <string name="download_notification_channel_blocked">通知栏被关闭，下载进度无法显示</string>
 </resources>

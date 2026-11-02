@@ -22,22 +22,21 @@
     touch-action: manipulation; overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 480px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; padding: 0 2px; }
-  h1 { margin: 0; font-size: 26px; }
-  .sub { font-size: 13px; color: var(--g-muted); }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
   .stats { display: flex; gap: 8px; margin-bottom: 12px; }
   .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
-  .stat .label { display: block; font-size: 11px; color: var(--g-muted); }
-  .stat .val { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
   .stat .val.plain { color: var(--g-text); }
   /* 牌桌 */
   .zone { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 12px; margin-bottom: 10px; }
   .zhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .zhead h3 { margin: 0; font-size: 15px; color: var(--g-muted); }
-  .pill { padding: 3px 10px; border-radius: 999px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .zhead h3 { margin: 0; font-size: 14px; color: var(--g-muted); }
+  .pill { padding: 3px 10px; border-radius: 999px; background: var(--g-primary-soft); color: var(--g-on-soft); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .cards { display: flex; flex-wrap: wrap; min-height: 78px; align-items: center; }
   .pc {
-    width: 54px; height: 78px; border-radius: 8px;
+    width: 54px; height: 78px; border-radius: 12px;
     background: var(--g-card); border: 1px solid var(--g-border);
     box-shadow: 0 2px 4px var(--g-shadow);
     position: relative; color: var(--g-text);
@@ -46,7 +45,7 @@
   .pc + .pc { margin-left: -20px; }
   @keyframes dealin { from { transform: translateY(-16px) rotate(-4deg); } to { transform: none; opacity: 1; } }
   .pc .corner { position: absolute; top: 4px; left: 5px; line-height: 1.05; text-align: center; }
-  .pc .corner b { display: block; font-size: 14px; font-weight: 800; }
+  .pc .corner b { display: block; font-size: 14px; font-weight: 700; }
   .pc .corner svg { width: 10px; height: 10px; }
   .pc .big { position: absolute; right: 7px; bottom: 6px; }
   .pc .big svg { width: 24px; height: 24px; }
@@ -63,7 +62,7 @@
     flex: 1; min-height: 44px;
     border: 1px dashed var(--g-primary); border-radius: 999px;
     background: var(--g-primary-soft); color: var(--g-on-soft);
-    font: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
   }
   .chip:active { opacity: .8; }
   .chip.clear { border-style: solid; border-color: var(--g-border); background: var(--g-surface2); color: var(--g-muted); flex: 0 0 30%; }
@@ -72,7 +71,7 @@
     min-height: 44px; padding: 0 14px; flex: 1;
     border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: #fff;
-    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
   }
   .btn:active { opacity: .85; }
   .btn:disabled { opacity: .4; cursor: default; }
@@ -112,7 +111,7 @@ paint(B||"light");
 </head>
 <body>
 <div class="wrap">
-  <header><h1>二十一点</h1><span class="sub">凑近 21 · 别爆牌</span></header>
+  <header><span class="sub">凑近 21 · 别爆牌</span></header>
   <div class="stats">
     <div class="stat"><span class="label">筹码</span><span class="val" id="stBank">1000</span></div>
     <div class="stat"><span class="label">当前下注</span><span class="val plain" id="stBet">0</span></div>

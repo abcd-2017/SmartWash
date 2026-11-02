@@ -8,13 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.smartwash.feature.update.R
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.yield
@@ -32,6 +35,22 @@ import javax.inject.Named
  * 前台服务通知：经 setForeground 提升为前台服务在通知栏展示下载进度，防止下载被系统杀死；
  * targetSdk 34+ 前台服务必须带类型启动，类型统一由 buildForegroundInfo 注入
  * （清单侧 SystemForegroundService 的 foregroundServiceType=dataSync 声明见 :feature:update Manifest）。
+ *
+ * ## 为什么进度/完成/失败通知要经 [NotificationManagerCompat] 再发一次（2026-11-02）
+ *
+ * `setForeground` 的通知与前台服务生命周期绑定，两条路径会让通知「没有动静」：
+ *
+ * 1. **前台服务启动被系统拒绝**：WorkManager 的 `SystemForegroundService.Api31Impl.startForeground`
+ *    捕获 `ForegroundServiceStartNotAllowedException` 后**只打日志不抛出**（App 不在前台态时启动
+ *    前台服务会被 Android 12+ 拒绝）——此时 Worker 照常下载、应用内进度弹窗照常，但通知栏
+ *    一条都没有。App 侧 [com.smartwash.ui.page.update.UpdateFlow] 已把「入队下载」收敛到
+ *    Activity RESUMED 之后，从源头规避；这里再发一次独立通知做兜底。
+ * 2. **完成通知被回收**：Worker 结束时 WorkManager 经 `SystemForegroundDispatcher.onExecuted`
+ *    → `cancelNotification(foregroundInfo.notificationId)` 撤掉前台通知，因此「下载完成、
+ *    点击安装」这条**唯一安装入口**（用户已划掉 App 时）必须用**独立通知 ID** 发出，
+ *    否则跟着前台通知一起消失。
+ *
+ * 进度通知与前台通知同 ID（内容一致，后发覆盖先发布，无重复）；完成/失败用独立 ID 常驻。
  */
 @HiltWorker
 class ApkDownloadWorker @AssistedInject constructor(
@@ -44,6 +63,7 @@ class ApkDownloadWorker @AssistedInject constructor(
         const val APK_FILE_NAME = "smartwash_update.apk"
         const val KEY_APK_URL = "apk_url"
         const val KEY_SHA256 = "sha256"
+        const val KEY_VERSION_NAME = "versionName"
         const val KEY_PROGRESS = "progress"
         const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
         const val KEY_TOTAL_BYTES = "total_bytes"
@@ -55,13 +75,23 @@ class ApkDownloadWorker @AssistedInject constructor(
 
         // 通知渠道 ID（与应用同名，避免重复创建）
         private const val CHANNEL_ID = "smartwash_update_download"
-        private const val CHANNEL_NAME = "应用更新下载"
 
-        // 通知 ID（固定，保证进度更新是同一通知）
-        private const val NOTIFICATION_ID = 0x1001
+        /** 进度通知 ID：与前台服务通知同 ID（内容一致，后发覆盖），保证任一条路径发出都可见 */
+        internal const val NOTIFICATION_ID = 0x1001
+
+        /**
+         * 完成/失败通知使用**独立 ID**：WorkManager 在 Worker 结束时按
+         * `ForegroundInfo.notificationId` 撤掉前台通知，同 ID 的完成通知会被一并回收
+         * （见类注释第 2 条）。独立 ID 才能让「点击安装」常驻。
+         * internal（非 private）供回归测试锚定「完成/失败 ID ≠ 进度 ID」这条不变量。
+         */
+        internal const val NOTIFICATION_ID_COMPLETE = 0x1002
+        internal const val NOTIFICATION_ID_FAILED = 0x1003
 
         // 前台服务类型（minSdk 30，常量可直接引用；须与 Manifest 声明一致）
         private const val FGS_TYPE = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+
+        private const val TAG = "ApkDownloadWorker"
 
         /**
          * 构建下载完成通知（companion 暴露供回归测试直接构建）。
@@ -69,11 +99,11 @@ class ApkDownloadWorker @AssistedInject constructor(
          * 完成通知的「点击安装」是那时唯一的安装入口。
          */
         fun buildCompleteNotification(context: Context, versionName: String, apkFile: File): Notification {
-            val title = "更新包下载完成"
+            val title = context.getString(R.string.download_notification_complete)
             val text = if (versionName.isNotBlank()) {
-                "点击安装 SmartWash $versionName"
+                context.getString(R.string.download_notification_complete_tap, versionName)
             } else {
-                "点击安装 SmartWash 更新"
+                context.getString(R.string.download_notification_complete)
             }
 
             val installIntent = Intent(Intent.ACTION_VIEW).apply {
@@ -111,7 +141,7 @@ class ApkDownloadWorker @AssistedInject constructor(
         val apkUrl = inputData.getString(KEY_APK_URL)
             ?: return Result.failure(workDataOf(KEY_ERROR to "APK 下载地址为空"))
         val expectedSha256 = inputData.getString(KEY_SHA256)?.takeIf { it.isNotBlank() }
-        val versionName = inputData.getString("versionName") ?: ""
+        val versionName = inputData.getString(KEY_VERSION_NAME) ?: ""
 
         val apkFile = File(applicationContext.cacheDir, APK_FILE_NAME)
 
@@ -121,7 +151,7 @@ class ApkDownloadWorker @AssistedInject constructor(
 
             // 创建通知渠道 + 提升为前台服务
             createNotificationChannel()
-            setForeground(buildForegroundInfo(buildProgressNotification(0, 0L, 0L)))
+            setProgressNotification(0, 0L, 0L)
 
             val request = Request.Builder().url(apkUrl).build()
             val response = okHttpClient.newCall(request).execute()
@@ -129,12 +159,14 @@ class ApkDownloadWorker @AssistedInject constructor(
             if (!response.isSuccessful) {
                 val errorMsg = "下载失败: HTTP ${response.code}"
                 setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
+                notifyFailed(errorMsg)
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
             }
 
             val body = response.body ?: run {
                 val errorMsg = "下载失败: 空响应体"
                 setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
+                notifyFailed(errorMsg)
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
             }
 
@@ -161,9 +193,7 @@ class ApkDownloadWorker @AssistedInject constructor(
                                     KEY_TOTAL_BYTES to totalBytes,
                                 ))
                                 // 更新通知栏进度
-                                setForeground(buildForegroundInfo(
-                                    buildProgressNotification(progress, downloadedBytes, totalBytes)
-                                ))
+                                setProgressNotification(progress, downloadedBytes, totalBytes)
                             }
                         }
                     }
@@ -178,12 +208,14 @@ class ApkDownloadWorker @AssistedInject constructor(
                     apkFile.delete()
                     val errorMsg = "文件校验失败，SHA256 不匹配"
                     setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
+                    notifyFailed(errorMsg)
                     return Result.failure(workDataOf(KEY_ERROR to errorMsg))
                 }
             }
 
-            // 下载完成：展示完成通知（点击拉起系统安装器；App 进程不在前台时这是唯一安装入口）
-            setForeground(buildForegroundInfo(buildCompleteNotification(applicationContext, versionName, apkFile)))
+            // 下载完成：完成通知走独立 ID（Worker 结束时被回收的是前台通知，不是它），
+            // 保证用户划掉 App 后仍有「点击安装」入口
+            notifyComplete(versionName, apkFile)
 
             // 下载完成，返回文件路径
             return Result.success(
@@ -201,6 +233,7 @@ class ApkDownloadWorker @AssistedInject constructor(
             if (apkFile.exists()) apkFile.delete()
             val errorMsg = e.message ?: "下载失败"
             setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
+            notifyFailed(errorMsg)
             return Result.failure(workDataOf(KEY_ERROR to errorMsg))
         }
     }
@@ -215,16 +248,50 @@ class ApkDownloadWorker @AssistedInject constructor(
         ForegroundInfo(NOTIFICATION_ID, notification, FGS_TYPE)
 
     /**
+     * 进度通知：既走 setForeground（前台服务保活 + 通知），也经 [NotificationManagerCompat]
+     * 直发一份（同 ID 同内容，覆盖式更新）。两条路径任一成功，通知栏就有进度。
+     */
+    private suspend fun setProgressNotification(progress: Int, downloaded: Long, total: Long) {
+        val notification = buildProgressNotification(progress, downloaded, total)
+        setForeground(buildForegroundInfo(notification))
+        notify(NOTIFICATION_ID, notification)
+    }
+
+    /** 完成通知：独立 ID，Worker 结束回收前台通知时不被连带清除 */
+    private fun notifyComplete(versionName: String, apkFile: File) {
+        notify(NOTIFICATION_ID_COMPLETE, buildCompleteNotification(applicationContext, versionName, apkFile))
+    }
+
+    /** 失败通知：独立 ID，常驻供用户看到失败原因 */
+    private fun notifyFailed(error: String) {
+        notify(NOTIFICATION_ID_FAILED, buildFailedNotification(error))
+    }
+
+    /**
+     * 经 [NotificationManagerCompat] 直发通知（独立于前台服务生命周期）。
+     * 通知权限被拒 / 用户在系统设置关掉通知时 [NotificationManagerCompat.areNotificationsEnabled]
+     * 为 false——此时静默跳过并留日志，不再叠加一条永远发不出去的通知。
+     */
+    private fun notify(notificationId: Int, notification: Notification) {
+        val manager = NotificationManagerCompat.from(applicationContext)
+        if (!manager.areNotificationsEnabled()) {
+            Log.w(TAG, "通知不可用（权限未授或系统设置已关闭），跳过通知 id=$notificationId")
+            return
+        }
+        manager.notify(notificationId, notification)
+    }
+
+    /**
      * 创建通知渠道（Android 8.0+ 必需；已存在则幂等）
      */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                CHANNEL_NAME,
+                applicationContext.getString(R.string.download_channel_name),
                 NotificationManager.IMPORTANCE_LOW // 低重要性：不发出声音，只在通知栏显示
             ).apply {
-                description = "显示 APK 更新包的下载进度"
+                description = applicationContext.getString(R.string.download_channel_desc)
                 setShowBadge(false)
             }
             val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -237,14 +304,18 @@ class ApkDownloadWorker @AssistedInject constructor(
      */
     private fun buildProgressNotification(progress: Int, downloaded: Long, total: Long): Notification {
         val contentText = if (total > 0) {
-            "${formatFileSize(downloaded)} / ${formatFileSize(total)}"
+            applicationContext.getString(
+                R.string.download_notification_progress,
+                formatFileSize(downloaded),
+                formatFileSize(total),
+            )
         } else {
             formatFileSize(downloaded)
         }
 
         return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("正在下载 SmartWash 更新")
+            .setContentTitle(applicationContext.getString(R.string.download_notification_title))
             .setContentText(contentText)
             .setOngoing(true) // 进行中，用户不可滑动删除
             .setSilent(true) // 静默通知，不发出声音
@@ -260,7 +331,7 @@ class ApkDownloadWorker @AssistedInject constructor(
     private fun buildFailedNotification(error: String): Notification {
         return NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("下载失败")
+            .setContentTitle(applicationContext.getString(R.string.download_notification_failed))
             .setContentText(error)
             .setAutoCancel(true)
             .setSilent(false) // 失败时允许提示音

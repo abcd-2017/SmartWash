@@ -67,3 +67,17 @@ com.smartwash.feature.update
 5. **FileProvider 配置**：`ApkInstaller` 走 `${packageName}.fileprovider`，壳层 Manifest 须声明对应 `<provider>` + `file_paths.xml` 包含 `cache-path`；缺失则安装 Intent 抛 FileUriExposedException。
 6. **forceUpdate 分流**：`UpdateAvailable.version.forceUpdate = true` 为强制更新，壳层沿用 4 态弹窗分流；本期逻辑在壳层 `UpdateFlow`，本模块不处理 UI 分支。
 7. **前台服务类型双声明缺一即崩（targetSdk 34+）**：`setForeground` 的 `ForegroundInfo` 必须携带 `FOREGROUND_SERVICE_TYPE_DATA_SYNC`（所有调用点统一走 `buildForegroundInfo`），且本模块 Manifest 须覆盖声明 `SystemForegroundService` 的 `foregroundServiceType="dataSync"`——WorkManager 自带清单未声明任何类型，两处缺一即抛 `InvalidForegroundServiceTypeException`；且 `SystemForegroundService` 以 `START_REDELIVER_INTENT` 运行，残留的下载任务会让 App 每次冷启动即崩（崩溃循环），修复时勿漏改任何一处 `setForeground` 调用点。
+8. **前台通知有两条「静默消失」路径（2026-11-02 用户反馈「点后台下载后通知栏没动静」的根因）**：
+   - **启动被拒**：App 不在前台态时 `SystemForegroundService` 启动前台服务会被 Android 12+ 拒绝，
+     `Api31Impl.startForeground` 捕获 `ForegroundServiceStartNotAllowedException` **只打日志不抛出**
+     （源码见 WorkManager 2.10 `SystemForegroundService`）——此时 Worker 照跑、应用内进度弹窗照显，
+     通知栏一条都没有。典型触发点是**权限授权回调里入队下载**（授权页刚关、本页尚未 RESUMED）。
+     壳层 `UpdateFlow` 已把入队收敛到 Activity `RESUMED` 之后（`combine(downloadUrl, isResumed)`）。
+   - **结束被回收**：Worker 结束时 WorkManager 经 `SystemForegroundDispatcher.onExecuted` →
+     `cancelNotification(foregroundInfo.notificationId)` 撤掉前台通知，**与前台通知同 ID 的完成通知会被连带清除**，
+     「下载完成、点击安装」这个用户划掉 App 后唯一的安装入口就没了。故完成/失败通知必须用**独立通知 ID**
+     （`NOTIFICATION_ID_COMPLETE` / `NOTIFICATION_ID_FAILED`，回归锚点见 `ApkDownloadWorkerNotificationTest`）。
+   - 进度通知同时经 `NotificationManagerCompat.notify` 直发一份（与前台通知同 ID、同内容）：前台启动失败时仍有通知。
+     发通知前查 `areNotificationsEnabled()`，权限被拒/系统设置关闭时静默跳过并留日志，不叠加永远发不出去的通知。
+9. **通知文案在本模块 `res/values/strings.xml`**：通知由 `ApkDownloadWorker` 直接发出，文案不得硬编码在 Kotlin 里
+   （历史上一度留在壳层 `app/strings.xml` 成为死字符串）。新增文案一律加进本模块 strings.xml。

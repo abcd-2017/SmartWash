@@ -24,14 +24,12 @@
     overscroll-behavior: none;
   }
   .wrap { width: 100%; max-width: 420px; position: relative; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-  .eyebrow { margin: 0 0 3px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--g-faint); }
-  h1 { margin: 0; font-size: 28px; line-height: 1; color: var(--g-primary-deep); }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
   .boxes { display: flex; gap: 8px; }
   .box { background: var(--g-primary); color: var(--g-on-primary); border-radius: 10px; min-width: 86px; padding: 5px 12px; text-align: center; line-height: 1.3; }
   .box.alt { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); }
-  .box .label { display: block; font-size: 11px; opacity: .8; }
-  .box b { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .box .label { display: block; font-size: 12px; opacity: .8; }
+  .box b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .stage { position: relative; width: min(100%, calc((100vh - 320px) * .75)); margin: 0 auto; }
   @supports (height: 100dvh) { .stage { width: min(100%, calc((100dvh - 320px) * .75)); } }
   canvas {
@@ -49,21 +47,21 @@
   .overlay.show { display: flex; animation: fadein .18s ease-out; }
   @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
   .card { width: 100%; max-width: 310px; max-height: 100%; overflow: auto; background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 18px 16px; }
-  .ov-kicker { margin: 0 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .1em; color: var(--g-faint); }
-  .card h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.2; color: var(--g-text); }
-  .ov-text { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--g-muted); }
+  .ov-kicker { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; color: var(--g-faint); }
+  .card h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.2; color: var(--g-text); }
+  .ov-text { margin: 0 0 12px; font-size: 14px; line-height: 1.6; color: var(--g-muted); }
   .ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 12px; }
-  .ov-stats .st { background: var(--g-surface2); border-radius: 10px; padding: 7px 4px; }
+  .ov-stats .st { background: var(--g-surface2); border-radius: 12px; padding: 7px 4px; }
   .ov-stats b { display: block; font-size: 16px; color: var(--g-primary-deep); font-variant-numeric: tabular-nums; }
-  .ov-stats span { font-size: 10px; color: var(--g-muted); }
+  .ov-stats span { font-size: 12px; color: var(--g-muted); }
   .ov-btns { display: grid; gap: 8px; }
   .step { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 0 0 8px; }
-  .step .sel { font-size: 17px; font-weight: 800; min-width: 86px; color: var(--g-text); }
+  .step .sel { font-size: 18px; font-weight: 700; min-width: 86px; color: var(--g-text); }
   .cfg { font-size: 12px; color: var(--g-muted); margin: 0 0 12px; }
   .btn {
     min-height: 48px; padding: 0 16px; border: 0; border-radius: var(--g-radius-btn);
     background: var(--g-primary); color: var(--g-on-primary);
-    font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer;
+    font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer;
   }
   .btn.ghost { background: var(--g-surface2); color: var(--g-text); border: 1px solid var(--g-border); }
   .btn.sq { min-width: 48px; padding: 0; font-size: 22px; line-height: 1; }
@@ -100,10 +98,6 @@ paint(B||"light");
 <body>
 <div class="wrap">
   <header>
-    <div>
-      <p class="eyebrow">MOON DESCENT</p>
-      <h1>月面轻降</h1>
-    </div>
     <div class="boxes">
       <div class="box"><span class="label">当前站台</span><b id="hudLv">1</b></div>
       <div class="box alt"><span class="label">单站最佳</span><b id="hudBest">0</b></div>

@@ -155,12 +155,15 @@
                   <div class="picked-file-name">{{ selectedFile.name }}</div>
                   <div class="picked-file-size">{{ formatFileSize(selectedFile.size) }}</div>
                 </div>
+                <!-- icon 必须传组件（el-button 内部用 resolveDynamicComponent 解析，
+                     本仓库按需引入未全局注册图标，传字符串会渲染成空图标） -->
                 <el-button
                   size="small"
                   circle
                   type="danger"
                   plain
-                  icon="Close"
+                  :icon="Close"
+                  aria-label="移除文件"
                   class="picked-file-remove"
                   @click.stop="handleRemoveFile"
                 />
@@ -331,7 +334,7 @@
       </template>
     </el-dialog>
 
-    <!-- 编辑弹窗（不含文件；gameKey/来源/文件不在编辑范围，方案 §五） -->
+    <!-- 编辑弹窗（元数据 + 可选更换游戏包；gameKey/来源不可改，方案 §五） -->
     <el-dialog
       title="编辑游戏"
       v-model="editDialogVisible"
@@ -344,6 +347,46 @@
         <el-form-item label="gameKey">
           <el-input :model-value="tempGame.gameKey" disabled />
           <div class="form-tip">游戏唯一标识不可修改；如需更换请删除后重新上传</div>
+        </el-form-item>
+
+        <el-form-item label="游戏文件">
+          <!-- 可选「更换游戏包」：不选文件 = 仅改元数据；选文件 = 以同 gameKey 覆盖上传。
+               拖拽区 hide 内部文件列表，选中后自绘文件卡片（与上传弹窗同形态） -->
+          <el-upload
+            ref="editUploadRef"
+            class="game-uploader"
+            drag
+            :auto-upload="false"
+            :limit="1"
+            :show-file-list="false"
+            accept=".html,.htm,.zip"
+            :on-change="handleEditFileChange"
+            :on-exceed="handleEditFileExceed"
+          >
+            <div v-if="editFile" class="picked-file">
+              <el-icon class="picked-file-icon"><Document /></el-icon>
+              <div class="picked-file-meta">
+                <div class="picked-file-name">{{ editFile.name }}</div>
+                <div class="picked-file-size">{{ formatFileSize(editFile.size) }}</div>
+              </div>
+              <el-button
+                size="small"
+                circle
+                type="danger"
+                plain
+                :icon="Close"
+                aria-label="移除文件"
+                class="picked-file-remove"
+                @click.stop="handleEditFileRemove"
+              />
+            </div>
+            <div v-else class="upload-empty">
+              <div class="upload-empty-text">可选：拖拽新游戏包到此处覆盖上传</div>
+              <div class="upload-empty-tip">
+                不选文件则仅修改元数据；选文件会以当前 gameKey 覆盖上传（.html / .htm / .zip，≤10MB）
+              </div>
+            </div>
+          </el-upload>
         </el-form-item>
 
         <el-form-item label="标题" prop="title">
@@ -441,7 +484,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Document, UploadFilled, CircleCheckFilled } from '@element-plus/icons-vue';
+import { Document, UploadFilled, CircleCheckFilled, Close } from '@element-plus/icons-vue';
 import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame } from '@/api/game';
 import { formatTime, formatFileSize } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
@@ -505,6 +548,11 @@ const tempGame = reactive({
 
 // gameKey 规则：小写字母开头、3-64 位小写字母/数字/_/-（与工作台 entryKey 同款正则语言）
 const GAME_KEY_PATTERN = /^[a-z][a-z0-9_-]{2,63}$/;
+
+// 同一规则剥掉 ^/$ 后供「从文本中间提取」使用：GAME_KEY_PATTERN 的锚点是为整串校验设计的，
+// 直接 .source 嵌进 heading 中间会因 ^ 锚定串首而**永远匹配不到**，gameKey 静默回退成目录名
+// （目录名与 gameKey 不一致时填错唯一标识，且 README 元首行作为填表数据源的约定形同失效）
+const GAME_KEY_SOURCE = GAME_KEY_PATTERN.source.replace(/^\^/, '').replace(/\$$/, '');
 
 // 验证规则（上传/编辑两弹窗共用；file 项仅上传弹窗消费）。
 // file 校验走自定义 validator 读 selectedFile 闭包——form model 中无 file 字段，
@@ -608,7 +656,7 @@ const parseGameReadme = (text, dirName) => {
     .trim()
     .slice(0, 32);
   const keyMatch = heading.match(
-    new RegExp(`gameKey[：:]\\s*\`?(${GAME_KEY_PATTERN.source})\`?`, 'i')
+    new RegExp(`gameKey[：:]\\s*\`?(${GAME_KEY_SOURCE})\`?`, 'i')
   );
   const categoryMatch = heading.match(/category(?:\s*建议)?[：:]\s*`?([a-z]+)`?/i);
   const category = categoryMatch?.[1];
@@ -806,15 +854,18 @@ const handleToggleEnabled = async (row) => {
   }
 };
 
-// ---------- 编辑弹窗 ----------
+// ---------- 编辑弹窗（元数据 + 可选更换游戏包） ----------
 
 const editDialogVisible = ref(false);
 const editFormRef = ref(null);
+const editUploadRef = ref(null);
+const editFile = ref(null); // 已选的新游戏包（null = 仅改元数据）
 const submitting = ref(false);
 
 // 打开编辑弹窗（仅可编辑字段进表单；gameKey 只读展示）
 const handleEdit = (row) => {
   editDialogVisible.value = true;
+  editFile.value = null;
   Object.assign(tempGame, {
     id: row.id,
     gameKey: row.gameKey,
@@ -829,19 +880,48 @@ const handleEdit = (row) => {
   });
 };
 
-// 弹窗关闭 — 清除验证状态
+// 弹窗关闭 — 清除验证状态与已选文件
 const handleEditDialogClosed = () => {
   editFormRef.value?.resetFields();
   editFormRef.value?.clearValidate();
+  editFile.value = null;
 };
 
-// 提交编辑：按方案 §五契约，PUT 只携带可编辑字段（不含 gameKey/sourceType/文件）
+// 选择新游戏包（含超限替换）：校验失败清空并提示，与上传弹窗同口径
+const handleEditFileChange = (uploadFile) => {
+  const raw = uploadFile?.raw;
+  if (!raw) return;
+  const error = validateFile(raw);
+  if (error) {
+    ElMessage.error(error);
+    editUploadRef.value?.clearFiles();
+    editFile.value = null;
+    return;
+  }
+  editFile.value = raw;
+};
+
+// limit=1 下再次选择：替换为最新文件
+const handleEditFileExceed = (files) => {
+  editUploadRef.value?.clearFiles();
+  const file = files[0];
+  if (file) editUploadRef.value?.handleStart(file);
+};
+
+const handleEditFileRemove = () => {
+  editUploadRef.value?.clearFiles();
+  editFile.value = null;
+};
+
+// 提交编辑：
+// - 未选文件 → PUT 元数据（gameKey/来源不可改，方案 §五契约）
+// - 选了文件 → 以同 gameKey 走覆盖上传（后端保留 id/created_at，元数据取当前表单值），
+//   使「修改游戏」同时覆盖游戏包，不必绕道上传弹窗重填一遍表单
 const submitEdit = async () => {
   submitting.value = true;
   try {
     await editFormRef.value.validate();
-    await updateGame({
-      id: tempGame.id,
+    const payload = {
       title: tempGame.title,
       description: tempGame.description,
       icon: tempGame.icon,
@@ -850,7 +930,18 @@ const submitEdit = async () => {
       badge: tempGame.badge,
       sort: tempGame.sort,
       remark: tempGame.remark,
-    });
+    };
+    if (editFile.value) {
+      const formData = new FormData();
+      formData.append('file', editFile.value);
+      formData.append('gameKey', tempGame.gameKey);
+      Object.entries(payload).forEach(([key, value]) =>
+        formData.append(key, value == null ? '' : String(value))
+      );
+      await uploadGame(formData);
+    } else {
+      await updateGame({ id: tempGame.id, ...payload });
+    }
     ElMessage.success('修改成功');
     editDialogVisible.value = false;
     fetchData();

@@ -133,6 +133,33 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
 > 初版实现期间的实测教训，留档备查：主题切换基准必须用**当前生效模式**而非手动值
 > （否则跟随系统时点击无效）；SVG 数值属性必须加引号（`r=4.4/` 会把自闭合斜杠吞进值）。
 
+## 5.1 原生 chrome 控制（D6 · 2026-11-02）
+
+**问题**：游戏在 App 内 WebView 里运行，上方是 App 原生 `PageHeader`（标题 + 返回箭头）。
+各游戏历史上又自绘了一个 `<h1>` 大标题，两条标题栏叠在一起，与系统元素不协调。
+
+**两条决策**：
+
+1. **标题唯一来源 = 原生页头**。游戏**不再自绘标题**：`<h1>` 一律删除（含孤立的 `h1{}` 规则），
+   页头显示的一直是后端下发的游戏名（`GameItem.title`）。游戏 `<header>` 只保留**功能性**内容
+   （记分块 `.scores`/`.boxes`、状态行 `#status`、玩法提示 `.sub`、操作按钮）。
+2. **原生 chrome 可由 H5 控制**（桥 + URL 参数双通道）：
+
+| mode | 原生标题返回栏 | 系统状态栏 | 适用 |
+|---|---|---|---|
+| `full`（默认） | 显示 | 显示 | 卡片式布局游戏（有 `.wrap`） |
+| `immersive` | 显示 | **隐藏** | 全屏画布游戏（`html,body{height:100%}` + `overflow:hidden`） |
+| `none` | **隐藏** | **隐藏** | 页面自绘 chrome（需自备返回入口） |
+
+- **桥**：`window.SmartWashGameBridge.setChrome(mode)`，仅白名单 host（后端 API + MinIO endpoint）
+  内生效，非法值经 `GameChrome.normalize` 回落 `full`（脏值不得让页面丢掉返回入口）。
+- **URL 参数**：路由 `WebView?url=&title=&chrome=`，供原生侧在**加载前**给定初值，避免先闪一帧原生栏。
+- **离开页面复原**：`WebViewContent` 的 `DisposableEffect` 在 onDispose 时把 chrome 复原为 `full`，
+  沉浸式不会跟着导航带进后续页面。
+
+**当前接入 `immersive` 的 5 个全屏画布游戏**：breakout、flappy、gomoku、falling-sand、beat-tap。
+其余 11 个保持 `full`。
+
 ## 6. 新游戏接入清单（library/ 后续加游戏时照此执行）
 
 1. 抄第 2 节 token 两块 CSS（`:root` + `[data-theme=dark]`）+ 第 4 节运行时（置于
@@ -143,9 +170,16 @@ HTML/CSS、`__gThemeToggle`、`g-theme` 读写、matchMedia 监听及按钮让�
    `getComputedStyle`，并定义 `window.__gOnTheme = function(){ palLoad(); <该游戏重绘函数>() }`。
    rAF 连续重绘的游戏只需在钩子里刷新缓存梯度对象。
 3. 存档键不改；`touch-action`/`user-select`/`touch-callout` 既有规则不回退。
-4. 过三关：`node` 提取 `<script>` `new Function` 语法检查；`grep -nE 'https?://'` 零命中；
+4. **不自绘标题**：不要在 `<header>` 里写 `<h1>`——标题由 App 原生页头唯一承载（§5.1）；
+   游戏 `<header>` 只放记分/状态/玩法提示/操作按钮。
+5. **字号入八档**（36/28/22/18/16/14/12，weight 仅 400/500/600/700），圆角只用
+   16/14/12/10（见 §2 与 Android `ui-design-spec.md` v0.4）。
+6. 全屏视口游戏（`html,body{height:100%}` + `overflow:hidden`）在 `<head` 主题运行时里追加
+   `try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}`（§5.1）；
+   卡片式布局游戏不加。
+7. 过三关：`node` 提取 `<script>` `new Function` 语法检查；`grep -nE 'https?://'` 零命中；
    375px 视口实开无横向溢出。体积：改后 ≤ 改前 × 1.3。
-5. 更新 `PROGRESS.md` 该游戏行。
+8. 更新 `PROGRESS.md` 该游戏行。
 
 ## 7. 三关验证与预算
 

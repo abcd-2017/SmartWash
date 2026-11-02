@@ -278,7 +278,10 @@ fun DivAskPage(
                     onClear = { viewModel.onQuestionChange("") },
                 )
             } else {
-                askForm(c)
+                // askForm 内含多个兄弟节点（问题卡/章节标题/领域 chips/方式卡/按钮/脚注），
+                // 必须落在 Column 作用域才能纵向排布：Crossfade 的内容是 Box，
+                // 直接发射会让全部兄弟叠在同一原点，整页表单挤成一团（布局错乱）
+                Column(Modifier.fillMaxWidth()) { askForm(c) }
             }
         }
     }

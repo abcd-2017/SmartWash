@@ -31,8 +31,11 @@ public final class ClientIpUtil {
         return remoteAddr;
     }
 
-    /** 直连地址为回环或 RFC1918 内网时，视为存在可信反向代理 */
-    private static boolean isTrustedProxy(String remoteAddr) {
+    /**
+     * 直连地址为回环或 RFC1918 内网时，视为存在可信反向代理。
+     * 包级可见：供同包的 {@link PublicBaseUrlResolver} 复用同一判定，避免安全口径分叉。
+     */
+    static boolean isTrustedProxy(String remoteAddr) {
         if (remoteAddr == null) {
             return false;
         }

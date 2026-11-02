@@ -2,7 +2,7 @@ package com.smartwash.game.storage;
 
 /**
  * 游戏静态资源对象存储抽象（MinIO game/{gameKey}/ 前缀语义）。
- * 下发形态与头像先例一致：后端只管写路径，读取走 MinIO 公共读直链（game_config.url 存完整对象直链），
+ * 下发形态与头像先例一致：只落对象键（object_key + entry_path），可玩地址读时拼 MinIO 公共读直链，
  * 对象元数据（Content-Type / Cache-Control）在上传时写入，由 MinIO 随 GET 返回，服务侧零转发代码。
  */
 public interface GameObjectStorage {

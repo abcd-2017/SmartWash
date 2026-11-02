@@ -12,10 +12,9 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:none}
-header{width:100%;max-width:460px;padding:10px 14px 0;text-align:center}
-header h1{font-size:19px;font-weight:600}
-#record{font-size:13px;color:var(--g-muted);margin-top:3px}
-#status{font-size:15px;font-weight:600;color:var(--g-primary-deep);margin-top:8px;min-height:22px}
+header{width:100%;max-width:460px;padding:10px 14px 16px;text-align:center}
+#record{font-size:14px;color:var(--g-muted);margin-top:3px}
+#status{font-size:16px;font-weight:600;color:var(--g-primary-deep);margin-top:8px;min-height:24px}
 #stage{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;touch-action:none}
 canvas{display:block;border-radius:10px;box-shadow:var(--g-shadow)}
 footer{display:flex;gap:16px;padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
@@ -31,13 +30,13 @@ var R=document.documentElement,B=null;
 function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();try{window.__gOnTheme(m)}catch(e){}}
 window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
 try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+try{SmartWashGameBridge&&SmartWashGameBridge.setChrome('immersive')}catch(e){}
 paint(B||"light");
 })();
 </script>
 </head>
 <body>
 <header>
-  <h1>五子棋 · 人机对弈</h1>
   <div id="record">战绩 胜 0 / 负 0 / 和 0</div>
   <div id="status">你执黑先行，点击棋盘落子</div>
 </header>

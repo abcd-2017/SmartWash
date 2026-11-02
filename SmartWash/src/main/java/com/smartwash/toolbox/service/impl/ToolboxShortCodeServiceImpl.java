@@ -16,16 +16,20 @@ import com.smartwash.toolbox.from.UpdateShortCodeFrom;
 import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
+import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
 import com.smartwash.toolbox.vo.ShortCodeStatsVo;
 import com.smartwash.toolbox.vo.ShortCodeVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.net.URI;
 import java.time.Duration;
@@ -70,9 +74,8 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     private final StringRedisTemplate stringRedisTemplate;
     private final UsersMapper usersMapper;
 
-    /** 短码对外完整跳转 URL 的域名前缀，生产通过环境变量 TOOLBOX_PUBLIC_BASE_URL 注入 */
-    @Value("${toolbox.public-base-url}")
-    private String publicBaseUrl;
+    /** 短链对外域名解析：显式配置优先，未配置时按当前请求推导（见 PublicBaseUrlResolver） */
+    private final PublicBaseUrlResolver publicBaseUrlResolver;
 
     // ==================== 创建（唯一索引裁决 + 冲突重试） ====================
 
@@ -369,10 +372,19 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     }
 
     private String shortUrlOf(String code) {
-        String base = publicBaseUrl.endsWith("/")
-                ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
-                : publicBaseUrl;
-        return base + "/web/t/" + code;
+        String base = publicBaseUrlResolver.resolve(currentRequest());
+        if (StrUtil.isBlank(base)) {
+            log.warn("未配置 toolbox.public-base-url 且无法从请求推导对外域名，短链退化为相对路径: code={}", code);
+        }
+        return StrUtil.removeSuffix(base, "/") + "/web/t/" + code;
+    }
+
+    /** 取当前请求；非请求线程（如定时任务）返回 null，由调用方降级 */
+    private HttpServletRequest currentRequest() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        return (attributes instanceof ServletRequestAttributes servletRequestAttributes)
+                ? servletRequestAttributes.getRequest()
+                : null;
     }
 
     private ShortCodeVo buildVo(ToolboxShortCode record) {

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -56,8 +58,12 @@ import com.smartwash.feature.update.service.InstallRequestResult
 import com.smartwash.feature.update.ui.ErrorSource
 import com.smartwash.feature.update.ui.UpdateState
 import com.smartwash.feature.update.ui.UpdateViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.io.File
 import java.util.UUID
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 
 /**
  * 更新流程（T8.1 自 MainActivity 抽出，职责仍归壳层）：事件收集 → 下载调度 →
@@ -83,8 +89,34 @@ internal fun UpdateFlow(
             // 授权通过：进入准备下载状态，开始获取预签名地址
             updateViewModel.preparingDownload()
             updateViewModel.startDownload(context)
+        } else {
+            // 未授权不再静默无反应（旧行为：什么都不做，用户只见弹窗不动，不知发生了什么）——
+            // 更新照常开始（应用内进度弹窗承载反馈），仅明确告知通知栏不显示进度
+            Toast.makeText(
+                context,
+                context.getString(R.string.update_notification_denied),
+                Toast.LENGTH_LONG
+            ).show()
+            updateViewModel.preparingDownload()
+            updateViewModel.startDownload(context)
         }
-        // 未授权则什么都不做，弹窗保持 UpdateAvailable 状态（用户可再次点击）
+    }
+
+    // 前台态标记（2026-11-02）：下载入队收敛到 Activity RESUMED 之后。
+    // WorkManager 的 SystemForegroundService 在 App 不处于前台态时启动前台服务会被
+    // Android 12+ 拒绝（ForegroundServiceStartNotAllowedException），而 WorkManager 只记日志
+    // 不抛出——典型触发点是「权限授权回调里入队下载」：授权页刚关闭、本页尚未恢复 RESUMED。
+    // 此时下载照跑、应用内进度弹窗照显，但通知栏一条都没有（用户反馈的「后台下载没动静」）。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val isResumed = remember {
+        MutableStateFlow(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            isResumed.value = event == Lifecycle.Event.ON_RESUME
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // 检查通知权限是否已授予（Android 13+ 需要运行时权限）
@@ -110,15 +142,18 @@ internal fun UpdateFlow(
     // 声明必须早于下方 LaunchedEffect(updateViewModel) 的首次使用
     val currentDownloadWorkId = remember { mutableStateOf<String?>(null) }
 
-    // 监听预签名下载地址：获取成功后调度 Worker 开始下载
+    // 监听预签名下载地址：获取成功后调度 Worker 开始下载。
+    // 与前台态标记 combine：仅在本页 RESUMED 时入队（见 isResumed 注释）；
+    // 未恢复时先持有 URL 不消费，恢复后自动补发，避免下载被降级为后台进程遭系统回收。
     LaunchedEffect(updateViewModel) {
-        updateViewModel.downloadUrl.collect { url ->
-            if (url != null) {
-                val version = updateViewModel.getLatestVersion() ?: return@collect
-                enqueueApkDownload(context, workManager, url, version, currentDownloadWorkId)
-                updateViewModel.consumeDownloadUrl()
+        combine(updateViewModel.downloadUrl, isResumed) { url, resumed -> url to resumed }
+            .collect { (url, resumed) ->
+                if (url != null && resumed) {
+                    val version = updateViewModel.getLatestVersion() ?: return@collect
+                    enqueueApkDownload(context, workManager, url, version, currentDownloadWorkId)
+                    updateViewModel.consumeDownloadUrl()
+                }
             }
-        }
     }
 
     LaunchedEffect(currentDownloadWorkId.value) {
@@ -344,7 +379,7 @@ private fun enqueueApkDownload(
     val inputData = workDataOf(
         ApkDownloadWorker.KEY_APK_URL to downloadUrl,
         ApkDownloadWorker.KEY_SHA256 to version.sha256,
-        "versionName" to version.versionName,
+        ApkDownloadWorker.KEY_VERSION_NAME to version.versionName,
     )
 
     val downloadRequest = OneTimeWorkRequestBuilder<ApkDownloadWorker>()

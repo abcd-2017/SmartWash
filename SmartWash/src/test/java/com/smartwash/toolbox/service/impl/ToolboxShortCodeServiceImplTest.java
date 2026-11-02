@@ -16,6 +16,7 @@ import com.smartwash.toolbox.from.UpdateShortCodeFrom;
 import com.smartwash.toolbox.mapper.ToolboxShortCodeMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService.ResolveResult;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
+import com.smartwash.toolbox.toolkit.PublicBaseUrlResolver;
 import com.smartwash.toolbox.toolkit.ShortCodeGenerator;
 import com.smartwash.toolbox.vo.AdminShortCodeVo;
 import com.smartwash.toolbox.vo.ShortCodeVo;
@@ -82,6 +83,8 @@ class ToolboxShortCodeServiceImplTest {
     private StringRedisTemplate stringRedisTemplate;
     @Mock
     private ValueOperations<String, String> valueOperations;
+    @Mock
+    private PublicBaseUrlResolver publicBaseUrlResolver;
 
     /** 模拟 Redis 的字符串存储，还原真实 get/set/hasKey/delete 语义 */
     private final Map<String, String> cache = new ConcurrentHashMap<>();
@@ -100,10 +103,11 @@ class ToolboxShortCodeServiceImplTest {
     @BeforeEach
     void setUp() {
         cache.clear();
-        service = new ToolboxShortCodeServiceImpl(generator, visitService, stringRedisTemplate, usersMapper);
+        service = new ToolboxShortCodeServiceImpl(generator, visitService, stringRedisTemplate, usersMapper, publicBaseUrlResolver);
         // ServiceImpl 的 save/getById 等内置方法走父类 baseMapper 字段，需手动注入同一 mock
         ReflectionTestUtils.setField(service, "baseMapper", shortCodeMapper);
-        ReflectionTestUtils.setField(service, "publicBaseUrl", "http://test.local");
+        // 对外域名解析器：本测试只关心拼接逻辑，统一返回固定前缀
+        when(publicBaseUrlResolver.resolve(any())).thenReturn("http://test.local");
 
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(anyString())).thenAnswer(inv -> cache.get(inv.getArgument(0, String.class)));
