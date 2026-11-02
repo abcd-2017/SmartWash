@@ -172,21 +172,33 @@
                 <el-icon class="upload-empty-icon"><UploadFilled /></el-icon>
                 <div class="upload-empty-text">拖拽文件到此处，或 <em>点击选择</em></div>
                 <div class="upload-empty-tip">支持 .html / .htm 单文件或 .zip 包，不超过 10MB</div>
-                <!-- 目录导入：games-library 标准结构（index.html + 可选 README.md），README 解析后自动填表 -->
-                <el-divider class="upload-empty-divider">或</el-divider>
-                <el-button size="small" @click.stop="handlePickDirectory">
-                  选择游戏目录（自动填表）
-                </el-button>
-                <input
-                  ref="dirInputRef"
-                  class="dir-input"
-                  type="file"
-                  webkitdirectory
-                  multiple
-                  @change="handleDirImport"
-                />
               </div>
             </el-upload>
+
+            <!-- 自动填表入口必须放在 el-upload 之外：
+                 el-upload 根 div 自带 onClick → 点开它自己的 file input（accept=.html,.htm,.zip）。
+                 放在它的插槽里时，点击会冒泡到那一层，弹出来的是它的文件选择器（实测：点「选择游戏目录」
+                 弹的确实是 el-upload__input），目录入口形同失效。移出后两条路径互不干扰。 -->
+            <div class="upload-alt">
+              <span class="upload-alt-divider">或</span>
+              <el-button size="small" @click="handlePickDirectory">选择游戏目录（自动填表）</el-button>
+              <el-button size="small" @click="handlePickReadme">选 README.md 自动填表</el-button>
+              <input
+                ref="dirInputRef"
+                class="dir-input"
+                type="file"
+                webkitdirectory
+                multiple
+                @change="handleDirImport"
+              />
+              <input
+                ref="readmeInputRef"
+                class="dir-input"
+                type="file"
+                accept="README.md,.md"
+                @change="handleReadmePick"
+              />
+            </div>
           </el-form-item>
 
           <el-divider content-position="left">基本信息</el-divider>
@@ -639,12 +651,51 @@ const handleExceed = (files) => {
   }
 };
 
-// ---------- 目录导入（games-library 标准结构：index.html + 可选 README.md） ----------
+// ---------- 自动填表：选目录（部分浏览器）/ 选 README.md（全浏览器） ----------
+// 两者都服务 games-library 标准结构（index.html + 可选 README.md），最终汇到 applyReadmeFields。
 
 const dirInputRef = ref(null);
+const readmeInputRef = ref(null);
 
 const handlePickDirectory = () => {
   dirInputRef.value?.click();
+};
+
+const handlePickReadme = () => {
+  readmeInputRef.value?.click();
+};
+
+/**
+ * README 解析结果落表单：gameKey 不再被标题 watch 覆盖；
+ * 目录名缺失（只选了 README）时按标题生成，避免 gameKey 留空卡在必填校验。
+ */
+const applyReadmeFields = (parsed) => {
+  Object.assign(tempGame, parsed);
+  keyEdited.value = true;
+  if (!tempGame.gameKey) {
+    tempGame.gameKey = slugFromTitle(tempGame.title);
+  }
+  uploadFormRef.value?.clearValidate(['title', 'gameKey', 'category']);
+};
+
+// 只选 README.md（全浏览器降级路径）：不碰上传文件，只填表
+const handleReadmePick = (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = ''; // 允许重复选择同一文件
+  if (!file) return;
+  if (!/^readme\.md$/i.test(file.name)) {
+    ElMessage.error('请选择 README.md');
+    return;
+  }
+  file
+    .text()
+    .then((text) => {
+      applyReadmeFields(parseGameReadme(text, ''));
+      ElMessage.success('已按 README 填表，请核对后提交');
+    })
+    .catch(() => {
+      ElMessage.error('README 读取失败，请手动填写表单');
+    });
 };
 
 // README 首行解析：`# 标题（gameKey：`x`，category 建议：`y`）`；
@@ -706,15 +757,14 @@ const handleDirImport = (event) => {
 
   // README 可选：无则字段留空（gameKey 仍取目录名），有则解析预填
   if (!readmeFile) {
-    Object.assign(tempGame, { title: '', gameKey: dirName, category: '', description: '' });
-    keyEdited.value = true; // 导入的 key 不再被标题 watch 覆盖
+    applyReadmeFields({ title: '', gameKey: dirName, category: '', description: '' });
     return;
   }
   readmeFile
     .text()
     .then((text) => {
-      Object.assign(tempGame, parseGameReadme(text, dirName));
-      keyEdited.value = true; // 导入的 key 不再被标题 watch 覆盖
+      applyReadmeFields(parseGameReadme(text, dirName));
+      ElMessage.success('已按 README 填表，请核对后提交');
     })
     .catch(() => {
       ElMessage.error('README 读取失败，请手动填写表单');
@@ -1090,19 +1140,28 @@ onMounted(() => {
   color: #94a3b8;
 }
 
-/* 目录导入：隐藏 input + 分隔线 */
-.dir-input {
-  display: none;
+/* 自动填表入口：置于 el-upload 之外，与拖拽区平级（见模板处注释——放在插槽内会被 el-upload 抢走点击） */
+.upload-alt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
 }
 
-.upload-empty-divider {
-  width: 70%;
-  margin: 8px 0;
-}
-
-.upload-empty-divider :deep(.el-divider__text) {
+.upload-alt-divider {
+  width: 100%;
+  margin: 0;
   font-size: 12px;
   color: #94a3b8;
+  text-align: center;
+}
+
+/* 自动填表用的两个隐藏 input */
+.dir-input {
+  display: none;
 }
 
 /* 已选文件卡片 */
