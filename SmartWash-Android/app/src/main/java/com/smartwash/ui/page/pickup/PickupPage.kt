@@ -227,7 +227,8 @@ private fun PickupOrderCard(
                     )
                 }
                 Text(
-                    text = stringResource(R.string.currency_format, "${order.totalPrice}"),
+                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致
+                    text = stringResource(R.string.currency_format, String.format("%.2f", order.totalPrice)),
                     style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primaryDark
                 )

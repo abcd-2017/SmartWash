@@ -681,7 +681,9 @@ private fun OrderListItem(
             )
         }
         Text(
-            text = stringResource(R.string.currency_format, orderVo.payPrice.toString()),
+            // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与首页/详情/支付页
+            // 的「¥29.90」不一致；全应用 ¥ 金额统一 String.format("%.2f")
+            text = stringResource(R.string.currency_format, String.format("%.2f", orderVo.payPrice)),
             style = AppTextStyles.AmountMedium,
             color = AppColors.colorScheme.primaryDark
         )

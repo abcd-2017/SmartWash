@@ -182,12 +182,13 @@ fun OrderDetailPage(
                                 // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
                                 InfoRow(
                                     stringResource(R.string.price),
-                                    stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
+                                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f))
                                 )
                                 // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
                                 InfoRow(
                                     stringResource(R.string.actual_payment),
-                                    stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueColor = AppColors.colorScheme.primaryDark,
                                     valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
                                 )

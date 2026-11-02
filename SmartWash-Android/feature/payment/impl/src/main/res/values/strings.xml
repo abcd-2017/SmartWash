@@ -32,6 +32,8 @@
     <string name="coupon_amount_format">%s元优惠券</string>
     <string name="coupon_discount_format">满%s减%s</string>
     <string name="coupon_min_amount_format">满%s元可用</string>
+    <!-- 选券后支付行实扣金额（原代码内联「-￥%s」硬编码，收编进资源） -->
+    <string name="coupon_discount_value">-￥%s</string>
     <string name="valid_until">有效期至：%s</string>
 
     <!-- 支付成功页 -->

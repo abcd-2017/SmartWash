@@ -181,9 +181,11 @@ fun PaymentPage(
                                     label = "amountDue"
                                 ) { payPrice ->
                                     Text(
+                                        // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，
+                                        // 与充值/记录/订单页的「¥29.90」不一致（tnum 大字随字符串统一）
                                         text = stringResource(
                                             R.string.currency_format,
-                                            "${payPrice ?: ""}"
+                                            String.format("%.2f", payPrice ?: 0f)
                                         ),
                                         style = AppTextStyles.DataLarge,
                                         color = AppColors.colorScheme.primaryDark,
@@ -262,7 +264,10 @@ fun PaymentPage(
                                             else AppColors.colorScheme.textPrimary
                                         )
                                         Text(
-                                            stringResource(R.string.current_balance_format, "${orderInfo?.userVo?.balance ?: 0}"),
+                                            stringResource(
+                                                R.string.current_balance_format,
+                                                String.format("%.2f", orderInfo?.userVo?.balance ?: 0f)
+                                            ),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = AppColors.colorScheme.textSecondary,
                                             modifier = Modifier.padding(top = 4.dp)
@@ -326,7 +331,10 @@ fun PaymentPage(
                                     ) { discount ->
                                         Text(
                                             text = if (discount == null) stringResource(R.string.do_not_use)
-                                            else "-￥${discount ?: 0}",
+                                            else stringResource(
+                                                R.string.coupon_discount_value,
+                                                String.format("%.2f", discount ?: 0f)
+                                            ),
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 fontFeatureSettings = if (discount == null) "normal" else "tnum"
                                             ),
@@ -355,7 +363,10 @@ fun PaymentPage(
                         // §2.4 豁免：固定 CTA 条与滚动内容之间可用 0.5dp 分隔线
                         HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                         AppButton(
-                            text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
+                            text = stringResource(
+                                R.string.confirm_pay_format,
+                                String.format("%.2f", orderInfo?.payPrice ?: 0f)
+                            ),
                             onClick = {
                                 if (orderInfo != null) {
                                     if (orderInfo!!.userVo.balance >= orderInfo!!.payPrice) {
@@ -579,13 +590,23 @@ private fun UserCouponItem(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = stringResource(R.string.coupon_amount_format, "${userCouponVo.discount}"),
+                    text = stringResource(
+                        R.string.coupon_amount_format,
+                        String.format("%.2f", userCouponVo.discount)
+                    ),
                     style = AppTextStyles.AmountMedium
                 )
                 Text(
                     text = if (userCouponVo.threshold == 0f)
-                        stringResource(R.string.coupon_discount_format, "${userCouponVo.discount + 0.01}", "${userCouponVo.discount}")
-                    else stringResource(R.string.coupon_min_amount_format, "${userCouponVo.threshold}"),
+                        stringResource(
+                            R.string.coupon_discount_format,
+                            String.format("%.2f", userCouponVo.discount + 0.01f),
+                            String.format("%.2f", userCouponVo.discount)
+                        )
+                    else stringResource(
+                        R.string.coupon_min_amount_format,
+                        String.format("%.2f", userCouponVo.threshold)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary
                 )

@@ -227,7 +227,8 @@ fun PaySuccessPage(
                                 )
                                 InfoRow(
                                     stringResource(R.string.payment_amount),
-                                    stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"),
+                                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueStyle = infoValueStyle,
                                     rowHeight = 16.dp
                                 )

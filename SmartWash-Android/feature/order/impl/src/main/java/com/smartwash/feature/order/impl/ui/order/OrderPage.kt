@@ -461,7 +461,8 @@ private fun OrderRow(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = stringResource(R.string.currency_format, order.payPrice.toString()),
+                // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致
+                text = stringResource(R.string.currency_format, String.format("%.2f", order.payPrice)),
                 color = if (order.status == OrderStatus.CANCELED.status) {
                     AppColors.colorScheme.textSecondary
                 } else {
