@@ -475,10 +475,11 @@ private fun OrderRow(
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）
+                        // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）；
+                        // 热区 44dp（触控最低档，原 40dp 不达标）
                         Box(
                             modifier = Modifier
-                                .heightIn(min = 40.dp)
+                                .heightIn(min = 44.dp)
                                 .pressable(onClick = { cancelClick(order.orderId) })
                                 .padding(horizontal = 4.dp),
                             contentAlignment = Alignment.Center

@@ -224,7 +224,8 @@ fun LaundryPage(
                                     )
                                 }
                             }
-                            // M3 TextButton 自带 state layer（涟漪色块不受令牌控制）→ 自绘 pressable 文字按钮
+                            // M3 TextButton 自带 state layer（涟漪色块不受令牌控制）→ 自绘 pressable 文字按钮；
+                            // 垂直 12 使热区达 48dp（正文 24 行高 + 24，原 8 只有 40dp 触控不达标）
                             Text(
                                 text = stringResource(R.string.change),
                                 style = MaterialTheme.typography.bodyLarge,
@@ -232,7 +233,7 @@ fun LaundryPage(
                                 color = AppColors.colorScheme.primaryDark,
                                 modifier = Modifier
                                     .pressable(onClick = { showChangeSchoolDialog = true })
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    .padding(horizontal = 12.dp, vertical = 12.dp)
                             )
                         }
                     }

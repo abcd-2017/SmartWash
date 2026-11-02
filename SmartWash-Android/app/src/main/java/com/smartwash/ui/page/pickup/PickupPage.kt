@@ -265,22 +265,30 @@ private fun PickupOrderCard(
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(AppDimens.radiusMd),
                         color = AppColors.colorScheme.surfaceVariant,
+                        // §3.3 小按钮档：高 36dp（原文字 v8 内边距撑出 32dp 热区不达标），
+                        // 与订单行 OrderActionPill / 优惠券 ClaimAction 同规格
                         modifier = Modifier
                             .pressable(onClick = {
                                 clipboardManager.setText(AnnotatedString(pickupCode))
                                 view.performHaptic(HapticEffect.SELECTION)
                                 Toast.makeText(context, context.getString(R.string.copy_success), Toast.LENGTH_SHORT).show()
                             })
-                            .clip(RoundedCornerShape(12.dp))
+                            .height(36.dp)
+                            .clip(RoundedCornerShape(AppDimens.radiusMd))
                     ) {
-                        Text(
-                            text = stringResource(R.string.copy_pickup_code),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        Box(
+                            modifier = Modifier.height(36.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.copy_pickup_code),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AppColors.colorScheme.textPrimary,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
                     }
                 }
             }
