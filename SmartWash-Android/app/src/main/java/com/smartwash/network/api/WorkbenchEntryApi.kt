@@ -34,7 +34,7 @@ data class WorkbenchEntryVo(
     /** 副标题描述 */
     val description: String = "",
 
-    /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/default） */
+    /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/science/default） */
     val icon: String = "",
 
     /** 图标色组 key（白名单：green/blue/orange/pink/teal/purple） */

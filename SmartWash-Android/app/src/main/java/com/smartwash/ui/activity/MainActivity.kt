@@ -47,6 +47,7 @@ import com.smartwash.deeplink.DeepLinkHandler
 import com.smartwash.feature.coupon.ui.couponGraph
 import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.game.ui.gameGraph
+import com.smartwash.feature.lab.ui.labGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
@@ -247,6 +248,9 @@ class MainActivity : ComponentActivity() {
                             // 游戏中心（独立路由；入口走深链 smartwash://game-center 与
                             // 后端 workbench_entry 配置的工作台卡片，无底栏入口）
                             gameGraph(navController)
+                            // 解压实验舱（纯本地玩具：泡泡纸/呼吸引导/指尖鱼群；入口走深链
+                            // smartwash://lab 与后端 workbench_entry 配置的工作台卡片，无底栏入口）
+                            labGraph(navController)
                         }
                         }
                     }

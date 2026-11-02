@@ -194,4 +194,9 @@ dependencies {
     //gameGraph 聚合；游戏页承载复用壳层 WebView 路由（零新建容器），
     //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:game")
+
+    //解压实验舱子系统（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群三页 + 首页入口卡，
+    //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
+    //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
+    implementation project(":feature:lab")
 }

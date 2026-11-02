@@ -1263,7 +1263,8 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('toolbox-short-code', '短链工具箱',  3, 1, NULL, 1),
   ('web',                '内置 WebView', 3, 0, 'scheme 说明：smartwash://web?url= 打开内置 WebView', 1),
   ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1),
-  ('game-center',        '游戏中心',    3, 1, 'smartwash://game-center 打开游戏中心列表页', 1);
+  ('game-center',        '游戏中心',    3, 1, 'smartwash://game-center 打开游戏中心列表页', 1),
+  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
@@ -1272,7 +1273,8 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('toolbox-short-code', '短链工具箱', '生成与管理短链', 'link',    'blue',   'smartwash://toolbox-short-code',   NULL, 1, 1, NULL),
   ('my-history',         '我的卦历',   NULL,             'history', 'purple', 'smartwash://divination-history',   NULL, 1, 2, NULL),
   ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL),
-  ('game-center',        '游戏中心',   'H5 小游戏合集',  'gamepad', 'teal',   'smartwash://game-center',          NULL, 1, 9, NULL);
+  ('game-center',        '游戏中心',   'H5 小游戏合集',  'gamepad', 'teal',   'smartwash://game-center',          NULL, 1, 9, NULL),
+  ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'smartwash://lab', '新', 1, 10, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）
