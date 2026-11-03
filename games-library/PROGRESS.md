@@ -32,9 +32,9 @@
 
   Playwright 375px 全套（初开浅色 / 冒烟交互 / `__applySmartWashTheme` 推深 /
   非法值拒绝 / 无横向溢出 / 无 `<h1>` / 零 JS 异常）：6/6 通过。
-  同批将 beat-tap/billiards/blackjack/falling-sand/moon-lander/slingshot 六款
-  存量 README 的 category 建议从非白名单值（rhythm/physics/cards/sandbox）
-  修正为端上白名单（arcade/board/board/other/arcade/puzzle），上传填表不再回落「其他」。
+  同批把存量 README 的 category 建议统一到端上白名单：beat-tap→arcade、
+  billiards→board、blackjack→board、falling-sand→other、moon-lander→arcade
+  （slingshot 版本库中已为 puzzle，仅复位工作区陈旧副本），上传填表不再回落「其他」。
 
 - **2026-11-02 四次修订（用户反馈「游戏与系统标题返回栏不协调」）**：
   1. **标题唯一来源 = App 原生页头**：17 个游戏**全部删除自绘 `<h1>`**（含孤立的 `h1{}` 规则），
