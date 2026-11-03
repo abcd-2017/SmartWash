@@ -9,6 +9,7 @@ import { checkStatus } from '../utils/CheckStatus'
 import { promptAction } from '@kit.ArkUI'
 import { logger } from '../utils/Logger'
 import { getValue, setValue } from '../utils/StorageUtil'
+import { PublicPaths } from './PublicPaths'
 import { CommonConstants } from '../constant/CommonConstants'
 import { RouteNames } from '../constant/RouteNames'
 import { pathStack } from '../utils/PathStackUtil'
@@ -93,8 +94,14 @@ export const instance: AxiosInstance = axios.create({
   }
 })
 
-//请求前拦截器：/web 前缀接口注入 Bearer Token
+//请求前拦截器：/web 前缀接口注入 Bearer Token（公开路径白名单除外，见 PublicPaths）
 instance.interceptors.request.use(async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
+  // 公开接口（后端 SecurityConfig permitAll 段，清单见 PublicPaths）：不带 token，
+  // 也不因本地无 token 而拦截——未登录用户同样能拉取启动配置、洗衣项目列表等只读数据。
+  // 语义对齐 Android：@RequireAuthorization 未标注的方法不注入 token。
+  if (PublicPaths.isPublic(config.url)) {
+    return config
+  }
   const cached = await getValue(CommonConstants.USER_TOKEN, "")
   const tokenCache = typeof cached === "string" ? cached : ""
   if (config.url?.startsWith("/web")) {
