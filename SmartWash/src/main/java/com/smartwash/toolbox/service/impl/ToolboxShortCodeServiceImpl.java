@@ -139,6 +139,10 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
             record.setTarget(validateTarget(from.getTarget()));
         }
         if (from.getExpireAt() != null) {
+            // 传值即修改：必须晚于当前时刻，避免把短码改成「立即过期」的既成事实
+            if (!from.getExpireAt().isAfter(LocalDateTime.now())) {
+                throw new CustomExceptions("过期时间必须为未来时间");
+            }
             record.setExpireAt(from.getExpireAt());
         }
         this.updateById(record);

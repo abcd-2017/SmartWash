@@ -11,8 +11,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "工作台-路由字典管理端", description = "App deeplink 路由字典维护（ROLE_ADMIN）")
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/admin/deeplink/routes")
 @RequiredArgsConstructor
@@ -52,7 +55,7 @@ public class DeeplinkRouteAdminController {
 
     @Operation(summary = "批量删除路由", description = "根据ID批量物理删除，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> delete(@PathVariable("ids") @Parameter(description = "路由ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+    public Result<Boolean> delete(@PathVariable("ids") @Pattern(regexp = "^\\d+(,\\d+)*$", message = "ids 必须为逗号分隔的数字") @Parameter(description = "路由ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         deeplinkRouteService.deleteRoutes(ids);
         return Result.ok(true);
     }

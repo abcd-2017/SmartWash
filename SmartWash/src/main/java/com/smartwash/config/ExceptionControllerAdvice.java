@@ -5,13 +5,19 @@ import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.exception.UserAuthenticationException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -28,7 +34,22 @@ public class ExceptionControllerAdvice {
             String field = item.getField();
             sb.append(field).append(":").append(message).append(" ");
         });
-        return Result.build(sb.toString(), ResultCodeEnum.FAIL);
+        // 校验提示放在 message 字段：三端拦截器与 Web 提示均消费 message，data 保持 null
+        return Result.build(null, ResultCodeEnum.FAIL.getCode(), sb.toString());
+    }
+
+    /**
+     * 方法参数校验失败（@Validated 类级校验，如 @PathVariable 上的 @Pattern）：
+     * 返回 HTTP 400 + 统一 Result 信封，避免 ConstraintViolationException 落到全局兜底变成 500 语义。
+     */
+    @ExceptionHandler(value = ConstraintViolationException.class)
+    public ResponseEntity<Result<String>> handleConstraintViolationException(ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(" "));
+        log.warn("方法参数校验失败：{}", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Result.build(null, HttpStatus.BAD_REQUEST.value(), message));
     }
 
     /**
