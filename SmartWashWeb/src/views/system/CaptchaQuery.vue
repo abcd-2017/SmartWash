@@ -13,9 +13,9 @@
         <el-form-item label="手机号" :error="phoneError">
           <el-input
             v-model="form.phoneNumber"
-            placeholder="请输入手机号"
+            placeholder="请输入11位手机号"
             clearable
-            maxlength="14"
+            maxlength="11"
             style="width: 240px"
             @input="phoneError = ''"
           />
