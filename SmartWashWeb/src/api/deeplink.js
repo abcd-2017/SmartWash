@@ -5,7 +5,7 @@
 // 注意：列表 Vo 不含 createdAt/updatedAt 时间字段。
 import request from '@/utils/http';
 
-// 路由字典分页列表：page/size + host（模糊）/ enabled（1 启用 0 停用，可空），
+// 路由字典分页列表：page/size + hostKeyword（host 模糊）/ enabled（1 启用 0 停用，可空），
 // 返回 MyBatis-Plus Page（records/total），按 host 升序
 export function getDeeplinkRouteList(params) {
   return request({
