@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 声景混音器文案（本玩具专用，经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题 ==================== -->
+    <string name="lab_soundscape_title">声景混音器</string>
+
+    <!-- ==================== 控制卡（hero） ==================== -->
+    <string name="lab_soundscape_playing">正在播放</string>
+    <string name="lab_soundscape_stopped">已停止</string>
+    <string name="lab_soundscape_play">播放</string>
+    <string name="lab_soundscape_stop">停止</string>
+
+    <!-- ==================== 预设场景 ==================== -->
+    <string name="lab_soundscape_presets_label">预设场景</string>
+    <string name="lab_soundscape_preset_study">自习室</string>
+    <string name="lab_soundscape_preset_sleep">睡前</string>
+    <string name="lab_soundscape_preset_dorm">宿舍夜</string>
+    <string name="lab_soundscape_preset_campfire">篝火夜话</string>
+    <string name="lab_soundscape_preset_ocean">海边</string>
+
+    <!-- ==================== 混音台分组 ==================== -->
+    <string name="lab_soundscape_group_noise">底噪</string>
+    <string name="lab_soundscape_group_nature">自然</string>
+    <string name="lab_soundscape_group_indoor">室内</string>
+
+    <!-- ==================== 声道名 ==================== -->
+    <string name="lab_soundscape_channel_white">白噪音</string>
+    <string name="lab_soundscape_channel_pink">粉噪音</string>
+    <string name="lab_soundscape_channel_brown">棕噪音</string>
+    <string name="lab_soundscape_channel_rain">雨声</string>
+    <string name="lab_soundscape_channel_wind">风声</string>
+    <string name="lab_soundscape_channel_ocean">海浪</string>
+    <string name="lab_soundscape_channel_campfire">篝火</string>
+    <string name="lab_soundscape_channel_page">翻书</string>
+    <string name="lab_soundscape_channel_keyboard">键盘</string>
+    <string name="lab_soundscape_channel_murmur">远处交谈</string>
+
+    <!-- ==================== 开关 / 音量 ==================== -->
+    <string name="lab_soundscape_on">已开启</string>
+    <string name="lab_soundscape_off">已关闭</string>
+    <!-- 音量描述（%1$d 为 0-100） -->
+    <string name="lab_soundscape_volume_format">音量 %1$d</string>
+
+    <!-- ==================== 睡眠定时 ==================== -->
+    <string name="lab_soundscape_timer_label">睡眠定时</string>
+    <string name="lab_soundscape_timer_off">关闭</string>
+    <string name="lab_soundscape_timer_minutes_format">%1$d 分钟</string>
+    <!-- 剩余时间（分:秒，秒补零） -->
+    <string name="lab_soundscape_timer_remaining_format">剩余 %1$d:%2$02d</string>
+    <string name="lab_soundscape_timer_hint">先开始播放，再设定定时器</string>
+
+    <!-- ==================== 无障碍 ==================== -->
+    <string name="lab_soundscape_visualizer_desc">声景可视化</string>
+</resources>

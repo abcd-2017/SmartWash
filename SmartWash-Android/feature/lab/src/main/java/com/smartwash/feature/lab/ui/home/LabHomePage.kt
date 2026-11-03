@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BubbleChart
+import androidx.compose.material.icons.rounded.Brush
 import androidx.compose.material.icons.rounded.Grain
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.WaterDrop
@@ -105,6 +107,8 @@ private fun ToyEntryCard(
         LabToy.SAND -> scheme.iconContainerOrange to scheme.iconForegroundOrange
         LabToy.FLUID -> scheme.iconContainerPurple to scheme.iconForegroundPurple
         LabToy.DRUM -> scheme.iconContainerPink to scheme.iconForegroundPink
+        LabToy.PAINTING -> scheme.iconContainerGreen to scheme.iconForegroundGreen
+        LabToy.SOUNDSCAPE -> scheme.iconContainerBlue to scheme.iconForegroundBlue
     }
     val title = toyLabel(toy)
     val description = toyDescription(toy)
@@ -171,6 +175,8 @@ private fun toyIcon(toy: LabToy): ImageVector = when (toy) {
     LabToy.SAND -> Icons.Rounded.Grain
     LabToy.FLUID -> Icons.Rounded.WaterDrop
     LabToy.DRUM -> Icons.Rounded.MusicNote
+    LabToy.PAINTING -> Icons.Rounded.Brush
+    LabToy.SOUNDSCAPE -> Icons.Rounded.GraphicEq
 }
 
 @Composable
@@ -181,6 +187,8 @@ private fun toyLabel(toy: LabToy): String = when (toy) {
     LabToy.SAND -> stringResource(R.string.lab_toy_sand)
     LabToy.FLUID -> stringResource(R.string.lab_toy_fluid)
     LabToy.DRUM -> stringResource(R.string.lab_toy_drum)
+    LabToy.PAINTING -> stringResource(R.string.lab_toy_painting)
+    LabToy.SOUNDSCAPE -> stringResource(R.string.lab_toy_soundscape)
 }
 
 @Composable
@@ -191,4 +199,6 @@ private fun toyDescription(toy: LabToy): String = when (toy) {
     LabToy.SAND -> stringResource(R.string.lab_toy_sand_desc)
     LabToy.FLUID -> stringResource(R.string.lab_toy_fluid_desc)
     LabToy.DRUM -> stringResource(R.string.lab_toy_drum_desc)
+    LabToy.PAINTING -> stringResource(R.string.lab_toy_painting_desc)
+    LabToy.SOUNDSCAPE -> stringResource(R.string.lab_toy_soundscape_desc)
 }

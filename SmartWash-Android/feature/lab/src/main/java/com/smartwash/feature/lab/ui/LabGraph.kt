@@ -10,7 +10,9 @@ import com.smartwash.feature.lab.ui.drum.DrumPage
 import com.smartwash.feature.lab.ui.fish.FishPage
 import com.smartwash.feature.lab.ui.fluid.FluidPage
 import com.smartwash.feature.lab.ui.home.LabHomePage
+import com.smartwash.feature.lab.ui.painting.PaintingPage
 import com.smartwash.feature.lab.ui.sand.SandPage
+import com.smartwash.feature.lab.ui.soundscape.SoundscapePage
 
 /**
  * 解压实验舱路由聚合（模式同 gameGraph）：四个页面注册自 app 壳
@@ -40,5 +42,11 @@ fun NavGraphBuilder.labGraph(navController: NavHostController) {
     }
     composable(LabRoute.Drum.text) {
         DrumPage(navController)
+    }
+    composable(LabRoute.Painting.text) {
+        PaintingPage(navController)
+    }
+    composable(LabRoute.Soundscape.text) {
+        SoundscapePage(navController)
     }
 }

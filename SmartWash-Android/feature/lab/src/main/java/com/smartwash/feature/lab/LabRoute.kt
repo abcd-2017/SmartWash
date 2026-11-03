@@ -30,6 +30,12 @@ sealed class LabRoute(val text: String) {
 
     /** 滚筒节拍机（8 音色 × 16 步音序器） */
     data object Drum : LabRoute("LabDrum")
+
+    /** 今日一画（程序化水墨山水生成） */
+    data object Painting : LabRoute("LabPainting")
+
+    /** 声景混音器（程序化环境声叠混） */
+    data object Soundscape : LabRoute("LabSoundscape")
 }
 
 /**
@@ -43,4 +49,6 @@ enum class LabToy(val route: String) {
     SAND(LabRoute.Sand.text),
     FLUID(LabRoute.Fluid.text),
     DRUM(LabRoute.Drum.text),
+    PAINTING(LabRoute.Painting.text),
+    SOUNDSCAPE(LabRoute.Soundscape.text),
 }

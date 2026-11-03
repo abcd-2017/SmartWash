@@ -46,4 +46,8 @@
     <string name="lab_toy_fluid_desc">手指划过，搅出彩色漩涡</string>
     <string name="lab_toy_drum">滚筒节拍机</string>
     <string name="lab_toy_drum_desc">8 音色 × 16 步，排出洗衣节奏</string>
+    <string name="lab_toy_painting">今日一画</string>
+    <string name="lab_toy_painting_desc">每天一幅水墨山水</string>
+    <string name="lab_toy_soundscape">声景混音器</string>
+    <string name="lab_toy_soundscape_desc">雨声风声，自由叠混</string>
 </resources>
