@@ -1267,7 +1267,8 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('mood',               '情绪气象站',  3, 1, 'smartwash://mood 打开情绪气象站今日记录页', 1),
   ('review',             '记忆复习',    3, 1, 'smartwash://review 打开记忆复习今日队列页', 1),
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
-  ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1);
+  ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
+  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
@@ -1280,7 +1281,8 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('mood',               '情绪气象站', '记录每天的心情', 'chat',    'purple', 'smartwash://mood',                 '新', 1, 4, NULL),
   ('review',             '记忆复习',   'FSRS 复习卡片',  'book',    'blue',   'smartwash://review',               '新', 1, 5, NULL),
   ('subscription',       '订阅逃生舱', '管理订阅与续费', 'link',    'orange', 'smartwash://subscription',         '新', 1, 6, NULL),
-  ('delivery',           '设备投递',   '手机与电脑互传文件', 'link', 'teal',   'smartwash://delivery',           '新', 1, 7, NULL);
+  ('delivery',           '设备投递',   '手机与电脑互传文件', 'link', 'teal',   'smartwash://delivery',           '新', 1, 7, NULL),
+  ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'smartwash://lab', '新', 1, 10, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）

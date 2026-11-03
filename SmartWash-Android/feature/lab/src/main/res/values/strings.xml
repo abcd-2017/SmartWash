@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 解压实验舱文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题 ==================== -->
+    <string name="lab_title">解压实验舱</string>
+
+    <!-- ==================== 首页玩具入口卡 ==================== -->
+    <string name="lab_toy_bubble_wrap">泡泡纸</string>
+    <string name="lab_toy_bubble_wrap_desc">一戳一个，噼里啪啦</string>
+    <string name="lab_toy_breath">呼吸引导</string>
+    <string name="lab_toy_breath_desc">跟着圆环，一呼一吸</string>
+    <string name="lab_toy_fish">指尖鱼群</string>
+    <string name="lab_toy_fish_desc">鱼群随指尖游走</string>
+
+    <!-- ==================== 泡泡纸 ==================== -->
+    <string name="lab_bubble_title">泡泡纸</string>
+    <!-- 计数槽位（tnum）：已戳数 / 总数 -->
+    <string name="lab_bubble_popped_format">已戳 %1$d / %2$d</string>
+    <string name="lab_bubble_reset">再铺一张</string>
+
+    <!-- ==================== 呼吸引导 ==================== -->
+    <string name="lab_breath_title">呼吸引导</string>
+    <string name="lab_breath_mode_sleep">4-7-8 睡眠</string>
+    <string name="lab_breath_mode_box">4-4-4-4 专注</string>
+    <string name="lab_breath_mode_sleep_hint">吸 4 秒 · 屏 7 秒 · 呼 8 秒</string>
+    <string name="lab_breath_mode_box_hint">四相位各 4 秒</string>
+    <string name="lab_breath_start">开始</string>
+    <string name="lab_breath_pause">暂停</string>
+    <string name="lab_breath_resume">继续</string>
+    <string name="lab_breath_stop">停止</string>
+    <string name="lab_breath_phase_inhale">吸气</string>
+    <string name="lab_breath_phase_hold">屏息</string>
+    <string name="lab_breath_phase_exhale">呼气</string>
+    <string name="lab_breath_phase_keep">保持</string>
+    <!-- 完成轮次（tnum 数量槽位） -->
+    <string name="lab_breath_cycles_format">已完成 %1$d 轮</string>
+
+    <!-- ==================== 指尖鱼群 ==================== -->
+    <string name="lab_fish_title">指尖鱼群</string>
+    <string name="lab_fish_hint">按住吸引 · 长按驱散 · 双击炸开</string>
+    <string name="lab_fish_play">播放</string>
+    <string name="lab_fish_pause">暂停</string>
+    <string name="lab_toy_sand">落沙实验室</string>
+    <string name="lab_toy_sand_desc">倒水撒沙，看元素互相反应</string>
+    <string name="lab_toy_fluid">指尖流体</string>
+    <string name="lab_toy_fluid_desc">手指划过，搅出彩色漩涡</string>
+    <string name="lab_toy_drum">滚筒节拍机</string>
+    <string name="lab_toy_drum_desc">8 音色 × 16 步，排出洗衣节奏</string>
+    <string name="lab_toy_painting">今日一画</string>
+    <string name="lab_toy_painting_desc">每天一幅水墨山水</string>
+    <string name="lab_toy_soundscape">声景混音器</string>
+    <string name="lab_toy_soundscape_desc">雨声风声，自由叠混</string>
+    <string name="lab_toy_pet">泡泡精灵</string>
+    <string name="lab_toy_pet_desc">养一只住在洗衣机里的泡泡精灵</string>
+    <string name="lab_toy_star_map">掌上星图</string>
+    <string name="lab_toy_star_map_desc">举起手机，看头顶的星空</string>
+</resources>

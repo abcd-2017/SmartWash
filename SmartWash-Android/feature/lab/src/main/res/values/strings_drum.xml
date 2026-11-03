@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 滚筒节拍机文案（本玩具专用，经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题 ==================== -->
+    <string name="lab_drum_title">滚筒节拍机</string>
+
+    <!-- ==================== 控制卡：BPM / 播放 ==================== -->
+    <string name="lab_drum_bpm_label">BPM</string>
+    <string name="lab_drum_play">播放</string>
+    <string name="lab_drum_stop">停止</string>
+    <string name="lab_drum_pattern_label">节奏型</string>
+    <string name="lab_drum_pattern_a">A</string>
+    <string name="lab_drum_pattern_b">B</string>
+    <string name="lab_drum_pattern_c">C</string>
+    <string name="lab_drum_pattern_d">D</string>
+
+    <!-- ==================== 预设节奏 ==================== -->
+    <string name="lab_drum_presets_label">预设节奏</string>
+    <string name="lab_drum_preset_basic">基础四四</string>
+    <string name="lab_drum_preset_groove">律动</string>
+    <string name="lab_drum_preset_breakbeat">碎拍</string>
+    <string name="lab_drum_preset_latin">拉丁</string>
+    <string name="lab_drum_preset_robot">机械</string>
+    <string name="lab_drum_preset_laundry">洗衣节奏</string>
+
+    <!-- ==================== 声部名（网格行标签） ==================== -->
+    <string name="lab_drum_voice_kick">底鼓</string>
+    <string name="lab_drum_voice_snare">军鼓</string>
+    <string name="lab_drum_voice_hihat">踩镲</string>
+    <string name="lab_drum_voice_clap">拍手</string>
+    <string name="lab_drum_voice_tom">通鼓</string>
+    <string name="lab_drum_voice_cowbell">牛铃</string>
+    <string name="lab_drum_voice_rim">边击</string>
+    <string name="lab_drum_voice_cymbal">镲片</string>
+
+    <!-- ==================== 无障碍 / 提示 ==================== -->
+    <!-- 步位描述（第 %1$d 步） -->
+    <string name="lab_drum_step_format">第 %1$d 步</string>
+    <string name="lab_drum_cell_on">已开启</string>
+    <string name="lab_drum_cell_off">已关闭</string>
+</resources>

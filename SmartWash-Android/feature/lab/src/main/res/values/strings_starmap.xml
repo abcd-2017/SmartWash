@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 掌上星图文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <string name="lab_star_map_title">掌上星图</string>
+    <string name="lab_star_map_back">返回</string>
+    <!-- 顶部引导：正常态停留数秒后淡出，reduced motion 常显 -->
+    <string name="lab_star_map_hint">转动手机环顾夜空</string>
+    <!-- 传感器不可用降级提示（无磁力计 / 加速度计，如模拟器） -->
+    <string name="lab_star_map_sensor_unavailable">传感器不可用，已切换为静态星空</string>
+    <!-- 夜视模式开关（深红滤镜，保护暗适应） -->
+    <string name="lab_star_map_night_vision">夜视模式</string>
+    <string name="lab_star_map_night_vision_on">关闭夜视模式</string>
+    <string name="lab_star_map_night_vision_off">开启夜视模式</string>
+    <!-- 选中天体星等（tnum 数字槽位） -->
+    <string name="lab_star_map_magnitude_format">星等 %1$.1f</string>
+</resources>

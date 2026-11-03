@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 落沙实验室文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <string name="lab_sand_title">落沙实验室</string>
+    <string name="lab_sand_hint">拖动手指涂抹，看元素互相反应</string>
+    <string name="lab_sand_clear">清除</string>
+    <string name="lab_sand_play">播放</string>
+    <string name="lab_sand_pause">暂停</string>
+    <!-- 当前笔刷元素（%1$s = 元素名） -->
+    <string name="lab_sand_current_format">当前：%1$s</string>
+
+    <!-- 调色板元素名 -->
+    <string name="lab_sand_element_empty">橡皮</string>
+    <string name="lab_sand_element_sand">沙</string>
+    <string name="lab_sand_element_water">水</string>
+    <string name="lab_sand_element_detergent">洗衣粉</string>
+    <string name="lab_sand_element_foam">泡沫</string>
+    <string name="lab_sand_element_stain">污渍</string>
+    <string name="lab_sand_element_fabric">织物</string>
+    <string name="lab_sand_element_fire">火</string>
+    <string name="lab_sand_element_steam">蒸汽</string>
+</resources>

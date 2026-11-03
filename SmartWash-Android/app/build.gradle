@@ -201,10 +201,15 @@ dependencies {
 
     //记忆复习域（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
     //路由常量 ReviewRoute 为模块内单一事实来源；MainActivity NavHost 一行 reviewGraph 聚合，
-    //入口宿主后续接入（模式同 toolboxGraph，本次不改动壳层导航）
+    //入口走深链 smartwash://review 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:review")
 
-    //订阅逃生舱子系统：列表/添加编辑/详情/提醒独立路由，宿主入口待接——
-    //MainActivity NavHost 一行 subscriptionGraph 聚合（本提交不改动壳层导航）
+    //订阅逃生舱子系统：列表/添加编辑/详情/提醒独立路由，经 MainActivity NavHost 一行
+    //subscriptionGraph 聚合；入口走深链 smartwash://subscription 与工作台卡片
     implementation project(":feature:subscription")
+
+    //解压实验舱子系统（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群等十个玩具页，
+    //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
+    //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
+    implementation project(":feature:lab")
 }
