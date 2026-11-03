@@ -221,8 +221,8 @@ fun DivCastPage(
                     if (viewModel.isComplete()) {
                         view.performHaptic(HapticEffect.SUCCESS)
                         viewModel.completeChart(question, com.smartwash.feature.divination.core.DivCategory.fromId(categoryId)) { id ->
-                            navController.navigate("${DivRoute.Chart.text}/$id?animate=true") {
-                                popUpTo(DivRoute.Home.text)
+                            navController.navigate(DivRoute.Chart(id, animate = true)) {
+                                popUpTo<DivRoute.Home>()
                             }
                         }
                     } else {

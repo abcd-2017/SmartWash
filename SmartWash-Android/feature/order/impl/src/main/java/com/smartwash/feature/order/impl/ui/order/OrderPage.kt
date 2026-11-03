@@ -269,10 +269,10 @@ fun OrderPage(
                                     is OrderListItem.Group -> {
                                         MonthGroupCard(
                                             group = item,
-                                            itemClick = { order -> navController.navigate("${OrderRoute.OrderDetail.text}/${order.orderId}") },
-                                            paymentClick = { order -> navController.navigate("${PaymentRoute.Payment.text}/${order.orderId}") },
-                                            shipmentClick = { order -> navController.navigate("${OrderRoute.PickupDelivery.text}/${order.orderId}/${OrderRoute.PICKUP_TYPE_DELIVERY}") },
-                                            pickupClick = { order -> navController.navigate("${OrderRoute.PickupDelivery.text}/${order.orderId}/${OrderRoute.PICKUP_TYPE_PICKUP}") },
+                                            itemClick = { order -> navController.navigate(OrderRoute.OrderDetail(order.orderId)) },
+                                            paymentClick = { order -> navController.navigate(PaymentRoute.Payment(order.orderId)) },
+                                            shipmentClick = { order -> navController.navigate(OrderRoute.PickupDelivery(order.orderId, OrderRoute.PICKUP_TYPE_DELIVERY)) },
+                                            pickupClick = { order -> navController.navigate(OrderRoute.PickupDelivery(order.orderId, OrderRoute.PICKUP_TYPE_PICKUP)) },
                                             cancelClick = { orderId ->
                                                 currOrderId = orderId
                                                 confirmPayShow = true

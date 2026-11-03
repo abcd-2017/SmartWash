@@ -17,7 +17,7 @@ import dagger.multibindings.IntoSet
  * - laundry → LaundryRoute.Laundry（洗衣预约页）
  *
  * service 不注册：Service 是 HomePage 底部 tab 页（HorizontalPager 内），
- * 跳转等价「navigate(Home) 并切 pager」，需改 ShellRoute.HOME 注册形态并让
+ * 跳转等价「navigate(Home) 并切 pager」，需改 ShellRoute.Home 注册形态并让
  * HomePage 观察初始 tab，不满足低成本标准（原因同步记录于 app/AGENTS.md deeplink 章节）。
  */
 @Module
@@ -28,7 +28,7 @@ object LaundryDeepLinkModule {
     @IntoSet
     fun provideLaundryDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "laundry" to DeepLinkRouteFactory { _, _ -> LaundryRoute.Laundry.build(-1L) },
+            "laundry" to DeepLinkRouteFactory { _, _ -> LaundryRoute.Laundry(-1L) },
         )
     }
 }

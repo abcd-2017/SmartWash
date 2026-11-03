@@ -123,7 +123,7 @@ fun ReviewQueuePage(
                                 action = {
                                     AppButton(
                                         text = stringResource(R.string.review_queue_empty_action),
-                                        onClick = { navController.navigate(ReviewRoute.Materials.text) },
+                                        onClick = { navController.navigate(ReviewRoute.Materials) },
                                     )
                                 },
                             )

@@ -118,7 +118,7 @@ fun ServicePage(
                         ServiceListCard(
                             items = laundryItems,
                             onReserve = { itemId ->
-                                navController.navigate(LaundryRoute.Laundry.build(itemId))
+                                navController.navigate(LaundryRoute.Laundry(itemId))
                             }
                         )
                     }

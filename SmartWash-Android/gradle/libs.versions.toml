@@ -33,8 +33,12 @@ lifecycleViewmodelCompose = "2.8.7"
 workRuntimeKtx = "2.10.0"
 hiltWork = "1.2.0"
 hiltCompiler = "1.2.0"
+kotlinxSerialization = "1.6.3"
 
 [libraries]
+# Navigation 2.8 类型安全路由：@Serializable 路由对象的运行时（navigation-common 2.8.9 仅 runtime 传递，编译期需显式声明）
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 # buildSrc convention plugin 的编译期依赖（运行期由根 build.gradle 的 apply false 提供）
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -93,4 +97,5 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

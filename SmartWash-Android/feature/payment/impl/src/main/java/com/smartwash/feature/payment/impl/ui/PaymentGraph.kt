@@ -9,9 +9,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -32,8 +31,7 @@ import com.smartwash.feature.payment.impl.ui.recharge.RechargeRecordPage
  * 只保留 180ms 淡入淡出（规范 §8）。
  */
 fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion: Boolean) {
-    composable(
-        PaymentRoute.Recharge.text,
+    composable<PaymentRoute.Recharge>(
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
@@ -42,8 +40,7 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
     ) {
         RechargePage(navController)
     }
-    composable(
-        PaymentRoute.RechargeRecord.text,
+    composable<PaymentRoute.RechargeRecord>(
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
@@ -52,37 +49,23 @@ fun NavGraphBuilder.paymentGraph(navController: NavHostController, reduceMotion:
     ) {
         RechargeRecordPage(navController)
     }
-    composable(
-        route = "${PaymentRoute.Payment.text}/{orderId}",
-        arguments = listOf(
-            navArgument("orderId") {
-                type = NavType.LongType
-                defaultValue = -1
-            }
-        ),
+    composable<PaymentRoute.Payment>(
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
         popEnterTransition = { slideEnterFromTop(reduceMotion) },
         popExitTransition = { slideExitToBottom(reduceMotion) },
-    ) { entity ->
-        PaymentPage(navController, entity.arguments?.getLong("orderId"))
+    ) { entry ->
+        PaymentPage(navController, entry.toRoute<PaymentRoute.Payment>().orderId)
     }
-    composable(
-        route = "${PaymentRoute.PaySuccess.text}/{orderId}",
-        arguments = listOf(
-            navArgument("orderId") {
-                type = NavType.LongType
-                defaultValue = -1
-            }
-        ),
+    composable<PaymentRoute.PaySuccess>(
         enterTransition = { slideEnter(reduceMotion) },
         exitTransition = { slideExit(reduceMotion) },
         // pop 返回方向反转（2026-11-01 转场分析）：原 pop 复用上滑入/淡出无方向语义
         popEnterTransition = { slideEnterFromTop(reduceMotion) },
         popExitTransition = { slideExitToBottom(reduceMotion) },
-    ) { entity ->
-        PaySuccessPage(navController, entity.arguments?.getLong("orderId") ?: -1)
+    ) { entry ->
+        PaySuccessPage(navController, entry.toRoute<PaymentRoute.PaySuccess>().orderId)
     }
 }
 

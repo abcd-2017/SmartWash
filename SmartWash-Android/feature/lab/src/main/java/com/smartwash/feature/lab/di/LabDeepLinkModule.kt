@@ -25,7 +25,7 @@ object LabDeepLinkModule {
     @IntoSet
     fun provideLabDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "lab" to DeepLinkRouteFactory { _, _ -> LabRoute.Home.text },
+            "lab" to DeepLinkRouteFactory { _, _ -> LabRoute.Home },
         )
     }
 }

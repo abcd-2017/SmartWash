@@ -1,5 +1,7 @@
 package com.smartwash.common.utils.deeplink
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
+
 /**
  * 深链路由贡献者契约 —— 对齐 common:init 的 [com.smartwash.common.init.InitTask] 模式：
  * 契约放公共层（零 feature 依赖），**各域 impl 模块在自己的 Hilt Module 中以
@@ -15,7 +17,7 @@ package com.smartwash.common.utils.deeplink
  *     @IntoSet
  *     fun provideXxxDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
  *         mapOf(
- *             "xxx-home" to DeepLinkRouteFactory { _, _ -> XxxRoute.Home.text },
+ *             "xxx-home" to DeepLinkRouteFactory { _, _ -> XxxRoute.Home },
  *         )
  *     }
  * }
@@ -33,13 +35,13 @@ fun interface DeepLinkContributor {
 
 /**
  * 单个 host 的路由工厂：由 host 之后的 path 段与（已百分号解码的）query 参数，
- * 构造可直接 navigate 的路由字符串。
+ * 构造可直接 navigate 的类型安全路由对象。
  *
  * @param pathSegments host 之后的剩余 path 段（如 smartwash://t/ab12 → ["ab12"]），保留原始大小写
  * @param query query 参数（value 已百分号解码；key 大小写敏感）
- * @return 可直接 navigate 的路由字符串；参数不归本域处理/非法时返回 null（上层降级 Unknown）
+ * @return 可直接 navigate 的路由对象；参数不归本域处理/非法时返回 null（上层降级 Unknown）
  */
 fun interface DeepLinkRouteFactory {
 
-    fun route(pathSegments: List<String>, query: Map<String, String>): String?
+    fun route(pathSegments: List<String>, query: Map<String, String>): SmartWashRoute?
 }

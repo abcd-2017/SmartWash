@@ -19,7 +19,7 @@ import dagger.multibindings.IntoSet
  * - setting → UserRoute.Setting
  *
  * user-info 不注册：UserInfo 是 HomePage 底部 tab 页（HorizontalPager 内），
- * 跳转等价「navigate(Home) 并切 pager」，需改 ShellRoute.HOME 注册形态并让
+ * 跳转等价「navigate(Home) 并切 pager」，需改 ShellRoute.Home 注册形态并让
  * HomePage 观察初始 tab，不满足低成本标准（原因同步记录于 app/AGENTS.md deeplink 章节）。
  */
 @Module
@@ -30,9 +30,9 @@ object UserDeepLinkModule {
     @IntoSet
     fun provideUserDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "login" to DeepLinkRouteFactory { _, _ -> UserRoute.Login.text },
-            "register" to DeepLinkRouteFactory { _, _ -> UserRoute.Register.text },
-            "setting" to DeepLinkRouteFactory { _, _ -> UserRoute.Setting.text },
+            "login" to DeepLinkRouteFactory { _, _ -> UserRoute.Login },
+            "register" to DeepLinkRouteFactory { _, _ -> UserRoute.Register },
+            "setting" to DeepLinkRouteFactory { _, _ -> UserRoute.Setting },
         )
     }
 }

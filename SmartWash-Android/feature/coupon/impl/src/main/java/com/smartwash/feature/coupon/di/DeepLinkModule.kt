@@ -24,7 +24,7 @@ object CouponDeepLinkModule {
     @IntoSet
     fun provideCouponDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "coupon" to DeepLinkRouteFactory { _, _ -> CouponRoute.Coupon.text },
+            "coupon" to DeepLinkRouteFactory { _, _ -> CouponRoute.Coupon },
         )
     }
 }

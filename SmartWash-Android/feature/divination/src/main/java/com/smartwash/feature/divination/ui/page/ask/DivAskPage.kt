@@ -76,9 +76,9 @@ fun DivAskPage(
     LaunchedEffect(methodId) { viewModel.initMethod(methodId) }
 
     val navigateChart: (Long) -> Unit = { id ->
-        navController.navigate("${DivRoute.Chart.text}/$id?animate=true") {
+        navController.navigate(DivRoute.Chart(id, animate = true)) {
             // 起卦交互链收敛：卦盘返回直接回观象台首页
-            popUpTo(DivRoute.Home.text)
+            popUpTo<DivRoute.Home>()
         }
     }
 
@@ -217,7 +217,7 @@ fun DivAskPage(
             onClick = {
                 when (state.method) {
                     DivMethod.LIU_YAO -> when (state.liuYaoMode) {
-                        LiuYaoCastMode.SHAKE -> navController.navigate(DivRoute.Cast.text)
+                        LiuYaoCastMode.SHAKE -> navController.navigate(DivRoute.Cast())
                         LiuYaoCastMode.LINES -> showLinesDialog = true
                         LiuYaoCastMode.MANUAL -> showLinesDialog = true
                     }

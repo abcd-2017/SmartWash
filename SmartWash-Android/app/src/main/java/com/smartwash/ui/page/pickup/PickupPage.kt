@@ -165,7 +165,7 @@ fun PickupPage(
                                 orderList[i]?.let {
                                     PickupOrderCard(
                                         order = it,
-                                        onClick = { navController.navigate("${OrderRoute.PickupDelivery.text}/${orderList[i]?.orderId ?: -1}/${PickupDeliveryType.PICKUP.type}") }
+                                        onClick = { navController.navigate(OrderRoute.PickupDelivery(orderList[i]?.orderId ?: -1, PickupDeliveryType.PICKUP.type)) }
                                     )
                                 }
                             }

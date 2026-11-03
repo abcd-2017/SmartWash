@@ -130,10 +130,10 @@ fun IndexPage(
                     StatusHeroCard(
                         orderList = orderList,
                         onOrderClick = { orderId ->
-                            navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                            navController.navigate(OrderRoute.OrderDetail(orderId))
                         },
                         onBookingClick = {
-                            navController.navigate(LaundryRoute.Laundry.build(-1L)) {
+                            navController.navigate(LaundryRoute.Laundry()) {
                                 launchSingleTop = true
                             }
                         }
@@ -146,7 +146,7 @@ fun IndexPage(
                         couponCount = userInfo?.couponCount ?: 0,
                         orderCount = userInfo?.orderCount ?: 0,
                         onRechargeClick = {
-                            navController.navigate(PaymentRoute.Recharge.text)
+                            navController.navigate(PaymentRoute.Recharge)
                         }
                     )
                 }
@@ -163,18 +163,18 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(12.dp))
                     ServiceGrid(
                         onBookingClick = {
-                            navController.navigate(LaundryRoute.Laundry.build(-1L)) {
+                            navController.navigate(LaundryRoute.Laundry()) {
                                 launchSingleTop = true
                             }
                         },
                         onPickupClick = {
-                            navController.navigate(PageConstant.Pickup.text)
+                            navController.navigate(PageConstant.Pickup)
                         },
                         onRechargeClick = {
-                            navController.navigate(PaymentRoute.Recharge.text)
+                            navController.navigate(PaymentRoute.Recharge)
                         },
                         onCouponClick = {
-                            navController.navigate(CouponRoute.Coupon.text)
+                            navController.navigate(CouponRoute.Coupon)
                         }
                     )
                 }
@@ -203,7 +203,7 @@ fun IndexPage(
                             modifier = Modifier
                                 .pressable(
                                     onClick = rememberDebouncedClick {
-                                        navController.navigate("${OrderRoute.Order.text}/${OrderStatus.WASHING.status}")
+                                        navController.navigate(OrderRoute.Order(OrderStatus.WASHING.status.toInt()))
                                     },
                                     debounce = false,
                                 )
@@ -224,7 +224,7 @@ fun IndexPage(
                             OrderListCard(
                                 orderList = orderList,
                                 onOrderClick = { orderId ->
-                                    navController.navigate("${OrderRoute.OrderDetail.text}/$orderId")
+                                    navController.navigate(OrderRoute.OrderDetail(orderId))
                                 }
                             )
                         } else {

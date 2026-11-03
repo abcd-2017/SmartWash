@@ -164,7 +164,7 @@ fun DivReadingPage(
                                     .padding(start = 20.dp, end = 20.dp, top = 20.dp)
                                     .fillMaxWidth(),
                                 onClick = {
-                                    navController.navigate("${DivRoute.FollowUp.text}/$recordId")
+                                    navController.navigate(DivRoute.FollowUp(recordId))
                                 },
                             )
                         }

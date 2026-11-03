@@ -29,15 +29,15 @@ object ToolboxDeepLinkModule {
     @IntoSet
     fun provideToolboxDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "toolbox-short-code" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.List.text },
+            "toolbox-short-code" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.List },
             // delivery → 设备投递发起页（工作台卡片入口）
-            "delivery" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.Delivery.text },
+            "delivery" to DeepLinkRouteFactory { _, _ -> ToolboxRoute.Delivery },
             // t/{code}：仅接受 t + code 两段形态（parser 已滤空段）；code 校验在本域——
             // 详情路由其余字段走注册缺省值（见 ToolboxGraph），完整数据路径仍走列表页入口
             "t" to DeepLinkRouteFactory { pathSegments, _ ->
                 val code = pathSegments.singleOrNull()
                 if (code != null && SHORT_CODE_REGEX.matches(code)) {
-                    "${ToolboxRoute.Detail.text}?code=$code"
+                    ToolboxRoute.Detail(code = code)
                 } else {
                     null
                 }

@@ -17,44 +17,44 @@ import com.smartwash.feature.lab.ui.soundscape.SoundscapePage
 import com.smartwash.feature.lab.ui.starmap.StarMapPage
 
 /**
- * 解压实验舱路由聚合（模式同 gameGraph）：四个页面注册自 app 壳
- * MainActivity NavHost，宿主侧一行 [labGraph] 完成聚合。路由常量取模块内
+ * 解压实验舱路由聚合（模式同 gameGraph）：玩具页面注册自 app 壳
+ * MainActivity NavHost，宿主侧一行 [labGraph] 完成聚合。类型安全路由取模块内
  * [LabRoute]（单一事实来源）。无底栏入口：进入路径为深链
  * smartwash://lab（本模块 di/LabDeepLinkModule 贡献）与后端 workbench_entry
  * 配置的工作台卡片（target 指向同一深链）。
  */
 fun NavGraphBuilder.labGraph(navController: NavHostController) {
-    composable(LabRoute.Home.text) {
+    composable<LabRoute.Home> {
         LabHomePage(navController)
     }
-    composable(LabRoute.BubbleWrap.text) {
+    composable<LabRoute.BubbleWrap> {
         BubbleWrapPage(navController)
     }
-    composable(LabRoute.Breath.text) {
+    composable<LabRoute.Breath> {
         BreathPage(navController)
     }
-    composable(LabRoute.Fish.text) {
+    composable<LabRoute.Fish> {
         FishPage(navController)
     }
-    composable(LabRoute.Sand.text) {
+    composable<LabRoute.Sand> {
         SandPage(navController)
     }
-    composable(LabRoute.Fluid.text) {
+    composable<LabRoute.Fluid> {
         FluidPage(navController)
     }
-    composable(LabRoute.Drum.text) {
+    composable<LabRoute.Drum> {
         DrumPage(navController)
     }
-    composable(LabRoute.Painting.text) {
+    composable<LabRoute.Painting> {
         PaintingPage(navController)
     }
-    composable(LabRoute.Soundscape.text) {
+    composable<LabRoute.Soundscape> {
         SoundscapePage(navController)
     }
-    composable(LabRoute.Pet.text) {
+    composable<LabRoute.Pet> {
         PetPage(navController)
     }
-    composable(LabRoute.StarMap.text) {
+    composable<LabRoute.StarMap> {
         StarMapPage(navController)
     }
 }

@@ -141,7 +141,7 @@ fun RechargePage(
                         // semantics 补 contentDescription——IconBox 内部图标为装饰，读屏标签挂在热区盒上
                         modifier = Modifier
                             .size(48.dp)
-                            .pressable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord.text) })
+                            .pressable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord) })
                             .semantics { contentDescription = recordDesc },
                         contentAlignment = Alignment.Center,
                     ) {

@@ -6,7 +6,13 @@
 // OrderApi 先例）。原 payment-impl 内的 CouponSource 过渡 seam（app 壳
 // PaymentImplSeamModule 实现）随本模块就位删除，模式同 T7.1 的 laundry-api。
 apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.coupon.api'
+}
+
+dependencies {
+    // SmartWashRoute 类型安全路由契约（CouponRoute 实现该接口，供公共层深链持有）
+    implementation project(':common:utils')
 }

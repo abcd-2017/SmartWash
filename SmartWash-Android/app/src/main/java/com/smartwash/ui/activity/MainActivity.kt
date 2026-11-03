@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -169,7 +170,7 @@ class MainActivity : ComponentActivity() {
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 navController.popBackStack()
-                                navController.navigate(UserRoute.Login.text) {
+                                navController.navigate(UserRoute.Login) {
                                     launchSingleTop = true
                                 }
                             }
@@ -183,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 navController.popBackStack()
-                                navController.navigate(UserRoute.Login.text) {
+                                navController.navigate(UserRoute.Login) {
                                     launchSingleTop = true
                                 }
                             }
@@ -211,9 +212,9 @@ class MainActivity : ComponentActivity() {
                         // 转场露底色跟随当前目的地：导航命令执行时 currentBackStackEntry 即更新，
                         // 动画在其上播放——认证页透认证渐变（修复登录↔注册白闪），
                         // 其余页面透主题底色，避免全局纯绿背景在非认证转场中透色。
-                        val currentRoute = backStackEntry?.destination?.route
-                        val isAuthRoute = currentRoute == UserRoute.Login.text ||
-                            currentRoute == UserRoute.Register.text
+                        val currentDestination = backStackEntry?.destination
+                        val isAuthRoute = currentDestination?.hasRoute<UserRoute.Login>() == true ||
+                            currentDestination?.hasRoute<UserRoute.Register>() == true
                         // 共享元素转场容器（2026-11-01）：承载「短链 item → 详情页」一镜到底。
                         // 仅当进出两侧存在相同 key 的 sharedElement 时才激活，不影响其余页面转场。
                         SharedTransitionLayout {
@@ -221,7 +222,7 @@ class MainActivity : ComponentActivity() {
                         val sharedTransitionScope = this
                         NavHost(
                             navController = navController,
-                            startDestination = UserRoute.Login.text,
+                            startDestination = UserRoute.Login,
                             enterTransition = { shellEnterTransition(reduceMotion) },
                             exitTransition = { shellExitTransition(reduceMotion) },
                             popEnterTransition = { shellEnterTransition(reduceMotion) },

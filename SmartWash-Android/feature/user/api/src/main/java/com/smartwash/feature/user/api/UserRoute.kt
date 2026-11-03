@@ -1,32 +1,49 @@
 package com.smartwash.feature.user.api
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 /**
- * 用户域路由常量（模块内单一事实来源，模式仿 :feature:divination 的 DivRoute）。
+ * 用户域类型安全路由（模块内单一事实来源）。
  *
- * 路由值对齐 app 壳层 PageConstant / HomePageConstant 的现有常量，保证宿主 NavHost
- * 注册与模块内跳转永不漂移；feature 不得反向依赖 app 壳层的 PageConstant。
- * T5.3 消费方切换后，app 的 PageConstant.Login 等用户域常量委托本常量的值
- * （同 PageConstant.Div* 委托 DivRoute 的模式）；T8.1 统一拆路由后 app 侧委托常量移除。
+ * 迁移前为 `sealed class UserRoute(val text: String)` 字符串常量；现改为
+ * sealed interface + @Serializable 路由对象，@SerialName 固定路由串与迁移前
+ * 完全一致（"Login"/"Register"/...），保证宿主 NavHost 注册与模块内跳转行为等价。
+ * feature 不得反向依赖 app 壳层的 PageConstant。
  *
  * 归属说明：用户域 = 登录/注册 + 用户中心（含设置页——登出入口在 SettingPage，
  * 经 SessionManager.clearToken 登出）；充值/订单/支付等路由归各自 feature 的 api 模块。
  */
-sealed class UserRoute(val text: String) {
-    /** 登录页（PageConstant.Login） */
-    data object Login : UserRoute("Login")
+sealed interface UserRoute : SmartWashRoute {
 
-    /** 注册页（PageConstant.Register） */
-    data object Register : UserRoute("Register")
+    /** 登录页 */
+    @Serializable
+    @SerialName("Login")
+    data object Login : UserRoute
+
+    /** 注册页 */
+    @Serializable
+    @SerialName("Register")
+    data object Register : UserRoute
 
     /** 用户中心主页 tab（HomePageConstant.UserInfo） */
-    data object UserInfo : UserRoute("UserInfo")
+    @Serializable
+    @SerialName("UserInfo")
+    data object UserInfo : UserRoute
 
-    /** 用户学校信息修改页（PageConstant.UpdateUserInfoPage） */
-    data object UpdateUserInfo : UserRoute("UpdateUserInfoPage")
+    /** 用户学校信息修改页 */
+    @Serializable
+    @SerialName("UpdateUserInfoPage")
+    data object UpdateUserInfo : UserRoute
 
-    /** 设置页（PageConstant.Setting，含登出入口） */
-    data object Setting : UserRoute("Setting")
+    /** 设置页（含登出入口） */
+    @Serializable
+    @SerialName("Setting")
+    data object Setting : UserRoute
 
     /** 权限管理页（设置页跳入：查看/申请应用权限、跳系统设置对应页） */
-    data object PermissionManagement : UserRoute("PermissionManagement")
+    @Serializable
+    @SerialName("PermissionManagement")
+    data object PermissionManagement : UserRoute
 }

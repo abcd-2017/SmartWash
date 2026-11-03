@@ -174,7 +174,7 @@ fun SettingPage(
                         Spacer(modifier = Modifier.width(4.dp))
                         IconChevron()
                     },
-                    onClick = { navController.navigate(UserRoute.PermissionManagement.text) }
+                    onClick = { navController.navigate(UserRoute.PermissionManagement) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 // 触感反馈（真实开关，2026-11-01 缺陷 5b）：内存态即时生效 + DataStore 异步落盘
@@ -244,7 +244,7 @@ fun SettingPage(
                     iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.permission_management),
                     trailing = { IconChevron() },
-                    onClick = { navController.navigate(UserRoute.PermissionManagement.text) }
+                    onClick = { navController.navigate(UserRoute.PermissionManagement) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
@@ -292,8 +292,8 @@ fun SettingPage(
                 showDialog = false
                 // 登出（清会话 + 主动登出广播，见 SettingViewModel.logout）
                 settingViewModel.logout()
-                navController.navigate(UserRoute.Login.text) {
-                    popUpTo(ShellRoute.HOME) { inclusive = true }
+                navController.navigate(UserRoute.Login) {
+                    popUpTo<ShellRoute.Home> { inclusive = true }
                 }
             },
             onDismiss = { showDialog = false }

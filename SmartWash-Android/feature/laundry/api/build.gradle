@@ -7,7 +7,13 @@
 // 原 user-impl 内的 SchoolSearchSource 过渡 seam（app 壳 UserImplSeamModule 实现）
 // 随本模块就位删除；T7.2 coupon 域的 CouponSource seam 删除时复制本模式。
 apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.laundry.api'
+}
+
+dependencies {
+    // SmartWashRoute 类型安全路由契约（LaundryRoute 实现该接口，供公共层深链持有）
+    implementation project(':common:utils')
 }

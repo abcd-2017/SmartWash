@@ -21,7 +21,7 @@ object SubscriptionDeepLinkModule {
     @IntoSet
     fun provideSubscriptionDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "subscription" to DeepLinkRouteFactory { _, _ -> SubscriptionRoute.List.text },
+            "subscription" to DeepLinkRouteFactory { _, _ -> SubscriptionRoute.List },
         )
     }
 }
