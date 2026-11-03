@@ -11,7 +11,7 @@
 3. **与 ADR 的关系**：ADR 记录**决策与理由**（为什么），本表记录**词汇与事实**（是什么）。一个术语若已有 ADR 覆盖，本表条目末尾以「→ ADR-XXXX」标注，不复制 ADR 的论证过程。ADR 与本表冲突时改 ADR 并同步本表，不得让两者各说各话。
 4. **四端对应物的写法**：每条给出「后端字段/枚举 · Android 类 · 鸿蒙 VO/常量 · Web 字典/页面」。某一端没有对应实现时明确写「无对应实现」，不要留空让人误以为漏查。
 5. **易混淆点**：只写真实发生过的误解或代码里已注释的坑，不写「理论上可能」的臆测。
-6. **命名口径**：术语名以代码标识符为准（如 `gameKey`、`entryPath`），中文名只是检索别名；同一概念在不同端的拼写差异（`bingCampus` vs `bindCampus`）在条目内点明。
+6. **命名口径**：术语名以代码标识符为准（如 `gameKey`、`entryPath`），中文名只是检索别名；同一概念在不同端的拼写差异（`bindCampus`，历史拼写 `bingCampus` 已四端统一）在条目内点明。
 
 ---
 
@@ -119,16 +119,16 @@
   - Web：`views/system/UserList.vue`、`api/user.js`。
 - **易混淆点**：`users`（C 端）与 `admin_users`（管理端）是两张表、两套登录；`student_id`（学号）与 `campus_card`（校园卡号）是两个独立字段，都有唯一索引。
 
-### 2.2 校园卡绑定（campus_card / bingCampus）
+### 2.2 校园卡绑定（campus_card / bindCampus）
 
-- **代码标识**：`campus_card`、`bingCampus` / `unBingCampus`、`uk_users_campus_card`
+- **代码标识**：`campus_card`、`bindCampus` / `unBindCampus`、`uk_users_campus_card`
 - **定义**：为当前 C 端用户绑定/解绑一个校园卡号；卡号全局唯一（唯一索引），绑定后用于身份识别。
 - **四端对应物**：
-  - 后端：`WebUsersController` `POST /web/auth/user/bingCampus/{campusCard}`、`POST /web/auth/user/unBingCampus`；`users.campus_card`。
+  - 后端：`WebUsersController` `POST /web/auth/user/bindCampus/{campusCard}`、`POST /web/auth/user/unBindCampus`；`users.campus_card`。
   - Android：`:feature:user:impl` `UserAccountApi`、`ui/userinfo/UserInfoPage.kt`。
   - 鸿蒙：`pages/BingCampusCardAlert.ets`、`network/api/UserApi.ets`。
   - Web：管理端不直接代管校园卡（用户自绑），仅在用户列表展示。
-- **易混淆点**：绑定的是**卡号字符串**，不是实体卡或支付工具；后端方法名拼写为 `bingCampus`（非 `bindCampus`），检索时注意。
+- **易混淆点**：绑定的是**卡号字符串**，不是实体卡或支付工具；历史 typo `bingCampus` 已统一为 `bindCampus`，检索旧代码时注意。
 
 ### 2.3 学校与组织层级（schools）
 

@@ -1,8 +1,7 @@
 package com.smartwash.service.impl;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.smartwash.utils.JsonUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,30 +19,42 @@ class MinioPublicReadPolicyTest {
 
     private static final String BUCKET = "smartwash";
 
+    private static boolean containsText(JsonNode array, String text) {
+        if (array == null || !array.isArray()) {
+            return false;
+        }
+        for (JsonNode node : array) {
+            if (text.equals(node.asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Test
     @DisplayName("白名单文档：单 statement、Resource 覆盖三前缀、仅 s3:GetObject、不授 ListBucket/写入")
     void buildScopedPolicy_structure() {
         String policy = MinioPublicReadPolicy.buildScopedPolicy(BUCKET);
-        JSONObject root = JSON.parseObject(policy);
+        JsonNode root = JsonUtils.readTree(policy);
 
-        assertEquals("2012-10-17", root.getString("Version"));
-        JSONArray statements = root.getJSONArray("Statement");
+        assertEquals("2012-10-17", root.path("Version").asText());
+        JsonNode statements = root.path("Statement");
         assertEquals(1, statements.size(), "必须为单条 statement（三前缀合入 Resource 列表）");
 
-        JSONObject statement = statements.getJSONObject(0);
-        assertEquals("Allow", statement.getString("Effect"));
-        assertTrue(statement.getJSONArray("Action").contains("s3:GetObject"), "必须授予 s3:GetObject");
-        assertEquals(1, statement.getJSONArray("Action").size(), "只授 GetObject，不得携带其它 Action");
-        String actions = statement.getJSONArray("Action").toJSONString();
-        assertFalse(actions.contains("ListBucket"), "不得授予 ListBucket");
-        assertFalse(actions.contains("PutObject"), "不得授予写入");
+        JsonNode statement = statements.get(0);
+        assertEquals("Allow", statement.path("Effect").asText());
+        JsonNode actions = statement.path("Action");
+        assertTrue(containsText(actions, "s3:GetObject"), "必须授予 s3:GetObject");
+        assertEquals(1, actions.size(), "只授 GetObject，不得携带其它 Action");
+        String actionsJson = actions.toString();
+        assertFalse(actionsJson.contains("ListBucket"), "不得授予 ListBucket");
+        assertFalse(actionsJson.contains("PutObject"), "不得授予写入");
 
-        JSONArray resources = statement.getJSONArray("Resource");
-        assertTrue(resources.contains("arn:aws:s3:::" + BUCKET + "/game/*"), "game/* 必须在白名单（游戏直链）");
-        assertTrue(resources.contains("arn:aws:s3:::" + BUCKET + "/avatar/*"), "avatar/* 必须在白名单（用户头像直链，收窄后不得回归）");
-        assertTrue(resources.contains("arn:aws:s3:::" + BUCKET + "/default/*"), "default/* 必须在白名单（默认头像直链，收窄后不得回归）");
-        assertFalse(resources.toJavaList(String.class).stream()
-                        .anyMatch(r -> r.equals("arn:aws:s3:::" + BUCKET + "/*")),
+        JsonNode resources = statement.path("Resource");
+        assertTrue(containsText(resources, "arn:aws:s3:::" + BUCKET + "/game/*"), "game/* 必须在白名单（游戏直链）");
+        assertTrue(containsText(resources, "arn:aws:s3:::" + BUCKET + "/avatar/*"), "avatar/* 必须在白名单（用户头像直链，收窄后不得回归）");
+        assertTrue(containsText(resources, "arn:aws:s3:::" + BUCKET + "/default/*"), "default/* 必须在白名单（默认头像直链，收窄后不得回归）");
+        assertFalse(resources.toString().contains("arn:aws:s3:::" + BUCKET + "/*"),
                 "不得存在桶级通配（收窄目的即消除桶级泄露面）");
     }
 

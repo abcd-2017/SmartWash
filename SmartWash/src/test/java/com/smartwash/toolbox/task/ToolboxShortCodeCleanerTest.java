@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.smartwash.toolbox.entity.ToolboxShortCode;
 import com.smartwash.toolbox.entity.ToolboxShortVisit;
+import com.smartwash.toolbox.mapper.ToolboxShortVisitMapper;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import com.smartwash.toolbox.service.ToolboxShortVisitService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -23,6 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -30,7 +32,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 过期短码清理任务测试：仅物理清理 expire_at 已过 30 天的记录与关联明细，
+ * 过期短码清理任务测试（跟随删除语义）：
+ * 先物理删除过期主记录，再全局清扫无主明细（code NOT IN 现存短码表）；
  * 阈值必须为 now - 30 天之前；失效判断在读取路径完成，本任务不参与。
  */
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +44,8 @@ class ToolboxShortCodeCleanerTest {
     private ToolboxShortCodeService shortCodeService;
     @Mock
     private ToolboxShortVisitService visitService;
+    @Mock
+    private ToolboxShortVisitMapper visitMapper;
 
     private ToolboxShortCodeCleaner cleaner;
 
@@ -54,36 +59,32 @@ class ToolboxShortCodeCleanerTest {
 
     @BeforeEach
     void setUp() {
-        cleaner = new ToolboxShortCodeCleaner(shortCodeService, visitService);
+        cleaner = new ToolboxShortCodeCleaner(shortCodeService, visitService, visitMapper);
     }
 
     @Test
-    @DisplayName("无过期记录时不做任何删除")
-    void cleanExpired_nothingExpired_noop() {
+    @DisplayName("无过期记录：不删主记录，但仍全局清扫历史悬挂明细")
+    void cleanExpired_nothingExpired_stillSweepsOrphanVisits() {
         when(shortCodeService.list(any(Wrapper.class))).thenReturn(List.of());
 
         cleaner.cleanExpired();
 
-        verify(visitService, never()).remove(any(Wrapper.class));
         verify(shortCodeService, never()).removeById(anyLong());
+        verify(visitMapper, times(1)).sweepOrphanVisits();
     }
 
     @Test
-    @DisplayName("清理过期记录：先删关联明细（按 code）再删主记录")
-    void cleanExpired_removesVisitsThenRecords() {
+    @DisplayName("清理过期记录：先删过期主记录，再全局清扫无主明细")
+    void cleanExpired_removesExpiredCodesThenSweepsOrphanVisits() {
         ToolboxShortCode expired = new ToolboxShortCode().setId(7L).setCode("old0001");
         when(shortCodeService.list(any(Wrapper.class))).thenReturn(List.of(expired));
 
         cleaner.cleanExpired();
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<LambdaQueryWrapper<ToolboxShortVisit>> visitCaptor =
-                ArgumentCaptor.forClass(LambdaQueryWrapper.class);
-        verify(visitService, times(1)).remove(visitCaptor.capture());
-        visitCaptor.getValue().getSqlSegment(); // 物化惰性 SQL 段，条件参数才写入 paramNameValuePairs
-        assertTrue(visitCaptor.getValue().getParamNameValuePairs().containsValue("old0001"),
-                "明细必须按该短码的 code 删除");
         verify(shortCodeService, times(1)).removeById(7L);
+        verify(visitMapper, times(1)).sweepOrphanVisits();
+        // 跟随删除语义下不再逐条按 code 清明细（由全局 NOT IN 清扫替代）
+        verify(visitService, never()).remove(any(Wrapper.class));
     }
 
     @Test
