@@ -1,5 +1,4 @@
-/* 子页面公共样式 — 遵循 Indigo/Slate 设计系统 */
-/* 设计规范: docs/superpowers/specs/2026-05-03-ui-redesign-design.md */
+/* 子页面公共样式 — 遵循 Indigo/Slate 设计系统（SmartWashWeb/DESIGN.md） */
 
 /* 页面容器 */
 .page-container {
@@ -33,12 +32,12 @@
   }
 }
 
-/* 筛选区 — 白底卡片 + 12px 圆角 + 微阴影 */
+/* 筛选区 — 白底卡片 + 12px 圆角 + 着地阴影 */
 .filter-container {
   padding: 20px 24px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 /* 筛选表单 — 允许换行，筛选项与按钮分行 */
@@ -55,14 +54,14 @@
 }
 
 .filter-container .el-form-item__label {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
 }
 
 .filter-container .el-input__wrapper,
 .filter-container .el-select .el-input__wrapper {
-  background-color: #f8fafc;
+  background-color: var(--bg-subtle);
 }
 
 /* 按钮组 — 始终靠右 */
@@ -76,9 +75,9 @@
 
 /* 表格卡片容器 — 白底卡片包裹 el-table + 分页 */
 .table-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
   overflow: hidden;
 }
 
@@ -87,14 +86,14 @@
 }
 
 .table-card .el-table th.el-table__cell {
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 13px;
 }
 
 .table-card .el-table td.el-table__cell {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .table-card .el-table--border::after,
@@ -111,8 +110,8 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px 20px;
-  border-top: 1px solid #f1f5f9;
-  background: #f8fafc;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
   flex-shrink: 0;
 }
 
@@ -121,9 +120,9 @@
   display: flex;
   justify-content: flex-end;
   padding: 12px 20px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 /* 页面标题区 */
@@ -135,11 +134,11 @@
   margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .page-header p {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }

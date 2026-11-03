@@ -542,12 +542,12 @@ const handleDelete = async (row) => {
 }
 
 .title-main {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .title-sub {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -566,7 +566,7 @@ const handleDelete = async (row) => {
 }
 
 .color-text {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -598,7 +598,7 @@ const handleDelete = async (row) => {
   width: 100%;
   font-size: 12px;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 路由字典快捷选择下拉 */

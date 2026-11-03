@@ -327,7 +327,7 @@ function handleDialogClosed() {
   width: 280px;
   max-height: 400px;
   overflow-y: auto;
-  background: #fff;
+  background: var(--bg-card);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   z-index: 10;
@@ -336,23 +336,23 @@ function handleDialogClosed() {
 .amap-search-item {
   padding: 10px 14px;
   cursor: pointer;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-subtle);
   transition: background-color var(--motion-fast) var(--ease-standard);
 }
 
 .amap-search-item:hover {
-  background: #f8fafc;
+  background: var(--bg-subtle);
 }
 
 .amap-search-item-name {
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .amap-search-item-address {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 

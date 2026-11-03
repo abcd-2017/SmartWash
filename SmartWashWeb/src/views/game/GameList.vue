@@ -1045,12 +1045,12 @@ onMounted(() => {
 }
 
 .title-main {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
 .title-sub {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -1065,8 +1065,8 @@ onMounted(() => {
 
 /* gameKey 等宽字体（对齐跳转路由页 host 单元格） */
 .key-text {
-  font-family: 'SF Mono', Menlo, Consolas, monospace;
-  color: #334155;
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  color: var(--text-body);
 }
 
 /* 色块圆点（表格与下拉选项共用） */
@@ -1085,14 +1085,14 @@ onMounted(() => {
   width: 100%;
   font-size: 12px;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 拖拽上传区：占满表单行，hover/dragover 高亮走全局 motion token */
@@ -1109,7 +1109,7 @@ onMounted(() => {
 }
 
 .game-uploader :deep(.el-upload-dragger.is-dragover) {
-  background-color: #eef2ff;
+  background-color: var(--primary-tint);
 }
 
 .upload-empty {
@@ -1122,22 +1122,22 @@ onMounted(() => {
 
 .upload-empty-icon {
   font-size: 36px;
-  color: #a5b4fc;
+  color: var(--primary-soft);
 }
 
 .upload-empty-text {
   font-size: 14px;
-  color: #334155;
+  color: var(--text-body);
 }
 
 .upload-empty-text em {
   font-style: normal;
-  color: #6366f1;
+  color: var(--color-primary);
 }
 
 .upload-empty-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* 自动填表入口：置于 el-upload 之外，与拖拽区平级（见模板处注释——放在插槽内会被 el-upload 抢走点击） */
@@ -1155,7 +1155,7 @@ onMounted(() => {
   width: 100%;
   margin: 0;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -1175,7 +1175,7 @@ onMounted(() => {
 
 .picked-file-icon {
   font-size: 28px;
-  color: #6366f1;
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 
@@ -1187,7 +1187,7 @@ onMounted(() => {
 
 .picked-file-name {
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1195,7 +1195,7 @@ onMounted(() => {
 
 .picked-file-size {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .picked-file-remove {
@@ -1206,14 +1206,14 @@ onMounted(() => {
 .progress-panel {
   margin-top: 4px;
   padding: 12px 16px;
-  background-color: #f8fafc;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
 .progress-text {
   margin-top: 6px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -1228,13 +1228,13 @@ onMounted(() => {
 
 .upload-success-icon {
   font-size: 48px;
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .upload-success-title {
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .upload-success-url {
@@ -1247,18 +1247,18 @@ onMounted(() => {
 .upload-success-label {
   flex-shrink: 0;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .upload-success-tip {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
   text-align: center;
   line-height: 1.6;
 }
 
 .upload-success-missing {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 </style>

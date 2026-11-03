@@ -2,7 +2,7 @@
   <div class="navbar">
     <div class="left">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+        <el-breadcrumb-item v-if="route.path !== '/'" :to="{ path: '/' }">首页</el-breadcrumb-item>
         <el-breadcrumb-item>{{ currentRouteName }}</el-breadcrumb-item>
       </el-breadcrumb>
     </div>
@@ -73,8 +73,8 @@ const handleLogout = async () => {
 <style scoped>
 .navbar {
   padding: 0 24px;
-  background-color: #fff;
-  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   height: 52px;
   display: flex;
@@ -110,7 +110,7 @@ const handleLogout = async () => {
 }
 
 .user-avatar {
-  background: #6366f1;
+  background: var(--color-primary);
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -119,7 +119,7 @@ const handleLogout = async () => {
 .username {
   margin-left: 8px;
   font-size: 14px;
-  color: #334155;
+  color: var(--text-body);
 }
 
 :deep(.el-dropdown-menu__item) {

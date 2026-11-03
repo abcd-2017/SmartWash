@@ -26,23 +26,21 @@ const goHome = () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f1f5f9;
+  background: var(--bg-page);
 }
 
 .not-found-card {
   text-align: center;
   padding: 48px 64px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow:
-    0 4px 32px rgba(99, 102, 241, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: var(--shadow-brand);
 }
 
 .not-found-code {
   font-size: 64px;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--color-primary);
   line-height: 1;
   letter-spacing: -2px;
 }
@@ -51,13 +49,13 @@ const goHome = () => {
   margin-top: 16px;
   font-size: 18px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .not-found-desc {
   margin-top: 8px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .back-btn {

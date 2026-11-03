@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00+08:00",
+  "title": "Design System: SmartWash Web 管理后台",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "靛蓝 Indigo", "canonical": "#6366f1", "tonalRamp": ["#1e1b4b", "#312e81", "#4338ca", "#6366f1", "#818cf8", "#a5b4fc", "#c7d2fe", "#eef2ff"] },
+      "success": { "role": "secondary", "displayName": "翡翠绿 Emerald", "canonical": "#10b981", "tonalRamp": ["#064e3b", "#065f46", "#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0", "#d1fae5"] },
+      "warning": { "role": "secondary", "displayName": "警琥珀 Amber", "canonical": "#f59e0b", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "danger": { "role": "secondary", "displayName": "警示红 Red", "canonical": "#ef4444", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "info-blue": { "role": "tertiary", "displayName": "信息蓝 Blue", "canonical": "#3b82f6" },
+      "sidebar-bg": { "role": "neutral", "displayName": "墨黑（侧栏底）", "canonical": "#0f172a" },
+      "text-primary": { "role": "neutral", "displayName": "墨黑（主文字）", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"] },
+      "text-secondary": { "role": "neutral", "displayName": "说明灰", "canonical": "#64748b" },
+      "border": { "role": "neutral", "displayName": "标准边框灰", "canonical": "#e2e8f0" },
+      "border-subtle": { "role": "neutral", "displayName": "卡内分隔线灰", "canonical": "#f1f5f9" },
+      "bg-page": { "role": "neutral", "displayName": "页面底灰", "canonical": "#f1f5f9" },
+      "bg-subtle": { "role": "neutral", "displayName": "弱底灰（表头/输入底）", "canonical": "#f8fafc" },
+      "bg-card": { "role": "neutral", "displayName": "卡片白", "canonical": "#ffffff" }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "页面标题，每页唯一。" },
+      "stat": { "displayName": "Stat", "purpose": "统计卡大数字，tabular numbers。" },
+      "title": { "displayName": "Title", "purpose": "弹窗标题、卡片区块标题。" },
+      "body": { "displayName": "Body", "purpose": "全站默认 14px。" },
+      "label": { "displayName": "Label", "purpose": "表头、筛选标签、侧栏二级项。" },
+      "micro": { "displayName": "Micro", "purpose": "弱化辅助文字、页脚、卡片内补充说明。" },
+      "mono": { "displayName": "Mono", "purpose": "短码、deeplink 路径、验证码等机器标识符。" }
+    },
+    "shadows": [
+      { "name": "shadow-ground", "value": "0 1px 3px rgba(15, 23, 42, 0.04)", "purpose": "卡片/筛选区/表格卡静止着地阴影。" },
+      { "name": "shadow-lift", "value": "0 4px 12px rgba(15, 23, 42, 0.08)", "purpose": "hover 上浮元素，配 translateY(-2px)。" },
+      { "name": "shadow-popover", "value": "0 10px 30px rgba(15, 23, 42, 0.1)", "purpose": "下拉/日期面板等气泡层。" },
+      { "name": "shadow-dialog", "value": "0 20px 60px rgba(15, 23, 42, 0.15)", "purpose": "对话框、确认框最高层级。" },
+      { "name": "shadow-brand", "value": "0 4px 32px rgba(99, 102, 241, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)", "purpose": "仅登录页面板的品牌光。" }
+    ],
+    "motion": [
+      { "name": "motion-fast", "value": "150ms", "purpose": "按下反馈、颜色/状态过渡。" },
+      { "name": "motion-base", "value": "220ms", "purpose": "路由切换、弹窗、常规过渡。" },
+      { "name": "motion-slow", "value": "320ms", "purpose": "列表/统计卡渐进进场。" },
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "默认状态过渡缓动。" },
+      { "name": "ease-decelerate", "value": "cubic-bezier(0, 0, 0.2, 1)", "purpose": "进场。" },
+      { "name": "ease-accelerate", "value": "cubic-bezier(0.4, 0, 1, 1)", "purpose": "离场。" }
+    ],
+    "breakpoints": [
+      { "name": "quick-4col", "value": "600px" },
+      { "name": "login-single-col", "value": "880px" },
+      { "name": "stats-4col", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "主操作按钮：靛蓝实心，hover 提亮、active 加深、按下微缩。",
+      "html": "<button class=\"ds-btn-primary\">保存</button>",
+      "css": ".ds-btn-primary { background: var(--color-primary, #6366f1); color: #fff; border: none; border-radius: 8px; height: 32px; padding: 0 15px; font-size: 14px; font-weight: 500; cursor: pointer; transition: transform 150ms cubic-bezier(0.4,0,0.2,1), background-color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: var(--color-primary-light, #818cf8); } .ds-btn-primary:active { background: var(--color-primary-dark, #4f46e5); transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-primary, #6366f1); outline-offset: 2px; }"
+    },
+    {
+      "name": "Default Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "次级按钮：白底细边，hover 淡入靛蓝世界（淡彩底 + 靛蓝字边）。",
+      "html": "<button class=\"ds-btn-default\">取消</button>",
+      "css": ".ds-btn-default { background: var(--bg-card, #fff); color: var(--text-body, #334155); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; height: 32px; padding: 0 15px; font-size: 14px; cursor: pointer; transition: all 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-default:hover { background: var(--primary-tint, #eef2ff); border-color: var(--color-primary, #6366f1); color: var(--color-primary, #6366f1); } .ds-btn-default:focus-visible { outline: 2px solid var(--color-primary, #6366f1); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "弱底输入框：1px 内描边 ring，focus 靛蓝 ring + 光晕。",
+      "html": "<input class=\"ds-input\" placeholder=\"请输入内容\" />",
+      "css": ".ds-input { background: var(--bg-subtle, #f8fafc); color: var(--text-input, #1e293b); border: none; border-radius: 8px; height: 32px; padding: 0 11px; font-size: 14px; font-family: inherit; box-shadow: 0 0 0 1px var(--border, #e2e8f0) inset; outline: none; transition: box-shadow 150ms cubic-bezier(0.4,0,0.2,1); } .ds-input::placeholder { color: var(--text-muted, #94a3b8); } .ds-input:hover { box-shadow: 0 0 0 1px var(--border-hover, #cbd5e1) inset; } .ds-input:focus { box-shadow: 0 0 0 1px var(--color-primary, #6366f1) inset, 0 0 0 3px rgba(99, 102, 241, 0.15); }"
+    },
+    {
+      "name": "Status Tag (Success)",
+      "kind": "chip",
+      "refersTo": "tag-success",
+      "description": "淡彩底 + 同色系深字，无边框；实心色只属于按钮。",
+      "html": "<span class=\"ds-tag ds-tag-success\">已完成</span><span class=\"ds-tag ds-tag-warning\">待支付</span><span class=\"ds-tag ds-tag-danger\">失败</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none; transition: background-color 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-tag-success { background: var(--success-tint, #d1fae5); color: #065f46; } .ds-tag-warning { background: var(--warning-tint, #fef3c7); color: #92400e; } .ds-tag-danger { background: var(--danger-tint, #fee2e2); color: #991b1b; }"
+    },
+    {
+      "name": "Stat Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "仪表盘数据卡：淡底图标容器 + 灰标签 + 24px 等宽大数字。",
+      "html": "<div class=\"ds-stat-card\"><div class=\"ds-stat-icon\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 21h18\"/><path d=\"M5 21V7l7-4 7 4v14\"/></svg></div><div class=\"ds-stat-info\"><span class=\"ds-stat-label\">今日订单</span><span class=\"ds-stat-value\">128</span></div></div>",
+      "css": ".ds-stat-card { display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-card, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04); width: 280px; } .ds-stat-icon { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 12px; background: rgba(99, 102, 241, 0.1); color: var(--color-primary, #6366f1); flex-shrink: 0; } .ds-stat-info { display: flex; flex-direction: column; gap: 4px; } .ds-stat-label { font-size: 13px; color: var(--text-secondary, #64748b); } .ds-stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary, #0f172a); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Sidebar Item",
+      "kind": "nav",
+      "refersTo": "sidebar-bg",
+      "description": "墨色侧栏菜单项：hover 微靛蓝底，激活 20% 靛蓝底 + 浅靛字。",
+      "html": "<div class=\"ds-sidebar\"><div class=\"ds-nav-item\"><span class=\"ds-nav-icon\">◆</span>订单管理</div><div class=\"ds-nav-item is-active\"><span class=\"ds-nav-icon\">◆</span>数据看板</div></div>",
+      "css": ".ds-sidebar { background: var(--sidebar-bg, #0f172a); padding: 12px; width: 196px; } .ds-nav-item { display: flex; align-items: center; height: 44px; padding: 0 12px; margin-bottom: 2px; border-radius: 8px; color: #cbd5e1; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item:hover { background: rgba(99, 102, 241, 0.1); color: #e2e8f0; } .ds-nav-item.is-active { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; } .ds-nav-icon { margin-right: 10px; font-size: 14px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "靛蓝工作台",
+    "overview": "深色靛蓝侧栏是工作台的外壳，白色卡片是摊开的工具盘，靛蓝只出现在需要手去碰的地方——按钮、焦点、激活项。这是一套纯亮色、数据优先的运营后台（明确不跟随系统暗色模式），气质克制、精准、低压力：界面退后，表格与数字是主角。品牌上与 Android 用户端的清氧绿体系刻意分离——管理后台是内部工具，靛蓝是它自己的身份。\n\n密度中高但不紧张：信息靠淡彩底色标签和清晰的圆角层级组织，而不是靠线条分隔。动效全站共享三档时长 token（150/220/320ms）与标准缓动曲线，进场减速、离场加速，且全站尊重系统「减少动态效果」设置。",
+    "keyCharacteristics": [
+      "深色 Slate 侧栏（#0f172a）+ 白色顶栏 + 浅灰页面底（#f1f5f9）的三段式框架",
+      "白卡片承载一切内容，圆角 12px，静止时几乎无阴影（0 1px 3px / 4% 黑）",
+      "状态表达一律「淡彩底 + 同色系深字」，实心饱和色只留给按钮",
+      "靛蓝是唯一强调色，出现在 ≤10% 的界面上；其余全部交给 Slate 中性色阶",
+      "全站 tabular numbers：金额、数量、ID 列数字不抖动",
+      "基于 Element Plus 深度换肤：所有组件圆角/配色对齐全局 token，禁止组件自说自话"
+    ],
+    "rules": [
+      { "name": "淡彩底规则 (Tint-on-Tint Rule)", "body": "状态标签永远用「淡彩底 + 同色系深字」，无边框；实心饱和底色只属于按钮。表格里出现一排实心彩色块即视为破坏体系。", "section": "colors" },
+      { "name": "一成靛蓝规则 (One-Voice Rule)", "body": "靛蓝出现在任何一屏上的面积不超过 ~10%。它稀缺，焦点才清晰。大面积使用靛蓝底色是错误。", "section": "colors" },
+      { "name": "外壳即墨色规则", "body": "侧栏、登录页品牌区共用 #0f172a 墨色系（可渐变到 #1e293b/#312e81），侧栏上的文字用 #cbd5e1、激活 #a5b4fc——亮暗两界各用各的文字灰阶，不混用。", "section": "colors" },
+      { "name": "数字等宽规则", "body": "表格单元格全局 font-variant-numeric: tabular-nums；所有金额、数量、ID 列数字必须等宽，右对齐金额列配人民币符号。", "section": "typography" },
+      { "name": "平面常态规则 (Flat-By-Default Rule)", "body": "阴影是响应不是装饰：静止的界面里只有着地阴影，任何悬浮阴影都必须对应 hover/浮层状态。", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 从 :root token 取色（var(--color-primary) 等），新颜色先进 base.css 再使用。",
+      "Do 动效只用全局三档时长（--motion-fast/base/slow）与三条缓动（--ease-standard/decelerate/accelerate）；进场减速、离场加速、离场时长 ≤ 进场 60%。",
+      "Do 新页面复用 .page-container / .filter-container / .table-card 骨架与 useTableList composable，禁止另起炉灶。",
+      "Do 状态 → 标签颜色的映射进 src/constants/dict.js 统一维护。",
+      "Do 全部交互元素可达：键盘 focus-visible 有 2px 靛蓝 outline，触控/点击目标 ≥ 24px。",
+      "Do 尊重 prefers-reduced-motion：CSS 过渡/动画全局降级，JS 数字滚动等数据动效直接落定终值。"
+    ],
+    "donts": [
+      "Don't 引入暗色模式——本系统是明确的纯亮色后台，不做暗色适配。",
+      "Don't 在组件里写死色值绕过 token；淡彩标签必须「淡彩底 + 深字」，实心饱和色块只属于按钮。",
+      "Don't 为组件另立时长/缓动/阴影常量，或在静止元素上加浮起阴影。",
+      "Don't 在 scoped 样式里重新定义 Element Plus 已被全局换肤的属性（表格表头、分页、弹窗圆角等）。",
+      "Don't 使用 v-html、裸 localStorage 存权限、前端 localStorage 判权限（安全红线，非视觉但同样硬性）。"
+    ]
+  }
+}

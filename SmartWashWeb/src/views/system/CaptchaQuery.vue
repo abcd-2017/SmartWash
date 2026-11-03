@@ -55,7 +55,7 @@
             <span v-if="row.remainSeconds > 0">
               {{ formatRemainTime(row.remainSeconds) }}
             </span>
-            <span v-else style="color: #ef4444">已过期</span>
+            <span v-else style="color: var(--color-danger)">已过期</span>
           </template>
         </el-table-column>
       </el-table>
@@ -117,10 +117,10 @@ function formatRemainTime(seconds) {
 
 <style scoped>
 .captcha-code {
-  font-family: 'Courier New', monospace;
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 4px;
-  color: #6366f1;
+  color: var(--color-primary);
 }
 </style>

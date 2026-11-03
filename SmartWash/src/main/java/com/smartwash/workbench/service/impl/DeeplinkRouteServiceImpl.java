@@ -1,6 +1,5 @@
 package com.smartwash.workbench.service.impl;
 
-import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -50,7 +49,7 @@ public class DeeplinkRouteServiceImpl extends ServiceImpl<AppDeeplinkRouteMapper
     @Override
     public Page<DeeplinkRouteVo> adminPage(SearchDeeplinkRouteFrom from) {
         LambdaQueryWrapper<AppDeeplinkRoute> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(StringUtils.hasText(from.getHost()), AppDeeplinkRoute::getHost, from.getHost());
+        wrapper.like(StringUtils.hasText(from.getHostKeyword()), AppDeeplinkRoute::getHost, from.getHostKeyword());
         wrapper.eq(from.getEnabled() != null, AppDeeplinkRoute::getEnabled, from.getEnabled());
         // 字典类数据按 host 升序，便于管理端定位
         wrapper.orderByAsc(AppDeeplinkRoute::getHost);

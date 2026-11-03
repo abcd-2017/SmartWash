@@ -30,7 +30,7 @@ public class DeeplinkRouteAdminController {
 
     private final DeeplinkRouteService deeplinkRouteService;
 
-    @Operation(summary = "分页查询路由字典", description = "page/size + host 模糊 + enabled 筛选，按 host 升序")
+    @Operation(summary = "分页查询路由字典", description = "page/size + hostKeyword 模糊 + enabled 筛选，按 host 升序")
     @GetMapping("/all")
     public Result<Page<DeeplinkRouteVo>> getAll(SearchDeeplinkRouteFrom from) {
         return Result.ok(deeplinkRouteService.adminPage(from));

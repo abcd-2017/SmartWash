@@ -60,7 +60,7 @@ watch(
   flex: 1;
   padding: 20px;
   overflow-y: auto; /* 垂直滚动 */
-  background-color: #f1f5f9;
+  background-color: var(--bg-page);
 }
 
 /* 路由切换过渡：进场减速（轻微上移 + 淡入）、离场快速淡出（退出快于进入，sub-60% 时长） */

@@ -322,7 +322,7 @@ const handleDelete = async (row) => {
 
 <style scoped>
 .user-table-avatar {
-  background: #6366f1;
+  background: var(--color-primary);
   color: #fff;
   font-size: 12px;
   font-weight: 600;

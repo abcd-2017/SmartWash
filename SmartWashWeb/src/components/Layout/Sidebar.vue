@@ -161,7 +161,8 @@ const menuGroups = computed(() => {
     items.forEach((item) => consumed.add(item.path));
     return { title: cfg.title, icon: cfg.icon, items };
   });
-  const rest = menuRoutes.value.filter((r) => !consumed.has(r.path));
+  // 首页已单独渲染为顶层菜单项，兜底分组里不能再出现一次
+  const rest = menuRoutes.value.filter((r) => !consumed.has(r.path) && r.path !== '/');
   if (rest.length) {
     groups.push({ title: '其他', icon: 'Grid', items: rest });
   }
@@ -198,7 +199,7 @@ watch(activeGroupIndex, (title) => {
 <style scoped>
 .sidebar {
   width: 220px;
-  background-color: #0f172a;
+  background-color: var(--sidebar-bg);
   height: 100vh;
   display: flex;
   flex-direction: column;

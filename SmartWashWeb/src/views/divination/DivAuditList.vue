@@ -76,7 +76,7 @@
         <h4 class="diff-title">审计明细</h4>
         <div class="diff-content">
           <pre v-if="currentAudit.auditJson">{{ formatJson(currentAudit.auditJson) }}</pre>
-          <span v-else style="color: #64748b">无审计明细数据</span>
+          <span v-else style="color: var(--text-secondary)">无审计明细数据</span>
         </div>
       </div>
       <template #footer>
@@ -154,11 +154,11 @@ const handleViewDetail = (row) => {
   margin: 20px 0 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .diff-content {
-  background: #f8fafc;
+  background: var(--bg-subtle);
   border-radius: 8px;
   padding: 16px;
   max-height: 400px;
@@ -168,7 +168,7 @@ const handleViewDetail = (row) => {
 .diff-content pre {
   margin: 0;
   font-size: 12px;
-  color: #334155;
+  color: var(--text-body);
   white-space: pre-wrap;
   word-break: break-all;
 }
