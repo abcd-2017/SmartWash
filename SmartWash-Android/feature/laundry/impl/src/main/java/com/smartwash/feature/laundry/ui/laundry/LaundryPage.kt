@@ -260,8 +260,8 @@ fun LaundryPage(
                         selectItemId = item.itemId
                         totalPrice = item.basePrice
                     }
-                    // 规范 §3 关键常量：列表项间距 12
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // 卡间距 16dp（规范 §2.3；原 12dp 属列表项间距旧值）
+                    Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
                 }
             }
 

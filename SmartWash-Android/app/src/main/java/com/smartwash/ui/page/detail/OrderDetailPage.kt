@@ -191,7 +191,9 @@ fun OrderDetailPage(
                                 InfoRow(
                                     stringResource(R.string.price),
                                     // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
-                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f))
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f)),
+                                    // 金额行开 tnum（规范 §2.2 硬规则，与实付款行成对）
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
                                 )
                                 // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
                                 InfoRow(

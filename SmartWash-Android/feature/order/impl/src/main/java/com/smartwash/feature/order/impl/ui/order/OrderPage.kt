@@ -232,7 +232,8 @@ fun OrderPage(
                         LazyColumn(
                             state = listState,
                             contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
-                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                            // 卡间距 16dp（规范 §2.3；月分组卡之间不再用 12dp）
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(
@@ -439,7 +440,12 @@ private fun OrderRow(
             // 设计稿实测：角标底→订单号行间距 8（与订单号→时间行一致）
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
+                // 单号 · 套餐 组合文案资源化（规范 §9「用户可见文案在 strings.xml」）
+                text = stringResource(
+                    R.string.order_no_item_format,
+                    order.orderNo,
+                    order.laundryPackageVo.itemName
+                ),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
                 // 2026-11-01 折行修复：右侧操作列占宽 ~113dp 挤压本列，长文本限单行省略（原会折行撑高卡片）
