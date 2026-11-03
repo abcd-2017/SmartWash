@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00+08:00",
+  "title": "Design System: SmartWash Android 用户端（清氧设计系统）",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "清氧绿",
+        "canonical": "#2D9B6A",
+        "tonalRamp": ["#0B3625", "#144D36", "#1E8C5C", "#2D9B6A", "#6FBF98", "#A5D8BE", "#D9F0E4", "#F0FBF4"]
+      },
+      "water": {
+        "role": "secondary",
+        "displayName": "水蓝",
+        "canonical": "#4A9FD4",
+        "tonalRamp": ["#0F2A3D", "#16466A", "#2470A0", "#4A9FD4", "#7FB9E2", "#ADD3EE", "#DCEFF7", "#EFF7FC"]
+      },
+      "ongoing": {
+        "role": "tertiary",
+        "displayName": "进行中橙",
+        "canonical": "#D98A26",
+        "tonalRamp": ["#4A2E08", "#6B4210", "#935F15", "#D98A26", "#E5AC5C", "#F2CB94", "#FDF3E7", "#FEF9F0"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "危险玫红",
+        "canonical": "#A8435A",
+        "tonalRamp": ["#3D1520", "#5A2233", "#7E2F45", "#A8435A", "#C9526B", "#DB7186", "#E795A5", "#FDEEF0"]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "氧泡米白（页面底）",
+        "canonical": "#F5F6F3",
+        "tonalRamp": ["#1C1C1E", "#3A3D3C", "#6B6E73", "#7E837D", "#A9AEA9", "#C9CDC9", "#EFF1EE", "#F5F6F3"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "器物白（卡片）",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#1C1C1E", "#3A3D3C", "#6B6E73", "#A9AEA9", "#C9CDC9", "#E6E9E6", "#EFF1EE", "#FFFFFF"]
+      },
+      "text-primary": { "role": "neutral", "displayName": "墨（主文本）", "canonical": "#1C1C1E" },
+      "text-secondary": { "role": "neutral", "displayName": "灰墨（次文本）", "canonical": "#6B6E73" },
+      "text-tertiary": { "role": "neutral", "displayName": "淡墨（弱文本，仅装饰）", "canonical": "#A9AEA9" },
+      "dark-background": { "role": "neutral", "displayName": "夜舱底（清氧·夜页面底）", "canonical": "#141614" },
+      "dark-surface": { "role": "neutral", "displayName": "夜器物白（清氧·夜卡片）", "canonical": "#1D201E" },
+      "dark-primary": { "role": "primary", "displayName": "暗底亮绿（primaryDeep 深色语义）", "canonical": "#5BC894" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "数据大字 DataLarge", "purpose": "余额、应付金额、取件码——每屏至多一处锚点级大字，强制 tnum。" },
+      "headline": { "displayName": "结果大字", "purpose": "结果页大标题；数据大字窄屏降级档（36 → 28 → 22）。" },
+      "title-large": { "displayName": "页头/根页标题", "purpose": "内页页头 PageHeader、根页大标题 RootTitle、hero 状态锚点字 StatusLarge。" },
+      "title": { "displayName": "区块/卡片标题", "purpose": "区块标题、卡片标题、金额中字 AmountMedium（+tnum）。" },
+      "body-large": { "displayName": "主要正文", "purpose": "主要正文与表单输入正文最小档（输入禁用 14sp 及以下）。" },
+      "body": { "displayName": "列表正文", "purpose": "列表行主文案（特许 500）、次要正文。" },
+      "caption": { "displayName": "辅助文字", "purpose": "辅助说明、时间戳、占位符。" },
+      "caption-strong": { "displayName": "角标", "purpose": "tab、角标、底部导航标签。" },
+      "button": { "displayName": "按钮文字", "purpose": "15sp/600/ls 1sp——组件级规格（§3.3），不在 8 档字阶内。" }
+    },
+    "shadows": [
+      {
+        "name": "card-level1",
+        "value": "0 2px 12px rgba(20,40,30,.05)",
+        "purpose": "唯一卡片阴影——Compose 侧 AppElevation.level1（1dp），GroupCard/AppCard/页面侧 Surface 同一条路径；深色主题加强为 rgba(0,0,0,.28)。"
+      },
+      {
+        "name": "float-layer",
+        "value": "0 10px 24px rgba(20,40,30,.10)",
+        "purpose": "弹窗/Sheet 浮层——AppElevation.floatLayer（10dp），禁再叠加 tonalElevation。"
+      }
+    ],
+    "motion": [
+      { "name": "default-spring", "value": "spring(dampingRatio=1.0, stiffness=350)", "purpose": "卡片入场、选中态、所有非手势位移；临界阻尼无回弹、从当前值出发可中断。" },
+      { "name": "momentum-spring", "value": "spring(dampingRatio=0.8, stiffness=350)", "purpose": "仅带惯性的动作（掷币落定、爻坠落、甩环）。" },
+      { "name": "heavy-spring", "value": "spring(dampingRatio=0.8, stiffness=200)", "purpose": "大质量物体。" },
+      { "name": "press-feedback", "value": "tween(100ms, FastOutSlowIn) + scale 0.97", "purpose": "全应用唯一按压反馈；pressable 内置 indication = null（禁 Material ripple/state layer）。" },
+      { "name": "crossfade-alt", "value": "180ms", "purpose": "reduced motion 降级专用档：淡入、颜色过渡、文字↔spinner 交叉淡变。" },
+      { "name": "duration-ladder", "value": "micro 200ms / card 300ms / screen 400ms", "purpose": "时长层级；退出时长 ≈ 进入的 60–70%（enterTween 减速进 / exitTween 加速出）。" },
+      { "name": "list-stagger", "value": "间隔 ≤60ms，总时长 ≤400ms", "purpose": "列表逐项入场上限。" },
+      { "name": "spin-period", "value": "900ms linear infinite", "purpose": "持续型旋转（pending 圆环）；调用方必须自备 reduced motion 静态分支。" },
+      {
+        "name": "reduce-motion",
+        "value": "Settings.Global.ANIMATOR_DURATION_SCALE == 0 → LocalReduceMotion",
+        "purpose": "全树共享降级开关：取消无限旋转/回弹/位移/缩放/逐项延迟；保留文字、颜色、图标可读与触觉；按压缩放改透明度。无降级不合入。"
+      }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "single-column, 8pt grid", "purpose": "纯手机单列布局，无平板断点；底栏 4 tab 恒驻。" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "app-button-primary",
+      "description": "品牌渐变胶囊 CTA——48dp 高、r999、白字 15sp/600/ls 1sp；深色主题文字切换为深绿 #17322B。加载态换 spinner（reduced motion 为静态 270° 圆弧）。",
+      "html": "<button class=\"ds-btn-primary\">立即下单</button>",
+      "css": ".ds-btn-primary { height: 48px; padding: 0 24px; border: none; border-radius: 999px; background: linear-gradient(135deg, #2D9B6A, #1E8C5C); color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 1px; font-variant-numeric: tabular-nums; transition: transform .1s ease, opacity .2s ease; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: .5; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "app-button-secondary",
+      "description": "浅灰底胶囊次按钮——同尺寸同字；退出登录等语义例外由 contentColor 换 dangerInk，形态不变。",
+      "html": "<button class=\"ds-btn-secondary\">取消</button>",
+      "css": ".ds-btn-secondary { height: 48px; padding: 0 24px; border: none; border-radius: 999px; background: #EFF1EE; color: #1C1C1E; font-size: 15px; font-weight: 600; letter-spacing: 1px; transition: transform .1s ease; } .ds-btn-secondary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "全应用唯一卡片画法：纯白底 + 1dp 描边 + 着地影 + 16dp 圆角 + 20dp 内边距。灰底卡、裸白卡、0.5dp 描边卡均为违规。",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card__title\">订单信息</div><div class=\"ds-card__body\">标准洗 × 1</div></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #E6E9E6; border-radius: 16px; box-shadow: 0 2px 12px rgba(20,40,30,.05); padding: 20px; } .ds-card__title { font-size: 18px; font-weight: 600; color: #1C1C1E; } .ds-card__body { margin-top: 8px; font-size: 14px; color: #6B6E73; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Icon Box",
+      "kind": "custom",
+      "refersTo": "icon-box-primary",
+      "description": "六色浅底图标容器（主 44dp/12dp 圆角/24dp 图标）——所有功能图标必须入容器，底色按语义取（示例为洗护绿）。",
+      "html": "<div class=\"ds-icon-box\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#2D9B6A\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3c0 0-7 6.4-7 11a7 7 0 0 0 14 0c0-4.6-7-11-7-11z\"/></svg></div>",
+      "css": ".ds-icon-box { width: 44px; height: 44px; border-radius: 12px; background: #F0FBF4; display: flex; align-items: center; justify-content: center; }"
+    },
+    {
+      "name": "Hero Card",
+      "kind": "card",
+      "refersTo": "hero-card",
+      "description": "每页至多一个的品牌渐变 hero：白字 + 白色胶囊 CTA；无描边无阴影，层级由渐变自身承担。深色主题渐变暗端切换为 #5BC894。",
+      "html": "<div class=\"ds-hero\"><div><div class=\"ds-hero__label\">钱包余额（元）</div><div class=\"ds-hero__amount\">128.50</div></div><button class=\"ds-hero__cta\">去充值</button></div>",
+      "css": ".ds-hero { background: linear-gradient(135deg, #2D9B6A, #1E8C5C); border-radius: 20px; padding: 20px; display: flex; align-items: center; justify-content: space-between; } .ds-hero__label { font-size: 12px; color: rgba(255,255,255,.75); } .ds-hero__amount { margin-top: 4px; font-size: 36px; line-height: 44px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; } .ds-hero__cta { height: 36px; padding: 0 16px; border: none; border-radius: 999px; background: #fff; color: #1E8C5C; font-size: 13px; font-weight: 600; transition: transform .1s ease; } .ds-hero__cta:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "List Row",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "56dp 列表行：次级图标容器 + 主文案 14sp/500 + 右值/箭头；行间 0.5dp 发丝线只在本卡片内部。",
+      "html": "<div class=\"ds-row\"><div class=\"ds-row__icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#2D9B6A\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3c0 0-7 6.4-7 11a7 7 0 0 0 14 0c0-4.6-7-11-7-11z\"/></svg></div><div class=\"ds-row__text\">标准洗 6kg</div><div class=\"ds-row__value\">¥29.90</div></div>",
+      "css": ".ds-row { display: flex; align-items: center; gap: 16px; height: 56px; padding: 0 20px; border-bottom: .5px solid #EFF1EE; } .ds-row__icon { width: 36px; height: 36px; border-radius: 12px; background: #F0FBF4; display: flex; align-items: center; justify-content: center; } .ds-row__text { flex: 1; font-size: 14px; font-weight: 500; color: #1C1C1E; } .ds-row__value { font-size: 18px; font-weight: 600; color: #2D9B6A; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Status Tag",
+      "kind": "chip",
+      "refersTo": "card",
+      "description": "状态语义 = 8dp 色点 + 浅底深字标签；订单 8 态映射以 OrderStatus 枚举为单一事实来源。示例为进行中橙。",
+      "html": "<span class=\"ds-tag ds-tag--ongoing\"><i class=\"ds-tag__dot\"></i>清洗中</span><span class=\"ds-tag ds-tag--success\"><i class=\"ds-tag__dot\"></i>已完成</span><span class=\"ds-tag ds-tag--danger\"><i class=\"ds-tag__dot\"></i>已取消</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 500; } .ds-tag__dot { width: 8px; height: 8px; border-radius: 50%; } .ds-tag--ongoing { background: #FDF3E7; color: #92400E; } .ds-tag--ongoing .ds-tag__dot { background: #D98A26; } .ds-tag--success { background: #F0FBF4; color: #17322B; } .ds-tag--success .ds-tag__dot { background: #2D9B6A; } .ds-tag--danger { background: #FDEEF0; color: #A8435A; } .ds-tag--danger .ds-tag__dot { background: #C9526B; }"
+    },
+    {
+      "name": "Drum Mark（滚筒圆）",
+      "kind": "custom",
+      "refersTo": "icon-box-primary",
+      "description": "签名母题：同心圆环 + 一条穿过它的水波线（64 栅格）。进度弧由真实状态传入，null 即静止空态；双主题可 tint。",
+      "html": "<svg class=\"ds-drum\" width=\"48\" height=\"48\" viewBox=\"0 0 64 64\" fill=\"none\"><circle cx=\"32\" cy=\"32\" r=\"28\" stroke=\"#2D9B6A\" stroke-width=\"2.5\" stroke-linecap=\"round\"/><circle cx=\"32\" cy=\"32\" r=\"17\" stroke=\"#2D9B6A\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M23 32c3-3.5 6 2 9-.5s6 1.5 9-1\" stroke=\"#2D9B6A\" stroke-width=\"2.4\" stroke-linecap=\"round\"/></svg>",
+      "css": ".ds-drum { display: block; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "清氧呼吸舱",
+    "overview": "整个 App 是一间氧气充足的舱室：学生把换洗衣物送进舱里（投柜），衣物在舱内呼吸一轮——滚筒转动、水波起伏、泡沫上浮——然后干爽地回来（凭取件码取件）。界面的职责是让这台「呼吸机器」被感知：绿是舱内的空气，白卡是舱内的器物，滚筒圆是唯一被记住的几何。界面安静、留白慷慨，但绝不简陋——洗衣的物质（水、泡沫、织物、打孔洗衣票）必须以矢量与 Canvas 的形式出现在界面里，让新用户一眼看出这是洗衣产品。气质基调是「简约而非简陋」：层次靠底色差、1dp 描边、两档轻阴影与大面积留白共同撑起，而不是靠分割线与重色块。品牌绿 #2D9B6A 是氛围不是按钮色——它出现在 hero 渐变、选中底、图标容器、数据强调等非功能位置，按钮反而是它最不显眼的用途。动效全部来自真实状态（订单在洗、金额到账），并全树尊重系统「减少动态效果」。",
+    "keyCharacteristics": [
+      "每屏至多一个视觉锚点（36sp 数据大字 / 状态大字 / hero 卡三选一），其余全部安静",
+      "卡片只有一种画法：纯白底 + 1dp 描边 + 着地影，禁止灰底卡、裸白卡、0.5dp 描边卡并存",
+      "所有功能图标必须进六色浅底容器；裸 Material 图标直接着色即违规",
+      "金额、数量、取件码、订单号一律 tabular numbers（fontFeatureSettings = \"tnum\"）",
+      "双主题（清氧·日 / 清氧·夜）共享全部结构令牌，只换强调层；观象台另有玄墨子主题",
+      "零外部动画库（Lottie/Rive/Shimmer/Vico 禁用）、零外部图标库；动效全部 Compose 原生",
+      "任何动效必须有 LocalReduceMotion 降级分支，无降级不合入"
+    ],
+    "rules": [
+      { "name": "一屏一锚点规则 (One Anchor Rule)", "body": "每屏最多一个「重」元素——36sp 数据大字、状态大字、hero 卡，三者至多留一。锚点超过一个等于没有锚点；标题不参与大字竞争（根页 ≤22sp、内页 ≤22sp）。", "section": "colors" },
+      { "name": "品牌绿是空气规则 (Green-is-Air Rule)", "body": "绿色必须出现在至少三处非功能位置（hero 渐变、区块标题装饰、选中底、图标容器、数据强调），它在界面里是「空气中的氧」，不是按钮的专利。大面积纯绿底只属于 hero 与主 CTA。", "section": "colors" },
+      { "name": "六色容器规则", "body": "图标容器底色按语义从六色浅底中取（洗护绿、物流蓝、待办橙、异常粉、账户青、观象台紫），禁止随机取色、禁止裸图标直接着色。", "section": "colors" },
+      { "name": "数字等宽规则 (tnum Rule)", "body": "金额、数量、取件码、订单号一律 fontFeatureSettings = \"tnum\"——数字变化时左右跳即违规。取件码等关键数字优先用 display/tnum 大字。", "section": "typography" },
+      { "name": "两档阴影规则 (Two-Shadow Rule)", "body": "出现第三种阴影（更大扩散、更高海拔、彩色影）即返工。浮层之下不加 tonalElevation，着地影只属于卡片。", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 从 common/ui/theme/（AppColors.colorScheme / AppDimens / AppTextStyles / MaterialTheme）取令牌；用户可见文案一律 strings.xml + stringResource()。",
+      "Do 可点击组件一律走 pressable（内置 indication = null + scale 0.97）或 AppButton；组合期副作用（Toast/导航/状态回写）一律放 LaunchedEffect/SideEffect。",
+      "Do 每个新动效同时给出 reduced motion 分支（motionSpec() / LocalReduceMotion），无限旋转降级为静态可读图形。",
+      "Do 金额/数量/取件码/订单号开 tnum；订单状态标签映射走 OrderStatus 枚举单一事实来源。",
+      "Do 支付渠道用微信/支付宝品牌图标与品牌色；改任何用户端界面先对照 docs/design/redesigned_pages.html 原型与 .claude/ui-design-spec.md。",
+      "Do 交付前按规范 §9 十条自检（底色/卡片画法/锚点唯一/tnum/间距/圆角五档/发丝线/降级分支/无新增 Icons.*/无硬编码文案）。"
+    ],
+    "donts": [
+      "Don't 引入 Lottie / Rive / Shimmer / Vico 等动画库，或引入任何外部图标库（已调研否决，见规范 §4.1）；自绘图标仅限 tab 8 + 动效 4 + 品牌标识 2。",
+      "Don't 新增 Icons.* 使用点；存量 104 处 Material 内置图标保持现状，不替换、不重绘。",
+      "Don't 改主色 #2D9B6A（玄墨子主题除外）；微信/支付宝图标与品牌色不得换成通用组件。",
+      "Don't 使用第二种卡片画法（灰底卡/裸白卡/0.5dp 描边卡）、第三种阴影、字阶外的夹档字号、五档外的圆角。",
+      "Don't 伪造状态动画（支付成功/订单完成必须由真实接口返回触发）；订单没在「清洗中」时转动滚筒/泡沫图标。",
+      "Don't 在页面里写动效魔法数值（改 AnimationUtils.kt 等于全应用换手感）、写死色值/URL、用位图图标或 AI 生图直入。",
+      "Don't 劫持系统返回手势、破坏 edge-to-edge insets；Material 交互组件（Button/TextField 等自带 state layer）禁止直接用于可点击场景。"
+    ]
+  }
+}

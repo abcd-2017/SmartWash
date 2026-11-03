@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,8 +49,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,7 +60,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
-import com.smartwash.common.ui.components.AppInfoDialog
+import com.smartwash.common.ui.components.DialogAction
+import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.InfoSection
@@ -69,9 +74,12 @@ import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.common.utils.DURATION_CARD_MS
+import com.smartwash.common.utils.HapticEffect
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 
 @Composable
@@ -182,12 +190,15 @@ fun OrderDetailPage(
                                 // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
                                 InfoRow(
                                     stringResource(R.string.price),
-                                    stringResource(R.string.currency_format, (orderInfo?.totalPrice ?: 0f).toString())
+                                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f)),
+                                    // 金额行开 tnum（规范 §2.2 硬规则，与实付款行成对）
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
                                 )
                                 // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
                                 InfoRow(
                                     stringResource(R.string.actual_payment),
-                                    stringResource(R.string.currency_format, (orderInfo?.payPrice ?: 0f).toString()),
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueColor = AppColors.colorScheme.primaryDark,
                                     valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
                                 )
@@ -224,16 +235,109 @@ fun OrderDetailPage(
         }
     }
 
-        // 取件码弹窗（D-OD1）：柜号 + 取件码，承载旧版寄存柜信息卡的全部信息
+        // 取件码弹窗（D-OD1）：柜号 + 取件码大字 + 复制，承载旧版寄存柜信息卡的全部信息。
+        // 原为 AppInfoDialog 纯文本——取件码与说明正文同级 16sp 且无等宽，与规范 §2.2
+        // 「DataLarge 数据大字 = 取件码槽位」不符，改为专用大字弹窗（样式对齐 AppInfoDialog 骨架）
         if (showPickupCodeDialog) {
-            AppInfoDialog(
-                message = stringResource(
-                    R.string.pickup_code_info,
-                    parsePickupCode(orderInfo),
-                    orderInfo?.lockersVo?.lockerNumber ?: 0
-                ),
+            PickupCodeDialog(
+                pickupCode = parsePickupCode(orderInfo),
+                lockerNumber = orderInfo?.lockersVo?.lockerNumber ?: 0,
                 onDismiss = { showPickupCodeDialog = false }
             )
+        }
+    }
+}
+
+/**
+ * 取件码弹窗 — 标题 + 柜号副行 + DataLarge 等宽取件码（每屏唯一锚点，tnum 防数字抖动）+
+ * 底部「关闭 / 复制取件码」分区动作（骨架与 AppConfirmDialog 同款：radiusLg + floatLayer +
+ * dialogEnterMotion 入场，0.5dp 分隔线切动作区）。复制复用取件页同款剪贴板 + 选中触感。
+ */
+@Composable
+private fun PickupCodeDialog(
+    pickupCode: String,
+    lockerNumber: Int,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val view = currentView()
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.dialogEnterMotion(),
+            shape = RoundedCornerShape(AppDimens.radiusLg),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = AppElevation.floatLayer
+        ) {
+            Column {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.pickup_code),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.locker_label_format, "$lockerNumber"),
+                        style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                        color = AppColors.colorScheme.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (pickupCode.isNotEmpty()) {
+                        // 取件码大字 — DataLarge（36/44/700 + tnum，规范 §2.2 取件码槽位）
+                        Text(
+                            text = pickupCode,
+                            style = AppTextStyles.DataLarge,
+                            color = AppColors.colorScheme.primaryDark,
+                            maxLines = 1
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.no_pickup_code),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.colorScheme.textSecondary
+                        )
+                    }
+                }
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    DialogAction(
+                        text = stringResource(R.string.cancel),
+                        color = AppColors.colorScheme.textSecondary,
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(0.5.dp)
+                            .height(48.dp)
+                            .background(AppColors.colorScheme.divider)
+                    )
+                    DialogAction(
+                        text = stringResource(R.string.copy_pickup_code),
+                        color = AppColors.colorScheme.primary,
+                        onClick = {
+                            if (pickupCode.isNotEmpty()) {
+                                clipboardManager.setText(AnnotatedString(pickupCode))
+                                view.performHaptic(HapticEffect.SELECTION)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.copy_success),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            onDismiss()
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
     }
 }

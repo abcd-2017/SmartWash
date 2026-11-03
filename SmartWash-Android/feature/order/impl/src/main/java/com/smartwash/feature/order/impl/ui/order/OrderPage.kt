@@ -232,7 +232,8 @@ fun OrderPage(
                         LazyColumn(
                             state = listState,
                             contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
-                            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                            // 卡间距 16dp（规范 §2.3；月分组卡之间不再用 12dp）
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(
@@ -439,7 +440,12 @@ private fun OrderRow(
             // 设计稿实测：角标底→订单号行间距 8（与订单号→时间行一致）
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${order.orderNo} · ${order.laundryPackageVo.itemName}",
+                // 单号 · 套餐 组合文案资源化（规范 §9「用户可见文案在 strings.xml」）
+                text = stringResource(
+                    R.string.order_no_item_format,
+                    order.orderNo,
+                    order.laundryPackageVo.itemName
+                ),
                 style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textSecondary,
                 // 2026-11-01 折行修复：右侧操作列占宽 ~113dp 挤压本列，长文本限单行省略（原会折行撑高卡片）
@@ -461,7 +467,8 @@ private fun OrderRow(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = stringResource(R.string.currency_format, order.payPrice.toString()),
+                // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致
+                text = stringResource(R.string.currency_format, String.format("%.2f", order.payPrice)),
                 color = if (order.status == OrderStatus.CANCELED.status) {
                     AppColors.colorScheme.textSecondary
                 } else {
@@ -474,10 +481,11 @@ private fun OrderRow(
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）
+                        // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）；
+                        // 热区 44dp（触控最低档，原 40dp 不达标）
                         Box(
                             modifier = Modifier
-                                .heightIn(min = 40.dp)
+                                .heightIn(min = 44.dp)
                                 .pressable(onClick = { cancelClick(order.orderId) })
                                 .padding(horizontal = 4.dp),
                             contentAlignment = Alignment.Center

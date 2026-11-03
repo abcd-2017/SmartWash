@@ -146,10 +146,11 @@ fun SettingPage(
             PageHeader(title = stringResource(R.string.settings), onBack = { navController.navigateUp() })
 
             // 通用
-            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.general),
-                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                // v0.4 字阶 SectionTitle 即 18/24/600 无字距，不再叠加 copy(letterSpacing)
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
@@ -180,7 +181,7 @@ fun SettingPage(
                 SettingRow(
                     icon = Icons.Default.TouchApp,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.haptic_feedback),
                     trailing = {
                         Text(
@@ -201,10 +202,10 @@ fun SettingPage(
             }
 
             // 观象台
-            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.divination),
-                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
@@ -223,10 +224,10 @@ fun SettingPage(
             }
 
             // 其他
-            Spacer(modifier = Modifier.height(AppDimens.spaceXl))
+            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
             Text(
                 text = stringResource(R.string.other),
-                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
@@ -240,7 +241,7 @@ fun SettingPage(
                 SettingRow(
                     icon = Icons.Default.AdminPanelSettings,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.permission_management),
                     trailing = { IconChevron() },
                     onClick = { navController.navigate(UserRoute.PermissionManagement.text) }
@@ -249,7 +250,7 @@ fun SettingPage(
                 SettingRow(
                     icon = Icons.Default.Info,
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    iconForegroundColor = AppColors.colorScheme.iconForegroundGreen,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
                     title = stringResource(R.string.about_smartwash),
                     trailing = {
                         Text(
@@ -265,18 +266,16 @@ fun SettingPage(
             }
 
             // 退出登录 — §2.1 唯一按钮例外（2026-10-29 用户拍板）：次按钮形态
-            // = 52dp 高 / 14dp 圆角 / surfaceVariant 底 / dangerInk 文字 15sp，
-            // 不套分组卡（按钮自身即浮起物）；危险语义经 contentColor 注入，不改 AppButton 三态
+            // = 48dp 胶囊 / surfaceVariant 底 / dangerInk 文字 15sp（AppButton SECONDARY + contentColor），
+            // 不套分组卡（按钮自身即浮起物）；危险语义经 contentColor 注入，不改 AppButton 三态。
+            // 规范 §3.3 次按钮无描边——2026-11-01 曾补 1dp 描边（对比度），v0.4 唯一画法优先，已移除
             Spacer(modifier = Modifier.height(16.dp))
             AppButton(
                 text = stringResource(R.string.logout),
                 onClick = { showDialog = true },
                 variant = AppButtonVariant.SECONDARY,
                 contentColor = AppColors.colorScheme.dangerInk,
-                // 2026-11-01：surfaceVariant 底与页面底对比仅 1.05:1，真机实测按钮边界不可辨 → 补 1dp 描边
-                modifier = Modifier
-                    .padding(horizontal = AppDimens.pagePadding)
-                    .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.buttonRadius))
+                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )
             Spacer(modifier = Modifier.height(24.dp))
         }

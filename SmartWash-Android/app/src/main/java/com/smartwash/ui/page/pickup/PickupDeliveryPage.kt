@@ -72,6 +72,7 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.order.api.PickupDeliveryType
 import com.smartwash.common.utils.model.RequestState
@@ -231,11 +232,13 @@ fun PickupDeliveryPage(
                                     modifier = Modifier.padding(AppDimens.cardPadding),
                                     verticalAlignment = Alignment.Top
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Warning,
-                                        contentDescription = null,
-                                        tint = AppColors.colorScheme.warning,
-                                        modifier = Modifier.size(20.dp)
+                                    // §3.2 功能图标进六色浅底容器（注意事项/待办语义 → 橙）
+                                    IconBox(
+                                        icon = Icons.Rounded.Warning,
+                                        size = 36.dp,
+                                        iconSize = 20.dp,
+                                        containerColor = AppColors.colorScheme.iconContainerOrange,
+                                        iconTint = AppColors.colorScheme.iconForegroundOrange
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
@@ -314,19 +317,24 @@ fun PickupDeliveryPage(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-                // 寄存柜信息（板实测仅 3 行：学校名称/地址/寄存柜柜号；行距节奏 34+14=48，
-                // 与订单详情页同款；寄件码已在上方大字展示，不再重复成行）
-                InfoSection(title = stringResource(R.string.locker_info_section), icon = Icons.Rounded.School) {
+                        // 寄存柜信息（板实测仅 3 行：学校名称/地址/寄存柜柜号；行距节奏 34+14=48，
+                        // 与订单详情页同款；寄件码已在上方大字展示，不再重复成行）
+                        InfoSection(title = stringResource(R.string.locker_info_section), icon = Icons.Rounded.School) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         InfoRow(stringResource(R.string.school_name_label), orderInfo?.schoolsVo?.schoolName ?: "")
                         InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
-                        InfoRow(stringResource(R.string.locker_number_label), "$lockerNumber")
+                        // 柜号是编号类数字，开 tnum（规范 §2.2）
+                        InfoRow(
+                            stringResource(R.string.locker_number_label),
+                            "$lockerNumber",
+                            valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
                 // 操作指引（板实测：卡内无图标、标题 14/500 textPrimary（titleSmall 覆盖默认 18/600）；
                 // 步骤号盒 20 r8 iconContainerGreen、序号 12/400 浅 onPrimaryContainer/深 primary、
@@ -359,7 +367,7 @@ fun PickupDeliveryPage(
                 }
 
                 // 板实测 末卡底 → 底部操作条顶 12
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
             }
 
             // 底部操作栏（模板 E 变体）— 板实测：无 surface 底/顶线，双 48dp 胶囊按钮落在页面底上，

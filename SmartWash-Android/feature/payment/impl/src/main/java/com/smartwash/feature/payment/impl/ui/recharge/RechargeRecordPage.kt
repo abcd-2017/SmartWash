@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -107,7 +108,9 @@ fun RechargeRecordPage(
                 when (state) {
                     RecordListState.Content -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding)
+                        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
+                        // 卡间距 16dp（规范 §2.3）；卡间 1dp 分隔线属「发丝线用在卡外」违规（§1.3），已移除
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
                     ) {
                         items(
                             count = records.itemCount,
@@ -115,25 +118,7 @@ fun RechargeRecordPage(
                         ) { index ->
                             val record = records[index]
                             if (record != null) {
-                                Column {
-                                    RechargeRecordCard(record)
-                                    // 画板实测：卡间 12 内含 1px 分组分隔线（hairline），最后一项不带
-                                    if (index < records.itemCount - 1) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(AppDimens.spaceSm),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(1.dp)
-                                                    .background(AppColors.colorScheme.hairline)
-                                            )
-                                        }
-                                    }
-                                }
+                                RechargeRecordCard(record)
                             }
                         }
 
@@ -191,6 +176,10 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
             modifier = Modifier.padding(AppDimens.cardPadding),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // §3.2 容器规格（44dp / 12dp 圆角 / 24dp 图标，六色浅底 + 对应前景）：
+            // 品牌件是 VectorDrawable 且本仓库 compose 版本无 ImageVector.vectorResource，
+            // 无法走 IconBox 的 ImageVector 参数——按同规格自绘等价容器；
+            // 官方品牌色 tint 属 §10 红线豁免
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -204,7 +193,7 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                             else -> MaterialTheme.colorScheme.primaryContainer
                         }
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(

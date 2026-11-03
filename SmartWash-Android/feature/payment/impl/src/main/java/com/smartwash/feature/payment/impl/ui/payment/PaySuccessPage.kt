@@ -227,7 +227,8 @@ fun PaySuccessPage(
                                 )
                                 InfoRow(
                                     stringResource(R.string.payment_amount),
-                                    stringResource(R.string.currency_format, "${orderInfo?.payPrice ?: 0}"),
+                                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
+                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueStyle = infoValueStyle,
                                     rowHeight = 16.dp
                                 )
@@ -285,12 +286,13 @@ fun PaySuccessPage(
                                     )
                                     Text(
                                         stringResource(R.string.locker_deposited_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
-                                        style = MaterialTheme.typography.bodyMedium
+                                        // 柜号是编号类数字，开 tnum（规范 §2.2）
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
                                     )
                                     Text(
                                         // 柜号空值兜底显示 "-"，不再误显示 "-1柜"（对齐鸿蒙 PaymentSuccess.ets 的空值语义）
                                         stringResource(R.string.go_to_locker_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
-                                        style = MaterialTheme.typography.bodyMedium
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
                                     )
                                     Text(
                                         stringResource(R.string.locker_process_tip),

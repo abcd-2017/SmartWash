@@ -70,6 +70,7 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
@@ -181,9 +182,11 @@ fun PaymentPage(
                                     label = "amountDue"
                                 ) { payPrice ->
                                     Text(
+                                        // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，
+                                        // 与充值/记录/订单页的「¥29.90」不一致（tnum 大字随字符串统一）
                                         text = stringResource(
                                             R.string.currency_format,
-                                            "${payPrice ?: ""}"
+                                            String.format("%.2f", payPrice ?: 0f)
                                         ),
                                         style = AppTextStyles.DataLarge,
                                         color = AppColors.colorScheme.primaryDark,
@@ -230,28 +233,20 @@ fun PaymentPage(
                                         .padding(start = 20.dp, end = 16.dp, top = 20.dp, bottom = 20.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                            .background(
-                                                // 选中卡上的图标盒：浅色=白 surface、深色=surfaceVariant（画板实测）
-                                                if (selectedPaymentMethod == "balance") {
-                                                    if (isSystemInDarkTheme()) AppColors.colorScheme.surfaceVariant
-                                                    else AppColors.colorScheme.surface
-                                                } else {
-                                                    AppColors.colorScheme.iconContainerGreen
-                                                }
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocalOffer,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = AppColors.colorScheme.primary
-                                        )
-                                    }
+                                    // §3.2 公共 IconBox（36dp 容器 / 12dp 圆角 / 20dp 图标）；
+                                    // 选中卡上的容器底色：浅色=白 surface、深色=surfaceVariant（画板实测）
+                                    IconBox(
+                                        icon = Icons.Default.LocalOffer,
+                                        size = 36.dp,
+                                        iconSize = 20.dp,
+                                        containerColor = if (selectedPaymentMethod == "balance") {
+                                            if (isSystemInDarkTheme()) AppColors.colorScheme.surfaceVariant
+                                            else AppColors.colorScheme.surface
+                                        } else {
+                                            AppColors.colorScheme.iconContainerGreen
+                                        },
+                                        iconTint = AppColors.colorScheme.primary
+                                    )
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
@@ -262,8 +257,14 @@ fun PaymentPage(
                                             else AppColors.colorScheme.textPrimary
                                         )
                                         Text(
-                                            stringResource(R.string.current_balance_format, "${orderInfo?.userVo?.balance ?: 0}"),
-                                            style = MaterialTheme.typography.bodySmall,
+                                            stringResource(
+                                                R.string.current_balance_format,
+                                                String.format("%.2f", orderInfo?.userVo?.balance ?: 0f)
+                                            ),
+                                            // 余额行开 tnum（规范 §2.2 金额硬规则）
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontFeatureSettings = "tnum"
+                                            ),
                                             color = AppColors.colorScheme.textSecondary,
                                             modifier = Modifier.padding(top = 4.dp)
                                         )
@@ -277,7 +278,8 @@ fun PaymentPage(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            // 卡间距 16dp（规范 §2.3）
+                            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
                             // 优惠券卡：surface 白底 + 1px outline 描边 + level1(1dp) 阴影（§3.1）
                             Surface(
@@ -294,20 +296,14 @@ fun PaymentPage(
                                         .padding(horizontal = 20.dp, vertical = 15.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(AppDimens.radiusMd))
-                                            .background(AppColors.colorScheme.iconContainerOrange),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.LocalOffer,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = AppColors.colorScheme.iconForegroundOrange
-                                        )
-                                    }
+                                    // §3.2 公共 IconBox（待办/优惠语义 → 橙）
+                                    IconBox(
+                                        icon = Icons.Default.LocalOffer,
+                                        size = 36.dp,
+                                        iconSize = 20.dp,
+                                        containerColor = AppColors.colorScheme.iconContainerOrange,
+                                        iconTint = AppColors.colorScheme.iconForegroundOrange
+                                    )
                                     Spacer(Modifier.width(12.dp))
                                     Text(
                                         stringResource(R.string.coupon),
@@ -326,7 +322,10 @@ fun PaymentPage(
                                     ) { discount ->
                                         Text(
                                             text = if (discount == null) stringResource(R.string.do_not_use)
-                                            else "-￥${discount ?: 0}",
+                                            else stringResource(
+                                                R.string.coupon_discount_value,
+                                                String.format("%.2f", discount ?: 0f)
+                                            ),
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 fontFeatureSettings = if (discount == null) "normal" else "tnum"
                                             ),
@@ -355,7 +354,10 @@ fun PaymentPage(
                         // §2.4 豁免：固定 CTA 条与滚动内容之间可用 0.5dp 分隔线
                         HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                         AppButton(
-                            text = stringResource(R.string.confirm_pay_format, "${orderInfo?.payPrice ?: ""}"),
+                            text = stringResource(
+                                R.string.confirm_pay_format,
+                                String.format("%.2f", orderInfo?.payPrice ?: 0f)
+                            ),
                             onClick = {
                                 if (orderInfo != null) {
                                     if (orderInfo!!.userVo.balance >= orderInfo!!.payPrice) {
@@ -416,7 +418,8 @@ fun PaymentPage(
                             stringResource(R.string.select_coupon),
                             style = MaterialTheme.typography.headlineSmall
                         )
-                        // 去领取 — 自绘文字动作（规范 §7 禁 M3 交互组件；防抖已注入，关闭叠加）
+                        // 去领取 — 自绘文字动作（规范 §7 禁 M3 交互组件；防抖已注入，关闭叠加）；
+                        // 垂直 12 使热区 44dp+（原 4 只有 32dp，§3.3 文字按钮最小热区）
                         Row(
                             modifier = Modifier
                                 .pressable(
@@ -426,7 +429,7 @@ fun PaymentPage(
                                     },
                                     debounce = false,
                                 )
-                                .padding(vertical = 4.dp),
+                                .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.primary)
@@ -579,14 +582,25 @@ private fun UserCouponItem(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = stringResource(R.string.coupon_amount_format, "${userCouponVo.discount}"),
+                    text = stringResource(
+                        R.string.coupon_amount_format,
+                        String.format("%.2f", userCouponVo.discount)
+                    ),
                     style = AppTextStyles.AmountMedium
                 )
                 Text(
                     text = if (userCouponVo.threshold == 0f)
-                        stringResource(R.string.coupon_discount_format, "${userCouponVo.discount + 0.01}", "${userCouponVo.discount}")
-                    else stringResource(R.string.coupon_min_amount_format, "${userCouponVo.threshold}"),
-                    style = MaterialTheme.typography.bodySmall,
+                        stringResource(
+                            R.string.coupon_discount_format,
+                            String.format("%.2f", userCouponVo.discount + 0.01f),
+                            String.format("%.2f", userCouponVo.discount)
+                        )
+                    else stringResource(
+                        R.string.coupon_min_amount_format,
+                        String.format("%.2f", userCouponVo.threshold)
+                    ),
+                    // 门槛/折扣是金额，开 tnum（规范 §2.2）
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary
                 )
                 Text(

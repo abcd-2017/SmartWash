@@ -8,6 +8,8 @@
     <!-- 订单页 -->
     <string name="my_orders">我的订单</string>
     <string name="order_month_group">%1$d年%2$d月</string>
+    <!-- 列表行「单号 · 套餐」组合（原代码内联「·」硬编码，收编进资源） -->
+    <string name="order_no_item_format">%1$s · %2$s</string>
     <string name="order_time_today_prefix">今天 %s</string>
     <string name="order_time_yesterday_prefix">昨天 %s</string>
     <string name="order_time_date">%1$d月%2$d日</string>

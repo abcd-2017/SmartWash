@@ -1,5 +1,7 @@
 package com.smartwash.ui.page
 
+import androidx.annotation.StringRes
+import com.smartwash.R
 import com.smartwash.common.ui.R as CommonUiR
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.feature.laundry.api.LaundryRoute
@@ -40,7 +42,8 @@ sealed class PageConstant(val text: String, val description: String) {
  */
 sealed class HomePageConstant(
     val text: String,
-    val description: String,
+    /** 底栏标签字符串资源（用户可见文案一律走 strings.xml，规范 §9；原硬编码中文已收编） */
+    @StringRes val labelRes: Int,
     val iconRes: Int,
     /** 规范 §4.5 实心路径（带镂空，EvenOdd 填充） */
     val solidPath: String,
@@ -48,23 +51,23 @@ sealed class HomePageConstant(
     val outlinePath: String,
 ) {
     data object Index :
-        HomePageConstant("Index", "首页", CommonUiR.drawable.ic_nav_home_solid,
+        HomePageConstant("Index", R.string.tab_home, CommonUiR.drawable.ic_nav_home_solid,
             solidPath = "M12.96 2.35 21.46 9.88a1.5 1.5 0 0 1 .54 1.15V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8.97a1.5 1.5 0 0 1 .54-1.15L11.04 2.35a1.5 1.5 0 0 1 1.92 0z M8 22v-6.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V22z M10 22v-4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V22z",
             outlinePath = "M12.96 2.35 21.46 9.88a1.5 1.5 0 0 1 .54 1.15V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8.97a1.5 1.5 0 0 1 .54-1.15L11.04 2.35a1.5 1.5 0 0 1 1.92 0z",)
 
     data object Service :
-        HomePageConstant(LaundryRoute.Service.text, "服务", CommonUiR.drawable.ic_nav_service_solid,
+        HomePageConstant(LaundryRoute.Service.text, R.string.tab_service, CommonUiR.drawable.ic_nav_service_solid,
             solidPath = "M5 2h14a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z M6.5 7h11a1 1 0 0 1 0 2h-11a1 1 0 0 1 0-2z M6.5 11h11a1 1 0 0 1 0 2h-11a1 1 0 0 1 0-2z M6.5 15h7a1 1 0 0 1 0 2h-7a1 1 0 0 1 0-2z",
             outlinePath = "M5 2h14a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3z",)
 
     // 工作台 tab（规范决策 7：替换问卜）— 三方块 + 一圆
     data object Workbench :
-        HomePageConstant("Workbench", "工作台", CommonUiR.drawable.ic_nav_workbench_solid,
+        HomePageConstant("Workbench", R.string.tab_workbench, CommonUiR.drawable.ic_nav_workbench_solid,
             solidPath = "M4 2h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M4 13h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M15 13h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M17.5 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z",
             outlinePath = "M4 2h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M4 13h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M15 13h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z M17.5 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z",)
 
     data object UserInfo :
-        HomePageConstant(UserRoute.UserInfo.text, "我的", CommonUiR.drawable.ic_nav_mine_solid,
+        HomePageConstant(UserRoute.UserInfo.text, R.string.tab_mine, CommonUiR.drawable.ic_nav_mine_solid,
             solidPath = "M12 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z M2 19a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v1.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 20.5V19z",
             outlinePath = "M12 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z M2 19a5 5 0 0 1 5-5h10a5 5 0 0 1 5 5v1.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 20.5V19z",)
 }

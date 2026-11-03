@@ -50,6 +50,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +72,7 @@ import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
@@ -103,6 +106,8 @@ fun RechargePage(
     // 画板实测：页面顶部直出账户余额（无卡片），数据 VM 已有 balance 流
     val balance by rechargeViewModel.balance.collectAsState()
     val context = LocalContext.current
+    // 充值记录入口的读屏标签（语义挂在 48dp 热区盒上，见 PageHeader actions）
+    val recordDesc = stringResource(R.string.recharge_record)
 
     LaunchedEffect(rechargeState) {
         when (rechargeState) {
@@ -132,17 +137,21 @@ fun RechargePage(
                     // §7 禁 Material 交互组件：M3 IconButton 自带 state layer 涟漪（颜色/形状不受令牌控制），
                     // 改自绘按压热区。pressable 内置 indication = null + pressScale(0.97f)，与 PageHeader 返回键一致
                     Box(
-                        // 触控热区 48dp（与 PageHeader 返回键同规范 §3.2）
+                        // 触控热区 48dp（与 PageHeader 返回键同规范 §3.2）；
+                        // semantics 补 contentDescription——IconBox 内部图标为装饰，读屏标签挂在热区盒上
                         modifier = Modifier
                             .size(48.dp)
-                            .pressable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord.text) }),
+                            .pressable(onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.RechargeRecord.text) })
+                            .semantics { contentDescription = recordDesc },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = stringResource(R.string.recharge_record),
-                            modifier = Modifier.size(24.dp),
-                            tint = AppColors.colorScheme.textSecondary
+                        // §3.2 功能图标必须进六色浅底容器（账户/记录语义 → 青），禁止裸图标着色
+                        IconBox(
+                            icon = Icons.Default.History,
+                            size = 36.dp,
+                            iconSize = 20.dp,
+                            containerColor = AppColors.colorScheme.iconContainerTeal,
+                            iconTint = AppColors.colorScheme.iconForegroundTeal
                         )
                     }
                 }
@@ -419,8 +428,11 @@ private fun AmountGridCell(
             if (bonus > 0f) {
                 Text(
                     text = stringResource(R.string.recharge_bonus_format, "${bonus.toInt()}"),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
+                    // v0.4 字阶无 11sp 档（原 11sp 属作废夹档）→ captionStrong 12sp/500；
+                    // 赠额是金额，同句开 tnum 防数字抖动（规范 §2.2 硬规则）
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFeatureSettings = "tnum"
+                    ),
                     color = AppColors.colorScheme.ongoingInk
                 )
             }
@@ -492,7 +504,7 @@ private fun RechargeSummaryLine(selectedAmount: Float?, isCustom: Boolean) {
                 )
             }
         },
-        style = MaterialTheme.typography.bodySmall,
+        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
         color = AppColors.colorScheme.textSecondary
     )
 }
@@ -521,7 +533,8 @@ private fun CustomAmountInput(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp),
-        shape = RoundedCornerShape(AppDimens.radiusMd),
+        // 输入档圆角 14dp（规范 §2.3 inputRadius；原 radiusMd 12dp 与输入框档不符）
+        shape = RoundedCornerShape(AppDimens.inputRadius),
         color = bgColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
@@ -564,7 +577,9 @@ private fun PaymentMethodCard(
     ) {
         // 官方品牌图标（2026-11-01 缺陷 8a）：原微信=Message/支付宝=Payment 通用 Material 图标
         // 违反规范 §4.4「第三方品牌图标不得换成通用组件」红线，替换为官方矢量（Simple Icons，CC0）；
-        // 着色用官方品牌色（红线豁免：品牌色不得换），容器仍走六色浅底令牌
+        // 着色用官方品牌色（红线豁免：品牌色不得换）。品牌件是 VectorDrawable 而本仓库 compose 版本
+        // 无 ImageVector.vectorResource，无法走 IconBox 的 ImageVector 参数——此处按 IconBox 同规格
+        // （36dp 容器 / 12dp 圆角 / 20dp 图标 / 六色浅底 + 对应前景）自绘等价容器
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -575,7 +590,7 @@ private fun PaymentMethodCard(
                         PaymentMethod.ALIPAY -> AppColors.colorScheme.iconContainerBlue
                     }
                 ),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(

@@ -191,7 +191,8 @@ fun CouponCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = if (coupon.threshold == 0f) stringResource(R.string.no_threshold) else stringResource(R.string.coupon_min_amount_format, "${coupon.threshold}"),
-                    style = MaterialTheme.typography.bodySmall,
+                    // 门槛是金额，开 tnum（规范 §2.2）
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))

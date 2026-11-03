@@ -164,7 +164,8 @@ fun UpdateUserInfoPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { focusManager.clearFocus() }
+            // 规范 §7：裸 clickable 必须配套按压反馈——统一走 pressable（内置 indication=null + scale 0.97）
+            .pressable(onClick = { focusManager.clearFocus() })
             .background(AppColors.colorScheme.background)
     ) {
         LazyColumn(
@@ -315,14 +316,15 @@ fun UpdateUserInfoPage(
                             { Text(stringResource(R.string.invalid_student_id)) }
                         } else null,
                         leadingIcon = {
+                            // §3.7 前缀图标 16dp + 透明度 .5（原 20dp 全色 primary 违规）
                             Icon(
                                 Icons.Rounded.Badge,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = AppColors.colorScheme.primary
+                                modifier = Modifier.size(16.dp),
+                                tint = AppColors.colorScheme.primary.copy(alpha = 0.5f)
                             )
                         },
-                        shape = RoundedCornerShape(AppDimens.radiusMd),
+                        shape = RoundedCornerShape(AppDimens.inputRadius),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppColors.colorScheme.primary,
                             unfocusedBorderColor = AppColors.colorScheme.outline,
@@ -407,18 +409,19 @@ fun SearchSchoolInput(
                 { Text(stringResource(R.string.please_select_school)) }
             } else null,
             leadingIcon = {
+                // §3.7 前缀图标 16dp + 透明度 .5
                 Icon(
                     Icons.Rounded.School,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = AppColors.colorScheme.primary
+                    modifier = Modifier.size(16.dp),
+                    tint = AppColors.colorScheme.primary.copy(alpha = 0.5f)
                 )
             },
             trailingIcon = {
-                // 40dp 自绘清空按钮（M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）
+                // 48dp 自绘清空按钮（§3.7 尾缀热区 ≥44dp；M3 IconButton 自带 state layer/涟漪，规范 §7 禁用于可点击场景）
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .then(
                             if (enabled) Modifier.pressable(onClick = clearOnClick, debounce = false)
                             else Modifier
@@ -433,7 +436,7 @@ fun SearchSchoolInput(
                     )
                 }
             },
-            shape = RoundedCornerShape(AppDimens.radiusMd),
+            shape = RoundedCornerShape(AppDimens.inputRadius),
             interactionSource = interactionSource,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AppColors.colorScheme.primary,
