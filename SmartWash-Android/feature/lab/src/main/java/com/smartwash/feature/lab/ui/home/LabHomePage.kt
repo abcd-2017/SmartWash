@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BubbleChart
+import androidx.compose.material.icons.rounded.Grain
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -99,6 +102,9 @@ private fun ToyEntryCard(
         LabToy.BUBBLE_WRAP -> scheme.iconContainerGreen to scheme.iconForegroundGreen
         LabToy.BREATH -> scheme.iconContainerBlue to scheme.iconForegroundBlue
         LabToy.FISH -> scheme.iconContainerTeal to scheme.iconForegroundTeal
+        LabToy.SAND -> scheme.iconContainerOrange to scheme.iconForegroundOrange
+        LabToy.FLUID -> scheme.iconContainerPurple to scheme.iconForegroundPurple
+        LabToy.DRUM -> scheme.iconContainerPink to scheme.iconForegroundPink
     }
     val title = toyLabel(toy)
     val description = toyDescription(toy)
@@ -162,6 +168,9 @@ private fun toyIcon(toy: LabToy): ImageVector = when (toy) {
     LabToy.BUBBLE_WRAP -> Icons.Rounded.BubbleChart
     LabToy.BREATH -> Icons.Rounded.SelfImprovement
     LabToy.FISH -> Icons.Rounded.Waves
+    LabToy.SAND -> Icons.Rounded.Grain
+    LabToy.FLUID -> Icons.Rounded.WaterDrop
+    LabToy.DRUM -> Icons.Rounded.MusicNote
 }
 
 @Composable
@@ -169,6 +178,9 @@ private fun toyLabel(toy: LabToy): String = when (toy) {
     LabToy.BUBBLE_WRAP -> stringResource(R.string.lab_toy_bubble_wrap)
     LabToy.BREATH -> stringResource(R.string.lab_toy_breath)
     LabToy.FISH -> stringResource(R.string.lab_toy_fish)
+    LabToy.SAND -> stringResource(R.string.lab_toy_sand)
+    LabToy.FLUID -> stringResource(R.string.lab_toy_fluid)
+    LabToy.DRUM -> stringResource(R.string.lab_toy_drum)
 }
 
 @Composable
@@ -176,4 +188,7 @@ private fun toyDescription(toy: LabToy): String = when (toy) {
     LabToy.BUBBLE_WRAP -> stringResource(R.string.lab_toy_bubble_wrap_desc)
     LabToy.BREATH -> stringResource(R.string.lab_toy_breath_desc)
     LabToy.FISH -> stringResource(R.string.lab_toy_fish_desc)
+    LabToy.SAND -> stringResource(R.string.lab_toy_sand_desc)
+    LabToy.FLUID -> stringResource(R.string.lab_toy_fluid_desc)
+    LabToy.DRUM -> stringResource(R.string.lab_toy_drum_desc)
 }

@@ -21,6 +21,15 @@ sealed class LabRoute(val text: String) {
 
     /** 指尖鱼群（boids 模拟 + 指针交互） */
     data object Fish : LabRoute("LabFish")
+
+    /** 落沙实验室（元胞自动机元素沙盒） */
+    data object Sand : LabRoute("LabSand")
+
+    /** 指尖流体（stable fluids + 触摸注入） */
+    data object Fluid : LabRoute("LabFluid")
+
+    /** 滚筒节拍机（8 音色 × 16 步音序器） */
+    data object Drum : LabRoute("LabDrum")
 }
 
 /**
@@ -31,4 +40,7 @@ enum class LabToy(val route: String) {
     BUBBLE_WRAP(LabRoute.BubbleWrap.text),
     BREATH(LabRoute.Breath.text),
     FISH(LabRoute.Fish.text),
+    SAND(LabRoute.Sand.text),
+    FLUID(LabRoute.Fluid.text),
+    DRUM(LabRoute.Drum.text),
 }

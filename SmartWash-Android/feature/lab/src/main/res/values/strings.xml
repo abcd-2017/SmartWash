@@ -40,4 +40,10 @@
     <string name="lab_fish_hint">按住吸引 · 长按驱散 · 双击炸开</string>
     <string name="lab_fish_play">播放</string>
     <string name="lab_fish_pause">暂停</string>
+    <string name="lab_toy_sand">落沙实验室</string>
+    <string name="lab_toy_sand_desc">倒水撒沙，看元素互相反应</string>
+    <string name="lab_toy_fluid">指尖流体</string>
+    <string name="lab_toy_fluid_desc">手指划过，搅出彩色漩涡</string>
+    <string name="lab_toy_drum">滚筒节拍机</string>
+    <string name="lab_toy_drum_desc">8 音色 × 16 步，排出洗衣节奏</string>
 </resources>
