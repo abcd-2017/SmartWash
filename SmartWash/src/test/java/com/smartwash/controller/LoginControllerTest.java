@@ -100,6 +100,8 @@ class LoginControllerTest {
         when(redisTemplate.expire(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(redisTemplate.hasKey(anyString()))
                 .thenAnswer(inv -> store.containsKey(inv.getArgument(0, String.class)) || counters.containsKey(inv.getArgument(0, String.class)));
+        // 默认按未注册手机号处理（register 的状态前置检查放行），重置密码场景的用例按需覆盖为已注册
+        when(usersService.getUserByPhone(anyString())).thenReturn(null);
     }
 
     private Result<String> register(String code) {
@@ -107,7 +109,7 @@ class LoginControllerTest {
         from.setPhoneNumber(PHONE);
         from.setPassword("abc12345");
         from.setCode(code);
-        return controller.register(from);
+        return controller.register(from, requestFromIp());
     }
 
     private Result<String> resetPassword(String code) {
@@ -115,7 +117,13 @@ class LoginControllerTest {
         from.setPhoneNumber(PHONE);
         from.setCode(code);
         from.setNewPassword("newpass99");
-        return controller.resetPassword(from);
+        return controller.resetPassword(from, requestFromIp());
+    }
+
+    private org.springframework.mock.web.MockHttpServletRequest requestFromIp() {
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.setRemoteAddr(IP);
+        return request;
     }
 
     // ==================== 失败次数上限（防穷举） ====================
@@ -123,6 +131,7 @@ class LoginControllerTest {
     @Test
     @DisplayName("验证码错误累计 5 次：第 5 次销毁验证码并返回\"错误次数过多\"，之后视为已过期")
     void verifyCaptcha_fiveFails_destroysCaptcha() {
+        when(usersService.getUserByPhone(PHONE)).thenReturn(new com.smartwash.entity.Users());
         store.put(RESET_KEY, CODE);
 
         for (int i = 1; i <= 4; i++) {
@@ -157,6 +166,7 @@ class LoginControllerTest {
     @Test
     @DisplayName("purpose 隔离：注册场景签发的验证码不能用于重置密码（reset key 独立）")
     void purposeIsolation_registerCodeCannotBeUsedForReset() {
+        when(usersService.getUserByPhone(PHONE)).thenReturn(new com.smartwash.entity.Users());
         store.put(REGISTER_KEY, CODE);
 
         Result<String> resetResult = resetPassword(CODE);
@@ -182,6 +192,7 @@ class LoginControllerTest {
     @Test
     @DisplayName("purpose 隔离：校验成功按用途销毁对应 key（一次性使用）")
     void purposeIsolation_successDestroysOnlyItsOwnKey() {
+        when(usersService.getUserByPhone(PHONE)).thenReturn(new com.smartwash.entity.Users());
         store.put(RESET_KEY, CODE);
         when(usersService.resetPassword(PHONE, "newpass99")).thenReturn(true);
 
@@ -269,6 +280,51 @@ class LoginControllerTest {
         // 返回的 JWT 必须面向该手机号用户
         Claims claims = jwtUtil.getPayloadFromToken(first.getData());
         assertEquals("user-" + PHONE, claims.getSubject(), "注册成功签发的 JWT 应是 user-{手机号}");
+    }
+
+    // ==================== 注册状态前置拦截（修复"已注册手机号注册报验证码已过期"） ====================
+
+    @Test
+    @DisplayName("注册拦截：已注册手机号注册直接明确拒绝，不消耗验证码、不触发注册")
+    void register_registeredPhone_rejectedWithClearMessage() {
+        when(usersService.getUserByPhone(PHONE)).thenReturn(new com.smartwash.entity.Users());
+        // 复现报障场景：已注册手机号发码实际签到 reset key（purpose 推断）
+        store.put(RESET_KEY, CODE);
+
+        Result<String> result = register(CODE);
+
+        assertEquals("该手机号已注册，请直接登录或使用忘记密码找回", result.getMessage(),
+                "已注册手机号必须明确拒绝，不得报\"验证码已过期\"误导用户");
+        verify(usersService, never()).registerUser(any(UserRegisterFrom.class));
+        // 拦截发生在验证码校验之前：验证码不被消耗，用户可直接转忘记密码流程使用
+        assertEquals(CODE, store.get(RESET_KEY), "注册拦截不得消耗该手机号的验证码");
+    }
+
+    @Test
+    @DisplayName("重置密码拦截：未注册手机号直接明确拒绝，不消耗验证码、不触发重置")
+    void resetPassword_unregisteredPhone_rejectedWithClearMessage() {
+        // setUp 默认手机号未注册；未注册手机号发码实际签到 register key（purpose 推断）
+        store.put(REGISTER_KEY, CODE);
+
+        Result<String> result = resetPassword(CODE);
+
+        assertEquals("该手机号未注册，请先注册", result.getMessage(),
+                "未注册手机号必须明确拒绝，不得报\"验证码已过期\"误导用户");
+        verify(usersService, never()).resetPassword(anyString(), anyString());
+        assertEquals(CODE, store.get(REGISTER_KEY), "重置拦截不得消耗该手机号的验证码");
+    }
+
+    @Test
+    @DisplayName("注册状态探测限流：同一 IP 反复用已注册手机号注册达 20 次后被 IP 锁定")
+    void register_ipLock_blocksStatusProbing() {
+        when(usersService.getUserByPhone(anyString())).thenReturn(new com.smartwash.entity.Users());
+
+        for (int i = 0; i < 20; i++) {
+            assertEquals("该手机号已注册，请直接登录或使用忘记密码找回", register(CODE).getMessage(),
+                    "锁定阈值内每次注册应正常返回已注册提示（第 " + (i + 1) + " 次）");
+        }
+        assertEquals("操作过于频繁，请稍后再试", register(CODE).getMessage(),
+                "达阈值后注册必须被 IP 锁拦截（防手机号注册状态枚举）");
     }
 
     // ==================== IP 维度登录限制（评审报告后端 #18） ====================
