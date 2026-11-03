@@ -32,7 +32,9 @@
   .seg button{min-width:44px;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--g-text);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
   .seg button+button{border-left:1px solid var(--g-border)}
   .seg button.on{background:var(--g-primary);color:var(--g-on-primary)}
-  .stage{position:relative;flex:1;min-height:240px;display:flex;align-items:center;justify-content:center;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface2);overflow:hidden}
+  /* 极矮视口(横屏/小窗):flex-basis 让 stage 随视口收缩(上限 240px),把控制区/元素栏/提示行让出来,
+     避免 body overflow:hidden 下底部被裁;视口充足时 240px 保底不变 */
+  .stage{position:relative;flex:1 1 240px;min-height:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface2);overflow:hidden}
   canvas{display:block;touch-action:none;border-radius:10px}
   .badge{position:absolute;top:10px;right:10px;padding:5px 10px;border:1px solid var(--g-border);border-radius:10px;background:var(--g-surface);color:var(--g-warning);font-size:12px;font-weight:700}
   .bar{display:flex;gap:8px;overflow-x:auto;padding:8px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -430,6 +432,7 @@ paint(B||"light");
     }
   });
   window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
 
   // ===== 主循环:dt 累积器驱动固定步长模拟 =====
   let last = performance.now(), acc = 0, frames = 0, hudT = 0;

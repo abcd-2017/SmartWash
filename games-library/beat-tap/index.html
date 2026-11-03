@@ -24,7 +24,9 @@
   .btn:active{opacity:.85}
   .btn.ghost{background:var(--g-surface);color:var(--g-text);border:1px solid var(--g-border)}
   .btn:disabled{opacity:.4;cursor:default}
-  .stage{position:relative;flex:1;min-height:260px;margin-top:16px;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface);overflow:hidden}
+  /* 极矮视口(横屏/小窗):flex-basis 让 stage 随视口收缩(上限 260px),把控制区/提示行让出来,
+     避免 body overflow:hidden 下底部被裁;视口充足时 260px 保底不变 */
+  .stage{position:relative;flex:1 1 260px;min-height:0;margin-top:16px;border:1px solid var(--g-border);border-radius:var(--g-radius);background:var(--g-surface);overflow:hidden}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
   .overlay{position:absolute;inset:0;z-index:5;background:var(--g-scrim);display:flex;align-items:center;justify-content:center;padding:16px}
   .panel{width:100%;max-width:370px;max-height:100%;overflow:auto;background:var(--g-surface);border:1px solid var(--g-border);border-radius:var(--g-radius);box-shadow:var(--g-shadow);padding:18px}
@@ -624,6 +626,7 @@ paint(B||"light");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
 
   // ===== 主循环(dt 效果 + 时钟驱动音符) =====
   function loop(now){
