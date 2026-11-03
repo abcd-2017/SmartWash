@@ -427,6 +427,9 @@ class DeliverySessionViewModel @Inject constructor(
                 closePreviewWithError(generation, toastFor(e, R.string.toolbox_delivery_preview_error))
             } catch (e: NetworkException) {
                 closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, e.message))
+            } catch (e: DeliveryMediaException) {
+                // 媒体库写入失败：文案由 saver 以资源 id 携带，此处映射为 Toast（无硬编码中文）
+                closePreviewWithError(generation, ToastEvent(e.resId))
             } catch (e: Exception) {
                 closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error))
             } finally {

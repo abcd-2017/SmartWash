@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -123,7 +124,7 @@ private fun MoodTrendContent(
         } else {
             requireNotNull(stats)
 
-            // ---------- 记录天数 + 月均值（数据大字槽位，tnum） ----------
+            // ---------- 记录天数 + 月均值（月均值为数据大字锚点，tnum） ----------
             GroupCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     MoodStatCell(
@@ -131,6 +132,8 @@ private fun MoodTrendContent(
                         value = stats.recordedDays.toString(),
                         suffix = stringResource(R.string.mood_trend_days_unit),
                         modifier = Modifier.weight(1f),
+                        // 一屏一锚点：记录天数降为 AmountMedium，把大字锚点留给月均值
+                        valueStyle = AppTextStyles.AmountMedium,
                     )
                     MoodStatCell(
                         label = stringResource(R.string.mood_trend_stats_average),
@@ -170,13 +173,18 @@ private fun MoodTrendContent(
     }
 }
 
-/** 数据格：标签（caption）+ 大数字（AppTextStyles.Headline 28sp，tnum）+ 可选单位 */
+/**
+ * 数据格：标签（caption）+ 数字 + 可选单位。
+ * valueStyle 默认 AppTextStyles.Headline 28sp（一屏一锚点，仅一个格子用大字）；
+ * 次要数字传 AppTextStyles.AmountMedium 18sp，避免同屏双锚点（规范 §2.2 一屏一锚点）。
+ */
 @Composable
 private fun MoodStatCell(
     label: String,
     value: String,
     suffix: String?,
     modifier: Modifier = Modifier,
+    valueStyle: TextStyle = AppTextStyles.Headline,
 ) {
     Column(modifier = modifier) {
         Text(
@@ -187,7 +195,7 @@ private fun MoodStatCell(
         Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = value,
-                style = AppTextStyles.Headline.copy(fontFeatureSettings = "tnum"),
+                style = valueStyle.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.textPrimary,
             )
             if (suffix != null) {
@@ -195,7 +203,8 @@ private fun MoodStatCell(
                     text = suffix,
                     style = MaterialTheme.typography.bodySmall,
                     color = AppColors.colorScheme.textSecondary,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 3.dp),
+                    // 裸值 2/3dp 收敛为 spaceXxs（与数字间距统一）
+                    modifier = Modifier.padding(start = AppDimens.spaceXxs, bottom = AppDimens.spaceXxs),
                 )
             }
         }

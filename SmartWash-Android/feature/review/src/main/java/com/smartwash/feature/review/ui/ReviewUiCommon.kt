@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.HapticEffect
@@ -58,7 +59,7 @@ internal fun ReviewTagChip(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
         )
     }
 }
@@ -125,8 +126,8 @@ internal fun ratingColor(rating: ReviewRating): Color = when (rating) {
 }
 
 /**
- * 四档评分按钮 — 规格（§3.3 主按钮口径）：高 52dp / 14dp 圆角 / 实色语义底 / 白字。
- * 两行文案：Anki 英文惯例名（14/600）+ 中文语义（captionStrong 12/500）。
+ * 四档评分按钮 — 规格（§3.3 主按钮口径）：高 48dp / 胶囊圆角（radiusFull）/ 实色语义底 / onPrimary 文字。
+ * 两行文案：Anki 英文惯例名（15sp/600）+ 中文语义（caption 12sp）。
  * 按压反馈 scale 0.97（pressable 内置 indication=null）；提交中整排禁用降透明度。
  */
 @Composable
@@ -151,22 +152,22 @@ internal fun RatingButton(
                     Modifier
                 }
             )
-            .height(52.dp)
-            .background(containerColor, RoundedCornerShape(AppDimens.buttonRadius)),
+            .height(48.dp)
+            .background(containerColor, RoundedCornerShape(AppDimens.radiusFull)),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = stringResource(rating.labelRes),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp),
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White,
+                color = AppColors.colorScheme.onPrimary,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = stringResource(rating.semanticRes),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.85f),
+                color = AppColors.colorScheme.onPrimary,
                 textAlign = TextAlign.Center,
             )
         }

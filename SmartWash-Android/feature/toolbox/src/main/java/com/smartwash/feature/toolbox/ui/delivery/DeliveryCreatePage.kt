@@ -181,7 +181,7 @@ private fun DeliveryCreateForm(
             text = stringResource(R.string.toolbox_delivery_duration_desc),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.colorScheme.textTertiary,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -194,8 +194,8 @@ private fun DeliveryCreateForm(
             placeholder = {
                 Text(
                     text = stringResource(R.string.toolbox_delivery_password_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textTertiary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.colorScheme.textSecondary,
                 )
             },
             textStyle = MaterialTheme.typography.bodyLarge,
@@ -225,15 +225,15 @@ private fun DeliveryCreateForm(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(AppDimens.radiusMd),
+                .height(48.dp),
+            shape = RoundedCornerShape(AppDimens.inputRadius),
             colors = tokenTextFieldColors(),
         )
         Text(
             text = stringResource(R.string.toolbox_delivery_password_helper),
             style = MaterialTheme.typography.labelSmall,
             color = AppColors.colorScheme.textTertiary,
-            modifier = Modifier.padding(top = 6.dp),
+            modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -305,6 +305,7 @@ private fun CreatedSessionCard(
         )
 
         Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+        // 二维码为次级信息，尺寸收敛到 160dp，避免与上方 36sp 投递码争抢本页唯一锚点（规范 §1.2）
         QrImage(enterUrl = session.enterUrl)
 
         Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -400,7 +401,7 @@ private fun QrImage(enterUrl: String?) {
     ) {
         if (bitmap == null) {
             SkeletonBlock(
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.size(160.dp),
                 shape = RoundedCornerShape(AppDimens.radiusMd),
             )
         } else {
@@ -409,7 +410,7 @@ private fun QrImage(enterUrl: String?) {
                 contentDescription = stringResource(R.string.toolbox_delivery_qr_desc),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .size(200.dp)
+                    .size(160.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusMd))
                     .background(Color.White),
             )
@@ -436,7 +437,7 @@ private fun FormLabel(text: String) {
     )
 }
 
-/** 输入框令牌配色（对齐 ShortCodeCreatePage：r12 + surfaceVariant 底 + outline 描边） */
+/** 输入框令牌配色（规范 §3.7：inputRadius 14dp + surfaceVariant 底 + outline 描边） */
 @Composable
 private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AppColors.colorScheme.primary,

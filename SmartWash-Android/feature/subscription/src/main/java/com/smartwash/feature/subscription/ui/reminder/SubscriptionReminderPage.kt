@@ -15,12 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,11 +34,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.StatusDot
 import com.smartwash.common.utils.model.RequestState
@@ -179,18 +177,14 @@ private fun ReminderRow(
 ) {
     val type = SubscriptionReminderType.fromRawOrDefault(reminder.remindType)
     val unread = reminder.isRead == 0
-    Surface(
+    // 统一走 GroupCard（规范 §3.1 唯一卡片画法：softCardShadow + 1dp 描边 + 20dp 卡内边距）
+    GroupCard(
         modifier = Modifier
             .fillMaxWidth()
             // 已读条目不可点（无动作可执行），不挂点击
             .then(if (unread) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f) else Modifier),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
         Row(
-            modifier = Modifier.padding(AppDimens.cardPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconBox(
@@ -218,7 +212,7 @@ private fun ReminderRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 Text(
                     text = stringResource(R.string.subscription_reminder_date_format, reminder.remindDate.orEmpty()),
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),

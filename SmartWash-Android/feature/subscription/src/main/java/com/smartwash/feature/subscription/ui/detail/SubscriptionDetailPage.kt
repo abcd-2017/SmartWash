@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,7 +26,6 @@ import androidx.compose.material.icons.rounded.Autorenew
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -408,6 +408,7 @@ private fun DetailContent(
                 InfoRow(
                     label = stringResource(R.string.subscription_detail_cycle),
                     value = cycleDescriptionFor(cycleType, vo.cycleInterval),
+                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 )
                 InfoRow(
                     label = stringResource(R.string.subscription_detail_next_renew),
@@ -434,6 +435,7 @@ private fun DetailContent(
                     } else {
                         stringResource(R.string.subscription_detail_remind_days_zero)
                     },
+                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 )
                 if (!vo.note.isNullOrBlank()) {
                     InfoRow(
@@ -508,17 +510,23 @@ private fun DetailContent(
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textSecondary,
                         )
-                        Text(
-                            text = stringResource(R.string.subscription_action_retry),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppColors.colorScheme.primary,
+                        // 44dp 最小热区（规范 §2.3），重试文字居中
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .pressable(onClick = viewModel::loadStats)
+                                .heightIn(min = 44.dp)
                                 .padding(vertical = AppDimens.spaceXs),
-                            textAlign = TextAlign.Center,
-                        )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.subscription_action_retry),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = AppColors.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                     else -> {
                         InfoRow(
@@ -601,17 +609,23 @@ private fun UsageListBlock(
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.colorScheme.textSecondary,
                 )
-                Text(
-                    text = stringResource(R.string.subscription_action_retry),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.colorScheme.primary,
-                    textAlign = TextAlign.Center,
+                // 44dp 最小热区（规范 §2.3），重试文字居中
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .pressable(onClick = { usageItems.retry() })
+                        .heightIn(min = 44.dp)
                         .padding(vertical = AppDimens.spaceXs),
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.subscription_action_retry),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
         usageItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
@@ -690,15 +704,21 @@ private fun UsageRow(
         }
         Spacer(modifier = Modifier.weight(1f))
         if (!terminal) {
-            Text(
-                text = stringResource(R.string.subscription_usage_undo),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.colorScheme.dangerInk,
+            // 44dp 最小热区（规范 §2.3），文字居中
+            Box(
                 modifier = Modifier
                     .pressable(onClick = { onUndo(log.usageId) })
+                    .heightIn(min = 44.dp)
                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(R.string.subscription_usage_undo),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.dangerInk,
+                )
+            }
         }
     }
 }
@@ -718,6 +738,7 @@ private fun CancelPathCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .pressable(onClick = { onExpandedChange(!expanded) }),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -727,10 +748,13 @@ private fun CancelPathCard(
                 color = AppColors.colorScheme.textPrimary,
                 modifier = Modifier.weight(1f),
             )
-            Icon(
-                imageVector = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                contentDescription = null,
-                tint = AppColors.colorScheme.textSecondary,
+            // 展开箭头进 32dp IconBox（规范 §3.2；取消路径=待办语义取橙），整行 48dp 热区
+            IconBox(
+                icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                size = 32.dp,
+                iconSize = 20.dp,
+                containerColor = AppColors.colorScheme.iconContainerOrange,
+                iconTint = AppColors.colorScheme.iconForegroundOrange,
             )
         }
         AnimatedVisibility(
@@ -766,28 +790,40 @@ private fun CancelPathCard(
                             color = AppColors.colorScheme.textPrimary,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 2.dp),
+                            modifier = Modifier.padding(top = AppDimens.spaceXxs),
                         )
                         Row(modifier = Modifier.padding(top = AppDimens.spaceXs)) {
-                            Text(
-                                text = stringResource(R.string.subscription_action_open_browser),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primary,
+                            // 44dp 最小热区（规范 §2.3），文字居中
+                            Box(
                                 modifier = Modifier
                                     .pressable(onClick = { onOpenUrl(cancelUrl) })
+                                    .heightIn(min = 44.dp)
                                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
-                            )
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.subscription_action_open_browser),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppColors.colorScheme.primary,
+                                )
+                            }
                             Spacer(modifier = Modifier.width(AppDimens.spaceMd))
-                            Text(
-                                text = stringResource(R.string.subscription_action_copy),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primary,
+                            // 44dp 最小热区（规范 §2.3），文字居中
+                            Box(
                                 modifier = Modifier
                                     .pressable(onClick = { onCopyUrl(cancelUrl) })
+                                    .heightIn(min = 44.dp)
                                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
-                            )
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.subscription_action_copy),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = AppColors.colorScheme.primary,
+                                )
+                            }
                         }
                     }
                     if (!cancelSteps.isNullOrBlank()) {
@@ -807,7 +843,7 @@ private fun CancelPathCard(
                             text = cancelSteps,
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textPrimary,
-                            modifier = Modifier.padding(top = 2.dp),
+                            modifier = Modifier.padding(top = AppDimens.spaceXxs),
                         )
                     }
                 }

@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -126,20 +128,27 @@ fun MoodWordChip(
     val borderColor = selectedColor(
         if (selected) Color.Transparent else AppColors.colorScheme.outline
     )
-    Surface(
-        modifier = modifier.pressable(onClick = onClick, debounce = false),
-        shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = containerColor,
-        border = BorderStroke(1.dp, borderColor),
+    // 视觉高保持 labelMedium + 6dp 纵向内边距（约 28dp），外层 Box 撑到 44dp 满足触控热区，视觉不突变
+    Box(
+        modifier = modifier
+            .heightIn(min = 44.dp)
+            .pressable(onClick = onClick, debounce = false),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
-            fontWeight = FontWeight.SemiBold,
-            color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
-        )
+        Surface(
+            shape = RoundedCornerShape(AppDimens.radiusFull),
+            color = containerColor,
+            border = BorderStroke(1.dp, borderColor),
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+                modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
+            )
+        }
     }
 }
 
@@ -215,13 +224,18 @@ fun MoodSmallAction(
     Surface(
         shape = RoundedCornerShape(AppDimens.radiusMd),
         color = containerColor,
-        modifier = modifier.pressable(onClick = onClick),
+        modifier = modifier
+            .height(36.dp)
+            .pressable(onClick = onClick),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 8.dp),
+            // 高度固定 36dp 后 wrapContentHeight 把文字重新居中（Surface 内容默认顶对齐）
+            modifier = Modifier
+                .wrapContentHeight(Alignment.CenterVertically)
+                .padding(horizontal = AppDimens.spaceMd, vertical = 8.dp),
         )
     }
 }
@@ -248,13 +262,17 @@ fun MoodErrorState(
             color = AppColors.colorScheme.surfaceVariant,
             modifier = Modifier
                 .padding(top = AppDimens.spaceMd)
+                .height(36.dp)
                 .pressable(onClick = onRetry),
         ) {
             Text(
                 text = stringResource(R.string.mood_action_retry),
                 style = MaterialTheme.typography.labelMedium,
                 color = AppColors.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = AppDimens.spaceXl, vertical = 8.dp),
+                // 同 MoodSmallAction：固定 36dp 后 wrapContentHeight 保持文字垂直居中
+                modifier = Modifier
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(horizontal = AppDimens.spaceMd, vertical = 8.dp),
             )
         }
     }
@@ -290,12 +308,13 @@ fun MoodDistributionBar(
             color = AppColors.colorScheme.textSecondary,
             modifier = Modifier
                 .padding(start = AppDimens.spaceXs)
+                // 等级名列宽无对应间距令牌（44dp 非 8pt 网格档），保留字面量
                 .width(44.dp),
         )
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(16.dp)
+                .height(AppDimens.spaceMd)
                 .background(AppColors.colorScheme.surfaceVariant, RoundedCornerShape(AppDimens.radiusFull)),
         ) {
             if (count > 0L) {

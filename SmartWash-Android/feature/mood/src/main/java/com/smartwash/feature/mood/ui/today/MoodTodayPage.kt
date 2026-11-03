@@ -152,7 +152,7 @@ private fun MoodTodayContent(
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.colorScheme.textSecondary,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = AppDimens.spaceXxs),
             )
         }
 
@@ -220,8 +220,9 @@ private fun MoodTodayContent(
                 placeholder = {
                     Text(
                         text = stringResource(R.string.mood_note_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textTertiary,
+                        // §3.7：占位符与输入正文同字号（16sp）、textSecondary
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 },
                 // §3.7：输入正文 16sp，禁 14sp 及以下
@@ -233,8 +234,8 @@ private fun MoodTodayContent(
                     .fillMaxWidth()
                     .padding(top = AppDimens.spaceSm)
                     .height(48.dp),
-                // 规范 §3 radius.input = 12
-                shape = RoundedCornerShape(AppDimens.radiusMd),
+                // 规范 §3.7 输入档 14dp
+                shape = RoundedCornerShape(AppDimens.inputRadius),
                 colors = moodTextFieldColors(),
             )
         }

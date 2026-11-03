@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -59,6 +58,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
@@ -263,24 +263,13 @@ private fun SessionStrip(
     onClose: () -> Unit,
 ) {
     if (session == null) return
-    Surface(
+    // 卡片阴影与描边统一走 GroupCard（softCardShadow），与创建页同一画法（规范 §2.4 / §3.1）
+    GroupCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
-        Row(
-            modifier = Modifier.padding(
-                start = AppDimens.cardPadding,
-                end = AppDimens.spaceXs,
-                top = AppDimens.spaceXs,
-                bottom = AppDimens.spaceXs,
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             IconBox(
                 icon = Icons.Rounded.Devices,
                 size = 36.dp,
@@ -292,6 +281,7 @@ private fun SessionStrip(
             Column(
                 modifier = Modifier
                     .weight(1f)
+                    .heightIn(min = 44.dp)
                     .pressable(onClick = { onCopyCode(session.code) }, debounce = false),
             ) {
                 Text(
@@ -311,11 +301,13 @@ private fun SessionStrip(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            // 关闭会话 — 危险动作文字按钮（对齐短链详情页页头动作：dangerInk + 48 高热区）
+            // 关闭会话 — 危险动作文字按钮（dangerInk；44dp 最小热区，规范 §3.3）
             Box(
                 modifier = Modifier
+                    .heightIn(min = 44.dp)
                     .pressable(onClick = onClose)
-                    .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
+                    .padding(horizontal = AppDimens.spaceSm),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(R.string.toolbox_delivery_action_close_session),
@@ -343,17 +335,15 @@ private fun DeliveryItemList(
             if (reduceMotion) listState.scrollToItem(items.lastIndex) else listState.animateScrollToItem(items.lastIndex)
         }
     }
-    Surface(
+    // 卡片阴影与描边统一走 GroupCard（softCardShadow），与创建页同一画法（规范 §2.4 / §3.1）；
+    // 列表行卡按 GroupCard 约定只给水平 20dp（行自带高度铺满，纵向不再加内边距）
+    GroupCard(
         modifier = modifier
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceXs),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = BorderStroke(1.dp, AppColors.colorScheme.outline),
+        contentPadding = PaddingValues(horizontal = AppDimens.cardPadding),
     ) {
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(horizontal = AppDimens.cardPadding, vertical = AppDimens.spaceXs),
             modifier = Modifier.fillMaxSize(),
         ) {
             items(items.size, key = { items[it].id }) { index ->
@@ -363,6 +353,7 @@ private fun DeliveryItemList(
                     HorizontalDivider(
                         thickness = 0.5.dp,
                         color = AppColors.colorScheme.hairline,
+                        // 44dp = 32dp 图标容器 + 12dp 间距（无独立令牌，保留字面量并注释）
                         modifier = Modifier.padding(start = 44.dp),
                     )
                 }
@@ -412,7 +403,7 @@ private fun DeliveryItemRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 val time = DeliveryRules.formatItemTime(item.createdAt)
                 Text(
                     text = item.objectSize?.let { size ->
@@ -539,8 +530,8 @@ private fun DeliverySendArea(
                     placeholder = {
                         Text(
                             text = stringResource(R.string.toolbox_delivery_send_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = AppColors.colorScheme.textTertiary,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = AppColors.colorScheme.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -551,17 +542,17 @@ private fun DeliverySendArea(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(AppDimens.radiusMd),
+                    shape = RoundedCornerShape(AppDimens.inputRadius),
                     colors = tokenTextFieldColors(),
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-                // 发送 — 40dp 圆形主色按钮（draft 空则禁用降透明度）
+                // 发送 — 44dp 圆形主色按钮（热区 ≥44dp，规范 §3.3；draft 空则禁用降透明度 0.5）
                 val canSend = draft.isNotBlank() && sendState !is RequestState.Loading
                 Box(
                     modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .size(40.dp)
-                        .alpha(if (canSend) 1f else 0.4f)
+                        .padding(bottom = AppDimens.spaceXxs)
+                        .size(44.dp)
+                        .alpha(if (canSend) 1f else 0.5f)
                         .then(if (canSend) Modifier.pressable(onClick = onSend) else Modifier)
                         .background(AppColors.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center,
@@ -608,7 +599,7 @@ private fun kindIcon(kind: DeliveryRules.ItemKind): ImageVector = when (kind) {
     DeliveryRules.ItemKind.FILE -> Icons.Rounded.InsertDriveFile
 }
 
-/** 输入框令牌配色（对齐 ShortCodeCreatePage：r12 + surfaceVariant 底 + outline 描边） */
+/** 输入框令牌配色（规范 §3.7：inputRadius 14dp + surfaceVariant 底 + outline 描边） */
 @Composable
 private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AppColors.colorScheme.primary,

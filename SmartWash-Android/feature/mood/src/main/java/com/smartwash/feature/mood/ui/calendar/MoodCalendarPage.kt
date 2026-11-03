@@ -161,7 +161,7 @@ private fun MoodCalendarContent(
                 text = stringResource(R.string.mood_calendar_day_empty_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = AppColors.colorScheme.textTertiary,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier.padding(top = AppDimens.spaceXxs),
             )
         }
     }
@@ -241,9 +241,10 @@ private fun MoodCalendarGrid(
                     }
                 },
         ) {
-            val gap = 4.dp.toPx()
+            val gap = AppDimens.spaceXxs.toPx()
             val boxSize = Size(cellWidthPx - gap * 2, cellHeightPx - gap * 2)
-            val corner = CornerRadius(8.dp.toPx())
+            // 热图格圆角取 radiusSmall（规范 §2.3 六档内）
+            val corner = CornerRadius(AppDimens.radiusSmall.toPx())
             for (day in 1..daysInMonth) {
                 val index = offset + day - 1
                 val col = index % 7
@@ -279,6 +280,8 @@ private fun MoodCalendarGrid(
                         lineHeight = 16.sp,
                         fontWeight = if (date == today) FontWeight.SemiBold else FontWeight.Normal,
                         color = numberColor,
+                        // 数字槽位开 tnum（规范 §2.2：日期数字必须 tabular numbers）
+                        fontFeatureSettings = "tnum",
                     ),
                 )
                 drawText(
@@ -317,7 +320,12 @@ private fun MoodDayDetailDialog(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
         ) {
-            Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+            Column(
+                modifier = Modifier.padding(
+                    horizontal = AppDimens.spaceXl,
+                    vertical = AppDimens.spaceLg,
+                ),
+            ) {
                 Text(
                     text = date?.format(
                         DateTimeFormatter.ofPattern(

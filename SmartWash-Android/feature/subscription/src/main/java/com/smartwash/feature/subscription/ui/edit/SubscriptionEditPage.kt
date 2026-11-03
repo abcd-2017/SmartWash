@@ -3,12 +3,15 @@ package com.smartwash.feature.subscription.ui.edit
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -100,6 +103,7 @@ fun SubscriptionEditPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(AppColors.colorScheme.background)
             .imePadding()
     ) {
         PageHeader(
@@ -150,8 +154,8 @@ fun SubscriptionEditPage(
                             placeholder = {
                                 Text(
                                     text = stringResource(R.string.subscription_form_name_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -161,7 +165,7 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
 
@@ -175,8 +179,8 @@ fun SubscriptionEditPage(
                             placeholder = {
                                 Text(
                                     text = stringResource(R.string.subscription_form_amount_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary,
                                 )
                             },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(fontFeatureSettings = "tnum"),
@@ -185,7 +189,7 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
 
@@ -220,14 +224,14 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_interval_helper),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppColors.colorScheme.textTertiary,
-                            modifier = Modifier.padding(top = 6.dp),
+                            modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -255,15 +259,21 @@ fun SubscriptionEditPage(
                             )
                             if (form.trialEndDate != null) {
                                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                                Text(
-                                    text = stringResource(R.string.subscription_form_trial_clear),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = AppColors.colorScheme.primary,
+                                // 44dp 最小热区（规范 §2.3），文字居中
+                                Box(
                                     modifier = Modifier
                                         .pressable(onClick = { viewModel.updateTrialEndDate(null) })
+                                        .heightIn(min = 44.dp)
                                         .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXs),
-                                )
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.subscription_form_trial_clear),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AppColors.colorScheme.primary,
+                                    )
+                                }
                             }
                         }
 
@@ -302,14 +312,14 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_remind_helper),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppColors.colorScheme.textTertiary,
-                            modifier = Modifier.padding(top = 6.dp),
+                            modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
 
                         Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -322,8 +332,8 @@ fun SubscriptionEditPage(
                             placeholder = {
                                 Text(
                                     text = stringResource(R.string.subscription_form_cancel_url_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -333,14 +343,14 @@ fun SubscriptionEditPage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
                         Text(
                             text = stringResource(R.string.subscription_form_cancel_url_helper),
                             style = MaterialTheme.typography.labelSmall,
                             color = AppColors.colorScheme.textTertiary,
-                            modifier = Modifier.padding(top = 6.dp),
+                            modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
                         if (form.cancelUrl.isNotBlank()) {
                             Row(modifier = Modifier.padding(top = AppDimens.spaceXs)) {
@@ -373,15 +383,15 @@ fun SubscriptionEditPage(
                             placeholder = {
                                 Text(
                                     text = stringResource(R.string.subscription_form_cancel_steps_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary,
                                 )
                             },
                             textStyle = MaterialTheme.typography.bodyLarge,
                             minLines = 2,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
 
@@ -395,15 +405,15 @@ fun SubscriptionEditPage(
                             placeholder = {
                                 Text(
                                     text = stringResource(R.string.subscription_form_note_hint),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = AppColors.colorScheme.textSecondary,
                                 )
                             },
                             textStyle = MaterialTheme.typography.bodyLarge,
                             minLines = 2,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(AppDimens.radiusMd),
+                            shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
                     }
@@ -470,15 +480,21 @@ private fun FormLabel(text: String) {
 /** 行内文字动作（13→12sp captionStrong 收敛档，主色） */
 @Composable
 private fun InlineTextAction(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = AppColors.colorScheme.primary,
+    // 44dp 最小热区（规范 §2.3），文字居中
+    Box(
         modifier = Modifier
             .pressable(onClick = onClick)
+            .heightIn(min = 44.dp)
             .padding(vertical = AppDimens.spaceXxs),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = AppColors.colorScheme.primary,
+        )
+    }
 }
 
 /** 输入框令牌配色（对齐 ShortCodeCreatePage 先例：r12 + surfaceVariant 底 + outline 描边） */

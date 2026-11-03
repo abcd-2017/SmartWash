@@ -135,6 +135,8 @@
     <string name="toolbox_delivery_error_text_empty">请输入要投递的文本</string>
     <string name="toolbox_delivery_session_gone_toast">投递会话不存在或已失效</string>
     <string name="toolbox_delivery_item_taken_toast">条目已被取走</string>
+    <string name="toolbox_delivery_error_media_insert_denied">保存失败：系统媒体库拒绝写入</string>
+    <string name="toolbox_delivery_error_media_stream_open">保存失败：无法打开系统媒体库输出流</string>
 
     <!-- ==================== 设备投递 · 预览与取走 ==================== -->
     <string name="toolbox_delivery_file_type">类型</string>

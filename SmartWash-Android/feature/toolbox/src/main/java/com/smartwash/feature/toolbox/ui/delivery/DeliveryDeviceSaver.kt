@@ -7,6 +7,8 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import androidx.annotation.StringRes
+import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,6 +20,14 @@ import java.util.Locale
  * 设备投递的设备侧 IO 小件（选取文件元信息解析 / 条目流落缓存 / 媒体库保存 / 预览位图解码）。
  * 全部 suspend 且切 IO/Default 线程，供 ViewModel 编排，页面不触碰 IO。
  */
+
+/**
+ * 系统媒体库写入失败：只携带 UI 文案资源 id（[resId]），由 UI 层映射为 stringResource 文案，
+ * 禁止在异常消息里硬编码中文（规范 §9「所有用户可见文案在 strings.xml，无硬编码」）。
+ */
+internal class DeliveryMediaException(
+    @StringRes val resId: Int,
+) : Exception()
 
 /** 所选文件的元信息（发布 multipart 用） */
 internal data class DeliveryPickedFile(
@@ -121,11 +131,11 @@ internal suspend fun saveDeliveryContent(
         MediaStore.Downloads.EXTERNAL_CONTENT_URI
     }
     val target = resolver.insert(collection, values)
-        ?: throw IllegalStateException("系统媒体库写入被拒绝")
+        ?: throw DeliveryMediaException(R.string.toolbox_delivery_error_media_insert_denied)
     try {
         resolver.openOutputStream(target)?.use { output ->
             source.use { input -> input.copyTo(output) }
-        } ?: throw IllegalStateException("系统媒体库输出流打开失败")
+        } ?: throw DeliveryMediaException(R.string.toolbox_delivery_error_media_stream_open)
         val done = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
         resolver.update(target, done, null, null)
         safeName

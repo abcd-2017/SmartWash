@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
@@ -60,6 +62,7 @@ internal fun SubscriptionTagChip(
     containerColor: Color,
     contentColor: Color,
     modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.labelSmall,
 ) {
     Surface(
         modifier = modifier,
@@ -68,9 +71,9 @@ internal fun SubscriptionTagChip(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelSmall,
+            style = style,
             color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
         )
     }
 }
@@ -98,20 +101,27 @@ internal fun SubscriptionSelectableChip(
     val borderColor = selectedColor(
         if (selected) Color.Transparent else AppColors.colorScheme.outline
     )
-    Surface(
-        modifier = modifier.pressable(onClick = onClick, debounce = false),
-        shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = containerColor,
-        border = BorderStroke(1.dp, borderColor),
+    // 外层 44dp 最小热区（规范 §2.3 触控热区 ≥44dp），胶囊本体居中，视觉高度不变
+    Box(
+        modifier = modifier
+            .pressable(onClick = onClick, debounce = false)
+            .heightIn(min = 44.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelMedium,
-            // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
-            fontWeight = FontWeight.SemiBold,
-            color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
-        )
+        Surface(
+            shape = RoundedCornerShape(AppDimens.radiusFull),
+            color = containerColor,
+            border = BorderStroke(1.dp, borderColor),
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+                modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
+            )
+        }
     }
 }
 
@@ -163,7 +173,9 @@ private fun DialogTextAction(
     Box(
         modifier = Modifier
             .pressable(onClick = onClick, debounce = false)
-            .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs)
+            .heightIn(min = 44.dp)
+            .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
@@ -193,21 +205,28 @@ internal fun SubscriptionToggle(
     val trackColor = selectedColor(
         if (checked) AppColors.colorScheme.primary else AppColors.colorScheme.textTertiary
     )
+    // 外层 44dp 最小热区（规范 §2.3），24dp 轨道居中，视觉尺寸不变
     Box(
         modifier = modifier
             .pressable(onClick = { onCheckedChange(!checked) }, debounce = false)
-            .size(width = 44.dp, height = 24.dp)
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
-            .background(trackColor),
-        contentAlignment = Alignment.CenterStart,
+            .heightIn(min = 44.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
-                .padding(start = thumbOffset)
-                .size(width = 20.dp, height = 20.dp)
-                .clip(CircleShape)
-                .background(AppColors.colorScheme.surface),
-        )
+                .size(width = 44.dp, height = 24.dp)
+                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                .background(trackColor),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(start = thumbOffset)
+                    .size(width = 20.dp, height = 20.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.colorScheme.surface),
+            )
+        }
     }
 }
 

@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Autorenew
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -27,7 +27,6 @@ import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -52,11 +51,11 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.StatusDot
@@ -223,16 +222,22 @@ fun SubscriptionListPage(
                                 }
                                 is LoadState.Error -> {
                                     item(key = "append_error") {
-                                        Text(
-                                            text = stringResource(R.string.subscription_error_load),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = AppColors.colorScheme.dangerInk,
+                                        // 44dp 最小热区（规范 §2.3），重试文字居中
+                                        Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .pressable(onClick = { pagingItems.retry() })
+                                                .heightIn(min = 44.dp)
                                                 .padding(vertical = AppDimens.spaceSm),
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                        )
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.subscription_error_load),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = AppColors.colorScheme.dangerInk,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            )
+                                        }
                                     }
                                 }
                                 else -> {}
@@ -293,7 +298,7 @@ private fun AppendLoadingRow() {
 }
 
 /**
- * 订阅条目卡（规范 §3.1 唯一卡片画法：r16 · surface 底 + 1px outline 描边 + level1 阴影）：
+ * 订阅条目卡（规范 §3.1 唯一卡片画法：GroupCard r16 · surface 底 + 1dp 描边 + softCardShadow）：
  * 图标盒 36（状态语义六色浅底）+ 名称（含未读红点）+ 周期描述 + 续费进度环（44dp）+
  * 金额（tnum 金额中字）+ 试用倒计时角标 + 续费日相对描述 + 状态 chip；终态整卡去灰。
  */
@@ -306,16 +311,13 @@ private fun SubscriptionCard(
     val cycleType = SubscriptionCycleType.fromRaw(vo.cycleType)
     val terminal = status.isTerminal
 
-    Surface(
+    // 统一走 GroupCard（规范 §3.1 唯一卡片画法：softCardShadow + 1dp 描边 + 20dp 卡内边距）
+    GroupCard(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick, scaleFactor = 0.97f),
-        shape = RoundedCornerShape(AppDimens.radiusLg),
-        color = AppColors.colorScheme.surface,
-        shadowElevation = AppElevation.level1,
-        border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.colorScheme.outline),
     ) {
-        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconBox(
                     icon = statusIcon(status),
@@ -344,7 +346,7 @@ private fun SubscriptionCard(
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = cycleDescription(cycleType, vo.cycleInterval),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textSecondary,
                     )
                 }
@@ -396,6 +398,8 @@ private fun TrialBadge(vo: SubscriptionVo) {
         text = text,
         containerColor = if (urgent) AppColors.colorScheme.iconContainerPink else AppColors.colorScheme.warningContainer,
         contentColor = if (urgent) AppColors.colorScheme.dangerInk else AppColors.colorScheme.ongoingInk,
+        // 天数为动态数字，开 tnum 防跳动（规范 §2.2）
+        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
     )
 }
 

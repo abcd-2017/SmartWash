@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -138,16 +140,18 @@ fun MaterialListPage(
                 title = stringResource(R.string.review_material_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    // 文字按钮 — 规格对齐 toolbox 列表页「新建」（title 18/600，热区 ≥44dp）
+                    // 文字按钮 — §3.3 规格 13sp/600 主色，热区 ≥44dp
                     Box(
                         modifier = Modifier
                             .pressable(onClick = { viewModel.toggleCreateForm() })
-                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
+                            .heightIn(min = 44.dp)
+                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
                     ) {
                         Text(
                             text = stringResource(R.string.review_material_action_new),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = AppColors.colorScheme.primaryDark,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.primary,
                         )
                     }
                 },
@@ -323,8 +327,8 @@ private fun CreateMaterialForm(
             placeholder = {
                 Text(
                     text = stringResource(R.string.review_material_form_title_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textTertiary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -334,7 +338,7 @@ private fun CreateMaterialForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            shape = RoundedCornerShape(AppDimens.radiusMd),
+            shape = RoundedCornerShape(AppDimens.inputRadius),
             colors = tokenTextFieldColors(),
         )
 
@@ -347,15 +351,15 @@ private fun CreateMaterialForm(
             placeholder = {
                 Text(
                     text = stringResource(R.string.review_material_form_raw_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.textTertiary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = AppColors.colorScheme.textSecondary,
                 )
             },
             textStyle = MaterialTheme.typography.bodyLarge,
             minLines = 4,
             maxLines = 8,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(AppDimens.radiusMd),
+            shape = RoundedCornerShape(AppDimens.inputRadius),
             colors = tokenTextFieldColors(),
         )
 
@@ -415,7 +419,7 @@ private fun MaterialCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = ReviewFormat.createdDateOf(material.createdAt, "—"),
                         style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
@@ -455,18 +459,20 @@ private fun MaterialCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = stringResource(R.string.review_material_cards_header_format, cardsTotal),
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
                             color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.weight(1f),
                         )
                         Box(
                             modifier = Modifier
                                 .pressable(onClick = onShowAddCard)
-                                .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs)
+                                .heightIn(min = 44.dp)
+                                .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = stringResource(R.string.review_material_add_card),
-                                style = MaterialTheme.typography.labelLarge,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = AppColors.colorScheme.primary,
                             )
@@ -519,15 +525,20 @@ private fun ExpandedCardsContent(
                     color = AppColors.colorScheme.dangerInk,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = stringResource(R.string.review_action_retry),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppColors.colorScheme.primary,
+                Box(
                     modifier = Modifier
                         .pressable(onClick = onRetryCards)
+                        .heightIn(min = 44.dp)
                         .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.review_action_retry),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppColors.colorScheme.primary,
+                    )
+                }
             }
         }
         else -> {
@@ -548,17 +559,21 @@ private fun ExpandedCardsContent(
                     }
                 }
                 if (cardsHasMore) {
-                    Text(
-                        text = stringResource(R.string.review_material_load_more),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = AppColors.colorScheme.primary,
-                        textAlign = TextAlign.Center,
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .pressable(onClick = onLoadMoreCards)
-                            .padding(vertical = AppDimens.spaceSm),
-                    )
+                            .heightIn(min = 44.dp)
+                            .pressable(onClick = onLoadMoreCards),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.review_material_load_more),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AppColors.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }
@@ -576,7 +591,7 @@ private fun CardRow(card: ReviewCardVo, now: LocalDateTime) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
         Text(
             text = card.answer,
             style = MaterialTheme.typography.bodySmall,
@@ -595,6 +610,7 @@ private fun LoadMoreRow(loading: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 44.dp)
             .then(if (loading) Modifier else Modifier.pressable(onClick = onClick))
             .padding(vertical = AppDimens.spaceSm),
         contentAlignment = Alignment.Center,
@@ -608,7 +624,7 @@ private fun LoadMoreRow(loading: Boolean, onClick: () -> Unit) {
         } else {
             Text(
                 text = stringResource(R.string.review_material_load_more),
-                style = MaterialTheme.typography.labelMedium,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = AppColors.colorScheme.primary,
             )
@@ -673,15 +689,15 @@ private fun ReviewCardEditDialog(
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.review_card_dialog_question_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppColors.colorScheme.textTertiary,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = AppColors.colorScheme.textSecondary,
                             )
                         },
                         textStyle = MaterialTheme.typography.bodyLarge,
                         minLines = 2,
                         maxLines = 5,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.radiusMd),
+                        shape = RoundedCornerShape(AppDimens.inputRadius),
                         colors = tokenTextFieldColors(),
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
@@ -692,15 +708,15 @@ private fun ReviewCardEditDialog(
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.review_card_dialog_answer_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = AppColors.colorScheme.textTertiary,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = AppColors.colorScheme.textSecondary,
                             )
                         },
                         textStyle = MaterialTheme.typography.bodyLarge,
                         minLines = 3,
                         maxLines = 8,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(AppDimens.radiusMd),
+                        shape = RoundedCornerShape(AppDimens.inputRadius),
                         colors = tokenTextFieldColors(),
                     )
                     val errorMessage = (submitState as? RequestState.Error)?.getMessage(context)
@@ -751,7 +767,7 @@ private fun FormLabel(text: String) {
     )
 }
 
-/** 输入框令牌配色（对齐 toolbox 创建页先例：r12 + surfaceVariant 底 + outline 描边） */
+/** 输入框令牌配色（r14 + surfaceVariant 底 + outline 描边，规范 §3.7） */
 @Composable
 private fun tokenTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AppColors.colorScheme.primary,

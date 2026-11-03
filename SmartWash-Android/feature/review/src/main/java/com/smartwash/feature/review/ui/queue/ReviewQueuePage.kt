@@ -172,7 +172,7 @@ private fun QueueContent(
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                 Text(
                     text = stringResource(R.string.review_queue_breakdown_format, dueCount, newCount),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary,
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))
