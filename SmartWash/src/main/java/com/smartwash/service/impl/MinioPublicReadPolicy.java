@@ -1,9 +1,9 @@
 package com.smartwash.service.impl;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.smartwash.utils.JsonUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,19 +26,18 @@ public final class MinioPublicReadPolicy {
      * 构造白名单策略：单条 statement、Resource 列表覆盖全部白名单前缀、仅 s3:GetObject。
      */
     public static String buildScopedPolicy(String bucket) {
-        JSONObject root = new JSONObject();
+        var root = JsonUtils.createObjectNode();
         root.put("Version", "2012-10-17");
-        JSONArray statements = new JSONArray();
-        JSONObject statement = new JSONObject();
+        var statements = root.putArray("Statement");
+        var statement = statements.addObject();
         statement.put("Effect", "Allow");
-        statement.put("Principal", JSONObject.of("AWS", List.of("*")));
-        statement.put("Action", List.of(GET_OBJECT));
-        statement.put("Resource", PUBLIC_READ_PREFIXES.stream()
+        statement.putObject("Principal").putArray("AWS").add("*");
+        statement.putArray("Action").add(GET_OBJECT);
+        var resources = statement.putArray("Resource");
+        PUBLIC_READ_PREFIXES.stream()
                 .map(prefix -> "arn:aws:s3:::" + bucket + "/" + prefix + "*")
-                .toList());
-        statements.add(statement);
-        root.put("Statement", statements);
-        return root.toJSONString();
+                .forEach(resources::add);
+        return JsonUtils.toJson(root);
     }
 
     /**
@@ -50,21 +49,20 @@ public final class MinioPublicReadPolicy {
         if (existingPolicy == null || existingPolicy.isBlank()) {
             return false;
         }
-        JSONObject root;
+        JsonNode root;
         try {
-            root = JSON.parseObject(existingPolicy);
+            root = JsonUtils.readTree(existingPolicy);
         } catch (Exception e) {
             // 非法策略文档按不满足处理，由覆盖写入纠正
             return false;
         }
-        JSONArray statements = root == null ? null : root.getJSONArray("Statement");
-        if (statements == null || statements.isEmpty()) {
+        JsonNode statements = root == null ? null : root.get("Statement");
+        if (statements == null || !statements.isArray() || statements.isEmpty()) {
             return false;
         }
         boolean allPrefixesGranted = false;
-        for (int i = 0; i < statements.size(); i++) {
-            JSONObject statement = statements.getJSONObject(i);
-            if (statement == null || !"Allow".equals(statement.getString("Effect"))) {
+        for (JsonNode statement : statements) {
+            if (statement == null || !"Allow".equals(statement.path("Effect").asText())) {
                 continue;
             }
             if (!grantsGetObject(statement)) {
@@ -82,14 +80,15 @@ public final class MinioPublicReadPolicy {
     }
 
     /** 语句的 Action 是否授予 s3:GetObject（兼容字符串与数组形态） */
-    private static boolean grantsGetObject(JSONObject statement) {
-        Object action = statement.get("Action");
-        if (action instanceof String s) {
+    private static boolean grantsGetObject(JsonNode statement) {
+        JsonNode action = statement.get("Action");
+        if (action != null && action.isTextual()) {
+            String s = action.asText();
             return GET_OBJECT.equals(s) || "*".equals(s) || "s3:*".equals(s);
         }
-        if (action instanceof JSONArray array) {
-            for (int i = 0; i < array.size(); i++) {
-                String a = array.getString(i);
+        if (action != null && action.isArray()) {
+            for (JsonNode node : action) {
+                String a = node.asText();
                 if (GET_OBJECT.equals(a) || "*".equals(a) || "s3:*".equals(a)) {
                     return true;
                 }
@@ -99,13 +98,17 @@ public final class MinioPublicReadPolicy {
     }
 
     /** 语句的 Resource 归一为 arn 列表（兼容字符串与数组形态） */
-    private static List<String> resourceArns(JSONObject statement) {
-        Object resource = statement.get("Resource");
-        if (resource instanceof String s) {
-            return List.of(s);
+    private static List<String> resourceArns(JsonNode statement) {
+        JsonNode resource = statement.get("Resource");
+        if (resource != null && resource.isTextual()) {
+            return List.of(resource.asText());
         }
-        if (resource instanceof JSONArray array) {
-            return array.stream().map(String::valueOf).toList();
+        if (resource != null && resource.isArray()) {
+            List<String> arns = new ArrayList<>(resource.size());
+            for (JsonNode node : resource) {
+                arns.add(node.asText());
+            }
+            return arns;
         }
         return List.of();
     }

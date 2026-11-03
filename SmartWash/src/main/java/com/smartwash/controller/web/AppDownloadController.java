@@ -1,7 +1,6 @@
 package com.smartwash.controller.web;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.smartwash.common.Result;
 import com.smartwash.config.MinioConfig;
 import io.minio.GetPresignedObjectUrlArgs;
@@ -15,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.smartwash.utils.JsonUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,8 +66,8 @@ public class AppDownloadController {
         try {
             // 读取并解析 version.json，取 fileName 字段
             String content = Files.readString(path);
-            JSONObject jsonObject = JSON.parseObject(content);
-            String fileName = jsonObject.getString("fileName");
+            JsonNode jsonObject = JsonUtils.readTree(content);
+            String fileName = jsonObject == null ? null : jsonObject.path("fileName").asText(null);
             if (fileName == null || fileName.isBlank()) {
                 log.error("version.json 中缺少 fileName 字段：{}", versionFilePath);
                 return Result.failMsg("版本信息缺少文件名");

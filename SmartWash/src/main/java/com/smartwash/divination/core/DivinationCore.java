@@ -4,6 +4,8 @@ import com.smartwash.divination.core.liuyao.LiuYaoEngine;
 import com.smartwash.divination.core.meihua.MeiHuaEngine;
 import com.smartwash.divination.core.qimen.QiMenEngine;
 import com.smartwash.divination.core.liuren.LiuRenEngine;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.smartwash.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -83,12 +85,12 @@ public class DivinationCore {
         return va != null && va.equals(vb);
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, Object> parseJson(String json) {
-        return (Map<String, Object>) com.alibaba.fastjson2.JSON.parseObject(json, Object.class);
+        return JsonUtils.parseObject(json, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     private String toJson(Map<String, Object> chart) {
-        return com.alibaba.fastjson2.JSON.toJSONString(chart);
+        return JsonUtils.toJson(chart);
     }
 }

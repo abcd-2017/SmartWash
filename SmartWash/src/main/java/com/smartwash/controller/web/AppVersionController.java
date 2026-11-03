@@ -1,7 +1,7 @@
 package com.smartwash.controller.web;
 
-import com.alibaba.fastjson2.JSON;
 import com.smartwash.common.Result;
+import com.smartwash.utils.JsonUtils;
 import com.smartwash.vo.AppVersionVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,7 +51,7 @@ public class AppVersionController {
         try {
             // 读取文件内容并解析
             String content = Files.readString(path);
-            AppVersionVo vo = JSON.parseObject(content, AppVersionVo.class);
+            AppVersionVo vo = JsonUtils.parseObject(content, AppVersionVo.class);
             log.debug("读取版本文件成功：versionCode={}, versionName={}", vo.getVersionCode(), vo.getVersionName());
             return Result.ok(vo);
         } catch (Exception e) {

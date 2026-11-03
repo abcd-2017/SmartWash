@@ -1,6 +1,5 @@
 package com.smartwash.divination.service.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,6 +17,7 @@ import com.smartwash.divination.service.IDivRecordService;
 import com.smartwash.divination.vo.InterpretationVo;
 import com.smartwash.divination.vo.RecordDetailVo;
 import com.smartwash.divination.vo.RecordVo;
+import com.smartwash.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -67,7 +67,7 @@ public class DivRecordServiceImpl extends ServiceImpl<DivRecordMapper, DivRecord
                 java.time.ZoneOffset.ofTotalSeconds((from.getTzOffset() != null ? from.getTzOffset() : 480) * 60)));
         record.setTzOffset(from.getTzOffset() != null ? from.getTzOffset() : 480);
         record.setSource("app");
-        record.setLines(from.getLines() != null ? JSON.toJSONString(from.getLines()) : null);
+        record.setLines(from.getLines() != null ? JsonUtils.toJson(from.getLines()) : null);
         record.setClientChart(from.getClientChart());
         record.setServerChart(serverChart);
         record.setChartVerified(verified ? 1 : 0);

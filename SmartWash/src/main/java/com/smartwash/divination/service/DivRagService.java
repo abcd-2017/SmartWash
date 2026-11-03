@@ -1,11 +1,11 @@
 package com.smartwash.divination.service;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.smartwash.divination.entity.DivRagChunk;
 import com.smartwash.divination.entity.DivRagDocument;
 import com.smartwash.divination.mapper.DivRagChunkMapper;
 import com.smartwash.divination.mapper.DivRagDocumentMapper;
+import com.smartwash.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -107,7 +107,8 @@ public class DivRagService {
         List<DivRagChunk> chunks = chunkMapper.selectList(null);
         for (DivRagChunk chunk : chunks) {
             try {
-                List<Float> emb = JSON.parseObject(chunk.getEmbedding(), new TypeReference<List<Float>>() {});
+                List<Float> emb = JsonUtils.parseObject(chunk.getEmbedding(), new TypeReference<List<Float>>() {
+                });
                 float[] vec = new float[emb.size()];
                 for (int i = 0; i < emb.size(); i++) vec[i] = emb.get(i);
                 vectorIndex.put(chunk.getId(), vec);
@@ -122,7 +123,8 @@ public class DivRagService {
 
     /** 解析 embedding JSON 字符串为 float[] */
     private float[] parseEmbedding(String embeddingJson) {
-        List<Float> emb = JSON.parseObject(embeddingJson, new TypeReference<List<Float>>() {});
+        List<Float> emb = JsonUtils.parseObject(embeddingJson, new TypeReference<List<Float>>() {
+        });
         float[] vec = new float[emb.size()];
         for (int i = 0; i < emb.size(); i++) vec[i] = emb.get(i);
         return vec;
@@ -159,7 +161,7 @@ public class DivRagService {
         }
         List<Float> list = new ArrayList<>();
         for (float v : vec) list.add(v);
-        return JSON.toJSONString(list);
+        return JsonUtils.toJson(list);
     }
 
     private String getMethodByDocId(Long docId) {

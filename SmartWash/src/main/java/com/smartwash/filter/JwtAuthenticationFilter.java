@@ -1,11 +1,10 @@
 package com.smartwash.filter;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONWriter;
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
 import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.utils.JwtUtil;
+import com.smartwash.utils.JsonUtils;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import io.jsonwebtoken.Claims;
@@ -122,8 +121,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * 认证失败时直接写响应：HTTP 401 + application/json;charset=UTF-8，
-     * 响应体为项目统一 Result 信封 {code, message, data}（FastJSON 2 序列化，
-     * WriteMapNullValue 保留 data:null 与全局异常处理器输出结构一致）。
+     * 响应体为项目统一 Result 信封 {code, message, data}（Jackson 序列化，
+     * 保留 data:null 与全局异常处理器/ MVC 响应输出结构一致）。
      * 写响应失败（如客户端已断开）仅记录日志，不再向上抛出。
      */
     private void writeUnauthorized(HttpServletResponse response) {
@@ -133,7 +132,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write(JSON.toJSONString(Result.build(null, ResultCodeEnum.UNAUTHORIZED), JSONWriter.Feature.WriteMapNullValue));
+            response.getWriter().write(JsonUtils.toJson(Result.build(null, ResultCodeEnum.UNAUTHORIZED)));
         } catch (IOException e) {
             log.warn("认证失败响应写出失败（客户端可能已断开连接）: {}", e.getMessage());
         }
