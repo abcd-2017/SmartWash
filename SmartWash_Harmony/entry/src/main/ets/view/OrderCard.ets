@@ -1,13 +1,17 @@
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { formatOrderTime } from "../utils/TimeUtil"
 import { Debouncer } from "../utils/DebounceUtil"
+import vibrator from '@ohos.vibrator'
+
+/** 行内小按钮字号 — 对齐安卓 OrderActionPill 13sp/600；设计系统 8 档无 13 档，按安卓代码取值为文件内常量 */
+const ACTION_FONT_SIZE: number = 13
 
 /**
  * 单个自然月的订单合并卡（对齐安卓 MonthGroupCard，差异分析 02 §3.3）：
- * 每月一张卡，行间 0.5 发丝线分隔；行内含状态文字+语义色点、订单号·套餐名、
- * 相对时间（今天/昨天/M月d日）、价格（已取消置灰）与按状态的操作按钮（节流防抖）。
+ * 每月一张卡，行间 0.5 发丝线分隔；行内含状态角标胶囊、订单号·套餐名、
+ * 相对时间（今天/昨天/M月d日）、价格（已取消置灰）与按状态的操作按钮（节流防抖 + 触感）。
  * 卡壳不可点，行点击进详情；动作按钮自身消费点击，与行点击不冲突。
  *
  * 卡片画法（DESIGN-SPEC v0.4 §3.1 / §2.4）：surface 白底 + 1px outline 描边 +
@@ -34,45 +38,65 @@ export struct OrderMonthCard {
     this.debouncer.cancel()
   }
 
-  /** 订单状态 → 左侧图标容器语义色（对齐安卓 OrderRow：蓝=待寄件 / 青=已完成 / 粉=已取消 / 其余橙） */
+  /** 轻触感（对齐安卓 HapticEffect 体系在鸿蒙的最低成本近似；时长与公共组件一致） */
+  private haptic(duration: number = 10): void {
+    try {
+      vibrator.startVibration({ type: 'time', duration: duration }, { id: 0, usage: 'unknown' })
+    } catch (err) {
+      // 忽略不支持的设备
+    }
+  }
+
+  /**
+   * 订单状态 → 左侧图标容器语义色（对齐安卓 OrderRow 397-405）：
+   * 待寄件/清洗中 = 蓝；已完成 = primaryLight + primary；已取消 = errorContainer + error；其余 = 橙。
+   */
   private iconColors(status: string | null | undefined): [number, number] {
-    if (status === OrderStatusEnum.PENDING_SHIPMENT) {
+    if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
       return [DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE]
     }
     if (status === OrderStatusEnum.COMPLETED) {
-      return [DesignColor.ICON_CONTAINER_TEAL, DesignColor.ICON_FOREGROUND_TEAL]
+      return [DesignColor.PRIMARY_LIGHT, DesignColor.PRIMARY]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return [DesignColor.ICON_CONTAINER_PINK, DesignColor.ICON_FOREGROUND_PINK]
+      return [DesignColor.ERROR_CONTAINER, DesignColor.ERROR]
     }
-    return [DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE]
+    return [DesignColor.WARNING_CONTAINER, DesignColor.WARNING]
   }
 
-  /** 状态色点语义（规范 §3.5：完成=success / 取消=danger / 其余=warning） */
-  private statusDotColor(status: string | null | undefined): number {
+  /**
+   * 状态角标胶囊语义色（对齐安卓 OrderRow 418-426）：
+   * 与图标容器同语义，但已完成角标文字用 primaryDark（#1E8C5C）。
+   */
+  private badgeColors(status: string | null | undefined): [number, number] {
+    if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
+      return [DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE]
+    }
     if (status === OrderStatusEnum.COMPLETED) {
-      return DesignColor.SUCCESS
+      return [DesignColor.PRIMARY_LIGHT, DesignColor.PRIMARY_DARK]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return DesignColor.DANGER
+      return [DesignColor.ERROR_CONTAINER, DesignColor.ERROR]
     }
-    return DesignColor.WARNING
+    return [DesignColor.WARNING_CONTAINER, DesignColor.WARNING]
   }
 
   @Builder
   ActionButton(label: string, action: () => void) {
     Row() {
       Text(label)
-        .fontSize(DesignFontSize.BODY)
-        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontSize(ACTION_FONT_SIZE)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.ON_PRIMARY)
     }
     .height(36)
     .padding({ left: 16, right: 16 })
     .justifyContent(FlexAlign.Center)
-    .borderRadius(DesignDimens.BUTTON_RADIUS)
+    // 行内小按钮档：36 高 / radiusMd 12 / 13sp·600（对齐安卓 OrderActionPill）
+    .borderRadius(DesignDimens.RADIUS_MD)
     .backgroundColor(DesignColor.PRIMARY)
     .onClick(() => {
+      this.haptic()
       this.debouncer.throttle(action, 500)
     })
   }
@@ -80,10 +104,10 @@ export struct OrderMonthCard {
   @Builder
   OrderRow(order: OrderInfo) {
     Row() {
-      // 左侧图标容器：按状态映射语义色（IconBox 规格 36/18）
+      // 左侧图标容器（对齐安卓 IconBox 36/20，顶部 +4 与角标文字对齐）
       Column() {
         SymbolGlyph($r('sys.symbol.laundry'))
-          .fontSize(18)
+          .fontSize(20)
           .fontColor([this.iconColors(order.status)[1]])
       }
       .width(36)
@@ -91,60 +115,70 @@ export struct OrderMonthCard {
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
       .backgroundColor(this.iconColors(order.status)[0])
       .justifyContent(FlexAlign.Center)
-      .margin({ right: 12 })
+      .margin({ top: 4, right: 4 })
 
       // 主体信息
       Column() {
-        // 状态文字 + 语义色点
+        // 状态角标胶囊（对齐安卓 24dp 高 / radiusFull / 底色与文字成对取语义色）
         Row() {
           Text(getOrderStatusDescription(order.status))
             .fontSize(DesignFontSize.CAPTION)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-
-          Row()
-            .width(6)
-            .height(6)
-            .borderRadius(3)
-            .backgroundColor(this.statusDotColor(order.status))
-            .margin({ left: 8 })
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(this.badgeColors(order.status)[1])
         }
-        .alignItems(VerticalAlign.Center)
+        .height(24)
+        .padding({ left: 8, right: 8 })
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor(this.badgeColors(order.status)[0])
+        .justifyContent(FlexAlign.Center)
 
+        // 单号 · 套餐（bodySmall 14 + tnum；角标底→单号行 8）
         Text(`${order.orderNo ?? ""} · ${order.laundryPackageVo?.itemName ?? ""}`)
-          .fontSize(DesignFontSize.CAPTION)
+          .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 5 })
+          .fontFeature(DesignFontFeature.TNUM)
+          .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .maxLines(1)
 
+        // 相对时间（bodySmall 14 + tnum；单号→时间 8）
         Text(formatOrderTime(order.createdAt))
-          .fontSize(DesignFontSize.CAPTION)
+          .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
+          .fontFeature(DesignFontFeature.TNUM)
+          .margin({ top: 8 })
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .maxLines(1)
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
 
-      // 右侧价格 + 操作按钮
+      // 右侧价格 + 操作按钮（金额顶部与角标对齐，下距 20 后接操作区）
       Column() {
-        Text(`￥${order.payPrice}`)
+        Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.BOLD)
-          // 已取消价格置灰（对齐安卓 textTertiary 分支）
+          // 金额两位小数（N1）+ tnum（G5）；已取消置灰，余态 primaryDark（绿字红线）
+          .fontFeature(DesignFontFeature.TNUM)
           .fontColor(order.status === OrderStatusEnum.CANCELED ?
-            DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY)
+            DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK)
 
         Column() {
           if (order.status === OrderStatusEnum.PENDING_PAYMENT) {
             Row() {
-              Text("取消订单")
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
-                .padding({ left: 8, right: 8, top: 10, bottom: 10 })
-                .onClick(() => {
-                  this.cancelClick(order)
-                })
+              // 取消订单 — 自绘文字动作，热区 44（安卓 OrderPage.kt:486-494，原 40 不达标）
+              Row() {
+                Text("取消订单")
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+              }
+              .constraintSize({ minHeight: 44 })
+              .padding({ left: 4, right: 4 })
+              .justifyContent(FlexAlign.Center)
+              .onClick(() => {
+                this.haptic(20)
+                this.cancelClick(order)
+              })
 
               this.ActionButton("去支付", () => {
                 this.paymentClick(order)
@@ -170,7 +204,7 @@ export struct OrderMonthCard {
           }
         }
         .alignItems(HorizontalAlign.End)
-        .margin({ top: 8 })
+        .margin({ top: 20 })
       }
       .alignItems(HorizontalAlign.End)
     }

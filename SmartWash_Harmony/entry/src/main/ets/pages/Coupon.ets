@@ -5,7 +5,7 @@ import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { AppPillTabRow, EmptyState, LoadingState } from "../view/common/AppComponents"
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
@@ -229,9 +229,10 @@ struct AvailableCouponCard {
     Row() {
       // 左侧金额
       Column() {
-        Text(`￥${this.coupon?.discount?.toFixed(0) ?? "0"}`)
+        Text(`¥${this.coupon?.discount?.toFixed(0) ?? "0"}`)
           .fontSize(24)
-          .fontWeight(DesignFontWeight.BOLD)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontFeature(DesignFontFeature.TNUM)
           .fontColor(DesignColor.PRIMARY)
       }
       .width(80)
@@ -389,9 +390,10 @@ struct CouponTicketCard {
       Row() {
         // 左侧金额区（历史态 surfaceVariant，其余 brand-soft 纯色底）
         Column() {
-          Text(`￥${this.userCoupon?.couponVo?.discount?.toFixed(0) ?? "0"}`)
+          Text(`¥${this.userCoupon?.couponVo?.discount?.toFixed(0) ?? "0"}`)
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-            .fontWeight(DesignFontWeight.BOLD)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontFeature(DesignFontFeature.TNUM)
             .fontColor(this.amountColor())
           Text("券")
             .fontSize(DesignFontSize.CAPTION)

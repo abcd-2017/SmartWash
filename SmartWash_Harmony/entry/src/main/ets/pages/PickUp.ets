@@ -9,7 +9,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { pasteboard } from "@kit.BasicServicesKit"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -112,9 +112,10 @@ struct PickUp {
           ColumnSplit().layoutWeight(1)
           Column() {
             Row() {
-              Text(`￥${order.totalPrice}`)
+              Text(`¥${order.totalPrice}`)
                 .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                .fontWeight(FontWeight.Bold)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontFeature(DesignFontFeature.TNUM)
                 .fontColor(DesignColor.PRIMARY_DARK)
             }
           }

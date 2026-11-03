@@ -1,18 +1,15 @@
 import { HttpStatusCode } from "@ohos/axios"
+import { pasteboard } from "@kit.BasicServicesKit"
+import vibrator from '@ohos.vibrator'
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { AppInfoDialog, LoadingState } from "../view/common/AppComponents"
-
-// @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
-@Builder
-@Builder
-function emptyContent() {
-}
+import { IconBox, LoadingState } from "../view/common/AppComponents"
+import { DrumIllustration } from "../view/DrumIllustration"
 
 @Builder
 export function OrderDetailBuilder() {
@@ -22,12 +19,12 @@ export function OrderDetailBuilder() {
 /**
  * 订单状态区的展示元数据。
  * ArkTS @Builder 内仅允许 UI 语法（不允许 let/switch 局部语句），
- * 状态 → 文案/颜色/图标/描述 的映射收敛为类 + 私有方法计算。
+ * 状态 → 文案/颜色/描述 的映射收敛为类 + 私有方法计算。
+ * 文案对齐安卓 app/.../strings.xml（D-OD8）。
  */
 class StatusMeta {
   text: string = ""
   color: number = DesignColor.PRIMARY
-  icon: Resource = $r('sys.symbol.checkmark_circle')
   description: string = ""
 }
 
@@ -48,11 +45,15 @@ struct OrderDetail {
   @State orderId: number | null = null
   // 加载态：详情请求期间全屏 Loading（对齐安卓 LoadingState）
   @State isLoading: boolean = true
-  // 取件码弹窗文案（open 前赋值，弹窗以当次值初始化）
-  @State pickupCodeMessage: string = ""
-  // 取件码弹窗（对齐安卓 AppInfoDialog：取件码 + 柜号）
+  // 取件码弹窗入参（open 前赋值，弹窗以当次值初始化）
+  @State pickupCodeText: string = ""
+  @State lockerNumberText: number = 0
+  // 取件码弹窗（N2：DataLarge 36 tnum + 柜号副行 + 复制按钮，对齐安卓 PickupCodeDialog）
   private pickupCodeDialogController: CustomDialogController = new CustomDialogController({
-    builder: AppInfoDialog({ message: this.pickupCodeMessage }),
+    builder: PickupCodeDialog({
+      pickupCode: this.pickupCodeText,
+      lockerNumber: this.lockerNumberText
+    }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: true
@@ -70,13 +71,13 @@ struct OrderDetail {
     // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
     this.orderId = getNumberParam(RouteNames.ORDER_DETAIL)
     if (this.orderId === null) {
-      // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求
+      // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求（鸿蒙更优，保留）
       showToastSafety("订单信息加载失败")
       this.isLoading = false
       return
     }
     let res = await getOrderInfo(this.orderId)
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.orderInfo = res.data
     } else {
       showToastSafety(res.message, "订单详情加载失败")
@@ -99,44 +100,38 @@ struct OrderDetail {
       case OrderStatusEnum.PENDING_PAYMENT:
         meta.text = "待支付"
         meta.color = DesignColor.WARNING
-        meta.icon = $r('sys.symbol.hourglass_bottomhalf_filled')
-        meta.description = "请尽快完成支付"
+        meta.description = "请尽快支付"
         break
       case OrderStatusEnum.PENDING_SHIPMENT:
         meta.text = "待寄件"
         meta.color = DesignColor.PRIMARY
-        meta.icon = $r('sys.symbol.paperplane')
-        meta.description = "请尽快将衣物放入寄存柜"
+        meta.description = "请尽快去寄件"
         break
       case OrderStatusEnum.WASHING:
         meta.text = "清洗中"
         meta.color = DesignColor.PRIMARY_DARK
-        meta.icon = $r('sys.symbol.wash_light')
-        meta.description = "衣物正在清洗中"
+        meta.description = "衣物正在清洗，完成后将通知您取件"
         break
       case OrderStatusEnum.READY_FOR_PICKUP:
         meta.text = "待取件"
         meta.color = DesignColor.PRIMARY
-        meta.icon = $r('sys.symbol.checkmark_circle')
-        meta.description = "衣物已放入寄存柜"
+        meta.description = "衣物已到寄存柜"
         break
       case OrderStatusEnum.COMPLETED:
         meta.text = "已完成"
         meta.color = DesignColor.SUCCESS
-        meta.icon = $r('sys.symbol.checkmark_circle')
+        // 安卓此处为 completion_time「完成时间」（疑似占位文案），保留语义化文案
         meta.description = "订单已完成"
         break
       case OrderStatusEnum.CANCELED:
         meta.text = "已取消"
         meta.color = DesignColor.DANGER
-        meta.icon = $r('sys.symbol.xmark_circle')
-        meta.description = "订单已取消"
+        meta.description = "已取消"
         break
       default:
         meta.text = getOrderStatusDescription(this.orderInfo?.status)
         meta.color = DesignColor.TEXT_SECONDARY
-        meta.icon = $r('sys.symbol.checkmark_circle')
-        meta.description = ""
+        meta.description = "-"
         break
     }
     return meta
@@ -161,13 +156,20 @@ struct OrderDetail {
     return ""
   }
 
+  /** 时间线 rail 段数（节点数 - 1） */
+  private railKeys(): number[] {
+    const keys: number[] = []
+    for (let i = 0; i < this.nodes.length - 1; i++) {
+      keys.push(i)
+    }
+    return keys
+  }
+
   @Builder
   StatusHeader() {
-    // 状态区：居中大图标 + 状态大字 + 副行提示（对齐安卓无卡片形态，插画降级为 SymbolGlyph）
+    // 状态区（对齐安卓 OrderStatusHeader）：无卡片，居中 120 滚筒插画 + 状态大字 + 副行提示
     Column() {
-      SymbolGlyph(this.statusMeta().icon)
-        .fontSize(64)
-        .fontColor([this.statusMeta().color])
+      DrumIllustration({ sizeValue: 120 })
 
       Text(this.statusMeta().text)
         .fontSize(DesignFontSize.DATA_LARGE)
@@ -184,87 +186,14 @@ struct OrderDetail {
     }
     .width("100%")
     .alignItems(HorizontalAlign.Center)
-    .padding({ top: 10, bottom: 14 })
+    .padding({ bottom: 16 })
   }
 
-  @Builder
-  TimelineNodeContent(node: TimelineNode, index: number) {
-    // 左侧竖列：节点圆点 + 竖 rail（非末行固定行高，rail 撑满剩余高度保证连续）
-    Column() {
-      if (index === this.currentIndex()) {
-        // now 节点：20 光环底（primaryContainer）+ 内层 12 主色实心
-        Column() {
-          Column()
-            .width(12)
-            .height(12)
-            .borderRadius(6)
-            .backgroundColor(DesignColor.PRIMARY)
-        }
-        .width(20)
-        .height(20)
-        .borderRadius(10)
-        .backgroundColor(DesignColor.PRIMARY_CONTAINER)
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-      } else {
-        // done → 主色实心；未完成 → outline 实心
-        Column()
-          .width(12)
-          .height(12)
-          .borderRadius(6)
-          .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-      }
-      if (index < this.nodes.length - 1) {
-        // rail 2dp：已完成段主色、未完成 hairline
-        Column()
-          .width(2)
-          .layoutWeight(1)
-          .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.HAIRLINE)
-          .margin({ top: 2 })
-      }
-    }
-    .width(20)
-    .height("100%")
-    .alignItems(HorizontalAlign.Center)
-
-    Column() {
-      Text(node.label)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontWeight(index === this.currentIndex() ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
-        .fontColor(index === this.currentIndex() ? DesignColor.PRIMARY_DARK :
-          (index < this.currentIndex() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY))
-
-      // 副行仅首节点显示真实下单时间 HH:mm
-      if (index === 0 && this.firstNodeTime() !== "") {
-        Text(this.firstNodeTime())
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
-          .margin({ top: 4 })
-      }
-    }
-    .alignItems(HorizontalAlign.Start)
-    .margin({ left: 12 })
-  }
-
-  @Builder
-  TimelineNodeRow(node: TimelineNode, index: number) {
-    // 非末行固定行高（rail 可撑满），末行自适应高度
-    if (index < this.nodes.length - 1) {
-      Row() {
-        this.TimelineNodeContent(node, index)
-      }
-      .width("100%")
-      .height(56)
-      .alignItems(VerticalAlign.Top)
-    } else {
-      Row() {
-        this.TimelineNodeContent(node, index)
-      }
-      .width("100%")
-      .alignItems(VerticalAlign.Top)
-    }
-  }
-
+  /**
+   * 进度时间线卡（对齐安卓 ProgressTimeline 水平 stepper）：
+   * rail 2dp 节点连线（完成段 primary / 未完成 hairline）；当前节点 water 蓝光环 + 12 实心，
+   * 已完成 primary 实心，未完成 outline 实心；节点下方 caption 标签，首节点下时间副行。
+   */
   @Builder
   ProgressTimelineCard() {
     Column() {
@@ -272,14 +201,80 @@ struct OrderDetail {
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ bottom: 16 })
+        .letterSpacing(0.3)
+        .margin({ bottom: 6 })
 
-      Column() {
-        ForEach(this.nodes, (node: TimelineNode, index: number) => {
-          this.TimelineNodeRow(node, index)
-        }, (node: TimelineNode) => node.status)
+      Stack({ alignContent: Alignment.TopStart }) {
+        // rail 层（先绘，节点覆盖其上）：相邻节点圆心连线，2dp
+        Row() {
+          ForEach(this.railKeys(), (index: number) => {
+            Column()
+              .layoutWeight(1)
+              .height(2)
+              .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.HAIRLINE)
+          }, (index: number) => index.toString())
+        }
+        .width("100%")
+        // 5 等分节点列：圆心位于 10%/30%/50%/70%/90%，左右各让 10% 后 4 段各跨 20%
+        .padding({ left: "10%", right: "10%" })
+        .offset({ y: 9 })
+
+        // 节点 + 标签层
+        Row() {
+          ForEach(this.nodes, (node: TimelineNode, index: number) => {
+            Column() {
+              Stack() {
+                if (index === this.currentIndex()) {
+                  // now 节点：20dp water 光环（12%）+ 内层 12dp water 实心
+                  Column()
+                    .width(20)
+                    .height(20)
+                    .borderRadius(10)
+                    .backgroundColor(DesignColor.WATER)
+                    .opacity(0.12)
+                  Column()
+                    .width(12)
+                    .height(12)
+                    .borderRadius(6)
+                    .backgroundColor(DesignColor.WATER)
+                } else {
+                  // done → primary 实心；未完成 → outline 实心
+                  Column()
+                    .width(12)
+                    .height(12)
+                    .borderRadius(6)
+                    .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+                }
+              }
+              .width(20)
+              .height(20)
+
+              Text(node.label)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(index === this.currentIndex() ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
+                .fontColor(index === this.currentIndex() ? DesignColor.ON_PRIMARY_CONTAINER :
+                  (index < this.currentIndex() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY))
+                .textAlign(TextAlign.Center)
+                .maxLines(1)
+                .margin({ top: 6 })
+
+              // 副行仅首节点（已接单）显示真实下单时间 HH:mm
+              if (index === 0 && this.firstNodeTime() !== "") {
+                Text(this.firstNodeTime())
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontFeature(DesignFontFeature.TNUM)
+                  .textAlign(TextAlign.Center)
+                  .margin({ top: 2 })
+              }
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Center)
+          }, (node: TimelineNode) => node.status)
+        }
+        .width("100%")
       }
-      .padding({ left: 24 })
+      .width("100%")
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
@@ -295,21 +290,69 @@ struct OrderDetail {
     })
   }
 
+  /**
+   * 订单信息卡（对齐安卓 InfoSection 单卡 6 行）：标题 IconBox 36/20 蓝 + 行高 56 + 行距 14。
+   * 安卓 InfoSection 将订单编号/套餐/价格/实付款/学校/地址合并在一张「订单信息」卡内，
+   * 寄存柜信息仅经取件码弹窗承载，故此处不再拆 4 卡。
+   */
   @Builder
-  InfoRowBuilder(label: string, value: string, isGreen?: boolean) {
-    Row() {
-      Text(label)
-        .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+  OrderInfoCard() {
+    Column() {
+      Row() {
+        IconBox({
+          icon: $r('sys.symbol.list_square_bill'),
+          sizeValue: 36,
+          iconSize: 20,
+          containerColor: DesignColor.ICON_CONTAINER_BLUE,
+          iconColor: DesignColor.ICON_FOREGROUND_BLUE
+        })
 
-      Text(value)
-        .fontSize(DesignFontSize.BODY)
-        .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(isGreen ? DesignColor.PRIMARY : DesignColor.TEXT_PRIMARY)
+        Text("订单信息")
+          .fontSize(DesignFontSize.SECTION_TITLE)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .margin({ left: 12 })
+      }
+      .width("100%")
+      .margin({ bottom: 4 })
+
+      Column({ space: 14 }) {
+        InfoRow({
+          label: "订单编号",
+          value: `${this.orderInfo?.orderNo ?? ""}`,
+          valueSize: DesignFontSize.BODY_SMALL,
+          valueWeight: DesignFontWeight.MEDIUM,
+          valueTnum: true
+        })
+        InfoRow({ label: "套餐类型", value: `${this.orderInfo?.laundryPackageVo?.itemName ?? ""}` })
+        InfoRow({
+          label: "价格",
+          value: `¥${(this.orderInfo?.totalPrice ?? 0).toFixed(2)}`,
+          valueTnum: true
+        })
+        InfoRow({
+          label: "实付款",
+          value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`,
+          valueColor: DesignColor.PRIMARY_DARK,
+          valueSize: DesignFontSize.AMOUNT_MEDIUM,
+          valueWeight: DesignFontWeight.BOLD,
+          valueTnum: true
+        })
+        InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
+        InfoRow({ label: "地址", value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
+      }
     }
     .width("100%")
-    .justifyContent(FlexAlign.SpaceBetween)
-    .margin({ top: 6, bottom: 6 })
+    .padding(DesignDimens.CARD_PADDING)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: DesignColor.SHADOW_COLOR_CARD,
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 
   @Builder
@@ -320,18 +363,18 @@ struct OrderDetail {
         .color(DesignColor.OUTLINE)
 
       Row() {
-        // 联系客服（次按钮，D-OD12：待客服功能立项，先以 toast 兜底）
+        // 联系客服（次按钮：透明底 + 1dp outline 描边 + primaryDark 字，D-OD12 先以 toast 兜底）
         Column() {
           Text("联系客服")
-            .fontSize(DesignFontSize.BODY)
+            .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(DesignColor.PRIMARY_DARK)
         }
         .layoutWeight(1)
-        .height(52)
+        .height(48)
         .justifyContent(FlexAlign.Center)
-        .borderRadius(DesignDimens.BUTTON_RADIUS)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .border({ width: 1, color: DesignColor.OUTLINE })
         .onClick(() => {
           showToastSafety("客服暂未开通，请稍后再试")
         })
@@ -339,14 +382,15 @@ struct OrderDetail {
         // 查看取件码（主按钮）：待寄件/待取件且取件码非空弹窗，否则提示
         Column() {
           Text("查看取件码")
-            .fontSize(DesignFontSize.BODY)
+            .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.ON_PRIMARY)
+            .letterSpacing(1)
         }
         .layoutWeight(1)
-        .height(52)
+        .height(48)
         .justifyContent(FlexAlign.Center)
-        .borderRadius(DesignDimens.BUTTON_RADIUS)
+        .borderRadius(DesignDimens.RADIUS_FULL)
         .backgroundColor(DesignColor.PRIMARY)
         .margin({ left: 12 })
         .onClick(() => {
@@ -354,7 +398,8 @@ struct OrderDetail {
           const code = this.parsePickupCode()
           if ((status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.READY_FOR_PICKUP) &&
             code !== "") {
-            this.pickupCodeMessage = `取件码 ${code} · ${this.orderInfo?.lockersVo?.lockerNumber ?? "-"} 号柜`
+            this.pickupCodeText = code
+            this.lockerNumberText = this.orderInfo?.lockersVo?.lockerNumber ?? 0
             this.pickupCodeDialogController.open()
           } else {
             showToastSafety("暂无取件码，请稍后再试")
@@ -375,120 +420,79 @@ struct OrderDetail {
 
   build() {
     NavDestination() {
-      Stack({ alignContent: Alignment.Bottom }) {
+      Stack({ alignContent: Alignment.TopStart }) {
         Column() {
           Scroll() {
             Column() {
-              // 自定义页面标题
+              // 页头（对齐安卓 PageHeader：22/600 + 48 返回热区）
               Row() {
-                SymbolGlyph($r('sys.symbol.chevron_left'))
-                  .fontSize(24)
-                  .fontColor([DesignColor.TEXT_PRIMARY])
-                  .onClick(() => {
-                    pathStack.pop()
-                  })
+                Column() {
+                  SymbolGlyph($r('sys.symbol.chevron_left'))
+                    .fontSize(24)
+                    .fontColor([DesignColor.TEXT_PRIMARY])
+                }
+                .width(48)
+                .height(48)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
+                .onClick(() => {
+                  pathStack.pop()
+                })
 
                 Text("订单详情")
                   .fontSize(DesignFontSize.ROOT_TITLE)
-                  .fontWeight(DesignFontWeight.BOLD)
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontColor(DesignColor.TEXT_PRIMARY)
-                  .margin({ left: 8 })
               }
               .width("100%")
-              .padding({ left: DesignDimens.PAGE_PADDING, top: 12, bottom: 8 })
+              .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
+              .alignItems(VerticalAlign.Center)
 
               // 内容区域
               Column() {
-                // 状态区（大图标 + 大字状态）
+                // 状态区（120 滚筒插画 + 状态大字 + 副行）
                 this.StatusHeader()
 
-                // 进度时间线（5 节点）
+                // 进度时间线（5 节点水平 stepper）
                 Column() {
                   this.ProgressTimelineCard()
                 }
                 .width("100%")
                 .margin({ top: DesignDimens.CARD_SPACING })
 
-                // 套餐信息
-                InfoSectionCard({
-                  title: "套餐信息",
-                  icon: $r('sys.symbol.laundry'),
-                  content: () => {
-                    this.InfoRowBuilder("套餐类型", `${this.orderInfo?.laundryPackageVo?.itemName}`)
-                    this.InfoRowBuilder("价格", `￥${this.orderInfo?.totalPrice}`)
-                    this.InfoRowBuilder("实付款", `￥${this.orderInfo?.payPrice}`, true)
-                  }
-                })
-                .margin({ top: DesignDimens.CARD_SPACING })
-
-                // 学校信息
-                InfoSectionCard({
-                  title: "学校信息",
-                  icon: $r('sys.symbol.company'),
-                  content: () => {
-                    this.InfoRowBuilder("学校名称", `${this.orderInfo?.schoolsVo?.schoolName}`)
-                    this.InfoRowBuilder("地址", `${this.orderInfo?.schoolsVo?.location}`)
-                  }
-                })
-                .margin({ top: DesignDimens.CARD_SPACING })
-
-                // 寄存柜信息 — 待取件/待寄件时显示（保留鸿蒙条件显示，信息密度更优）
-                if (this.orderInfo?.status == OrderStatusEnum.READY_FOR_PICKUP ||
-                  this.orderInfo?.status == OrderStatusEnum.PENDING_SHIPMENT) {
-                  InfoSectionCard({
-                    title: "寄存柜信息",
-                    icon: $r('sys.symbol.externaldrive_fill_3'),
-                    content: () => {
-                      this.InfoRowBuilder("柜号", `${this.orderInfo?.lockersVo?.lockerNumber}`)
-                      this.InfoRowBuilder("取件码", this.parsePickupCode())
-                    }
-                  })
-                  .margin({ top: DesignDimens.CARD_SPACING })
+                // 订单信息（单卡 6 行）
+                Column() {
+                  this.OrderInfoCard()
                 }
-
-                // 订单信息（后端无完成时间字段，删除原硬编码「完成时间 -」行）
-                InfoSectionCard({
-                  title: "订单信息",
-                  icon: $r('sys.symbol.list_square_bill'),
-                  content: () => {
-                    this.InfoRowBuilder("订单编号", `${this.orderInfo?.orderNo}`)
-                    this.InfoRowBuilder("下单时间", `${this.orderInfo?.createdAt}`)
-                    this.InfoRowBuilder("当前状态", `${getOrderStatusDescription(this.orderInfo?.status)}`)
-                  }
-                })
-                .margin({ top: DesignDimens.CARD_SPACING })
+                .width("100%")
+                .margin({ top: DesignDimens.SPACE_SM })
               }
               .padding({
                 left: DesignDimens.PAGE_PADDING,
                 right: DesignDimens.PAGE_PADDING,
-                top: 8,
-                bottom: 24
+                bottom: DesignDimens.SPACE_SM
               })
             }
           }
           .layoutWeight(1)
           .width("100%")
           .scrollBar(BarState.Off)
+
+          // 底部操作条（联系客服 + 查看取件码）— 与滚动内容同列排布，不遮挡内容
+          this.BottomActionBar()
         }
         .width("100%")
         .height("100%")
         .backgroundColor(DesignColor.BACKGROUND)
 
-        // 底部操作条（联系客服 + 查看取件码）
-        Column() {
-          this.BottomActionBar()
-        }
-        .width("100%")
-        .zIndex(1)
-
         // 加载态
         if (this.isLoading) {
           // 加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
           LoadingState()
-          .width("100%")
-          .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
-          .zIndex(2)
+            .width("100%")
+            .height("100%")
+            .backgroundColor(DesignColor.BACKGROUND)
+            .zIndex(2)
         }
       }
     }
@@ -497,45 +501,181 @@ struct OrderDetail {
 }
 
 /**
- * 通用信息分组卡片（标题行 + 内容插槽）。
- * 原实现为 @Builder 方法接收 `builder: () => void` 参数并链式 .margin()——
- * ArkTS 中 @Builder 调用返回 void、且 builder() 不满足 UI 语法，故改为子组件 + @BuilderParam。
+ * 卡片内「标签 — 值」信息行（对齐安卓 InfoRow）：行高 56，标签与值分列两端。
+ * 值侧样式由调用方给定（默认 caption 12/400；订单号 14/500、实付款 18/700）。
  */
-@Component
-struct InfoSectionCard {
-  @Prop title: string = ""
-  icon: Resource = $r('sys.symbol.checkmark_circle')
-  @BuilderParam content: () => void = emptyContent
+@ComponentV2
+struct InfoRow {
+  @Param label: string = ""
+  @Param value: string = ""
+  @Param valueColor: number = DesignColor.TEXT_PRIMARY
+  @Param valueSize: number = DesignFontSize.CAPTION
+  @Param valueWeight: number = DesignFontWeight.NORMAL
+  @Param valueTnum: boolean = false
+
+  build() {
+    Row() {
+      Text(this.label)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+
+      if (this.valueTnum) {
+        Text(this.value)
+          .fontSize(this.valueSize)
+          .fontWeight(this.valueWeight)
+          .fontColor(this.valueColor)
+          .fontFeature(DesignFontFeature.TNUM)
+      } else {
+        Text(this.value)
+          .fontSize(this.valueSize)
+          .fontWeight(this.valueWeight)
+          .fontColor(this.valueColor)
+      }
+    }
+    .width("100%")
+    .height(56)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
+}
+
+/**
+ * 取件码弹窗（N2，对齐安卓 OrderDetailPage.kt PickupCodeDialog）：
+ * 标题 + 柜号副行 + DataLarge 36 tnum 取件码（每屏唯一锚点）+ 底部「取消 / 复制取件码」分区动作。
+ * 骨架与 AppInfoDialog 同款：radiusLg + floatLayer + dialogEnterMotion 入场，0.5dp 分隔线切动作区。
+ * 复制复用取件页同款剪贴板 + 选中触感。
+ */
+@CustomDialog
+export struct PickupCodeDialog {
+  // 由父组件注入控制器（与 AppInfoDialog 同款：空 builder 的自建控制器不合法）
+  controller: CustomDialogController
+  @Prop pickupCode: string = ''
+  @Prop lockerNumber: number = 0
+  @State entered: boolean = false
+  onDismiss: () => void = () => {
+  }
+
+  /** 弹窗统一入场（对齐安卓 dialogEnterMotion）：scale 0.92→1 + fade 0→1 弹簧一次性进场 */
+  private playEnterMotion(): void {
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
+  }
+
+  /** 复制取件码（对齐安卓 clipboard + SELECTION 触感 + copy_success toast） */
+  private copyCode(): void {
+    if (this.pickupCode === '') {
+      return
+    }
+    try {
+      vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+    } catch (err) {
+      // 忽略不支持的设备
+    }
+    const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, this.pickupCode)
+    pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
+      showToastSafety("取件码已复制")
+    }).catch(() => {
+      showToastSafety("复制失败")
+    })
+    this.onDismiss()
+    this.controller.close()
+  }
 
   build() {
     Column() {
-      // 标题行
-      Row() {
-        SymbolGlyph(this.icon)
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontColor([DesignColor.PRIMARY])
-
-        Text(this.title)
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.MEDIUM)
+      // 内容区
+      Column() {
+        Text("取件码")
+          .fontSize(DesignFontSize.ROOT_TITLE)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.TEXT_PRIMARY)
-          .margin({ left: 10 })
+
+        Text(`寄存柜: ${this.lockerNumber}`)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontFeature(DesignFontFeature.TNUM)
+          .margin({ top: 4 })
+
+        if (this.pickupCode !== '') {
+          // 取件码大字 — DataLarge（36/44/700 + tnum，规范 §2.2 取件码槽位）
+          Text(this.pickupCode)
+            .fontSize(DesignFontSize.DATA_LARGE)
+            .fontWeight(DesignFontWeight.BOLD)
+            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontFeature(DesignFontFeature.TNUM)
+            .maxLines(1)
+            .margin({ top: 12 })
+        } else {
+          Text("暂无取件码，请稍后再试")
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ top: 12 })
+        }
       }
       .width("100%")
-      .margin({ bottom: 12 })
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: 20,
+        bottom: 20
+      })
+      .alignItems(HorizontalAlign.Center)
 
-      this.content()
+      // 分隔线（0.5dp，切动作区）
+      Divider()
+        .color(DesignColor.DIVIDER)
+        .strokeWidth(0.5)
+
+      // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
+      Row() {
+        Text("取消")
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .layoutWeight(1)
+          .height(48)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            this.onDismiss()
+            this.controller.close()
+          })
+
+        Divider()
+          .vertical(true)
+          .color(DesignColor.DIVIDER)
+          .strokeWidth(0.5)
+          .height(48)
+
+        Text("复制取件码")
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.PRIMARY)
+          .layoutWeight(1)
+          .height(48)
+          .textAlign(TextAlign.Center)
+          .onClick(() => {
+            this.copyCode()
+          })
+      }
+      .width("100%")
     }
-    .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
     .backgroundColor(DesignColor.SURFACE)
-    // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
     .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+      color: DesignColor.SHADOW_COLOR_FLOAT,
       offsetX: 0,
-      offsetY: 2
+      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+    })
+    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+    .opacity(this.entered ? 1 : 0)
+    .onAppear(() => {
+      this.playEnterMotion()
     })
   }
 }

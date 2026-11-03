@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
@@ -303,9 +303,10 @@ export struct UserInfo {
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(Color.White)
                 .opacity(0.7)
-              Text(`￥${this.userInfo?.balance ?? "0.00"}`)
+              Text(`¥${this.userInfo?.balance ?? "0.00"}`)
                 .fontSize(28)
                 .fontWeight(DesignFontWeight.BOLD)
+                .fontFeature(DesignFontFeature.TNUM)
                 .fontColor(Color.White)
                 .margin({ top: 4 })
             }

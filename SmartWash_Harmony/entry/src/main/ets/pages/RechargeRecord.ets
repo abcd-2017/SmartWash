@@ -1,5 +1,5 @@
-import { LoadingState } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { EmptyState, LoadingState } from "../view/common/AppComponents"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
 import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
@@ -40,6 +40,23 @@ struct RechargeRecord {
   }
 
   /**
+   * 充值时间展示格式化（对齐安卓 formatRechargeTime）：
+   * 后端已补 `@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")`，端上防御性兼容两种入参——
+   * 已是空格分隔串则原样展示，ISO（含 T）则转为 `yyyy-MM-dd HH:mm`；解析失败原样返回，不吞数据。
+   */
+  private formatRechargeTime(raw: string): string {
+    if (raw === "") {
+      return raw
+    }
+    if (!raw.includes("T")) {
+      return raw
+    }
+    // ISO 取前 16 位（yyyy-MM-ddTHH:mm）并把 T 替换为空格
+    const head: string = raw.length >= 16 ? raw.substring(0, 16) : raw
+    return head.replace("T", " ")
+  }
+
+  /**
    * 按页拉取充值记录。
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
@@ -49,16 +66,18 @@ struct RechargeRecord {
     param['page'] = page
     param['size'] = PAGE_SIZE
     let res = await getRechargeRecordList(param)
-    if (res.code == HttpStatusCode.Ok && res.data != null) {
+    if (res.code === HttpStatusCode.Ok && res.data !== null) {
       let records = res.data!.records
-      if (records == null || records.length == 0) {
+      if (records === null || records.length === 0) {
         if (this.recordList.length > 0) {
           showToastSafety("没有更多数据了")
         }
         return false
       }
-      if (page == 1) {
-        this.recordList = []
+      if (page === 1) {
+        // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
+        this.recordList = records
+        return true
       }
       this.recordList.push(...records)
       return true
@@ -70,60 +89,64 @@ struct RechargeRecord {
   refreshRecords() {
     this.isRefreshing = false
     this.paging.reset()
-    this.recordList = []
     this.fetchRecordPage(1)
   }
 
   @Builder
   RecordCard(record: RechargeRecordVo) {
     Row() {
-      // 左侧：支付方式图标容器
+      // 左侧：支付方式图标容器（对齐安卓 44 容器 / 12 圆角 / 24 图标 + 六色浅底）
       Row() {
-        if (record.rechargeType == RechargeType.WECHAT) {
+        if (record.rechargeType === RechargeType.WECHAT) {
           Image($r('app.media.wechat'))
-            .width(22)
-            .height(22)
-        } else if (record.rechargeType == RechargeType.ALIPAY) {
+            .width(24)
+            .height(24)
+        } else if (record.rechargeType === RechargeType.ALIPAY) {
           Image($r('app.media.alipay'))
-            .width(22)
-            .height(22)
+            .width(24)
+            .height(24)
         } else {
           SymbolGlyph($r('sys.symbol.creditcard'))
-            .fontSize(22)
+            .fontSize(24)
             .fontColor([DesignColor.PRIMARY])
         }
       }
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      // 品牌浅色底收敛到 DesignSystem 常量（评审 #18），视觉不变
-      .backgroundColor(record.rechargeType == RechargeType.WECHAT ? DesignColor.WECHAT_GREEN_LIGHT :
-        record.rechargeType == RechargeType.ALIPAY ? DesignColor.ALIPAY_BLUE_LIGHT : DesignColor.PRIMARY_LIGHT)
+      // 微信/余额 = primaryContainer(#F0FBF4)、支付宝 = iconContainerBlue(#EEF2FB)（对齐安卓 RechargeRecordCard）
+      .backgroundColor(record.rechargeType === RechargeType.WECHAT ? DesignColor.ICON_CONTAINER_GREEN :
+        record.rechargeType === RechargeType.ALIPAY ? DesignColor.ICON_CONTAINER_BLUE : DesignColor.ICON_CONTAINER_GREEN)
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
       // 中间：支付方式名称 + 充值时间
       Column() {
-        Text(record.rechargeType == RechargeType.WECHAT ? "微信支付" :
-          record.rechargeType == RechargeType.ALIPAY ? "支付宝" : "充值")
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.MEDIUM)
+        Text(record.rechargeType === RechargeType.WECHAT ? "微信支付" :
+          record.rechargeType === RechargeType.ALIPAY ? "支付宝" : "充值")
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.NORMAL)
           .fontColor(DesignColor.TEXT_PRIMARY)
 
-        Text(record.rechargeTime ?? "")
-          .fontSize(DesignFontSize.CAPTION)
+        Text(this.formatRechargeTime(record.rechargeTime ?? ""))
+          .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.Start)
       .margin({ left: 12 })
       .layoutWeight(1)
 
-      // 右侧：充值金额
+      // 右侧：充值金额（对齐安卓 AmountMedium 18/600 + primaryDark + tnum + 单行 Clip）
       Text(`+¥${record.amount?.toFixed(2) ?? "0.00"}`)
-        .fontSize(DesignFontSize.SECTION_TITLE)
+        .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.PRIMARY)
+        .fontFeature(DesignFontFeature.TNUM)
+        .fontColor(DesignColor.PRIMARY_DARK)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Clip })
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
@@ -168,14 +191,16 @@ struct RechargeRecord {
           LoadingState()
           .width("100%")
           .layoutWeight(1)
+          .transition(TransitionEffect.OPACITY)
+          .animation({ duration: 200, curve: Curve.EaseOut })
         } else if (this.recordList.length > 0) {
           Refresh({ refreshing: $$this.isRefreshing }) {
-            List() {
+            List({ space: DesignDimens.CARD_SPACING }) {
               ForEach(this.recordList, (record: RechargeRecordVo) => {
                 ListItem() {
                   this.RecordCard(record)
                 }
-              })
+              }, (record: RechargeRecordVo, index: number) => `${record.recordId ?? index}`)
               ListItem() {
                 LoadingFooter({ isLoading: !!this.isLoadingMore })
               }
@@ -195,22 +220,13 @@ struct RechargeRecord {
           .onRefreshing(() => {
             this.refreshRecords()
           })
+          .transition(TransitionEffect.OPACITY)
+          .animation({ duration: 200, curve: Curve.EaseOut })
         } else {
-          // 空状态
-          Column() {
-            SymbolGlyph($r('sys.symbol.creditcard'))
-              .fontSize(64)
-              .fontColor([DesignColor.TEXT_TERTIARY])
-              .margin({ bottom: 16 })
-
-            Text("暂无充值记录")
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-          }
+          // 空状态（对齐安卓 EmptyState：滚筒圆母题 + 引导文案，§3.6 禁灰色 Material 图标）
+          EmptyState({ message: "暂无充值记录" })
           .width("100%")
           .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
-          .alignItems(HorizontalAlign.Center)
         }
       }
       .width("100%")

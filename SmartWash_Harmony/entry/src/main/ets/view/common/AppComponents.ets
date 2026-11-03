@@ -1,7 +1,7 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
 
@@ -22,23 +22,27 @@ export struct PageHeader {
 
   build() {
     Row() {
-      // 左侧返回按钮
+      // 左侧返回按钮 — 24vp 图形 + 48vp 触控热区（规范 §3.2：返回箭头豁免入容器仍强制 48dp）
       if (this.showBack) {
-        SymbolGlyph($r('sys.symbol.chevron_left'))
-          .fontSize(24)
-          .fontColor([DesignColor.ON_BACKGROUND])
-          .onClick(() => {
-            this.backClick()
-          })
-          .padding(8)
+        Column() {
+          SymbolGlyph($r('sys.symbol.chevron_left'))
+            .fontSize(24)
+            .fontColor([DesignColor.ON_BACKGROUND])
+        }
+        .width(DesignDimens.BACK_HIT_AREA)
+        .height(DesignDimens.BACK_HIT_AREA)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .onClick(() => {
+          this.backClick()
+        })
       }
 
-      // 标题
+      // 标题（PageHeader 22sp/600，DESIGN.md typography.titleLarge）
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
-        .fontWeight(DesignFontWeight.BOLD)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.ON_BACKGROUND)
-        .margin({ left: this.showBack ? 4 : 0 })
 
       Blank()
 
@@ -46,7 +50,8 @@ export struct PageHeader {
     }
     .width('100%')
     .height(56)
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    // 行首让位 12：48dp 热区盒居中后图形左缘落在 24（对齐 Android PageHeader）
+    .padding({ left: this.showBack ? DesignDimens.SPACE_SM : DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     .alignItems(VerticalAlign.Center)
   }
 }
@@ -54,14 +59,14 @@ export struct PageHeader {
 // ========== IconBox 图标容器模板（对齐 Android AppDesign.kt IconBox/CircleIconBox） ==========
 
 /**
- * 方形图标容器 — 浅底 + 语义色前景图标，默认 44vp 容器 / 22fp 图标 / 12vp 圆角。
+ * 方形图标容器 — 浅底 + 语义色前景图标，默认 44vp 容器 / 24fp 图标 / 12vp 圆角。
  * 六色浅底/前景令牌见 DesignColor.ICON_CONTAINER_* / ICON_FOREGROUND_*。
  */
 @ComponentV2
 export struct IconBox {
   @Require @Param icon: Resource
   @Param sizeValue: number = 44
-  @Param iconSize: number = 22
+  @Param iconSize: number = 24
   @Param containerColor: number = DesignColor.PRIMARY_LIGHT
   @Param iconColor: number = DesignColor.PRIMARY
   @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
@@ -154,13 +159,13 @@ export enum AppButtonVariant {
 }
 
 /**
- * 统一按钮（规范 §3.3）— 自绘实现，业务层一律经本组件消费，禁止裸写可点击按钮：
- * 主 = 52vp 高 / 14vp 圆角 / 135° primary→primaryDark 渐变底 / onPrimary 文字 18 档 SemiBold；
+ * 统一按钮（DESIGN.md §3.3）— 自绘实现，业务层一律经本组件消费，禁止裸写可点击按钮：
+ * 主 = 48vp 高 / 胶囊（radiusFull）/ 135° primary→primaryDark 渐变底 / onPrimary 文字 15sp·600·ls1sp·tnum；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色（「退出登录」等经 contentColor 换语义色，容器不变）；
- * 文字 = 主色无底无框，最小触控 44。
+ * 文字 = 主色 13sp·600 无底无框，最小触控 44。
  *
- * 形态用 Normal 方角 + BUTTON_RADIUS：此前 Capsule 会让 borderRadius(14) 失效变胶囊，
- * 与安卓 AppButton 的 14 圆角矩形不一致（v0.4 §3.3）。
+ * 2026-11-03 对齐 DESIGN.md：旧 52dp + 14dp 圆角作废，改 48dp 高胶囊；
+ * 按钮文字由 18sp 改 15sp/600/ls1sp，并开 tnum（内嵌金额文案数字不跳）。
  * disabled/loading：整钮降透明度 0.5 + 禁点（对齐安卓禁用降透明，替代旧灰底 TEXT_TERTIARY）；
  * spinner 色随文字色，浅底次按钮上不再出现不可见的白圈。
  */
@@ -214,7 +219,7 @@ export struct AppButton {
             .color(this.contentTint())
         } else {
           Text(this.text)
-            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontSize(DesignFontSize.BUTTON_TEXT)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(this.contentTint())
         }
@@ -235,15 +240,17 @@ export struct AppButton {
             .color(this.contentTint())
         } else {
           Text(this.text)
-            .fontSize(DesignFontSize.SECTION_TITLE)
+            .fontSize(DesignFontSize.BUTTON)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .letterSpacing(DesignFontSize.BUTTON_LETTER_SPACING)
+            .fontFeature(DesignFontFeature.TNUM)
             .fontColor(this.contentTint())
         }
       }
       .type(ButtonType.Normal)
       .width('100%')
-      .height(52)
-      .borderRadius(DesignDimens.BUTTON_RADIUS)
+      .height(48)
+      .borderRadius(DesignDimens.RADIUS_FULL)
       // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）
       .backgroundColor(this.variant === AppButtonVariant.SECONDARY ? DesignColor.SURFACE_VARIANT : Color.Transparent)
       .linearGradient({
@@ -427,7 +434,8 @@ export struct AppPillTabRow {
             .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
         }
         .justifyContent(FlexAlign.Center)
-        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 8, bottom: 8 })
+        // 垂直 14 → 触控热区 44dp（规范 §2.3；胶囊视觉高不变，padding 只扩热区）
+        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
         .borderRadius(DesignDimens.RADIUS_FULL)
         .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY_LIGHT : Color.Transparent)
         .margin({ right: DesignDimens.SPACE_XS })

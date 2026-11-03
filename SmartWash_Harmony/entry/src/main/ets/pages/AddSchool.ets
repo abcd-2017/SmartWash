@@ -6,6 +6,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation } from "../constant/DesignSystem"
+import { AppButton } from "../view/common/AppComponents"
 
 @Builder
 export function AddSchoolBuilder() {
@@ -43,6 +44,8 @@ struct AddSchool {
   @State checkStudentId: boolean = false
   // 信息锁定只读态：学校/学号已填写的用户回填并禁用输入与提交（对齐安卓 UpdateUserInfoPage.kt:91-93,114-125）
   @State isInfoLocked: boolean = false
+  // 提交进行中标记：AppButton loading 展示并拦截连点，防止重复提交写库接口（评审 #P0）
+  @State submitting: boolean = false
   searchData: Record<string, Object> = {}
   @State schoolList: Array<SchoolName> | null = null
   private scroller: Scroller = new Scroller()
@@ -118,6 +121,50 @@ struct AddSchool {
     this.checkSchoolId = this.schoolId == null
     this.checkStudentData['studentId'] = `${this.studentId}`
     this.checkStudentId = this.studentId == null || this.studentId == ""
+  }
+
+  /**
+   * 提交学校/学号（P0 防重）：submitting 标记 + AppButton loading/禁用双保险，
+   * 请求期间不可连点，避免写库接口重复提交（对齐安卓 UpdateUserInfoPage.kt:359-371）。
+   */
+  async submit() {
+    // 信息锁定态禁止提交（对齐安卓 enabled = !isInfoLocked）
+    if (this.isInfoLocked || this.submitting) {
+      return
+    }
+    this.check()
+    if (this.checkSchoolId || this.checkStudentId) {
+      return
+    }
+    this.submitting = true
+    try {
+      let checkStudentRes = await getUserByStudentId(this.checkStudentData)
+      // 学号查重（对齐决策 D6）：接口失败统一 toast 网络错误并阻止提交，
+      // 既不像安卓失败误报「已注册」，也不像原实现失败放行导致绕过查重
+      if (checkStudentRes.code !== HttpStatusCode.Ok) {
+        showToastSafety("网络异常，请稍后重试")
+        return
+      }
+      // 后端 getUserByStudentId 返回 data = (该学号用户不存在)，true 才可提交（对齐安卓 checkStudentId）
+      if (checkStudentRes.data !== true) {
+        showToastSafety("该学号已注册")
+        return
+      }
+      let res = await updateUserInfo({
+        schoolId: this.schoolId,
+        studentId: this.studentId
+      })
+      if (res.code == HttpStatusCode.Ok) {
+        if (pathStack.size() > 0) {
+          pathStack.clear()
+        }
+        AppStorage.setOrCreate("userLoginFlag", true)
+      } else {
+        showToastSafety(res.message, "学校信息保存失败")
+      }
+    } finally {
+      this.submitting = false
+    }
   }
 
   build() {
@@ -253,46 +300,15 @@ struct AddSchool {
 
         RowSplit()
 
-        Button("确认")
-          .onClick(async (event: ClickEvent) => {
-            // 信息锁定态禁止提交（对齐安卓 enabled = !isInfoLocked）
-            if (this.isInfoLocked) {
-              return
-            }
-            this.check()
-            if (this.checkSchoolId || this.checkStudentId) {
-              return
-            }
-            let checkStudentRes = await getUserByStudentId(this.checkStudentData)
-            // 学号查重（对齐决策 D6）：接口失败统一 toast 网络错误并阻止提交，
-            // 既不像安卓失败误报「已注册」，也不像原实现失败放行导致绕过查重
-            if (checkStudentRes.code !== HttpStatusCode.Ok) {
-              showToastSafety("网络异常，请稍后重试")
-              return
-            }
-            // 后端 getUserByStudentId 返回 data = (该学号用户不存在)，true 才可提交（对齐安卓 checkStudentId）
-            if (checkStudentRes.data !== true) {
-              showToastSafety("该学号已注册")
-              return
-            }
-            let res = await updateUserInfo({
-              schoolId: this.schoolId,
-              studentId: this.studentId
-            })
-            if (res.code == HttpStatusCode.Ok) {
-              if (pathStack.size() > 0) {
-                pathStack.clear()
-              }
-              AppStorage.setOrCreate("userLoginFlag", true)
-            } else {
-              showToastSafety(res.message, "学校信息保存失败")
-            }
-          })
-          .enabled(!this.isInfoLocked)
+        AppButton({
+          text: "确认",
+          loading: this.submitting,
+          isEnabled: !this.isInfoLocked,
+          click: () => {
+            this.submit()
+          }
+        })
           .width("85%")
-          .backgroundColor(this.isInfoLocked ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY)
-          .fontColor(DesignColor.ON_PRIMARY)
-          .borderRadius(DesignDimens.BUTTON_RADIUS)
 
       }.width("100%")
       .height("100%")

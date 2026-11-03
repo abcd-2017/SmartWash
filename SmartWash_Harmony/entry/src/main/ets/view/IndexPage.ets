@@ -6,7 +6,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { showToastSafety } from "../utils/ToastUtil"
@@ -218,9 +218,10 @@ export struct IndexPage {
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(Color.White)
             .opacity(0.7)
-          Text(`￥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
+          Text(`¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.BOLD)
+            .fontFeature(DesignFontFeature.TNUM)
             .fontColor(Color.White)
             .margin({ top: 4 })
         }
@@ -340,9 +341,10 @@ export struct IndexPage {
         .layoutWeight(1)
 
         // 右侧价格
-        Text(`￥${order.payPrice ?? 0}`)
+        Text(`¥${order.payPrice ?? 0}`)
           .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.BOLD)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontFeature(DesignFontFeature.TNUM)
           .fontColor(DesignColor.PRIMARY)
       }
       .width("100%")
@@ -423,12 +425,14 @@ export struct IndexPage {
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", DesignColor.SERVICE_LUXURY, DesignColor.SERVICE_LUXURY_LIGHT, () => {
+          // 取件入口 = 橙（对齐安卓 IndexPage.kt:581 iconContainerOrange/iconForegroundOrange）
+          this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", DesignColor.ICON_FOREGROUND_ORANGE, DesignColor.ICON_CONTAINER_ORANGE, () => {
             pathStack.pushPathByName(RouteNames.PICK_UP, null)
           })
           Row() {
           }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", DesignColor.SERVICE_PRESS, DesignColor.SERVICE_PRESS_LIGHT, () => {
+          // 优惠券入口 = 蓝（对齐安卓 IndexPage.kt:598 iconContainerBlue/iconForegroundBlue）
+          this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", DesignColor.ICON_FOREGROUND_BLUE, DesignColor.ICON_CONTAINER_BLUE, () => {
             pathStack.pushPathByName(RouteNames.COUPON, null)
           })
         }
