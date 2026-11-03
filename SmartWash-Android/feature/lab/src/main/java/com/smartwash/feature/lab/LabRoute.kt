@@ -36,6 +36,12 @@ sealed class LabRoute(val text: String) {
 
     /** 声景混音器（程序化环境声叠混） */
     data object Soundscape : LabRoute("LabSoundscape")
+
+    /** 泡泡精灵（页内电子宠物） */
+    data object Pet : LabRoute("LabPet")
+
+    /** 掌上星图（陀螺仪星空） */
+    data object StarMap : LabRoute("LabStarMap")
 }
 
 /**
@@ -51,4 +57,6 @@ enum class LabToy(val route: String) {
     DRUM(LabRoute.Drum.text),
     PAINTING(LabRoute.Painting.text),
     SOUNDSCAPE(LabRoute.Soundscape.text),
+    PET(LabRoute.Pet.text),
+    STAR_MAP(LabRoute.StarMap.text),
 }

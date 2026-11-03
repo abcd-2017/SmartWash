@@ -50,4 +50,8 @@
     <string name="lab_toy_painting_desc">每天一幅水墨山水</string>
     <string name="lab_toy_soundscape">声景混音器</string>
     <string name="lab_toy_soundscape_desc">雨声风声，自由叠混</string>
+    <string name="lab_toy_pet">泡泡精灵</string>
+    <string name="lab_toy_pet_desc">养一只住在洗衣机里的泡泡精灵</string>
+    <string name="lab_toy_star_map">掌上星图</string>
+    <string name="lab_toy_star_map_desc">举起手机，看头顶的星空</string>
 </resources>
