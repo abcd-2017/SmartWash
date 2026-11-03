@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>猜成语</title>
+<style>
+  /*token:GAME-THEME.md §2（全部 UI 壳走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .board { display: grid; gap: 6px; width: min(312px, 100%); margin: 0 auto; }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600; border-radius: 12px;
+    background: var(--g-surface2); color: var(--g-faint);
+    border: 1px solid transparent; transition: background .25s, color .25s, border-color .25s, transform .12s;
+  }
+  .cell.fill { background: var(--g-surface); color: var(--g-text); border-color: var(--g-border); }
+  .cell.hit { background: var(--g-success); color: #fff; border-color: transparent; }
+  .cell.near { background: var(--g-warning); color: #fff; border-color: transparent; }
+  .cell.miss { background: var(--g-surface2); color: var(--g-faint); border-color: transparent; opacity: .75; }
+  .cell.bump { transform: scale(1.08); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+  .key {
+    min-height: 46px; border: 0; border-radius: 12px;
+    background: var(--g-surface); color: var(--g-text);
+    font: inherit; font-size: 18px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 0 var(--g-border); transition: background .25s, color .25s;
+  }
+  .key:active { opacity: .7; }
+  .key.hit { background: var(--g-success); color: #fff; box-shadow: none; }
+  .key.near { background: var(--g-warning); color: #fff; box-shadow: none; }
+  .key.miss { background: var(--g-surface2); color: var(--g-faint); box-shadow: none; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn.wide { flex: 1.4; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .word { margin: 0 0 4px; font-size: 28px; font-weight: 700; color: var(--g-primary-deep); letter-spacing: 4px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点字组词 · 六次机会猜成语</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">场次</span><span class="val" id="stPlayed">0</span></div>
+    <div class="stat"><span class="label">连胜</span><span class="val" id="stStreak">0</span></div>
+    <div class="stat"><span class="label">最佳连胜</span><span class="val" id="stBest">0</span></div>
+  </div>
+  <div class="board" id="board"></div>
+  <p class="msg" id="msg">从字库里挑四个字，拼出藏起来的成语</p>
+  <div class="keys" id="keys"></div>
+  <div class="tools">
+    <button class="btn ghost" id="btnHint">释义提示</button>
+    <button class="btn ghost" id="btnDel">退格</button>
+    <button class="btn wide" id="btnGo">提交</button>
+  </div>
+  <p class="foot">绿＝字对位对 · 黄＝字对位错 · 灰＝没有这个字 · 每题字库由答案字与干扰字组成</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">猜对了！</h2>
+    <p class="word" id="ovWord"></p>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">下一局</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 词库：成语 + 一句话释义 ---------- */
+var IDIOMS=[
+["画蛇添足","多此一举，反而坏事"],["亡羊补牢","出事之后设法补救"],["守株待兔","不劳而获的侥幸心理"],
+["一鸣惊人","平日不显，忽然做出惊人成绩"],["掩耳盗铃","自己欺骗自己"],["井底之蛙","眼界狭小的人"],
+["刻舟求剑","拘泥固执，不懂变通"],["狐假虎威","借别人的势力吓唬人"],["杯弓蛇影","疑神疑鬼，自相惊扰"],
+["望梅止渴","用空想安慰自己"],["塞翁失马","坏事在一定条件下可变好事"],["愚公移山","坚持不懈终能成功"],
+["对牛弹琴","对不懂道理的人讲道理"],["画龙点睛","在关键处点明要旨"],["滥竽充数","没本领的人混在行家里充数"],
+["自相矛盾","言语行动前后抵触"],["拔苗助长","违反规律急于求成反而坏事"],["叶公好龙","表面爱好并非真爱好"],
+["邯郸学步","模仿不成反把原本领丢了"],["惊弓之鸟","受过惊吓，遇事就惶恐不安"],["胸有成竹","做事之前已有通盘考虑"],
+["完璧归赵","原物完好无损地归还本人"],["负荆请罪","背着荆条主动认错赔罪"],["纸上谈兵","空谈理论不能解决实际问题"],
+["四面楚歌","陷入四面受敌的孤立境地"],["卧薪尝胆","刻苦自励，发愤图强"],["三顾茅庐","诚心诚意一再登门邀请"],
+["草船借箭","运用巧计获取所需"],["破釜沉舟","下定决心，不留退路干到底"],["指鹿为马","颠倒黑白，混淆是非"],
+["毛遂自荐","自告奋勇，自己推荐自己"],["名落孙山","投考选拔没有被录取"],["程门立雪","尊敬师长，诚恳求学"],
+["口蜜腹剑","嘴上甜言蜜语，心里藏着坏主意"],["望洋兴叹","力量不够，感到无可奈何"],["螳臂当车","不自量力，必然失败"],
+["鹬蚌相争","双方相持不下，让第三者得了利"],["鹤立鸡群","才能仪表在一群人中很突出"],["杯水车薪","力量太小，无济于事"],
+["雪中送炭","在别人急难时给予及时帮助"],["锦上添花","好上加好，美上加美"],["水滴石穿","坚持不懈，事情终能成功"],
+["百发百中","料事用计很有把握"],["大器晚成","能担当大事的人成就来得较晚"],["后来居上","后来的超过先前的"],
+["一箭双雕","做一件事达到两个目的"],["半途而废","做事中途停止，不坚持到底"],["坚韧不拔","意志坚定顽强，不可动摇"],
+["得过且过","马虎应付，过一天算一天"],["豁然开朗","一下子明白过来"],["全神贯注","全部精神高度集中"],
+["举一反三","从一件事情类推而知道许多事情"],["融会贯通","把知识融合贯穿，理解得全面透彻"],["精益求精","好了还求更好"],
+["因地制宜","根据当地具体情况制定适宜办法"],["实事求是","按照事物的实际情况办事"],["深思熟虑","深入细致地考虑"],
+["当机立断","抓住时机，立刻做出决断"],["雷厉风行","执行起来严厉迅速"],["同舟共济","同心协力，共同渡过困难"],
+["众志成城","万众一心，力量无比强大"],["集思广益","集中众人的智慧，收到更好效果"],["各抒己见","各自发表自己的意见"],
+["畅所欲言","痛痛快快地把想说的话都说出来"],["推心置腹","真心诚意地对待别人"],["将心比心","设身处地替别人着想"],
+["雪上加霜","接连遭受灾难，损害愈加严重"],["釜底抽薪","从根本上解决问题"],["抛砖引玉","用粗浅意见引出别人高明的见解"],
+["事半功倍","做事费力小，收效大"],["事倍功半","做事费力大，收效小"],["取长补短","吸取别人的长处，弥补自己的不足"],
+["扬长避短","发挥长处，避开短处"],["循序渐进","按照一定的步骤逐渐深入提高"],["触类旁通","掌握某一事物的规律，推知同类事物"],
+["熟能生巧","熟练了就能找到巧妙的办法"],["温故知新","温习旧的知识，得到新的体会"],["学以致用","学了要能用于实际"],
+["不耻下问","乐于向学问不如自己的人请教"],["持之以恒","长期坚持做下去"],["水到渠成","条件成熟，事情自然成功"],
+["瓜熟蒂落","时机成熟，事情自然顺利解决"],["雨后春笋","新事物大量涌现，蓬勃发展"],["日新月异","发展变化快，不断出现新气象"],
+["天衣无缝","事物完美自然，没有破绽"],["十全十美","各方面都非常完美"],["独一无二","没有相同的，无可相比"],
+["举世闻名","全世界都有名"],["琳琅满目","美好的东西很多，满眼都是"],["美不胜收","美好的东西太多，看不过来"],
+["心旷神怡","心境开阔，精神愉快"],["赏心悦目","看到美好的景色而心情舒畅"],["聚精会神","集中注意力，不分心"],
+["兴高采烈","兴致高，情绪热烈"],["垂头丧气","失望懊丧的样子"],["眉开眼笑","高兴愉快的样子"],
+["情不自禁","感情激动，难以控制自己"],["依依不舍","留恋，不忍分离"],["迫不及待","急迫得不能再等待"],
+["小心翼翼","举动十分谨慎，丝毫不敢疏忽"],["目不转睛","看得很专注，眼睛不斜视"],["东张西望","向四处乱看，心神不定"],
+["翻山越岭","翻越山岭，长途跋涉"],["风尘仆仆","奔波忙碌，旅途劳累"],["和颜悦色","脸色和蔼，态度温和可亲"],
+["脱口而出","不假思索，随口说出"],["哑口无言","像哑巴一样说不出话来"],["理直气壮","理由充分，说话有气势"],
+["语重心长","言辞诚恳，情意深长"],["念念不忘","牢记在心，时刻不忘"],["历历在目","清晰地展现在眼前"],
+["一模一样","完全相同，毫无二致"],["千篇一律","形式陈旧呆板，毫无变化"],["五花八门","花样繁多，变化多端"]
+];
+/* ---------- 存档 ---------- */
+var KEY="sw.idiom.v1";
+function loadStats(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{played:s.played||0,streak:s.streak||0,best:s.best||0}}catch(e){return{played:0,streak:0,best:0}}}
+function saveStats(s){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
+var stats=loadStats();
+/* ---------- 状态 ---------- */
+var ROWS=6,target="",meaning="",keys=[],guess=[],row=0,over=false,hinted=false;
+var history=[],fbOf=[],recent=[];
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+/* ---------- 词盘 ---------- */
+function pickIdiom(){
+  var i,n=IDIOMS.length;
+  do{i=Math.floor(Math.random()*n)}while(recent.indexOf(i)>=0);
+  recent.push(i);if(recent.length>15)recent.shift();
+  return IDIOMS[i];
+}
+function newRound(){
+  var it=pickIdiom();
+  target=it[0];meaning=it[1];hinted=false;guess=[];row=0;over=false;
+  history=[];fbOf=[];
+  //字库 = 答案去重字 + 干扰字（取自其他成语，保证不在答案里）
+  var uniq=[];
+  for(var i=0;i<4;i++)if(uniq.indexOf(target[i])<0)uniq.push(target[i]);
+  var pool=[];
+  for(var j=0;j<IDIOMS.length;j++){
+    if(IDIOMS[j][0]===target)continue;
+    var w=IDIOMS[j][0];
+    for(var k=0;k<4;k++)pool.push(w[k]);
+  }
+  keys=uniq.slice();
+  var guard=0;
+  while(keys.length<16&&guard++<800){
+    var c=pool[Math.floor(Math.random()*pool.length)];
+    if(keys.indexOf(c)<0)keys.push(c);
+  }
+  shuffle(keys);
+  buildBoard();buildKeys();
+  $("btnHint").disabled=false;
+  say("从字库里挑四个字，拼出藏起来的成语");
+}
+/* ---------- 渲染 ---------- */
+var cells=[];
+function buildBoard(){
+  var b=$("board");b.innerHTML="";cells=[];
+  for(var r=0;r<ROWS;r++){
+    var rowEl=document.createElement("div");rowEl.className="row";cells.push([]);
+    for(var c=0;c<4;c++){
+      var d=document.createElement("div");d.className="cell";
+      rowEl.appendChild(d);cells[r].push(d);
+    }
+    b.appendChild(rowEl);
+  }
+}
+function buildKeys(){
+  var k=$("keys");k.innerHTML="";
+  keys.forEach(function(ch){
+    var btn=document.createElement("button");btn.className="key";btn.textContent=ch;
+    btn.addEventListener("click",function(){type(ch)});
+    k.appendChild(btn);
+  });
+}
+function paintInput(){
+  for(var i=0;i<4;i++){
+    var el=cells[row][i];
+    el.textContent=guess[i]||"";
+    el.className="cell"+(guess[i]?" fill":"");
+    if(guess[i]&&i===guess.length-1)el.classList.add("bump");
+  }
+}
+function paintHistory(){
+  //键盘状态取历次反馈的最好成绩（2>1>0）
+  var best={};
+  keys.forEach(function(ch){best[ch]=-1});
+  for(var r=0;r<history.length;r++){
+    for(var i=0;i<4;i++){
+      var ch=history[r][i],s=fbOf[r][i];
+      if(s>best[ch])best[ch]=s;
+    }
+  }
+  var btns=$("keys").children;
+  keys.forEach(function(ch,i){
+    var lv=best[ch];
+    btns[i].className="key"+(lv===2?" hit":lv===1?" near":lv===0?" miss":"");
+  });
+}
+function paintRow(r,g,fb){
+  for(var i=0;i<4;i++){
+    var el=cells[r][i];
+    el.textContent=g[i];
+    el.className="cell "+(fb[i]===2?"hit":fb[i]===1?"near":"miss");
+    el.style.transitionDelay=(i*70)+"ms";
+  }
+}
+/* ---------- 规则 ---------- */
+function feedback(g){
+  var res=[0,0,0,0],rem={};
+  for(var i=0;i<4;i++){
+    if(g[i]===target[i])res[i]=2;
+    else rem[target[i]]=(rem[target[i]]||0)+1;
+  }
+  for(var j=0;j<4;j++){
+    if(res[j]!==2&&rem[g[j]]>0){res[j]=1;rem[g[j]]--}
+  }
+  return res;
+}
+function type(ch){
+  if(over||guess.length>=4)return;
+  guess.push(ch);paintInput();
+}
+function del(){
+  if(over||!guess.length)return;
+  guess.pop();paintInput();
+}
+function submit(){
+  if(over)return;
+  if(guess.length<4){say("还差 "+(4-guess.length)+" 个字");return}
+  var fb=feedback(guess);
+  history.push(guess.slice());fbOf.push(fb);
+  paintRow(row,guess,fb);
+  paintHistory();
+  row++;guess=[];
+  var win=true;
+  for(var i=0;i<4;i++)if(fb[i]!==2)win=false;
+  if(win){endRound(true);return}
+  if(row>=ROWS){endRound(false);return}
+  say("第 "+(row+1)+" / "+ROWS+" 次");
+}
+function endRound(win){
+  over=true;
+  stats.played++;
+  if(win){
+    stats.streak++;if(stats.streak>stats.best)stats.best=stats.streak;
+    $("ovTitle").textContent="猜对了！";
+    $("ovDesc").innerHTML="用了 "+row+" / "+ROWS+" 次机会"+(hinted?"（看过提示）":"")+"<br>当前连胜 "+stats.streak+" 局";
+  }else{
+    stats.streak=0;
+    $("ovTitle").textContent="差一点";
+    $("ovDesc").innerHTML="六次没猜中，连胜结束<br>释义："+meaning;
+  }
+  saveStats(stats);paintStats();
+  $("ovWord").textContent=target;
+  $("ovBtn").textContent="下一局";
+  $("overlay").classList.add("show");
+}
+function paintStats(){
+  $("stPlayed").textContent=stats.played;
+  $("stStreak").textContent=stats.streak;
+  $("stBest").textContent=stats.best;
+}
+/* ---------- 输入 ---------- */
+$("btnGo").addEventListener("click",submit);
+$("btnDel").addEventListener("click",del);
+$("btnHint").addEventListener("click",function(){
+  if(over||hinted)return;
+  hinted=true;$("btnHint").disabled=true;
+  say("释义提示："+meaning);
+});
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  newRound();
+});
+paintStats();newRound();
+})();
+</script>
+</body>
+</html>

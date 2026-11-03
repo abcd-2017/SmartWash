@@ -15,6 +15,27 @@
 
 ## 修订记录
 
+- **2026-11-04 新增六款（出生即主题化，游戏库 17 → 23 款）**：
+  tetris（俄罗斯方块）/ sudoku（数独）/ idiom（猜成语，**word 类别首款**）/
+  pacman（吃豆人）/ invaders（星空保卫战）/ lights-out（点灯谜阵）。
+  全部按 §6 清单接入：无 `<h1>`、桥唯一控制、token 上色、卡片式 `full` chrome、
+  存档键 `sw.<key>.v1`、触屏热区 ≥44px。
+
+  | 游戏 | 渲染 | 存档键 | 体积 | 三关 | 375px 实开 | 专项校验 |
+  |---|---|---|---|---|---|---|
+  | tetris | canvas·rAF | `sw.tetris.v1` | 16503B | ✅✅✅ | ✅ 深浅切换·落块/旋转/硬降可玩 | 按住连移 130ms；7-bag 随机 |
+  | sudoku | DOM 网格 | `sw.sudoku.v1` | 16519B | ✅✅✅ | ✅ 选格填数/笔记/冲突标红 | 生成器 24 局抽测：三档提示格全部命中（40/32/26）且唯一解 |
+  | idiom | DOM 键盘 | `sw.idiom.v1` | 18318B | ✅✅✅ | ✅ 点字组词/逐字反馈/键盘染色 | wordle 双计法用例校验（含「一心一意」重复字） |
+  | pacman | canvas·rAF | `sw.pacman.v1` | 21300B | ✅✅✅ | ✅ 滑动转向/幽灵 AI/能量豆反击 | 迷宫脚本校验：99 豆格全可达·零死胡同·镜像对称·G 区连通 |
+  | invaders | canvas·rAF | `sw.invaders.v1` | 18714B | ✅✅✅ | ✅ 按住拖动跟随/自动开火/掩体侵蚀 | 复刻 susam/invaders（MIT）思路 |
+  | lights-out | DOM 网格 | `sw.lightsout.v1` | 9191B | ✅✅✅ | ✅ 点灯翻转/★最优标记/关卡进度 | 生成器 200 局抽测：反向奇偶集校验全可解 |
+
+  Playwright 375px 全套（初开浅色 / 冒烟交互 / `__applySmartWashTheme` 推深 /
+  非法值拒绝 / 无横向溢出 / 无 `<h1>` / 零 JS 异常）：6/6 通过。
+  同批将 beat-tap/billiards/blackjack/falling-sand/moon-lander/slingshot 六款
+  存量 README 的 category 建议从非白名单值（rhythm/physics/cards/sandbox）
+  修正为端上白名单（arcade/board/board/other/arcade/puzzle），上传填表不再回落「其他」。
+
 - **2026-11-02 四次修订（用户反馈「游戏与系统标题返回栏不协调」）**：
   1. **标题唯一来源 = App 原生页头**：17 个游戏**全部删除自绘 `<h1>`**（含孤立的 `h1{}` 规则），
      消除「原生页头 + 游戏大标题」两条标题栏叠加；游戏 `<header>` 只留记分块 / 状态行 / 玩法提示 / 操作按钮。
