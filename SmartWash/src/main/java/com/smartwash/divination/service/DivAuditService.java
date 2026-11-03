@@ -1,12 +1,10 @@
 package com.smartwash.divination.service;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivRecord;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
+import com.smartwash.utils.JsonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -98,13 +96,13 @@ public class DivAuditService {
             }
         }
 
-        // 4. 更新审计结果
+        // 4. 更新审计结果（LinkedHashMap 保持字段顺序稳定，Jackson 序列化）
         interpretation.setAuditStatus(consistent);
-        JSONObject auditJson = new JSONObject();
+        Map<String, Object> auditJson = new LinkedHashMap<>();
         auditJson.put("citedGanZhi", citedGanZhi);
         auditJson.put("chartGanZhi", chartGanZhi);
         auditJson.put("diffs", diffs);
-        interpretation.setAuditJson(auditJson.toJSONString());
+        interpretation.setAuditJson(JsonUtils.toJson(auditJson));
         interpretationMapper.updateById(interpretation);
 
         log.info("事实审计完成, interpretationId: {}, status: {}", interpretationId, consistent);

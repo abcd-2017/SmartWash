@@ -41,7 +41,7 @@
                    'success' as status,
                    r.record_id as biz_id
             from recharge_records r
-            where r.user_id = #{userId}
+            where r.user_id = #{userId} and r.is_delete = 0
             union all
             select 'payment' as type,
                    -p.amount as amount,
@@ -50,7 +50,7 @@
                    'success' as status,
                    p.payment_id as biz_id
             from payments p
-            where p.user_id = #{userId} and p.status = #{paymentStatus}
+            where p.user_id = #{userId} and p.status = #{paymentStatus} and p.is_delete = 0
         ) t
         order by t.transaction_time desc, t.type desc, t.biz_id desc
         limit #{limit} offset #{offset}
@@ -58,7 +58,7 @@
 
     <!-- 交易流水总数：与 selectTransactionPage 同口径（充值全量 + 已支付消费），供 Page 组装 total -->
     <select id="countTransactionHistory" resultType="long">
-        select (select count(*) from recharge_records where user_id = #{userId})
-             + (select count(*) from payments where user_id = #{userId} and status = #{paymentStatus})
+        select (select count(*) from recharge_records where user_id = #{userId} and is_delete = 0)
+             + (select count(*) from payments where user_id = #{userId} and status = #{paymentStatus} and is_delete = 0)
     </select>
 </mapper>

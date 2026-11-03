@@ -19,6 +19,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -105,11 +106,21 @@ public class DeeplinkRouteServiceImpl extends ServiceImpl<AppDeeplinkRouteMapper
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = CACHE_NAME, allEntries = true)
     public void deleteRoutes(String ids) {
         log.info("删除 deeplink 路由, ids: {}", ids);
         for (String id : ids.split(",")) {
-            this.removeById(Long.parseLong(id.trim()));
+            this.removeById(parseId(id));
+        }
+    }
+
+    /** ids 逐个解析为 Long；controller 已用 @Pattern 兜住畸形入参，此处再做一层防御，避免 NumberFormatException 直达全局兜底 */
+    private Long parseId(String id) {
+        try {
+            return Long.parseLong(id.trim());
+        } catch (NumberFormatException e) {
+            throw new CustomExceptions("ids 必须为逗号分隔的数字");
         }
     }
 

@@ -789,6 +789,7 @@ CREATE TABLE `payments`  (
   `out_trade_no` varchar(64) NULL DEFAULT NULL COMMENT '网关统一订单号（幂等键），格式：PAY + yyyyMMdd + 雪花ID',
   `status` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NULL DEFAULT '0' COMMENT '支付状态：0-待支付，1-已支付，2-失败，3-处理中',
   `paid_at` timestamp NULL DEFAULT NULL COMMENT '实际支付时间',
+  `is_delete` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除（资金流水禁止物理删除）',
   PRIMARY KEY (`payment_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  
@@ -804,6 +805,7 @@ CREATE TABLE `recharge_records`  (
   `recharge_type` varchar(10) CHARACTER SET utf16 COLLATE utf16_bin NOT NULL COMMENT '充值类型，1--微信支付，2--支付宝支付',
   `status` varchar(10) NULL DEFAULT '3' COMMENT '充值状态：3-处理中（默认），1-充值成功，2-充值失败',
   `out_trade_no` varchar(64) NULL DEFAULT NULL COMMENT '网关统一订单号（幂等键），格式：RCH + yyyyMMdd + 雪花ID',
+  `is_delete` tinyint(1) NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除（资金流水禁止物理删除）',
   PRIMARY KEY (`record_id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf16 COLLATE = utf16_bin ROW_FORMAT = Dynamic;
  

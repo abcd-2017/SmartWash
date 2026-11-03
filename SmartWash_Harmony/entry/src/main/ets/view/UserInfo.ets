@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
 import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
@@ -10,17 +10,18 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
+import { LoadingState } from "./common/AppComponents"
 
 /**
- * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:586-587 maskPhone）：
+ * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:623-624 maskPhone）：
  * 隐私要求不在页面明文展示完整手机号。
  */
 function maskPhone(phone: string | null): string {
   const value = phone ?? ""
-  if (value.length < 7) {
-    return value
+  if (value.length === 11) {
+    return `${value.substring(0, 3)}****${value.substring(value.length - 4)}`
   }
-  return `${value.substring(0, 3)}****${value.substring(value.length - 4)}`
+  return value
 }
 
 @Component
@@ -55,7 +56,7 @@ export struct UserInfo {
 
   async refreshUserInfo() {
     let res = await getUserInfo()
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
       this.avatarUrl = this.userInfo?.avatar ?? null
     } else {
@@ -75,7 +76,7 @@ export struct UserInfo {
         let uri = result.photoUris[0]
         this.isUploading = true
         let res = await uploadAvatar(uri)
-        if (res.code == HttpStatusCode.Ok) {
+        if (res.code === HttpStatusCode.Ok) {
           this.avatarUrl = res.data
           // 上传成功后全量重拉用户信息：余额等其余字段由服务端在该响应后变更，
           // 直接用响应 data 更新头像会导致页面其余字段陈旧（对齐安卓 UserInfoViewModel.kt:117）
@@ -99,7 +100,7 @@ export struct UserInfo {
       pendingPickupStatus: ShowOrderStatusEnum.READY_FOR_PICKUP,
       shippedStatus: ShowOrderStatusEnum.PENDING_SHIPMENT,
     })
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.orderItemCount = res.data
     } else {
       showToastSafety(res.message, "订单数量加载失败")
@@ -113,37 +114,98 @@ export struct UserInfo {
     })
   }
 
-  // 渲染订单快捷入口
+  /** 余额两位小数（对齐安卓 String.format("%.2f", balance)） */
+  private formatBalance(): string {
+    const value = this.userInfo?.balance ?? 0
+    return value.toFixed(2)
+  }
+
+  /** 头像占位首字（对齐安卓 phoneNumber.firstOrNull() ?: "U"） */
+  private avatarInitial(): string {
+    const phone = this.userInfo?.phoneNumber ?? ""
+    if (phone.length > 0) {
+      return phone.substring(0, 1)
+    }
+    return "U"
+  }
+
+  /** 校园卡绑定态：campusCard 空串=未绑（与绑卡页同语义，差异分析 02 §9.3） */
+  private isCampusCardBound(): boolean {
+    return (this.userInfo?.campusCard ?? "") !== ""
+  }
+
+  /**
+   * 头像三态（对齐安卓 UserInfoPage.kt:264-329）：
+   * 上传中 = primaryLight 底 + spinner；占位 = hero 渐变底 + 手机号首字；远程 = 网络图。
+   */
   @Builder
-  orderQuickEntry(icon: Resource, label: string, count: number, onClick: () => void) {
+  avatarContent() {
+    if (this.isUploading) {
+      Column() {
+        LoadingProgress()
+          .width(24)
+          .height(24)
+          .color(DesignColor.PRIMARY)
+      }
+      .width(56)
+      .height(56)
+      .borderRadius(28)
+      .backgroundColor(DesignColor.PRIMARY_LIGHT)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+    } else if (this.avatarUrl !== null && this.avatarUrl !== "") {
+      Image(this.avatarUrl)
+        .width(56)
+        .height(56)
+        .borderRadius(28)
+        .objectFit(ImageFit.Cover)
+    } else {
+      Column() {
+        Text(this.avatarInitial())
+          .fontSize(DesignFontSize.STATUS_LARGE)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(DesignColor.ON_PRIMARY)
+      }
+      .width(56)
+      .height(56)
+      .borderRadius(28)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .linearGradient({
+        angle: 135,
+        colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+      })
+    }
+  }
+
+  /**
+   * 订单快捷入口（鸿蒙独有 F3，保留）：44 容器 + 六色语义底色/前景 + 计数。
+   */
+  @Builder
+  orderQuickEntry(icon: Resource, label: string, count: number, containerColor: number, iconColor: number, onClick: () => void) {
     Column() {
-      // 图标容器
       Column() {
         SymbolGlyph(icon)
           .fontSize(20)
-          .fontColor([DesignColor.PRIMARY])
+          .fontColor([iconColor])
       }
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(DesignColor.PRIMARY_LIGHT)
+      .backgroundColor(containerColor)
       .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
       Text(label)
-        .fontSize(DesignFontSize.BODY)
+        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .margin({ top: 8 })
 
-      if (count > 0) {
-        Text(`${count}单`)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.PRIMARY)
-          .margin({ top: 4 })
-      } else {
-        Text(" ")
-          .fontSize(DesignFontSize.CAPTION)
-          .margin({ top: 4 })
-      }
+      Text(count > 0 ? `${count}单` : " ")
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.PRIMARY)
+        .margin({ top: 4 })
     }
     .layoutWeight(1)
     .alignItems(HorizontalAlign.Center)
@@ -151,307 +213,356 @@ export struct UserInfo {
     .onClick(onClick)
   }
 
-  // 渲染功能列表项
+  /**
+   * GroupCard 行卡（对齐安卓 UserInfoPage.kt:573-621 SettingRow）：
+   * 64 行 + ib32/20 图标盒 + 14sp 主文案 + 行尾值（tnum）+ chevron 20。
+   * 行间 0.5dp 发丝线由调用方在卡内补充。
+   */
   @Builder
-  functionItem(icon: Resource, title: string, subtitle: string, onClick: () => void) {
+  settingRow(icon: Resource, title: string, containerColor: number, iconColor: number,
+             trailingText: string, trailingColor: number, onClick: () => void) {
     Row() {
-      // 左侧图标容器
       Column() {
         SymbolGlyph(icon)
-          .fontSize(18)
-          .fontColor([DesignColor.PRIMARY])
+          .fontSize(20)
+          .fontColor([iconColor])
       }
-      .width(36)
-      .height(36)
+      .width(32)
+      .height(32)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(DesignColor.PRIMARY_LIGHT)
+      .backgroundColor(containerColor)
       .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
-      // 标题 + 副标题
-      Column() {
-        Text(title)
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-        Text(subtitle)
+      Text(title)
+        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .layoutWeight(1)
+        .margin({ left: 12 })
+
+      if (trailingText !== "") {
+        Text(trailingText)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
+          .fontColor(trailingColor)
+          .fontFeature(DesignFontFeature.TNUM)
       }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-      .margin({ left: 12 })
 
-      // 右侧箭头
       SymbolGlyph($r('sys.symbol.chevron_right'))
-        .fontSize(16)
-        .fontColor([DesignColor.TEXT_SECONDARY])
+        .fontSize(20)
+        .fontColor([DesignColor.TEXT_TERTIARY])
+        .margin({ left: 4 })
     }
     .width("100%")
-    .padding({ left: 16, right: 16, top: 14, bottom: 14 })
-    .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值（原为旧值 #1A000000/offsetY 1）
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
-      offsetX: 0,
-      offsetY: 2
-    })
+    .height(64)
+    .alignItems(VerticalAlign.Center)
     .onClick(onClick)
   }
 
   build() {
     Scroll(this.scroller) {
       Column() {
-        // ========== 标题行 ==========
-        Row() {
-          Text("个人中心")
-            .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.ON_BACKGROUND)
+        if (this.userInfo === null) {
+          // 首载骨架（对齐安卓 UserInfoPage.kt:180-195 LoadingState；回 tab/绑定/换头像后的刷新保留现有内容）
+          LoadingState()
+        } else {
+          // ========== 标题行（对齐安卓 UserInfoPage.kt:202-240） ==========
+          Row() {
+            Text("我的")
+              .fontSize(DesignFontSize.ROOT_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_PRIMARY)
 
-          SymbolGlyph($r('sys.symbol.gearshape'))
-            .fontSize(24)
-            .fontColor([DesignColor.TEXT_SECONDARY])
-            .padding(12)
+            // 设置入口：48dp 圆形青底容器 + 齿轮 20（对齐安卓 UserInfoPage.kt:220-239，PR #47 由 surfaceVariant 改青）
+            Column() {
+              SymbolGlyph($r('sys.symbol.gearshape'))
+                .fontSize(20)
+                .fontColor([DesignColor.ICON_FOREGROUND_TEAL])
+            }
+            .width(48)
+            .height(48)
+            .borderRadius(DesignDimens.RADIUS_FULL)
+            .backgroundColor(DesignColor.ICON_CONTAINER_TEAL)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.SETTING, null)
             })
-        }
-        .justifyContent(FlexAlign.SpaceBetween)
-        .alignItems(VerticalAlign.Center)
-        .width("100%")
-        .padding({ top: 8 })
-
-        // ========== 用户信息区 ==========
-        Column() {
-          // 头像区域 - 点击可上传
-          Stack({ alignContent: Alignment.BottomEnd }) {
-            if (this.avatarUrl != null && this.avatarUrl !== "") {
-              // 有头像时显示头像图片
-              Image(this.avatarUrl)
-                .width(72)
-                .height(72)
-                .borderRadius(36)
-                .objectFit(ImageFit.Cover) // ImageFit.Crop 不存在：Cover 等价（等比缩放填满并裁剪多余部分）
-            } else {
-              // 无头像时显示默认图标
-              Column() {
-                if (this.isUploading) {
-                  LoadingProgress()
-                    .width(28)
-                    .height(28)
-                    .color(DesignColor.PRIMARY)
-                } else {
-                  SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
-                    .fontSize(32)
-                    .fontColor([DesignColor.PRIMARY])
-                }
-              }
-              .width(72)
-              .height(72)
-              .borderRadius(36)
-              .backgroundColor(DesignColor.PRIMARY_LIGHT)
-              .justifyContent(FlexAlign.Center)
-            }
-
-            // 相机角标
-            Column() {
-              SymbolGlyph($r('sys.symbol.camera_fill'))
-                .fontSize(13)
-                .fontColor([Color.White])
-            }
-            .width(22)
-            .height(22)
-            .borderRadius(11)
-            .backgroundColor(DesignColor.PRIMARY)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
           }
-          .onClick(() => {
-            this.selectAndUploadAvatar()
-          })
-
-          // 手机号（掩码展示，对齐安卓 maskPhone）
-          Text(maskPhone(this.userInfo?.phoneNumber ?? null))
-            .fontSize(20)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ top: 14 })
-
-          // 学校名（对齐安卓 UserInfoPage.kt:296 schoolVo.schoolName；无学校时回落学号）
-          Text(this.userInfo?.schoolVo?.schoolName ?? `学号：${this.userInfo?.studentId ?? ""}`)
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-            .margin({ top: 4 })
-        }
-        .width("100%")
-        .alignItems(HorizontalAlign.Center)
-        .padding({ top: 28, bottom: 28 })
-        .linearGradient({
-          direction: GradientDirection.Bottom,
-          colors: [[0x0F2D9B6A, 0.0], [Color.Transparent, 1.0]]
-        })
-
-        // ========== 余额信息卡（渐变绿底） ==========
-        Column() {
-          Row() {
-            // 左侧：账户余额
-            Column() {
-              Text("账户余额")
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(Color.White)
-                .opacity(0.7)
-              Text(`￥${this.userInfo?.balance ?? "0.00"}`)
-                .fontSize(28)
-                .fontWeight(DesignFontWeight.BOLD)
-                .fontColor(Color.White)
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Start)
-
-            // 中间：优惠券计数（点击进优惠券页，对齐安卓 UserInfoPage.kt:342-368 三列数据卡）
-            Column() {
-              Text(`${this.userInfo?.couponCount ?? 0}`)
-                .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(Color.White)
-              Text("优惠券")
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(Color.White)
-                .opacity(0.7)
-                .margin({ top: 4 })
-            }
-            .alignItems(HorizontalAlign.Center)
-            .onClick(() => {
-              pathStack.pushPathByName(RouteNames.COUPON, null)
-            })
-
-            // 右侧：校园卡状态 + 去充值
-            Column() {
-              // 绑定态判定与绑定页同语义：campusCard 空串=未绑（差异分析 02 §9.3）
-              Text(`校园卡：${(this.userInfo?.campusCard ?? "") == "" ? "未绑定" : "已绑定"}`)
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(Color.White)
-                .opacity(0.7)
-                .onClick(() => {
-                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
-                    this.refreshUserInfo()
-                  }, false)
-                })
-
-              Row() {
-                Text("去充值")
-                  .fontSize(DesignFontSize.CARD_TITLE)
-                  .fontColor(Color.White)
-                  .fontWeight(DesignFontWeight.MEDIUM)
-
-                SymbolGlyph($r('sys.symbol.chevron_right'))
-                  .fontSize(18)
-                  .fontColor([Color.White])
-              .margin({ top: 4 })
-              }
-              .onClick(() => {
-                pathStack.pushPathByName(RouteNames.RECHARGE, "")
-              })
-            }
-            .alignItems(HorizontalAlign.End)
-          }
-          .width("100%")
           .justifyContent(FlexAlign.SpaceBetween)
           .alignItems(VerticalAlign.Center)
-          .padding(20)
-        }
-        .width("100%")
-        .borderRadius(DesignDimens.CARD_RADIUS)
-        .linearGradient({
-          direction: GradientDirection.Right,
-          colors: [[DesignColor.PRIMARY, 0.0], [DesignColor.PRIMARY_DARK, 1.0]]
-        })
-
-        // ========== 订单快捷入口 ==========
-        Text("订单管理")
-          .fontSize(DesignFontSize.SECTION_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.ON_BACKGROUND)
-          .margin({ top: DesignDimens.SECTION_SPACING })
           .width("100%")
+          .padding({ top: 16, bottom: 8 })
 
-        Row() {
-          this.orderQuickEntry($r('sys.symbol.clock'), "待支付",
-            this.orderItemCount?.pendingPaymentCount ?? 0, () => {
-              this.jumpToOrderList(1)
+          // ========== 横排头部（对齐安卓 UserInfoPage.kt:242-357） ==========
+          Row() {
+            Stack({ alignContent: Alignment.Center }) {
+              this.avatarContent()
+            }
+            .width(56)
+            .height(56)
+            .onClick(() => {
+              this.selectAndUploadAvatar()
             })
 
-          Divider()
-            .strokeWidth(0.5)
-            .vertical(true)
-            .height(72)
-            .color(DesignColor.DIVIDER)
+            Column() {
+              Text(maskPhone(this.userInfo?.phoneNumber ?? null))
+                .fontSize(DesignFontSize.CARD_TITLE)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor(DesignColor.TEXT_PRIMARY)
 
-          this.orderQuickEntry($r('sys.symbol.laundry'), "清洗中",
-            this.orderItemCount?.processingCount ?? 0, () => {
-              this.jumpToOrderList(3)
+              // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时回落学号）
+              Text(this.userInfo?.schoolVo?.schoolName ?? `学号：${this.userInfo?.studentId ?? ""}`)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.TEXT_SECONDARY)
+                .margin({ top: 4 })
+            }
+            .layoutWeight(1)
+            .alignItems(HorizontalAlign.Start)
+            .margin({ left: 16 })
+
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(20)
+              .fontColor([DesignColor.TEXT_TERTIARY])
+          }
+          .width("100%")
+          .alignItems(VerticalAlign.Center)
+          .padding({ top: 8, bottom: 16 })
+
+          // ========== 数据卡（白底 GroupCard，对齐安卓 UserInfoPage.kt:359-436） ==========
+          Column() {
+            // 余额通栏在上（点击去充值）
+            Column() {
+              Text("钱包余额")
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.TEXT_SECONDARY)
+              Text(`¥${this.formatBalance()}`)
+                .fontSize(DesignFontSize.DATA_LARGE)
+                .fontWeight(DesignFontWeight.BOLD)
+                .fontFeature(DesignFontFeature.TNUM)
+                .fontColor(DesignColor.PRIMARY_DARK)
+                .margin({ top: 4 })
+                // 字重保持 BOLD：DATA_LARGE（36）属 font.display 档，规范允许 700
+            }
+            .alignItems(HorizontalAlign.Start)
+            .width("100%")
+            .onClick(() => {
+              pathStack.pushPathByName(RouteNames.RECHARGE, "")
             })
 
-          Divider()
-            .strokeWidth(0.5)
-            .vertical(true)
-            .height(72)
-            .color(DesignColor.DIVIDER)
+            // 下方券/单两半格各居中，中间 1×40 发丝线
+            Row() {
+              Column() {
+                Text(`${this.userInfo?.couponCount ?? 0}`)
+                  .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
+                  .fontFeature(DesignFontFeature.TNUM)
+                  .fontColor(DesignColor.TEXT_PRIMARY)
+                Text("优惠券")
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .margin({ top: 4 })
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center)
+              .onClick(() => {
+                pathStack.pushPathByName(RouteNames.COUPON, null)
+              })
 
-          this.orderQuickEntry($r('sys.symbol.envelope_open'), "待取件",
-            this.orderItemCount?.pendingPickupCount ?? 0, () => {
-              this.jumpToOrderList(4)
-            })
+              Column()
+                .width(1)
+                .height(40)
+                .backgroundColor(DesignColor.HAIRLINE)
 
-          Divider()
-            .strokeWidth(0.5)
-            .vertical(true)
-            .height(72)
-            .color(DesignColor.DIVIDER)
+              Column() {
+                Text(`${this.userInfo?.orderCount ?? 0}`)
+                  .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
+                  .fontFeature(DesignFontFeature.TNUM)
+                  .fontColor(DesignColor.TEXT_PRIMARY)
+                Text("累计订单")
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .margin({ top: 4 })
+              }
+              .layoutWeight(1)
+              .alignItems(HorizontalAlign.Center)
+            }
+            .width("100%")
+            .margin({ top: 8 })
+          }
+          .width("100%")
+          .padding(DesignDimens.CARD_PADDING)
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.CARD_SHADOW_RADIUS,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: DesignElevation.CARD_SHADOW_OFFSET
+          })
 
-          this.orderQuickEntry($r('sys.symbol.arrow_counterclockwise_clock'), "历史订单",
-            0, () => {
-              this.jumpToOrderList(0)
-            })
+          // ========== 账户卡 GroupCard（对齐安卓 UserInfoPage.kt:441-487） ==========
+          Column() {
+            this.settingRow($r('sys.symbol.creditcard'), "校园卡",
+              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+              this.isCampusCardBound() ? "已绑定" : "未绑定",
+              this.isCampusCardBound() ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY,
+              () => {
+                pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                  this.refreshUserInfo()
+                }, false)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            this.settingRow($r('sys.symbol.pin_fill'), "收货地址",
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                promptAction.showToast({ message: "功能开发中，敬请期待" })
+              })
+          }
+          .width("100%")
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.CARD_SHADOW_RADIUS,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: DesignElevation.CARD_SHADOW_OFFSET
+          })
+          .margin({ top: DesignDimens.CARD_SPACING })
+
+          // ========== 功能卡 GroupCard（对齐安卓 UserInfoPage.kt:492-535） ==========
+          Column() {
+            this.settingRow($r('sys.symbol.list_square_bill'), "我的订单",
+              DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE,
+              `${this.userInfo?.orderCount ?? 0} 单`, DesignColor.TEXT_SECONDARY,
+              () => {
+                this.jumpToOrderList(0)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            this.settingRow($r('sys.symbol.gearshape'), "设置",
+              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                pathStack.pushPathByName(RouteNames.SETTING, null)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            // 联系客服 / 常见问题（鸿蒙独有 F4，保留为行卡）
+            this.settingRow($r('sys.symbol.service'), "联系客服",
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                promptAction.showToast({ message: "功能开发中，敬请期待" })
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            this.settingRow($r('sys.symbol.questionmark_circle'), "常见问题",
+              DesignColor.ICON_CONTAINER_PURPLE, DesignColor.ICON_FOREGROUND_PURPLE,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                promptAction.showToast({ message: "功能开发中，敬请期待" })
+              })
+          }
+          .width("100%")
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.CARD_SHADOW_RADIUS,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: DesignElevation.CARD_SHADOW_OFFSET
+          })
+          .margin({ top: DesignDimens.CARD_SPACING })
+
+          // ========== 订单管理（鸿蒙独有 F3，保留） ==========
+          Text("订单管理")
+            .fontSize(DesignFontSize.SECTION_TITLE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .width("100%")
+            .margin({ top: DesignDimens.SECTION_SPACING })
+
+          Row() {
+            this.orderQuickEntry($r('sys.symbol.clock'), "待支付",
+              this.orderItemCount?.pendingPaymentCount ?? 0,
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              () => {
+                this.jumpToOrderList(1)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .vertical(true)
+              .height(72)
+              .color(DesignColor.DIVIDER)
+
+            this.orderQuickEntry($r('sys.symbol.laundry'), "清洗中",
+              this.orderItemCount?.processingCount ?? 0,
+              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+              () => {
+                this.jumpToOrderList(3)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .vertical(true)
+              .height(72)
+              .color(DesignColor.DIVIDER)
+
+            this.orderQuickEntry($r('sys.symbol.envelope_open'), "待取件",
+              this.orderItemCount?.pendingPickupCount ?? 0,
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              () => {
+                this.jumpToOrderList(4)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .vertical(true)
+              .height(72)
+              .color(DesignColor.DIVIDER)
+
+            this.orderQuickEntry($r('sys.symbol.arrow_counterclockwise_clock'), "历史订单",
+              0,
+              DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE,
+              () => {
+                this.jumpToOrderList(0)
+              })
+          }
+          .width("100%")
+          .margin({ top: 12 })
+          .padding({ top: 8, bottom: 8 })
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: DesignColor.OUTLINE })
+          .shadow({
+            radius: DesignElevation.CARD_SHADOW_RADIUS,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: DesignElevation.CARD_SHADOW_OFFSET
+          })
         }
-        .width("100%")
-        .margin({ top: 12 })
-        .backgroundColor(DesignColor.SURFACE)
-        .borderRadius(DesignDimens.CARD_RADIUS)
-        // v0.4 §3.1 卡片画法：补 1px outline 描边，阴影收敛为 level1 规范值
-        .border({ width: 1, color: DesignColor.OUTLINE })
-        .shadow({
-          radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
-          offsetX: 0,
-          offsetY: 2
-        })
-
-        // ========== 功能列表 ==========
-        // Column 无 .space 属性（原写法为 Flex 用法），改用构造参数 { space } 实现行间距
-        Column({ space: DesignDimens.CARD_SPACING }) {
-          this.functionItem($r('sys.symbol.label'), "优惠券", "可领取优惠券", () => {
-            pathStack.pushPathByName(RouteNames.COUPON, null)
-          })
-
-          // 收货地址占位行（对齐安卓 UserInfoPage.kt:431-445，功能未开放）
-          this.functionItem($r('sys.symbol.pin_fill'), "收货地址", "收货地址管理", () => {
-            promptAction.showToast({ message: "功能开发中" })
-          })
-
-          this.functionItem($r('sys.symbol.service'), "联系客服", "在线咨询", () => {
-            promptAction.showToast({ message: "功能开发中" })
-          })
-
-          this.functionItem($r('sys.symbol.questionmark_circle'), "常见问题", "使用指南", () => {
-            promptAction.showToast({ message: "功能开发中" })
-          })
-        }
-        .width("100%")
-        .margin({ top: DesignDimens.SECTION_SPACING })
 
         // 底部安全距离
         Row().height(72)

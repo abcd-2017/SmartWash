@@ -9,6 +9,8 @@ export class RouteNames {
   static readonly HOME: string = "Home"
   static readonly ADD_SCHOOL: string = "AddSchool"
   static readonly SETTING: string = "Setting"
+  // 权限管理页（对齐安卓 UserRoute.PermissionManagement；设置页「消息通知」「权限管理」行跳入）
+  static readonly PERMISSION_MANAGEMENT: string = "PermissionManagement"
   static readonly RECHARGE: string = "Recharge"
   static readonly COUPON: string = "Coupon"
   static readonly ORDER_LIST: string = "OrderList"
@@ -38,4 +40,6 @@ export class RouteNames {
   static readonly TOOLBOX_SHORT_CODE_DETAIL: string = "ToolboxShortCodeDetail"
   // 内置浏览器页（深链 web 分支与运营位 H5 承载，对齐安卓 ShellRoute.WEB_VIEW）
   static readonly WEB_PAGE: string = "WebPage"
+  // 游戏中心页（对齐安卓 GameRoute.Center；入口为深链 smartwash://game-center 与后端 workbench_entry 卡片）
+  static readonly GAME_CENTER: string = "GameCenter"
 }

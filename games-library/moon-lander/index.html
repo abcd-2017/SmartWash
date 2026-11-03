@@ -100,7 +100,7 @@ paint(B||"light");
   <header>
     <div class="boxes">
       <div class="box"><span class="label">当前站台</span><b id="hudLv">1</b></div>
-      <div class="box alt"><span class="label">单站最佳</span><b id="hudBest">0</b></div>
+      <div class="box alt"><span class="label">历史最佳</span><b id="hudBest">0</b></div>
     </div>
   </header>
   <div class="stage">
@@ -290,7 +290,7 @@ function touchdown(vy,vxs,aa){
   syncHud();
   showOv({kicker:"TOUCHDOWN",title:"着陆成功 · 第 "+S.level+" 站",
     text:newUn?"解锁第 "+(S.level+1)+" 站：平台更窄、横风更急，重力也在爬升。":"动作干净利落，试试更高分的软着陆。",
-    stats:[["触地垂直",vy.toFixed(1)],["触地水平",vxs.toFixed(1)],["倾角",Math.round(aa*57.3)+"°"],["剩余燃料",S.fuel.toFixed(0)],["得分",sc],["单站最佳",S.best]],
+    stats:[["触地垂直",vy.toFixed(1)],["触地水平",vxs.toFixed(1)],["倾角",Math.round(aa*57.3)+"°"],["剩余燃料",S.fuel.toFixed(0)],["得分",sc],["历史最佳",S.best]],
     btns:[["下一站","primary",function(){startLevel(S.level+1)}],["重飞本站","ghost",function(){startLevel(S.level)}],["选站","ghost",function(){showMenu()}]]});
 }
 function crash(reason){
@@ -317,7 +317,7 @@ function showMenu(){
   showOv({kicker:"MOON DESCENT",title:"月面轻降",
     text:"按住屏幕或「点火」喷射减速，‹ › 修正姿态；垂直 ≤46、水平 ≤30、倾角 ≤28° 落在平台内。",
     mid:'step',
-    stats:[["最高解锁",S.unlocked+" 站"],["单站最佳",S.best]],
+    stats:[["最高解锁",S.unlocked+" 站"],["历史最佳",S.best]],
     btns:[["开始下降 · 第 "+S.selLevel+" 站","primary",function(){startLevel(S.selLevel)}]]});
   renderStepper(c);
 }

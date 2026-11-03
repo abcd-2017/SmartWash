@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import java.time.LocalDateTime;
 import java.io.Serializable;
 import lombok.Data;
@@ -45,4 +46,12 @@ public class Payments implements Serializable {
     private String status;
 
     private LocalDateTime paidAt;
+
+    /**
+     * 逻辑删除标记：0-未删除，1-已删除。
+     * 资金流水为审计凭证，禁止物理删除；MyBatis-Plus 据此在所有查询/更新自动追加 is_delete = 0，
+     * removeById 会转为 update is_delete = 1。
+     */
+    @TableLogic
+    private Integer isDelete;
 }

@@ -35,16 +35,12 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())  // 启用 CORS
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint)) // 使用自定义异常处理器
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "admin" -> "ROLE_admin"
-                    .requestMatchers("/admin/div/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // 观象台管理端
+                    .requestMatchers("/admin/**").hasRole(DefaultConstant.ADMIN_USER_LOGIN_TYPE) // "admin" -> "ROLE_admin"；通配已覆盖 /admin/div/**，显式细化规则须置于通配之前否则永远匹配不到
                     .requestMatchers("/web/auth/div/**").hasRole(DefaultConstant.USER_LOGIN_TYPE) // 观象台用户端
                     .requestMatchers("/web/auth/**").hasRole(DefaultConstant.USER_LOGIN_TYPE)       // "user" -> "ROLE_user"
                     .requestMatchers("/auth/**").permitAll() // 认证接口（登录、注册、验证码）
                     .requestMatchers( // 公开的只读数据接口
-                            "/web/orders/status",
                             "/web/laundryItems/all",
-                            "/web/lockers/status",
-                            "/web/lockers/all",
                             "/web/schools/allName",
                             "/web/payments/payType",
                             "/web/payments/payStatus",

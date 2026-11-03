@@ -25,18 +25,20 @@ const DEFAULT_UNKNOWN_MESSAGE: string = "未知错误"
  * - 业务失败（201/404/500 等）且 message 缺失：补默认文案，页面 toast 不再弹 "undefined"；
  * - 401 已由 Axios 响应拦截器统一处理（清 token → replace 登录页），此处不改写。
  * 统一转译后，页面只需判断 code === 200，失败分支的 message 一定可用。
+ *
+ * 注：message 的「缺失」含 undefined / null / 空串三态——后端 Jackson 可显式下发 null，
+ * 仅判 undefined 会把 null 透传到 toast（单测 HttpUtil.test.ets 覆盖该边界）。
  */
-function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
+export function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
   if (raw.code === undefined || raw.code === null) {
     const unknown: BaseResponse<T> = {
       data: null,
       code: BizCode.ERROR,
-      message: raw.message !== undefined && raw.message !== "" ? raw.message : DEFAULT_UNKNOWN_MESSAGE
+      message: isBlankMessage(raw.message) ? DEFAULT_UNKNOWN_MESSAGE : raw.message
     }
     return unknown
   }
-  if (raw.code !== BizCode.SUCCESS &&
-    (raw.message === undefined || raw.message === "")) {
+  if (raw.code !== BizCode.SUCCESS && isBlankMessage(raw.message)) {
     const failed: BaseResponse<T> = {
       data: raw.data,
       code: raw.code,
@@ -45,6 +47,11 @@ function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
     return failed
   }
   return raw
+}
+
+/** message 是否为缺失态（undefined / null / 空串） */
+function isBlankMessage(message: string | null | undefined): boolean {
+  return message === undefined || message === null || message === ""
 }
 
 /**

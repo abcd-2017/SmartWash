@@ -9,8 +9,9 @@ import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
-import { AppConfirmDialog } from "../view/common/AppComponents"
+import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import vibrator from '@ohos.vibrator'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -34,6 +35,13 @@ struct OrderList {
   @State currIndex: number = 0
   @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
+  // 首载/页码 1 加载态：骨架门控（对齐安卓 showSkeleton = Loading && list.isEmpty()）
+  @State isLoading: boolean = false
+  // 切 tab 内容淡出/淡入（对齐安卓 AnimatedContent 300/200；ArkUI 无等价组件，用透明度近似）
+  @State contentOpacity: number = 1
+  private fadeTimer: number = -1
+  // 各页签已加载列表缓存（对齐安卓 VM 按状态保留列表：切页签不重建，仅首载请求）
+  private sectionCache: Map<string, Array<MonthSection>> = new Map()
   // 取消订单确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
   private confirmCancelController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
@@ -51,7 +59,8 @@ struct OrderList {
   // 轻量分页封装：触底加载/上锁防重/封底判定统一收敛（差异分析 01 §3.3）
   private paging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
-      return this.fetchOrderPage(page)
+      // 第 1 页整体替换，后续页追加（对齐安卓 loadAllOrders / loadMore）
+      return this.fetchOrderPage(page, page === 1)
     },
     (loading: boolean) => {
       this.isLoadingMore = loading
@@ -62,29 +71,39 @@ struct OrderList {
     // 安全取参（评审 #31）：参数缺失/非法时兜底第 0 个页签
     this.currIndex = getNumberParam(RouteNames.ORDER_LIST) ?? 0
     this.orderStatus = this.list[this.currIndex]
-    this.fetchOrderPage(1)
+    this.fetchOrderPage(1, true)
   }
 
   /**
    * 按页拉取订单列表。
+   * @param replace 是否整体替换（第 1 页 true；触底加载 false）
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
-  async fetchOrderPage(page: number): Promise<boolean> {
+  async fetchOrderPage(page: number, replace: boolean): Promise<boolean> {
+    if (page === 1) {
+      this.isLoading = true
+    }
     let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
     if (res.code === HttpStatusCode.Ok) {
-      if (res.data == null || res.data?.length == 0) {
-        if (this.orderListLength() > 0) {
+      if (res.data === null || res.data === undefined || res.data.length === 0) {
+        if (page === 1) {
+          this.sections = []
+          this.sectionCache.set(this.orderStatus, [])
+        } else if (this.orderListLength() > 0) {
           showToastSafety("没有更多数据了")
         }
+        this.isLoading = false
+        this.contentOpacity = 1
         return false
       }
-      if (page == 1) {
-        this.sections = []
-      }
-      this.appendOrders(res.data)
+      this.appendOrders(res.data, replace)
+      this.isLoading = false
+      this.contentOpacity = 1
       return true
     }
     showToastSafety(res.message, "订单加载失败")
+    this.isLoading = false
+    this.contentOpacity = 1
     return false
   }
 
@@ -99,12 +118,15 @@ struct OrderList {
 
   /**
    * 追加订单并重建月份分组（D2 决策：数据源维持单状态分页拉取，
-   * 列表结构对齐安卓——按 createdAt 降序、按 yyyy-MM 分组，组间倒序排列）
+   * 列表结构对齐安卓——按 createdAt 降序、按 yyyy-MM 分组，组间倒序排列）。
+   * @param replace true 时仅用本页数据重建（第 1 页语义），false 时与现有列表合并（触底加载）
    */
-  private appendOrders(data: Array<OrderInfo>): void {
+  private appendOrders(data: Array<OrderInfo>, replace: boolean): void {
     const flat: Array<OrderInfo> = []
-    for (const s of this.sections) {
-      flat.push(...s.orders)
+    if (!replace) {
+      for (const s of this.sections) {
+        flat.push(...s.orders)
+      }
     }
     flat.push(...data)
     flat.sort((a: OrderInfo, b: OrderInfo) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))
@@ -129,18 +151,32 @@ struct OrderList {
       }
     }
     this.sections = next
+    // 缓存当前页签列表（切页签直接复用，不再重建）
+    this.sectionCache.set(this.orderStatus, next)
   }
 
   aboutToDisappear(): void {
+    this.clearFadeTimer()
     AppStorage.setOrCreate("refreshOrderCount", true)
     AppStorage.setOrCreate("refreshUserInfo", true)
   }
 
+  /** 清理切 tab 淡入定时器（避免页面销毁后回调改状态） */
+  private clearFadeTimer(): void {
+    if (this.fadeTimer !== -1) {
+      clearTimeout(this.fadeTimer)
+      this.fadeTimer = -1
+    }
+  }
+
+  /**
+   * 刷新当前页签（下拉刷新 / 返回页面 / 取消订单后）。
+   * 不清空列表：请求返回前保留旧列表（对齐安卓 stale-while-revalidate，取消后不闪空）。
+   */
   refreshOrder() {
     this.isRefreshing = false
     this.paging.reset()
-    this.sections = []
-    this.fetchOrderPage(1)
+    this.fetchOrderPage(1, true)
   }
 
   /** 确认取消订单：成功后 toast + 当前状态全量重拉，并打标记让订单计数同步刷新 */
@@ -164,58 +200,91 @@ struct OrderList {
   @Builder
   PageHeader() {
     Row() {
-      SymbolGlyph($r('sys.symbol.chevron_left'))
-        .fontSize(24)
-        .fontColor([DesignColor.TEXT_PRIMARY])
-        .onClick(() => {
-          pathStack.pop()
-        })
+      // 返回热区 48（安卓 PageHeader：行首让位 12，图形左缘落在 24）
+      Column() {
+        SymbolGlyph($r('sys.symbol.chevron_left'))
+          .fontSize(24)
+          .fontColor([DesignColor.TEXT_PRIMARY])
+      }
+      .width(48)
+      .height(48)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .onClick(() => {
+        pathStack.pop()
+      })
 
       Text("我的订单")
-        .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontWeight(DesignFontWeight.BOLD)
+        .fontSize(DesignFontSize.ROOT_TITLE)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ left: 8 })
     }
     .width("100%")
-    .height(56)
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
     .backgroundColor(DesignColor.BACKGROUND)
   }
 
+  /**
+   * 状态筛选胶囊条（对齐安卓 AppPillTabRow）：
+   * 选中 = primary 实底 + 白字；未选中 = surface 白底 + 1px outline 描边 + textSecondary；
+   * radiusFull，视觉高 34（文字行盒 16 + 上下 9），垂直 padding 9 → 14 把触控热区抬到 44；可横滚。
+   */
   @Builder
   TabBar() {
-    Row() {
-      ForEach(this.list, (title: string, index: number) => {
-        Column() {
-          // 两态同字号同字重（14/Medium，对齐安卓 AppTabBar）：避免选中瞬间字号跳变拉动兄弟位移
-          Text(getShowOrderStatusDescription(title))
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
-
-          // 底部短横线指示器（20×3 r1.5，对齐安卓 AppTabBar）
-          Divider()
-            .strokeWidth(3)
-            .width(20)
-            .borderRadius(1.5)
-            .color(index === this.currIndex ? DesignColor.PRIMARY : Color.Transparent)
-            .margin({ top: 6 })
-        }
-        .layoutWeight(1)
-        .alignItems(HorizontalAlign.Center)
-        .onClick(() => {
-          if (this.currIndex !== index) {
-            this.currIndex = index
-            this.orderStatus = this.list[index]
-            this.refreshOrder()
+    Scroll() {
+      Row() {
+        ForEach(this.list, (title: string, index: number) => {
+          Row() {
+            Text(getShowOrderStatusDescription(title))
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
           }
-        })
-      })
+          .justifyContent(FlexAlign.Center)
+          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变）
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
+          .border({
+            width: 1,
+            color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
+          })
+          .margin({ right: DesignDimens.SPACE_XS })
+          .onClick(() => {
+            if (this.currIndex !== index) {
+              // tab 切换 SELECTION 触感（对齐安卓 AppPillTabRow）
+              try {
+                vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+              } catch (err) {
+                // 忽略不支持的设备
+              }
+              this.currIndex = index
+              this.orderStatus = this.list[index]
+              this.paging.reset()
+              // 切 tab 内容淡出 → 数据到位淡入（对齐安卓 AnimatedContent 300/200）
+              this.contentOpacity = 0
+              const cached = this.sectionCache.get(this.orderStatus)
+              if (cached !== undefined) {
+                // 已加载页签：直接复用缓存（对齐安卓 VM 按状态保留列表）
+                this.sections = cached
+                this.clearFadeTimer()
+                this.fadeTimer = setTimeout(() => {
+                  this.contentOpacity = 1
+                }, 200)
+              } else {
+                this.sections = []
+                this.fetchOrderPage(1, true)
+              }
+            }
+          })
+        }, (title: string) => title)
+      }
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width("100%")
-    .height(48)
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
     .backgroundColor(DesignColor.BACKGROUND)
   }
 
@@ -225,96 +294,103 @@ struct OrderList {
         // 自定义页面标题
         this.PageHeader()
 
-        // 自定义 Tab 标签栏
+        Blank()
+          .height(DesignDimens.SPACE_SM)
+
+        // 状态筛选胶囊条
         this.TabBar()
 
-        // 分隔线
-        Divider()
-          .strokeWidth(1)
-          .color(DesignColor.DIVIDER)
+        Blank()
+          .height(DesignDimens.SPACE_XL)
 
-        // 内容区域
-        if (this.orderListLength() > 0) {
-          Refresh({ refreshing: $$this.isRefreshing }) {
-            List() {
-              ForEach(this.sections, (section: MonthSection) => {
-                // 月份标题（对齐安卓 "%d年%d月" 月份行）
-                ListItem() {
-                  Text(this.monthLabel(section.monthKey))
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
-                    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 24, bottom: 8 })
-                }
+        // 内容区域（切 tab 淡入淡出容器，对齐安卓 AnimatedContent 300/200）
+        Column() {
+          if (this.isLoading && this.orderListLength() === 0) {
+            // 首载骨架（对齐安卓 LoadingState；有旧数据时走 stale-while-revalidate 不闪骨架）
+            LoadingState()
+              .width("100%")
+              .layoutWeight(1)
+          } else if (this.orderListLength() > 0) {
+            Refresh({ refreshing: $$this.isRefreshing }) {
+              List({ space: DesignDimens.CARD_SPACING }) {
+                ForEach(this.sections, (section: MonthSection) => {
+                  // 月份标题（对齐安卓 labelSmall 12/Medium/ls0.3，卡间距由 List space 统一给出）
+                  ListItem() {
+                    Text(this.monthLabel(section.monthKey))
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontWeight(DesignFontWeight.MEDIUM)
+                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .letterSpacing(0.3)
+                      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+                  }
 
-                // 整月订单合并卡
-                ListItem() {
-                  OrderMonthCard({
-                    orders: section.orders,
-                    cancelClick: (order: OrderInfo) => {
-                      this.pendingCancelOrderId = order.orderId
-                      this.confirmCancelController.open()
-                    },
-                    paymentClick: (order: OrderInfo) => {
-                      // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
-                      pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
-                    },
-                    shipmentClick: (order: OrderInfo) => {
-                      const param: PickupDeliveryParam = new PickupDeliveryParam()
-                      param.order = order
-                      param.isPickup = false
-                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                    },
-                    pickupClick: (order: OrderInfo) => {
-                      const param: PickupDeliveryParam = new PickupDeliveryParam()
-                      param.order = order
-                      param.isPickup = true
-                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                    },
-                    itemClick: (order: OrderInfo) => {
-                      pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
-                    },
+                  // 整月订单合并卡
+                  ListItem() {
+                    OrderMonthCard({
+                      orders: section.orders,
+                      cancelClick: (order: OrderInfo) => {
+                        this.pendingCancelOrderId = order.orderId
+                        this.confirmCancelController.open()
+                      },
+                      paymentClick: (order: OrderInfo) => {
+                        // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
+                        pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
+                      },
+                      shipmentClick: (order: OrderInfo) => {
+                        const param: PickupDeliveryParam = new PickupDeliveryParam()
+                        param.order = order
+                        param.isPickup = false
+                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                      },
+                      pickupClick: (order: OrderInfo) => {
+                        const param: PickupDeliveryParam = new PickupDeliveryParam()
+                        param.order = order
+                        param.isPickup = true
+                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                      },
+                      itemClick: (order: OrderInfo) => {
+                        pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
+                      },
+                    })
+                  }
+                  .padding({
+                    left: DesignDimens.PAGE_PADDING,
+                    right: DesignDimens.PAGE_PADDING
                   })
+                }, (section: MonthSection) => section.monthKey)
+
+                ListItem() {
+                  LoadingFooter({ isLoading: !!this.isLoadingMore })
                 }
-                .padding({
-                  left: DesignDimens.PAGE_PADDING,
-                  right: DesignDimens.PAGE_PADDING,
-                  bottom: 6
-                })
-              }, (section: MonthSection) => section.monthKey)
-
-              ListItem() {
-                LoadingFooter({ isLoading: !!this.isLoadingMore })
               }
+              .onScrollIndex((start: number, end: number) => {
+                this.paging.onScrollIndex(end, this.orderListLength())
+              })
+              .onScrollFrameBegin((offset: number, state: ScrollState) => {
+                this.paging.onScrollFrameBegin(offset)
+                return { offsetRemain: offset }
+              })
+              .width("100%")
+              .height("100%")
             }
-            .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.orderListLength())
+            .layoutWeight(1)
+            .onRefreshing(() => {
+              this.refreshOrder()
             })
-            .onScrollFrameBegin((offset: number, state: ScrollState) => {
-              this.paging.onScrollFrameBegin(offset)
-              return { offsetRemain: offset }
-            })
-            .height("100%")
+          } else {
+            // 空状态（对齐安卓 EmptyState：DrumMark 48 + 引导文案）
+            Column() {
+              EmptyState({ message: "暂无订单" })
+            }
+            .width("100%")
+            .layoutWeight(1)
+            .justifyContent(FlexAlign.Center)
           }
-          .onRefreshing(() => {
-            this.refreshOrder()
-          })
-        } else {
-          // 空状态
-          Column() {
-            SymbolGlyph($r('sys.symbol.square_slash'))
-              .fontColor([DesignColor.PRIMARY])
-              .fontSize(56)
-              .margin({ bottom: 16 })
-
-            Text("暂无订单")
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-          }
-          .height("100%")
-          .width("100%")
-          .justifyContent(FlexAlign.Center)
         }
+        .width("100%")
+        .layoutWeight(1)
+        .opacity(this.contentOpacity)
+        .animation({ duration: 200, curve: Curve.EaseOut })
       }
       .width("100%")
       .height("100%")
@@ -323,7 +399,7 @@ struct OrderList {
     .hideTitleBar(true)
     .onShown(() => {
       // 支付/寄件等 pop() 均不带 result，原 onPop 回调不触发（评审 #8）；
-      // 改为每次展示时重置分页后重拉：page==1 分支会在响应返回后整体替换列表，避免追加重复数据
+      // 改为每次展示时重置分页后重拉（保留旧列表，请求返回后整体替换，避免追加重复数据）
       this.refreshOrder()
     })
   }

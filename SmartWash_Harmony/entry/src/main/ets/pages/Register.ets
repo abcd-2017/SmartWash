@@ -8,6 +8,29 @@ import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
+// ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
+// 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
+// 不在 8 档字阶内；全局按钮批次补 token 后回收本常量。
+const BUTTON_FONT_SIZE: number = 15
+const BUTTON_LETTER_SPACING: number = 1
+// 玻璃卡底白 8%（Android GlassBgCard = Color.White.copy(alpha = 0.08f)）
+const GLASS_CARD_BG: number = 0x14FFFFFF
+// 卡内分隔线白 12%（Android RegisterPage.kt:470-480）
+const GLASS_DIVIDER: number = 0x1FFFFFFF
+// 占位符白 45%（Android contentColor.copy(alpha = 0.45f)）
+const GLASS_PLACEHOLDER: number = 0x73FFFFFF
+// 前缀图标白 50%（Android contentColor.copy(alpha = 0.5f)）
+const GLASS_PREFIX: number = 0x80FFFFFF
+// 尾部图标白 92%（Android contentColor.copy(alpha = 0.92f)）
+const GLASS_ICON_ACTIVE: number = 0xEBFFFFFF
+// 进度条未激活段白 28%（Android RegisterPage.kt:107 ProgressInactive）
+const GLASS_PROGRESS_INACTIVE: number = 0x47FFFFFF
+// 发送验证码按钮禁用态：描边白 30%×0.55、文字白 92%×0.55（Android RegisterPage.kt:545-552）
+const GLASS_SEND_BORDER_DISABLED: number = 0x2AFFFFFF
+const GLASS_SEND_TEXT_DISABLED: number = 0x81FFFFFF
+// 输入错误色：Android 认证页用 ErrorLight #FFB4AB（深色玻璃底专用），
+// 与 DESIGN.md 浅色 surface 的 error #A8435A 冲突，按「Android 代码优先」取 ErrorLight
+const AUTH_ERROR: number = 0xFFFFB4AB
 // 返回/去登录的节流间隔：与安卓 RegisterPage.kt:114-121 的 800ms 防抖一致，
 // 防转场残影期连点把导航栈弹空（黑屏）
 const NAV_THROTTLE_MS: number = 800
@@ -28,6 +51,9 @@ struct Register {
   @State countDown: number = 0
   // 注册请求进行中标记：按钮展示 loading 并拦截连点（评审 #12）
   @State registering: boolean = false
+  // 验证码请求进行中标记：发送按钮禁用（对齐 Android sendEnabled = countDown===0 && captchaState !is Loading）
+  @State captchaLoading: boolean = false
+  @State showPassword: boolean = false
   private timer: number = -1
   // 导航防抖（返回/去登录节流，防连点弹空导航栈）
   private navDebouncer: Debouncer = new Debouncer()
@@ -39,6 +65,22 @@ struct Register {
       this.timer = -1
     }
     this.navDebouncer.cancel()
+  }
+
+  private isValidPhone(value: string): boolean {
+    return /^1[3-9]\d{9}$/.test(value)
+  }
+
+  private sendEnabled(): boolean {
+    return this.countDown === 0 && !this.captchaLoading
+  }
+
+  private resetCountDown() {
+    if (this.timer !== -1) {
+      clearInterval(this.timer)
+      this.timer = -1
+    }
+    this.countDown = 0
   }
 
   startCountDown() {
@@ -57,16 +99,40 @@ struct Register {
     }, 1000)
   }
 
+  // 发送验证码（对齐 Android RegisterPage.kt:376-395：先校验手机号，失败立即可重发）
+  private async sendCaptcha() {
+    if (!this.sendEnabled()) {
+      return
+    }
+    this.checkPhone()
+    if (this.checkPhoneNumber) {
+      return
+    }
+    this.captchaLoading = true
+    this.startCountDown()
+    try {
+      let res = await getCaptcha(this.phoneNumber ?? "")
+      if (res.code === HttpStatusCode.Ok) {
+        showToastSafety(res.data, "验证码已发送，请查看短信")
+      } else {
+        showToastSafety(res.message, "验证码获取失败")
+        this.resetCountDown()
+      }
+    } finally {
+      this.captchaLoading = false
+    }
+  }
+
   check() {
     this.checkPhone()
-    this.checkCode = this.verificationCode?.length != 6
+    this.checkCode = (this.verificationCode?.length ?? 0) !== 6
     let len = this.password?.length ?? 0;
     this.checkPassword = len < 6 || len > 16
   }
 
   checkPhone() {
     let value = this.phoneNumber ?? ""
-    this.checkPhoneNumber = !/^1[3-9]\d{9}$/.test(value)
+    this.checkPhoneNumber = !this.isValidPhone(value)
   }
 
   build() {
@@ -88,212 +154,270 @@ struct Register {
 
         // 主内容区域
         Column() {
-          // 顶部品牌标识区域
-          Column({ space: 8 }) {
-            // 品牌标识 — 外圈光环 + 内圈图标
-            Column() {
-              // 内圈 — 图标（品牌图形与登录页统一为水波符号，替代跨设备渲染不可控的 emoji）
-              Column() {
-                SymbolGlyph($r('sys.symbol.water_waves'))
-                  .fontSize(36)
-                  .fontColor([Color.White])
-              }
-              .width(72)
-              .height(72)
-              .borderRadius(36)
-              .backgroundColor(DesignColor.GLASS_BG)
-              .border({
-                width: 1,
-                color: DesignColor.GLASS_BORDER,
-                style: BorderStyle.Solid
-              })
-              .justifyContent(FlexAlign.Center)
-              .alignItems(HorizontalAlign.Center)
+          // 顶部导航行 — 48dp 返回热区 + 22/600 标题居中 + 48 占位（对齐 Android RegisterPage.kt:221-254）
+          Row() {
+            Stack({ alignContent: Alignment.Center }) {
+              SymbolGlyph($r('sys.symbol.chevron_left'))
+                .fontSize(24)
+                .fontColor([Color.White])
+                .opacity(0.8)
             }
-            // 外圈 — 淡光环
-            .width(88)
-            .height(88)
-            .borderRadius(44)
-            .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-            .margin({ top: 20 })
+            .width(48)
+            .height(48)
+            .onClick(() => {
+              // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐安卓 RegisterPage.kt:116-121）
+              this.navDebouncer.throttle(() => {
+                pathStack.pop()
+              }, NAV_THROTTLE_MS)
+            })
 
-            // 品牌文字
+            Text("注 册")
+              .fontSize(DesignFontSize.ROOT_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(Color.White)
+              .layoutWeight(1)
+              .textAlign(TextAlign.Center)
+
+            // 右侧 48 占位，保持标题视觉居中
+            Stack()
+              .width(48)
+              .height(48)
+          }
+          .width("100%")
+          .padding({ top: 16, bottom: 16 })
+          .alignItems(VerticalAlign.Center)
+
+          // 品牌区（92dp 单层圆形 + 标题 22/600 + 副标题 12，对齐 Android RegisterPage.kt:259-292）
+          Column() {
+            Stack({ alignContent: Alignment.Center }) {
+              SymbolGlyph($r('sys.symbol.drop'))
+                .fontSize(42)
+                .fontColor([Color.White])
+            }
+            .width(92)
+            .height(92)
+            .borderRadius(46)
+            .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+            .border({
+              width: 1,
+              color: DesignColor.GLASS_BORDER_SUBTLE,
+              style: BorderStyle.Solid
+            })
+
             Text("创建账号")
               .fontSize(DesignFontSize.ROOT_TITLE)
-              .fontWeight(DesignFontWeight.BOLD)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(Color.White)
-              .margin({ top: 20 })
+              .lineHeight(28)
+              .margin({ top: 12 })
 
-            Text("开启洗衣新旅程")
-              .fontSize(DesignFontSize.BODY)
+            Text("开启智能洗衣之旅")
+              .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.NORMAL)
-              .fontColor(DesignColor.GLASS_TEXT_DISABLED)
-              .margin({ top: 6 })
+              .fontColor(Color.White)
+              .lineHeight(16)
+              .margin({ top: 4 })
 
-            // 进度条
+            // 进度条（激活纯白 + 未激活白 28%，对齐 Android RegisterPage.kt:296-319）
             Row({ space: 8 }) {
-              // 激活段 — 白色渐变
               Column()
                 .width(32)
                 .height(6)
-                .borderRadius(3)
-                .linearGradient({
-                  direction: GradientDirection.Right,
-                  colors: [[Color.White, 0.0], [0xCCFFFFFF, 1.0]]
-                })
-
-              // 未激活段
-              Column()
-                .width(32)
-                .height(6)
-                .borderRadius(3)
-                .backgroundColor(DesignColor.GLASS_INPUT)
+                .borderRadius(DesignDimens.RADIUS_FULL)
+                .backgroundColor(Color.White)
 
               Column()
                 .width(32)
                 .height(6)
-                .borderRadius(3)
-                .backgroundColor(DesignColor.GLASS_INPUT)
-            .margin({ top: 24 })
+                .borderRadius(DesignDimens.RADIUS_FULL)
+                .backgroundColor(GLASS_PROGRESS_INACTIVE)
+
+              Column()
+                .width(32)
+                .height(6)
+                .borderRadius(DesignDimens.RADIUS_FULL)
+                .backgroundColor(GLASS_PROGRESS_INACTIVE)
             }
+            .margin({ top: 20 })
           }
           .width("100%")
           .alignItems(HorizontalAlign.Center)
+          .margin({ top: 16 })
 
-          // 毛玻璃输入卡片
-          Column({ space: 0 }) {
-            // 手机号输入框
-            TextInput({ text: $$this.phoneNumber, placeholder: "请输入手机号" })
-              .type(InputType.PhoneNumber)
-              .maxLength(11)
-              .width("100%")
-              .height(50)
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(Color.White)
-              .placeholderColor(DesignColor.GLASS_TEXT_HINT)
-              .backgroundColor(Color.Transparent)
-              .onChange(it => {
-                this.phoneNumber = it
-              })
-
-            if (this.checkPhoneNumber) {
-              Text("手机号非法")
-                .fontColor(DesignColor.ERROR)
-                .fontSize(DesignFontSize.CAPTION)
-                .margin({ top: 4 })
-            }
-
-            // 分隔线
-            Divider()
-              .color(DesignColor.GLASS_BORDER_SUBTLE)
-              .strokeWidth(0.5)
-              .margin({ top: 12, bottom: 12 })
-
-            // 验证码输入框 + 获取验证码按钮
-            Row({ space: 12 }) {
-              TextInput({ text: $$this.verificationCode, placeholder: "请输入验证码" })
-                .type(InputType.Number)
-                .maxLength(6)
-                .layoutWeight(1)
-                .height(50)
+          // 毛玻璃输入卡片（白 8% / r16 / 内边距水平16·垂直20，对齐 Android RegisterPage.kt:325-331）
+          Column() {
+            // 手机号输入行（高 48 + 前缀图标 16/.5 + 间距 12，对齐 Android PhoneNumberInput.kt:53-68）
+            Row() {
+              SymbolGlyph($r('sys.symbol.phone'))
+                .fontSize(16)
+                .fontColor([this.checkPhoneNumber ? AUTH_ERROR : GLASS_PREFIX])
+              TextInput({ text: $$this.phoneNumber, placeholder: "手机号" })
+                .type(InputType.PhoneNumber)
+                .maxLength(11)
                 .fontSize(DesignFontSize.BODY)
                 .fontColor(Color.White)
-                .placeholderColor(DesignColor.GLASS_TEXT_HINT)
+                .placeholderColor(GLASS_PLACEHOLDER)
                 .backgroundColor(Color.Transparent)
-                .key("registerCodeInput")
-                .onChange(it => {
-                  this.verificationCode = it
-                  // 验证码输满 6 位自动聚焦密码框（对齐安卓 RegisterPage.kt:340-348）
-                  if (it.length === 6) {
-                    focusControl.requestFocus("registerPasswordInput")
-                  }
-                })
-
-              Button(this.countDown > 0 ? `${this.countDown}s` : "获取验证码")
-                .height(36)
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.countDown > 0 ? DesignColor.GLASS_TEXT_SECONDARY : Color.White)
-                .backgroundColor(DesignColor.GLASS_INPUT)
-                .borderRadius(8)
-                .enabled(this.countDown === 0)
-                .onClick(async () => {
-                  this.checkPhone()
-                  if (!this.checkPhoneNumber) {
-                    this.startCountDown()
-                    let res = await getCaptcha(this.phoneNumber ?? "")
-                    if (res.code === HttpStatusCode.Ok) {
-                      showToastSafety(res.data, "验证码已发送")
-                    } else {
-                      showToastSafety(res.message, "验证码发送失败")
-                      clearInterval(this.timer)
-                      this.timer = -1
-                      this.countDown = 0
-                    }
+                .layoutWeight(1)
+                .margin({ left: 12 })
+                .key("registerPhoneInput")
+                .onChange((it: string) => {
+                  this.phoneNumber = it
+                  // 对齐 Android RegisterPage.kt:340-348：仅完成（11 位）或清空时校验
+                  this.checkPhoneNumber = it.length === 11 ? !this.isValidPhone(it) : false
+                  // 输入完成自动跳转到验证码框
+                  if (it.length === 11 && this.isValidPhone(it)) {
+                    focusControl.requestFocus("registerCodeInput")
                   }
                 })
             }
             .width("100%")
+            .height(48)
+            .alignItems(VerticalAlign.Center)
 
-            if (this.checkCode) {
-              Text("验证码不能为空")
-                .fontColor(DesignColor.ERROR)
+            if (this.checkPhoneNumber) {
+              Text("请输入正确的手机号")
+                .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
+                .lineHeight(16)
                 .margin({ top: 4 })
+                .transition(TransitionEffect.OPACITY)
             }
 
-            // 分隔线
+            // 卡内分隔线（白 12% / 1dp / 缩进 24，对齐 Android RegisterPage.kt:470-480）
             Divider()
-              .color(DesignColor.GLASS_BORDER_SUBTLE)
-              .strokeWidth(0.5)
-              .margin({ top: 12, bottom: 12 })
+              .color(GLASS_DIVIDER)
+              .strokeWidth(1)
+              .margin({ left: 24, right: 24, top: 8, bottom: 8 })
 
-            // 密码输入框
-            TextInput({ text: $$this.password, placeholder: "请输入密码（6-16位）" })
-              .type(InputType.Password)
-              .maxLength(16)
-              .width("100%")
-              .height(50)
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(Color.White)
-              .placeholderColor(DesignColor.GLASS_TEXT_HINT)
-              .backgroundColor(Color.Transparent)
-              .key("registerPasswordInput")
-              .onChange(it => this.password = it)
+            // 验证码输入行（高 48 + Key 16/.5，对齐 Android RegisterPage.kt:497-512）
+            Row() {
+              SymbolGlyph($r('sys.symbol.key'))
+                .fontSize(16)
+                .fontColor([this.checkCode ? AUTH_ERROR : GLASS_PREFIX])
+              TextInput({ text: $$this.verificationCode, placeholder: "验证码" })
+                .type(InputType.Number)
+                .maxLength(6)
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(Color.White)
+                .placeholderColor(GLASS_PLACEHOLDER)
+                .backgroundColor(Color.Transparent)
+                .layoutWeight(1)
+                .margin({ left: 12 })
+                .key("registerCodeInput")
+                .onChange((it: string) => {
+                  // 只允许输入数字，过滤非数字字符（对齐 Android RegisterPage.kt:364-370）
+                  const filtered = it.replace(/[^0-9]/g, '')
+                  if (filtered.length <= 6) {
+                    this.verificationCode = filtered
+                    this.checkCode = false
+                  }
+                  // 验证码输满 6 位自动聚焦密码框（对齐安卓 RegisterPage.kt:371-374）
+                  if (filtered.length === 6) {
+                    focusControl.requestFocus("registerPasswordInput")
+                  }
+                })
+
+              // 发送按钮 — 1dp 白30% 描边 + r12 + h40（对齐 Android RegisterPage.kt:553-568）
+              Stack({ alignContent: Alignment.Center }) {
+                Text(this.countDown > 0 ? `重新发送(${this.countDown}s)` : "获取验证码")
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor(this.sendEnabled() ? GLASS_ICON_ACTIVE : GLASS_SEND_TEXT_DISABLED)
+              }
+              .height(40)
+              .padding({ left: 14, right: 14 })
+              .borderRadius(DesignDimens.RADIUS_MD)
+              .border({
+                width: 1,
+                color: this.sendEnabled() ? DesignColor.GLASS_INPUT : GLASS_SEND_BORDER_DISABLED
+              })
+              .onClick(() => {
+                this.sendCaptcha()
+              })
+            }
+            .width("100%")
+            .height(48)
+            .alignItems(VerticalAlign.Center)
+
+            if (this.checkCode) {
+              Text("请输入正确的验证码")
+                .fontColor(AUTH_ERROR)
+                .fontSize(DesignFontSize.CAPTION)
+                .lineHeight(16)
+                .margin({ top: 4 })
+                .transition(TransitionEffect.OPACITY)
+            }
+
+            // 卡内分隔线（白 12% / 1dp / 缩进 24）
+            Divider()
+              .color(GLASS_DIVIDER)
+              .strokeWidth(1)
+              .margin({ left: 24, right: 24, top: 8, bottom: 8 })
+
+            // 密码输入行（占位「设置密码」，对齐 Android RegisterPage.kt:404-416）
+            Row() {
+              SymbolGlyph($r('sys.symbol.lock'))
+                .fontSize(16)
+                .fontColor([this.checkPassword ? AUTH_ERROR : GLASS_PREFIX])
+              TextInput({ text: $$this.password, placeholder: "设置密码" })
+                .type(this.showPassword ? InputType.Normal : InputType.Password)
+                .maxLength(16)
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(Color.White)
+                .placeholderColor(GLASS_PLACEHOLDER)
+                .backgroundColor(Color.Transparent)
+                .layoutWeight(1)
+                .margin({ left: 12 })
+                .key("registerPasswordInput")
+                .onChange((it: string) => this.password = it)
+
+              // 密码可见性切换 — 图标化 + 48dp 热区（对齐 Android PasswordInput.kt:112-136）
+              Stack({ alignContent: Alignment.Center }) {
+                SymbolGlyph(this.showPassword ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
+                  .fontSize(20)
+                  .fontColor([GLASS_ICON_ACTIVE])
+              }
+              .width(48)
+              .height(48)
+              .onClick(() => {
+                this.showPassword = !this.showPassword
+              })
+            }
+            .width("100%")
+            .height(48)
+            .alignItems(VerticalAlign.Center)
 
             if (this.checkPassword) {
               Text("密码必须为6-16位")
-                .fontColor(DesignColor.ERROR)
+                .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
+                .lineHeight(16)
                 .margin({ top: 4 })
+                .transition(TransitionEffect.OPACITY)
             }
-          }
-          .width("85%")
-          // 玻璃卡内边距对齐安卓 RegisterPage.kt:329 = padding(horizontal = 16, vertical = 20)
-          .padding({ left: 16, right: 16, top: 20, bottom: 20 })
-          .backgroundColor(DesignColor.GLASS_BG)
-          .borderRadius(28)
-          .border({
-            width: 1,
-            color: DesignColor.GLASS_BORDER
-          })
-          .margin({ top: 40 })
 
-          // ArkUI 无 Spacer 组件（原为跨框架误用），Blank() 等价：在 Column 中撑满剩余空间
-          Blank()
-
-          // 注册按钮
-          Button(this.registering ? "注册中..." : "注册")
-            .width("85%")
-            .height(50)
-            .fontSize(DesignFontSize.SECTION_TITLE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(Color.White)
-            .backgroundColor(DesignColor.GLASS_INPUT)
-            .borderRadius(16)
-            .enabled(!this.registering)
-            .onClick(async (event: ClickEvent) => {
+            // 注册按钮 — 卡内 primary 实底胶囊（对齐 Android AuthCtaButton：48dp / r999 / 15sp·600·ls1）
+            Stack() {
+              if (this.registering) {
+                LoadingProgress()
+                  .width(22)
+                  .height(22)
+                  .color(Color.White)
+              } else {
+                Text("注 册")
+                  .fontSize(BUTTON_FONT_SIZE)
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
+                  .fontColor(Color.White)
+                  .letterSpacing(BUTTON_LETTER_SPACING)
+              }
+            }
+            .width("100%")
+            .height(48)
+            .borderRadius(DesignDimens.RADIUS_FULL)
+            .backgroundColor(DesignColor.PRIMARY)
+            .opacity(this.registering ? 0.38 : 1)
+            .onClick(() => {
               // 防连点：请求进行中直接忽略
               if (this.registering) {
                 return
@@ -303,51 +427,73 @@ struct Register {
                 return
               }
               this.registering = true
-              try {
-                let res = await register({
-                  phoneNumber: this.phoneNumber,
-                  code: this.verificationCode,
-                  password: this.password
-                })
-                if (res.code === HttpStatusCode.Ok) {
-                  showToastSafety("注册成功")
-                  // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
-                  await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
-                  pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
-                } else {
-                  showToastSafety(res.message, "注册失败")
-                }
-              } finally {
-                this.registering = false
-              }
+              this.requestRegister()
             })
+            .margin({ top: 20 })
+          }
+          .width("100%")
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .backgroundColor(GLASS_CARD_BG)
+          .border({
+            width: 1,
+            color: DesignColor.GLASS_BORDER_SUBTLE,
+            style: BorderStyle.Solid
+          })
+          .padding({ left: 16, right: 16, top: 20, bottom: 20 })
+          .margin({ top: 24 })
 
-          // 登录入口
+          // 登录入口 — 仅「立即登录」可点（12sp + 48dp 热区 + 800ms 节流，对齐 Android RegisterPage.kt:443-465）
           Row() {
             Text("已有账号？")
-              .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.GLASS_TEXT_SECONDARY)
-            Text("立即登录")
-              .fontSize(DesignFontSize.BODY)
+              .fontSize(DesignFontSize.CAPTION)
+              .lineHeight(16)
               .fontColor(Color.White)
+            Text("立即登录")
+              .fontSize(DesignFontSize.CAPTION)
+              .lineHeight(16)
               .fontWeight(DesignFontWeight.MEDIUM)
-          .margin({ top: 16, bottom: 40 })
+              .fontColor(Color.White)
+              .padding({ left: 4, right: 4, top: 16, bottom: 16 })
+              .onClick(() => {
+                // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐安卓 RegisterPage.kt:116-121）
+                this.navDebouncer.throttle(() => {
+                  pathStack.pop()
+                }, NAV_THROTTLE_MS)
+              })
           }
-          .onClick(() => {
-            // 防抖：转场残影期连点 pop 会弹空导航栈导致黑屏（对齐安卓 RegisterPage.kt:116-121）
-            this.navDebouncer.throttle(() => {
-              pathStack.pop()
-            }, NAV_THROTTLE_MS)
-          })
+          .margin({ top: 8 })
         }
         .width("100%")
         .height("100%")
         .alignItems(HorizontalAlign.Center)
+        .padding({ left: 24, right: 24 })
       }
       .width("100%")
       .height("100%")
     }
     .hideTitleBar(true)
     .height("100%")
+  }
+
+  private async requestRegister() {
+    try {
+      let res = await register({
+        phoneNumber: this.phoneNumber,
+        code: this.verificationCode,
+        password: this.password
+      })
+      if (res.code === HttpStatusCode.Ok) {
+        this.showPassword = false
+        showToastSafety("注册成功")
+        // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
+        await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
+        // 注册成功后去向：鸿蒙对应页 AddSchool，等价 Android UpdateUserInfo
+        pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
+      } else {
+        showToastSafety(res.message, "注册失败")
+      }
+    } finally {
+      this.registering = false
+    }
   }
 }

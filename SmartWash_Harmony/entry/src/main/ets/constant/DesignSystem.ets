@@ -34,7 +34,10 @@ export class DesignColor {
   static readonly ON_PRIMARY_CONTAINER: number = 0xFF17322B
 
   // 主色变体
-  static readonly PRIMARY_LIGHT: number = 0xFFF0FBF4 // 超浅绿，选中态背景（= primaryContainer）
+  static readonly PRIMARY_LIGHT: number = 0xFFF0FBF4 // 超浅绿，图标容器/票券底（= primaryContainer）
+  // 浅绿选中底（DESIGN.md primary-soft）——与 PRIMARY_LIGHT 是两个绿，勿合并
+  static readonly PRIMARY_SOFT: number = 0xFFE8F6EF
+  static readonly ON_PRIMARY_SOFT: number = 0xFF0B3625 // 浅绿选中底上的深绿字
   static readonly PRIMARY_DARK: number = 0xFF1E8C5C  // 深绿，按下态
 
   // 次要色
@@ -125,6 +128,8 @@ export class DesignColor {
   static readonly DARK_PRIMARY_CONTAINER: number = 0xFF17322B
   static readonly DARK_ON_PRIMARY_CONTAINER: number = 0xFFF0FBF4
   static readonly DARK_PRIMARY_LIGHT: number = 0xFF17322B
+  static readonly DARK_PRIMARY_SOFT: number = 0xFF1D3229   // 深色选中底（DESIGN.md dark-primary-soft）
+  static readonly DARK_ON_PRIMARY_SOFT: number = 0xFFB9E8CF // 深色选中底上的亮绿字
   static readonly DARK_PRIMARY_DARK: number = 0xFF5BC894
 
   static readonly DARK_SECONDARY: number = 0xFFA9AEA9
@@ -218,8 +223,11 @@ export class DesignColor {
   // ========== 服务类型色彩（页面自有语义，非令牌层） ==========
   static readonly SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿
   static readonly SERVICE_WASH_LIGHT: number = 0xFFF0FBF4
-  static readonly SERVICE_DRY: number = 0xFF7C3AED        // 干洗 — 优雅紫
-  static readonly SERVICE_DRY_LIGHT: number = 0xFFF3EFFE
+  // 干洗 — 取 Android 代码现状「干→蓝」（ServicePage.kt:305 iconForegroundBlue/iconContainerBlue）。
+  // ⚠️ 冲突记录：DESIGN.md 服务五色写「干洗紫 #7C3AED」，与 Android 代码现状（蓝 #4A67C9）不一致；
+  //    按「基准 = Android 代码」以蓝为准，待设计确认后再统一。
+  static readonly SERVICE_DRY: number = 0xFF4A67C9        // 干洗 — 蓝（对齐 Android iconForegroundBlue）
+  static readonly SERVICE_DRY_LIGHT: number = 0xFFEEF2FB  // 干洗浅底 — 蓝（对齐 Android iconContainerBlue）
   static readonly SERVICE_PRESS: number = 0xFFE07B00      // 熨烫 — 暖橙
   static readonly SERVICE_PRESS_LIGHT: number = 0xFFFFF7ED
   static readonly SERVICE_LUXURY: number = 0xFF0EA5E9     // 奢护 — 清澈蓝
@@ -256,6 +264,9 @@ export class DesignDimens {
   static readonly BUTTON_RADIUS: number = 14
   static readonly INPUT_RADIUS: number = 14
   static readonly ICON_CONTAINER_RADIUS: number = 12
+  // 触控热区（规范 §2.3：可点元素 ≥44dp；返回箭头豁免入容器仍强制 48dp）
+  static readonly TOUCH_TARGET_MIN: number = 44
+  static readonly BACK_HIT_AREA: number = 48
   // 间距 token（8pt 网格）
   static readonly SPACE_XXS: number = 4
   static readonly SPACE_XS: number = 8
@@ -313,7 +324,8 @@ export class MotionTiming {
 /**
  * 清氧设计系统字阶（DESIGN-SPEC v0.4：收敛为 8 档，weight 仅 400/500/600/700）
  * 对齐 Android AppTextStyles 的语义别名。
- * **不存在 15/17/20/21/24 档。**
+ * **8 档字阶内不存在 15/17/20/21/24 档**；15/13 仅为按钮组件级规格（DESIGN.md §3.3，
+ * 与 Android 同口径：按钮文字不在 8 档内），见 BUTTON / BUTTON_TEXT。
  * 单位：fp (字体像素)
  */
 export class DesignFontSize {
@@ -335,6 +347,12 @@ export class DesignFontSize {
   static readonly BODY_SMALL: number = 14
   /** caption — 辅助 / 角标 / labelSmall */
   static readonly CAPTION: number = 12
+  /** button — 按钮文字（DESIGN.md §3.3 组件级规格：15sp/600/ls1sp，不在 8 档字阶内） */
+  static readonly BUTTON: number = 15
+  /** button-text — 文字按钮（DESIGN.md §3.3：13sp/600） */
+  static readonly BUTTON_TEXT: number = 13
+  /** button — 按钮文字字距（DESIGN.md §3.3：1sp） */
+  static readonly BUTTON_LETTER_SPACING: number = 1
 }
 
 // ========== 字体粗细常量 ==========
@@ -347,4 +365,16 @@ export class DesignFontWeight {
   static readonly SEMI_BOLD: number = 600
   static readonly MEDIUM: number = 500
   static readonly NORMAL: number = 400
+}
+
+// ========== 字体特征常量 ==========
+
+/**
+ * 清氧设计系统字体特征常量（DESIGN.md「数字等宽规则 tnum Rule」）。
+ * 金额、数量、取件码、订单号一律 tabular numbers——数字变化时左右跳即违规。
+ * ArkUI `Text.fontFeature(value)` 自 API 12 起支持（SDK 5.0.5(17) 满足），取值同 OpenType feature tag。
+ */
+export class DesignFontFeature {
+  /** tabular numbers — 数字等宽 */
+  static readonly TNUM: string = 'tnum'
 }

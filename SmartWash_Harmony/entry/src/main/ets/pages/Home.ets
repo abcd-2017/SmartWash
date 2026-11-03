@@ -2,8 +2,10 @@ import { IndexPage } from "../view/IndexPage"
 import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
 import { Workbench } from "../feature/workbench/Workbench"
+import { BottomNavItem } from "../view/BottomNavBar"
 import { DesignColor } from "../constant/DesignSystem"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
+import vibrator from '@ohos.vibrator'
 
 @Builder
 export function HomeBuilder() {
@@ -48,30 +50,17 @@ struct Home {
 
   @Builder
   tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {
-    Column() {
-      // 图标 24vp（对齐安卓 v0.4 bottomNav：icon.md 24dp）；未选中 TEXT_TERTIARY / 选中 PRIMARY
-      SymbolGlyph(this.currentIndex === targetIndex ? selectedImg : normalImg)
-        .fontSize(24)
-        .fontColor([this.currentIndex === targetIndex ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY])
-        .margin({ top: 8 })
-      Text(title)
-        .fontSize(12)
-        .margin({ top: 4 })
-        .fontColor(this.currentIndex === targetIndex ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
-        .fontWeight(this.currentIndex === targetIndex ? FontWeight.Bold : FontWeight.Normal)
-
-      // 底部指示器 — 选中时显示胶囊形
-      if (this.currentIndex === targetIndex) {
-        Column()
-          .width(24)
-          .height(5)
-          .borderRadius(2.5)
-          .backgroundColor(DesignColor.PRIMARY)
-          .margin({ top: 4 })
+    BottomNavItem({
+      label: title,
+      selectedIcon: selectedImg,
+      normalIcon: normalImg,
+      isSelected: this.currentIndex === targetIndex,
+      onItemClick: () => {
+        if (this.currentIndex !== targetIndex) {
+          this.controller.changeIndex(targetIndex)
+        }
       }
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
+    })
   }
 
   build() {
@@ -80,9 +69,6 @@ struct Home {
         TabContent() {
           Column() {
             IndexPage({
-              userInfoClick: () => {
-                this.controller.changeIndex(3)
-              },
               isActive: this.currentIndex === 0
             })
           }.height("100%")
@@ -98,7 +84,7 @@ struct Home {
           Workbench()
         }.tabBar(this.tabBuilder("工作台", 2, $r('sys.symbol.square_grid_2x2'),
           // 过渡图标：安卓自绘「三方块 + 一圆」，SDK 5.0.5 无 square_grid_2x2_fill，
-          // 选中态由文字色/加粗 + 胶囊指示器区分
+          // 选中态由文字色/品牌色实心图标区分
           $r('sys.symbol.square_grid_2x2')))
 
         TabContent() {
@@ -107,17 +93,33 @@ struct Home {
       }
       .onChange(i => {
         this.currentIndex = i
+        // 滑动切 tab 落定触感（对齐安卓 LaunchedEffect(settledPage) → performHaptic(SELECTION)）
+        try {
+          vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+        } catch (err) {
+          // 忽略不支持触感的设备
+        }
         if (i === 3) {
           AppStorage.setOrCreate("refreshUserInfo", true)
           AppStorage.setOrCreate("refreshOrderCount", true)
         }
       })
-      .barOverlap(true)
-      // 底栏高 68（对齐安卓 v0.4 AppDimens.bottomBarHeight = 68dp）
+      // 底栏规范 §4.5：68dp 高、纯白底、0.5dp outline 顶部分隔线（对齐安卓 BottomBar）
+      .barOverlap(false)
       .barHeight(68)
-      .backgroundColor('#F2FFFFFF')  // 半透明白色
-      .divider(null)  // 移除硬分隔线
+      .backgroundColor(DesignColor.BACKGROUND)
+      .barBackgroundColor(DesignColor.SURFACE)
+      .divider({ strokeWidth: 0.5, color: DesignColor.OUTLINE })
     }
     .hideTitleBar(true)
+    // 非首页 tab 系统返回先回首页 tab（对齐安卓 BackHandler），首页则交还系统退出
+    .onBackPressed(() => {
+      if (this.currentIndex !== 0) {
+        this.currentIndex = 0
+        this.controller.changeIndex(0)
+        return true
+      }
+      return false
+    })
   }
 }

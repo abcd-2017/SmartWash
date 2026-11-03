@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { CommonConstants } from "../constant/CommonConstants"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { bindCampus, unBindCampus } from "../network/api/UserApi"
 import { BaseResponse } from "../network/BaseResponse"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
@@ -12,21 +12,43 @@ export function BingCampusCardAlertBuilder() {
   BingCampusCardAlert()
 }
 
+/**
+ * 绑定/解绑校园卡弹窗（对齐安卓 AppInputDialog / AppConfirmDialog 皮肤）。
+ * 形态保留鸿蒙对话页（F1 属产品决策），仅按新版设计系统重皮肤：
+ * 设计令牌色 + 16dp 卡圆角 + 浮层阴影 + 22/600 标题 + 16sp 输入 + 48dp 分区按钮 + 入场动效。
+ */
 @Component
 struct BingCampusCardAlert {
   @State userInfo: UserInfoVo | null = null
   // 绑定态判定统一为「campusCard 空串=未绑」（差异分析 02 §9.3，两端同语义防漂移）
   @State isBingFlag: boolean = false
-  @State campusCard: string | null = ""
-  @State showErrorMessage: string | null = null
+  @State campusCard: string = ""
+  @State errorMessage: string = ""
+  @State isFocused: boolean = false
   // 请求进行中标记：确认按钮防重（对齐安卓 bindCampusState Loading 防重）
   @State submitting: boolean = false
+  // 入场动效标记（对齐安卓 dialogEnterMotion：scale 0.92→1 + fade 0→1 弹簧一次性进场）
+  @State entered: boolean = false
   private inputController = new TextInputController()
 
   aboutToAppear(): void {
     // 安全取参（评审 #31）：参数缺失/非对象时返回 null，isBingFlag 兜底为绑定态
     this.userInfo = getObjectParam<UserInfoVo>(RouteNames.BING_CAMPUS_CARD_ALERT)
-    this.isBingFlag = (this.userInfo?.campusCard ?? "") == ""
+    this.isBingFlag = (this.userInfo?.campusCard ?? "") === ""
+    // 首帧后再触发，保证初始 0.92/0 先上屏，过渡才可见（退出动画窗口层不支持，两端一致不做）
+    setTimeout(() => {
+      animateTo(MotionTiming.DIALOG_ENTER, () => {
+        this.entered = true
+      })
+    }, 16)
+  }
+
+  /** 输入框描边色：错误 > 聚焦 > 常规（对齐安卓 OutlinedTextField 三态） */
+  private inputBorderColor(): number {
+    if (this.errorMessage !== "") {
+      return DesignColor.ERROR
+    }
+    return this.isFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE
   }
 
   /** 确认绑定/解绑（防重：请求进行中忽略后续点击） */
@@ -36,17 +58,16 @@ struct BingCampusCardAlert {
     }
     let res: BaseResponse<boolean>
     if (this.isBingFlag) {
-      if (this.campusCard == null || this.campusCard == "") {
-        this.showErrorMessage = "校园卡号不能为空"
+      if (this.campusCard === "") {
+        this.errorMessage = "校园卡号不能为空"
         return
-      } else {
-        this.showErrorMessage = ""
-        this.submitting = true
-        try {
-          res = await bindCampus(this.campusCard)
-        } finally {
-          this.submitting = false
-        }
+      }
+      this.errorMessage = ""
+      this.submitting = true
+      try {
+        res = await bindCampus(this.campusCard)
+      } finally {
+        this.submitting = false
       }
     } else {
       this.submitting = true
@@ -56,7 +77,7 @@ struct BingCampusCardAlert {
         this.submitting = false
       }
     }
-    if (res.code == HttpStatusCode.Ok) {
+    if (res.code === HttpStatusCode.Ok) {
       this.inputController.stopEditing()
       pathStack.pop()
       showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
@@ -69,55 +90,114 @@ struct BingCampusCardAlert {
     NavDestination() {
       Stack({ alignContent: Alignment.Center }) {
         Column() {
-          Row() {
-            Text(`${this.isBingFlag ? "绑定校园卡" : "解绑校园卡"}`)
-              .fontSize(18)
-              .fontColor($r('sys.color.font_primary'))
-              .fontWeight(FontWeight.Bold)
-              .margin({ bottom: 18 })
-          }.width("100%")
-          .justifyContent(FlexAlign.Start)
+          // 标题（对齐安卓 AppComponents.kt:961-965 headlineMedium 22/600）
+          Text(`${this.isBingFlag ? "绑定校园卡" : "解绑校园卡"}`)
+            .fontSize(DesignFontSize.STATUS_LARGE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .margin({ bottom: 16 })
 
-          Row() {
-            if (this.isBingFlag) {
-              // 数字键盘限定（对齐安卓 KeyboardType.Number，卡号仅数字）
-              TextInput({ text: this.campusCard, placeholder: "请输入校园卡号", controller: this.inputController })
-                .onChange((it) => {
-                  this.campusCard = it
-                })
-                .type(InputType.Number)
-                .fontSize(14)
-                .width("90%")
-                .showUnderline(true)
-                .showError(this.showErrorMessage)
-            } else {
-              Text("确定要解绑当前绑定的校园卡吗？")
-                .fontSize(15)
+          if (this.isBingFlag) {
+            // 输入框（对齐安卓 OutlinedTextField r14 + 聚焦 primary 描边 + 16sp）
+            TextInput({ text: this.campusCard, placeholder: "请输入校园卡号", controller: this.inputController })
+              .width("100%")
+              .height(48)
+              .type(InputType.Number)
+              .fontSize(DesignFontSize.BODY)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .placeholderColor(DesignColor.TEXT_SECONDARY)
+              .placeholderFont({ size: DesignFontSize.BODY })
+              .backgroundColor(Color.Transparent)
+              .borderRadius(DesignDimens.INPUT_RADIUS)
+              .border({
+                width: 1,
+                color: this.inputBorderColor(),
+                radius: DesignDimens.INPUT_RADIUS
+              })
+              .onFocus(() => {
+                this.isFocused = true
+              })
+              .onBlur(() => {
+                this.isFocused = false
+              })
+              .onChange((it: string) => {
+                this.campusCard = it
+                if (this.errorMessage !== "") {
+                  this.errorMessage = ""
+                }
+              })
+
+            // 错误行（对齐安卓 supportingText：ERROR 色，仅提交时展示）
+            if (this.errorMessage !== "") {
+              Text(this.errorMessage)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.ERROR)
+                .alignSelf(ItemAlign.Start)
+                .margin({ top: 4 })
             }
+          } else {
+            Text("确定要解绑当前绑定的校园卡吗？")
+              .fontSize(DesignFontSize.BODY)
+              .fontColor(DesignColor.TEXT_SECONDARY)
           }
 
+          // 按钮行（对齐安卓 DialogAction：48dp 热区，左右贴合边缘）
           Row() {
-            Text("取消").onClick(() => {
+            Row() {
+              Text("取消")
+                .fontSize(DesignFontSize.BODY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
+            }
+            .layoutWeight(1)
+            .height(48)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
               pathStack.pop()
-            }).fontColor($r('sys.color.brand'))
-              .margin({ right: 20 })
-              .fontSize(16)
+            })
 
-            Text(this.submitting ? "处理中..." : `确认${this.isBingFlag ? "绑定" : "解绑"}`).onClick(() => {
+            Divider()
+              .vertical(true)
+              .color(DesignColor.DIVIDER)
+              .strokeWidth(0.5)
+              .height(48)
+
+            Row() {
+              Text(this.isBingFlag ? "确认" : "确认解绑")
+                .fontSize(DesignFontSize.BODY)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor(this.isBingFlag ? DesignColor.PRIMARY : DesignColor.DANGER_INK)
+            }
+            .layoutWeight(1)
+            .height(48)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
               this.confirmAction()
-            }).fontColor($r('sys.color.brand')).fontSize(16)
-          }.width("100%")
-          .margin({ top: 28 })
-          .justifyContent(FlexAlign.End)
+            })
+          }
+          .width("100%")
+          .margin({ top: 20 })
         }
-        .justifyContent(FlexAlign.SpaceBetween)
-        .backgroundColor($r('sys.color.comp_background_primary'))
-        .borderRadius(CommonConstants.BORDER_RADIUS)
-        .padding("22")
-        .width('80%')
-        .onClick(() => {
+        .width("80%")
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 20, bottom: 20 })
+        .backgroundColor(DesignColor.SURFACE)
+        .borderRadius(DesignDimens.CARD_RADIUS)
+        // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
+        .shadow({
+          radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+          color: DesignColor.SHADOW_COLOR_FLOAT,
+          offsetX: 0,
+          offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
         })
-      }.height("100%").width('100%')
+        .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+        .opacity(this.entered ? 1 : 0)
+        .onClick(() => {
+          // 消费点击，避免冒泡到遮罩触发关闭
+        })
+      }
+      .height("100%")
+      .width("100%")
     }
     .onClick(() => {
       pathStack.pop()

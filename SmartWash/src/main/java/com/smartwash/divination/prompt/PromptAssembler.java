@@ -1,7 +1,5 @@
 package com.smartwash.divination.prompt;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.smartwash.divination.entity.DivPromptVersion;
 import com.smartwash.divination.service.DivPromptService;
 import lombok.RequiredArgsConstructor;

@@ -8,6 +8,7 @@
 // 二者对「用户选中的那一天」语义一致；短链过期时刻由 ShortCodeRules.expireAtFor 补 23:59:59）。
 
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { ToolboxText } from './api'
 import { formatDate } from './ShortCodeRules'
 
 @CustomDialog
@@ -59,7 +60,7 @@ export struct ToolboxDatePickerDialog {
         .height(200)
 
       Row() {
-        Button("取消")
+        Button(ToolboxText.toolbox_date_cancel)
           .type(ButtonType.Normal)
           .layoutWeight(1)
           .height(44)
@@ -78,7 +79,7 @@ export struct ToolboxDatePickerDialog {
           .strokeWidth(0.5)
           .height(44)
 
-        Button("确定")
+        Button(ToolboxText.toolbox_date_confirm)
           .type(ButtonType.Normal)
           .layoutWeight(1)
           .height(44)

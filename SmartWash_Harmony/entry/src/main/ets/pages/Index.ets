@@ -35,7 +35,7 @@ struct Index {
     if (this.token !== "") {
       let res = await getUserSchoolId()
       if (res.code === HttpStatusCode.Ok) {
-        this.showPageType = res.data == null ? 1 : 2
+        this.showPageType = res.data === null ? 1 : 2
       } else {
         // 接口异常（含 401，网络层已统一清理并跳登录）时回退登录页
         this.showPageType = 0
@@ -50,7 +50,7 @@ struct Index {
       if (this.token !== "") {
         let res = await getUserSchoolId()
         if (res.code === HttpStatusCode.Ok) {
-          if (res.data == null) {
+          if (res.data === null) {
             this.showPageType = 1
           } else {
             this.showPageType = 2

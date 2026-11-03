@@ -42,9 +42,9 @@ public class WebUserCouponController {
     @GetMapping("/auth/userCoupon/getUserCoupon")
     public Result<List<UserCouponVo>> getUserCoupon(@RequestParam(value = "status", defaultValue = "0") @Parameter(description = "优惠券状态：0-可用，1-已使用或过期", example = "0") String status,
                                                     @RequestParam(value = "page", defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
-                                                    @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页数量", example = "10") Integer pageSize) {
+                                                    @RequestParam(value = "size", defaultValue = "10") @Parameter(description = "每页数量", example = "10") Integer size) {
         LoginUser user = UserContextHolder.getUser();
-        return Result.ok(userCouponService.getUserCouponByStatus(status, user.getUserId(), page, pageSize));
+        return Result.ok(userCouponService.getUserCouponByStatus(status, user.getUserId(), page, size));
     }
 
     @Operation(summary = "领取优惠券", description = "用户领取指定优惠券")

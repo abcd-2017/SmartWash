@@ -3,25 +3,37 @@ import { RouteNames } from "../constant/RouteNames"
 import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
-import { CommonConstants } from "../constant/CommonConstants"
 import { OrderVo } from "../network/vo/OrderVo"
 import { getWashingOrder } from "../network/api/OrderApi"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription } from "../constant/OrderStatus"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { IconBox } from "./common/AppComponents"
+import { HeroCard } from "./HeroCard"
+import { BizCode } from "../network/HttpUtil"
 
 // 连续轮询失败达到该次数才提示一次（评审 #4：避免每 5s 弹 toast）
 const POLLING_FAILURE_THRESHOLD: number = 3
 
+// 稳定空数组：避免 `?? []` 每次 build 生成新引用导致子组件 @Monitor 反复触发
+const EMPTY_ORDER_LIST: Array<OrderVo> = []
+
+/**
+ * 首页（对齐安卓 IndexPage.kt，PR #47 后新形态）——结构自上而下：
+ * Hero 状态卡（品牌渐变，唯一锚点）→ 账户数据卡（白卡）→ 洗衣服务网格（4 入口）
+ * → 进行中订单（单卡多行 + 发丝线）→ 服务须知。
+ *
+ * 轮询为鸿蒙独有（安卓落 tab 刷新）：5s 拉取进行中订单，失败静默计数，连续失败达阈值才提示一次。
+ */
 @ComponentV2
 export struct IndexPage {
   private scroller = new Scroller()
   @Local userInfo: UserInfoVo | null = null
-  @Event userInfoClick: () => void
   @Local orderList: Array<OrderVo> | null = []
   @Param isActive: boolean = true
+  // 余额大字按可用宽度分档（对齐安卓 BoxWithConstraints：36 / 28 / 22 阶梯内降级）
+  @Local balanceFontSize: number = DesignFontSize.DATA_LARGE
   private pollingTimer: number = -1
   // 连续轮询失败计数：失败静默，连续失败达到阈值才提示一次；成功后清零
   private pollingFailureCount: number = 0
@@ -41,7 +53,8 @@ export struct IndexPage {
   @Monitor('isActive')
   onIsActiveChange() {
     if (this.isActive) {
-      // 重新激活时立即拉取一次，再启动 5s 轮询
+      // 重新激活时立即拉取一次（对齐安卓 LaunchedEffect(isActive) → getInfoData），再启动 5s 轮询
+      this.refreshUserInfo()
       this.getOrderList()
       this.startPolling()
     } else {
@@ -67,11 +80,16 @@ export struct IndexPage {
   }
 
   async refreshUserInfo() {
-    let res = await getUserInfo()
-    if (res.code === HttpStatusCode.Ok) {
-      this.userInfo = res.data
-    } else {
-      showToastSafety(res.message, "用户信息加载失败")
+    try {
+      let res = await getUserInfo()
+      if (res.code === HttpStatusCode.Ok) {
+        this.userInfo = res.data
+      } else if (res.code !== BizCode.UNAUTHORIZED) {
+        // 401 已由 Axios 拦截器统一处理（清 token → 清登录态 → replace 登录页），此处不重复弹 toast
+        showToastSafety(res.message, "用户信息加载失败")
+      }
+    } catch (e) {
+      // 401/网络异常均由 Axios 拦截器统一提示并处理，页面不再重复弹 toast
     }
   }
 
@@ -81,7 +99,7 @@ export struct IndexPage {
       if (res.code === HttpStatusCode.Ok) {
         this.pollingFailureCount = 0
         this.orderList = res.data
-      } else {
+      } else if (res.code !== BizCode.UNAUTHORIZED) {
         // 失败静默计数，连续失败达到阈值才提示一次（评审 #4）
         this.handlePollingFailure(res.message)
       }
@@ -100,206 +118,144 @@ export struct IndexPage {
   }
 
   /**
-   * 根据当前小时获取问候语
-   */
-  private getGreeting(): string {
-    let hour = new Date().getHours()
-    if (hour < 12) {
-      return "早上好"
-    } else if (hour < 18) {
-      return "下午好"
-    } else {
-      return "晚上好"
-    }
-  }
-
-  /**
-   * 根据订单状态计算进度值
-   */
-  private getOrderProgress(status: string | null): number {
-    switch (status) {
-      case "0":
-        return 10
-      case "1":
-        return 25
-      case "2":
-        return 35
-      case "3":
-        return 55
-      case "4":
-        return 70
-      case "5":
-        return 85
-      case "6":
-        return 95
-      case "7":
-        return 100
-      default:
-        return 0
-    }
-  }
-
-  /**
-   * 问候头部 — 左侧问候语+学校地址，右侧圆形头像
-   * 外层包裹渐变背景
+   * 账户数据卡 —— 白底 + 1px 描边 + 轻阴影（对齐安卓 AccountDataCard）。
+   * 余额是主角（36sp tnum 大字，可点进充值），优惠券/累计订单是小字半格 + 1×40 发丝竖线。
    */
   @Builder
-  GreetingHeader() {
+  AccountDataCard() {
     Column() {
-      Row() {
-        // 左侧问候信息
-        Column() {
-          Text(this.getGreeting())
-            .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.ON_BACKGROUND)
-
-          Row() {
-            // sys.symbol.location_fill 不存在（SDK 5.0.5 无该符号），就近换用地图定位 pin 符号
-            SymbolGlyph($r('sys.symbol.pin_fill'))
-              .fontSize(14)
-              .fontColor([DesignColor.TEXT_SECONDARY])
-            Text(this.userInfo?.schoolVo?.schoolName ?? "")
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .margin({ left: 4 })
-          .margin({ top: 4 })
-          }
-        }
-        .alignItems(HorizontalAlign.Start)
-
-        Blank()
-
-        // 右侧圆形头像按钮 — 添加边框
-        Column() {
-          SymbolGlyph($r('sys.symbol.person_crop_circle_fill'))
-            .fontSize(24)
-            .fontColor([DesignColor.PRIMARY])
-        }
-        .width(44)
-        .height(44)
-        .borderRadius(22)
-        .backgroundColor(DesignColor.PRIMARY_LIGHT)
-        .border({ width: 2, color: 0x4D2D9B6A, style: BorderStyle.Solid })
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-        .onClick(() => {
-          this.userInfoClick()
-        })
-      }
-      .width("100%")
-      .alignItems(VerticalAlign.Center)
-      .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        top: 20,
-        bottom: 8
-      })
-    }
-    .width("100%")
-    // Hero 卡圆角 RADIUS_XL(20)（对齐安卓 v0.4 StatusHeroCard：clip(RoundedCornerShape(radiusXl))）
-    .borderRadius(DesignDimens.RADIUS_XL)
-    .linearGradient({
-      direction: GradientDirection.Right,
-      colors: [[0x142D9B6A, 0.0], [0x0AF0FAF5, 1.0]]
-    })
-  }
-
-  /**
-   * 账户概览卡 — 渐变绿底，显示余额和去充值按钮
-   */
-  @Builder
-  AccountOverviewCard() {
-    Column() {
-      Row() {
-        // 左侧余额
+      Column() {
+        // 余额（可点进充值）—— 按可用宽度分档缩字号，窄屏不折行不溢出
         Column() {
           Text("账户余额")
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(Color.White)
-            .opacity(0.7)
-          Text(`￥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
-            .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(Color.White)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+
+          Text(`¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
+            .fontSize(this.balanceFontSize)
+            .fontColor(DesignColor.PRIMARY_DARK)
+            .fontFeature(DesignFontFeature.TNUM)
+            .maxLines(1)
             .margin({ top: 4 })
         }
         .alignItems(HorizontalAlign.Start)
-
-        Blank()
-
-        // 右侧充值入口
-        Column() {
-          Text("可用优惠券")
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(Color.White)
-            .opacity(0.7)
-          Row() {
-            Text("去充值 >")
-              .fontSize(DesignFontSize.CARD_TITLE)
-              .fontColor(Color.White)
-          .margin({ top: 4 })
-          }
-        }
-        .alignItems(HorizontalAlign.End)
+        .width('100%')
+        .padding({ top: 16, left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         .onClick(() => {
           pathStack.pushPathByName(RouteNames.RECHARGE, null)
         })
+        .onAreaChange((oldValue: Area, newValue: Area) => {
+          const width: number = typeof newValue.width === 'number' ? newValue.width : 0
+          if (width >= 160) {
+            this.balanceFontSize = DesignFontSize.DATA_LARGE
+          } else if (width >= 130) {
+            this.balanceFontSize = DesignFontSize.HEADLINE
+          } else {
+            this.balanceFontSize = DesignFontSize.STATUS_LARGE
+          }
+        })
+
+        // 券 / 累计订单半格，中间 1×40 发丝竖线
+        Row() {
+          this.AccountStatCell(`${this.userInfo?.couponCount ?? 0}`, "可用优惠券")
+          Row()
+            .width(1)
+            .height(40)
+            .backgroundColor(DesignColor.HAIRLINE)
+          this.AccountStatCell(`${this.userInfo?.orderCount ?? 0}`, "累计订单")
+        }
+        .width('100%')
+        .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+        .margin({ top: DesignDimens.SPACE_XS })
+
+        // 卡片底部呼吸位（对齐安卓 Spacer 16）
+        Row()
+          .height(DesignDimens.SPACE_MD)
       }
-      .width("100%")
-      .alignItems(VerticalAlign.Bottom)
+      .width('100%')
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .border({ width: 1, color: DesignColor.OUTLINE })
+      .shadow({
+        radius: DesignElevation.LEVEL_1,
+        color: DesignColor.SHADOW_COLOR_CARD,
+        offsetX: 0,
+        offsetY: 2
+      })
     }
-    .width("100%")
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .padding(20)
-    .linearGradient({
-      direction: GradientDirection.Right,
-      colors: [[DesignColor.PRIMARY, 0.0], [DesignColor.PRIMARY_DARK, 1.0]]
-    })
-    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
-      offsetX: 0,
-      offsetY: 2
-    })
+    .width('100%')
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
+  }
+
+  /** 账户卡底部半格：数值 18/600 tnum + 标签 12/400，水平居中 */
+  @Builder
+  AccountStatCell(value: string, label: string) {
+    Column() {
+      Text(value)
+        .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontFeature(DesignFontFeature.TNUM)
+        .maxLines(1)
+
+      Text(label)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+        .maxLines(1)
+    }
+    .layoutWeight(1)
+    .alignItems(HorizontalAlign.Center)
   }
 
   /**
-   * 服务入口卡片 — 白底+边框样式，彩色图标容器
-   * @param serviceColor 图标前景色
-   * @param serviceColorLight 图标容器浅底色
+   * 服务网格 —— 4 入口（对齐安卓 ServiceGrid）：预约洗衣 / 取件 / 充值 / 优惠券。
+   * 图标进六色浅底容器（IconBox 44/24），标签 12/400 textSecondary，行距 12。
    */
   @Builder
-  ServiceEntryCard(icon: Resource, title: string, serviceColor: number, serviceColorLight: number, itemClick: () => void) {
+  ServiceGrid() {
+    Row({ space: DesignDimens.SPACE_SM }) {
+      // 预约洗衣 = 绿（对齐安卓 IndexPage.kt:569-576）
+      this.ServiceEntry($r('sys.symbol.laundry'), "预约洗衣",
+        DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN, () => {
+          pathStack.pushPathByName(RouteNames.LAUNDRY, null)
+        })
+      // 取件 = 橙（对齐安卓 IndexPage.kt:577-584）
+      this.ServiceEntry($r('sys.symbol.book_pages'), "取件",
+        DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE, () => {
+          pathStack.pushPathByName(RouteNames.PICK_UP, null)
+        })
+      // 充值 = 绿（对齐安卓 IndexPage.kt:585-593，与预约洗衣同 primaryContainer 底）
+      this.ServiceEntry($r('sys.symbol.creditcard'), "充值",
+        DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN, () => {
+          pathStack.pushPathByName(RouteNames.RECHARGE, null)
+        })
+      // 优惠券 = 蓝（对齐安卓 IndexPage.kt:594-601）
+      this.ServiceEntry($r('sys.symbol.label'), "优惠券",
+        DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE, () => {
+          pathStack.pushPathByName(RouteNames.COUPON, null)
+        })
+    }
+    .width('100%')
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    .margin({ top: DesignDimens.SPACE_SM })
+  }
+
+  /** 服务入口 —— IconBox 44/24 + 标签 12/400 textSecondary，居中（对齐安卓 ServiceEntry） */
+  @Builder
+  ServiceEntry(icon: Resource, title: string, containerColor: number, iconColor: number, itemClick: () => void) {
     Column() {
-      // 图标容器 — 统一 IconBox 模板（对齐安卓 IndexPage.kt：44/22/圆角 12）
       IconBox({
         icon: icon,
-        containerColor: serviceColorLight,
-        iconColor: serviceColor
+        containerColor: containerColor,
+        iconColor: iconColor
       })
 
       Text(title)
-        .fontSize(DesignFontSize.CARD_TITLE)
-        .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ top: 8 })
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+        .margin({ top: DesignDimens.SPACE_XS })
     }
     .layoutWeight(1)
-    .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 规范 §2.4 卡片：1px OUTLINE 描边（原 0.5 发丝线仅为卡内分隔线许可，卡边界须 1px）
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
-      offsetX: 0,
-      offsetY: 2
-    })
-    .backgroundColor(DesignColor.SURFACE)
-    .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .onClick(() => {
       itemClick()
@@ -307,184 +263,177 @@ export struct IndexPage {
   }
 
   /**
-   * 订单卡片 — 白底+边框，左侧图标+状态+订单号，右侧价格，底部进度条
+   * 进行中订单卡 —— 白底 + 1px 描边 + 轻阴影，单卡多行 + 行内发丝线（对齐安卓 OrderListCard）。
+   * 行高 56（36 图标 + 上下各 10），无进度条（进度由 Hero 卡承载）。
    */
   @Builder
-  OrderItemCard(order: OrderVo) {
+  OrderListCard() {
     Column() {
-      Row() {
-        // 图标容器色按状态语义（对齐安卓 OrderListItem：清洗中→绿，其余→橙 36/18）
-        IconBox({
-          icon: $r('sys.symbol.laundry'),
-          sizeValue: 36,
-          iconSize: 18,
-          containerColor: order.status === OrderStatusEnum.WASHING ?
-            DesignColor.ICON_CONTAINER_GREEN : DesignColor.ICON_CONTAINER_ORANGE,
-          iconColor: order.status === OrderStatusEnum.WASHING ?
-            DesignColor.ICON_FOREGROUND_GREEN : DesignColor.ICON_FOREGROUND_ORANGE
-        })
-        .margin({ right: 12 })
-
-        // 状态文字 + 订单号
-        Column() {
-          Text(getOrderStatusDescription(order.status))
-            .fontSize(DesignFontSize.CARD_TITLE)
-            .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-          Text(`订单号：${order.orderNo ?? ""}`)
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-            .margin({ top: 4 })
+      ForEach(this.orderList ?? [], (order: OrderVo, index: number) => {
+        this.OrderListItem(order)
+        if (index < (this.orderList?.length ?? 0) - 1) {
+          // 行内发丝线只在本卡片内部（左右缩进 20，对齐安卓 padding horizontal 20）
+          Row() {
+            Row()
+              .width('100%')
+              .height(1)
+              .backgroundColor(DesignColor.HAIRLINE)
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
-        .alignItems(HorizontalAlign.Start)
-        .layoutWeight(1)
-
-        // 右侧价格
-        Text(`￥${order.payPrice ?? 0}`)
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.BOLD)
-          .fontColor(DesignColor.PRIMARY)
-      }
-      .width("100%")
-      .alignItems(VerticalAlign.Center)
-
-      // 底部进度条
-      Progress({
-        value: this.getOrderProgress(order.status),
-        total: 100,
-        type: ProgressType.Linear
       })
-        .width("100%")
-        .height(4)
-        .margin({ top: 12 })
-        .borderRadius(2)
-        .color(DesignColor.PRIMARY)
-        .backgroundColor(DesignColor.PRIMARY_LIGHT)
     }
-    .width("100%")
-    .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .width('100%')
     .backgroundColor(DesignColor.SURFACE)
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
       radius: DesignElevation.LEVEL_1,
       color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
+  }
+
+  /** 订单行 —— 36dp 图标容器 + 状态/订单号 + 等宽价格（对齐安卓 OrderListItem） */
+  @Builder
+  OrderListItem(order: OrderVo) {
+    Row() {
+      // 图标容器色按状态语义：清洗中 → water 水蓝，其余 → 橙（对齐安卓 IndexPage.kt:689-704）
+      IconBox({
+        icon: $r('sys.symbol.laundry'),
+        sizeValue: 36,
+        iconSize: 20,
+        containerColor: order.status === OrderStatusEnum.WASHING ?
+          DesignColor.ICON_CONTAINER_BLUE : DesignColor.ICON_CONTAINER_ORANGE,
+        iconColor: order.status === OrderStatusEnum.WASHING ?
+          DesignColor.WATER : DesignColor.ICON_FOREGROUND_ORANGE
+      })
+      .margin({ right: DesignDimens.SPACE_SM })
+
+      Column() {
+        Text(getOrderStatusDescription(order.status))
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .maxLines(1)
+
+        Text(`订单号: ${order.orderNo ?? ""}`)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontFeature(DesignFontFeature.TNUM)
+          .maxLines(1)
+          .margin({ top: 4 })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+
+      Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
+        .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontFeature(DesignFontFeature.TNUM)
+    }
+    .width('100%')
+    .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: 10, bottom: 10 })
+    .alignItems(VerticalAlign.Center)
     .onClick(() => {
       pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
     })
   }
 
   /**
-   * 服务须知 — 底部提示文字
+   * 服务须知 —— 居中纯文字（对齐安卓 ServiceTips，D-I9）
    */
   @Builder
   ServiceTips() {
-    Row() {
-      SymbolGlyph($r('sys.symbol.info_circle_fill'))
-        .fontSize(14)
-        .fontColor([DesignColor.TEXT_TERTIARY])
-      Text("请在营业时间内完成取件，超时将收取额外保管费用")
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_TERTIARY)
-        .margin({ left: 6 })
-    }
-    .width("100%")
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    Text("服务时间 07:00 – 22:00 · 节假日正常营业")
+      .fontSize(DesignFontSize.CAPTION)
+      .fontColor(DesignColor.TEXT_SECONDARY)
+      .width('100%')
+      .textAlign(TextAlign.Center)
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 
   build() {
     Scroll(this.scroller) {
       Column() {
-        // 1. 问候头部
-        this.GreetingHeader()
+        // 1. Hero 状态卡（品牌渐变，全页唯一视觉锚点）
+        HeroCard({
+          orderList: this.orderList ?? EMPTY_ORDER_LIST,
+          onOrderClick: (orderId: number) => {
+            pathStack.pushPathByName(RouteNames.ORDER_DETAIL, orderId)
+          },
+          onBookingClick: () => {
+            pathStack.pushPathByName(RouteNames.LAUNDRY, null)
+          }
+        })
 
-        // 2. 账户概览卡
-        Column() {
-          this.AccountOverviewCard()
-        }
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 2. 账户数据卡（白卡）
+        this.AccountDataCard()
 
-        // 3. 服务网格
+        // 3. 洗衣服务 + 服务网格
         Text("洗衣服务")
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.ON_BACKGROUND)
-          .width("100%")
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-          .margin({ top: DesignDimens.SECTION_SPACING })
+          .margin({ top: DesignDimens.SPACE_MD })
 
-        Row() {
-          this.ServiceEntryCard($r('sys.symbol.laundry'), "立即预约", DesignColor.SERVICE_WASH, DesignColor.SERVICE_WASH_LIGHT, () => {
-            pathStack.pushPathByName(RouteNames.LAUNDRY, null)
-          })
-          Row() {
-          }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.book_pages'), "取回衣物", DesignColor.SERVICE_LUXURY, DesignColor.SERVICE_LUXURY_LIGHT, () => {
-            pathStack.pushPathByName(RouteNames.PICK_UP, null)
-          })
-          Row() {
-          }.width(DesignDimens.CARD_SPACING)
-          this.ServiceEntryCard($r('sys.symbol.label'), "优惠券", DesignColor.SERVICE_PRESS, DesignColor.SERVICE_PRESS_LIGHT, () => {
-            pathStack.pushPathByName(RouteNames.COUPON, null)
-          })
-        }
-        .width("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ top: 12 })
+        this.ServiceGrid()
 
-        // 4. 进行中订单
+        // 4. 进行中订单（标题 + 查看全部）
         Row() {
           Text("进行中订单")
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.ON_BACKGROUND)
+            .fontColor(DesignColor.TEXT_PRIMARY)
 
           Blank()
 
-          Text("查看全部")
+          // 「查看全部 ›」16/600 primaryDark + 48dp 热区（对齐安卓 IndexPage.kt:197-211）
+          Text("查看全部 ›")
             .fontSize(DesignFontSize.BODY)
-            .fontColor(DesignColor.PRIMARY)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.PRIMARY_DARK)
+            .padding({ left: DesignDimens.SPACE_SM, top: 16, bottom: 16 })
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.ORDER_LIST, 3)
             })
         }
-        .width("100%")
+        .width('100%')
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ top: DesignDimens.SECTION_SPACING })
+        .margin({ top: DesignDimens.SPACE_XL })
         .alignItems(VerticalAlign.Center)
 
-        // 订单列表
+        // 订单列表 ↔ 空态
         Column() {
           if ((this.orderList?.length ?? 0) > 0) {
-            ForEach(this.orderList ?? [], (order: OrderVo) => {
-              this.OrderItemCard(order)
-            })
+            this.OrderListCard()
           } else {
             Text("暂无进行中的订单")
               .fontSize(DesignFontSize.BODY)
               .fontColor(DesignColor.TEXT_SECONDARY)
-              .width("100%")
-              .height(60)
-              .textAlign(TextAlign.Center)
+              .padding({ top: 32, bottom: 32 })
           }
         }
-        .width("100%")
+        .width('100%')
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ top: 12 })
+        .margin({ top: DesignDimens.SPACE_SM })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
 
-        // 5. 服务须知（@Builder 调用返回 void，无法链式 .margin，外包一层容器承载间距）
+        // 5. 服务须知（@Builder 调用返回 void，外包一层容器承载间距）
         Column() {
           this.ServiceTips()
         }
-        .margin({ top: DesignDimens.SECTION_SPACING })
+        .margin({ top: 44 })
 
-        // 底部间距
+        // 底部间距（底栏不重叠内容，留一档呼吸位）
         Row() {
-        }.height(72)
+        }.height(DesignDimens.SPACE_MD)
       }
     }
     .scrollBar(BarState.Off)
@@ -492,8 +441,5 @@ export struct IndexPage {
     .height("100%")
     .align(Alignment.TopStart)
     .backgroundColor(DesignColor.BACKGROUND)
-  }
-
-  onUserInfoChange(changedPropertyName: string) {
   }
 }

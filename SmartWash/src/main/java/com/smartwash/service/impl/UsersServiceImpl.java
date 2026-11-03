@@ -229,7 +229,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     }
 
     @Override
-    public Boolean bingCampus(String campusCard, Long userId) {
+    public Boolean bindCampus(String campusCard, Long userId) {
         log.info("用户绑定校园卡, userId: {}", userId);
         // 绑定前查重：同一张校园卡只允许绑定一个账号，已被他人绑定则拒绝（评审报告后端 #15）
         Users boundUser = getUserByCampusCard(campusCard);
@@ -248,7 +248,7 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     }
 
     @Override
-    public Boolean unBingCampus(Long userId) {
+    public Boolean unBindCampus(Long userId) {
         log.info("用户解绑校园卡, userId: {}", userId);
         return update(new LambdaUpdateWrapper<Users>().eq(Users::getUserId, userId).set(Users::getCampusCard, null));
     }

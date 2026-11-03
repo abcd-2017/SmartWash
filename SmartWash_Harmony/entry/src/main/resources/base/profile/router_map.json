@@ -36,6 +36,13 @@
       }
     },
     {
+      "name": "PermissionManagement",
+      "pageSourceFile": "src/main/ets/pages/PermissionManagement.ets",
+      "buildFunction": "PermissionManagementBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "Recharge",
       "pageSourceFile": "src/main/ets/pages/Recharge.ets",
       "buildFunction": "RechargeBuilder",
@@ -193,6 +200,13 @@
       "name": "WebPage",
       "pageSourceFile": "src/main/ets/pages/WebPage.ets",
       "buildFunction": "WebPageBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "GameCenter",
+      "pageSourceFile": "src/main/ets/feature/game/ui/GameCenterPage.ets",
+      "buildFunction": "GameCenterBuilder",
       "data": {
       }
     }

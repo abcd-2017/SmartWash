@@ -1,8 +1,8 @@
 /**
  * 解读页 —— 对齐安卓 ui/page/reading/DivReadingPage.kt + DivReadingViewModel.kt。
  *
- * 结构：盘面摘要卡（印章 + 卦名 + 起卦时刻）→ 解读正文三态（Loading / Error / Success）
- * → 金边「总结与行动」卡 → 落款印 → 底部「继续追问」/「分享」→ 页脚免责声明常驻。
+ * 结构：页头右侧固定卦印 → 解读正文三态（Loading / Error / Success）→ 「总结与行动」卡
+ * → 底部单按钮「继续追问」（soft 44 高 13 号通栏）→ 页脚免责声明常驻。
  *
  * 关键约束：
  * - 记录读库（getById），解读走 interpret(form)（本期 Mock；后端就绪后仅换实现，页面不变）。
@@ -11,7 +11,7 @@
  */
 
 import { DivReadingSection, DivReadingVo, interpret as requestInterpret } from '../../../network/DivinationApi'
-import { chartNameOf, divMethodName } from '../../../data/DivChartReader'
+import { chartNameOf } from '../../../data/DivChartReader'
 import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivCard,
@@ -19,9 +19,9 @@ import {
   DivGoldButton,
   DivPageHeader,
   DivPalette,
-  DivSeal,
   DivSerifText,
-  DivText
+  DivText,
+  DivWaveIcon
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
@@ -35,13 +35,66 @@ export function DivReadingBuilder() {
   DivReadingPage()
 }
 
+/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8）；
+ *  首屏逐项淡入（60ms 间隔 / 120ms 淡入 / cap 240，reduced motion 降级由全局常量控制） */
+@ComponentV2
+struct ReadingSectionCard {
+  @Param section: DivReadingSection | null = null
+  @Param index: number = 0
+  @Local alpha: number = 0
+  private timerId: number = -1
+
+  aboutToAppear(): void {
+    const delay = Math.min(this.index * 60, 240)
+    this.timerId = setTimeout(() => {
+      animateTo({ duration: 120, curve: Curve.EaseOut }, () => {
+        this.alpha = 1
+      })
+    }, delay)
+  }
+
+  aboutToDisappear(): void {
+    if (this.timerId !== -1) {
+      clearTimeout(this.timerId)
+      this.timerId = -1
+    }
+  }
+
+  build() {
+    if (this.section !== null) {
+      DivCard({ lineColor: DivPalette.goldHair }) {
+        Column() {
+          DivSerifText({
+            text: this.section.title,
+            textSize: 14,
+            weight: 600,
+            spacing: 4,
+            color: DivPalette.goldText
+          })
+          Column().height(8)
+          DivSerifText({
+            text: this.section.content,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textPrimary
+          })
+        }
+        .width('100%')
+        .padding(14)
+        .margin({ top: 6, bottom: 6 })
+        .opacity(this.alpha)
+      }
+    }
+  }
+}
+
 @ComponentV2
 struct DivReadingPage {
   @Local loadingRecord: boolean = true
   @Local record: DivRecordRow | null = null
   @Local chartName: string = ''
   @Local chartSeal: string = ''
-  @Local timeText: string = ''
   @Local readingState: ReadingState = 'idle'
   @Local reading: DivReadingVo | null = null
 
@@ -57,7 +110,6 @@ struct DivReadingPage {
       if (row !== null) {
         this.chartName = this.resolveName(row)
         this.chartSeal = this.resolveSeal(row.method, this.chartName)
-        this.timeText = this.formatTime(row.castAt)
       }
     } catch (err) {
       this.record = null
@@ -74,7 +126,7 @@ struct DivReadingPage {
     return chartNameOf(row.method, chartJson)
   }
 
-  /** 摘要印章（对齐安卓 ReadingSummaryCard：六爻取首字 / 梅 / 奇 / 壬） */
+  /** 页头卦印文字（对齐安卓 readingSealText：六爻取卦名首字 / 梅 / 奇 / 壬） */
   private resolveSeal(method: string, name: string): string {
     if (method === 'liuyao') {
       return name.length > 0 ? name.charAt(0) : '卦'
@@ -86,19 +138,6 @@ struct DivReadingPage {
       return '奇'
     }
     return '壬'
-  }
-
-  private formatTime(castAt: number): string {
-    const d = new Date(castAt)
-    const month = d.getMonth() + 1
-    const day = d.getDate()
-    const hour = d.getHours()
-    const minute = d.getMinutes()
-    return `${this.pad2(month)}-${this.pad2(day)} ${this.pad2(hour)}:${this.pad2(minute)} · 卜`
-  }
-
-  private pad2(n: number): string {
-    return n < 10 ? `0${n}` : `${n}`
   }
 
   private hasReading(): boolean {
@@ -138,91 +177,46 @@ struct DivReadingPage {
   }
 
   @Builder
-  SummaryCard() {
-    Row() {
-      DivSeal({ text: this.chartSeal, sealSize: 32, fontSize: 15 })
-      Column().width(12)
-      DivSerifText({
-        text: this.chartName.length > 0 ? this.chartName : divMethodName(this.record?.method ?? ''),
-        textSize: 15,
-        weight: 600,
-        spacing: 3,
-        color: DivPalette.textPrimary
-      })
-        .layoutWeight(1)
-      DivSerifText({
-        text: this.timeText,
-        textSize: 10,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textTertiary
-      })
-    }
-    .width('100%')
-    .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-    .alignItems(VerticalAlign.Center)
+  SectionCard(section: DivReadingSection) {
+    ReadingSectionCard({ section: section, index: this.sectionIndex(section) })
   }
 
-  @Builder
-  SectionCard(section: DivReadingSection) {
-    DivCard({ lineColor: DivPalette.goldHair }) {
-      Column() {
-        DivSerifText({
-          text: section.title,
-          textSize: 13.5,
-          weight: 600,
-          spacing: 3,
-          color: DivPalette.gold
-        })
-        Column().height(6)
-        DivSerifText({
-          text: section.content,
-          textSize: 12.5,
-          weight: 400,
-          spacing: 0,
-          color: DivPalette.textPrimary
-        })
+  /** 章节卡在列表中的序号（供逐项淡入延迟使用） */
+  private sectionIndex(section: DivReadingSection): number {
+    const sections = this.readingSections()
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i] === section) {
+        return i
       }
-      .width('100%')
-      .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-    .margin({ top: 6, bottom: 6 })
     }
+    return 0
   }
 
   @Builder
   ActionCard(action: string) {
-    DivCard({ bgColor: DivPalette.goldSoft, lineColor: DivPalette.goldLine }) {
+    // 「总结与行动」卡与章节卡同款（surface 底 + 12% 金发丝线，画板无金底卡）
+    DivCard({ lineColor: DivPalette.goldHair }) {
       Column() {
         DivSerifText({
           text: DivText.readingAction,
-          textSize: 13,
+          textSize: 14,
           weight: 600,
-          spacing: 3,
-          color: DivPalette.gold
+          spacing: 4,
+          color: DivPalette.goldText
         })
-        Column().height(6)
+        Column().height(8)
         DivSerifText({
           text: action,
-          textSize: 12.5,
+          textSize: 12,
           weight: 400,
           spacing: 0,
           color: DivPalette.textPrimary
         })
       }
       .width('100%')
-      .padding({ left: 16, right: 16, top: 14, bottom: 14 })
-    .margin({ left: 20, right: 20, top: 8, bottom: 8 })
+      .padding(14)
+    .margin({ top: 6, bottom: 6 })
     }
-  }
-
-  @Builder
-  EndSeal() {
-    Column() {
-      DivSeal({ text: DivText.readingEndseal, sealSize: 36, fontSize: 18 })
-    }
-    .width('100%')
-    .padding({ top: 8 })
-    .alignItems(HorizontalAlign.Center)
   }
 
   build() {
@@ -230,6 +224,8 @@ struct DivReadingPage {
       DivinationScreen() {
         DivPageHeader({
           title: DivText.readingTitle,
+          // 页头右侧固定卦印（对齐安卓 sealTrailing：右缘 20、30 方印 r8 平涂深朱、印文 14/700）
+          sealTrailing: this.chartSeal,
           onBack: () => {
             pathStack.pop()
           }
@@ -258,88 +254,72 @@ struct DivReadingPage {
             .width('100%')
             .padding({ top: 80 })
         } else {
-          // 盘面摘要卡
-          DivCard({ lineColor: DivPalette.goldLine }) {
-            Column() {
-              this.SummaryCard()
-            }
-            .margin({ left: 20, right: 20 })
-          }
-
-          // 解读正文三态
-          if (this.readingState === 'loading' || this.readingState === 'idle') {
-            DivCard() {
-              DivSerifText({
-                text: DivText.readingLoading,
-                textSize: 12,
-                weight: 400,
-                spacing: 0,
-                color: DivPalette.textTertiary,
-                textAlign: TextAlign.Center
-              })
+          // 内容统一左右 20（对齐安卓页边距；卡片不再通栏）
+          Column() {
+            // 解读正文三态
+            if (this.readingState === 'loading' || this.readingState === 'idle') {
+              DivCard() {
+                Column() {
+                  DivWaveIcon({ sizeValue: 18, tint: DivPalette.gold })
+                  Column().height(8)
+                  DivSerifText({
+                    text: DivText.readingLoading,
+                    textSize: 12,
+                    weight: 400,
+                    spacing: 0,
+                    color: DivPalette.textTertiary,
+                    textAlign: TextAlign.Center
+                  })
+                }
                 .width('100%')
                 .padding({ top: 24, bottom: 24 })
-            .margin({ left: 20, right: 20 })
-            }
-          } else if (this.readingState === 'error') {
-            DivCard() {
-              DivSerifText({
-                text: DivText.readingError,
-                textSize: 12,
-                weight: 400,
-                spacing: 0,
-                color: DivPalette.textTertiary,
-                textAlign: TextAlign.Center
-              })
-                .width('100%')
-                .padding({ top: 24, bottom: 24 })
-            .margin({ left: 20, right: 20 })
-            }
-          } else if (this.hasReading()) {
-            // 章节卡列表
-            Column() {
-              ForEach(this.readingSections(), (section: DivReadingSection) => {
-                this.SectionCard(section)
-              }, (section: DivReadingSection, index: number) => index.toString())
-            }
-            .width('100%')
+                .alignItems(HorizontalAlign.Center)
+              }
+            } else if (this.readingState === 'error') {
+              DivCard() {
+                DivSerifText({
+                  text: DivText.readingError,
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textTertiary,
+                  textAlign: TextAlign.Center
+                })
+                  .width('100%')
+                  .padding({ top: 24, bottom: 24 })
+              }
+            } else if (this.hasReading()) {
+              // 章节卡列表
+              Column() {
+                ForEach(this.readingSections(), (section: DivReadingSection) => {
+                  this.SectionCard(section)
+                }, (section: DivReadingSection, index: number) => index.toString())
+              }
+              .width('100%')
 
-            // 金边「总结与行动」卡
-            this.ActionCard(this.readingAction())
-
-            // 落款印
-            this.EndSeal()
-          }
-
-          // 底部双按钮
-          Row() {
-            Column() {
-              DivGoldButton({
-                text: DivText.readingFollowup,
-                isEnabled: true,
-                onAction: () => {
-                  const id = this.record?.id ?? 0
-                  pathStack.pushPathByName(RouteNames.DIV_FOLLOW_UP, id)
-                }
-              })
+              // 「总结与行动」卡
+              this.ActionCard(this.readingAction())
             }
-            .layoutWeight(1)
-            Column().width(10)
-            Column() {
-              DivGoldButton({
-                text: DivText.readingShare,
-                isEnabled: false,
-                onAction: () => {
-                }
-              })
-            }
-            .layoutWeight(1)
+
+            // 主行动：单按钮「继续追问」（对齐安卓 soft 44 高 13 号通栏；画板「分享」暂无实现，不落占位）
+            DivGoldButton({
+              text: DivText.readingFollowup,
+              soft: true,
+              btnHeight: 44,
+              fontSize: 13,
+              isEnabled: true,
+              onAction: () => {
+                const id = this.record?.id ?? 0
+                pathStack.pushPathByName(RouteNames.DIV_FOLLOW_UP, id)
+              }
+            })
+              .padding({ left: 20, right: 20, top: 20 })
+
+            // 页脚免责声明（常驻）
+            DivFooterNote({ text: DivText.disclaimerReading })
           }
           .width('100%')
           .padding({ left: 20, right: 20 })
-
-          // 页脚免责声明（常驻）
-          DivFooterNote({ text: DivText.disclaimerReading })
         }
       }
     }

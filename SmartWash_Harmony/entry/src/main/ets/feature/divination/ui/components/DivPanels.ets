@@ -18,7 +18,7 @@ import {
   DivCard,
   DivPalette,
   DivSerifText,
-  divSpiritColor
+  divReduceMotion
 } from './DivComponents'
 
 @Builder
@@ -51,40 +51,202 @@ interface MeiHuaCardData {
   chipGold: boolean
 }
 
-// ========== 六爻盘 ==========
+// ========== 六爻盘（无卡容器直铺背景；自初爻向上 draw-on 入场） ==========
+
+/** 六爻逐爻展开的单爻时长 — 350ms（规范 7：进入减速 LinearOutSlowIn） */
+const YAO_DRAW_MS: number = 350
+/** 六爻逐爻展开的交叠间隔 — 60ms（规范 7：逐项间隔 ≤60ms） */
+const YAO_STAGGER_MS: number = 60
+
+/** 爻线段（draw-on 进度 0..1 控制展开宽度） */
+@Builder
+function YaoSegment(progress: number) {
+  Column() {
+    Column()
+      .width(`${Math.round(progress * 100)}%`)
+      .height(9)
+      .borderRadius(2)
+      .linearGradient({
+        direction: GradientDirection.Right,
+        colors: [[DivPalette.yaoTop, 0.0], [DivPalette.yaoBottom, 1.0]]
+      })
+  }
+  .width('100%')
+  .height(9)
+}
+
+/** 爻线：阳爻六段、阴爻两组四段（3/3/中缝2/3/3 权重，随槽宽自适应居中） */
+@Builder
+function YaoBar(yang: boolean, progress: number) {
+  if (yang) {
+    Row({ space: 2 }) {
+      ForEach([0, 1, 2, 3, 4, 5], (item: number) => {
+        Column() {
+          YaoSegment(progress)
+        }
+        .layoutWeight(1)
+      }, (item: number) => item.toString())
+    }
+    .width('100%')
+  } else {
+    Row() {
+      Column() {
+        YaoSegment(progress)
+      }
+      .layoutWeight(3)
+      Column() {
+        YaoSegment(progress)
+      }
+      .layoutWeight(3)
+      Column()
+        .layoutWeight(2)
+      Column() {
+        YaoSegment(progress)
+      }
+      .layoutWeight(3)
+      Column() {
+        YaoSegment(progress)
+      }
+      .layoutWeight(3)
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Center)
+  }
+}
+
+/** 六爻装卦一行：六神（弱化灰 12）/ 爻线 / 六亲纳甲 / 世应（12/600 金） */
+@ComponentV2
+struct LiuYaoRow {
+  @Param line: LiuYaoLine | null = null
+  @Param revealed: number = 1
+  // 动爻标记：爻线展开满后延迟 80ms 弹簧盖上（对齐安卓）
+  @Local markVisible: boolean = false
+  @Local markScale: number = 0
+  private markTimer: number = -1
+
+  aboutToAppear(): void {
+    if (this.line !== null && this.line.yao.isMoving && this.revealed >= 1) {
+      this.markTimer = setTimeout(() => {
+        this.markVisible = true
+        animateTo({ duration: 200, curve: Curve.EaseOut }, () => {
+          this.markScale = 1
+        })
+      }, 80)
+    }
+  }
+
+  aboutToDisappear(): void {
+    if (this.markTimer !== -1) {
+      clearTimeout(this.markTimer)
+      this.markTimer = -1
+    }
+  }
+
+  build() {
+    if (this.line !== null) {
+      Row() {
+        // 六神（画板：无色点，弱化灰 12）
+        DivSerifText({
+          text: this.line.liuShen,
+          textSize: 12,
+          weight: 400,
+          spacing: 0,
+          color: DivPalette.textSecondary,
+          maxLines: 1
+        })
+          .width(44)
+
+        Column().width(12)
+
+        // 爻象（权重自适应）
+        Column() {
+          YaoBar(this.line.yao.isYang, this.revealed)
+        }
+        .layoutWeight(1)
+
+        Column().width(6)
+
+        // 六亲 · 纳甲（动爻标记 ○/⨯ 延迟 80ms 弹簧盖上，同文字色）
+        Row() {
+          DivSerifText({
+            text: `${this.line.liuQin}${this.line.ganZhi}${this.line.zhiWuXing.label}`,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textPrimary,
+            maxLines: 1
+          })
+          if (this.line.yao.isMoving && this.markVisible) {
+            DivSerifText({
+              text: this.line.yao.code === 3 ? ' ○' : ' ⨯',
+              textSize: 12,
+              weight: 400,
+              spacing: 0,
+              color: DivPalette.textPrimary
+            })
+              .scale({ x: this.markScale, y: this.markScale })
+          }
+        }
+        .layoutWeight(1.2)
+        .alignItems(VerticalAlign.Center)
+
+        // 世应徽标（画板：12/600 主题金）
+        DivSerifText({
+          text: this.line.shiYing ?? '',
+          textSize: 12,
+          weight: 600,
+          spacing: 0,
+          color: DivPalette.goldText,
+          textAlign: TextAlign.End
+        })
+          .width(24)
+      }
+      .width('100%')
+      .padding({ top: 14, bottom: 14 })
+      .alignItems(VerticalAlign.Center)
+    }
+  }
+}
 
 @ComponentV2
 export struct LiuYaoPan {
   @Param chart: LiuYaoChart | null = null
   @Param facts: LiuYaoFacts | null = null
   @Param animateEntry: boolean = false
-  // 动爻进场：自初爻向上逐条显现（60ms/条）；非动画直接全显
-  @Local revealCount: number = 6
-  private timerId: number = -1
+  // 逐爻展开进度（0..1），自初爻(index 0)向上交叠展开
+  @Local progresses: number[] = [1, 1, 1, 1, 1, 1]
+  private timers: number[] = []
 
   aboutToAppear(): void {
-    if (this.chart === null) {
-      return
-    }
-    if (this.animateEntry) {
-      this.revealCount = 0
-      this.timerId = setInterval(() => {
-        this.revealCount = Math.min(6, this.revealCount + 1)
-        if (this.revealCount >= 6 && this.timerId !== -1) {
-          clearInterval(this.timerId)
-          this.timerId = -1
-        }
-      }, 60)
+    if (this.animateEntry && !divReduceMotion()) {
+      this.progresses = [0, 0, 0, 0, 0, 0]
+      for (let i = 0; i < 6; i++) {
+        const id = setTimeout(() => {
+          animateTo({ duration: YAO_DRAW_MS, curve: Curve.FastOutSlowIn }, () => {
+            const next = this.progresses.slice()
+            next[i] = 1
+            this.progresses = next
+          })
+        }, i * YAO_STAGGER_MS)
+        this.timers.push(id)
+      }
     } else {
-      this.revealCount = 6
+      this.progresses = [1, 1, 1, 1, 1, 1]
     }
   }
 
   aboutToDisappear(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId)
-      this.timerId = -1
+    for (const id of this.timers) {
+      clearTimeout(id)
     }
+    this.timers = []
+  }
+
+  /** 点按跳过：进度直接置满（对齐安卓 pressable skip） */
+  private skip(): void {
+    animateTo({ duration: 120 }, () => {
+      this.progresses = [1, 1, 1, 1, 1, 1]
+    })
   }
 
   private hasChart(): boolean {
@@ -100,194 +262,33 @@ export struct LiuYaoPan {
     return row
   }
 
-  private typeFooterText(): string {
-    const chart = this.chart
-    if (chart === null) {
-      return ''
-    }
-    let out = ''
-    if (chart.type.length > 0) {
-      out += chart.type + '卦'
-    }
-    if (chart.bianName !== null) {
-      out += ' 之 ' + chart.bianName
-    }
-    if (chart.movingPositions.length > 0) {
-      const parts: string[] = []
-      for (const pos of chart.movingPositions) {
-        parts.push(`${pos}爻动`)
-      }
-      out += ' · ' + parts.join('、')
-    }
-    return out
-  }
-
-  private bianTypeText(): string {
-    const chart = this.chart
-    return chart !== null && chart.bianType !== null ? `变卦${chart.bianType}` : ''
-  }
-
-  @Builder
-  YaoBar(yang: boolean, revealed: boolean) {
-    if (yang) {
-      Column()
-        .width('100%')
-        .height(9)
-        .borderRadius(4.5)
-        .backgroundColor(DivPalette.yaoTop)
-        .opacity(revealed ? 1 : 0)
-    } else {
-      Row({ space: 14 }) {
-        Column()
-          .layoutWeight(1)
-          .height(9)
-          .borderRadius(4.5)
-          .backgroundColor(DivPalette.yaoTop)
-          .opacity(revealed ? 1 : 0)
-        Column()
-          .layoutWeight(1)
-          .height(9)
-          .borderRadius(4.5)
-          .backgroundColor(DivPalette.yaoTop)
-          .opacity(revealed ? 1 : 0)
-      }
-      .width('100%')
-    }
-  }
-
-  @Builder
-  LiuYaoRow(line: LiuYaoLine, index: number) {
-    Row() {
-      // 六神（色点 + 名）
-      Row() {
-        Column()
-          .width(6)
-          .height(6)
-          .borderRadius(3)
-          .backgroundColor(divSpiritColor(line.liuShen))
-        DivSerifText({
-          text: line.liuShen,
-          textSize: 10.5,
-          weight: 400,
-          spacing: 0,
-          color: DivPalette.textSecondary,
-          maxLines: 1
-        })
-          .padding({ left: 6 })
-      }
-      .width(52)
-      .alignItems(VerticalAlign.Center)
-
-      // 爻象 + 动爻标记
-      Row() {
-        Column() {
-          this.YaoBar(line.yao.isYang, index < this.revealCount)
-        }
-        .layoutWeight(1)
-
-        if (line.yao.isMoving) {
-          // 老阳○ 鎏金 / 老阴× 朱砂 —— 颜色即信息
-          DivSerifText({
-            text: line.yao.code === 3 ? '○' : '×',
-            textSize: 13,
-            weight: 700,
-            spacing: 0,
-            color: line.yao.code === 3 ? DivPalette.gold : DivPalette.sealHi
-          })
-            .padding({ left: 4 })
-        }
-      }
-      .layoutWeight(1)
-      .padding({ right: 10 })
-      .alignItems(VerticalAlign.Center)
-
-      // 六亲 · 干支
-      Row() {
-        DivSerifText({
-          text: line.liuQin,
-          textSize: 12.5,
-          weight: 500,
-          spacing: 1,
-          color: DivPalette.textPrimary
-        })
-        DivSerifText({
-          text: line.ganZhi + line.zhiWuXing.label,
-          textSize: 10.5,
-          weight: 400,
-          spacing: 0,
-          color: DivPalette.gold
-        })
-          .padding({ left: 4 })
-      }
-      .alignItems(VerticalAlign.Center)
-
-      // 世应徽标：世鎏金 / 应青玉
-      DivSerifText({
-        text: line.shiYing ?? '',
-        textSize: 9.5,
-        weight: 400,
-        spacing: 0,
-        color: line.shiYing === '世' ? DivPalette.gold : DivPalette.jade,
-        textAlign: TextAlign.Center
-      })
-        .width(20)
-        .padding({ left: 6 })
-    }
-    .width('100%')
-    .padding({ top: 7, bottom: 7 })
-    .alignItems(VerticalAlign.Center)
-  }
-
   build() {
     if (this.hasChart()) {
-      DivCard({ lineColor: DivPalette.goldLine }) {
-        Column() {
-          // 表头
-          Row() {
-            DivSerifText({ text: '六神', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
-              .width(52)
-            DivSerifText({ text: '爻象', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
-              .layoutWeight(1)
-            DivSerifText({ text: '六亲 · 干支', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
-            DivSerifText({ text: '世应', textSize: 9.5, weight: 400, spacing: 2, color: DivPalette.textTertiary })
-              .width(20)
-          }
-          .width('100%')
-          .padding({ bottom: 4 })
-
-          // 自上爻到初爻（index 5 → 0）
-          ForEach(DISPLAY_INDEXES, (index: number) => {
-            Column() {
-              this.LiuYaoRow(this.rowAt(index), index)
+      // 无卡容器直铺背景；轨道左 28 / 右 20
+      Column() {
+        ForEach(DISPLAY_INDEXES, (index: number) => {
+          Column() {
+            // 行间 1px 12% 金发丝分隔（右缩 8 与卡片轨对齐）
+            if (index < 5) {
+              Row() {
+                Column()
+                  .width('100%')
+                  .height(1)
+                  .backgroundColor(DivPalette.hair)
+              }
+              .width('100%')
+              .padding({ right: 8 })
             }
-            .width('100%')
-          }, (index: number) => index.toString())
-
-          // 类型脚注
-          Row() {
-            DivSerifText({
-              text: this.typeFooterText(),
-              textSize: 11,
-              weight: 400,
-              spacing: 0,
-              color: DivPalette.textSecondary
-            })
-              .layoutWeight(1)
-            DivSerifText({
-              text: this.bianTypeText(),
-              textSize: 11,
-              weight: 600,
-              spacing: 1,
-              color: DivPalette.textPrimary
-            })
+            LiuYaoRow({ line: this.rowAt(index), revealed: this.progresses[index] })
           }
           .width('100%')
-          .padding({ top: 10 })
-          .alignItems(VerticalAlign.Center)
-        }
-        .width('100%')
-        .padding(14)
+        }, (index: number) => index.toString())
       }
+      .width('100%')
+      .padding({ left: 28, right: 20 })
+      .onClick(() => {
+        this.skip()
+      })
     }
   }
 }
@@ -376,31 +377,37 @@ export struct MeiHuaTripleCards {
           Column().height(8)
           DivSerifText({ text: item.name, textSize: 17, weight: 600, spacing: 2, color: DivPalette.textPrimary })
           Column().height(10)
-          // 爻象：自上爻到初爻
-          ForEach(DISPLAY_INDEXES, (index: number) => {
-            if (item.mark.charAt(index) === '1') {
-              Column()
+          // 爻象：自上爻到初爻（行距 3）
+          Column({ space: 3 }) {
+            ForEach(DISPLAY_INDEXES, (index: number) => {
+              if (item.mark.charAt(index) === '1') {
+                Column()
+                  .width('100%')
+                  .height(4)
+                  .borderRadius(2)
+                  .backgroundColor(DivPalette.yaoTop)
+              } else {
+                Row({ space: 6 }) {
+                  Column().layoutWeight(1).height(4).borderRadius(2).backgroundColor(DivPalette.yaoTop)
+                  Column().layoutWeight(1).height(4).borderRadius(2).backgroundColor(DivPalette.yaoTop)
+                }
                 .width('100%')
-                .height(4)
-                .borderRadius(2)
-                .backgroundColor(DivPalette.yaoTop)
-            } else {
-              Row({ space: 6 }) {
-                Column().layoutWeight(1).height(4).borderRadius(2).backgroundColor(DivPalette.yaoTop)
-                Column().layoutWeight(1).height(4).borderRadius(2).backgroundColor(DivPalette.yaoTop)
               }
-              .width('100%')
-            }
-          }, (index: number) => index.toString())
+            }, (index: number) => index.toString())
+          }
+          .width('100%')
           Column().height(10)
+          // 体用 chip：限两行居中 + 收横 padding 6（窄卡不溢出）
           DivSerifText({
             text: item.chip,
             textSize: 10,
             weight: 400,
             spacing: 0,
-            color: item.chipGold ? DivPalette.gold : DivPalette.textSecondary
+            color: item.chipGold ? DivPalette.gold : DivPalette.textSecondary,
+            textAlign: TextAlign.Center,
+            maxLines: 2
           })
-            .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+            .padding({ left: 6, right: 6, top: 3, bottom: 3 })
             .borderRadius(10)
             .backgroundColor(item.chipGold ? DivPalette.goldSoft : DivPalette.surface2)
         }
@@ -414,7 +421,7 @@ export struct MeiHuaTripleCards {
 
   build() {
     if (this.hasChart()) {
-      Row() {
+      Row({ space: 10 }) {
         ForEach(this.cardData(), (item: MeiHuaCardData) => {
           Column() {
             this.MeiHuaCard(item)
@@ -499,12 +506,7 @@ export struct QimenGrid {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
 
-          // 暗干角标
-          DivSerifText({ text: `暗·${this.cellAnGan(gong)}`, textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
-            .align(Alignment.BottomEnd)
-            .padding({ right: 8, bottom: 6 })
-
-          // 空亡 / 驿马 badge
+          // 空亡 / 驿马 badge（TopEnd）
           if (this.hasBadge(gong)) {
             DivSerifText({ text: this.badgeText(gong), textSize: 9, weight: 400, spacing: 0, color: DivPalette.sealHi })
               .align(Alignment.TopEnd)
@@ -516,15 +518,25 @@ export struct QimenGrid {
         }
       }
       .width('100%')
-      .height(116)
+      // 宫高 min 124 自适应（大字体下五层文本不叠压，对齐安卓 heightIn(min=124)）
+      .constraintSize({ minHeight: 124 })
       .padding({ left: 8, right: 8, top: 8, bottom: 8 })
 
-      // 宫名
-      DivSerifText({ text: this.gongNameText(gong), textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
-        .align(Alignment.BottomStart)
-        .padding({ left: 8, bottom: 6 })
+      // 底部行：宫名（左）+ 暗干（右）同行合并（原两处绝对定位角标大字号重叠）
+      Row() {
+        DivSerifText({ text: this.gongNameText(gong), textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
+          .layoutWeight(1)
+          .opacity(0.85)
+        if (gong !== 5) {
+          DivSerifText({ text: `暗·${this.cellAnGan(gong)}`, textSize: 9, weight: 400, spacing: 0, color: DivPalette.textTertiary })
+            .opacity(0.75)
+        }
+      }
+      .width('100%')
+      .align(Alignment.BottomStart)
+      .padding({ left: 8, right: 8, bottom: 6 })
     }
-    .height(116)
+    .constraintSize({ minHeight: 124 })
     .borderRadius(10)
     .backgroundColor(gong === 5 ? DivPalette.surface2 : DivPalette.surface)
     .border({ width: 1, color: DivPalette.goldHair, radius: 10 })
@@ -563,14 +575,15 @@ export struct QimenGrid {
 
   build() {
     if (this.hasChart()) {
-      Column() {
+      Column({ space: 5 }) {
         ForEach(LAYOUT_GONG, (row: number[]) => {
-          Row() {
+          Row({ space: 5 }) {
             ForEach(row, (gong: number) => {
               this.PalaceCell(gong)
             }, (gong: number) => gong.toString())
           }
           .width('100%')
+          .alignItems(VerticalAlign.Top)
         }, (row: number[], index: number) => index.toString())
       }
       .width('100%')
@@ -759,7 +772,7 @@ export struct LiurenCourses {
     if (this.hasChart()) {
       Column() {
         // 四课
-        Row() {
+        Row({ space: 10 }) {
           ForEach(this.courseList(), (course: LiuRenCourse) => {
             Column() {
               this.CourseCard(course)
@@ -771,7 +784,7 @@ export struct LiurenCourses {
 
         // 三传（或暂不支持说明）
         if (this.hasSanChuan()) {
-          Row() {
+          Row({ space: 10 }) {
             ForEach(CHUAN_LABELS, (label: string, index: number) => {
               Column() {
                 this.ChuanCard(label, this.chuanAt(index), this.chuanJiangAt(index))

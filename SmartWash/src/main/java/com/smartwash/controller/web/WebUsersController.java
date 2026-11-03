@@ -83,17 +83,17 @@ public class WebUsersController {
     }
 
     @Operation(summary = "绑定校园卡", description = "为当前用户绑定校园卡")
-    @PostMapping("/auth/user/bingCampus/{campusCard}")
-    public Result<Boolean> bingCampus(@PathVariable("campusCard") @Parameter(description = "校园卡号", required = true, example = "C2021001") String campusCard) {
+    @PostMapping("/auth/user/bindCampus/{campusCard}")
+    public Result<Boolean> bindCampus(@PathVariable("campusCard") @Parameter(description = "校园卡号", required = true, example = "C2021001") String campusCard) {
         LoginUser user = UserContextHolder.getUser();
-        return Result.ok(usersService.bingCampus(campusCard, user.getUserId()));
+        return Result.ok(usersService.bindCampus(campusCard, user.getUserId()));
     }
 
     @Operation(summary = "解绑校园卡", description = "解除当前用户的校园卡绑定")
-    @PostMapping("/auth/user/unBingCampus")
-    public Result<Boolean> unBingCampus() {
+    @PostMapping("/auth/user/unBindCampus")
+    public Result<Boolean> unBindCampus() {
         LoginUser user = UserContextHolder.getUser();
-        return Result.ok(usersService.unBingCampus(user.getUserId()));
+        return Result.ok(usersService.unBindCampus(user.getUserId()));
     }
 
     @Operation(summary = "获取交易记录", description = "分页获取当前用户的充值和消费记录（page 默认 1，pageSize 默认 10、上限 50）")

@@ -1,8 +1,5 @@
 package com.smartwash.config;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONFactory;
-import com.alibaba.fastjson2.JSONWriter;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -12,11 +9,9 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,10 +21,11 @@ import java.util.Map;
 @EnableCaching
 public class RedisConfig {
 
-    static {
-        // 限制 FastJSON2 反序列化自动类型识别仅允许项目内部类，防止反序列化漏洞
-        JSONFactory.getDefaultObjectReaderProvider().addAutoTypeAccept("com.smartwash.");
-    }
+    /**
+     * 缓存 value 序列化器：Jackson + 多态白名单（见 {@link CacheJsonSerializer}），
+     * 替代原 FastJSON2 WriteClassName 序列化。
+     */
+    private static final CacheJsonSerializer CACHE_SERIALIZER = new CacheJsonSerializer();
 
     @Bean
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
@@ -50,25 +46,10 @@ public class RedisConfig {
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        // 使用 FastJSON2 作为 value 序列化器
-        RedisSerializer<Object> fastJson2Serializer = new RedisSerializer<Object>() {
-            @Override
-            public byte[] serialize(Object object) {
-                if (object == null) return new byte[0];
-                return JSON.toJSONString(object, JSONWriter.Feature.WriteClassName).getBytes(StandardCharsets.UTF_8);
-            }
-
-            @Override
-            public Object deserialize(byte[] bytes) {
-                if (bytes == null || bytes.length == 0) return null;
-                return JSON.parseObject(new String(bytes, StandardCharsets.UTF_8), Object.class);
-            }
-        };
-
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(fastJson2Serializer))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(CACHE_SERIALIZER))
                 .computePrefixWith(cacheName -> "smartwash:" + cacheName + "::");
 
         // 不同缓存空间的 TTL 配置

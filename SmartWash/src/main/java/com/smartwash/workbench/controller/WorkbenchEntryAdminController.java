@@ -11,8 +11,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "工作台-入口配置管理端", description = "工作台入口卡片配置（ROLE_ADMIN）")
 @Slf4j
+@Validated
 @RestController
 @RequestMapping("/admin/workbench/entries")
 @RequiredArgsConstructor
@@ -52,7 +55,7 @@ public class WorkbenchEntryAdminController {
 
     @Operation(summary = "批量删除入口", description = "根据ID批量物理删除，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
-    public Result<Boolean> delete(@PathVariable("ids") @Parameter(description = "入口ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+    public Result<Boolean> delete(@PathVariable("ids") @Pattern(regexp = "^\\d+(,\\d+)*$", message = "ids 必须为逗号分隔的数字") @Parameter(description = "入口ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         workbenchEntryService.deleteEntries(ids);
         return Result.ok(true);
     }

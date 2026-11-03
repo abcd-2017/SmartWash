@@ -5,10 +5,11 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { LaundryItem } from "../network/vo/LaundryItem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { reservationLaundry } from "../network/api/OrderApi"
-import { pathStack } from "../utils/PathStackUtil"
+import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { AppButton, AppInfoDialog, LoadingState } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { AppButton, AppButtonVariant, AppInfoDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import vibrator from '@ohos.vibrator'
 
 @Builder
 export function LaundryBuilder() {
@@ -23,9 +24,16 @@ struct Laundry {
   @State totalPrice: number | null = 0
   // 页面首屏加载态：请求期间全屏 Loading（对齐安卓 LoadingState）
   @State pageLoading: boolean = true
+  // 套餐加载失败标记：置位后展示 EmptyState + 重试（S1，对齐安卓 Error toast + 空列表的可行动兜底）
+  @State loadFailed: boolean = false
   // 预约请求进行中标记：配合 AppButton loading 展示并拦截连点。
   // 后端预约接口无幂等（评审报告 P0），前端防重是唯一防线
   @State reserving: boolean = false
+  // 套餐卡 / 「更换」按压态（I2，对齐安卓 pressable scale 0.97）
+  @State pressedItemId: number | null = null
+  @State changePressed: boolean = false
+  // 路由预选套餐 id（F1，-1 = 不指定；对齐安卓 LaundryRoute.Laundry 的 ARG_ITEM_ID）
+  private defaultItemId: number = -1
   // 未选套餐提示弹窗（对齐安卓 AppInfoDialog，替代 toast 形态）
   private selectDialogController: CustomDialogController = new CustomDialogController({
     builder: AppInfoDialog({ message: "请选择套餐" }),
@@ -42,6 +50,11 @@ struct Laundry {
   })
 
   async aboutToAppear() {
+    // 路由预选参数（F1）：服务页套餐行携 id 跳入时落地默认选中（缺失/非法 = 不指定）
+    const routeItemId = getNumberParam(RouteNames.LAUNDRY)
+    if (routeItemId !== null && routeItemId > 0) {
+      this.defaultItemId = routeItemId
+    }
     // ArkTS 禁止解构声明（arkts-no-destruct-decls），改为先并发发起、再逐个 await（保持并发语义）
     const resTask = getUserInfo()
     const itemResTask = getLaundryItems()
@@ -54,10 +67,51 @@ struct Laundry {
     }
     if (itemRes.code === HttpStatusCode.Ok) {
       this.laundryItemList = itemRes.data
+      this.applyRoutePreselection()
     } else {
       showToastSafety(itemRes.message, "套餐加载失败")
+      this.loadFailed = true
     }
     this.pageLoading = false
+  }
+
+  /**
+   * 路由预选落地（F1，对齐安卓 LaundryPage.kt:103-112）：
+   * 仅首次（用户未手选）且套餐列表已就绪时按 id 预选，用户手动改选后不再覆盖
+   */
+  private applyRoutePreselection(): void {
+    if (this.selectItemId !== null || this.defaultItemId <= 0 || this.laundryItemList === null) {
+      return
+    }
+    const target = this.laundryItemList.find((item: LaundryItem) => item.itemId === this.defaultItemId)
+    if (target !== undefined) {
+      this.selectItemId = target.itemId
+      this.totalPrice = target.basePrice
+    }
+  }
+
+  /** 失败重试（S1）：重拉套餐列表，成功后补落路由预选 */
+  async retryFetchItems() {
+    this.pageLoading = true
+    this.loadFailed = false
+    let itemRes = await getLaundryItems()
+    if (itemRes.code === HttpStatusCode.Ok) {
+      this.laundryItemList = itemRes.data
+      this.applyRoutePreselection()
+    } else {
+      showToastSafety(itemRes.message, "套餐加载失败")
+      this.loadFailed = true
+    }
+    this.pageLoading = false
+  }
+
+  /** 选择触感（I1，对齐安卓 HapticEffect.SELECTION）：设备不支持时静默忽略 */
+  private hapticSelection(): void {
+    try {
+      vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+    } catch (err) {
+      // 不支持触感（模拟器 / 部分设备）时忽略
+    }
   }
 
   /**
@@ -97,38 +151,73 @@ struct Laundry {
   @Builder
   LaundryTypeItem(item: LaundryItem) {
     // @Builder 内仅允许 UI 语法，选中态直接内联计算（原 let isSelected 不合法）
-    // 选中态对齐安卓：primaryLight 底 + 1.5 主色描边，属性动画平滑过渡（LaundryPage.kt:286-310）
+    // 选中态对齐安卓：primaryLight 底 + primary 描边 + 36dp 指示器盒（LaundryPage.kt:296-418）
     Row() {
-      Column() {
-        Row() {
-          Text(`${item.itemName}`)
-            .fontSize(DesignFontSize.CARD_TITLE)
-            .fontWeight(FontWeight.Bold)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-        }.margin({ bottom: 4 })
+      // 选中指示器（F2）：36dp 盒（radiusSmall 10）+ 20dp 空心环 + 12dp 勾，弹簧过渡
+      Stack() {
+        // 盒底色：选中 primaryLight / 未选 surfaceVariant
+        Column()
+          .width(36)
+          .height(36)
+          .borderRadius(DesignDimens.RADIUS_SMALL)
+          .backgroundColor(this.selectItemId === item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE_VARIANT)
+          .animation(MotionTiming.ENTER)
 
-        Row() {
-          Text(`${item.description}`)
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-        }
-      }.alignItems(HorizontalAlign.Start)
+        // 空心环：选中 primary / 未选 outline
+        Column()
+          .width(20)
+          .height(20)
+          .borderRadius(10)
+          .border({
+            width: 1.5,
+            color: this.selectItemId === item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE
+          })
+          .animation(MotionTiming.ENTER)
+
+        // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(12)
+          .fontColor([DesignColor.PRIMARY])
+          .scale({ x: this.selectItemId === item.itemId ? 1 : 0, y: this.selectItemId === item.itemId ? 1 : 0 })
+          .animation(MotionTiming.ENTER)
+      }
+      .width(36)
+      .height(36)
+      .margin({ right: 12 })
+
+      Column() {
+        // 套餐卡标题（V4：bodyLarge 16/500，原 18 Bold 与描述落差过大）
+        Text(`${item.itemName}`)
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+
+        Text(`${item.description}`)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .margin({ top: 4 })
+      }
+      .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
 
-      Column() {
-        Text(`￥${item.basePrice?.toFixed(2)}`)
-          .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-          .fontWeight(DesignFontWeight.BOLD)
-          .fontColor(this.selectItemId == item.itemId ? DesignColor.PRIMARY : DesignColor.TEXT_PRIMARY)
-      }.margin({ left: 18 })
+      // 金额（V5：恒 primaryDark 600 + tnum，不随选中变色；单行防折行）
+      Text(`¥${item.basePrice?.toFixed(2)}`)
+        .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontFeature(DesignFontFeature.TNUM)
+        .fontColor(DesignColor.PRIMARY_DARK)
+        .maxLines(1)
+        .margin({ left: 18 })
     }
-    .backgroundColor(this.selectItemId == item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
+    .width("100%")
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor(this.selectItemId === item.itemId ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE)
     .padding(DesignDimens.CARD_PADDING)
     // 卡片唯一画法（规范 §3.1）：1px 描边 + level1 卡片阴影；
     // 描边宽度不再随选中变化（对齐安卓 v0.4），选中强调由 primaryLight 底 + primary 描边承担
     .border({
       width: 1,
-      color: this.selectItemId == item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+      color: this.selectItemId === item.itemId ? DesignColor.PRIMARY : DesignColor.OUTLINE,
       radius: DesignDimens.CARD_RADIUS
     })
     .borderRadius(DesignDimens.CARD_RADIUS)
@@ -138,14 +227,29 @@ struct Laundry {
       offsetX: 0,
       offsetY: 2
     })
-    .animation({ duration: 200, curve: Curve.EaseOut })
+    // V9 选中过渡曲线：200ms EaseOut → 弹簧（对齐安卓 defaultSpring）
+    .animation(MotionTiming.ENTER)
+    // I2 按压反馈：scale 0.97（对齐安卓 pressable；stateEffect 非通用属性，见 DivComponents.ets 注释）
+    .scale({
+      x: this.pressedItemId === item.itemId ? 0.97 : 1,
+      y: this.pressedItemId === item.itemId ? 0.97 : 1
+    })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedItemId = item.itemId
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedItemId = null
+      }
+    })
     .onClick(() => {
+      // I1 选中触感先于选中赋值（对齐安卓 LaundryPage.kt:340-342 的因果顺序）
+      this.hapticSelection()
       this.selectItemId = item.itemId
       this.totalPrice = item.basePrice
     })
+    // V8 列表项间距：卡间距 16（对齐安卓每项后置 Spacer 16）
     .margin({
-      top: 6,
-      bottom: 6,
+      bottom: DesignDimens.CARD_SPACING,
       left: DesignDimens.PAGE_PADDING,
       right: DesignDimens.PAGE_PADDING
     })
@@ -156,68 +260,68 @@ struct Laundry {
       Stack({ alignContent: Alignment.Bottom }) {
         Scroll() {
           Column() {
-            // 自定义 PageHeader
-            Row() {
-              SymbolGlyph($r('sys.symbol.chevron_left'))
-                .fontSize(24)
-                .fontColor([DesignColor.TEXT_PRIMARY])
-                .onClick(() => {
-                  pathStack.pop()
-                })
+            // 页头（V1：公共 PageHeader —— 22/600 标题 + 48dp 返回热区 + 内置连击防抖）
+            PageHeader({ title: "预约寄存" })
 
-              Text("预约寄存")
-                .fontSize(DesignFontSize.ROOT_TITLE)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(DesignColor.TEXT_PRIMARY)
-                .margin({ left: 8 })
-            }
-            .width("100%")
-            .padding({ left: DesignDimens.PAGE_PADDING, top: 12, bottom: 8 })
-
-            // 选择寄存柜卡片
-            Text("选择寄存柜")
+            // 投递柜标题（T1：对齐安卓 delivery_locker）
+            Text("投递柜")
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)
+              .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-            RowSplit().height("16")
+            Column()
+              .height(12)
 
             Row() {
-              SymbolGlyph($r('sys.symbol.circle_below_local_filled'))
-                .fontColor([DesignColor.PRIMARY])
-                .fontSize(24)
-                .fontWeight(FontWeight.Bold)
-              Column() {
-                Row() {
-                  Text(`${this.userInfo?.schoolVo?.schoolName}`)
-                    .fontSize(DesignFontSize.CARD_TITLE)
-                    .fontWeight(FontWeight.Bold)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
-                }.margin({ bottom: 4 })
+              // 投递柜图标（V6：IconBox 44/24 绿系 tile，替代裸 SymbolGlyph）
+              IconBox({
+                icon: $r('sys.symbol.circle_below_local_filled'),
+                sizeValue: 44,
+                iconSize: 24,
+                containerColor: DesignColor.PRIMARY_LIGHT,
+                iconColor: DesignColor.PRIMARY_DARK
+              })
 
-                Row() {
-                  Text(`${this.userInfo?.schoolVo?.location}`)
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
-                }
+              Column() {
+                Text(`${this.userInfo?.schoolVo?.schoolName}`)
+                  .fontSize(DesignFontSize.CARD_TITLE)
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
+                  .fontColor(DesignColor.TEXT_PRIMARY)
+
+                Text(`${this.userInfo?.schoolVo?.location}`)
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
               }
               .alignItems(HorizontalAlign.Start)
-              .margin({ left: 16 })
               .layoutWeight(1)
+              .margin({ left: 12 })
 
-              // 「更换」动作：弹「联系客服」提示弹窗（对齐安卓 LaundryPage.kt:119-124）
+              // 「更换」动作（V7）：16/600 primaryDark + 12/12 热区，弹「联系客服」提示弹窗
               Column() {
                 Text("更换")
                   .fontSize(DesignFontSize.BODY)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor(DesignColor.PRIMARY)
-                  .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+                  .fontWeight(DesignFontWeight.SEMI_BOLD)
+                  .fontColor(DesignColor.PRIMARY_DARK)
+                  .padding({ left: 12, right: 12, top: 12, bottom: 12 })
               }
+              .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.changePressed = true
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.changePressed = false
+                }
+              })
               .onClick(() => {
                 this.changeSchoolDialogController.open()
               })
             }
+            .width("100%")
+            .alignItems(VerticalAlign.Center)
             .borderRadius(DesignDimens.CARD_RADIUS)
             .backgroundColor(DesignColor.SURFACE)
             // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
@@ -231,16 +335,19 @@ struct Laundry {
             .padding(DesignDimens.CARD_PADDING)
             .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-            RowSplit().height("16")
+            Column()
+              .height(DesignDimens.SECTION_SPACING)
 
             // 洗护套餐标题
             Text("洗护套餐")
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)
+              .width("100%")
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-            RowSplit().height("8")
+            Column()
+              .height(12)
 
             // 套餐列表（补 ForEach key：itemId，对齐安卓 LazyColumn key）
             Row() {
@@ -253,7 +360,9 @@ struct Laundry {
               }
             }
 
-            RowSplit().height("72")
+            // 内容区 bottom 预留（V10）：底部 CTA 实高 ≈ 0.5 + 16 + 按钮 + 20
+            Column()
+              .height(100)
           }
         }
         .scrollBar(BarState.Off)
@@ -262,42 +371,31 @@ struct Laundry {
         .align(Alignment.Top)
         .backgroundColor(DesignColor.BACKGROUND)
 
-        // 底部操作栏
-        Row() {
-          Column() {
-            Row() {
-              Text("预估费用")
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+        // 底部操作栏（V2/V3：0.5dp 分隔 + 全宽按钮 + 金额内嵌文案，移除左置「预估费用」）
+        Column() {
+          Divider()
+            .strokeWidth(0.5)
+            .color(DesignColor.OUTLINE)
+
+          // AppButton 自带 loading 防重（请求中禁点），配合 reserving 拦截连点
+          AppButton({
+            text: this.selectItemId === null
+              ? "确认预约"
+              : `确认预约 · ${this.totalPrice?.toFixed(2) ?? "0.00"}`,
+            loading: this.reserving,
+            click: () => {
+              this.submitReservation()
             }
-
-            Row() {
-              Text(`￥${this.totalPrice?.toFixed(2)}`)
-                .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-                .fontWeight(FontWeight.Bold)
-                .fontColor(DesignColor.PRIMARY)
-            }
-          }.alignItems(HorizontalAlign.Start)
-
-          ColumnSplit().layoutWeight(1)
-
-          Column() {
-            // AppButton 自带 loading 防重（请求中禁点），配合 reserving 拦截连点
-            AppButton({
-              text: "确定预约",
-              loading: this.reserving,
-              click: () => {
-                this.submitReservation()
-              }
-            })
-          }
-          .width(160)
+          })
+          .margin({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_MD,
+            bottom: DesignDimens.SPACE_LG
+          })
         }
-        .backgroundColor(DesignColor.SURFACE)
-        .border({ width: { top: 1 }, color: DesignColor.OUTLINE })
         .width("100%")
-        .height(72)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .backgroundColor(DesignColor.SURFACE)
         .zIndex(1)
         .align(Alignment.Bottom)
 
@@ -309,6 +407,30 @@ struct Laundry {
           .height("100%")
           .backgroundColor(DesignColor.BACKGROUND)
           .zIndex(2)
+        }
+
+        // 失败态（S1）：EmptyState + 重试按钮，替代原「toast 后留空列表」
+        if (!this.pageLoading && this.loadFailed) {
+          Column() {
+            EmptyState({
+              message: "套餐加载失败",
+              action: () => {
+                AppButton({
+                  text: "重试",
+                  variant: AppButtonVariant.SECONDARY,
+                  click: () => {
+                    this.retryFetchItems()
+                  }
+                })
+                .margin({ top: DesignDimens.SPACE_MD })
+              }
+            })
+          }
+          .width("100%")
+          .height("100%")
+          .backgroundColor(DesignColor.BACKGROUND)
+          .justifyContent(FlexAlign.Center)
+          .zIndex(3)
         }
       }
     }
