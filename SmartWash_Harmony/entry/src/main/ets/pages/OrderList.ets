@@ -11,6 +11,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import vibrator from '@ohos.vibrator'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -36,6 +37,9 @@ struct OrderList {
   @State isLoadingMore: boolean = false
   // 首载/页码 1 加载态：骨架门控（对齐安卓 showSkeleton = Loading && list.isEmpty()）
   @State isLoading: boolean = false
+  // 切 tab 内容淡出/淡入（对齐安卓 AnimatedContent 300/200；ArkUI 无等价组件，用透明度近似）
+  @State contentOpacity: number = 1
+  private fadeTimer: number = -1
   // 各页签已加载列表缓存（对齐安卓 VM 按状态保留列表：切页签不重建，仅首载请求）
   private sectionCache: Map<string, Array<MonthSection>> = new Map()
   // 取消订单确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
@@ -89,14 +93,17 @@ struct OrderList {
           showToastSafety("没有更多数据了")
         }
         this.isLoading = false
+        this.contentOpacity = 1
         return false
       }
       this.appendOrders(res.data, replace)
       this.isLoading = false
+      this.contentOpacity = 1
       return true
     }
     showToastSafety(res.message, "订单加载失败")
     this.isLoading = false
+    this.contentOpacity = 1
     return false
   }
 
@@ -149,8 +156,17 @@ struct OrderList {
   }
 
   aboutToDisappear(): void {
+    this.clearFadeTimer()
     AppStorage.setOrCreate("refreshOrderCount", true)
     AppStorage.setOrCreate("refreshUserInfo", true)
+  }
+
+  /** 清理切 tab 淡入定时器（避免页面销毁后回调改状态） */
+  private clearFadeTimer(): void {
+    if (this.fadeTimer !== -1) {
+      clearTimeout(this.fadeTimer)
+      this.fadeTimer = -1
+    }
   }
 
   /**
@@ -239,13 +255,25 @@ struct OrderList {
           .margin({ right: DesignDimens.SPACE_XS })
           .onClick(() => {
             if (this.currIndex !== index) {
+              // tab 切换 SELECTION 触感（对齐安卓 AppPillTabRow）
+              try {
+                vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+              } catch (err) {
+                // 忽略不支持的设备
+              }
               this.currIndex = index
               this.orderStatus = this.list[index]
               this.paging.reset()
+              // 切 tab 内容淡出 → 数据到位淡入（对齐安卓 AnimatedContent 300/200）
+              this.contentOpacity = 0
               const cached = this.sectionCache.get(this.orderStatus)
               if (cached !== undefined) {
                 // 已加载页签：直接复用缓存（对齐安卓 VM 按状态保留列表）
                 this.sections = cached
+                this.clearFadeTimer()
+                this.fadeTimer = setTimeout(() => {
+                  this.contentOpacity = 1
+                }, 200)
               } else {
                 this.sections = []
                 this.fetchOrderPage(1, true)
@@ -277,88 +305,94 @@ struct OrderList {
         Blank()
           .height(DesignDimens.SPACE_XL)
 
-        // 内容区域
-        if (this.isLoading && this.orderListLength() === 0) {
-          // 首载骨架（对齐安卓 LoadingState；有旧数据时走 stale-while-revalidate 不闪骨架）
-          LoadingState()
+        // 内容区域（切 tab 淡入淡出容器，对齐安卓 AnimatedContent 300/200）
+        Column() {
+          if (this.isLoading && this.orderListLength() === 0) {
+            // 首载骨架（对齐安卓 LoadingState；有旧数据时走 stale-while-revalidate 不闪骨架）
+            LoadingState()
+              .width("100%")
+              .layoutWeight(1)
+          } else if (this.orderListLength() > 0) {
+            Refresh({ refreshing: $$this.isRefreshing }) {
+              List({ space: DesignDimens.CARD_SPACING }) {
+                ForEach(this.sections, (section: MonthSection) => {
+                  // 月份标题（对齐安卓 labelSmall 12/Medium/ls0.3，卡间距由 List space 统一给出）
+                  ListItem() {
+                    Text(this.monthLabel(section.monthKey))
+                      .fontSize(DesignFontSize.CAPTION)
+                      .fontWeight(DesignFontWeight.MEDIUM)
+                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .letterSpacing(0.3)
+                      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+                  }
+
+                  // 整月订单合并卡
+                  ListItem() {
+                    OrderMonthCard({
+                      orders: section.orders,
+                      cancelClick: (order: OrderInfo) => {
+                        this.pendingCancelOrderId = order.orderId
+                        this.confirmCancelController.open()
+                      },
+                      paymentClick: (order: OrderInfo) => {
+                        // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
+                        pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
+                      },
+                      shipmentClick: (order: OrderInfo) => {
+                        const param: PickupDeliveryParam = new PickupDeliveryParam()
+                        param.order = order
+                        param.isPickup = false
+                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                      },
+                      pickupClick: (order: OrderInfo) => {
+                        const param: PickupDeliveryParam = new PickupDeliveryParam()
+                        param.order = order
+                        param.isPickup = true
+                        pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
+                      },
+                      itemClick: (order: OrderInfo) => {
+                        pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
+                      },
+                    })
+                  }
+                  .padding({
+                    left: DesignDimens.PAGE_PADDING,
+                    right: DesignDimens.PAGE_PADDING
+                  })
+                }, (section: MonthSection) => section.monthKey)
+
+                ListItem() {
+                  LoadingFooter({ isLoading: !!this.isLoadingMore })
+                }
+              }
+              .onScrollIndex((start: number, end: number) => {
+                this.paging.onScrollIndex(end, this.orderListLength())
+              })
+              .onScrollFrameBegin((offset: number, state: ScrollState) => {
+                this.paging.onScrollFrameBegin(offset)
+                return { offsetRemain: offset }
+              })
+              .width("100%")
+              .height("100%")
+            }
+            .layoutWeight(1)
+            .onRefreshing(() => {
+              this.refreshOrder()
+            })
+          } else {
+            // 空状态（对齐安卓 EmptyState：DrumMark 48 + 引导文案）
+            Column() {
+              EmptyState({ message: "暂无订单" })
+            }
             .width("100%")
             .layoutWeight(1)
-        } else if (this.orderListLength() > 0) {
-          Refresh({ refreshing: $$this.isRefreshing }) {
-            List({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(this.sections, (section: MonthSection) => {
-                // 月份标题（对齐安卓 labelSmall 12/Medium/ls0.3，卡间距由 List space 统一给出）
-                ListItem() {
-                  Text(this.monthLabel(section.monthKey))
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
-                    .letterSpacing(0.3)
-                    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-                }
-
-                // 整月订单合并卡
-                ListItem() {
-                  OrderMonthCard({
-                    orders: section.orders,
-                    cancelClick: (order: OrderInfo) => {
-                      this.pendingCancelOrderId = order.orderId
-                      this.confirmCancelController.open()
-                    },
-                    paymentClick: (order: OrderInfo) => {
-                      // 返回时刷新交给 NavDestination.onShown（pop() 无 result 时 onPop 不触发，评审 #8）
-                      pathStack.pushPathByName(RouteNames.PAYMENT, order.orderId)
-                    },
-                    shipmentClick: (order: OrderInfo) => {
-                      const param: PickupDeliveryParam = new PickupDeliveryParam()
-                      param.order = order
-                      param.isPickup = false
-                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                    },
-                    pickupClick: (order: OrderInfo) => {
-                      const param: PickupDeliveryParam = new PickupDeliveryParam()
-                      param.order = order
-                      param.isPickup = true
-                      pathStack.pushPathByName(RouteNames.PICKUP_DELIVERY, param)
-                    },
-                    itemClick: (order: OrderInfo) => {
-                      pathStack.pushPathByName(RouteNames.ORDER_DETAIL, order.orderId)
-                    },
-                  })
-                }
-                .padding({
-                  left: DesignDimens.PAGE_PADDING,
-                  right: DesignDimens.PAGE_PADDING
-                })
-              }, (section: MonthSection) => section.monthKey)
-
-              ListItem() {
-                LoadingFooter({ isLoading: !!this.isLoadingMore })
-              }
-            }
-            .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.orderListLength())
-            })
-            .onScrollFrameBegin((offset: number, state: ScrollState) => {
-              this.paging.onScrollFrameBegin(offset)
-              return { offsetRemain: offset }
-            })
-            .width("100%")
-            .height("100%")
+            .justifyContent(FlexAlign.Center)
           }
-          .layoutWeight(1)
-          .onRefreshing(() => {
-            this.refreshOrder()
-          })
-        } else {
-          // 空状态（对齐安卓 EmptyState：DrumMark 48 + 引导文案）
-          Column() {
-            EmptyState({ message: "暂无订单" })
-          }
-          .width("100%")
-          .layoutWeight(1)
-          .justifyContent(FlexAlign.Center)
         }
+        .width("100%")
+        .layoutWeight(1)
+        .opacity(this.contentOpacity)
+        .animation({ duration: 200, curve: Curve.EaseOut })
       }
       .width("100%")
       .height("100%")

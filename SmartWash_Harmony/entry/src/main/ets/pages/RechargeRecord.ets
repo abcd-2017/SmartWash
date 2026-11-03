@@ -1,10 +1,9 @@
-import { EmptyState, LoadingState } from "../view/common/AppComponents"
+import { EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
 import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
 import { HttpStatusCode } from "@ohos/axios"
-import { pathStack } from "../utils/PathStackUtil"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
@@ -129,7 +128,7 @@ struct RechargeRecord {
           .fontColor(DesignColor.TEXT_PRIMARY)
 
         Text(this.formatRechargeTime(record.rechargeTime ?? ""))
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -139,12 +138,14 @@ struct RechargeRecord {
       .margin({ left: 12 })
       .layoutWeight(1)
 
-      // 右侧：充值金额（对齐安卓 AmountMedium 18/600 + primaryDark + tnum + 单行 Clip）
+      // 右侧：充值金额（对齐安卓 AmountMedium 18/600 + primaryDark + tnum + 单行 Clip；
+      // 与中间列之间 12dp 间距，对齐安卓 RechargeRecordCard 的 Spacer(width = 12.dp)）
       Text(`+¥${record.amount?.toFixed(2) ?? "0.00"}`)
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
         .fontColor(DesignColor.PRIMARY_DARK)
+        .margin({ left: 12 })
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Clip })
     }
@@ -165,26 +166,8 @@ struct RechargeRecord {
   build() {
     NavDestination() {
       Column() {
-        // 页面标题行
-        Row() {
-          SymbolGlyph($r('sys.symbol.chevron_left'))
-            .fontSize(24)
-            .fontColor([DesignColor.ON_BACKGROUND])
-            .onClick(() => {
-              pathStack.pop()
-            })
-            .padding(8)
-
-          Text("充值记录")
-            .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.ON_BACKGROUND)
-            .margin({ left: 4 })
-        }
-        .width("100%")
-        .height(56)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .alignItems(VerticalAlign.Center)
+        // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区，对齐安卓 PageHeader / recap G4）
+        PageHeader({ title: "充值记录" })
 
         if (this.isLoadingFirst) {
           // 首屏加载态（对齐安卓 LoadingState：骨架屏，§3.6 禁转圈）
@@ -208,7 +191,6 @@ struct RechargeRecord {
             .width("100%")
             .height("100%")
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
               this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
             })

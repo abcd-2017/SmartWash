@@ -8,7 +8,7 @@ import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { IconBox, LoadingState } from "../view/common/AppComponents"
+import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState } from "../view/common/AppComponents"
 import { DrumIllustration } from "../view/DrumIllustration"
 
 @Builder
@@ -45,6 +45,11 @@ struct OrderDetail {
   @State orderId: number | null = null
   // 加载态：详情请求期间全屏 Loading（对齐安卓 LoadingState）
   @State isLoading: boolean = true
+  // 失败态：请求失败置真 → EmptyState + 重试（§2-S1，对齐 §8 寄件页范式）
+  @State loadFailed: boolean = false
+  // 底部按钮按压态（scale 0.97 + 100ms，对齐安卓 pressable；V1 组件用 @State）
+  @State contactPressed: boolean = false
+  @State pickupPressed: boolean = false
   // 取件码弹窗入参（open 前赋值，弹窗以当次值初始化）
   @State pickupCodeText: string = ""
   @State lockerNumberText: number = 0
@@ -70,16 +75,29 @@ struct OrderDetail {
   async aboutToAppear() {
     // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
     this.orderId = getNumberParam(RouteNames.ORDER_DETAIL)
+    await this.loadOrderDetail()
+  }
+
+  /**
+   * 拉取订单详情（首载 / 重试共用）。
+   * 失败置 loadFailed → 渲染 EmptyState + 重试（对齐 §8 寄件页范式；
+   * 安卓失败驻留骨架无重试，此处按设计系统 EmptyState 母题补重试，见报告裁决）。
+   */
+  async loadOrderDetail(): Promise<void> {
     if (this.orderId === null) {
       // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求（鸿蒙更优，保留）
       showToastSafety("订单信息加载失败")
       this.isLoading = false
       return
     }
+    this.isLoading = true
+    this.loadFailed = false
     let res = await getOrderInfo(this.orderId)
     if (res.code === HttpStatusCode.Ok) {
       this.orderInfo = res.data
+      this.loadFailed = false
     } else {
+      this.loadFailed = true
       showToastSafety(res.message, "订单详情加载失败")
     }
     this.isLoading = false
@@ -179,7 +197,7 @@ struct OrderDetail {
 
       if (this.statusMeta().description !== "") {
         Text(this.statusMeta().description)
-          .fontSize(DesignFontSize.CAPTION)
+          .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 6 })
       }
@@ -261,7 +279,7 @@ struct OrderDetail {
               // 副行仅首节点（已接单）显示真实下单时间 HH:mm
               if (index === 0 && this.firstNodeTime() !== "") {
                 Text(this.firstNodeTime())
-                  .fontSize(DesignFontSize.CAPTION)
+                  .fontSize(DesignFontSize.BODY_SMALL)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .fontFeature(DesignFontFeature.TNUM)
                   .textAlign(TextAlign.Center)
@@ -375,6 +393,15 @@ struct OrderDetail {
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
         .border({ width: 1, color: DesignColor.OUTLINE })
+        .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
+        .animation({ duration: 100, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.contactPressed = true
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.contactPressed = false
+          }
+        })
         .onClick(() => {
           showToastSafety("客服暂未开通，请稍后再试")
         })
@@ -393,6 +420,15 @@ struct OrderDetail {
         .borderRadius(DesignDimens.RADIUS_FULL)
         .backgroundColor(DesignColor.PRIMARY)
         .margin({ left: 12 })
+        .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
+        .animation({ duration: 100, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pickupPressed = true
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pickupPressed = false
+          }
+        })
         .onClick(() => {
           const status = this.orderInfo?.status
           const code = this.parsePickupCode()
@@ -484,6 +520,11 @@ struct OrderDetail {
         .width("100%")
         .height("100%")
         .backgroundColor(DesignColor.BACKGROUND)
+        // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
+        // 骨架层以 TransitionEffect.OPACITY 淡入淡出（§2-I2）
+        .opacity(this.isLoading ? 0 : 1)
+        .animation({ duration: 300, curve: Curve.EaseInOut })
+        .enabled(!this.isLoading)
 
         // 加载态
         if (this.isLoading) {
@@ -493,6 +534,32 @@ struct OrderDetail {
             .height("100%")
             .backgroundColor(DesignColor.BACKGROUND)
             .zIndex(2)
+            .transition(TransitionEffect.OPACITY)
+        }
+
+        // 失败态（§2-S1）：EmptyState 母题 + 「重试」行动按钮，不留空白页
+        if (!this.isLoading && this.loadFailed) {
+          Column() {
+            EmptyState({
+              message: "订单详情加载失败",
+              action: () => {
+                AppButton({
+                  text: "重试",
+                  variant: AppButtonVariant.SECONDARY,
+                  click: () => {
+                    this.loadOrderDetail()
+                  }
+                })
+                  .margin({ top: DesignDimens.SPACE_MD })
+              }
+            })
+          }
+          .width("100%")
+          .height("100%")
+          .backgroundColor(DesignColor.BACKGROUND)
+          .justifyContent(FlexAlign.Center)
+          .zIndex(3)
+          .transition(TransitionEffect.OPACITY)
         }
       }
     }
@@ -502,21 +569,21 @@ struct OrderDetail {
 
 /**
  * 卡片内「标签 — 值」信息行（对齐安卓 InfoRow）：行高 56，标签与值分列两端。
- * 值侧样式由调用方给定（默认 caption 12/400；订单号 14/500、实付款 18/700）。
+ * 值侧样式由调用方给定（默认 bodySmall 14/400；订单号 14/500、实付款 18/700）。
  */
 @ComponentV2
 struct InfoRow {
   @Param label: string = ""
   @Param value: string = ""
   @Param valueColor: number = DesignColor.TEXT_PRIMARY
-  @Param valueSize: number = DesignFontSize.CAPTION
+  @Param valueSize: number = DesignFontSize.BODY_SMALL
   @Param valueWeight: number = DesignFontWeight.NORMAL
   @Param valueTnum: boolean = false
 
   build() {
     Row() {
       Text(this.label)
-        .fontSize(DesignFontSize.CAPTION)
+        .fontSize(DesignFontSize.BODY_SMALL)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       if (this.valueTnum) {

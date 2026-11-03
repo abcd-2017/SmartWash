@@ -167,23 +167,32 @@ struct Recharge {
     })
   }
 
+  // 动态到账说明的赠额：仅预设档生效（对齐安卓 RechargeSummaryLine：isCustom 时 bonus = 0，
+  // 否则自定义输入 50 会被误加预设档赠额 2）
+  private summaryBonus(): number {
+    if (this.isCustomSelected || this.selectedAmount === null) {
+      return 0
+    }
+    return this.bonusOf(this.selectedAmount)
+  }
+
   // 动态到账说明（对齐安卓 RechargeSummaryLine）：按当前选中档展示，未选/清空不渲染
   @Builder
   SummaryLine() {
     if (this.selectedAmount !== null && this.selectedAmount > 0) {
       Text() {
         Span(`充值 ¥${this.selectedAmount.toFixed(2)} · 到账 `)
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
 
-        Span(`¥${(this.selectedAmount + this.bonusOf(this.selectedAmount)).toFixed(2)}`)
-          .fontSize(DesignFontSize.BODY_SMALL)
+        Span(`¥${(this.selectedAmount + this.summaryBonus()).toFixed(2)}`)
+          .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.BOLD)
           .fontColor(DesignColor.PRIMARY_DARK)
 
-        if (!this.isCustomSelected && this.bonusOf(this.selectedAmount) > 0) {
-          Span(`（含赠送 ¥${this.bonusOf(this.selectedAmount).toFixed(2)}）`)
-            .fontSize(DesignFontSize.BODY_SMALL)
+        if (this.summaryBonus() > 0) {
+          Span(`（含赠送 ¥${this.summaryBonus().toFixed(2)}）`)
+            .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.TEXT_SECONDARY)
         }
       }
@@ -428,10 +437,10 @@ struct Recharge {
         // 内容区（安卓 LazyColumn，此处 Scroll 承载，小屏可滚）
         Scroll() {
           Column({ space: DesignDimens.SPACE_XL }) {
-            // 账户余额（安卓页顶直出，无卡片；bodySmall 14/400 + DataLarge 36 primaryDark）
+            // 账户余额（安卓页顶直出，无卡片；bodySmall 12/400 + DataLarge 36 primaryDark）
             Column() {
               Text("账户余额")
-                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontSize(DesignFontSize.CAPTION)
                 .fontColor(DesignColor.TEXT_SECONDARY)
 
               Text(`¥${this.balance.toFixed(2)}`)
@@ -473,7 +482,7 @@ struct Recharge {
                 this.SummaryLine()
 
                 Text("自定义金额")
-                  .fontSize(DesignFontSize.BODY_SMALL)
+                  .fontSize(DesignFontSize.CAPTION)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .margin({ top: 8 })
 
@@ -494,7 +503,7 @@ struct Recharge {
               if (this.checkPayNumber) {
                 Text(this.checkPayNumberMsg)
                   .fontColor(DesignColor.ERROR)
-                  .fontSize(DesignFontSize.BODY_SMALL)
+                  .fontSize(DesignFontSize.CAPTION)
                   .margin({ top: 8 })
                   .alignSelf(ItemAlign.Start)
                   .transition(TransitionEffect.OPACITY)
@@ -536,7 +545,7 @@ struct Recharge {
               if (this.checkPayType) {
                 Text("请选择充值方式")
                   .fontColor(DesignColor.ERROR)
-                  .fontSize(DesignFontSize.BODY_SMALL)
+                  .fontSize(DesignFontSize.CAPTION)
                   .margin({ top: 8 })
                   .alignSelf(ItemAlign.Start)
                   .transition(TransitionEffect.OPACITY)

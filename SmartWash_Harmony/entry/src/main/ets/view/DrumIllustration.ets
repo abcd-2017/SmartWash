@@ -2,7 +2,7 @@
  * 滚筒插画 — 120vp Canvas，逐属性复刻安卓 OrderDetailPage.kt DrumIllustration（D-OD8）。
  *
  * 设计稿 120×120 坐标直绘：unit = sizeValue / 120，全部尺寸按 unit 等比缩放。
- * 机身 roundRect(10,10,100×100, rx26) + 2.6 描边；顶线 (10,40)-(110,40)；
+ * 机身圆角矩形(10,10,100×100, rx26) + 2.6 描边；顶线 (10,40)-(110,40)；
  * 控制面板三点 r4；滚筒外圆 r30 + 2.6 描边、内圆 r21、中心轴 r7、水位波线 w2.2、高光两点。
  *
  * 主题：鸿蒙当前固定亮色（G6：Dark* 令牌已备但未开放跟随系统），故此处取亮色值；
@@ -34,15 +34,15 @@ export struct DrumIllustration {
     this.ctx.clearRect(0, 0, this.sizeValue, this.sizeValue)
     this.ctx.lineCap = 'round'
 
-    // 机身 roundRect(10,10,100×100, rx26)：fill + 2.6 描边
+    // 机身圆角矩形(10,10,100×100, rx26)：fill + 2.6 描边
+    // 注：CanvasRenderingContext2D.roundRect 自 SDK 20 起支持，本工程 compatibleSdkVersion=17，
+    // 运行期会抛 TypeError；改用 moveTo/lineTo/arc 手工构边（DrumMark 同款已验证 API）。
     this.ctx.fillStyle = bodyFill
-    this.ctx.beginPath()
-    this.ctx.roundRect(10 * unit, 10 * unit, 100 * unit, 100 * unit, 26 * unit)
+    this.roundedRect(10 * unit, 10 * unit, 100 * unit, 100 * unit, 26 * unit)
     this.ctx.fill()
     this.ctx.strokeStyle = brand
     this.ctx.lineWidth = 2.6 * unit
-    this.ctx.beginPath()
-    this.ctx.roundRect(10 * unit, 10 * unit, 100 * unit, 100 * unit, 26 * unit)
+    this.roundedRect(10 * unit, 10 * unit, 100 * unit, 100 * unit, 26 * unit)
     this.ctx.stroke()
 
     // 顶线 (10,40)-(110,40) w2
@@ -115,6 +115,25 @@ export struct DrumIllustration {
     this.ctx.beginPath()
     this.ctx.arc(70 * unit, 87 * unit, 2.2 * unit, 0, Math.PI * 2, false)
     this.ctx.fill()
+  }
+
+  /**
+   * 手工构圆角矩形路径（beginPath + moveTo/lineTo/arc + closePath）。
+   * 替代 SDK 20 才有的 roundRect，保证 compatibleSdkVersion=17 运行期可用。
+   */
+  private roundedRect(x: number, y: number, w: number, h: number, r: number): void {
+    const ctx: CanvasRenderingContext2D = this.ctx
+    ctx.beginPath()
+    ctx.moveTo(x + r, y)
+    ctx.lineTo(x + w - r, y)
+    ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0, false)
+    ctx.lineTo(x + w, y + h - r)
+    ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2, false)
+    ctx.lineTo(x + r, y + h)
+    ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false)
+    ctx.lineTo(x, y + r)
+    ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false)
+    ctx.closePath()
   }
 
   build() {

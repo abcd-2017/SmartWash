@@ -1,0 +1,215 @@
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
+import { notificationManager } from "@kit.NotificationKit"
+import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
+import { promptAction } from "@kit.ArkUI"
+
+// ========== 权限管理页（对齐安卓 PermissionManagementPage.kt）==========
+//
+// 安卓页列「通知 / 安装未知应用 / 网络访问 / 后台下载服务」四行；鸿蒙端权限模型不同：
+// 无 APK 热更新（无「安装未知应用」）、无前台下载服务，故只列两项——
+// 通知（用户可关、可拉起系统授权）与网络（normal 权限、安装即授予）。
+// 授权态变更无任何回调，只能靠页面可见性兜底重查（对齐安卓 ON_RESUME）。
+
+@Builder
+export function PermissionManagementBuilder() {
+  PermissionManagement()
+}
+
+@Component
+struct PermissionManagement {
+  @State notificationGranted: boolean = false
+  @State internetGranted: boolean = true
+
+  // 通知权限被拒且系统弹窗无法再拉起时，引导去系统设置
+  private settingsDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      title: "提示",
+      message: "通知权限未开启，是否前往系统设置开启？",
+      confirmText: "去设置",
+      cancelText: "取消",
+      onConfirm: () => {
+        this.openNotificationSettings()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  aboutToAppear(): void {
+    this.refreshGranted()
+  }
+
+  /** 全量重查授予态（页面可见性兜底，权限变更无回调） */
+  private refreshGranted(): void {
+    try {
+      this.notificationGranted = notificationManager.isNotificationEnabledSync()
+    } catch (err) {
+      this.notificationGranted = false
+    }
+    this.internetGranted = this.checkInternetGranted()
+  }
+
+  /** 网络访问为 normal 权限：经 accessToken 校验真实授予态（查询失败按已授予处理） */
+  private checkInternetGranted(): boolean {
+    try {
+      const bundleInfo = bundleManager.getBundleInfoForSelfSync(bundleManager.BundleFlag.GET_BUNDLE_INFO_DEFAULT)
+      const tokenId = bundleInfo.appInfo.accessTokenId
+      const atManager = abilityAccessCtrl.createAtManager()
+      return atManager.checkAccessTokenSync(tokenId, 'ohos.permission.INTERNET') ===
+        abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED
+    } catch (err) {
+      return true
+    }
+  }
+
+  /** 申请通知权限：拉起系统授权弹窗，结束后重查；仍拒绝则引导去系统设置 */
+  private requestNotification(): void {
+    const context = getContext(this) as common.UIAbilityContext
+    notificationManager.requestEnableNotification(context).then(() => {
+      this.refreshGranted()
+      if (!this.notificationGranted) {
+        this.settingsDialogController.open()
+      }
+    }).catch(() => {
+      this.settingsDialogController.open()
+    })
+  }
+
+  /** 打开本应用通知设置页（半模态），失败 toast 兜底 */
+  private openNotificationSettings(): void {
+    const context = getContext(this) as common.UIAbilityContext
+    notificationManager.openNotificationSettings(context).catch(() => {
+      promptAction.showToast({ message: "无法打开系统设置" })
+    })
+  }
+
+  // 权限行（对齐安卓 PermissionRow：72dp 高 / ib32 / 标题+描述 / 行尾状态+箭头）
+  @Builder
+  PermissionRowBuilder(icon: Resource, containerColor: number, iconColor: number,
+    title: string, description: string, granted: boolean, showAction: boolean, onClick: () => void) {
+    Row() {
+      Column() {
+        SymbolGlyph(icon)
+          .fontSize(20)
+          .fontColor([iconColor])
+      }
+      .width(32)
+      .height(32)
+      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      .backgroundColor(containerColor)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+
+      Column() {
+        Text(title)
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+
+        Text(description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .margin({ top: 2 })
+      }
+      .layoutWeight(1)
+      .margin({ left: 12 })
+      .alignItems(HorizontalAlign.Start)
+
+      Text(granted ? "已授权" : "去授权")
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(granted ? DesignColor.SUCCESS : DesignColor.PRIMARY)
+        .margin({ right: 4 })
+
+      if (showAction) {
+        SymbolGlyph($r('sys.symbol.chevron_right'))
+          .fontSize(20)
+          .fontColor([DesignColor.TEXT_TERTIARY])
+      }
+    }
+    .width('100%')
+    .height(72)
+    .alignItems(VerticalAlign.Center)
+    .onClick(() => {
+      if (showAction) {
+        onClick()
+      }
+    })
+  }
+
+  build() {
+    NavDestination() {
+      Column() {
+        PageHeader({ title: "权限管理" })
+
+        Scroll() {
+          Column() {
+            Text("通用")
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width('100%')
+              .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
+
+            // 分组卡：卡内边距仅水平 20（行铺满，卡高 = 行数 × 72），对齐安卓 PermissionGroupCard
+            AppCard({ paddingValue: 0 }) {
+              Column() {
+                this.PermissionRowBuilder(
+                  $r('sys.symbol.bell'),
+                  DesignColor.ICON_CONTAINER_ORANGE,
+                  DesignColor.ICON_FOREGROUND_ORANGE,
+                  "通知权限",
+                  "订单状态、活动提醒等（系统通知开关）",
+                  this.notificationGranted,
+                  true,
+                  () => {
+                    if (!this.notificationGranted) {
+                      this.requestNotification()
+                    }
+                  }
+                )
+
+                Divider()
+                  .color(DesignColor.HAIRLINE)
+                  .strokeWidth(0.5)
+
+                this.PermissionRowBuilder(
+                  $r('sys.symbol.wifi'),
+                  DesignColor.ICON_CONTAINER_BLUE,
+                  DesignColor.ICON_FOREGROUND_BLUE,
+                  "网络访问",
+                  "与服务端同步订单、余额与洗衣项目（安装即授予）",
+                  this.internetGranted,
+                  false,
+                  () => {
+                  }
+                )
+              }
+              .width('100%')
+              .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+            }
+
+            Text("权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width('100%')
+              .margin({ top: 16, bottom: 24 })
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        }
+        .layoutWeight(1)
+        .scrollBar(BarState.Off)
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor(DesignColor.BACKGROUND)
+    }
+    .hideTitleBar(true)
+    .onShown(() => {
+      // 从系统设置 / 授权弹窗返回后重查（对齐安卓 ON_RESUME）
+      this.refreshGranted()
+    })
+  }
+}

@@ -1,16 +1,28 @@
 import { CommonConstants } from "../constant/CommonConstants"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
-import { promptAction } from "@kit.ArkUI"
-import { setValue } from "../utils/StorageUtil"
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
-import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog } from "../view/common/AppComponents"
+import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
 import { getAppVersionName } from "../utils/AppInfoUtil"
+import { notificationManager } from "@kit.NotificationKit"
+import vibrator from "@ohos.vibrator"
 
-// 品牌名单一事实来源：与安卓 brand_name 一致（feature/user/impl strings.xml:17）
-const APP_NAME: string = "智能洗衣"
+// 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义）
+const HAPTIC_PREF_KEY: string = "haptic_enabled"
 
-// ========== 设置页面 ==========
+// 隐私与免责声明全文（对齐安卓 privacy_disclaimer_content）
+const PRIVACY_DISCLAIMER: string =
+  "本应用收集的信息与用途：\n\n" +
+  "· 手机号与学号：仅用于账号注册、登录与校内身份识别；\n" +
+  "· 学校与校园卡信息：用于寄存柜投递、取件与计费；\n" +
+  "· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\n" +
+  "· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\n" +
+  "· 设备标识与崩溃日志：仅用于问题排查与热更新。\n\n" +
+  "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n" +
+  "免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。"
+
+// ========== 设置页面（对齐安卓 SettingPage.kt）==========
 @Builder
 export function SettingBuilder() {
   Setting()
@@ -19,6 +31,11 @@ export function SettingBuilder() {
 @Component
 struct Setting {
   private scroller = new Scroller()
+
+  // 消息通知真实授权态（对齐安卓 SettingPage.kt:100-124：组合期查一次 + ON_RESUME 重查）
+  @State notificationGranted: boolean = false
+  // 触感反馈开关（内存态即时生效 + preferences 异步落盘，对齐安卓 SettingViewModel）
+  @State hapticEnabled: boolean = true
 
   // 退出登录弹窗（对齐安卓 AppConfirmDialog isDanger，统一使用 #23 产出的通用组件）
   private logoutDialogController: CustomDialogController = new CustomDialogController({
@@ -30,6 +47,8 @@ struct Setting {
       // 退出登录是不可逆操作 → 确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
       isDanger: true,
       onConfirm: () => {
+        // 登出是不可逆的确认操作：先给中触，再清会话（对齐安卓 SettingPage.kt:291）
+        this.performHaptic()
         // 登出链路（对齐安卓 SettingViewModel.logout）：清本地 token + 清 role + 复位内存登录态，
         // 再清栈跳登录页。userRole 属登录态脏数据，必须一并清理，
         // 否则下次登录前的 AppStorage 仍残留上一位用户的角色
@@ -48,120 +67,167 @@ struct Setting {
   // 关于我们弹窗（对齐安卓 AppInfoDialog，版本号动态读取）
   private aboutDialogController: CustomDialogController = new CustomDialogController({
     builder: AppInfoDialog({
-      title: "关于我们",
-      message: `${APP_NAME} v${getAppVersionName()}`
+      title: "关于 SmartWash",
+      message: `版本号：${getAppVersionName()}`
     }),
     autoCancel: true,
     alignment: DialogAlignment.Center,
     customStyle: true
   })
 
-  // 自定义设置行
-  @Builder
-  SettingRowBuilder(icon: Resource, title: string, description: string, onClick: () => void) {
-    Row() {
-      // 图标容器 — 36vp，12vp 圆角，浅绿底+绿色图标
-      Column() {
-        SymbolGlyph(icon)
-          .fontSize(18)
-          .fontColor([DesignColor.PRIMARY])
-      }
-      .width(36)
-      .height(36)
-      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(DesignColor.PRIMARY_LIGHT)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
+  // 隐私与免责声明弹窗（对齐安卓 AppInfoDialog + privacy_disclaimer_content 全文）
+  private privacyDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppInfoDialog({
+      title: "隐私与免责声明",
+      message: PRIVACY_DISCLAIMER
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
 
-      // 标题 + 副标题
-      Column() {
-        Text(title)
-          .fontSize(DesignFontSize.CARD_TITLE)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-
-        Text(description)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
-      }
-      .layoutWeight(1)
-      .margin({ left: 12 })
-      .alignItems(HorizontalAlign.Start)
-
-      // 右箭头
-      SymbolGlyph($r('sys.symbol.chevron_right'))
-        .fontSize(18)
-        .fontColor([DesignColor.TEXT_TERTIARY])
-    }
-    .width("100%")
-    .height(56)
-    .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
-    .onClick(() => {
-      onClick()
-    })
+  async aboutToAppear() {
+    this.refreshNotification()
+    // 触感反馈启动补读：覆盖冷启动后未预热就进设置页的窗口（对齐安卓 SettingViewModel.init）
+    const stored = await getValue(HAPTIC_PREF_KEY, true) as boolean
+    this.hapticEnabled = stored
   }
 
-  // 分组卡片（原 @Builder 接收 children 并链式 .margin 的写法不满足 ArkTS UI 语法，改为子组件 SectionCard）
+  /** 消息通知真实授权态（系统通知开关） */
+  private refreshNotification(): void {
+    try {
+      this.notificationGranted = notificationManager.isNotificationEnabledSync()
+    } catch (err) {
+      this.notificationGranted = false
+    }
+  }
+
+  /** 触感反馈开关：先改内存态（热路径即时生效），再异步落盘；开启瞬间给一次确认触感 */
+  private toggleHaptic(): void {
+    const newValue = !this.hapticEnabled
+    this.hapticEnabled = newValue
+    setValue(HAPTIC_PREF_KEY, newValue)
+    if (newValue) {
+      this.performHaptic()
+    }
+  }
+
+  /** 触感反馈（对齐安卓 performHaptic；不支持的设备静默忽略） */
+  private performHaptic(): void {
+    try {
+      vibrator.startVibration({ type: "time", duration: 30 }, { id: 0, usage: "unknown" })
+    } catch (err) {
+      // 忽略不支持的设备
+    }
+  }
 
   build() {
     NavDestination() {
       Column() {
-        // 自定义页面头部 — 返回按钮 + 标题"设置"
-        Row() {
-          SymbolGlyph($r('sys.symbol.chevron_left'))
-            .fontSize(24)
-            .fontColor([DesignColor.TEXT_PRIMARY])
-            .onClick(() => {
-              pathStack.pop()
-            })
-
-          Text("设置")
-            .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 12 })
-        }
-        .width("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 12, bottom: 12 })
-        .alignItems(VerticalAlign.Center)
+        // 公共页头 — 22/600 标题 + 48dp 返回热区 + 内置连击防抖（对齐安卓 PageHeader）
+        PageHeader({ title: "设置" })
 
         // 滚动内容
         Scroll(this.scroller) {
           Column() {
-            // 通知设置（ArkTS 不支持尾随闭包传 @Builder 参数，改为显式箭头函数）
-            SectionCard({
-              sectionTitle: "通知设置",
-              content: () => {
-                this.SettingRowBuilder(
-                  $r('sys.symbol.bell'),
-                  "消息通知",
-                  "订单状态、活动提醒等",
-                  () => {
-                    promptAction.showToast({ message: "功能开发中" })
-                  }
-                )
-              }
-            })
+            // ===== 通用 =====
+            Text("通用")
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width("100%")
+              .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
-            // 其他
-            SectionCard({
-              sectionTitle: "其他",
-              content: () => {
-                this.SettingRowBuilder(
-                  $r('sys.symbol.info_circle'),
-                  "关于我们",
-                  `v${getAppVersionName()}`,
-                  () => {
-                    this.aboutDialogController.open()
-                  }
-                )
-              }
-            })
-            .margin({ top: DesignDimens.SECTION_SPACING })
+            SettingGroupCard() {
+              // 消息通知（真实授权态，行尾显示系统实际授予情况，点击进权限管理页）
+              SettingRow({
+                icon: $r('sys.symbol.bell'),
+                containerColor: DesignColor.ICON_CONTAINER_ORANGE,
+                iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
+                title: "消息通知",
+                trailingValue: this.notificationGranted ? "已开启" : "未授权",
+                onRowClick: () => {
+                  pathStack.pushPathByName(RouteNames.PERMISSION_MANAGEMENT, null)
+                }
+              })
 
-            // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮变体（对齐安卓 AppButton(SECONDARY)）
-            // = 52vp 高 / 14vp 圆角 / surfaceVariant 底 / dangerInk 文字
+              Divider()
+                .color(DesignColor.HAIRLINE)
+                .strokeWidth(0.5)
+
+              // 触感反馈（真实开关，内存态即时生效 + 异步落盘）
+              SettingRow({
+                icon: $r('sys.symbol.hand_tap'),
+                containerColor: DesignColor.ICON_CONTAINER_TEAL,
+                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+                title: "触感反馈",
+                trailingValue: this.hapticEnabled ? "已开启" : "已关闭",
+                onRowClick: () => {
+                  this.toggleHaptic()
+                }
+              })
+            }
+
+            // ===== 观象台 =====
+            Text("观象台")
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width("100%")
+              .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
+
+            SettingGroupCard() {
+              SettingRow({
+                icon: $r('sys.symbol.questionmark_circle'),
+                containerColor: DesignColor.ICON_CONTAINER_PURPLE,
+                iconColor: DesignColor.ICON_FOREGROUND_PURPLE,
+                title: "隐私与免责声明",
+                trailingValue: "",
+                onRowClick: () => {
+                  this.privacyDialogController.open()
+                }
+              })
+            }
+
+            // ===== 其他 =====
+            Text("其他")
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width("100%")
+              .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
+
+            SettingGroupCard() {
+              // 权限管理入口（申请 / 跳系统设置都在权限页收口）
+              SettingRow({
+                icon: $r('sys.symbol.gearshape'),
+                containerColor: DesignColor.ICON_CONTAINER_TEAL,
+                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+                title: "权限管理",
+                trailingValue: "",
+                onRowClick: () => {
+                  pathStack.pushPathByName(RouteNames.PERMISSION_MANAGEMENT, null)
+                }
+              })
+
+              Divider()
+                .color(DesignColor.HAIRLINE)
+                .strokeWidth(0.5)
+
+              // 关于 SmartWash（行尾版本号 tnum，与关于弹窗同源）
+              SettingRow({
+                icon: $r('sys.symbol.info_circle'),
+                containerColor: DesignColor.ICON_CONTAINER_TEAL,
+                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+                title: "关于 SmartWash",
+                trailingValue: `v${getAppVersionName()}`,
+                onRowClick: () => {
+                  this.aboutDialogController.open()
+                }
+              })
+            }
+
+            // 退出登录 — 规范 §2.1 唯一按钮例外：次按钮变体（对齐安卓 AppButton(SECONDARY) + dangerInk）
             AppButton({
               text: "退出登录",
               variant: AppButtonVariant.SECONDARY,
@@ -180,47 +246,102 @@ struct Setting {
       }
       .width("100%")
       .height("100%")
+      .backgroundColor(DesignColor.BACKGROUND)
     }
-    .backgroundColor(DesignColor.BACKGROUND)
-    .height("100%")
-    .width("100%")
+    .onShown(() => {
+      // 从权限页 / 系统设置返回后重查授权态（对齐安卓 ON_RESUME）
+      this.refreshNotification()
+    })
   }
 }
 
 /**
- * 通用分组卡片（组标题 + 内容插槽）。
- * 原 @Builder 方法接收 `children: () => void` 参数：@Builder 调用返回 void 无法链式设置外边距、
- * 且 children() 不满足 UI 组件语法，故改为子组件 + @BuilderParam（ArkTS 标准插槽模式）。
- *
- * 卡片本体复用组件层 AppCard（DESIGN-SPEC v0.4 §3.1 唯一卡片画法），
- * 不在此重复维护描边/阴影取值。
+ * 设置行（对齐安卓 SettingRow：64dp 高 / ib32 / 14sp/500 标题 / 行尾值 / 0.5 hairline）。
+ * 水平缩进由分组卡内边距统一承载，行自身不叠 horizontal padding。
+ * 按压反馈自绘状态层（按下铺 surfaceVariant），不使用 Material ripple/state layer。
  */
 @Component
-struct SectionCard {
-  @Prop sectionTitle: string = ""
+struct SettingRow {
+  @Prop icon: Resource = $r('sys.symbol.info_circle')
+  @Prop containerColor: number = DesignColor.PRIMARY_LIGHT
+  @Prop iconColor: number = DesignColor.PRIMARY
+  @Prop title: string = ""
+  @Prop trailingValue: string = ""
+  onRowClick: () => void = () => {
+  }
+  @State pressed: boolean = false
+
+  build() {
+    Row() {
+      // 图标容器 — 32vp，12vp 圆角，语义浅底 + 语义色前景图标
+      Column() {
+        SymbolGlyph(this.icon)
+          .fontSize(20)
+          .fontColor([this.iconColor])
+      }
+      .width(32)
+      .height(32)
+      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      .backgroundColor(this.containerColor)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+
+      Text(this.title)
+        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .layoutWeight(1)
+        .margin({ left: 12 })
+
+      if (this.trailingValue !== "") {
+        Text(this.trailingValue)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontFeature(DesignFontFeature.TNUM)
+      }
+
+      SymbolGlyph($r('sys.symbol.chevron_right'))
+        .fontSize(20)
+        .fontColor([DesignColor.TEXT_TERTIARY])
+        .margin({ left: 4 })
+    }
+    .width("100%")
+    .height(64)
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor(this.pressed ? DesignColor.SURFACE_VARIANT : Color.Transparent)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    .onClick(() => {
+      this.onRowClick()
+    })
+  }
+}
+
+/**
+ * 设置分组卡（对齐安卓 SettingGroupCard：卡内边距仅水平 20，行铺满；
+ * 卡高 = 行数 × 64，纵向不加内边距）。卡片本体复用组件层 AppCard 的唯一画法。
+ */
+@Component
+struct SettingGroupCard {
   @BuilderParam content: () => void = emptyContent
 
   build() {
-    Column() {
-      // 分组标题
-      Text(this.sectionTitle)
-        .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ bottom: 12 })
-
-      // 卡片 — 复用组件层 AppCard：surface 白底 + 1px outline 描边 + level1 阴影 + 圆角 16 + 内边距 20
-      //（与安卓 SettingGroupCard 同构：卡内边距 20，SettingRow 内再各让 20）
-      AppCard() {
+    AppCard({ paddingValue: 0 }) {
+      Column() {
         this.content()
       }
+      .width("100%")
+      .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
     }
-    .width("100%")
   }
 }
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
-@Builder
 @Builder
 function emptyContent() {
 }

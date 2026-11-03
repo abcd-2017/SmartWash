@@ -34,6 +34,11 @@ struct Payment {
   @State isLoading: boolean = true
   // 支付请求进行中标记：AppButton loading 展示并拦截连点，防止重复扣款（评审 #12）
   @State paying: boolean = false
+  // 按压反馈（recap §3-I1 / G3）：可点行 scale 0.97 + onTouch，对齐安卓 pressable
+  @State pressedKey: string | null = null
+  // 金额/券变化淡入（recap §3-I2）：对齐安卓 AnimatedContent fade；ArkUI 无等价组件，用 opacity 淡入近似
+  @State amountVisible: boolean = true
+  private amountFadeTimer: number = -1
   // 确认支付二次确认弹窗（资金链路）：确认后立即关窗再发起请求——
   // 勿复制安卓旧版「等 Success 才关窗」缺陷（确认键持续可点 + 后端无幂等 = 连点重复扣款入口）
   private confirmPayController: CustomDialogController = new CustomDialogController({
@@ -108,14 +113,35 @@ struct Payment {
     this.selectCouponId = coupon?.userCouponId ?? null
     this.showSheet = false
     this.selectCoupon = coupon
+    // 金额/券变化淡入（recap §3-I2）：先隐去旧值，试算返回后淡入新值（对齐安卓 AnimatedContent fade）
+    this.amountVisible = false
     if (this.orderId !== null) {
       let res = await calculationOrder(this.orderId, coupon?.userCouponId ?? 0)
       if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
+        this.fadeAmountIn()
       } else {
         showToastSafety(res.message, "优惠券试算失败")
+        this.amountVisible = true
       }
+    } else {
+      this.amountVisible = true
     }
+  }
+
+  /**
+   * 金额/券淡入：60ms 后 180ms EaseOut，近似安卓 fadeIn(enterTween 200) togetherWith fadeOut(exitTween 120)。
+   * 定时器在 aboutToDisappear 中清理（定时器硬规则）。
+   */
+  private fadeAmountIn(): void {
+    if (this.amountFadeTimer !== -1) {
+      clearTimeout(this.amountFadeTimer)
+    }
+    this.amountFadeTimer = setTimeout(() => {
+      animateTo({ duration: 180, curve: Curve.EaseOut }, () => {
+        this.amountVisible = true
+      })
+    }, 60)
   }
 
   /** 选券试算入口（节流防连点，见 calcThrottler） */
@@ -128,6 +154,10 @@ struct Payment {
   aboutToDisappear(): void {
     this.calcThrottler.cancel()
     this.claimThrottler.cancel()
+    if (this.amountFadeTimer !== -1) {
+      clearTimeout(this.amountFadeTimer)
+      this.amountFadeTimer = -1
+    }
   }
 
   /**
@@ -278,6 +308,15 @@ struct Payment {
         .padding({ top: 12, bottom: 12 })
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
+        // 按压反馈（recap §3-I1 / G3）：scale 0.97 + onTouch，对齐安卓 pressable
+        .scale({ x: this.pressedKey === 'claim' ? 0.97 : 1, y: this.pressedKey === 'claim' ? 0.97 : 1 })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = 'claim'
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = null
+          }
+        })
         .onClick(() => {
           this.claimThrottler.throttle(() => {
             this.showSheet = false
@@ -329,6 +368,15 @@ struct Payment {
         .padding(DesignDimens.CARD_PADDING)
         .justifyContent(FlexAlign.SpaceBetween)
         .margin({ bottom: DesignDimens.CARD_SPACING })
+        // 按压反馈（recap §3-I1 / G3）：scale 0.97 + onTouch，对齐安卓 pressable
+        .scale({ x: this.pressedKey === 'noCoupon' ? 0.97 : 1, y: this.pressedKey === 'noCoupon' ? 0.97 : 1 })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = 'noCoupon'
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = null
+          }
+        })
         .onClick(() => {
           this.selectCouponWithThrottle(null)
         })
@@ -379,6 +427,18 @@ struct Payment {
               })
               .padding(DesignDimens.CARD_PADDING)
               .justifyContent(FlexAlign.SpaceBetween)
+              // 按压反馈（recap §3-I1 / G3）：scale 0.97 + onTouch，对齐安卓 pressable
+              .scale({
+                x: this.pressedKey === (coupon.userCouponId?.toString() ?? '') ? 0.97 : 1,
+                y: this.pressedKey === (coupon.userCouponId?.toString() ?? '') ? 0.97 : 1
+              })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedKey = coupon.userCouponId?.toString() ?? ''
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedKey = null
+                }
+              })
               .onClick(() => {
                 this.selectCouponWithThrottle(coupon)
               })
@@ -418,6 +478,8 @@ struct Payment {
                 .fontWeight(DesignFontWeight.BOLD)
                 .fontColor(DesignColor.PRIMARY_DARK)
                 .fontFeature(DesignFontFeature.TNUM)
+                // 金额变化淡入（recap §3-I2）
+                .opacity(this.amountVisible ? 1 : 0)
                 .margin({ top: 8 })
 
               // 卡内行分隔线 = 0.5dp hairline，上下 16（recap §3-V3）
@@ -494,9 +556,6 @@ struct Payment {
                 .width("100%")
                 .padding({ left: 20, right: 16, top: 20, bottom: 20 })
                 .alignItems(VerticalAlign.Center)
-                .onClick(() => {
-                  this.selectedPaymentMethod = "balance"
-                })
               }
               .width("100%")
               .backgroundColor(this.selectedPaymentMethod === "balance" ?
@@ -511,6 +570,18 @@ struct Payment {
                 offsetY: 2
               })
               .margin({ bottom: DesignDimens.CARD_SPACING })
+              // 按压反馈（recap §3-I1 / G3）：scale 0.97 + onTouch，对齐安卓 pressable
+              .scale({ x: this.pressedKey === 'balance' ? 0.97 : 1, y: this.pressedKey === 'balance' ? 0.97 : 1 })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedKey = 'balance'
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedKey = null
+                }
+              })
+              .onClick(() => {
+                this.selectedPaymentMethod = "balance"
+              })
 
               // 优惠券卡（recap §3-V5/V6）
               Row() {
@@ -538,6 +609,8 @@ struct Payment {
                   .fontSize(DesignFontSize.CAPTION)
                   .fontColor(this.selectCoupon === null ? DesignColor.TEXT_SECONDARY : DesignColor.ON_PRIMARY_CONTAINER)
                   .fontFeature(this.selectCoupon === null ? 'normal' : DesignFontFeature.TNUM)
+                  // 券变化淡入（recap §3-I2，与金额共用同一淡入态）
+                  .opacity(this.amountVisible ? 1 : 0)
 
                 SymbolGlyph($r('sys.symbol.chevron_right'))
                   .fontSize(14)
@@ -555,6 +628,15 @@ struct Payment {
                 color: DesignColor.SHADOW_COLOR_CARD,
                 offsetX: 0,
                 offsetY: 2
+              })
+              // 按压反馈（recap §3-I1 / G3）：scale 0.97 + onTouch，对齐安卓 pressable
+              .scale({ x: this.pressedKey === 'coupon' ? 0.97 : 1, y: this.pressedKey === 'coupon' ? 0.97 : 1 })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedKey = 'coupon'
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedKey = null
+                }
               })
               .bindSheet($$this.showSheet, this.BottomSheet(), {
                 // 对齐安卓 ModalBottomSheet(fillMaxHeight) 的近全高选券浮层；

@@ -33,6 +33,9 @@ export struct OrderMonthCard {
   }
   // 动作按钮节流（对齐安卓 rememberDebouncedClick：去支付/去寄件/去取件连点防护）
   private debouncer: Debouncer = new Debouncer()
+  // 按压态（scale 0.97 + 100ms，对齐安卓 pressable；V2 组件内部状态用 @Local）
+  @Local pressedRowId: number | null = null
+  @Local pressedActionKey: string | null = null
 
   aboutToDisappear(): void {
     this.debouncer.cancel()
@@ -82,7 +85,7 @@ export struct OrderMonthCard {
   }
 
   @Builder
-  ActionButton(label: string, action: () => void) {
+  ActionButton(label: string, btnKey: string, action: () => void) {
     Row() {
       Text(label)
         .fontSize(ACTION_FONT_SIZE)
@@ -95,6 +98,16 @@ export struct OrderMonthCard {
     // 行内小按钮档：36 高 / radiusMd 12 / 13sp·600（对齐安卓 OrderActionPill）
     .borderRadius(DesignDimens.RADIUS_MD)
     .backgroundColor(DesignColor.PRIMARY)
+    // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms）
+    .scale({ x: this.pressedActionKey === btnKey ? 0.97 : 1, y: this.pressedActionKey === btnKey ? 0.97 : 1 })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedActionKey = btnKey
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedActionKey = null
+      }
+    })
     .onClick(() => {
       this.haptic()
       this.debouncer.throttle(action, 500)
@@ -175,18 +188,30 @@ export struct OrderMonthCard {
               .constraintSize({ minHeight: 44 })
               .padding({ left: 4, right: 4 })
               .justifyContent(FlexAlign.Center)
+              .scale({
+                x: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1,
+                y: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1
+              })
+              .animation({ duration: 100, curve: Curve.EaseOut })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedActionKey = `${order.orderId}:cancel`
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedActionKey = null
+                }
+              })
               .onClick(() => {
                 this.haptic(20)
                 this.cancelClick(order)
               })
 
-              this.ActionButton("去支付", () => {
+              this.ActionButton("去支付", `${order.orderId}:pay`, () => {
                 this.paymentClick(order)
               })
             }
             .alignItems(VerticalAlign.Center)
           } else if (order.status === OrderStatusEnum.PENDING_SHIPMENT) {
-            this.ActionButton("去寄件", () => {
+            this.ActionButton("去寄件", `${order.orderId}:ship`, () => {
               this.shipmentClick(order)
             })
           } else if (order.status === OrderStatusEnum.WASHING) {
@@ -194,7 +219,7 @@ export struct OrderMonthCard {
               .fontSize(DesignFontSize.CAPTION)
               .fontColor(DesignColor.TEXT_SECONDARY)
           } else if (order.status === OrderStatusEnum.READY_FOR_PICKUP) {
-            this.ActionButton("去取件", () => {
+            this.ActionButton("去取件", `${order.orderId}:pickup`, () => {
               this.pickupClick(order)
             })
           } else {
@@ -215,6 +240,19 @@ export struct OrderMonthCard {
       right: DesignDimens.CARD_PADDING,
       top: 12,
       bottom: 12
+    })
+    // 行按压反馈（对齐安卓 pressable scale 0.97 + 100ms；动作按钮按下时行不缩放）
+    .scale({
+      x: this.pressedRowId === order.orderId && this.pressedActionKey === null ? 0.97 : 1,
+      y: this.pressedRowId === order.orderId && this.pressedActionKey === null ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedRowId = order.orderId ?? null
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedRowId = null
+      }
     })
     .onClick(() => {
       this.itemClick(order)

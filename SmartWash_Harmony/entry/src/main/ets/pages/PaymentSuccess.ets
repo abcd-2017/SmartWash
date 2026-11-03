@@ -23,6 +23,8 @@ struct PaymentSuccess {
   // 对勾入场（recap §4-F3）：本页只由真实支付成功抵达，动画由真实事件驱动；
   // scale 0.6→1 + 淡入，弹簧一次性进场（reduced motion 全局未接入，见报告裁决记录）
   @State checkEntered: boolean = false
+  // 按压反馈（G3）：文字链 scale 0.97 + onTouch，对齐安卓 pressable（PaySuccessPage.kt:334-340）
+  @State pressedKey: string | null = null
 
   async aboutToAppear() {
     // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
@@ -107,18 +109,22 @@ struct PaymentSuccess {
     .alignItems(VerticalAlign.Center)
   }
 
-  /** 卡内「标签 — 值」信息行（对齐 Android InfoRow：bodySmall 12 + tnum、行高 16） */
+  /**
+   * 卡内「标签 — 值」信息行（对齐 Android InfoRow：bodySmall 12 + tnum、行高 16）。
+   * 字号取 CAPTION 12：Android `bodySmall` 槽位在 Type.kt:176-181 映射为 caption 12/16/400，
+   * InfoRow.kt:33,45 标签与值均用 bodySmall（PaySuccessPage.kt:219-221 另传 valueStyle=bodySmall+tnum）。
+   */
   @Builder
   InfoLine(title: string, value: string) {
     Row() {
       Text(title)
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       Blank()
 
       Text(value)
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .fontFeature(DesignFontFeature.TNUM)
     }
@@ -278,6 +284,15 @@ struct PaymentSuccess {
               .width("100%")
               .textAlign(TextAlign.Center)
               .padding({ top: 16, bottom: 16 })
+              // 按压反馈（G3）：scale 0.97 + onTouch，对齐安卓 pressable
+              .scale({ x: this.pressedKey === 'back' ? 0.97 : 1, y: this.pressedKey === 'back' ? 0.97 : 1 })
+              .onTouch((event: TouchEvent) => {
+                if (event.type === TouchType.Down) {
+                  this.pressedKey = 'back'
+                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                  this.pressedKey = null
+                }
+              })
               .onClick(() => {
                 this.backToHome()
               })

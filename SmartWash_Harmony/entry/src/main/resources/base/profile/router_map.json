@@ -36,6 +36,13 @@
       }
     },
     {
+      "name": "PermissionManagement",
+      "pageSourceFile": "src/main/ets/pages/PermissionManagement.ets",
+      "buildFunction": "PermissionManagementBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "Recharge",
       "pageSourceFile": "src/main/ets/pages/Recharge.ets",
       "buildFunction": "RechargeBuilder",
