@@ -5,7 +5,7 @@
       <el-form :inline="true" :model="listQuery">
         <el-form-item label="Host">
           <el-input
-            v-model="listQuery.host"
+            v-model="listQuery.hostKeyword"
             placeholder="输入 host 模糊搜索"
             clearable
             style="width: 200px"
@@ -201,12 +201,12 @@ const {
 } = useTableList({
   fetchApi: getDeeplinkRouteList,
   baseQuery: {
-    host: '',
+    hostKeyword: '',
     enabled: null,
   },
   buildParams: (q) => ({
     ...q,
-    host: q.host || undefined,
+    hostKeyword: q.hostKeyword || undefined,
     enabled: q.enabled ?? undefined,
   }),
   errorMsg: '获取跳转路由列表失败',
@@ -374,13 +374,13 @@ const handleDelete = async (row) => {
 }
 
 .host-main {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 500;
-  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
 }
 
 .host-sub {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -389,13 +389,13 @@ const handleDelete = async (row) => {
   width: 100%;
   font-size: 12px;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 /* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 </style>

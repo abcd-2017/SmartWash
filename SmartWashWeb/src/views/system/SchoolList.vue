@@ -99,7 +99,7 @@
             <span v-if="row.longitude && row.latitude">
               {{ row.longitude }}, {{ row.latitude }}
             </span>
-            <span v-else style="color: #64748b">未定位</span>
+            <span v-else style="color: var(--text-secondary)">未定位</span>
           </template>
         </el-table-column>
         <el-table-column prop="lockerCount" label="储物柜数量" min-width="120">

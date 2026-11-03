@@ -342,6 +342,6 @@ const handleToggle = async (row) => {
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 </style>

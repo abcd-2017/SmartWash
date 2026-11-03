@@ -297,22 +297,22 @@ const renderCharts = (records) => {
 }
 
 .stat-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 .stat-label {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-top: 8px;
 }
 
@@ -323,17 +323,17 @@ const renderCharts = (records) => {
 }
 
 .chart-card {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 .chart-title {
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .chart-container {
@@ -352,9 +352,9 @@ const renderCharts = (records) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 14px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
   z-index: 1;
 }

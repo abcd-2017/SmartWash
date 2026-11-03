@@ -44,7 +44,11 @@
     <!-- 数据表格 -->
     <div class="table-card">
       <el-table v-loading="listLoading" :data="shortCodeList" fit highlight-current-row>
-        <el-table-column prop="code" label="短码" min-width="110" />
+        <el-table-column label="短码" min-width="110">
+          <template #default="{ row }">
+            <span class="code-cell">{{ row.code }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="类型" min-width="100">
           <template #default="{ row }">
             <el-tag :type="shortCodeContentTypeTagType(row.contentType)">
@@ -264,11 +268,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 短码是机器标识符：按 DESIGN.md mono 规则用等宽字体 */
+.code-cell {
+  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
 .visit-title {
   margin: 20px 0 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .break-all {

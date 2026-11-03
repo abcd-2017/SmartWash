@@ -115,7 +115,7 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f1f5f9;
+  background: var(--bg-page);
   padding: 16px;
 }
 
@@ -124,21 +124,20 @@ const handleLogin = async () => {
   width: 840px;
   max-width: 100%;
   min-height: 520px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow:
-    0 4px 32px rgba(99, 102, 241, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-brand);
 }
 
-/* --- 左侧品牌区 --- */
+/* --- 左侧品牌区（暗面板：文字用暗侧专属灰阶，不走亮色 token） --- */
 .brand-panel {
   display: flex;
   flex-direction: column;
   width: 46%;
   padding: 48px 40px;
-  background: linear-gradient(135deg, #0f172a, #1e293b, #312e81);
+  /* 墨色外壳渐变（外壳即墨色规则）：暗面板专属文字色见上方注释 */
+  background: linear-gradient(135deg, var(--sidebar-bg), #1e293b, #312e81);
   color: #f1f5f9;
 }
 
@@ -176,7 +175,7 @@ const handleLogin = async () => {
 
 .brand-footer {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* --- 右侧表单区 --- */
@@ -192,13 +191,13 @@ const handleLogin = async () => {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .form-sub {
   margin: 6px 0 24px;
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .login-btn {
@@ -221,35 +220,35 @@ const handleLogin = async () => {
   margin-top: 20px;
   text-align: center;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 :deep(.el-input__wrapper) {
   height: 40px;
   border-radius: 8px;
-  background: #f8fafc;
+  background: var(--bg-subtle);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--border-color);
   transition:
     border-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 :deep(.el-input__wrapper:hover) {
-  border-color: #cbd5e1;
+  border-color: var(--border-hover);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  border-color: #6366f1;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 :deep(.el-input__inner) {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 :deep(.el-input__inner::placeholder) {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* 窄屏收敛为单栏表单 */

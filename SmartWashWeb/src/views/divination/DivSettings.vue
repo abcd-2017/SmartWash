@@ -214,13 +214,13 @@ const handleRotateKey = async () => {
   margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .settings-sub {
   margin: 0;
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .settings-form {
@@ -230,7 +230,7 @@ const handleRotateKey = async () => {
 .form-tip {
   margin-left: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .rotate-key-section {

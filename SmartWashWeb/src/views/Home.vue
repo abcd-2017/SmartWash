@@ -42,7 +42,7 @@
         <div class="stat-card__info">
           <span class="stat-card__label">今日收入</span>
           <!-- 金额：整数元做滚动（小数补 .00 固定），避免 rAF 对小数漏帧抖动 -->
-          <span class="stat-card__value">¥{{ incomeDisplay }}</span>
+          <span class="stat-card__value">￥{{ incomeDisplay }}</span>
         </div>
       </div>
     </div>
@@ -131,9 +131,9 @@ onMounted(async () => {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 .stat-card__icon {
@@ -148,22 +148,22 @@ onMounted(async () => {
 
 .stat-card--indigo .stat-card__icon {
   background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  color: var(--color-primary);
 }
 
 .stat-card--blue .stat-card__icon {
   background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .stat-card--emerald .stat-card__icon {
   background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .stat-card--amber .stat-card__icon {
   background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .stat-card__info {
@@ -174,28 +174,28 @@ onMounted(async () => {
 
 .stat-card__label {
   font-size: 13px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .stat-card__value {
   font-size: 24px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 /* 快捷操作区 */
 .quick-actions {
   padding: 20px;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-ground);
 }
 
 .quick-actions__title {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .quick-actions__grid {
@@ -217,8 +217,8 @@ onMounted(async () => {
   gap: 8px;
   padding: 20px 16px;
   border-radius: 10px;
-  background: #f8fafc;
-  color: #475569;
+  background: var(--bg-subtle);
+  color: var(--text-regular);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -231,9 +231,9 @@ onMounted(async () => {
 
 .quick-action-item:hover {
   background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  color: var(--color-primary);
   /* hover 上浮表达「可进入」，与统计卡层级语言一致 */
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-lift);
 }
 </style>

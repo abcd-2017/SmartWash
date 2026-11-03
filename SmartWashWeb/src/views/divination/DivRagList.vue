@@ -232,7 +232,7 @@ const submitUpload = async () => {
 <style scoped>
 .upload-tip {
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 </style>
