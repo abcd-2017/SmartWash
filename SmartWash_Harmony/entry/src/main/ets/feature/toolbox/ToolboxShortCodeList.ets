@@ -2,12 +2,14 @@
 //
 // 分页：鸿蒙无 Paging 3 等价物，按 02 文档结论用 PagingController 手动 loadMore（每页 10，无人工延时）。
 // 四态：首刷 loading / 首刷失败重试 / 空态 / 列表 + 尾部（加载中/失败重试）。
-// 刷新：创建/续期/删除成功回列表后由 NavDestination.onShown 重拉（等价安卓 savedStateHandle CHANGED_KEY 信号）。
+// 刷新：创建/续期/删除成功回列表后由变更信号（ToolboxChangeSignal）重拉，等价安卓 savedStateHandle CHANGED_KEY。
 // 条目点击进详情：全量字段随路由携带（详情页不再请求）。
+// 卡片右列含「复制短链」描边按钮（对齐安卓 CopyPillButton）。
 
 import { HttpStatusCode } from '@ohos/axios'
+import { pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   CONTENT_TYPE_SHORT_LINK,
   ShortCodeVo,
@@ -20,8 +22,8 @@ import {
   toolboxExpiryUntil
 } from './api'
 import { ExpiryState, expiryStateOf, formatDisplayDateTime, isPublicVisibility } from './ShortCodeRules'
-import { AppButton, EmptyState, IconBox, LoadingState } from '../../view/common/AppComponents'
-import { LoadingFooter } from '../../view/LoadingFooter'
+import { consumeShortCodeChanged } from './ToolboxChangeSignal'
+import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
@@ -40,6 +42,8 @@ struct ToolboxShortCodeList {
   @State isLoadingMore: boolean = false
   // 追加加载失败态（对齐安卓 append Error → footer 文字重试）；重试经 paging.retry() 重拉同一页
   @State appendError: boolean = false
+  // 按压反馈（对齐安卓 pressable scale 0.97）：卡片 / 复制钮共用一个 key
+  @State pressedKey: string = ''
   // onShown 首次即触发，首屏加载由 aboutToAppear 承担；加锁避免首屏重复请求
   private hasShown: boolean = false
   private paging: PagingController = new PagingController(
@@ -80,7 +84,9 @@ struct ToolboxShortCodeList {
       return true
     }
     if (page === 1) {
+      // 首刷失败：说明 + 重试（规范 §3.6 错误态），并 toast 提示（对齐安卓 refresh Error toast）
       this.isFirstError = true
+      showToastSafety(res.message, ToolboxText.toolbox_error_load)
       return false
     }
     // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
@@ -89,7 +95,7 @@ struct ToolboxShortCodeList {
     throw new Error(ToolboxText.toolbox_error_load)
   }
 
-  /** 整列表重置重拉（下拉刷新 + onShown 回列表刷新共用） */
+  /** 整列表重置重拉（下拉刷新 + 变更信号回列表刷新共用） */
   refreshList(): void {
     this.isRefreshing = false
     this.appendError = false
@@ -117,6 +123,20 @@ struct ToolboxShortCodeList {
     pathStack.pushPathByName(RouteNames.TOOLBOX_SHORT_CODE_CREATE, null)
   }
 
+  /** 复制短链（空缺回落短码）+ 提示，与详情页复制行为一致（对齐安卓 onCopy） */
+  private copyShortCode(vo: ShortCodeVo): void {
+    const text = (vo.shortUrl ?? "").length > 0 ? (vo.shortUrl ?? "") : (vo.code ?? "")
+    if (text.length === 0) {
+      return
+    }
+    const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
+    pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
+      showToastSafety(ToolboxText.toolbox_copy_success)
+    }).catch(() => {
+      showToastSafety(ToolboxText.toolbox_open_failed)
+    })
+  }
+
   /** 可见性映射（非 2 一律公开，对齐后端 1公开/2私有） */
   private isPublicOf(vo: ShortCodeVo): boolean {
     return isPublicVisibility(vo.isPublic ?? VISIBILITY_PUBLIC)
@@ -133,13 +153,19 @@ struct ToolboxShortCodeList {
     return ToolboxText.toolbox_expiry_expired
   }
 
-  /** 过期态颜色 */
+  /** 过期态颜色（对齐安卓：常态 textSecondary，过期 dangerInk） */
   private expiryColorOf(vo: ShortCodeVo): number {
     return expiryStateOf(vo.expireAt, new Date()) === ExpiryState.EXPIRED
-      ? DesignColor.DANGER_INK : DesignColor.TEXT_TERTIARY
+      ? DesignColor.DANGER_INK : DesignColor.TEXT_SECONDARY
   }
 
-  /** 静态标签 chip（对齐安卓 ToolboxTagChip：胶囊 + labelSmall） */
+  /** 过期态字重（对齐安卓：过期 labelSmall 12/500，其余 bodySmall 12/400） */
+  private expiryWeightOf(vo: ShortCodeVo): number {
+    return expiryStateOf(vo.expireAt, new Date()) === ExpiryState.EXPIRED
+      ? DesignFontWeight.MEDIUM : DesignFontWeight.NORMAL
+  }
+
+  /** 静态标签 chip（对齐安卓 ToolboxTagChip：胶囊 + labelSmall 12） */
   @Builder
   TagChip(text: string, containerColor: number, contentColor: number) {
     Text(text)
@@ -148,6 +174,38 @@ struct ToolboxShortCodeList {
       .padding({ left: 8, right: 8, top: 2, bottom: 2 })
       .backgroundColor(containerColor)
       .borderRadius(DesignDimens.RADIUS_FULL)
+  }
+
+  /**
+   * 复制描边按钮 — 对齐安卓 CopyPillButton：视觉胶囊（透明底 + 1px outline +
+   * captionStrong 12/500 primaryDark），外扩 4/8 热区至 60×48 满足 48dp 触控红线。
+   */
+  @Builder
+  CopyPillButton(text: string, vo: ShortCodeVo) {
+    Column() {
+      Text(text)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(DesignColor.PRIMARY_DARK)
+        .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+        .border({ width: 1, color: DesignColor.OUTLINE })
+        .borderRadius(DesignDimens.RADIUS_FULL)
+    }
+    .padding({ left: 4, right: 4, top: 8, bottom: 8 })
+    .scale({
+      x: this.pressedKey === `copy-${vo.id ?? 0}` ? 0.97 : 1,
+      y: this.pressedKey === `copy-${vo.id ?? 0}` ? 0.97 : 1
+    })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `copy-${vo.id ?? 0}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
+    .onClick(() => {
+      this.copyShortCode(vo)
+    })
   }
 
   /**
@@ -170,8 +228,8 @@ struct ToolboxShortCodeList {
               }
             }
           })
-        .margin({ top: DesignDimens.SPACE_MD })
         }
+        .margin({ top: DesignDimens.SPACE_MD })
       }
     }
     .width('100%')
@@ -187,7 +245,7 @@ struct ToolboxShortCodeList {
         IconBox({
           icon: $r('sys.symbol.link'),
           sizeValue: 36,
-          iconSize: 18,
+          iconSize: 20,
           containerColor: DesignColor.ICON_CONTAINER_BLUE,
           iconColor: DesignColor.ICON_FOREGROUND_BLUE
         })
@@ -195,20 +253,23 @@ struct ToolboxShortCodeList {
         Column() {
           Text(vo.code ?? "")
             .fontSize(DesignFontSize.CARD_TITLE)
-            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-          Row({ space: DesignDimens.SPACE_XS }) {
+          Row({ space: 4 }) {
             this.TagChip(ToolboxText.toolbox_type_short_link,
               DesignColor.SURFACE_VARIANT, DesignColor.TEXT_SECONDARY)
             if (this.isPublicOf(vo)) {
+              // 公开 = primaryContainer/onPrimaryContainer（对齐安卓）
               this.TagChip(ToolboxText.toolbox_visibility_public_value,
-                DesignColor.ICON_CONTAINER_GREEN, DesignColor.PRIMARY_DARK)
+                DesignColor.PRIMARY_CONTAINER, DesignColor.ON_PRIMARY_CONTAINER)
             } else {
+              // 私有 = warningContainer/warning（对齐安卓）
               this.TagChip(ToolboxText.toolbox_visibility_private_value,
-                DesignColor.WARNING_CONTAINER, DesignColor.ON_WARNING_CONTAINER)
+                DesignColor.WARNING_CONTAINER, DesignColor.WARNING)
             }
           }
           .margin({ top: DesignDimens.SPACE_XS })
@@ -220,10 +281,14 @@ struct ToolboxShortCodeList {
         Column() {
           Text(toolboxClicksFormat(vo.clickCount ?? 0))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontFeature(DesignFontFeature.TNUM)
           Text(this.expiryTextOf(vo))
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(this.expiryColorOf(vo))
+            .fontWeight(this.expiryWeightOf(vo))
+            .margin({ top: 2 })
+          this.CopyPillButton(ToolboxText.toolbox_action_copy, vo)
         }
         .alignItems(HorizontalAlign.End)
         .margin({ left: DesignDimens.SPACE_SM })
@@ -233,7 +298,7 @@ struct ToolboxShortCodeList {
 
       if ((vo.target ?? "").length > 0) {
         Text(vo.target ?? "")
-          .fontSize(DesignFontSize.BODY)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -243,7 +308,8 @@ struct ToolboxShortCodeList {
     }
     .width('100%')
     .alignItems(HorizontalAlign.Start)
-    .padding(DesignDimens.CARD_PADDING)
+    // 画板实测：内边距左/上/右 20，底部 12 留给链接行（对齐安卓 ShortCodeCard）
+    .padding({ left: DesignDimens.CARD_PADDING, top: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, bottom: DesignDimens.SPACE_SM })
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
@@ -254,6 +320,18 @@ struct ToolboxShortCodeList {
       offsetX: 0,
       offsetY: 2
     })
+    // 按压反馈（对齐安卓 pressable scale 0.97）
+    .scale({
+      x: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1,
+      y: this.pressedKey === `card-${vo.id ?? 0}` ? 0.97 : 1
+    })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `card-${vo.id ?? 0}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.goDetail(vo)
     })
@@ -262,43 +340,49 @@ struct ToolboxShortCodeList {
   build() {
     NavDestination() {
       Column() {
-        // 页面标题 + 「新建」文字按钮（对齐安卓 PageHeader actions，主色 13fp/600 无底框）
+        // 页面标题 + 「新建」文字按钮（对齐安卓 PageHeader：标题 22/600，动作 18/600 primaryDark + 48 热区）
         Row() {
-          SymbolGlyph($r('sys.symbol.chevron_left'))
-            .fontSize(24)
-            .fontColor([DesignColor.TEXT_PRIMARY])
-            .onClick(() => {
-              pathStack.pop()
-            })
-            .padding(8)
+          Column() {
+            SymbolGlyph($r('sys.symbol.chevron_left'))
+              .fontSize(24)
+              .fontColor([DesignColor.TEXT_PRIMARY])
+          }
+          .width(DesignDimens.BACK_HIT_AREA)
+          .height(DesignDimens.BACK_HIT_AREA)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .onClick(() => {
+            pathStack.pop()
+          })
 
           Text(ToolboxText.toolbox_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
             .margin({ left: 4 })
 
           Blank()
 
           Text(ToolboxText.toolbox_action_new)
-            .fontSize(DesignFontSize.CAPTION)
+            .fontSize(DesignFontSize.PAGE_HEADER)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY)
-            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .fontColor(DesignColor.PRIMARY_DARK)
+            .padding({ left: 12, right: 12, top: 12, bottom: 12 })
             .onClick(() => {
               this.goCreate()
             })
         }
         .width('100%')
         .height(56)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 行首让位 12：48 热区盒居中后图形左缘落在 24（对齐安卓 PageHeader）
+        .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
         .alignItems(VerticalAlign.Center)
 
         if (this.isLoadingFirst) {
-          // 首刷加载态（对齐安卓 ToolboxListPage：骨架屏；骨架组件已补齐，不再降级转圈）
-          LoadingState()
-          .width('100%')
-          .layoutWeight(1)
+          // 首刷加载态（对齐安卓 SkeletonList(rows=5)；骨架组件已补齐，不再降级转圈）
+          SkeletonList({ rows: 5 })
+            .width('100%')
+            .layoutWeight(1)
         } else if (this.isFirstError && this.list.length === 0) {
           this.Placeholder(ToolboxText.toolbox_error_load, ToolboxText.toolbox_action_retry, true)
         } else if (this.list.length === 0) {
@@ -315,7 +399,15 @@ struct ToolboxShortCodeList {
               // 尾部：加载中 / 失败重试（对齐安卓 append LoadState：retry() 重拉失败页，页码不推进）
               ListItem() {
                 if (this.isLoadingMore) {
-                  LoadingFooter({ isLoading: true })
+                  // 骨架块而非转圈（规范 §3.6：分页尾部禁转圈；对齐安卓 AppendLoadingRow 120×14）
+                  Row() {
+                    SkeletonBlock()
+                      .width(120)
+                      .height(14)
+                  }
+                  .width('100%')
+                  .padding({ top: 12, bottom: 12 })
+                  .justifyContent(FlexAlign.Center)
                 } else if (this.appendError) {
                   Text(ToolboxText.toolbox_error_load)
                     .fontSize(DesignFontSize.CAPTION)
@@ -357,7 +449,9 @@ struct ToolboxShortCodeList {
         this.hasShown = true
         return
       }
-      this.refreshList()
+      if (consumeShortCodeChanged()) {
+        this.refreshList()
+      }
     })
   }
 }

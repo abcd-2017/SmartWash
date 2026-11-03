@@ -38,6 +38,9 @@ export class DivText {
   static readonly methodLiurenDesc: string = '月将加时 · 三传定机\n人事占验最精'
   static readonly methodLiurenUseFor: string = '精细推算 · 复杂事务'
   static readonly historyEmpty: string = '案卷尚空，且去起一卦'
+  static readonly historyTitle: string = '卦历 · 案卷'
+  static readonly historyNote: string = '复盘沿用原盘原时刻 · 不因当前日期重算'
+  static readonly filterAll: string = '全部'
 
   // 问事页
   static readonly askTitle: string = '心中所问'
@@ -112,6 +115,7 @@ export class DivText {
   static readonly followupSend: string = '发 送'
   static readonly followupEmpty: string = '还没有追问，输入你的问题吧'
   static readonly followupThinking: string = '正在推演…'
+  static readonly followupFooter: string = '—— 继续追问将沿用本卦盘推演 ——'
 
   // 摇卦页
   static readonly castTitle: string = '静 心 · 问 事'
@@ -142,6 +146,15 @@ export class DivPalette {
   static readonly line: number = DivColor.LINE_LIGHT
   static readonly yaoTop: number = DivColor.YAO_TOP_LIGHT
   static readonly yaoBottom: number = DivColor.YAO_BOTTOM_LIGHT
+  // 文字级金强调（对齐安卓 c.goldText：宣纸画板反转为墨，保对比 §10）
+  static readonly goldText: number = DivColor.TEXT_PRIMARY_LIGHT
+  // 金底墨字（对齐安卓 c.onGold 0xFF151412，问卦双板一致）
+  static readonly onGold: number = 0xFF151412
+  // 平涂深朱印（对齐安卓 c.sealDeep 0xFFA63A30）
+  static readonly sealDeep: number = 0xFFA63A30
+  // 金按钮渐变（宣纸侧 300→500：安卓 goldGradient = [DivGoldHiDark, DivGoldDark]）
+  static readonly goldGradientStart: number = 0xFFD4B878
+  static readonly goldGradientEnd: number = 0xFFC9A961
 }
 
 
@@ -258,6 +271,8 @@ export struct DivSeal {
   @Param text: string = ''
   @Param sealSize: number = 30
   @Param fontSize: number = 18
+  // flat=平涂深朱无描边（卦盘/卦历画板口径，对齐安卓 sealDeep）
+  @Param flat: boolean = false
 
   build() {
     Column() {
@@ -266,20 +281,140 @@ export struct DivSeal {
         textSize: this.fontSize,
         weight: 700,
         spacing: 1,
-        color: 0xFFF6E8DC,
+        // 印面文字两主题恒为宣纸白（画板双板一致）
+        color: 0xFFEFE9DA,
         textAlign: TextAlign.Center
       })
     }
     .width(this.sealSize)
     .height(this.sealSize)
     .borderRadius(8)
+    // flat=平涂深朱（无渐变无描边）；否则 sealHi→seal 135° 渐变
     .linearGradient({
       angle: 135,
-      colors: [[DivPalette.sealHi, 0.0], [DivPalette.seal, 1.0]]
+      colors: this.flat
+        ? [[DivPalette.sealDeep, 0.0], [DivPalette.sealDeep, 1.0]]
+        : [[DivPalette.sealHi, 0.0], [DivPalette.seal, 1.0]]
     })
-    .border({ width: 1, color: 0x38FFFFFF })
+    // 非 flat 用 22% 金线（安卓 c.line）；flat 无描边
+    .border(this.flat ? { width: 0, color: Color.Transparent } : { width: 1, color: DivPalette.line })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+  }
+}
+
+// ========== 四术定制线描 glyph（六爻=方孔铜钱 / 梅花=五瓣梅花环 / 奇门=九宫格 / 六壬=三层盘环） ==========
+
+/** 圆角矩形描边（CanvasRenderingContext2D.roundRect 需 SDK 20，当前 17，用 arcTo 手绘） */
+function strokeRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number,
+  w: number, h: number, r: number): void {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + w - r, y)
+  ctx.arcTo(x + w, y, x + w, y + r, r)
+  ctx.lineTo(x + w, y + h - r)
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
+  ctx.lineTo(x + r, y + h)
+  ctx.arcTo(x, y + h, x, y + h - r, r)
+  ctx.lineTo(x, y + r)
+  ctx.arcTo(x, y, x + r, y, r)
+  ctx.closePath()
+  ctx.stroke()
+}
+
+@ComponentV2
+export struct MethodGlyph {
+  @Param method: string = ''
+  // 命名注意：不能叫 size（与 CustomComponent 基类的 size() 属性方法冲突导致编译错误），
+  // 同 AppComponents.ets IconBox 的 sizeValue 约定
+  @Param sizeValue: number = 34
+  @Param tint: number = DivPalette.gold
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
+
+  aboutToAppear(): void {
+    this.draw()
+  }
+
+  /** 24 栅格 → 实际画布（中心 12,12 / 半径 10 基准）；stroke 2dp、round 端点 */
+  private draw(): void {
+    const size: number = this.sizeValue
+    const unit: number = size / 24
+    const cx: number = size / 2
+    const cy: number = size / 2
+    const p = (v: number): number => v * unit
+    this.ctx.clearRect(0, 0, size, size)
+    this.ctx.lineCap = 'round'
+    this.ctx.lineJoin = 'round'
+    this.ctx.lineWidth = 2 * unit
+    this.ctx.strokeStyle = this.tint
+
+    if (this.method === 'liuyao') {
+      // 方孔铜钱：外圆 + 圆角方孔
+      this.ctx.beginPath()
+      this.ctx.arc(cx, cy, p(10), 0, Math.PI * 2, false)
+      this.ctx.stroke()
+      strokeRoundRect(this.ctx, cx - p(3.5), cy - p(3.5), p(7), p(7), p(1))
+      return
+    }
+    if (this.method === 'meihua') {
+      // 五瓣梅花环：5 小圆 + 中心点
+      for (let i = 0; i < 5; i++) {
+        const angle: number = (i * 72 - 90) * Math.PI / 180
+        const px: number = cx + p(5.5) * Math.cos(angle)
+        const py: number = cy + p(5.5) * Math.sin(angle)
+        this.ctx.beginPath()
+        this.ctx.arc(px, py, p(3.2), 0, Math.PI * 2, false)
+        this.ctx.stroke()
+      }
+      this.ctx.fillStyle = this.tint
+      this.ctx.beginPath()
+      this.ctx.arc(cx, cy, p(1.2), 0, Math.PI * 2, false)
+      this.ctx.fill()
+      return
+    }
+    if (this.method === 'qimen') {
+      // 九宫格：外方（圆角）+ 十字分割
+      strokeRoundRect(this.ctx, cx - p(9), cy - p(9), p(18), p(18), p(2))
+      const lines: number[][] = [[-3, 0], [3, 0]]
+      for (let i = 0; i < lines.length; i++) {
+        const v: number = lines[i][0]
+        this.ctx.beginPath()
+        this.ctx.moveTo(cx + p(v), cy - p(9))
+        this.ctx.lineTo(cx + p(v), cy + p(9))
+        this.ctx.stroke()
+        this.ctx.beginPath()
+        this.ctx.moveTo(cx - p(9), cy + p(v))
+        this.ctx.lineTo(cx + p(9), cy + p(v))
+        this.ctx.stroke()
+      }
+      return
+    }
+    // liuren：三层盘环 + 中环四向刻度点
+    this.ctx.beginPath()
+    this.ctx.arc(cx, cy, p(10), 0, Math.PI * 2, false)
+    this.ctx.stroke()
+    this.ctx.beginPath()
+    this.ctx.arc(cx, cy, p(6.5), 0, Math.PI * 2, false)
+    this.ctx.stroke()
+    this.ctx.beginPath()
+    this.ctx.arc(cx, cy, p(3), 0, Math.PI * 2, false)
+    this.ctx.stroke()
+    this.ctx.fillStyle = this.tint
+    const dirs: number[][] = [[0, -1], [0, 1], [-1, 0], [1, 0]]
+    for (let i = 0; i < dirs.length; i++) {
+      this.ctx.beginPath()
+      this.ctx.arc(cx + dirs[i][0] * p(4.75), cy + dirs[i][1] * p(4.75), p(0.9), 0, Math.PI * 2, false)
+      this.ctx.fill()
+    }
+  }
+
+  build() {
+    Canvas(this.ctx)
+      .width(this.sizeValue)
+      .height(this.sizeValue)
+      .onReady(() => {
+        this.draw()
+      })
   }
 }
 
@@ -292,31 +427,27 @@ export struct TianXiangHeader {
 
   build() {
     Row() {
+      // 两侧线为实色 30% 金线（安卓 c.goldLine，非渐隐线）
       Column()
         .width(52)
         .height(this.modifierHeight)
-        .linearGradient({
-          direction: GradientDirection.Right,
-          colors: [[Color.Transparent, 0.0], [DivPalette.goldLine, 1.0]]
-        })
+        .backgroundColor(DivPalette.goldLine)
 
       DivSerifText({
         text: this.text,
         textSize: 12,
         weight: 500,
-        spacing: 3,
-        color: DivPalette.gold,
+        spacing: 0,
+        color: DivPalette.goldText,
         textAlign: TextAlign.Center
       })
-        .padding({ left: 12, right: 12 })
+        .opacity(0.75)
+        .padding({ left: 8, right: 8 })
 
       Column()
         .width(52)
         .height(this.modifierHeight)
-        .linearGradient({
-          direction: GradientDirection.Right,
-          colors: [[DivPalette.goldLine, 0.0], [Color.Transparent, 1.0]]
-        })
+        .backgroundColor(DivPalette.goldLine)
     }
     .width('100%')
     .padding({ left: 20, right: 20 })
@@ -325,7 +456,7 @@ export struct TianXiangHeader {
   }
 }
 
-// ========== 观象台页头：返回 + 可选印章 + 衬线标题 + 尾注 ==========
+// ========== 观象台页头：返回（48 热区防抖）+ 居中衬线标题（可选印章）+ 右侧尾注/卦印 + 副题 ==========
 
 @ComponentV2
 export struct DivPageHeader {
@@ -333,50 +464,116 @@ export struct DivPageHeader {
   @Param showBack: boolean = true
   @Param seal: string = ''
   @Param tail: string = ''
+  // flatSeal=印章平涂口径（卦盘）；titleSpacing=标题字距（卦盘 2，其余 4）
+  @Param flatSeal: boolean = false
+  @Param titleSpacing: number = 4
+  // alignStart=无返回页左对齐口径（卦历）；sealTrailing=页头右侧固定卦印（解读）；subtitle=标题下居中副题（追问）
+  @Param alignStart: boolean = false
+  @Param sealTrailing: string = ''
+  @Param subtitle: string = ''
   @Event onBack: () => void = () => {
   }
+  // 返回连击防抖时间戳（对齐安卓 rememberDebouncedClick）
+  @Local lastBackTs: number = 0
 
   build() {
-    Row() {
-      if (this.showBack) {
-        Column() {
-          SymbolGlyph($r('sys.symbol.chevron_left'))
-            .fontSize(24)
-            .fontColor([DivPalette.textSecondary])
+    Column() {
+      Stack({ alignContent: Alignment.Center }) {
+        // 返回箭头：48dp 热区（行首让位 12，使图形左缘落在 20）；整行垂直居中
+        if (this.showBack) {
+          Row() {
+            Column() {
+              SymbolGlyph($r('sys.symbol.chevron_left'))
+                .fontSize(24)
+                .fontColor([DivPalette.textSecondary])
+            }
+            .width(48)
+            .height(48)
+            .justifyContent(FlexAlign.Center)
+            .alignItems(HorizontalAlign.Center)
+            .onClick(() => {
+              const now = Date.now()
+              if (now - this.lastBackTs < 600) {
+                return
+              }
+              this.lastBackTs = now
+              this.onBack()
+            })
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Start)
+          .padding({ left: 12 })
+          .align(Alignment.Center)
         }
-        .width(40)
-        .height(40)
-        .borderRadius(20)
-        .justifyContent(FlexAlign.Center)
-        .alignItems(HorizontalAlign.Center)
-        .onClick(() => {
-          this.onBack()
-        })
+
+        // 标题（居中；alignStart 时左对齐 x20）
+        Row() {
+          if (this.seal.length > 0) {
+            DivSeal({ text: this.seal, sealSize: 30, fontSize: 14, flat: this.flatSeal })
+            Column().width(10)
+          }
+          DivSerifText({
+            text: this.title,
+            textSize: 18,
+            weight: 600,
+            spacing: this.titleSpacing,
+            color: DivPalette.textPrimary
+          })
+        }
+        .width(this.alignStart ? '100%' : 'auto')
+        .justifyContent(this.alignStart ? FlexAlign.Start : FlexAlign.Center)
+        .padding(this.alignStart ? { left: 20 } : {})
+        .align(Alignment.Center)
+        .alignItems(VerticalAlign.Center)
+
+        // 右侧尾注（金 75%）
+        if (this.tail.length > 0) {
+          Row() {
+            DivSerifText({
+              text: this.tail,
+              textSize: 12,
+              weight: 400,
+              spacing: 2,
+              color: DivPalette.goldText,
+              textAlign: TextAlign.End
+            })
+              .opacity(0.75)
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.End)
+          .padding({ right: 20 })
+          .align(Alignment.Center)
+        }
+
+        // 右侧固定卦印（解读画板：平涂深朱、印文 14/700；与 tail 互斥）
+        if (this.sealTrailing.length > 0) {
+          Row() {
+            DivSeal({ text: this.sealTrailing, sealSize: 30, fontSize: 14, flat: true })
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.End)
+          .padding({ right: 20 })
+          .align(Alignment.Center)
+        }
       }
+      .width('100%')
+      .padding({ top: this.alignStart ? 6 : 10, bottom: 10 })
 
-      if (this.seal.length > 0) {
-        DivSeal({ text: this.seal, sealSize: 30, fontSize: 15 })
-        Column().width(10)
-      }
-
-      DivSerifText({ text: this.title, textSize: 17, weight: 600, spacing: 3, color: DivPalette.textPrimary })
-
-      Blank()
-
-      if (this.tail.length > 0) {
+      // 标题下居中副题（追问画板：下距 4、12/16 字距 2 次要色）
+      if (this.subtitle.length > 0) {
+        Column().height(4)
         DivSerifText({
-          text: this.tail,
-          textSize: 11,
+          text: this.subtitle,
+          textSize: 12,
           weight: 400,
-          spacing: 0,
-          color: DivPalette.textTertiary,
-          textAlign: TextAlign.End
+          spacing: 2,
+          color: DivPalette.textSecondary,
+          textAlign: TextAlign.Center
         })
+          .width('100%')
       }
     }
     .width('100%')
-    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
-    .alignItems(VerticalAlign.Center)
   }
 }
 
@@ -389,6 +586,8 @@ export struct DivSectionTitle {
   @Param tailClickable: boolean = false
   @Event onTailClick: () => void = () => {
   }
+  // 尾注连击防抖时间戳（内聚，对齐安卓 rememberDebouncedClick）
+  @Local lastTailTs: number = 0
 
   build() {
     Row() {
@@ -399,14 +598,20 @@ export struct DivSectionTitle {
       if (this.tail.length > 0) {
         DivSerifText({
           text: this.tail,
-          textSize: 11,
+          textSize: 12,
           weight: 400,
           spacing: 0,
-          color: DivPalette.textTertiary,
+          // 可点击尾注为链接墨色（宣纸侧全墨），纯信息尾注降为次要灰
+          color: this.tailClickable ? DivPalette.textTertiary : DivPalette.textSecondary,
           textAlign: TextAlign.End
         })
         .onClick(() => {
           if (this.tailClickable) {
+            const now = Date.now()
+            if (now - this.lastTailTs < 600) {
+              return
+            }
+            this.lastTailTs = now
             DivHaptic.selection()
             this.onTailClick()
           }
@@ -425,8 +630,10 @@ export struct DivSectionTitle {
 export struct DivGoldButton {
   @Param text: string = ''
   @Param isEnabled: boolean = true
-  @Param btnHeight: number = 52
-  @Param fontSize: number = 18
+  @Param btnHeight: number = 48
+  @Param fontSize: number = 15
+  // soft=解读画板口径：14% 金底 + 金/墨字（玄墨金字 / 宣纸墨字），用于次级仪式主行动
+  @Param soft: boolean = false
   @Event onAction: () => void = () => {
   }
   // 按压态（scale 0.97）—— 见下方 build 说明
@@ -438,22 +645,28 @@ export struct DivGoldButton {
         text: this.text,
         textSize: this.fontSize,
         weight: 600,
-        spacing: 4,
-        color: this.isEnabled ? DivPalette.gold : DivPalette.textTertiary,
+        spacing: 3,
+        // 禁用=金 70%；soft=主题感知文字金（宣纸墨 / 玄墨金）；常态=金底墨字
+        color: !this.isEnabled ? 0xB31C1C1E : (this.soft ? DivPalette.goldText : DivPalette.onGold),
         textAlign: TextAlign.Center
       })
     }
     .width('100%')
     .height(this.btnHeight)
     .borderRadius(this.btnHeight / 2)
-    .backgroundColor(this.isEnabled ? DivPalette.goldSoft : Color.Transparent)
-    .border({ width: 1, color: this.isEnabled ? DivPalette.goldLine : DivPalette.hair })
+    // 金渐变实底胶囊（无描边）：禁用/soft 退回 14% 金底（对齐安卓「已保存」口径）
+    .backgroundColor(!this.isEnabled || this.soft ? DivPalette.gold14 : Color.Transparent)
+    .linearGradient(!this.isEnabled || this.soft ? {
+      angle: 135,
+      colors: [[DivPalette.gold14, 0.0], [DivPalette.gold14, 1.0]]
+    } : {
+      direction: GradientDirection.Right,
+      colors: [[DivPalette.goldGradientStart, 0.0], [DivPalette.goldGradientEnd, 1.0]]
+    })
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .enabled(this.isEnabled)
-    // 规范 §7：交互反馈不使用 Material ripple —— 原 .stateEffect() 不是通用属性（实测 ArkTS 编译报错
-    // 「Property 'stateEffect' does not exist on type 'ColumnAttribute'」），且涟漪形状不受令牌控制；
-    // 按压反馈统一由 scale 0.97 承载，禁用态不缩放（对齐安卓 DivGoldButton 的 pressable scaleFactor=0.97/1f）
+    // 规范 §7：交互反馈不使用 Material ripple；按压反馈统一由 scale 0.97 承载，禁用态不缩放
     .scale({ x: this.isEnabled && this.pressed ? 0.97 : 1, y: this.isEnabled && this.pressed ? 0.97 : 1 })
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
@@ -522,30 +735,48 @@ export struct DivCard {
   }
 }
 
-// ========== 问事领域 chip：选中金底 + 勾，未选素底 ==========
+// ========== 问事领域 chip：48 触控胶囊；选中金底 + 金环 + 勾（弹簧缩放） ==========
 
 @ComponentV2
 export struct DivCategoryChip {
   @Param text: string = ''
   @Param selected: boolean = false
+  @Param horizontalPadding: number = 12
   @Event onAction: () => void = () => {
   }
 
   build() {
     Row() {
       DivSerifText({
-        text: this.selected ? this.text + ' ✓' : this.text,
+        text: this.text,
         textSize: 12,
         weight: this.selected ? 600 : 400,
         spacing: 0,
-        color: this.selected ? DivPalette.gold : DivPalette.textSecondary,
-        textAlign: TextAlign.Center
+        color: this.selected ? DivPalette.goldText : DivPalette.textSecondary,
+        textAlign: TextAlign.Center,
+        maxLines: 1
       })
+      if (this.selected) {
+        DivSerifText({
+          text: '✓',
+          textSize: 12,
+          weight: 600,
+          spacing: 0,
+          color: DivPalette.goldText,
+          textAlign: TextAlign.Center
+        })
+          .padding({ left: 3 })
+          .scale({ x: 1, y: 1 })
+          .animation({ duration: 200, curve: Curve.EaseOut })
+      }
     }
-    .padding({ left: 14, right: 14, top: 7, bottom: 7 })
-    .borderRadius(16)
+    .height(48)
+    .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
+    .borderRadius(999)
     .backgroundColor(this.selected ? DivPalette.gold14 : DivPalette.surface)
-    .border({ width: 1, color: this.selected ? DivPalette.goldLine : DivPalette.hair })
+    .border({ width: 1, color: this.selected ? DivPalette.goldLine : DivPalette.goldLine })
+    // 底色/描边/字色 200ms 过渡（隐式动画）
+    .animation({ duration: 200 })
     .onClick(() => {
       DivHaptic.selection()
       this.onAction()
@@ -553,7 +784,7 @@ export struct DivCategoryChip {
   }
 }
 
-// ========== 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点 ==========
+// ========== 单选行（起卦方式）：标题 + 副题 + 金色圆形单选点（弹簧缩放） ==========
 
 @ComponentV2
 export struct DivRadioRow {
@@ -566,14 +797,15 @@ export struct DivRadioRow {
   build() {
     Row() {
       Column() {
-        DivSerifText({ text: this.title, textSize: 14, weight: 400, spacing: 0, color: DivPalette.textPrimary })
+        // 未选行标题次级色（对齐安卓）
+        DivSerifText({ text: this.title, textSize: 14, weight: 500, spacing: 0, color: this.selected ? DivPalette.textPrimary : DivPalette.textSecondary })
         if (this.subtitle.length > 0) {
           DivSerifText({
             text: this.subtitle,
-            textSize: 10,
+            textSize: 12,
             weight: 400,
             spacing: 0,
-            color: DivPalette.textTertiary
+            color: DivPalette.textSecondary
           })
             .margin({ top: 2 })
         }
@@ -583,25 +815,26 @@ export struct DivRadioRow {
 
       Stack() {
         Column()
-          .width(19)
-          .height(19)
-          .borderRadius(9.5)
-          .border({ width: 1.6, color: this.selected ? DivPalette.gold : DivPalette.hair })
+          .width(20)
+          .height(20)
+          .borderRadius(10)
+          .border({ width: 1, color: this.selected ? 0xE6C9A961 : DivPalette.goldLine })
 
         if (this.selected) {
           Column()
-            .width(9)
-            .height(9)
-            .borderRadius(4.5)
+            .width(8)
+            .height(8)
+            .borderRadius(4)
             .backgroundColor(DivPalette.gold)
+            .animation({ duration: 200, curve: Curve.EaseOut })
         }
       }
-      .width(19)
-      .height(19)
+      .width(20)
+      .height(20)
       .alignContent(Alignment.Center)
     }
     .width('100%')
-    .padding({ left: 14, right: 14, top: 12, bottom: 12 })
+    .padding({ left: 20, right: 20, top: 12, bottom: 12 })
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
       DivHaptic.selection()
@@ -619,20 +852,89 @@ export struct DivFooterNote {
   build() {
     DivSerifText({
       text: this.text,
-      textSize: 10,
+      textSize: 12,
       weight: 400,
       spacing: 1,
       color: DivPalette.textTertiary,
       textAlign: TextAlign.Center
     })
       .width('100%')
-      .padding({ left: 24, right: 24, top: 14, bottom: 14 })
+      .padding({ left: 20, right: 20, top: 8, bottom: 8 })
   }
 }
 
-// ========== 观象台罗盘：十二支环缓转（140s/圈）+ 四正金点 + 中宫「卜」 ==========
+// ========== 金色水波加载指示（对齐安卓 WaveIcon：观象台金色，自带 reduced motion 静止分支） ==========
 
-const COMPASS_SIZE: number = 112
+@ComponentV2
+export struct DivWaveIcon {
+  // 命名注意：不能叫 size（与 CustomComponent 基类的 size() 属性方法冲突导致编译错误），
+  // 同 AppComponents.ets IconBox 的 sizeValue 约定
+  @Param sizeValue: number = 18
+  @Param tint: number = DivPalette.gold
+  @Local phase: number = 0
+  private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
+  private timerId: number = -1
+
+  aboutToAppear(): void {
+    if (!divReduceMotion()) {
+      this.timerId = setInterval(() => {
+        this.phase = (this.phase + 0.12) % (Math.PI * 2)
+        this.drawWave()
+      }, 16)
+    }
+    this.drawWave()
+  }
+
+  aboutToDisappear(): void {
+    if (this.timerId !== -1) {
+      clearInterval(this.timerId)
+      this.timerId = -1
+    }
+  }
+
+  private drawWave(): void {
+    const size: number = this.sizeValue
+    const midY: number = size / 2
+    const amp: number = size * 0.22
+    this.ctx.clearRect(0, 0, size, size)
+    this.ctx.lineCap = 'round'
+    // 三条波：主线 + 两条相位错开的淡线（安卓水波指示的三层观感）
+    for (let layer = 0; layer < 3; layer++) {
+      const alpha: number = layer === 0 ? 1 : (0.55 - layer * 0.18)
+      const shift: number = this.phase + layer * 0.9
+      this.ctx.beginPath()
+      this.ctx.lineWidth = layer === 0 ? 2 : 1.4
+      this.ctx.strokeStyle = this.hexWithAlpha(this.tint, alpha)
+      for (let x = 0; x <= size; x++) {
+        const y = midY + amp * Math.sin((x / size) * Math.PI * 2 + shift)
+        if (x === 0) {
+          this.ctx.moveTo(x, y)
+        } else {
+          this.ctx.lineTo(x, y)
+        }
+      }
+      this.ctx.stroke()
+    }
+  }
+
+  private hexWithAlpha(color: number, alpha: number): string {
+    const a: number = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+    const r: number = (color >>> 16) & 0xFF
+    const g: number = (color >>> 8) & 0xFF
+    const b: number = color & 0xFF
+    return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`
+  }
+
+  build() {
+    Canvas(this.ctx)
+      .width(this.sizeValue)
+      .height(this.sizeValue)
+  }
+}
+
+// ========== 观象台罗盘：十二支环缓转（140s/圈）+ 中宫「卜」 ==========
+
+const COMPASS_DEFAULT_SIZE: number = 112
 const COMPASS_SPIN_PERIOD_MS: number = 140000
 const COMPASS_TICK_MS: number = 50
 const ZHI_LABELS: string[] = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
@@ -640,6 +942,8 @@ const ZHI_LABELS: string[] = ['子', '丑', '寅', '卯', '辰', '巳', '午', '
 @ComponentV2
 export struct CompassDial {
   @Param dialText: string = '卜'
+  // 尺寸参数化（首页 104，对齐安卓 CompassDial(modifier = Modifier.size(104.dp))）
+  @Param dialSize: number = COMPASS_DEFAULT_SIZE
   @Local rotation: number = 0
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   private timerId: number = -1
@@ -663,9 +967,9 @@ export struct CompassDial {
     }
   }
 
-  /** 罗盘绘制（旋转环 + 中环 + 中宫字 + 天心金点） */
+  /** 罗盘绘制（外环 50% 金实线 + 12% 虚环 + 十二支环文 + 中宫字；无中环/四正刻线/天心点） */
   private drawCompass(): void {
-    const size: number = COMPASS_SIZE
+    const size: number = this.dialSize
     const cx: number = size / 2
     const cy: number = size / 2
     const radius: number = size / 2
@@ -673,73 +977,50 @@ export struct CompassDial {
 
     this.ctx.clearRect(0, 0, size, size)
 
-    // 旋转环：外环鎏金渐变 + 内虚线环 + 十二支环文 + 四正刻线
     this.ctx.save()
     this.ctx.translate(cx, cy)
     this.ctx.rotate(spin * Math.PI / 180)
     this.ctx.translate(-cx, -cy)
 
+    // 外环：50% 鎏金实线（安卓 c.gold.copy(alpha = 0.5f)）
     this.ctx.lineCap = 'round'
     this.ctx.lineWidth = 1
     this.ctx.strokeStyle = 0x80C9A961
     this.ctx.beginPath()
-    this.ctx.arc(cx, cy, radius * 0.93, 0, Math.PI * 2, false)
+    this.ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     this.ctx.stroke()
 
+    // 内虚线环：12% 金发丝（安卓 c.hair）
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldHair
+    this.ctx.strokeStyle = DivPalette.hair
     this.ctx.setLineDash([6, 10])
     this.ctx.beginPath()
-    this.ctx.arc(cx, cy, radius * 0.78, 0, Math.PI * 2, false)
+    this.ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2, false)
     this.ctx.stroke()
     this.ctx.setLineDash([])
 
-    // 十二支环文
-    this.ctx.fillStyle = 0xBFC9A961
+    // 十二支环文（画板：r=0.92、12sp、金/墨 70%）
+    this.ctx.font = `${12 * size / 104}px serif`
+    this.ctx.fillStyle = 0xB31C1C1E
     for (let index = 0; index < ZHI_LABELS.length; index++) {
       const angle: number = (index * 30 - 90) * Math.PI / 180
-      const posX: number = cx + radius * 0.855 * Math.cos(angle)
-      const posY: number = cy + radius * 0.855 * Math.sin(angle)
+      const posX: number = cx + radius * 0.92 * Math.cos(angle)
+      const posY: number = cy + radius * 0.92 * Math.sin(angle)
       const metrics = this.ctx.measureText(ZHI_LABELS[index])
       this.ctx.fillText(ZHI_LABELS[index], posX - metrics.width / 2, posY + metrics.actualBoundingBoxAscent / 2)
     }
-
-    // 四正刻线
-    this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldLine
-    const ticks: number[] = [0, 90, 180, 270]
-    for (let i = 0; i < ticks.length; i++) {
-      const angle: number = ticks[i] * Math.PI / 180
-      this.ctx.beginPath()
-      this.ctx.moveTo(cx + radius * 0.70 * Math.cos(angle), cy + radius * 0.70 * Math.sin(angle))
-      this.ctx.lineTo(cx + radius * 0.78 * Math.cos(angle), cy + radius * 0.78 * Math.sin(angle))
-      this.ctx.stroke()
-    }
     this.ctx.restore()
 
-    // 中环（不随罗盘旋转）
-    this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldLine
-    this.ctx.beginPath()
-    this.ctx.arc(cx, cy, radius * 0.5, 0, Math.PI * 2, false)
-    this.ctx.stroke()
-
-    // 中宫「卜」
-    this.ctx.font = '26px serif'
-    this.ctx.fillStyle = 0xEB2A251C
+    // 中宫「卜」（不随罗盘旋转，画板 22sp 衬线半粗、主题金）
+    this.ctx.font = `${22 * size / 104}px serif`
+    this.ctx.fillStyle = DivPalette.goldText
     const dial = this.ctx.measureText(this.dialText)
     this.ctx.fillText(this.dialText, cx - dial.width / 2, cy + dial.actualBoundingBoxAscent / 2)
-
-    // 天心金点
-    this.ctx.fillStyle = DivPalette.gold
-    this.ctx.beginPath()
-    this.ctx.arc(cx, cy, 3, 0, Math.PI * 2, false)
-    this.ctx.fill()
   }
 
   build() {
     Canvas(this.ctx)
-      .width(COMPASS_SIZE)
-      .height(COMPASS_SIZE)
+      .width(this.dialSize)
+      .height(this.dialSize)
   }
 }

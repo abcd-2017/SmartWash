@@ -130,6 +130,9 @@ export class ToolboxText {
   static readonly toolbox_expiry_preset_30d: string = "30 天"
   static readonly toolbox_expiry_preset_custom: string = "自定义"
   static readonly toolbox_expiry_custom_pick: string = "选择过期日期"
+  // 日期弹窗动作（对齐安卓 toolbox_date_confirm / toolbox_date_cancel，原先硬编码在弹窗内）
+  static readonly toolbox_date_confirm: string = "确定"
+  static readonly toolbox_date_cancel: string = "取消"
   static readonly toolbox_submit_create: string = "创建"
   static readonly toolbox_toast_create_success: string = "创建成功"
   static readonly toolbox_error_invalid_target: string = "目标链接须以 http:// 或 https:// 开头"

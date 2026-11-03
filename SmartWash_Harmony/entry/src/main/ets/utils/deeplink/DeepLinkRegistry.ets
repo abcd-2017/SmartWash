@@ -5,7 +5,8 @@
 //
 // host 清单（与安卓 docs/deeplink-对接文档.md §4 对齐）：
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
-//   pickup / laundry / divination / divination-history / toolbox-short-code / t/{code} / web(内建)
+//   pickup / laundry / divination / divination-history / toolbox-short-code / game-center /
+//   t/{code} / web(内建)
 //
 // 未注册 host 与原因（对齐安卓 §5 取舍）：
 // - user-info / service：两页是 Home 页 Tabs 的内容页，非独立路由；跳转等价「进 Home 切 tab」，
@@ -53,6 +54,8 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('divination-history', { routeName: RouteNames.DIV_HISTORY, param: null })
   // 工具箱域
   routes.set('toolbox-short-code', { routeName: RouteNames.TOOLBOX_SHORT_CODE_LIST, param: null })
+  // 游戏中心域（对齐安卓 GameDeepLinkModule：game-center → GameRoute.Center）
+  routes.set('game-center', { routeName: RouteNames.GAME_CENTER, param: null })
   return routes
 }
 

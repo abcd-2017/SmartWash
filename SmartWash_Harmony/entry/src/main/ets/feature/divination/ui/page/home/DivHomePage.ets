@@ -19,11 +19,13 @@ import {
   CompassDial,
   DivCard,
   DivFooterNote,
+  DivHaptic,
   DivPalette,
   DivSectionTitle,
   DivSeal,
   DivSerifText,
   DivText,
+  MethodGlyph,
   TianXiangHeader
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
@@ -135,6 +137,11 @@ struct DivHomePage {
     return label !== undefined ? label : id
   }
 
+  /** 六爻为首选术（有推荐 tag） */
+  private isFeatured(tag: string): boolean {
+    return tag.length > 0
+  }
+
   /** 四术玉牌分行（对齐安卓 methods.chunked(2)） */
   private buildRows(): Array<Array<[string, string, string, string, string]>> {
     const rows: Array<Array<[string, string, string, string, string]>> = []
@@ -150,7 +157,7 @@ struct DivHomePage {
     Row() {
       DivSerifText({
         text: this.formatMonthDay(record.castAt),
-        textSize: 11,
+        textSize: 12,
         weight: 400,
         spacing: 0,
         color: DivPalette.textTertiary
@@ -167,7 +174,7 @@ struct DivHomePage {
 
       DivSerifText({
         text: record.question,
-        textSize: 13,
+        textSize: 12,
         weight: 400,
         spacing: 0,
         color: DivPalette.textPrimary,
@@ -182,9 +189,10 @@ struct DivHomePage {
         text: this.methodName(record.method),
         textSize: 12,
         weight: 500,
-        spacing: 2,
-        color: DivPalette.gold
+        spacing: 0,
+        color: DivPalette.goldText
       })
+        .opacity(0.75)
     }
     .width('100%')
     .padding({ top: 12, bottom: 12 })
@@ -197,12 +205,30 @@ struct DivHomePage {
    */
   @Builder
   JadeTile(method: string, name: string, desc: string, useFor: string, tag: string) {
-    Stack() {
-      // 左下：一句话定位 + 适用问题
+    // 六爻为首选术：鎏金渐变描边 + 推荐 tag + glyph 40；其余 12% 发丝描边 + glyph 34
+    Column() {
       Column() {
+        Row() {
+          MethodGlyph({ method: method, sizeValue: this.isFeatured(tag) ? 40 : 34, tint: DivPalette.gold })
+          Blank()
+          // 竖排术名（画板：18/600、行距 26、右上内缩 2）
+          Column() {
+            ForEach(name.split(''), (ch: string, index: number) => {
+              DivSerifText({ text: ch, textSize: 18, weight: 600, spacing: 0, color: DivPalette.textPrimary })
+                .margin({ bottom: 8 })
+            }, (ch: string, index: number) => index.toString())
+          }
+          .alignItems(HorizontalAlign.End)
+        }
+        .width('100%')
+        .alignItems(VerticalAlign.Top)
+
+        Column().height(8)
+
+        // 一句话定位（两行）
         DivSerifText({
           text: desc,
-          textSize: 11,
+          textSize: 12,
           weight: 400,
           spacing: 0,
           color: DivPalette.textSecondary,
@@ -219,33 +245,40 @@ struct DivHomePage {
             maxLines: 1,
             overflow: TextOverflow.Ellipsis
           })
-            .margin({ top: 4 })
+            .margin({ top: 6 })
         }
+        Column().height(6)
+        // tag 位固定高度：四牌同构（无 tag 留空，同一行两牌行高一致）
+        Column() {
+          if (tag.length > 0) {
+            DivSerifText({
+              text: tag,
+              textSize: 11,
+              weight: 400,
+              spacing: 2,
+              color: DivPalette.goldText
+            })
+              .opacity(0.75)
+          }
+        }
+        .height(16)
       }
       .width('100%')
-      .height('100%')
-      .padding(16)
-      .alignItems(HorizontalAlign.Start)
-      .justifyContent(FlexAlign.End)
-
-      // 右上：竖排术名（逐字换行）
-      Column() {
-        ForEach(name.split(''), (ch: string, index: number) => {
-          DivSerifText({ text: ch, textSize: 19, weight: 600, spacing: 7, color: DivPalette.textPrimary })
-        }, (ch: string, index: number) => index.toString())
-      }
-      .padding(14)
-      .alignItems(HorizontalAlign.End)
-
-      if (tag.length > 0) {
-        DivSerifText({ text: tag, textSize: 10, weight: 400, spacing: 2, color: DivPalette.gold })
-          .position({ x: 16, y: 156 - 10 - 16 })
-      }
+      .borderRadius(15)
+      .backgroundColor(DivPalette.surface)
+      .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     }
     .width('100%')
-    .height(156)
+    // 牌高由内容撑开（min 148 兜底），窄屏/大字号折行不裁切、不叠压
+    .constraintSize({ minHeight: 148 })
     .borderRadius(16)
-    .backgroundColor(DivPalette.surface)
+    // 渐变描边（135°）：六爻 goldLine→goldHair，其余 12% 发丝
+    .linearGradient({
+      angle: 135,
+      colors: this.isFeatured(tag)
+        ? [[DivPalette.goldLine, 0.0], [DivPalette.goldHair, 1.0]]
+        : [[DivPalette.hair, 0.0], [DivPalette.hair, 1.0]]
+    })
     // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + level1 轻阴影（宣纸侧；安卓 JadeTile 同此）
     .shadow({
       radius: DesignElevation.LEVEL_1,
@@ -253,7 +286,6 @@ struct DivHomePage {
       offsetX: 0,
       offsetY: 2
     })
-    .border({ width: 1, color: DivPalette.goldLine })
     .scale({ x: this.pressedKey === method ? 0.97 : 1, y: this.pressedKey === method ? 0.97 : 1 })
     .onTouch((event: TouchEvent) => {
       if (event.type === TouchType.Down) {
@@ -264,6 +296,7 @@ struct DivHomePage {
     })
     .onClick(() => {
       this.pressedKey = ''
+      DivHaptic.light()
       // 四牌并排且 navigate 无 launchSingleTop，连点会双推 Ask 页 → 节流防抖
       this.debouncer.throttle(() => {
         pathStack.pushPathByName(RouteNames.DIV_ASK, method)
@@ -281,37 +314,37 @@ struct DivHomePage {
         Column() {
           DivSerifText({
             text: DivText.title,
-            textSize: 26,
+            textSize: 22,
             weight: 600,
             spacing: 4,
             color: DivPalette.textPrimary
           })
-            .margin({ top: 10 })
+            .margin({ top: 6 })
 
           DivSerifText({
             text: `旬空 ${this.xunKong.length > 0 ? this.xunKong : '—'}`,
-            textSize: 11,
+            textSize: 12,
             weight: 400,
             spacing: 1,
-            color: DivPalette.textTertiary
+            color: DivPalette.textSecondary
           })
-            .margin({ top: 5 })
+            .margin({ top: 6 })
         }
         .width('100%')
         .padding({ left: 20, right: 20 })
 
-        // 3. 罗盘
+        // 3. 罗盘（画板 104dp）
         Column() {
-          CompassDial({ dialText: '卜' })
+          CompassDial({ dialText: '卜', dialSize: 104 })
         }
         .width('100%')
-        .padding({ top: 4, bottom: 4 })
+        .padding({ top: 8, bottom: 12 })
         .alignItems(HorizontalAlign.Center)
 
-        // 4. 四术玉牌 2×2
-        Column({ space: 10 }) {
+        // 4. 四术玉牌 2×2（gap 12）
+        Column({ space: 12 }) {
           ForEach(this.buildRows(), (row: Array<[string, string, string, string, string]>, rowIndex: number) => {
-            Row({ space: 10 }) {
+            Row({ space: 12 }) {
               ForEach(row, (item: [string, string, string, string, string]) => {
                 Column() {
                   this.JadeTile(item[0], item[1], item[2], item[3], item[4])
@@ -331,6 +364,7 @@ struct DivHomePage {
 
         // 5. 今日一签卡（无签数据时不显示）
         if (this.hasTodaySign) {
+          Column() {
           DivCard({
             clickable: true,
             lineColor: DivPalette.goldHair,
@@ -351,23 +385,26 @@ struct DivHomePage {
                 })
                 DivSerifText({
                   text: `${this.todaySignSub} —— ${DivText.signCardSource}`,
-                  textSize: 11,
+                  textSize: 12,
                   weight: 400,
                   spacing: 1,
                   color: DivPalette.textSecondary
                 })
-                  .margin({ top: 5 })
+                  .margin({ top: 4 })
               }
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Start)
 
-              DivSerifText({ text: '›', textSize: 16, weight: 400, spacing: 0, color: DivPalette.gold })
+              DivSerifText({ text: '›', textSize: 16, weight: 400, spacing: 0, color: DivPalette.goldText })
+                .opacity(0.6)
             }
             .width('100%')
-            .padding({ left: 18, right: 18, top: 16, bottom: 16 })
+            .padding({ left: 18, right: 10, top: 10, bottom: 22 })
             .alignItems(VerticalAlign.Center)
-          .margin({ left: 20, right: 20, top: 14, bottom: 14 })
           }
+          }
+          .width('100%')
+          .padding({ left: 20, right: 20, top: 14, bottom: 14 })
         }
 
         // 6. 案卷
@@ -382,36 +419,39 @@ struct DivHomePage {
           }
         })
 
-        DivCard({ lineColor: DivPalette.goldHair }) {
-          Column() {
-            if (this.records.length === 0) {
-              DivSerifText({
-                text: DivText.historyEmpty,
-                textSize: 12,
-                weight: 400,
-                spacing: 0,
-                color: DivPalette.textTertiary
-              })
-                .width('100%')
-                .padding({ top: 18, bottom: 18 })
-            } else {
-              ForEach(this.records, (record: DivRecordRow, index: number) => {
-                Column() {
-                  this.LedgerRow(record)
-                }
-                .width('100%')
-                if (index !== 2 && index !== this.records.length - 1) {
-                  Divider()
-                    .strokeWidth(0.5)
-                    .color(DivPalette.goldHair)
-                }
-              }, (record: DivRecordRow) => record.id.toString())
+        Column() {
+          DivCard({ lineColor: DivPalette.goldHair }) {
+            Column() {
+              if (this.records.length === 0) {
+                DivSerifText({
+                  text: DivText.historyEmpty,
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textTertiary
+                })
+                  .width('100%')
+                  .padding({ top: 18, bottom: 18 })
+              } else {
+                ForEach(this.records, (record: DivRecordRow, index: number) => {
+                  Column() {
+                    this.LedgerRow(record)
+                  }
+                  .width('100%')
+                  if (index !== 2 && index !== this.records.length - 1) {
+                    Divider()
+                      .strokeWidth(0.5)
+                      .color(DivPalette.goldHair)
+                  }
+                }, (record: DivRecordRow) => record.id.toString())
+              }
             }
+            .width('100%')
+            .padding({ left: 14, top: 4, bottom: 4 })
           }
-          .width('100%')
-          .padding({ left: 14, top: 4, bottom: 4 })
-        .margin({ left: 20, right: 20 })
         }
+        .width('100%')
+        .padding({ left: 20, right: 20 })
 
         // 7. 页脚免责声明
         DivFooterNote({ text: DivText.disclaimerFooter })

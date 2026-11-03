@@ -33,9 +33,9 @@ import { getObjectParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { DivChartParam } from '../../DivChartParam'
 
-/** 铜钱尺寸 / 间距（对齐安卓 CoinAndMeridian.kt:63 的 72dp 币身 + 11dp 水平内距） */
+/** 铜钱尺寸 / 间距（对齐安卓 CoinAndMeridian.kt:214 的 72dp 币身 + 12dp 币间距） */
 const COIN_SIZE: number = 72
-const COIN_GAP: number = 22
+const COIN_GAP: number = 12
 const COIN_ROW_WIDTH: number = COIN_SIZE * 3 + COIN_GAP * 2
 
 /** 爻位名（自上爻顶到初爻底，对齐安卓 DivCastPage.kt:118） */
@@ -84,6 +84,7 @@ struct DivCastPage {
       message: DivText.castQuitBody,
       confirmText: '丢弃',
       cancelText: '继续摇卦',
+      isDanger: true,
       onConfirm: () => {
         pathStack.pop()
       },
@@ -257,7 +258,15 @@ struct DivCastPage {
     ctx.clearRect(0, 0, COIN_ROW_WIDTH, COIN_SIZE)
     for (let i = 0; i < 3; i++) {
       const rot = this.baseRot[i] + this.deltaRot[i] * this.progress
-      const lift = -this.heights[i] * Math.sin(this.progress * Math.PI)
+      // 抬升：0→45% 起跳（ease-out 到最高点），45%→100% 惯性回弹（阻尼振荡，对齐安卓 momentumSpring）
+      let liftRatio: number
+      if (this.progress < 0.45) {
+        liftRatio = -Math.sin((this.progress / 0.45) * Math.PI / 2)
+      } else {
+        const t = (this.progress - 0.45) / 0.55
+        liftRatio = -0.18 * Math.sin(t * Math.PI * 2) * (1 - t)
+      }
+      const lift = this.heights[i] * liftRatio
       const tilt = this.tilts[i] * Math.sin(this.progress * Math.PI)
       ctx.save()
       ctx.translate(i * (COIN_SIZE + COIN_GAP) + COIN_SIZE / 2, COIN_SIZE / 2 + lift)
@@ -276,11 +285,10 @@ struct DivCastPage {
     const normalized = ((rotationY % 360) + 360) % 360
     const visibleFace = normalized < 90 || normalized > 270
 
-    // 币身：径向渐变鎏金
-    const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, 0, cx, cy, r * 1.4)
-    grad.addColorStop(0, '#E8D5A4')
-    grad.addColorStop(0.5, '#C9A961')
-    grad.addColorStop(1, '#8F7434')
+    // 币身：对角线性鎏金渐变（画板双板口径 300→500，对齐安卓 goldGradient）
+    const grad = ctx.createLinearGradient(0, 0, size, size)
+    grad.addColorStop(0, '#D4B878')
+    grad.addColorStop(1, '#C9A961')
     ctx.fillStyle = grad
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, Math.PI * 2, false)
@@ -302,9 +310,9 @@ struct DivCastPage {
     ctx.stroke()
     ctx.setLineDash([])
 
-    // 方孔
+    // 方孔（透出页面底色，画板口径：宣纸底 #EBE3D1）
     const holeHalf = r * 0.27
-    ctx.fillStyle = '#26231C'
+    ctx.fillStyle = '#EBE3D1'
     ctx.fillRect(cx - holeHalf, cy - holeHalf, holeHalf * 2, holeHalf * 2)
     ctx.lineWidth = 1.5
     ctx.strokeStyle = '#6B5626'
@@ -346,148 +354,159 @@ struct DivCastPage {
       DivSerifText({
         text: positionLabel,
         textSize: 12,
-        weight: 500,
-        spacing: 2,
-        color: DivPalette.textTertiary,
+        weight: 400,
+        spacing: 0,
+        color: DivPalette.textSecondary,
         textAlign: TextAlign.End
       })
-        .width(34)
+        .width(40)
 
-      Column().width(14)
+      Column().width(32)
 
-      Stack() {
-        Column()
-          .width(14)
-          .height(14)
-          .borderRadius(7)
-          .border({ width: 1, color: data.done ? DivPalette.gold : DivPalette.goldHair })
-        if (data.done) {
+      // 中列（120）：已掷仅爻符号 14/600；待掷 8dp 25% 金点
+      Column() {
+        if (data.done && data.symbol.length > 0) {
+          DivSerifText({
+            text: data.symbol,
+            textSize: 14,
+            weight: 600,
+            spacing: 1,
+            color: data.isMoving ? DivPalette.goldText : DivPalette.textPrimary,
+            textAlign: TextAlign.Center
+          })
+        } else {
           Column()
-            .width(6)
-            .height(6)
-            .borderRadius(3)
+            .width(8)
+            .height(8)
+            .borderRadius(4)
             .backgroundColor(DivPalette.gold)
+            .opacity(0.25)
         }
       }
-      .width(14)
-      .height(14)
-      .alignContent(Alignment.Center)
+      .width(120)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
-      Column().width(14)
+      Column().width(10)
 
-      if (data.done && data.symbol.length > 0) {
-        DivSerifText({ text: data.symbol, textSize: 17, weight: 400, spacing: 0, color: DivPalette.textPrimary })
-        if (data.isMoving) {
-          // 老阳○ 鎏金 / 老阴× 朱砂 —— 颜色即信息
-          DivSerifText({
-            text: data.nameLabel.indexOf('老阳') === 0 ? '○' : '×',
-            textSize: 13,
-            weight: 400,
-            spacing: 0,
-            color: data.nameLabel.indexOf('老阳') === 0 ? DivPalette.gold : DivPalette.sealHi
-          })
-            .margin({ left: 4 })
-        }
+      if (data.done && data.nameLabel.length > 0) {
         DivSerifText({
           text: data.nameLabel,
-          textSize: 11,
+          textSize: 12,
           weight: 400,
           spacing: 0,
-          color: data.isMoving ? DivPalette.sealHi : DivPalette.gold
+          color: data.isMoving ? DivPalette.goldText : DivPalette.textSecondary,
+          maxLines: 1
         })
-          .margin({ left: 8 })
+          .layoutWeight(1)
       } else {
-        DivSerifText({ text: '┄┄┄', textSize: 15, weight: 400, spacing: 0, color: DivPalette.goldHair })
+        Blank()
       }
     }
     .width('100%')
-    .height(54)
+    .height(50)
     .alignItems(VerticalAlign.Center)
   }
 
   build() {
     NavDestination() {
       DivinationScreen({ scrollable: false }) {
-        // 1. 标题 + 进度
-        DivSerifText({
-          text: DivText.castTitle,
-          textSize: 15,
-          weight: 500,
-          spacing: 4,
-          color: DivPalette.textSecondary,
-          textAlign: TextAlign.Center
-        })
-          .width('100%')
-          .margin({ top: 10 })
-
-        DivSerifText({
-          text: `第 ${Math.min(this.tossCount(), 6)} 掷 · 共 6 掷`,
-          textSize: 11,
-          weight: 400,
-          spacing: 3,
-          color: DivPalette.gold,
-          textAlign: TextAlign.Center
-        })
-          .width('100%')
-          .padding({ top: 4, bottom: 8 })
-
-        // 2. 三币
         Column() {
-          Canvas(this.coinCtx)
-            .width(COIN_ROW_WIDTH)
-            .height(COIN_SIZE)
-            .onReady(() => {
-              this.drawCoins()
-            })
-        }
-        .width('100%')
-        .alignItems(HorizontalAlign.Center)
-
-        Column().height(6)
-
-        // 3. 子午线：六节点，自上爻(顶)到初爻(底)
-        Column() {
-          Stack() {
-            // 中线（鎏金渐隐）—— 居中置于节点列之下
+          // 滚动内容区（weight 1）：矮屏/大字体可滚动不裁切（对齐安卓 weight(1f) + verticalScroll）
+          Scroll() {
             Column() {
-              Column()
-                .width(1)
-                .height(300)
-                .linearGradient({
-                  direction: GradientDirection.Bottom,
-                  colors: [[DivPalette.goldHair, 0.0], [DivPalette.goldLine, 0.5], [DivPalette.goldHair, 1.0]]
-                })
-            }
-            .width('100%')
-            .height('100%')
-            .alignItems(HorizontalAlign.Center)
-            .justifyContent(FlexAlign.Center)
+              // 1. 标题 + 进度
+              DivSerifText({
+                text: DivText.castTitle,
+                textSize: 14,
+                weight: 500,
+                spacing: 4,
+                color: DivPalette.textSecondary,
+                textAlign: TextAlign.Center
+              })
+                .width('100%')
+                .margin({ top: 10 })
 
-            Column() {
-              ForEach([0, 1, 2, 3, 4, 5], (displayIndex: number) => {
-                Column() {
-                  this.MeridianNode(this.nodeData(displayIndex), POSITION_LABELS[displayIndex])
+              DivSerifText({
+                text: `第 ${Math.min(this.tossCount(), 6)} 掷 · 共 6 掷`,
+                textSize: 12,
+                weight: 400,
+                spacing: 3,
+                color: DivPalette.goldText,
+                textAlign: TextAlign.Center
+              })
+                .width('100%')
+                .opacity(0.75)
+                .padding({ top: 6, bottom: 20 })
+
+              // 2. 三币
+              Column() {
+                Canvas(this.coinCtx)
+                  .width(COIN_ROW_WIDTH)
+                  .height(COIN_SIZE)
+                  .onReady(() => {
+                    this.drawCoins()
+                  })
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Center)
+
+              // 画板：铜钱底到节点区顶间距 48
+              Column().height(48)
+
+              // 3. 子午线：六节点，自上爻(顶)到初爻(底)；左右让位 36
+              Column() {
+                Stack() {
+                  // 中线：20% 金实色（画板口径）
+                  Column() {
+                    Column()
+                      .width(1)
+                      .height(300)
+                      .backgroundColor(DivPalette.gold)
+                      .opacity(0.2)
+                  }
+                  .width('100%')
+                  .height('100%')
+                  .alignItems(HorizontalAlign.Center)
+                  .justifyContent(FlexAlign.Center)
+
+                  Column() {
+                    ForEach([0, 1, 2, 3, 4, 5], (displayIndex: number) => {
+                      Column() {
+                        this.MeridianNode(this.nodeData(displayIndex), POSITION_LABELS[displayIndex])
+                      }
+                      .width('100%')
+                    }, (index: number) => index.toString())
+                  }
+                  .width('100%')
                 }
                 .width('100%')
-              }, (index: number) => index.toString())
+              }
+              .width('100%')
+              .padding({ left: 36, right: 36 })
+
+              // 节点区下留白（画板 800 基准取 24）
+              Column().height(24)
             }
             .width('100%')
           }
           .width('100%')
+          .layoutWeight(1)
+          .align(Alignment.TopStart)
+          .scrollBar(BarState.Off)
+
+          // 4. 掷爻 / 成卦（固定贴底）
+          DivGoldButton({
+            text: this.isComplete() ? DivText.castDone : DivText.castToss,
+            isEnabled: !this.tossing && !this.saving && this.pendingYao === null,
+            onAction: () => {
+              this.onMainButtonClick()
+            }
+          })
+            .padding({ left: 76, right: 76, top: 14, bottom: 14 })
         }
         .width('100%')
-        .layoutWeight(1)
-        .padding({ left: 48, right: 48 })
-
-        // 4. 掷爻 / 成卦
-        DivGoldButton({
-          text: this.isComplete() ? DivText.castDone : DivText.castToss,
-          isEnabled: !this.tossing && !this.saving && this.pendingYao === null,
-          onAction: () => {
-            this.onMainButtonClick()
-          }
-        })
-          .padding({ left: 76, right: 76, top: 14, bottom: 14 })
+        .height('100%')
       }
     }
     .hideTitleBar(true)

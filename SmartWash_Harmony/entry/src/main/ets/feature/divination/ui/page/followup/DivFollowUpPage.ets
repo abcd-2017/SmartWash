@@ -14,12 +14,13 @@ import { DivMessage, followUp as requestFollowUp } from '../../../network/Divina
 import { chartNameOf, divMethodName } from '../../../data/DivChartReader'
 import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
-  DivGoldButton,
   DivPageHeader,
   DivPalette,
   DivSeal,
   DivSerifText,
-  DivText
+  DivText,
+  DivWaveIcon,
+  divReduceMotion
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
@@ -29,6 +30,74 @@ import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 @Builder
 export function DivFollowUpBuilder() {
   DivFollowUpPage()
+}
+
+/** 聊天气泡视图（用户实金底右对齐 / 回复卡面左对齐；新气泡首帧 120ms 淡入） */
+@ComponentV2
+struct ChatBubbleView {
+  @Param turn: DivMessage = { role: 'user', content: '' }
+  @Local alpha: number = 0
+
+  aboutToAppear(): void {
+    if (divReduceMotion()) {
+      this.alpha = 1
+    } else {
+      animateTo({ duration: 120 }, () => {
+        this.alpha = 1
+      })
+    }
+  }
+
+  build() {
+    if (this.turn.role === 'user') {
+      Row() {
+        Column() {
+          DivSerifText({
+            text: this.turn.content,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.onGold
+          })
+        }
+        .constraintSize({ maxWidth: 220 })
+        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .borderRadius(16)
+        // 实金底（goldGradient 首色）+ 墨字 + r16 无描边；实色块免投影
+        .backgroundColor(DivPalette.goldGradientStart)
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.End)
+      .opacity(this.alpha)
+    } else {
+      Row() {
+        Column() {
+          DivSerifText({
+            text: this.turn.content,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textPrimary
+          })
+        }
+        .constraintSize({ maxWidth: 240 })
+        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .borderRadius(16)
+        .backgroundColor(DivPalette.surface)
+        // 回复气泡 = 卡面：1px 发丝描边 + level1 轻阴影（宣纸侧）
+        .shadow({
+          radius: DesignElevation.LEVEL_1,
+          color: DesignColor.SHADOW_COLOR_CARD,
+          offsetX: 0,
+          offsetY: 2
+        })
+        .border({ width: 1, color: DivPalette.hair })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Start)
+      .opacity(this.alpha)
+    }
+  }
 }
 
 @ComponentV2
@@ -64,11 +133,11 @@ struct DivFollowUpPage {
     this.loadingRecord = false
   }
 
-  /** 新消息自动滚底（对齐安卓 animateScrollToItem） */
+  /** 新消息自动滚底（对齐安卓 animateScrollToItem：smooth 动画） */
   @Monitor('historyLength')
   onHistoryChange(): void {
     if (this.historyLength > 0) {
-      this.scroller.scrollToIndex(this.historyLength - 1)
+      this.scroller.scrollToIndex(this.historyLength - 1, true)
     }
   }
 
@@ -167,95 +236,71 @@ struct DivFollowUpPage {
   }
 
   /**
-   * 聊天气泡：回复气泡即卡面（宣纸 surface + 1px 金线 + level1 轻阴影，规范 §2.4/§3.1）；
-   * 用户气泡为浅金块（非实色卡），不加投影，但保留 1px 金线以界定形状。
+   * 聊天气泡：用户实金底（goldGradient 首色）+ 墨字 + r16 无描边 + 宽上限 220 + padding 16/12；
+   * 回复卡面（surface + 1px 发丝描边 + r16 + 宽上限 240 + level1 轻阴影）；文字 12/16，新气泡首帧 120ms 淡入。
    * 规范 §7：本组件无可点击行为，无 Material 涟漪（对齐安卓 indication = null）。
    */
   @Builder
   ChatBubble(turn: DivMessage) {
-    if (turn.role === 'user') {
-      Row() {
-        Column() {
-          DivSerifText({
-            text: turn.content,
-            textSize: 12.5,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textPrimary
-          })
-        }
-        .constraintSize({ maxWidth: 260 })
-        .padding({ left: 13, right: 13, top: 9, bottom: 9 })
-        .borderRadius({ topLeft: 14, topRight: 14, bottomLeft: 4, bottomRight: 14 })
-        .backgroundColor(DivPalette.goldSoft)
-        // 描边宽度归一到 1px（0.5dp 按 §1.3 只保留给卡内行分隔线）；浅金底非实色块，不加投影
-        .border({ width: 1, color: DivPalette.goldHair })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.End)
-    } else {
-      Row() {
-        Column() {
-          DivSerifText({
-            text: turn.content,
-            textSize: 12.5,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textPrimary
-          })
-        }
-        .constraintSize({ maxWidth: 280 })
-        .padding({ left: 13, right: 13, top: 11, bottom: 11 })
-        .borderRadius({ topLeft: 14, topRight: 14, bottomLeft: 14, bottomRight: 4 })
-        .backgroundColor(DivPalette.surface)
-        // 回复气泡 = 卡面：1px 描边 + level1 轻阴影（宣纸侧；安卓 ChatBubble 同此）
-        .shadow({
-          radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
-          offsetX: 0,
-          offsetY: 2
-        })
-        .border({ width: 1, color: DivPalette.goldHair })
-      }
-      .width('100%')
-      .justifyContent(FlexAlign.Start)
-    }
+    ChatBubbleView({ turn: turn })
   }
 
+  /** 是否可发送（Loading 中 / 空输入禁用） */
+  private canSend(): boolean {
+    return !this.sending && this.input.trim().length > 0
+  }
+
+  // 底部输入条（画板）：surface 底 + 1px 发丝顶线；输入框 48 高 r12 金线描边；48 圆形鎏金发送钮
   @Builder
   InputBar() {
-    Row() {
-      TextInput({ text: this.input, placeholder: DivText.followupInputHint })
-        .layoutWeight(1)
-        .height(40)
-        .backgroundColor(DivPalette.surface2)
-        .borderRadius(20)
-        .padding({ left: 14, right: 14 })
-        .fontSize(13)
-        .fontColor(DivPalette.textPrimary)
-        .caretColor(DivPalette.gold)
-        .onChange((value: string) => {
-          this.input = value
-        })
+    Column() {
+      // 顶线（1px 12% 金发丝）
+      Column()
+        .width('100%')
+        .height(1)
+        .backgroundColor(DivPalette.hair)
 
-      Column().width(10)
+      Row() {
+        TextInput({ text: this.input, placeholder: DivText.followupInputHint })
+          .layoutWeight(1)
+          .height(48)
+          .backgroundColor(DivPalette.surface2)
+          .borderRadius(12)
+          .border({ width: 1, color: DivPalette.line })
+          .padding({ left: 16, right: 16 })
+          .fontSize(14)
+          .fontColor(DivPalette.textPrimary)
+          .caretColor(DivPalette.gold)
+          .onChange((value: string) => {
+            this.input = value
+          })
 
-      Column() {
-        DivGoldButton({
-          text: DivText.followupSend,
-          isEnabled: !this.sending && this.input.trim().length > 0,
-          btnHeight: 38,
-          fontSize: 13,
-          onAction: () => {
+        Column().width(10)
+
+        // 48 圆形鎏金发送钮（禁用退回 14% 金底）
+        Column() {
+          SymbolGlyph($r('sys.symbol.paperplane_fill'))
+            .fontSize(20)
+            .fontColor([this.canSend() ? DivPalette.onGold : DivPalette.goldText])
+        }
+        .width(48)
+        .height(48)
+        .borderRadius(24)
+        .backgroundColor(this.canSend() ? DivPalette.gold : DivPalette.gold14)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .onClick(() => {
+          if (this.canSend()) {
             this.send()
           }
         })
       }
-      .width(72)
+      .width('100%')
+      .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
-    .padding({ left: 20, right: 20, top: 10, bottom: 10 })
-    .alignItems(VerticalAlign.Center)
+    .backgroundColor(DivPalette.surface)
   }
 
   build() {
@@ -264,7 +309,7 @@ struct DivFollowUpPage {
         Column() {
           DivPageHeader({
             title: DivText.followupTitle,
-            tail: DivText.followupSubtitle,
+            subtitle: DivText.followupSubtitle,
             onBack: () => {
               pathStack.pop()
             }
@@ -284,7 +329,7 @@ struct DivFollowUpPage {
           } else if (this.record === null) {
             DivSerifText({
               text: DivText.chartMissing,
-              textSize: 13,
+              textSize: 12,
               weight: 400,
               spacing: 0,
               color: DivPalette.textTertiary,
@@ -296,8 +341,8 @@ struct DivFollowUpPage {
             // 盘面摘要条
             this.SummaryBar()
 
-            // 聊天流
-            List({ scroller: this.scroller }) {
+            // 聊天流（画板：项距 16）
+            List({ scroller: this.scroller, space: 16 }) {
               if (this.history.length === 0) {
                 ListItem() {
                   DivSerifText({
@@ -322,16 +367,33 @@ struct DivFollowUpPage {
               if (this.sending) {
                 ListItem() {
                   Row() {
+                    // 推演中的水波指示（金色 16）+ 文字 12
+                    DivWaveIcon({ sizeValue: 16, tint: DivPalette.gold })
+                    Column().width(8)
                     DivSerifText({
                       text: DivText.followupThinking,
-                      textSize: 11,
+                      textSize: 12,
                       weight: 400,
                       spacing: 0,
                       color: DivPalette.textTertiary
                     })
                   }
                   .width('100%')
+                  .alignItems(VerticalAlign.Center)
                 }
+              }
+
+              // 流尾常驻脚注（画板：—— 继续追问将沿用本卦盘推演 ——）
+              ListItem() {
+                DivSerifText({
+                  text: DivText.followupFooter,
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textSecondary,
+                  textAlign: TextAlign.Center
+                })
+                  .width('100%')
               }
             }
             .layoutWeight(1)

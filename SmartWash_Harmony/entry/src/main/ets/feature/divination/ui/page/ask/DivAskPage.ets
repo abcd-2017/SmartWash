@@ -319,7 +319,7 @@ struct DivAskPage {
 
       DivSerifText({
         text: DivText.safetyBody,
-        textSize: 13,
+        textSize: 16,
         weight: 400,
         spacing: 0,
         color: DivPalette.textSecondary,
@@ -342,6 +342,19 @@ struct DivAskPage {
     .alignItems(HorizontalAlign.Center)
   }
 
+  /** 方式卡行分隔（画板：1px 12% 金发丝线，左右缩进 16） */
+  @Builder
+  MethodRowDivider() {
+    Row() {
+      Column()
+        .width('100%')
+        .height(1)
+        .backgroundColor(DivPalette.hair)
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16 })
+  }
+
   build() {
     NavDestination() {
       DivinationScreen() {
@@ -356,34 +369,39 @@ struct DivAskPage {
         if (this.safetyBlocked) {
           this.SafetyBlockingPage()
         } else {
-          // 1. 问题卡
-          DivCard() {
-            Column() {
-              DivSerifText({
-                text: DivText.askHint,
-                textSize: 11,
-                weight: 400,
-                spacing: 0,
-                color: DivPalette.textTertiary
-              })
-              TextInput({
-                text: this.question,
-                placeholder: DivText.questionExample
-              })
-                .width('100%')
-                .height(72)
-                .backgroundColor(Color.Transparent)
-                .caretColor(DivPalette.gold)
-                .fontSize(14)
-                .fontColor(DivPalette.textPrimary)
-                .margin({ top: 8 })
-                .onChange((value: string) => {
-                  this.onQuestionChange(value)
+          // 1. 问题卡（hint 12/16 textSecondary；卡内边距 14）
+          Column() {
+            DivCard() {
+              Column() {
+                DivSerifText({
+                  text: DivText.askHint,
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textSecondary
                 })
+                TextInput({
+                  text: this.question,
+                  placeholder: DivText.questionExample
+                })
+                  .width('100%')
+                  .backgroundColor(Color.Transparent)
+                  .caretColor(DivPalette.gold)
+                  .fontSize(14)
+                  .fontColor(DivPalette.textPrimary)
+                  .fontFamily('serif')
+                  .placeholderColor(DivPalette.textSecondary)
+                  .margin({ top: 8 })
+                  .onChange((value: string) => {
+                    this.onQuestionChange(value)
+                  })
+              }
+              .width('100%')
+              .padding(14)
             }
-            .width('100%')
-            .padding({ left: 20, right: 20, top: 14, bottom: 14 })
           }
+          .width('100%')
+          .padding({ left: 20, right: 20 })
 
           // 2. 所问领域（自动识别 / 手动选择）
           DivSectionTitle({
@@ -413,6 +431,7 @@ struct DivAskPage {
           // 3. 起卦方式
           DivSectionTitle({ title: DivText.askCastMethodLabel })
 
+          Column() {
           DivCard() {
             Column() {
               if (this.method === DivMethod.LIU_YAO.id) {
@@ -424,6 +443,7 @@ struct DivAskPage {
                     this.liuYaoMode = LIU_YAO_MODE_SHAKE
                   }
                 })
+                this.MethodRowDivider()
                 DivRadioRow({
                   title: DivText.castMethodLines,
                   subtitle: DivText.castMethodLinesSub,
@@ -441,6 +461,7 @@ struct DivAskPage {
                     this.meiHuaMode = MEI_HUA_MODE_TIME
                   }
                 })
+                this.MethodRowDivider()
                 DivRadioRow({
                   title: DivText.castMethodNumber,
                   subtitle: DivText.castMethodNumberSub,
@@ -457,21 +478,23 @@ struct DivAskPage {
                   onAction: () => {
                   }
                 })
-              } else {
-                DivRadioRow({
-                  title: DivText.castMethodNowKe,
-                  subtitle: DivText.castMethodNowKeSub,
-                  selected: true,
-                  onAction: () => {
-                  }
-                })
-              }
+            } else {
+              DivRadioRow({
+                title: DivText.castMethodNowKe,
+                subtitle: DivText.castMethodNowKeSub,
+                selected: true,
+                onAction: () => {
+                }
+              })
             }
-            .width('100%')
-            .padding({ left: 20, right: 20 })
           }
+          .width('100%')
+        }
+          }
+          .width('100%')
+          .padding({ left: 20, right: 20 })
 
-          Column().height(20)
+          Column().height(24)
 
           // 4. 开始
           DivGoldButton({
@@ -489,6 +512,49 @@ struct DivAskPage {
       }
     }
     .hideTitleBar(true)
+  }
+}
+
+// ========== 手动爻值选项（0.5dp 描边 + 按压 scale 0.97） ==========
+
+@ComponentV2
+struct ManualOption {
+  @Param label: string = ''
+  @Param selected: boolean = false
+  @Event onAction: () => void = () => {
+  }
+  @Local pressed: boolean = false
+
+  build() {
+    Column() {
+      DivSerifText({
+        text: this.label,
+        textSize: 10,
+        weight: 400,
+        spacing: 0,
+        color: this.selected ? DivPalette.gold : DivPalette.textSecondary,
+        textAlign: TextAlign.Center
+      })
+    }
+    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+    .borderRadius(10)
+    .backgroundColor(this.selected ? DivPalette.gold14 : Color.Transparent)
+    .border({
+      width: 0.5,
+      color: this.selected ? DivPalette.goldLine : DivPalette.hair,
+      radius: 10
+    })
+    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    .onClick(() => {
+      this.onAction()
+    })
   }
 }
 
@@ -537,28 +603,14 @@ struct ManualLinesDialog {
 
           Row({ space: 6 }) {
             ForEach([1, 2, 3, 4], (code: number) => {
-              Column() {
-                DivSerifText({
-                  text: DivText.manualOptionLabels[code - 1],
-                  textSize: 10,
-                  weight: 400,
-                  spacing: 0,
-                  color: this.lines[index] === code ? DivPalette.gold : DivPalette.textSecondary,
-                  textAlign: TextAlign.Center
-                })
-              }
-              .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-              .borderRadius(10)
-              .backgroundColor(this.lines[index] === code ? DivPalette.gold14 : Color.Transparent)
-              .border({
-                width: 1,
-                color: this.lines[index] === code ? DivPalette.goldLine : DivPalette.hair,
-                radius: 10
-              })
-              .onClick(() => {
-                const next = this.lines.slice()
-                next[index] = code
-                this.lines = next
+              ManualOption({
+                label: DivText.manualOptionLabels[code - 1],
+                selected: this.lines[index] === code,
+                onAction: () => {
+                  const next = this.lines.slice()
+                  next[index] = code
+                  this.lines = next
+                }
               })
             }, (code: number) => code.toString())
           }
@@ -658,29 +710,44 @@ struct NumbersDialog {
         .margin({ bottom: 14 })
 
       Row({ space: 12 }) {
-        TextInput({ text: this.first, placeholder: '1–999' })
-          .layoutWeight(1)
-          .height(44)
-          .type(InputType.Number)
-          .backgroundColor(Color.Transparent)
-          .caretColor(DivPalette.gold)
-          .fontSize(16)
-          .fontColor(DivPalette.textPrimary)
-          .onChange((value: string) => {
-            this.first = this.filterDigits(value)
-          })
+        // 下划线指示（聚焦 goldLine / 未聚焦 hair；SDK 17 无 onFocus 回调，先落未聚焦发丝线）
+        Column() {
+          TextInput({ text: this.first, placeholder: '1–999' })
+            .width('100%')
+            .backgroundColor(Color.Transparent)
+            .caretColor(DivPalette.gold)
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontFamily('serif')
+            .fontColor(DivPalette.textPrimary)
+            .onChange((value: string) => {
+              this.first = this.filterDigits(value)
+            })
+          Column()
+            .width('100%')
+            .height(1)
+            .backgroundColor(DivPalette.hair)
+        }
+        .layoutWeight(1)
 
-        TextInput({ text: this.second, placeholder: '1–999' })
-          .layoutWeight(1)
-          .height(44)
-          .type(InputType.Number)
-          .backgroundColor(Color.Transparent)
-          .caretColor(DivPalette.gold)
-          .fontSize(16)
-          .fontColor(DivPalette.textPrimary)
-          .onChange((value: string) => {
-            this.second = this.filterDigits(value)
-          })
+        Column() {
+          TextInput({ text: this.second, placeholder: '1–999' })
+            .width('100%')
+            .backgroundColor(Color.Transparent)
+            .caretColor(DivPalette.gold)
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+            .fontFamily('serif')
+            .fontColor(DivPalette.textPrimary)
+            .onChange((value: string) => {
+              this.second = this.filterDigits(value)
+            })
+          Column()
+            .width('100%')
+            .height(1)
+            .backgroundColor(DivPalette.hair)
+        }
+        .layoutWeight(1)
       }
       .width('100%')
 

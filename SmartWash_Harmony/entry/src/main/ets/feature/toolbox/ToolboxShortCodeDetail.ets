@@ -3,6 +3,7 @@
 // 基础字段由列表路由携带（getObjectParam，禁止二次请求）；二维码本地生成（内容为完整 shortUrl）；
 // 复制短链 / 打开链接（公开码直开 shortUrl，私有码经 resolve 取 target 再开——计一次点击属预期）；
 // 续期（PUT expireAt，无永久选项）/ 删除（DELETE，成功以 code===200 为准）+ 访问明细分页（/stats）。
+// 一镜到底：NavDestination.customTransition 近似（信息卡展开/收拢，见 ToolboxCardTransition）。
 //
 // 红线：resolve 有点击统计副作用，仅用于「私有码打开」，禁止用于详情刷新/列表。
 
@@ -12,7 +13,7 @@ import { common, Want } from '@kit.AbilityKit'
 import { image } from '@kit.ImageKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
 import { RouteNames } from '../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   ShortCodeStatsVo,
   TOOLBOX_PAGE_SIZE,
@@ -35,10 +36,11 @@ import {
   formatDisplayDateTime,
   isPublicVisibility
 } from './ShortCodeRules'
+import { markShortCodeChanged } from './ToolboxChangeSignal'
+import { toolboxCardTransition } from './ToolboxCardTransition'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { ToolboxRenewDialog } from './ToolboxRenewDialog'
-import { AppButton, AppConfirmDialog, LoadingState } from '../../view/common/AppComponents'
-import { LoadingFooter } from '../../view/LoadingFooter'
+import { AppButton, AppButtonVariant, AppConfirmDialog, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
 import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
@@ -57,6 +59,8 @@ struct ToolboxShortCodeDetail {
   @State statsLoadingFirst: boolean = true
   @State statsError: boolean = false
   @State statsLoadingMore: boolean = false
+  // 追加失败内联错误态（对齐安卓 footer 内联错误可重试）
+  @State statsAppendError: boolean = false
   private statsPaging: PagingController = new PagingController(
     (page: number): Promise<boolean> => {
       return this.fetchStats(page)
@@ -76,13 +80,31 @@ struct ToolboxShortCodeDetail {
   // 续期弹窗表单（无永久选项——已创建的码不可改回永久）
   @State renewPreset: ExpiryPreset = ExpiryPreset.DAYS_7
   @State renewDate: string | null = null
+  // 一镜到底近似转场：信息卡展开/收拢
+  @State cardEntered: boolean = false
+  // 按压反馈（对齐安卓 pressable scale 0.97）
+  @State pressedKey: string = ''
+  // 转场兜底定时器（customTransition 事件未触发时保证信息卡可见）
+  private fallbackTimer: number = -1
 
   async aboutToAppear(): Promise<void> {
     // 基础字段由列表路由携带（红线：禁止经 resolve 拉取详情——resolve 会计点击）
     this.param = getObjectParam<ToolboxShortCodeDetailParam>(RouteNames.TOOLBOX_SHORT_CODE_DETAIL)
+    this.fallbackTimer = setTimeout(() => {
+      if (!this.cardEntered) {
+        this.cardEntered = true
+      }
+    }, 600)
     await this.loadQrCode()
     await this.fetchStats(1)
     this.statsLoadingFirst = false
+  }
+
+  aboutToDisappear(): void {
+    if (this.fallbackTimer !== -1) {
+      clearTimeout(this.fallbackTimer)
+      this.fallbackTimer = -1
+    }
   }
 
   private getShortUrl(): string {
@@ -144,13 +166,19 @@ struct ToolboxShortCodeDetail {
         this.statsError = false
       }
       this.statsList.push(...records)
+      this.statsAppendError = false
       return true
     }
     if (page === 1) {
+      // 首刷失败：无数据走整卡错误态，有数据走 footer 内联错误（对齐安卓）
       this.statsError = true
+      showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
+      return false
     }
+    // 追加失败：置内联错误态并 reject（分页器记失败页不封底，footer 重试重拉同一页）
+    this.statsAppendError = true
     showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
-    return false
+    throw new Error(ToolboxText.toolbox_stats_error_load)
   }
 
   /** 复制短链到剪贴板 */
@@ -284,6 +312,8 @@ struct ToolboxShortCodeDetail {
       })
       if (res.code === HttpStatusCode.Ok) {
         showToastSafety(ToolboxText.toolbox_toast_renew_success)
+        // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
+        markShortCodeChanged()
         controller.close()
         pathStack.pop()
       } else {
@@ -302,6 +332,8 @@ struct ToolboxShortCodeDetail {
       builder: AppConfirmDialog({
         title: ToolboxText.toolbox_confirm_delete_title,
         message: toolboxConfirmDeleteMessage(this.param?.code ?? ""),
+        // 危险操作确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
+        isDanger: true,
         confirmText: ToolboxText.toolbox_action_delete,
         onConfirm: () => {
           this.doDelete()
@@ -329,6 +361,8 @@ struct ToolboxShortCodeDetail {
       // 红线：DELETE 响应 data 为 null，只判 code
       if (res.code === HttpStatusCode.Ok) {
         showToastSafety(ToolboxText.toolbox_toast_delete_success)
+        // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
+        markShortCodeChanged()
         pathStack.pop()
       } else {
         showToastSafety(res.message, ToolboxText.toolbox_error_submit)
@@ -340,46 +374,50 @@ struct ToolboxShortCodeDetail {
     }
   }
 
-  /** 信息行（对齐安卓 InfoRow） */
+  /**
+   * 信息行（对齐安卓 InfoRow：行高 56、标签 bodySmall 12 textSecondary、值 bodySmall 12）。
+   * @param monospace 值是否走 tabular numbers（短码/点击数/时间等数字槽位）
+   */
   @Builder
-  InfoRow(label: string, value: string, valueColor: number) {
+  InfoRow(label: string, value: string, valueColor: number, monospace: boolean) {
     Row() {
       Text(label)
-        .fontSize(DesignFontSize.BODY)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(DesignColor.TEXT_SECONDARY)
-        .width(88)
+
+      Blank()
 
       Text(value)
-        .fontSize(DesignFontSize.BODY)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(valueColor)
-        .layoutWeight(1)
+        .fontFeature(monospace ? DesignFontFeature.TNUM : 'normal')
         .textAlign(TextAlign.End)
     }
     .width('100%')
+    .height(56)
     .alignItems(VerticalAlign.Center)
-    .margin({ top: 6, bottom: 6 })
   }
 
   /** 基础信息卡（6 行 + 目标链接全文 + 「修改有效期」文字按钮） */
   @Builder
   InfoCard() {
     Column() {
-      this.InfoRow(ToolboxText.toolbox_label_code, this.param?.code ?? "", DesignColor.TEXT_PRIMARY)
-      this.InfoRow(ToolboxText.toolbox_label_type, ToolboxText.toolbox_type_short_link, DesignColor.TEXT_PRIMARY)
+      this.InfoRow(ToolboxText.toolbox_label_code, this.param?.code ?? "", DesignColor.TEXT_PRIMARY, true)
+      this.InfoRow(ToolboxText.toolbox_label_type, ToolboxText.toolbox_type_short_link, DesignColor.TEXT_PRIMARY, false)
       this.InfoRow(ToolboxText.toolbox_label_visibility,
         this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value,
-        this.isPublicCode() ? DesignColor.SUCCESS : DesignColor.ONGOING_INK)
+        this.isPublicCode() ? DesignColor.SUCCESS : DesignColor.ONGOING_INK, false)
       this.InfoRow(ToolboxText.toolbox_label_clicks,
-        toolboxClicksFormat(this.param?.clickCount ?? 0), DesignColor.PRIMARY)
-      this.InfoRow(ToolboxText.toolbox_label_created, this.displayCreated(), DesignColor.TEXT_PRIMARY)
+        toolboxClicksFormat(this.param?.clickCount ?? 0), DesignColor.PRIMARY, true)
+      this.InfoRow(ToolboxText.toolbox_label_created, this.displayCreated(), DesignColor.TEXT_PRIMARY, true)
 
       if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.PERMANENT) {
-        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_permanent, DesignColor.SUCCESS)
+        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_permanent, DesignColor.SUCCESS, false)
       } else if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.ACTIVE) {
         this.InfoRow(ToolboxText.toolbox_label_expiry,
-          toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), DesignColor.TEXT_SECONDARY)
+          toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), DesignColor.TEXT_SECONDARY, true)
       } else {
-        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_expired, DesignColor.DANGER_INK)
+        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_expired, DesignColor.DANGER_INK, false)
       }
 
       if ((this.param?.target ?? "").length > 0) {
@@ -388,8 +426,9 @@ struct ToolboxShortCodeDetail {
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: DesignDimens.SPACE_XS })
         Text(this.param?.target ?? "")
-          .fontSize(DesignFontSize.BODY)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontFeature(DesignFontFeature.TNUM)
           .maxLines(5)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -403,6 +442,14 @@ struct ToolboxShortCodeDetail {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.PRIMARY)
           .padding({ top: 4, bottom: 4 })
+          .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pressedKey = 'renew'
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pressedKey = ''
+            }
+          })
           .onClick(() => {
             this.openRenewDialog()
           })
@@ -423,6 +470,9 @@ struct ToolboxShortCodeDetail {
       offsetX: 0,
       offsetY: 2
     })
+    // 一镜到底近似：信息卡由列表卡展开（进入 scale 0.94→1 + fade，退出反向）
+    .scale({ x: this.cardEntered ? 1 : 0.94, y: this.cardEntered ? 1 : 0.94 })
+    .opacity(this.cardEntered ? 1 : 0)
   }
 
   /** 二维码卡（本地生成 + 复制 + 打开） */
@@ -442,27 +492,24 @@ struct ToolboxShortCodeDetail {
           .height(200)
           .borderRadius(DesignDimens.RADIUS_MD)
           .objectFit(ImageFit.Contain)
+          // 二维码白底（对齐安卓 Image background(Color.White)）
+          .backgroundColor(Color.White)
+      } else if (this.qrLoading) {
+        // 加载态：200×200 骨架块（对齐安卓 SkeletonBlock，规范 §3.6 禁转圈）
+        SkeletonBlock()
+          .width(200)
+          .height(200)
       } else {
+        // 失败重试态（保留，对齐 recap §4 F2：设备无 ScanKit 能力时可重试）
         Column() {
-          if (this.qrLoading) {
-            LoadingProgress()
-              .width(28)
-              .height(28)
-              .color(DesignColor.PRIMARY)
-            Text(ToolboxText.toolbox_qr_loading)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .margin({ top: 8 })
-          } else {
-            Text(ToolboxText.toolbox_qr_failed)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-            Text(ToolboxText.toolbox_action_retry)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.PRIMARY)
-              .margin({ top: 8 })
-          }
+          Text(ToolboxText.toolbox_qr_failed)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+          Text(ToolboxText.toolbox_action_retry)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.PRIMARY)
+            .margin({ top: 8 })
         }
         .width(200)
         .height(200)
@@ -470,6 +517,14 @@ struct ToolboxShortCodeDetail {
         .alignItems(HorizontalAlign.Center)
         .backgroundColor(DesignColor.SURFACE_VARIANT)
         .borderRadius(DesignDimens.RADIUS_MD)
+        .scale({ x: this.pressedKey === 'qr-retry' ? 0.97 : 1, y: this.pressedKey === 'qr-retry' ? 0.97 : 1 })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = 'qr-retry'
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = ''
+          }
+        })
         .onClick(() => {
           if (!this.qrLoading && this.qrFailed) {
             this.loadQrCode()
@@ -480,6 +535,7 @@ struct ToolboxShortCodeDetail {
       Text(this.getShortUrl())
         .fontSize(DesignFontSize.CAPTION)
         .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
         .maxLines(2)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -497,28 +553,23 @@ struct ToolboxShortCodeDetail {
       }
 
       Row({ space: DesignDimens.SPACE_SM }) {
-        Button(ToolboxText.toolbox_action_copy)
-          .type(ButtonType.Capsule)
-          .layoutWeight(1)
-          .height(48)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.PRIMARY)
-          .backgroundColor(DesignColor.SURFACE)
-          .borderWidth(1)
-          .borderColor(DesignColor.PRIMARY)
-          .onClick(() => {
+        // 复制 = SECONDARY（surfaceVariant 底 + 主文本色），打开 = PRIMARY（对齐安卓）
+        AppButton({
+          text: ToolboxText.toolbox_action_copy,
+          variant: AppButtonVariant.SECONDARY,
+          click: () => {
             this.copyShortUrl()
-          })
+          }
+        })
+        .layoutWeight(1)
 
-        Column() {
-          AppButton({
-            text: ToolboxText.toolbox_action_open,
-            loading: this.resolving,
-            click: () => {
-              this.openLink()
-            }
-          })
-        }
+        AppButton({
+          text: ToolboxText.toolbox_action_open,
+          loading: this.resolving,
+          click: () => {
+            this.openLink()
+          }
+        })
         .layoutWeight(1)
       }
       .width('100%')
@@ -544,9 +595,17 @@ struct ToolboxShortCodeDetail {
   StatRow(stat: ShortCodeStatsVo) {
     Column() {
       Row() {
+        // 状态点（水蓝，对齐安卓 StatusDot(water)）
+        Circle()
+          .width(8)
+          .height(8)
+          .fill(DesignColor.WATER)
         Text(formatDisplayDateTime(stat.createdAt))
-          .fontSize(DesignFontSize.BODY)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontFeature(DesignFontFeature.TNUM)
+          .margin({ left: DesignDimens.SPACE_XS })
         Blank()
         Text(stat.ipHash ?? "—")
           .fontSize(DesignFontSize.CAPTION)
@@ -565,7 +624,7 @@ struct ToolboxShortCodeDetail {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-          .margin({ top: 2 })
+          .margin({ top: 2, left: 12 })
       }
       if ((stat.referer ?? "").length > 0) {
         Text(stat.referer ?? "")
@@ -574,7 +633,7 @@ struct ToolboxShortCodeDetail {
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-          .margin({ top: 2 })
+          .margin({ top: 2, left: 12 })
       }
     }
     .width('100%')
@@ -585,48 +644,60 @@ struct ToolboxShortCodeDetail {
   build() {
     NavDestination() {
       Column() {
-        // 页面标题 + 右上「删除」危险文字按钮
+        // 页面标题 + 右上「删除」危险文字按钮（对齐安卓 PageHeader：删除 18/600 dangerInk + 48 热区）
         Row() {
-          SymbolGlyph($r('sys.symbol.chevron_left'))
-            .fontSize(24)
-            .fontColor([DesignColor.TEXT_PRIMARY])
-            .onClick(() => {
-              pathStack.pop()
-            })
-            .padding(8)
+          Column() {
+            SymbolGlyph($r('sys.symbol.chevron_left'))
+              .fontSize(24)
+              .fontColor([DesignColor.TEXT_PRIMARY])
+          }
+          .width(DesignDimens.BACK_HIT_AREA)
+          .height(DesignDimens.BACK_HIT_AREA)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .onClick(() => {
+            pathStack.pop()
+          })
 
           Text(ToolboxText.toolbox_detail_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
-            .fontWeight(DesignFontWeight.BOLD)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
             .margin({ left: 4 })
 
           Blank()
 
           Text(ToolboxText.toolbox_action_delete)
-            .fontSize(DesignFontSize.CAPTION)
+            .fontSize(DesignFontSize.PAGE_HEADER)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.DANGER_INK)
-            .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+            .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+            .scale({ x: this.pressedKey === 'delete' ? 0.97 : 1, y: this.pressedKey === 'delete' ? 0.97 : 1 })
+            .onTouch((event: TouchEvent) => {
+              if (event.type === TouchType.Down) {
+                this.pressedKey = 'delete'
+              } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                this.pressedKey = ''
+              }
+            })
             .onClick(() => {
               this.openDeleteDialog()
             })
         }
         .width('100%')
         .height(56)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
         .alignItems(VerticalAlign.Center)
 
-        List() {
+        // 卡片间距统一 16（对齐安卓 LazyColumn spacedBy(cardSpacing)）
+        List({ space: DesignDimens.CARD_SPACING }) {
           ListItem() {
             this.InfoCard()
           }
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8 })
 
           ListItem() {
             this.QrCard()
           }
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 12 })
 
           ListItem() {
             Text(ToolboxText.toolbox_stats_title)
@@ -634,15 +705,13 @@ struct ToolboxShortCodeDetail {
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)
               .width('100%')
-              .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-              .margin({ top: 8, bottom: 4 })
           }
 
           ListItem() {
             Column() {
               if (this.statsLoadingFirst) {
-                // 统计首刷骨架（对齐安卓 ShortCodeDetailPage：SkeletonList，§3.6 禁转圈）
-                LoadingState()
+                // 统计首刷骨架（对齐安卓 ShortCodeDetailPage：SkeletonList(rows=3)，§3.6 禁转圈）
+                SkeletonList({ rows: 3 })
               } else if (this.statsError && this.statsList.length === 0) {
                 Text(ToolboxText.toolbox_stats_error_load)
                   .fontSize(DesignFontSize.BODY)
@@ -678,7 +747,27 @@ struct ToolboxShortCodeDetail {
                   this.StatRow(stat)
                 }, (stat: ShortCodeStatsVo, index: number) => `${index}`)
                 if (this.statsLoadingMore) {
-                  LoadingFooter({ isLoading: true })
+                  // 追加加载：通宽骨架条（对齐安卓 append SkeletonBlock 14 高）
+                  SkeletonBlock()
+                    .width('100%')
+                    .height(14)
+                }
+                if (this.statsAppendError || this.statsError) {
+                  // footer 内联错误可重试（对齐安卓 statsRefresh Error + itemCount > 0）
+                  Text(ToolboxText.toolbox_stats_error_load)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor(DesignColor.DANGER_INK)
+                    .width('100%')
+                    .textAlign(TextAlign.Center)
+                    .padding({ top: 8, bottom: 8 })
+                    .onClick(() => {
+                      if (this.statsError) {
+                        this.statsPaging.reset()
+                        this.fetchStats(1)
+                      } else {
+                        this.statsPaging.retry()
+                      }
+                    })
                 }
               }
             }
@@ -696,11 +785,11 @@ struct ToolboxShortCodeDetail {
               offsetY: 2
             })
           }
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 4, bottom: 24 })
         }
         .width('100%')
         .layoutWeight(1)
         .scrollBar(BarState.Off)
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
         .divider({ strokeWidth: 0, color: Color.Transparent })
         // 触底加载：列表项 = 信息卡 + 二维码卡 + 明细标题 + 明细行
         .onScrollIndex((start: number, end: number) => {
@@ -716,5 +805,15 @@ struct ToolboxShortCodeDetail {
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)
+    // 一镜到底近似转场（对齐安卓 sharedElement("shortcode-card-{id}")）
+    .customTransition((operation: NavigationOperation, isEnter: boolean): Array<NavDestinationTransition> | undefined => {
+      return toolboxCardTransition(operation, isEnter,
+        () => {
+          this.cardEntered = true
+        },
+        () => {
+          this.cardEntered = false
+        })
+    })
   }
 }

@@ -11,12 +11,18 @@
 import { DivRecordRow, DivRecordRepository, decodeBundleFromJson } from '../../../data/DivinationStore'
 import { readLiuYaoChart, readMeiHuaChart, readQiMenChart, readLiuRenChart, divMethodName }
   from '../../../data/DivChartReader'
-import { DivCard, DivCategoryChip, DivFooterNote, DivPageHeader, DivSeal } from '../../components/DivComponents'
+import {
+  DivCard,
+  DivCategoryChip,
+  DivFooterNote,
+  DivPageHeader,
+  DivPalette,
+  DivSeal,
+  DivText
+} from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack } from '../../../../../utils/PathStackUtil'
-import { DesignDimens } from '../../../../../constant/DesignSystem'
-import { DivColor } from '../../../../../constant/DivTheme'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
@@ -114,45 +120,53 @@ export struct DivHistoryPage {
   build() {
     DivinationScreen({ scrollable: false }) {
       Column() {
-        DivPageHeader({ title: '卦历案卷', showBack: false })
+        // 无返回页头标题左对齐 x20（alignStart）
+        DivPageHeader({ title: DivText.historyTitle, showBack: false, alignStart: true })
 
-        // 术数筛选
-        Row() {
-          DivCategoryChip({
-            text: '全部',
-            selected: this.filter === FILTER_ALL,
-            onAction: () => {
-              this.filter = FILTER_ALL
-            }
-          })
-          ForEach(METHODS, (method: string) => {
+        // 术数筛选（20 缩进 + 横向滚动 + 单行限高，窄屏滚动可见不折行）
+        Scroll() {
+          Row({ space: 8 }) {
             DivCategoryChip({
-              text: divMethodName(method),
-              selected: this.filter === method,
+              text: DivText.filterAll,
+              selected: this.filter === FILTER_ALL,
+              horizontalPadding: 14,
               onAction: () => {
-                this.filter = method
+                this.filter = FILTER_ALL
               }
             })
-          }, (method: string) => method)
+            ForEach(METHODS, (method: string) => {
+              DivCategoryChip({
+                text: divMethodName(method),
+                selected: this.filter === method,
+                horizontalPadding: 14,
+                onAction: () => {
+                  this.filter = method
+                }
+              })
+            }, (method: string) => method)
+          }
+          .padding({ left: 20, right: 20 })
         }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ top: DesignDimens.CARD_SPACING })
+        .align(Alignment.TopStart)
+        .margin({ top: 16 })
 
         if (this.filtered().length === 0) {
           // 空态
           Column() {
             DivSeal({ text: '空', sealSize: 44, fontSize: 22 })
-            Text('暂无卦象记录')
+            Text(DivText.historyEmpty)
               .fontSize(12)
-              .fontColor(DivColor.TEXT_TERTIARY_LIGHT)
+              .fontColor(DivPalette.textTertiary)
               .margin({ top: 16 })
           }
           .width('100%')
           .alignItems(HorizontalAlign.Center)
           .padding({ top: 80 })
         } else {
-          List({ space: 10 }) {
+          List({ space: 8 }) {
             ForEach(this.filtered(), (row: DivRecordRow) => {
               ListItem() {
                 DivCard({
@@ -160,18 +174,18 @@ export struct DivHistoryPage {
                   onAction: () => this.openChart(row)
                 }) {
                   Row() {
-                    DivSeal({ text: this.sealOf(row.method), sealSize: 32, fontSize: 15 })
+                    DivSeal({ text: this.sealOf(row.method), sealSize: 32, fontSize: 14 })
                     Column() {
                       Text(row.question.length > 0 ? row.question : '—')
-                        .fontSize(13.5)
-                        .fontColor(DivColor.TEXT_PRIMARY_LIGHT)
+                        .fontSize(14)
+                        .fontColor(DivPalette.textPrimary)
                         .maxLines(1)
                         .textOverflow({ overflow: TextOverflow.Ellipsis })
                         .width('100%')
                       Text(`${this.formatDateTime(row.castAt)} · ${divMethodName(row.method)} · ${this.summaryLine(row)}`)
-                        .fontSize(10.5)
-                        .fontColor(DivColor.TEXT_TERTIARY_LIGHT)
-                        .margin({ top: 4 })
+                        .fontSize(12)
+                        .fontColor(DivPalette.textSecondary)
+                        .margin({ top: 2 })
                         .width('100%')
                     }
                     .layoutWeight(1)
@@ -179,10 +193,10 @@ export struct DivHistoryPage {
                     .margin({ left: 12 })
                     Text('›')
                       .fontSize(14)
-                      .fontColor(DivColor.TEXT_TERTIARY_LIGHT)
+                      .fontColor(DivPalette.textSecondary)
                   }
                   .width('100%')
-                  .padding({ left: 14, right: 14, top: 13, bottom: 13 })
+                  .padding({ left: 14, right: 8, top: 12, bottom: 12 })
                   .alignItems(VerticalAlign.Center)
                 }
               }
@@ -190,10 +204,10 @@ export struct DivHistoryPage {
           }
           .width('100%')
           .layoutWeight(1)
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 4 })
+          .padding({ left: 20, right: 20, top: 4 })
         }
 
-        DivFooterNote({ text: '卦历仅保存本机排盘记录，只读复盘不改写原盘。' })
+        DivFooterNote({ text: DivText.historyNote })
       }
       .width('100%')
       .height('100%')
