@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -38,7 +39,7 @@ enum class WorkbenchTint {
 
 /**
  * 后端 icon 白名单 key → Material 内置图标映射（规范 §4.1：功能图标保持 Material 内置，
- * 禁外部图标库）。白名单：calendar/search/book/calculate/history/chat/link/default，
+ * 禁外部图标库）。白名单：calendar/search/book/calculate/history/chat/link/science/default，
  * 未知 key 与 default 同样兜底为「工具格」图标。
  */
 internal fun workbenchIconFromKey(key: String?): ImageVector = when (key?.lowercase()) {
@@ -49,6 +50,7 @@ internal fun workbenchIconFromKey(key: String?): ImageVector = when (key?.lowerc
     "history" -> Icons.Default.History
     "chat" -> Icons.Default.ChatBubbleOutline
     "link" -> Icons.Default.Link
+    "science" -> Icons.Default.Science
     else -> Icons.Default.Apps
 }
 

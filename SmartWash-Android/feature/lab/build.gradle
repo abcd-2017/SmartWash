@@ -1,0 +1,38 @@
+// :feature:lab —— 解压实验舱子系统（单模块，照 :feature:game 先例）。
+// 三个纯本地解压玩具（泡泡纸 / 呼吸引导 / 指尖鱼群），模块内零网络请求、
+// 零后端接口、零数据库（不依赖 :common:network，不建 Api/Repository 网络层）。
+// 路由常量 LabRoute 为模块内单一事实来源，经 app 壳 NavHost 一行 labGraph 聚合；
+// 入口：深链 smartwash://lab（本模块 di/LabDeepLinkModule 贡献）与后端
+// workbench_entry 配置的工作台卡片（icon key = science），无底栏入口。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.lab'
+}
+
+dependencies {
+    // LocalReduceMotion / pressable / HapticUtils / AnimationUtils 动效 vocabulary
+    implementation project(':common:utils')
+    // 清氧设计系统 theme（AppColors/AppDimens 令牌）+ 共享组件（PageHeader/AppButton）
+    implementation project(':common:ui')
+
+    // ViewModel 基类 + viewModelScope（呼吸相位状态机 tick 驱动）
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（玩具页跳转经 labGraph 聚合）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（Canvas/pointerInput；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 动效（Animatable/withFrameNanos 驱动的玩具动效）
+    implementation libs.androidx.compose.animation
+    // 图标（Icons.Rounded.BubbleChart 等，Material 内置；规范 §4.1 禁外部图标库）
+    implementation libs.androidx.material.icons.extended
+
+    // JVM 单测依赖：BoidsSimulator 均匀网格邻居查询等锚点单测仅本地验证，
+    // src/test/ 不入库（共享规则：新增测试文件一律不提交），文档与实物一致
+    testImplementation libs.junit
+    testImplementation libs.kotlinx.coroutines.test
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 今日一画文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <string name="lab_painting_title">今日一画</string>
+    <!-- 画作无障碍描述 -->
+    <string name="lab_painting_image_desc">程序化水墨山水画</string>
+    <!-- 种子号（tnum 数字槽位） -->
+    <string name="lab_painting_seed_format">种子 %1$d</string>
+    <!-- 今日日期（%1$d年%2$d月%3$d日） -->
+    <string name="lab_painting_today_format">%1$d年%2$d月%3$d日 · 今日</string>
+    <string name="lab_painting_random_label">随机种子</string>
+    <string name="lab_painting_hint">同一数字种子，生成同一幅山水</string>
+
+    <string name="lab_painting_random">换一张</string>
+    <string name="lab_painting_save">保存到相册</string>
+    <string name="lab_painting_save_success">已保存到相册</string>
+    <string name="lab_painting_save_failed">保存失败，请重试</string>
+
+    <string name="lab_painting_input_seed">输入种子</string>
+    <string name="lab_painting_seed_label">种子数字</string>
+    <string name="lab_painting_seed_invalid">请输入有效的数字种子</string>
+    <string name="lab_painting_back_today">回到今日</string>
+</resources>

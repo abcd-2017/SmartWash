@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 指尖流体文案（本玩具专用，经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <string name="lab_fluid_title">指尖流体</string>
+    <string name="lab_fluid_hint">手指划过，搅出彩色漩涡</string>
+
+    <!-- 配色预设（3 套，语义档位） -->
+    <string name="lab_fluid_preset_oxygen">清氧水色</string>
+    <string name="lab_fluid_preset_foam">泡沫白</string>
+    <string name="lab_fluid_preset_sand">落沙暖色</string>
+
+    <string name="lab_fluid_reset">清空重来</string>
+    <string name="lab_fluid_play">播放</string>
+    <string name="lab_fluid_pause">暂停</string>
+    <string name="lab_fluid_unsupported">当前设备不支持流体渲染</string>
+</resources>
