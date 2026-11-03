@@ -154,6 +154,8 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     @Override
     public void deleteShortCode(Long id, Long ownerUserId) {
         ToolboxShortCode record = getOwnedRecord(id, ownerUserId);
+        // 明细以 code 冗余关联（无外键），删除即「跟随删除访问明细」，避免悬挂
+        removeVisits(record.getCode());
         this.removeById(id);
         evictCache(record.getCode());
         log.info("短码已删除, code: {}, ownerUserId: {}", record.getCode(), ownerUserId);
@@ -283,6 +285,8 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
         if (record == null) {
             throw new CustomExceptions("短码不存在");
         }
+        // 与用户删除同语义：跟随删除访问明细，避免悬挂
+        removeVisits(record.getCode());
         this.removeById(id);
         evictCache(record.getCode());
         log.info("管理端删除短码, code: {}", record.getCode());
@@ -361,6 +365,11 @@ public class ToolboxShortCodeServiceImpl extends ServiceImpl<ToolboxShortCodeMap
     private void evictCache(String code) {
         stringRedisTemplate.delete(REDIRECT_KEY_PREFIX + code);
         stringRedisTemplate.delete(MISS_KEY_PREFIX + code);
+    }
+
+    /** 跟随删除：按 code 清理访问明细（明细表无外键，避免悬挂） */
+    private void removeVisits(String code) {
+        toolboxShortVisitService.remove(new LambdaQueryWrapper<ToolboxShortVisit>().eq(ToolboxShortVisit::getCode, code));
     }
 
     private Map<Long, Users> loadOwners(List<ToolboxShortCode> records) {

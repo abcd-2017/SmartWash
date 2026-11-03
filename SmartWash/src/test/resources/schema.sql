@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS payments (
     out_trade_no   varchar(64) DEFAULT NULL,
     status         varchar(10) DEFAULT '0',
     paid_at        timestamp DEFAULT NULL,
+    is_delete      tinyint NOT NULL DEFAULT 0,
     PRIMARY KEY (payment_id),
     CONSTRAINT uk_payments_out_trade_no UNIQUE (out_trade_no)
 );
@@ -141,6 +142,7 @@ CREATE TABLE IF NOT EXISTS recharge_records (
     recharge_type varchar(10) NOT NULL,
     status        varchar(10) DEFAULT '3',
     out_trade_no  varchar(64) DEFAULT NULL,
+    is_delete     tinyint NOT NULL DEFAULT 0,
     PRIMARY KEY (record_id),
     CONSTRAINT uk_recharge_out_trade_no UNIQUE (out_trade_no)
 );
@@ -200,4 +202,21 @@ CREATE TABLE IF NOT EXISTS toolbox_short_visit (
     referer    varchar(512) DEFAULT NULL,
     created_at timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+);
+
+-- 占卜每日用量表（WebUserApiContractIntegrationTest 的 /admin/div/usage 端点验证用）
+CREATE TABLE IF NOT EXISTS div_usage_daily (
+    id              bigint NOT NULL AUTO_INCREMENT,
+    stat_date       date NOT NULL,
+    method          varchar(16) NOT NULL,
+    record_count    int DEFAULT 0,
+    interpret_count int DEFAULT 0,
+    cache_hit_count int DEFAULT 0,
+    blocked_count   int DEFAULT 0,
+    tokens_in       bigint DEFAULT 0,
+    tokens_out      bigint DEFAULT 0,
+    active_users    int DEFAULT 0,
+    created_at      timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_date_method UNIQUE (stat_date, method)
 );
