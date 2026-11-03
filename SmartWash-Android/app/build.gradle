@@ -178,6 +178,10 @@ dependencies {
     //app 壳仅剩 NavHost 页面注册与 HomePage 服务 tab 内嵌（T8.1 拆聚合后摘除）
     implementation project(":feature:laundry:impl")
 
+    //情绪气象站子系统：今日记录/月历热图/月度趋势三页独立路由，Hilt 模块随依赖聚合；
+    //入口未接线（宿主后续一行 moodGraph 聚合，见 feature/mood/ui/MoodGraph.kt）
+    implementation project(":feature:mood")
+
     //优惠券域对外契约（T7.2，按域嵌套 feature/coupon/{api,impl}）：CouponRoute 路由常量
     //（PageConstant 优惠券路由委托本模块）+ CouponApi 服务契约（payment-impl 支付页选券消费）
     implementation project(":feature:coupon:api")
@@ -195,7 +199,16 @@ dependencies {
     //入口走深链 smartwash://game-center 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:game")
 
-    //解压实验舱子系统（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群三页 + 首页入口卡，
+    //记忆复习域（FSRS 调度在后端，客户端只传评分）：今日队列/复习评分/资料卡片三页面，
+    //路由常量 ReviewRoute 为模块内单一事实来源；MainActivity NavHost 一行 reviewGraph 聚合，
+    //入口走深链 smartwash://review 与后端 workbench_entry 配置的工作台卡片
+    implementation project(":feature:review")
+
+    //订阅逃生舱子系统：列表/添加编辑/详情/提醒独立路由，经 MainActivity NavHost 一行
+    //subscriptionGraph 聚合；入口走深链 smartwash://subscription 与工作台卡片
+    implementation project(":feature:subscription")
+
+    //解压实验舱子系统（纯本地玩具）：泡泡纸/呼吸引导/指尖鱼群等十个玩具页，
     //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
     //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:lab")

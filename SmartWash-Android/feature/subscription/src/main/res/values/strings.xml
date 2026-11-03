@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 订阅逃生舱文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题与页头动作 ==================== -->
+    <string name="subscription_title">订阅管理</string>
+    <string name="subscription_edit_title_new">新建订阅</string>
+    <string name="subscription_edit_title_edit">编辑订阅</string>
+    <string name="subscription_detail_title">订阅详情</string>
+    <string name="subscription_reminder_title">续费提醒</string>
+    <string name="subscription_action_new">新建</string>
+    <string name="subscription_action_reminders">提醒</string>
+
+    <!-- ==================== 列表页 ==================== -->
+    <string name="subscription_filter_all">全部</string>
+    <string name="subscription_filter_active">进行中</string>
+    <string name="subscription_filter_paused">已暂停</string>
+    <string name="subscription_filter_canceled">已取消</string>
+    <string name="subscription_filter_finished">已结束</string>
+    <string name="subscription_empty_message">还没有订阅，把正在按期扣费的服务登记进来吧</string>
+    <string name="subscription_empty_action">新建订阅</string>
+    <string name="subscription_error_load">订阅加载失败</string>
+    <string name="subscription_action_retry">重试</string>
+
+    <string name="subscription_amount_per_period">¥%1$s/期</string>
+    <string name="subscription_cycle_monthly">每月</string>
+    <string name="subscription_cycle_every_n_months">每 %1$d 个月</string>
+    <string name="subscription_cycle_yearly">每年</string>
+    <string name="subscription_cycle_every_n_years">每 %1$d 年</string>
+    <string name="subscription_renew_date_value">下次续费 %1$s</string>
+    <string name="subscription_renew_in_days_format">%1$d 天后续费</string>
+    <string name="subscription_renew_today">今日续费</string>
+    <string name="subscription_renew_overdue_format">已逾期 %1$d 天</string>
+    <string name="subscription_renew_days_compact">%1$d天</string>
+    <string name="subscription_trial_left_format">试用剩 %1$d 天</string>
+    <string name="subscription_trial_last_day">试用今日截止</string>
+    <string name="subscription_unread_reminders_format">%1$d 条未读提醒</string>
+
+    <string name="subscription_status_active">进行中</string>
+    <string name="subscription_status_paused">已暂停</string>
+    <string name="subscription_status_canceled">已取消</string>
+    <string name="subscription_status_finished">已结束</string>
+
+    <!-- ==================== 添加/编辑表单 ==================== -->
+    <string name="subscription_form_name_label">名称</string>
+    <string name="subscription_form_name_hint">如 iCloud+、健身房年卡</string>
+    <string name="subscription_form_amount_label">每期金额（元）</string>
+    <string name="subscription_form_amount_hint">21.00</string>
+    <string name="subscription_form_cycle_label">计费周期</string>
+    <string name="subscription_form_cycle_month">月付</string>
+    <string name="subscription_form_cycle_year">年付</string>
+    <string name="subscription_form_interval_label">间隔期数</string>
+    <string name="subscription_form_interval_helper">1-36，填 3 表示每 3 期扣一次</string>
+    <string name="subscription_form_next_renew_label">下次续费日</string>
+    <string name="subscription_form_pick_date">选择日期</string>
+    <string name="subscription_form_trial_label">试用截止（可选）</string>
+    <string name="subscription_form_trial_none">未设置</string>
+    <string name="subscription_form_trial_clear">清除</string>
+    <string name="subscription_form_auto_renew_label">自动续费</string>
+    <string name="subscription_form_auto_renew_helper">开启后到期自动顺延续费日</string>
+    <string name="subscription_form_remind_label">提醒提前天数</string>
+    <string name="subscription_form_remind_helper">0-60 天，0 表示仅到期当天提醒</string>
+    <string name="subscription_form_cancel_url_label">取消网址（可选）</string>
+    <string name="subscription_form_cancel_url_hint">https://…</string>
+    <string name="subscription_form_cancel_url_helper">须以 http:// 或 https:// 开头</string>
+    <string name="subscription_action_open_browser">打开</string>
+    <string name="subscription_action_copy">复制</string>
+    <string name="subscription_copy_success">已复制</string>
+    <string name="subscription_open_failed">未找到可打开链接的应用</string>
+    <string name="subscription_form_cancel_steps_label">取消步骤备忘（可选）</string>
+    <string name="subscription_form_cancel_steps_hint">如：设置 → Apple ID → 订阅 → iCloud+ → 取消</string>
+    <string name="subscription_form_note_label">备注（可选）</string>
+    <string name="subscription_form_note_hint">如：与家人共享</string>
+    <string name="subscription_submit_create">创建</string>
+    <string name="subscription_submit_save">保存</string>
+    <string name="subscription_toast_create_success">创建成功</string>
+    <string name="subscription_toast_save_success">已保存</string>
+    <string name="subscription_error_name_required">请填写订阅名称</string>
+    <string name="subscription_error_name_too_long">名称不能超过 100 字</string>
+    <string name="subscription_error_amount_invalid">金额须为大于 0 的数字</string>
+    <string name="subscription_error_next_renew_required">请选择下次续费日</string>
+    <string name="subscription_error_interval_invalid">间隔期数须为 1-36 的整数</string>
+    <string name="subscription_error_remind_days_invalid">提醒提前天数须为 0-60 的整数</string>
+    <string name="subscription_error_cancel_url_invalid">取消网址须以 http:// 或 https:// 开头</string>
+    <string name="subscription_error_cancel_steps_too_long">取消步骤不能超过 1000 字</string>
+    <string name="subscription_error_note_too_long">备注不能超过 500 字</string>
+    <string name="subscription_error_load_detail">详情加载失败</string>
+    <string name="subscription_error_submit">提交失败，请重试</string>
+
+    <!-- ==================== 详情页 ==================== -->
+    <string name="subscription_detail_amount">每期金额</string>
+    <string name="subscription_detail_cycle">计费周期</string>
+    <string name="subscription_detail_next_renew">下次续费日</string>
+    <string name="subscription_detail_trial_end">试用截止</string>
+    <string name="subscription_detail_auto_renew">自动续费</string>
+    <string name="subscription_detail_auto_renew_on">开启</string>
+    <string name="subscription_detail_auto_renew_off">关闭</string>
+    <string name="subscription_detail_status">状态</string>
+    <string name="subscription_detail_remind_days">提前提醒</string>
+    <string name="subscription_detail_remind_days_format">提前 %1$d 天</string>
+    <string name="subscription_detail_remind_days_zero">仅当天提醒</string>
+    <string name="subscription_detail_note">备注</string>
+    <string name="subscription_value_none">—</string>
+    <string name="subscription_action_edit">编辑</string>
+    <string name="subscription_action_pause">暂停</string>
+    <string name="subscription_action_resume">恢复</string>
+    <string name="subscription_action_cancel_sub">取消订阅</string>
+    <string name="subscription_action_finish">结束使用</string>
+    <string name="subscription_action_delete">删除</string>
+    <string name="subscription_confirm_cancel_title">取消订阅</string>
+    <string name="subscription_confirm_cancel_message">取消后不再续费且不可恢复为进行中（数据保留），确定取消「%1$s」？</string>
+    <string name="subscription_confirm_finish_title">结束使用</string>
+    <string name="subscription_confirm_finish_message">标记为结束后该订阅只读、不可再打卡，确定结束「%1$s」？</string>
+    <string name="subscription_confirm_delete_title">删除订阅</string>
+    <string name="subscription_confirm_delete_message">删除将同时清空打卡记录与提醒，且不可恢复，确定删除「%1$s」？</string>
+    <string name="subscription_confirm_delete_usage_title">撤销打卡</string>
+    <string name="subscription_confirm_delete_usage_message">确定撤销 %1$s 的使用打卡？</string>
+    <string name="subscription_terminal_readonly">订阅已结束，信息仅供查看</string>
+    <string name="subscription_toast_status_updated">状态已更新</string>
+    <string name="subscription_toast_delete_success">已删除</string>
+    <string name="subscription_detail_retry">重新加载</string>
+
+    <!-- ==================== 使用统计 ==================== -->
+    <string name="subscription_stats_title">使用统计（近 90 天）</string>
+    <string name="subscription_stats_usage_format">近 90 天使用 %1$d 次</string>
+    <string name="subscription_stats_per_use_format">单次折算 ¥%1$s</string>
+    <string name="subscription_stats_per_use_none">窗口内暂无使用，暂无单次成本</string>
+    <string name="subscription_stats_monthly_format">月度折算 ¥%1$s</string>
+    <string name="subscription_stats_error">统计加载失败</string>
+
+    <!-- ==================== 使用打卡 ==================== -->
+    <string name="subscription_usage_title">使用打卡</string>
+    <string name="subscription_usage_check_in">今日打卡</string>
+    <string name="subscription_usage_check_in_done">已打卡</string>
+    <string name="subscription_usage_empty">还没有使用记录，用一次打一次卡</string>
+    <string name="subscription_usage_error_load">记录加载失败</string>
+    <string name="subscription_usage_undo">撤销</string>
+    <string name="subscription_usage_today">今天</string>
+    <string name="subscription_toast_undo_success">已撤销</string>
+
+    <!-- ==================== 取消路径 ==================== -->
+    <string name="subscription_cancel_path_title">取消路径</string>
+    <string name="subscription_cancel_path_url">取消网址</string>
+    <string name="subscription_cancel_path_steps">取消步骤</string>
+    <string name="subscription_cancel_path_empty">未填写取消路径</string>
+
+    <!-- ==================== 提醒列表 ==================== -->
+    <string name="subscription_reminder_filter_unread">未读</string>
+    <string name="subscription_reminder_filter_all">全部</string>
+    <string name="subscription_reminder_empty_unread">没有未读提醒</string>
+    <string name="subscription_reminder_empty_all">暂无提醒</string>
+    <string name="subscription_reminder_error_load">提醒加载失败</string>
+    <string name="subscription_reminder_type_renew">续费提醒</string>
+    <string name="subscription_reminder_type_trial_end">试用截止</string>
+    <string name="subscription_reminder_date_format">应提醒 %1$s</string>
+    <string name="subscription_reminder_read_tag">已读</string>
+
+    <!-- ==================== 日期弹窗 ==================== -->
+    <string name="subscription_date_confirm">确定</string>
+    <string name="subscription_date_cancel">取消</string>
+</resources>

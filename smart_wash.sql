@@ -1167,7 +1167,7 @@ DROP TABLE IF EXISTS `toolbox_short_code`;
 CREATE TABLE `toolbox_short_code` (
   `id`              BIGINT        NOT NULL AUTO_INCREMENT,
   `code`            VARCHAR(16)   NOT NULL COMMENT '短码:7位随机或4-16位自定义别名',
-  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊',
+  `content_type`    TINYINT       NOT NULL DEFAULT 1 COMMENT '1短链 2活码 3交付箱 4图床 5时间胶囊 6设备投递',
   `target`          VARCHAR(2048) NULL COMMENT '类型1/2:目标长链;类型4:MinIO对象名',
   `content`         MEDIUMTEXT    NULL COMMENT '类型3/5:文本正文(交付箱密文/胶囊内容)',
   `owner_user_id`   BIGINT        NOT NULL COMMENT 'users.id',
@@ -1264,6 +1264,10 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('web',                '内置 WebView', 3, 0, 'scheme 说明：smartwash://web?url= 打开内置 WebView', 1),
   ('t',                  '短码跳转',    3, 0, 'scheme 说明：smartwash://t/{code} 打开短码', 1),
   ('game-center',        '游戏中心',    3, 1, 'smartwash://game-center 打开游戏中心列表页', 1),
+  ('mood',               '情绪气象站',  3, 1, 'smartwash://mood 打开情绪气象站今日记录页', 1),
+  ('review',             '记忆复习',    3, 1, 'smartwash://review 打开记忆复习今日队列页', 1),
+  ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
+  ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
   ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1);
 
 -- ----------------------------
@@ -1274,6 +1278,10 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('my-history',         '我的卦历',   NULL,             'history', 'purple', 'smartwash://divination-history',   NULL, 1, 2, NULL),
   ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL),
   ('game-center',        '游戏中心',   'H5 小游戏合集',  'gamepad', 'teal',   'smartwash://game-center',          NULL, 1, 9, NULL),
+  ('mood',               '情绪气象站', '记录每天的心情', 'chat',    'purple', 'smartwash://mood',                 '新', 1, 4, NULL),
+  ('review',             '记忆复习',   'FSRS 复习卡片',  'book',    'blue',   'smartwash://review',               '新', 1, 5, NULL),
+  ('subscription',       '订阅逃生舱', '管理订阅与续费', 'link',    'orange', 'smartwash://subscription',         '新', 1, 6, NULL),
+  ('delivery',           '设备投递',   '手机与电脑互传文件', 'link', 'teal',   'smartwash://delivery',           '新', 1, 7, NULL),
   ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'smartwash://lab', '新', 1, 10, NULL);
 
 -- =====================================================================
@@ -1307,4 +1315,181 @@ CREATE TABLE `game_config` (
   UNIQUE KEY `uk_game_key` (`game_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5游戏库与下发配置';
 
+-- =====================================================================
+-- 情绪气象站 —— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for mood_record（每日情绪记录,一天一条,重复提交覆盖）
+-- ----------------------------
+DROP TABLE IF EXISTS `mood_record`;
+CREATE TABLE `mood_record` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT       NOT NULL COMMENT 'users.id',
+  `mood_date`  DATE         NOT NULL COMMENT '记录日期(自然日,与user_id组成uk一天一条)',
+  `mood_level` TINYINT      NOT NULL COMMENT '1暴雨 2阴 3多云 4晴 5大晴',
+  `color`      VARCHAR(9)   NULL COMMENT '快照当日颜色(#RRGGBB/#RRGGBBAA),改词典不改史',
+  `word`       VARCHAR(20)  NULL COMMENT '一个词(累/顺/静/燥/燃等),可空',
+  `note`       VARCHAR(200) NULL COMMENT '一句话备注,可空',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_date` (`user_id`, `mood_date`),
+  CONSTRAINT `chk_mood_level` CHECK (`mood_level` BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪气象站-每日情绪记录';
+
+-- =====================================================================
+-- 记忆复习接力（FSRS-6 调度）—— 3 张业务表
+-- 字段名对齐 py-fsrs Card/CardDict(open-spaced-repetition/py-fsrs, MIT)
+-- =====================================================================
+
+SET NAMES utf8mb4;
+
+-- ----------------------------
+-- Table structure for study_material（复习资料）
+-- ----------------------------
+DROP TABLE IF EXISTS `study_material`;
+CREATE TABLE `study_material` (
+  `id`         BIGINT       NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT       NOT NULL COMMENT 'users.id',
+  `title`      VARCHAR(100) NOT NULL COMMENT '资料标题',
+  `raw_text`   MEDIUMTEXT   NULL COMMENT '粘贴的原文',
+  `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-资料';
+
+-- ----------------------------
+-- Table structure for review_card（复习卡,FSRS 状态列）
+-- ----------------------------
+DROP TABLE IF EXISTS `review_card`;
+CREATE TABLE `review_card` (
+  `id`             BIGINT        NOT NULL AUTO_INCREMENT,
+  `user_id`        BIGINT        NOT NULL COMMENT 'users.id',
+  `material_id`    BIGINT        NULL COMMENT 'study_material.id,NULL=独立卡',
+  `question`       VARCHAR(1000) NOT NULL,
+  `answer`         VARCHAR(2000) NOT NULL,
+  `state`          TINYINT       NOT NULL DEFAULT 1 COMMENT '1=Learning 2=Review 3=Relearning(py-fsrs State)',
+  `step`           TINYINT       NULL COMMENT 'learning/relearning 步序号,Review 态为NULL',
+  `stability`      DECIMAL(10,4) NULL COMMENT '稳定度S(天)',
+  `difficulty`     DECIMAL(10,4) NULL COMMENT '难度D(1-10)',
+  `due_at`         DATETIME      NOT NULL COMMENT '下次到期时刻',
+  `last_review_at` DATETIME      NULL COMMENT 'NULL=从未复习的新卡',
+  `reps`           INT           NOT NULL DEFAULT 0 COMMENT '累计复习次数',
+  `lapses`         INT           NOT NULL DEFAULT 0 COMMENT 'Again次数(遗忘次数)',
+  `created_at`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_due` (`user_id`, `due_at`),
+  KEY `idx_material` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-卡片';
+
+-- ----------------------------
+-- Table structure for review_log（复习日志,重放重算与统计依赖,不可省）
+-- ----------------------------
+DROP TABLE IF EXISTS `review_log`;
+CREATE TABLE `review_log` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT,
+  `user_id`     BIGINT   NOT NULL COMMENT 'users.id',
+  `card_id`     BIGINT   NOT NULL COMMENT 'review_card.id',
+  `rating`      TINYINT  NOT NULL COMMENT '1=Again 2=Hard 3=Good 4=Easy(py-fsrs Rating)',
+  `reviewed_at` DATETIME NOT NULL COMMENT '复习时刻',
+  `duration_ms` INT      NULL COMMENT '作答耗时毫秒',
+  PRIMARY KEY (`id`),
+  KEY `idx_card` (`card_id`, `reviewed_at`),
+  KEY `idx_user_time` (`user_id`, `reviewed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='记忆复习-日志';
+
+-- =====================================================================
+-- 订阅逃生舱（用户订阅档案）—— 3 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for user_subscription（订阅主档）
+-- ----------------------------
+DROP TABLE IF EXISTS `user_subscription`;
+CREATE TABLE `user_subscription` (
+  `subscription_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '订阅 ID',
+  `user_id`            BIGINT        NOT NULL COMMENT '所属用户(users.id)',
+  `name`               VARCHAR(100)  NOT NULL COMMENT '订阅名称',
+  `amount`             DECIMAL(10,2) NOT NULL COMMENT '每期金额',
+  `cycle_type`         VARCHAR(10)   NOT NULL DEFAULT 'month' COMMENT '计费周期 month/year',
+  `cycle_interval`     INT           NOT NULL DEFAULT 1 COMMENT '间隔期数(如每2月=2;firefly-iii repetition_skip 简化版)',
+  `next_renew_date`    DATE          NOT NULL COMMENT '下次续费日',
+  `first_anchor_date`  DATE          NULL COMMENT '起始锚点日(月末策略锚,保留字段;firefly-iii repetition_moment 简化版)',
+  `trial_end_date`     DATE          NULL COMMENT '试用截止日(NULL=非试用)',
+  `auto_renew`         TINYINT       NOT NULL DEFAULT 1 COMMENT '自动续费 0否 1是',
+  `status`             VARCHAR(20)   NOT NULL DEFAULT 'active' COMMENT 'active生效中/paused已暂停/canceled已取消/finished已结束(终态保留数据)',
+  `cancel_url`         VARCHAR(500)  NULL COMMENT '取消入口网址',
+  `cancel_steps`       VARCHAR(1000) NULL COMMENT '取消路径步骤备忘',
+  `remind_days_before` INT           NOT NULL DEFAULT 3 COMMENT '续费/试用截止前提醒天数(Wallos notification_settings.days 简化为主档字段)',
+  `note`               VARCHAR(500)  NULL COMMENT '备注',
+  `created_at`         TIMESTAMP     NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`         TIMESTAMP     NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`subscription_id`) USING BTREE,
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_next_renew` (`next_renew_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户订阅主档' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for user_subscription_usage_log（使用打卡流水）
+-- ----------------------------
+DROP TABLE IF EXISTS `user_subscription_usage_log`;
+CREATE TABLE `user_subscription_usage_log` (
+  `usage_id`        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '使用记录 ID',
+  `subscription_id` BIGINT       NOT NULL COMMENT '订阅 ID',
+  `user_id`         BIGINT       NOT NULL COMMENT '所属用户(users.id)',
+  `usage_date`      DATE         NOT NULL COMMENT '使用日期(每订阅每天一条)',
+  `note`            VARCHAR(200) NULL COMMENT '使用备注',
+  `created_at`      TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`usage_id`) USING BTREE,
+  KEY `idx_sub_date` (`subscription_id`,`usage_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订阅使用频率打卡(决策依据:近3月使用次数)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for subscription_reminder_log（提醒记录,唯一索引幂等）
+-- ----------------------------
+DROP TABLE IF EXISTS `subscription_reminder_log`;
+CREATE TABLE `subscription_reminder_log` (
+  `reminder_id`     BIGINT      NOT NULL AUTO_INCREMENT COMMENT '提醒 ID',
+  `subscription_id` BIGINT      NOT NULL COMMENT '订阅 ID',
+  `user_id`         BIGINT      NOT NULL COMMENT '所属用户(users.id)',
+  `remind_type`     VARCHAR(20) NOT NULL COMMENT 'renew续费/trial_end试用截止',
+  `remind_date`     DATE        NOT NULL COMMENT '应提醒日(=被提醒的目标日期,与uk_sub_type_date配合实现幂等)',
+  `is_read`         TINYINT     NOT NULL DEFAULT 0 COMMENT '已读 0未读 1已读',
+  `created_at`      TIMESTAMP   NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      TIMESTAMP   NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`reminder_id`) USING BTREE,
+  UNIQUE INDEX `uk_sub_type_date` (`subscription_id`,`remind_type`,`remind_date`) USING BTREE COMMENT '幂等:同一订阅同类型同日只发一次(renewlet notification_jobs 唯一索引先例)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订阅提醒记录' ROW_FORMAT = Dynamic;
+-- =====================================================================
+-- 设备投递（toolbox/delivery）—— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for toolbox_delivery_item（设备投递条目,会话主记录复用 toolbox_short_code content_type=6）
+-- ----------------------------
+DROP TABLE IF EXISTS `toolbox_delivery_item`;
+CREATE TABLE `toolbox_delivery_item` (
+  `id`              BIGINT       NOT NULL AUTO_INCREMENT,
+  `session_code`    VARCHAR(16)  NOT NULL COMMENT '投递码(冗余关联,无外键,对齐 toolbox_short_visit 冗余风格)',
+  `direction`       TINYINT      NOT NULL COMMENT '1手机→电脑 2电脑→手机',
+  `kind`            TINYINT      NOT NULL DEFAULT 1 COMMENT '1文本 2图片 3文件',
+  `title`           VARCHAR(255) NOT NULL COMMENT '文件名或文本摘要',
+  `text_content`    MEDIUMTEXT   NULL COMMENT 'kind=1:文本正文;焚毁后置 NULL',
+  `object_key`      VARCHAR(512) NULL COMMENT 'kind=2/3:MinIO对象名 delivery/{code}/{uuid}.{ext}',
+  `object_size`     BIGINT       NULL COMMENT '字节数',
+  `mime_type`       VARCHAR(128) NULL,
+  `sha256`          CHAR(64)     NULL COMMENT '完整性校验(LocalSend协议同名字段;015秒传思路预留)',
+  `burn_after_take` TINYINT      NOT NULL DEFAULT 1 COMMENT '1取走即焚(默认) 0保留至会话结束',
+  `taken`           TINYINT      NOT NULL DEFAULT 0 COMMENT '0未取走 1已取走(原子置位,PsiTransfer claim语义)',
+  `taken_at`        DATETIME     NULL,
+  `expire_at`       DATETIME     NULL COMMENT '条目过期,NULL继承会话,读路径判断',
+  `created_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code_time` (`session_code`, `created_at`),
+  KEY `idx_expire` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
 SET FOREIGN_KEY_CHECKS = 1;

@@ -1,0 +1,40 @@
+// :feature:subscription —— 订阅逃生舱子系统（单模块，照 :feature:toolbox 先例）。
+// 交付订阅档案 CRUD + 状态机（pause/resume/cancel/finish）、使用打卡、提醒列表、
+// 近 90 天使用统计四页面（列表/添加编辑/详情/提醒）。
+// 路由常量 SubscriptionRoute 为模块内单一事实来源，暂不接宿主入口：
+// 宿主 NavHost 一行 subscriptionGraph 即完成聚合（入口接入由后续任务执行）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.subscription'
+}
+
+dependencies {
+    // 响应信封 ApiResult/PageData、RequestState、pagingFlow、动效降级 LocalReduceMotion/motionSpec、按压反馈
+    implementation project(':common:utils')
+    // Retrofit（api 传递）+ @RequireAuthorization（SubscriptionApi 消费，
+    // 鉴权/错误转译拦截器经 common:network 的 NetworkModule 自动生效）
+    implementation project(':common:network')
+    // 清氧设计系统 theme + 共享组件（PageHeader/GroupCard/AppButton/EmptyState/InfoRow/SkeletonList）
+    implementation project(':common:ui')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（页面间跳转）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（Column/LazyColumn 等；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 动效（折叠卡展开/收起、进度环；reduced motion 降级共享 vocabulary）
+    implementation libs.androidx.compose.animation
+    // 分页（订阅列表/打卡列表 PagingSource + collectAsLazyPagingItems）
+    implementation libs.androidx.paging.runtime.ktx
+    implementation libs.androidx.paging.compose
+    // 图标（Material 内置；规范 §4.1 禁外部图标库）
+    implementation libs.androidx.material.icons.extended
+    // @Keep（SubscriptionApi 的请求/返回体）
+    implementation libs.androidx.annotation
+}

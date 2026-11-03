@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 记忆复习文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面标题 ==================== -->
+    <string name="review_queue_title">今日复习</string>
+    <string name="review_study_title">复习</string>
+    <string name="review_material_title">复习资料</string>
+
+    <!-- ==================== 今日队列页 ==================== -->
+    <string name="review_queue_count_format">今日 %1$d 张</string>
+    <string name="review_queue_breakdown_format">到期 %1$d 张 · 新卡 %2$d 张</string>
+    <string name="review_queue_action_start">开始复习</string>
+    <string name="review_queue_empty_message">今日没有需要复习的卡片，先去资料页建卡吧</string>
+    <string name="review_queue_empty_action">去资料页建卡</string>
+    <string name="review_card_new">新卡</string>
+    <string name="review_due_badge_minute">分钟级</string>
+    <string name="review_due_badge_daily">天级</string>
+    <string name="review_due_now">已到期</string>
+    <string name="review_due_in_minutes">%1$d 分钟后到期</string>
+    <string name="review_due_in_hours">%1$d 小时后到期</string>
+    <string name="review_due_in_days">%1$d 天后到期</string>
+    <string name="review_material_chip_none">未归资料</string>
+
+    <!-- ==================== 卡片状态（py-fsrs State） ==================== -->
+    <string name="review_state_learning">学习中</string>
+    <string name="review_state_review">复习中</string>
+    <string name="review_state_relearning">重学中</string>
+
+    <!-- ==================== 复习页 ==================== -->
+    <string name="review_study_progress_format">第 %1$d / %2$d 张</string>
+    <string name="review_study_question_hint">点击卡片查看答案</string>
+    <string name="review_study_answer_label">答案</string>
+    <string name="review_rating_again">Again</string>
+    <string name="review_rating_hard">Hard</string>
+    <string name="review_rating_good">Good</string>
+    <string name="review_rating_easy">Easy</string>
+    <string name="review_rating_again_semantic">想不起来</string>
+    <string name="review_rating_hard_semantic">有点费劲</string>
+    <string name="review_rating_good_semantic">正常想起</string>
+    <string name="review_rating_easy_semantic">轻松秒答</string>
+    <string name="review_study_completed_message">今日复习完成，休息一下吧</string>
+    <string name="review_action_back">返 回</string>
+    <string name="review_error_answer">评分提交失败，请重试</string>
+
+    <!-- ==================== 资料页 ==================== -->
+    <string name="review_material_empty">还没有复习资料，粘贴一段文本开始建卡吧</string>
+    <string name="review_material_action_new">新建</string>
+    <string name="review_material_form_title_label">资料标题</string>
+    <string name="review_material_form_title_hint">例如：操作系统期中考点</string>
+    <string name="review_material_form_raw_label">原文粘贴（可选）</string>
+    <string name="review_material_form_raw_hint">粘贴教材或笔记原文，便于回顾上下文</string>
+    <string name="review_material_action_create">创建资料</string>
+    <string name="review_toast_material_created">资料已创建</string>
+    <string name="review_material_expand">展开</string>
+    <string name="review_material_collapse">收起</string>
+    <string name="review_material_cards_header_format">问答卡（%1$d）</string>
+    <string name="review_material_add_card">添加卡片</string>
+    <string name="review_material_cards_empty">还没有卡片，添加第一张吧</string>
+    <string name="review_material_load_more">加载更多</string>
+    <string name="review_error_load_more">加载更多失败，点击重试</string>
+    <string name="review_card_dialog_title">添加问答卡</string>
+    <string name="review_card_dialog_question_label">问题</string>
+    <string name="review_card_dialog_question_hint">例如：进程与线程的区别？</string>
+    <string name="review_card_dialog_answer_label">答案</string>
+    <string name="review_card_dialog_answer_hint">例如：进程是资源分配单位，线程是调度单位</string>
+    <string name="review_dialog_action_confirm">确认</string>
+    <string name="review_dialog_action_cancel">取消</string>
+    <string name="review_toast_card_created">卡片已创建</string>
+
+    <!-- ==================== 校验与通用错误 ==================== -->
+    <string name="review_action_retry">重试</string>
+    <string name="review_error_load">加载失败，请重试</string>
+    <string name="review_error_title_required">请输入资料标题</string>
+    <string name="review_error_title_too_long">资料标题最长 100 字</string>
+    <string name="review_error_raw_too_long">资料原文过长</string>
+    <string name="review_error_question_required">请输入问题</string>
+    <string name="review_error_answer_required">请输入答案</string>
+    <string name="review_error_question_too_long">问题最长 1000 字</string>
+    <string name="review_error_answer_too_long">答案最长 2000 字</string>
+</resources>

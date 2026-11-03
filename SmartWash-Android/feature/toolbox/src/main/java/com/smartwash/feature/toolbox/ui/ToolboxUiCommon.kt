@@ -93,7 +93,8 @@ fun ToolboxSelectableChip(
         Box {
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium,
+                // tnum：chip 内含数字（「10 分钟」「7 天」等），数字变化时槽位不跳动（规范 §2.2）
+                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
                 // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
                 fontWeight = FontWeight.SemiBold,
                 color = contentColor,

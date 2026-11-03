@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.toolbox.delivery.mapper.ToolboxDeliveryItemMapper">
+
+    <!-- 原子认领：仅当未取走时置位，判影响行数放行（防并发双读） -->
+    <update id="claim">
+        UPDATE toolbox_delivery_item
+        SET taken = 1, taken_at = NOW()
+        WHERE id = #{id} AND taken = 0
+    </update>
+
+    <!-- 释放认领：下载中断回滚，允许重取（对齐 PsiTransfer res.on('close') 释放语义） -->
+    <update id="release">
+        UPDATE toolbox_delivery_item
+        SET taken = 0, taken_at = NULL
+        WHERE id = #{id} AND taken = 1
+    </update>
+
+    <!-- 会话累计字节（无对象条目记 0） -->
+    <select id="sumObjectSize" resultType="long">
+        SELECT COALESCE(SUM(object_size), 0)
+        FROM toolbox_delivery_item
+        WHERE session_code = #{sessionCode}
+    </select>
+
+</mapper>

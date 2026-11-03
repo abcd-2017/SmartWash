@@ -26,6 +26,8 @@ dependencies {
     implementation libs.androidx.hilt.navigation.compose
     // NavHostController（页面间跳转）
     implementation libs.androidx.navigation.compose
+    // rememberLauncherForActivityResult/GetContent（投递发送区选图片/选文件入口）
+    implementation libs.androidx.activity.compose
     // Compose 基础（Column/LazyColumn/PullToRefresh 等；compose convention 只带 ui/material3）
     implementation libs.androidx.compose.foundation
     // 动效（页面不自写动效，共享组件内部消费；保留与 divination 同基线）
