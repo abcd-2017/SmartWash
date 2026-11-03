@@ -457,8 +457,9 @@ fun RegisterPage(
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
                     modifier = Modifier
-                        // 热区先行：padding 必须在 pressable 之前，否则可点区域只有文字本体
-                        .padding(horizontal = 4.dp, vertical = 8.dp)
+                        // 热区先行：padding 必须在 pressable 之前，否则可点区域只有文字本体；
+                        // 垂直 16 使热区 48dp（规范 §2.3 触控 ≥44dp，原 8 只有 32dp）
+                        .padding(horizontal = 4.dp, vertical = 16.dp)
                         .pressable(onClick = debouncedLoginClick, debounce = false)
                 )
             }
@@ -549,7 +550,8 @@ private fun VerificationCodeRow(
             val sendTextColor = selectedColor(
                 contentColor.copy(alpha = if (sendEnabled) 0.92f else 0.92f * 0.55f)
             )
-            // §3.7 尾缀发送 = 描边按钮：1dp 描边 + radiusSmall(12dp) + 高 40dp + 横向 14dp；
+            // §3.7 尾缀发送 = 描边按钮：1dp 描边 + 12dp 圆角（规范正文写 radiusSmall(12dp)，
+            // 但 AppDimens.radiusSmall 实为 10dp——取规范值 12dp = radiusMd）+ 高 40dp + 横向 14dp；
             // 行高已为 48dp，按钮交由 Row 的 CenterVertically 居中，不再需要 offset 补偿
             Box(
                 modifier = Modifier
@@ -561,7 +563,7 @@ private fun VerificationCodeRow(
                     .border(
                         width = 1.dp,
                         color = sendBorderColor,
-                        shape = RoundedCornerShape(AppDimens.radiusSmall)
+                        shape = RoundedCornerShape(AppDimens.radiusMd)
                     )
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
@@ -577,9 +579,10 @@ private fun VerificationCodeRow(
                     Text(
                         text = if (counting) stringResource(R.string.countdown_format, countDown)
                         else stringResource(R.string.get_verification_code),
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        // 12/16/500 = captionStrong 档；倒计时秒数是数量，开 tnum（规范 §2.2）
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontFeatureSettings = "tnum"
+                        ),
                         color = sendTextColor
                     )
                 }

@@ -217,12 +217,13 @@ fun UserInfoPage(
                             style = AppTextStyles.RootTitle,
                             color = AppColors.colorScheme.textPrimary
                         )
-                        // 设计：48dp 圆形底（radius 999）+ 20dp 图标，兼作 48dp 热区（防抖已注入，关闭叠加）
+                        // 设计：48dp 圆形底 + 20dp 图标，兼作 48dp 热区（防抖已注入，关闭叠加）；
+                        // §3.2 容器底色取六色浅底按语义（设置/账户 → 青），禁用灰底 surfaceVariant
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(RoundedCornerShape(AppDimens.radiusFull))
-                                .background(AppColors.colorScheme.surfaceVariant)
+                                .background(AppColors.colorScheme.iconContainerTeal)
                                 .pressable(
                                     onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) },
                                     debounce = false,
@@ -233,7 +234,7 @@ fun UserInfoPage(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = stringResource(R.string.settings),
                                 modifier = Modifier.size(20.dp),
-                                tint = AppColors.colorScheme.textSecondary
+                                tint = AppColors.colorScheme.iconForegroundTeal
                             )
                         }
                     }
@@ -359,7 +360,8 @@ fun UserInfoPage(
                     // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线
                     GroupCard(
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                        contentPadding = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 16.dp)
+                        // §3.1 卡片内边距 20dp（原纵向 16dp 不符）
+                        contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 20.dp)
                     ) {
                         Column {
                             // 余额（点击去充值；防抖已注入，关闭叠加）
@@ -484,7 +486,8 @@ fun UserInfoPage(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // 卡间距 16dp（规范 §2.3）
+                    Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
                     // 功能卡片（列表行卡：内边距仅水平 20）
                     GroupCard(
@@ -499,8 +502,8 @@ fun UserInfoPage(
                             trailing = {
                                 Text(
                                     text = stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0),
-                                    // 画板实测行尾值 12/400（caption 400 档）
-                                    style = MaterialTheme.typography.bodySmall,
+                                    // 画板实测行尾值 12/400（caption 400 档）；订单数是数量，开 tnum（规范 §2.2）
+                                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                                     color = AppColors.colorScheme.textSecondary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))

@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -173,7 +174,8 @@ fun BottomBar(pagerState: PagerState, reduceMotion: Boolean) {
                 BottomNavItem(
                     solidPath = item.solidPath,
                     outlinePath = item.outlinePath,
-                    label = item.description,
+                    // 底栏标签走 strings.xml（规范 §9，原硬编码中文已收编进 PageConstant.labelRes）
+                    label = stringResource(item.labelRes),
                     isSelected = isSelected,
                     onClick = {
                         view.performHaptic(HapticEffect.SELECTION)

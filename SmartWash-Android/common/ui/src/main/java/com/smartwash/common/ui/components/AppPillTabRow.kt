@@ -90,9 +90,10 @@ fun AppPillTabRow(
                         },
                         debounce = false,
                     )
-                    // 设计稿 .seg3 胶囊 34 高：labelMedium 行盒 16 + 上下 9
-                    // （2026-11-01 对齐 redesigned_pages.html:140-145，原 40 高偏大）
-                    .padding(horizontal = AppDimens.spaceMd, vertical = 9.dp),
+                    // 胶囊视觉高 34（画板 .seg3：labelMedium 行盒 16 + 上下 9）；
+                    // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3，胶囊视觉高度不变——
+                    // padding 在 clip/background 之后，只扩热区不改视觉）
+                    .padding(horizontal = AppDimens.spaceMd, vertical = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

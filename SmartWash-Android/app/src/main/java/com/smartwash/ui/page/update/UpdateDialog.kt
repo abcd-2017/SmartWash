@@ -310,7 +310,8 @@ fun DownloadProgressDialog(
                         formatFileSize(downloadedBytes),
                         formatFileSize(totalBytes)
                     ),
-                    style = MaterialTheme.typography.bodyMedium,
+                    // 文件大小是数量，开 tnum（规范 §2.2）
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary,
                 )
                 Text(
@@ -477,15 +478,16 @@ fun DownloadErrorDialog(
 }
 
 /**
- * 将字节数格式化为可读大小（B / KB / MB）
+ * 将字节数格式化为可读大小（B / KB / MB）——单位走 strings.xml（规范 §9 文案资源化）
  */
+@Composable
 private fun formatFileSize(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
+    if (bytes <= 0) return stringResource(R.string.file_size_b, 0)
     val kb = 1024.0
     val mb = kb * 1024
     return when {
-        bytes >= mb -> String.format("%.1f MB", bytes / mb)
-        bytes >= kb -> String.format("%.1f KB", bytes / kb)
-        else -> "$bytes B"
+        bytes >= mb -> stringResource(R.string.file_size_mb, String.format("%.1f", bytes / mb))
+        bytes >= kb -> stringResource(R.string.file_size_kb, String.format("%.1f", bytes / kb))
+        else -> stringResource(R.string.file_size_b, bytes)
     }
 }

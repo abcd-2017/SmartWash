@@ -340,7 +340,8 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
             size = 32.dp,
             iconSize = 20.dp,
             containerColor = AppColors.colorScheme.iconContainerTeal,
-            iconTint = AppColors.colorScheme.iconForegroundGreen
+            // 容器-前景令牌配对：青底配青前景（§3.2 六色表；原错配 green 前景）
+            iconTint = AppColors.colorScheme.iconForegroundTeal
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
