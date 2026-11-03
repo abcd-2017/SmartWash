@@ -353,7 +353,8 @@ struct OrderDetail {
           value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`,
           valueColor: DesignColor.PRIMARY_DARK,
           valueSize: DesignFontSize.AMOUNT_MEDIUM,
-          valueWeight: DesignFontWeight.BOLD,
+          // AMOUNT_MEDIUM（18）属 font.title 档，规范 weight=600；原 BOLD(700) 属滥用，收敛
+          valueWeight: DesignFontWeight.SEMI_BOLD,
           valueTnum: true
         })
         InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })

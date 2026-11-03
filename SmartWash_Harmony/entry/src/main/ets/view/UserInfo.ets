@@ -342,6 +342,7 @@ export struct UserInfo {
                 .fontFeature(DesignFontFeature.TNUM)
                 .fontColor(DesignColor.PRIMARY_DARK)
                 .margin({ top: 4 })
+                // 字重保持 BOLD：DATA_LARGE（36）属 font.display 档，规范允许 700
             }
             .alignItems(HorizontalAlign.Start)
             .width("100%")

@@ -3,7 +3,7 @@ import { LoginUser } from "../entity/LoginUser";
 import { RegisterUser } from "../entity/RegisterUser";
 import { UpdateUserInfo } from "../entity/UpdateUserInfo";
 import { httpUtil } from "../HttpUtil"
-import { LoginVo } from "../vo/LoginVo";
+import { LoginVo, loginVoFromJSON } from "../vo/LoginVo";
 import { UserInfoVo } from "../vo/UserInfoVo";
 import { FormData, Type } from "@ohos/axios"
 import { fileIo as fs } from "@kit.CoreFileKit"
@@ -20,7 +20,13 @@ async function register(user: RegisterUser): Promise<BaseResponse<string>> {
 
 //登录（后端信封 data 为 {token, role} 对象，不再直接是 token 字符串）
 async function login(user: LoginUser): Promise<BaseResponse<LoginVo>> {
-  return httpUtil.post<LoginVo>("/auth/user/login", user)
+  const raw: BaseResponse<Object> = await httpUtil.post<Object>("/auth/user/login", user)
+  const mapped: BaseResponse<LoginVo> = {
+    code: raw.code,
+    message: raw.message,
+    data: loginVoFromJSON(raw.data)
+  }
+  return mapped
 }
 
 //获取当前登录用户学校id
@@ -44,13 +50,14 @@ async function getUserByStudentId(params: Record<string, Object>): Promise<BaseR
 }
 
 //绑定校园卡
+// 注：历史 typo `bingCampus` 已四端统一为 `bindCampus`（后端/Android/鸿蒙同步修正）。
 async function bindCampus(campusCard: string): Promise<BaseResponse<boolean>> {
-  return httpUtil.post<boolean>(`/web/auth/user/bingCampus/${campusCard}`)
+  return httpUtil.post<boolean>(`/web/auth/user/bindCampus/${campusCard}`)
 }
 
 //解绑校园卡
 async function unBindCampus(): Promise<BaseResponse<boolean>> {
-  return httpUtil.post<boolean>("/web/auth/user/unBingCampus")
+  return httpUtil.post<boolean>("/web/auth/user/unBindCampus")
 }
 
 //上传头像

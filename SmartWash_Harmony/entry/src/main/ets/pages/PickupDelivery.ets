@@ -107,7 +107,7 @@ struct PickupDelivery {
     this.qrLoading = true
     this.qrFailed = false
     let res = await generateQrCode(this.pickCode)
-    if (res.code == HttpStatusCode.Ok && (res.data ?? "") !== "") {
+    if (res.code === HttpStatusCode.Ok && (res.data ?? "") !== "") {
       this.qrCode = res.data ?? ""
     } else {
       showToastSafety(res.message, "取件码生成失败")
@@ -136,7 +136,7 @@ struct PickupDelivery {
           pickupCode: this.orderInfo?.pickupCode ?? ""
         })
       }
-      if (res.code == HttpStatusCode.Ok) {
+      if (res.code === HttpStatusCode.Ok) {
         // 确认成功触感（recap §9-F4，对齐安卓 HapticEffect.SUCCESS）
         try {
           vibrator.startVibration({ type: 'time', duration: 30 }, { id: 0, usage: 'unknown' })
@@ -298,7 +298,9 @@ struct PickupDelivery {
 
       Text(`${this.pickCode}`)
         .fontSize(DesignFontSize.DATA_LARGE)
-        .fontWeight(FontWeight.Bold)
+        // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：寄件码 700 + tnum），字重保持 BOLD；
+        // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
+        .fontWeight(DesignFontWeight.BOLD)
         .fontColor(DesignColor.PRIMARY_DARK)
         .fontFeature(DesignFontFeature.TNUM)
         .maxLines(1)

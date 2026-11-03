@@ -1,7 +1,7 @@
 {
   "app": {
     "bundleName": "com.hmy.smartwash",
-    "vendor": "example",
+    "vendor": "SmartWash",
     "versionCode": 1000000,
     "versionName": "1.0.0",
     "icon": "$media:layered_image",

@@ -228,30 +228,28 @@ struct OrderList {
   /**
    * 状态筛选胶囊条（对齐安卓 AppPillTabRow）：
    * 选中 = primary 实底 + 白字；未选中 = surface 白底 + 1px outline 描边 + textSecondary；
-   * radiusFull，视觉高 34（文字 16 + 上下 9），外层上下 5 把触控热区抬到 44；可横滚。
+   * radiusFull，视觉高 34（文字行盒 16 + 上下 9），垂直 padding 9 → 14 把触控热区抬到 44；可横滚。
    */
   @Builder
   TabBar() {
     Scroll() {
       Row() {
         ForEach(this.list, (title: string, index: number) => {
-          Column() {
-            Row() {
-              Text(getShowOrderStatusDescription(title))
-                .fontSize(DesignFontSize.CAPTION)
-                .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-            }
-            .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 9, bottom: 9 })
-            .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
-            .border({
-              width: 1,
-              color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
-            })
-            .justifyContent(FlexAlign.Center)
+          Row() {
+            Text(getShowOrderStatusDescription(title))
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
           }
-          .padding({ top: 5, bottom: 5 })
+          .justifyContent(FlexAlign.Center)
+          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变）
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
+          .border({
+            width: 1,
+            color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
+          })
           .margin({ right: DesignDimens.SPACE_XS })
           .onClick(() => {
             if (this.currIndex !== index) {

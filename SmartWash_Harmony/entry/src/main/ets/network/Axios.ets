@@ -9,7 +9,13 @@ import { checkStatus } from '../utils/CheckStatus'
 import { promptAction } from '@kit.ArkUI'
 import { logger } from '../utils/Logger'
 import { getValue, setValue } from '../utils/StorageUtil'
-import { PublicPaths } from './PublicPaths'
+import {
+  buildAuthorizationHeader,
+  isUnauthorizedCode,
+  isPublicRequest,
+  resolveToken,
+  shouldInjectToken
+} from './RequestRules'
 import { CommonConstants } from '../constant/CommonConstants'
 import { RouteNames } from '../constant/RouteNames'
 import { pathStack } from '../utils/PathStackUtil'
@@ -99,14 +105,14 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig): Pr
   // 公开接口（后端 SecurityConfig permitAll 段，清单见 PublicPaths）：不带 token，
   // 也不因本地无 token 而拦截——未登录用户同样能拉取启动配置、洗衣项目列表等只读数据。
   // 语义对齐 Android：@RequireAuthorization 未标注的方法不注入 token。
-  if (PublicPaths.isPublic(config.url)) {
+  if (isPublicRequest(config.url)) {
     return config
   }
   const cached = await getValue(CommonConstants.USER_TOKEN, "")
-  const tokenCache = typeof cached === "string" ? cached : ""
-  if (config.url?.startsWith("/web")) {
+  const tokenCache = resolveToken(cached)
+  if (shouldInjectToken(config.url)) {
     if (tokenCache !== "") {
-      config.headers['Authorization'] = `Bearer ${tokenCache}`
+      config.headers['Authorization'] = buildAuthorizationHeader(tokenCache)
     } else {
       // 本地无 token：复位登录态并替换到登录页（防抖避免重复压栈），本次请求直接失败
       handleUnauthorized("请先登录")
@@ -123,7 +129,7 @@ instance.interceptors.response.use((response: AxiosResponse): AxiosResponse => {
   // 仅输出状态码等摘要，不打印完整响应体（含手机号/余额等敏感信息，评审 #25）
   logger.debug("响应返回", `status=${response.status}`)
   // 后端统一业务信封：HTTP 200 但业务码 401 同样表示登录失效
-  if (response.data?.code === HttpStatusCode.Unauthorized) {
+  if (isUnauthorizedCode(response.data?.code)) {
     handleUnauthorized("登录失效，请重新登录！")
   }
   return response

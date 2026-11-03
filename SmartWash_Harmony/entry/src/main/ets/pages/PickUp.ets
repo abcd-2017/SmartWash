@@ -63,7 +63,7 @@ struct PickUp {
         if (page === 1) {
           this.orderList = []
         }
-        if (res.data == null || res.data.length == 0) {
+        if (res.data === null || res.data.length === 0) {
           if (page > 1 && this.orderList.length > 0) {
             showToastSafety("没有更多数据了")
           }
@@ -167,7 +167,9 @@ struct PickUp {
         Text(this.parsePickupCode(order))
           .fontSize(DesignFontSize.DATA_LARGE)
           .fontColor(DesignColor.PRIMARY_DARK)
-          .fontWeight(FontWeight.Bold)
+          // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：取件码 700 + tnum），字重保持 BOLD；
+          // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
+          .fontWeight(DesignFontWeight.BOLD)
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })

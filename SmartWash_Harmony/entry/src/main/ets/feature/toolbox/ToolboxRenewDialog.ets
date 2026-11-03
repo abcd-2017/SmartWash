@@ -155,7 +155,8 @@ export struct ToolboxRenewDialog {
       .width('100%')
     }
     .width('100%')
-    .padding(20)
+    // 对齐安卓 RenewDialog（horizontal spaceXl 24 / vertical spaceLg 20）与鸿蒙 AppInfoDialog 既有内边距
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL, top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_LG })
     .backgroundColor(DesignColor.SURFACE)
     // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
     .borderRadius(DesignDimens.CARD_RADIUS)

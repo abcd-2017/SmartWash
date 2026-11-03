@@ -170,7 +170,8 @@ export struct OrderMonthCard {
       Column() {
         Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-          .fontWeight(DesignFontWeight.BOLD)
+          // AMOUNT_MEDIUM（18）属 font.title 档，规范 weight=600；原 BOLD(700) 属滥用，收敛
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
           // 金额两位小数（N1）+ tnum（G5）；已取消置灰，余态 primaryDark（绿字红线）
           .fontFeature(DesignFontFeature.TNUM)
           .fontColor(order.status === OrderStatusEnum.CANCELED ?

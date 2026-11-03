@@ -324,7 +324,7 @@ struct AddSchool {
               }
 
               // 下拉列表（白卡 + 56dp 行 + 选中 primaryContainer 高亮 + 0.5 hairline）
-              if (this.showSchoolList && this.schoolList != null && this.schoolList.length > 0) {
+              if (this.showSchoolList && this.schoolList !== null && this.schoolList.length > 0) {
                 List({ scroller: this.scroller }) {
                   ForEach(this.schoolList, (school: SchoolName) => {
                     ListItem() {

@@ -144,7 +144,7 @@ export class WangShuaiUtil {
    * @param monthWx 月令五行（当令者）
    * @param wx      被考察五行
    * 规则（以月令为令）：
-   *   wx == 月令        → 旺（当令）
+   *   wx === 月令        → 旺（当令）
    *   月令生 wx         → 相（令生）
    *   wx 生月令         → 休（我生令）
    *   月令克 wx         → 囚（令克）

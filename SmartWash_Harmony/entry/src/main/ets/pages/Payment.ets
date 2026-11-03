@@ -30,7 +30,7 @@ struct Payment {
   @State selectCouponId: number | null = null
   // 支付方式选中态（当前仅余额支付，保留状态位与 Android selectedPaymentMethod 对齐）
   @State selectedPaymentMethod: string = "balance"
-  // 首载骨架门控（对齐 Android Crossfade(orderInfo == null) → LoadingState）
+  // 首载骨架门控（对齐 Android Crossfade(orderInfo === null) → LoadingState）
   @State isLoading: boolean = true
   // 支付请求进行中标记：AppButton loading 展示并拦截连点，防止重复扣款（评审 #12）
   @State paying: boolean = false
@@ -106,7 +106,7 @@ struct Payment {
   /**
    * 试算订单金额（评审 #17）：coupon 传 null 表示"不使用优惠券"。
    *
-   * 后端 OrdersServiceImpl.calculationOrder 仅认 userCouponId == null || 0 为不使用优惠券，
+   * 后端 OrdersServiceImpl.calculationOrder 仅认 userCouponId === null || 0 为不使用优惠券，
    * 传 -1 会抛"优惠券异常"（#31），故此处统一传 0。
    */
   async calculationOrder(coupon: UserCouponVo | null) {

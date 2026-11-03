@@ -51,7 +51,7 @@ struct Register {
   @State countDown: number = 0
   // 注册请求进行中标记：按钮展示 loading 并拦截连点（评审 #12）
   @State registering: boolean = false
-  // 验证码请求进行中标记：发送按钮禁用（对齐 Android sendEnabled = countDown==0 && captchaState !is Loading）
+  // 验证码请求进行中标记：发送按钮禁用（对齐 Android sendEnabled = countDown===0 && captchaState !is Loading）
   @State captchaLoading: boolean = false
   @State showPassword: boolean = false
   private timer: number = -1

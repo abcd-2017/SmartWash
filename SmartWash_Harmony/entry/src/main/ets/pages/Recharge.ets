@@ -187,7 +187,8 @@ struct Recharge {
 
         Span(`¥${(this.selectedAmount + this.summaryBonus()).toFixed(2)}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.BOLD)
+          // CAPTION（12）属 font.caption 档，规范 weight=400/500；原 BOLD(700) 属滥用，收敛
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.PRIMARY_DARK)
 
         if (this.summaryBonus() > 0) {

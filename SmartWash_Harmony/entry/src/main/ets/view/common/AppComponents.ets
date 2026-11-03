@@ -414,8 +414,15 @@ export struct AppTabBar {
  * 胶囊分段选择器 — 与 AppTabBar 的分工：本组件是「胶囊分段」形态（选中项有底色胶囊），
  * AppTabBar 是「下划线指示条」形态，页面按设计稿二选一（优惠券三 tab 用本组件）。
  *
- * 字重统一 SemiBold：字重渐变会让文字宽度在动画期间持续变化、兄弟节点连续位移，
- * 观感差于一次跳变；选中底/文字色经 .animation 弹簧过渡。触觉：选中档。
+ * 2026-11-03 对齐安卓 AppPillTabRow.kt：
+ * - 选中 = primary 实底 + onPrimary 白字（原 PRIMARY_LIGHT 浅绿底 + PRIMARY 绿字，不符设计稿）；
+ * - 未选中 = surface 白底 + 1px outline 描边 + textSecondary（原透明底无描边）；
+ * - 文字 labelMedium 12/500（原 14/600，与画板 .seg3 实测不符）；
+ * - 胶囊视觉高 34（文字行盒 16 + 上下 9），垂直 padding 9 → 14 把触控热区抬到 44dp；
+ * - 外层 Scroll 横滚（标签数超一行时可按住横滑，对齐安卓 horizontalScroll）。
+ *
+ * 字重统一 MEDIUM（不随选中切换）：字重渐变会让文字宽度在动画期间持续变化、
+ * 兄弟节点连续位移，观感差于一次跳变；选中底/文字色经 .animation 弹簧过渡。触觉：选中档。
  */
 @ComponentV2
 export struct AppPillTabRow {
@@ -425,33 +432,42 @@ export struct AppPillTabRow {
   }
 
   build() {
-    Row() {
-      ForEach(this.tabs, (title: string, index: number) => {
-        Row() {
-          Text(title)
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
-        }
-        .justifyContent(FlexAlign.Center)
-        // 垂直 14 → 触控热区 44dp（规范 §2.3；胶囊视觉高不变，padding 只扩热区）
-        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
-        .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY_LIGHT : Color.Transparent)
-        .margin({ right: DesignDimens.SPACE_XS })
-        .animation(MotionTiming.ENTER)
-        .onClick(() => {
-          try {
-            vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
-          } catch (err) {
-            // 忽略不支持的设备
+    Scroll() {
+      Row() {
+        ForEach(this.tabs, (title: string, index: number) => {
+          Row() {
+            Text(title)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(this.selectedIndex === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
           }
-          this.tabSelected(index)
-        })
-      }, (title: string) => title)
+          .justifyContent(FlexAlign.Center)
+          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变——
+          // padding 在 background/border 之后只扩热区，不改视觉）
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
+          .border({
+            width: 1,
+            color: this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.OUTLINE
+          })
+          .margin({ right: DesignDimens.SPACE_XS })
+          .animation(MotionTiming.ENTER)
+          .onClick(() => {
+            try {
+              vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+            } catch (err) {
+              // 忽略不支持的设备
+            }
+            this.tabSelected(index)
+          })
+        }, (title: string) => title)
+      }
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width('100%')
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
   }
 }
 

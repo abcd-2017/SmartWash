@@ -5,8 +5,9 @@ import { OrderNextStatus } from '../entity/OrderNextStatus';
 import { ReservationLaundry } from '../entity/ReservationLaundry';
 import { httpUtil } from '../HttpUtil';
 import { OrderInfo } from '../vo/OrderInfo';
-import { OrderItemCountVo } from '../vo/OrderItemCountVo';
-import { OrderVo } from '../vo/OrderVo';
+import { OrderItemCountVo, orderItemCountVoFromJSON } from '../vo/OrderItemCountVo';
+import { OrderVo, orderVoFromJSON } from '../vo/OrderVo';
+import { mapArray } from '../vo/JsonParse';
 
 //预约订单
 async function reservationLaundry(data: ReservationLaundry): Promise<BaseResponse<number>> {
@@ -25,7 +26,13 @@ async function getOrderList(data: OrderListForm): Promise<BaseResponse<Array<Ord
 
 //获取订单数量
 async function getOrderItemCount(data: OrderItemCountForm): Promise<BaseResponse<OrderItemCountVo>> {
-  return httpUtil.get<OrderItemCountVo>(`/web/auth/orders/itemCount`, data);
+  const raw: BaseResponse<Object> = await httpUtil.get<Object>(`/web/auth/orders/itemCount`, data);
+  const mapped: BaseResponse<OrderItemCountVo> = {
+    code: raw.code,
+    message: raw.message,
+    data: orderItemCountVoFromJSON(raw.data)
+  }
+  return mapped;
 }
 
 async function shippingOrder(data: OrderNextStatus): Promise<BaseResponse<boolean>> {
@@ -37,7 +44,13 @@ async function pickupOrder(data: OrderNextStatus): Promise<BaseResponse<boolean>
 }
 
 async function getWashingOrder(): Promise<BaseResponse<Array<OrderVo>>> {
-  return httpUtil.get<Array<OrderVo>>(`/web/auth/orders/getWashingOrder`);
+  const raw: BaseResponse<Object> = await httpUtil.get<Object>(`/web/auth/orders/getWashingOrder`);
+  const mapped: BaseResponse<Array<OrderVo>> = {
+    code: raw.code,
+    message: raw.message,
+    data: mapArray(raw.data, (item: Object): OrderVo => orderVoFromJSON(item))
+  }
+  return mapped;
 }
 
 //取消订单

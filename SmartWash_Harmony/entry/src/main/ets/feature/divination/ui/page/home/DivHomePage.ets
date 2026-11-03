@@ -90,7 +90,7 @@ struct DivHomePage {
         `${chart.yong.label}${chart.yong.wuXing.label}用 · ${chart.tiYongRelation.label}`
       this.hasTodaySign = true
     } catch (err) {
-      // 无签数据时不显示卡（对齐 DivHomePage.kt:129-160 的 sign != null 分支）
+      // 无签数据时不显示卡（对齐 DivHomePage.kt:129-160 的 sign !== null 分支）
       this.hasTodaySign = false
     }
 
