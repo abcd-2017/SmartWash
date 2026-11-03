@@ -366,9 +366,19 @@ struct DivAskPage {
           }
         })
 
-        if (this.safetyBlocked) {
-          this.SafetyBlockingPage()
-        } else {
+        // 高风险分流页与问事表单的整页替换：交叉淡入淡出（对齐安卓 Crossfade，避免 0ms 硬切）
+        Stack() {
+          // 分流页层（隐藏时禁命中）
+          Column() {
+            this.SafetyBlockingPage()
+          }
+          .width('100%')
+          .opacity(this.safetyBlocked ? 1 : 0)
+          .animation({ duration: 180, curve: Curve.EaseInOut })
+          .hitTestBehavior(this.safetyBlocked ? HitTestMode.Default : HitTestMode.None)
+
+          // 问事表单层
+          Column() {
           // 1. 问题卡（hint 12/16 textSecondary；卡内边距 14）
           Column() {
             DivCard() {
@@ -508,7 +518,13 @@ struct DivAskPage {
 
           // 5. 页脚安全提示
           DivFooterNote({ text: DivText.askSafetyHint })
+          }
+          .width('100%')
+          .opacity(this.safetyBlocked ? 0 : 1)
+          .animation({ duration: 180, curve: Curve.EaseInOut })
+          .hitTestBehavior(this.safetyBlocked ? HitTestMode.None : HitTestMode.Default)
         }
+        .width('100%')
       }
     }
     .hideTitleBar(true)
@@ -532,7 +548,8 @@ struct ManualOption {
         textSize: 10,
         weight: 400,
         spacing: 0,
-        color: this.selected ? DivPalette.gold : DivPalette.textSecondary,
+        // 选中项文字取语义金（goldText：宣纸侧墨色，对齐安卓 c.goldText 口径）
+        color: this.selected ? DivPalette.goldText : DivPalette.textSecondary,
         textAlign: TextAlign.Center
       })
     }
@@ -654,6 +671,9 @@ struct NumbersDialog {
   controller: CustomDialogController
   @State first: string = ''
   @State second: string = ''
+  // 聚焦态：下划线指示由发丝线转金线（对齐安卓 focusedIndicatorColor = goldLine）
+  @State firstFocused: boolean = false
+  @State secondFocused: boolean = false
   // 与公共弹窗同一条入场动效（对齐安卓 dialogEnterMotion：scale 0.92→1 + fade）
   @State entered: boolean = false
   onConfirm: (a: number, b: number) => void = () => {
@@ -710,7 +730,7 @@ struct NumbersDialog {
         .margin({ bottom: 14 })
 
       Row({ space: 12 }) {
-        // 下划线指示（聚焦 goldLine / 未聚焦 hair；SDK 17 无 onFocus 回调，先落未聚焦发丝线）
+        // 下划线指示（聚焦 goldLine / 未聚焦 hair；onFocus/onBlur 驱动）
         Column() {
           TextInput({ text: this.first, placeholder: '1–999' })
             .width('100%')
@@ -720,13 +740,19 @@ struct NumbersDialog {
             .fontWeight(FontWeight.Medium)
             .fontFamily('serif')
             .fontColor(DivPalette.textPrimary)
+            .onFocus(() => {
+              this.firstFocused = true
+            })
+            .onBlur(() => {
+              this.firstFocused = false
+            })
             .onChange((value: string) => {
               this.first = this.filterDigits(value)
             })
           Column()
             .width('100%')
             .height(1)
-            .backgroundColor(DivPalette.hair)
+            .backgroundColor(this.firstFocused ? DivPalette.goldLine : DivPalette.hair)
         }
         .layoutWeight(1)
 
@@ -739,13 +765,19 @@ struct NumbersDialog {
             .fontWeight(FontWeight.Medium)
             .fontFamily('serif')
             .fontColor(DivPalette.textPrimary)
+            .onFocus(() => {
+              this.secondFocused = true
+            })
+            .onBlur(() => {
+              this.secondFocused = false
+            })
             .onChange((value: string) => {
               this.second = this.filterDigits(value)
             })
           Column()
             .width('100%')
             .height(1)
-            .backgroundColor(DivPalette.hair)
+            .backgroundColor(this.secondFocused ? DivPalette.goldLine : DivPalette.hair)
         }
         .layoutWeight(1)
       }

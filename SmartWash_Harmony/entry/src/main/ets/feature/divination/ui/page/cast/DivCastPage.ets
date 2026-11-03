@@ -41,6 +41,12 @@ const COIN_ROW_WIDTH: number = COIN_SIZE * 3 + COIN_GAP * 2
 /** 爻位名（自上爻顶到初爻底，对齐安卓 DivCastPage.kt:118） */
 const POSITION_LABELS: string[] = ['上爻', '五爻', '四爻', '三爻', '二爻', '初爻']
 
+/** 进程重建防护：待落定爻 / tossId 的 AppStorage key（对齐安卓 rememberSaveable 语义） */
+const KEY_PENDING_YAO: string = 'div_cast_pending_yao'
+const KEY_TOSS_ID: string = 'div_cast_toss_id'
+/** 无待落定爻占位码（爻值合法范围 1..4） */
+const NO_PENDING_YAO: number = -1
+
 /** 爻值 → 符号 / 爻名（对齐安卓 DivCastPage.kt:148-163 与 CoinAndMeridian.kt:247-269） */
 const YAO_SYMBOL_YANG: string = '▅▅▅▅▅▅'
 const YAO_SYMBOL_YIN: string = '▅▅  ▅▅'
@@ -82,10 +88,13 @@ struct DivCastPage {
     builder: AppConfirmDialog({
       title: DivText.castQuitTitle,
       message: DivText.castQuitBody,
-      confirmText: '丢弃',
-      cancelText: '继续摇卦',
+      // 文案对齐安卓 AppConfirmDialog 默认「确定/取消」（鸿蒙组件默认「确认」，此处显式覆盖）
+      confirmText: '确定',
+      cancelText: '取消',
       isDanger: true,
       onConfirm: () => {
+        // 弃局：清空掷卦进度，避免下次进入恢复出过期状态
+        this.clearProgress()
         pathStack.pop()
       },
       onDismiss: () => {
@@ -103,6 +112,7 @@ struct DivCastPage {
       this.question = param.question
       this.category = param.category
     }
+    this.restoreProgress()
     this.drawCoins()
   }
 
@@ -112,6 +122,43 @@ struct DivCastPage {
       clearInterval(this.coinTimerId)
       this.coinTimerId = -1
     }
+  }
+
+  /**
+   * 恢复待落定爻与 tossId（对齐安卓 rememberSaveable：进程重建后不丢状态）。
+   * 仍有待落定爻时直接提交并释放掷爻按钮，避免按钮永久禁用（对齐安卓「待落定爻缺失时复位 tossing」兜底）。
+   */
+  private restoreProgress(): void {
+    const savedCode = AppStorage.get<number>(KEY_PENDING_YAO)
+    if (savedCode !== undefined && savedCode >= 1 && savedCode <= 4) {
+      try {
+        this.pendingYao = YaoValue.fromCode(savedCode)
+      } catch (err) {
+        this.pendingYao = null
+      }
+    }
+    const savedTossId = AppStorage.get<number>(KEY_TOSS_ID)
+    if (savedTossId !== undefined && savedTossId > 0) {
+      this.tossId = savedTossId
+    }
+    if (this.pendingYao !== null) {
+      this.commitToss(this.pendingYao)
+    } else {
+      this.tossing = false
+    }
+    this.saveProgress()
+  }
+
+  /** 持久化待落定爻与 tossId（起掷 / 落定 / 恢复后同步写） */
+  private saveProgress(): void {
+    AppStorage.setOrCreate(KEY_PENDING_YAO, this.pendingYao === null ? NO_PENDING_YAO : this.pendingYao.code)
+    AppStorage.setOrCreate(KEY_TOSS_ID, this.tossId)
+  }
+
+  /** 成卦 / 弃局时清空进度，避免下次进入恢复出过期状态 */
+  private clearProgress(): void {
+    AppStorage.setOrCreate(KEY_PENDING_YAO, NO_PENDING_YAO)
+    AppStorage.setOrCreate(KEY_TOSS_ID, 0)
   }
 
   /** tossId 递增即播放一次掷币编排（结果先于动画确定，动画只呈现） */
@@ -172,6 +219,7 @@ struct DivCastPage {
     this.lines = this.lines.concat(yao.code)
     this.tossing = false
     this.pendingYao = null
+    this.saveProgress()
   }
 
   private isComplete(): boolean {
@@ -195,6 +243,7 @@ struct DivCastPage {
     const ziCount = this.ziCountOf(yao)
     this.faces = [0, 1, 2].map((i: number): boolean => i < ziCount)
     this.tossing = true
+    this.saveProgress()
     if (divReduceMotion()) {
       // reduced-motion：直接定格结果面，仅保留落定触觉
       if (yao.isMoving) {
@@ -245,6 +294,8 @@ struct DivCastPage {
   }
 
   private navigateChart(id: number): void {
+    // 成卦后清空掷卦进度，避免下次进入恢复出过期状态
+    this.clearProgress()
     pathStack.clear()
     pathStack.pushPathByName(RouteNames.DIV_HOME, null)
     const chartParam: DivChartParam = { recordId: id, animate: true }
@@ -410,7 +461,8 @@ struct DivCastPage {
 
   build() {
     NavDestination() {
-      DivinationScreen({ scrollable: false }) {
+      // 摇卦为全屏画布页：整页扩展到系统安全区外（页头不再额外避让，避免双重避让）
+      DivinationScreen({ scrollable: false, immersive: true }) {
         Column() {
           // 滚动内容区（weight 1）：矮屏/大字体可滚动不裁切（对齐安卓 weight(1f) + verticalScroll）
           Scroll() {

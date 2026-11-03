@@ -153,8 +153,9 @@ export struct DivHistoryPage {
         .align(Alignment.TopStart)
         .margin({ top: 16 })
 
-        if (this.filtered().length === 0) {
-          // 空态
+        // 空态与列表互相替换走交叉淡入淡出（对齐安卓 Crossfade，避免 0ms 硬切）
+        Stack() {
+          // 空态层
           Column() {
             DivSeal({ text: '空', sealSize: 44, fontSize: 22 })
             Text(DivText.historyEmpty)
@@ -165,7 +166,10 @@ export struct DivHistoryPage {
           .width('100%')
           .alignItems(HorizontalAlign.Center)
           .padding({ top: 80 })
-        } else {
+          .opacity(this.filtered().length === 0 ? 1 : 0)
+          .animation({ duration: 180, curve: Curve.EaseInOut })
+
+          // 列表层
           List({ space: 8 }) {
             ForEach(this.filtered(), (row: DivRecordRow) => {
               ListItem() {
@@ -203,9 +207,13 @@ export struct DivHistoryPage {
             }, (row: DivRecordRow) => row.id.toString())
           }
           .width('100%')
-          .layoutWeight(1)
+          .height('100%')
           .padding({ left: 20, right: 20, top: 4 })
+          .opacity(this.filtered().length === 0 ? 0 : 1)
+          .animation({ duration: 180, curve: Curve.EaseInOut })
         }
+        .width('100%')
+        .layoutWeight(1)
 
         DivFooterNote({ text: DivText.historyNote })
       }

@@ -11,7 +11,6 @@
 
 import { Solar } from '../../../core/lunar/lunar'
 import { LunarAdapter } from '../../../core/LunarAdapter'
-import { DivMethod } from '../../../core/DivinationCommon'
 import { MeiHuaChart } from '../../../core/meihua/MeiHuaChart'
 import { DivRecordRepository, DivRecordRow, encodeBundle, encodeBundleToJson } from '../../../data/DivinationStore'
 import { encodeChartJson } from '../../../data/DivChartCodec'
@@ -43,11 +42,15 @@ const METHOD_LABELS: Record<string, string> = {
   'liuren': DivText.methodLiurenName,
 }
 
-const TILE_LIST: Array<[string, string, string, string, string]> = [
-  ['liuyao', DivText.methodLiuyaoName, DivText.methodLiuyaoDesc, DivText.methodLiuyaoUseFor, DivText.methodLiuyaoTag],
-  ['meihua', DivText.methodMeihuaName, DivText.methodMeihuaDesc, DivText.methodMeihuaUseFor, ''],
-  ['qimen', DivText.methodQimenName, DivText.methodQimenDesc, DivText.methodQimenUseFor, ''],
-  ['liuren', DivText.methodLiurenName, DivText.methodLiurenDesc, DivText.methodLiurenUseFor, ''],
+/**
+ * 四术玉牌元数据（对齐安卓 JadeEntryTile：术名 + 一句话定位 + 推荐 tag，无 useFor 行）。
+ * 安卓 strings.xml 虽保留 div_method_*_use_for 键，但 JadeEntryTile 不消费，故本端同步删除该行。
+ */
+const TILE_LIST: Array<[string, string, string, string]> = [
+  ['liuyao', DivText.methodLiuyaoName, DivText.methodLiuyaoDesc, DivText.methodLiuyaoTag],
+  ['meihua', DivText.methodMeihuaName, DivText.methodMeihuaDesc, ''],
+  ['qimen', DivText.methodQimenName, DivText.methodQimenDesc, ''],
+  ['liuren', DivText.methodLiurenName, DivText.methodLiurenDesc, ''],
 ]
 
 @Builder
@@ -143,8 +146,8 @@ struct DivHomePage {
   }
 
   /** 四术玉牌分行（对齐安卓 methods.chunked(2)） */
-  private buildRows(): Array<Array<[string, string, string, string, string]>> {
-    const rows: Array<Array<[string, string, string, string, string]>> = []
+  private buildRows(): Array<Array<[string, string, string, string]>> {
+    const rows: Array<Array<[string, string, string, string]>> = []
     for (let i = 0; i < TILE_LIST.length; i += 2) {
       rows.push(TILE_LIST.slice(i, i + 2))
     }
@@ -164,11 +167,12 @@ struct DivHomePage {
       })
         .width(44)
 
+      // 术数色点：对齐安卓恒色口径（不再按术数分色）；改动点按本批次裁决取 goldText
       Column()
         .width(7)
         .height(7)
         .borderRadius(3.5)
-        .backgroundColor(record.method === DivMethod.LIU_YAO.id ? DivPalette.gold : DivPalette.jade)
+        .backgroundColor(DivPalette.goldText)
 
       Column().width(12)
 
@@ -200,11 +204,12 @@ struct DivHomePage {
   }
 
   /**
-   * 四术玉牌：竖排术名 + 一句话定位 + 适用问题 + 推荐标（点击防抖 + pressScale + 触感）。
+   * 四术玉牌：竖排术名 + 一句话定位 + 推荐标（点击防抖 + pressScale + 触感）。
+   * 对齐安卓 JadeEntryTile：无 useFor 行，tag 位固定 16 高随内容流。
    * 自绘卡（非 DivCard）：按规范 §2.4/§3.1 补 1px 金线描边同款的 level1 轻阴影，玄墨侧同 DivCard 豁免。
    */
   @Builder
-  JadeTile(method: string, name: string, desc: string, useFor: string, tag: string) {
+  JadeTile(method: string, name: string, desc: string, tag: string) {
     // 六爻为首选术：鎏金渐变描边 + 推荐 tag + glyph 40；其余 12% 发丝描边 + glyph 34
     Column() {
       Column() {
@@ -235,18 +240,6 @@ struct DivHomePage {
           maxLines: 2,
           overflow: TextOverflow.Ellipsis
         })
-        if (useFor.length > 0) {
-          DivSerifText({
-            text: useFor,
-            textSize: 10,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textTertiary,
-            maxLines: 1,
-            overflow: TextOverflow.Ellipsis
-          })
-            .margin({ top: 6 })
-        }
         Column().height(6)
         // tag 位固定高度：四牌同构（无 tag 留空，同一行两牌行高一致）
         Column() {
@@ -306,7 +299,8 @@ struct DivHomePage {
 
   build() {
     NavDestination() {
-      DivinationScreen() {
+      // 观象台首页为全屏画布页：整页扩展到系统安全区外（页头不再额外避让，避免双重避让）
+      DivinationScreen({ immersive: true }) {
         // 1. 干支天象头
         TianXiangHeader({ text: this.tianXiang.length > 0 ? this.tianXiang : '—' })
 
@@ -343,21 +337,21 @@ struct DivHomePage {
 
         // 4. 四术玉牌 2×2（gap 12）
         Column({ space: 12 }) {
-          ForEach(this.buildRows(), (row: Array<[string, string, string, string, string]>, rowIndex: number) => {
+          ForEach(this.buildRows(), (row: Array<[string, string, string, string]>, rowIndex: number) => {
             Row({ space: 12 }) {
-              ForEach(row, (item: [string, string, string, string, string]) => {
+              ForEach(row, (item: [string, string, string, string]) => {
                 Column() {
-                  this.JadeTile(item[0], item[1], item[2], item[3], item[4])
+                  this.JadeTile(item[0], item[1], item[2], item[3])
                 }
                 .layoutWeight(1)
-              }, (item: [string, string, string, string, string]) => item[0])
+              }, (item: [string, string, string, string]) => item[0])
               if (row.length === 1) {
                 Column()
                   .layoutWeight(1)
               }
             }
             .width('100%')
-          }, (row: Array<[string, string, string, string, string]>, index: number) => index.toString())
+          }, (row: Array<[string, string, string, string]>, index: number) => index.toString())
         }
         .width('100%')
         .padding({ left: 20, right: 20 })
@@ -421,18 +415,28 @@ struct DivHomePage {
 
         Column() {
           DivCard({ lineColor: DivPalette.goldHair }) {
-            Column() {
-              if (this.records.length === 0) {
-                DivSerifText({
-                  text: DivText.historyEmpty,
-                  textSize: 12,
-                  weight: 400,
-                  spacing: 0,
-                  color: DivPalette.textTertiary
-                })
-                  .width('100%')
-                  .padding({ top: 18, bottom: 18 })
-              } else {
+            // 空态与记录列表交叉淡入淡出（对齐安卓 Crossfade，避免 0ms 硬切）
+            Stack() {
+              // 空态层
+              Column() {
+                if (this.records.length === 0) {
+                  DivSerifText({
+                    text: DivText.historyEmpty,
+                    textSize: 12,
+                    weight: 400,
+                    spacing: 0,
+                    color: DivPalette.textTertiary
+                  })
+                    .width('100%')
+                    .padding({ top: 18, bottom: 18 })
+                }
+              }
+              .width('100%')
+              .opacity(this.records.length === 0 ? 1 : 0)
+              .animation({ duration: 180, curve: Curve.EaseInOut })
+
+              // 记录列表层
+              Column() {
                 ForEach(this.records, (record: DivRecordRow, index: number) => {
                   Column() {
                     this.LedgerRow(record)
@@ -445,6 +449,9 @@ struct DivHomePage {
                   }
                 }, (record: DivRecordRow) => record.id.toString())
               }
+              .width('100%')
+              .opacity(this.records.length === 0 ? 0 : 1)
+              .animation({ duration: 180, curve: Curve.EaseInOut })
             }
             .width('100%')
             .padding({ left: 14, top: 4, bottom: 4 })

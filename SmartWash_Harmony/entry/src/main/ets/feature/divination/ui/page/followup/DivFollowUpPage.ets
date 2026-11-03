@@ -1,7 +1,7 @@
 /**
  * 追问页 —— 对齐安卓 ui/page/followup/DivFollowUpPage.kt + DivFollowUpViewModel.kt。
  *
- * 结构：盘面摘要条（紧凑单行）→ 聊天流（user 金底右对齐 / assistant 素底左对齐）
+ * 结构：页头（居中标题 + 副题）→ 聊天流（user 金底右对齐 / assistant 素底左对齐）
  * → 新消息自动滚底 + Loading 尾部「推演中…」→ 底部输入栏（胶囊输入 + 发送金按钮）。
  *
  * 关键约束：
@@ -11,12 +11,10 @@
  */
 
 import { DivMessage, followUp as requestFollowUp } from '../../../network/DivinationApi'
-import { chartNameOf, divMethodName } from '../../../data/DivChartReader'
-import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
+import { DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivPageHeader,
   DivPalette,
-  DivSeal,
   DivSerifText,
   DivText,
   DivWaveIcon,
@@ -104,9 +102,6 @@ struct ChatBubbleView {
 struct DivFollowUpPage {
   @Local loadingRecord: boolean = true
   @Local record: DivRecordRow | null = null
-  @Local chartName: string = ''
-  @Local chartSeal: string = ''
-  @Local timeText: string = ''
   @Local history: DivMessage[] = []
   @Local historyLength: number = 0
   @Local sending: boolean = false
@@ -122,11 +117,6 @@ struct DivFollowUpPage {
     try {
       const row = await DivRecordRepository.getById(recordId)
       this.record = row
-      if (row !== null) {
-        this.chartName = this.resolveName(row)
-        this.chartSeal = this.resolveSeal(row.method, this.chartName)
-        this.timeText = this.formatTime(row.castAt)
-      }
     } catch (err) {
       this.record = null
     }
@@ -139,37 +129,6 @@ struct DivFollowUpPage {
     if (this.historyLength > 0) {
       this.scroller.scrollToIndex(this.historyLength - 1, true)
     }
-  }
-
-  private resolveName(row: DivRecordRow): string {
-    const chartJson = decodeBundle(decodeBundleFromJson(row.chartJson))
-    return chartNameOf(row.method, chartJson)
-  }
-
-  private resolveSeal(method: string, name: string): string {
-    if (method === 'liuyao') {
-      return name.length > 0 ? name.charAt(0) : '卦'
-    }
-    if (method === 'meihua') {
-      return '梅'
-    }
-    if (method === 'qimen') {
-      return '奇'
-    }
-    return '壬'
-  }
-
-  private formatTime(castAt: number): string {
-    const d = new Date(castAt)
-    const month = d.getMonth() + 1
-    const day = d.getDate()
-    const hour = d.getHours()
-    const minute = d.getMinutes()
-    return `${this.pad2(month)}-${this.pad2(day)} ${this.pad2(hour)}:${this.pad2(minute)}`
-  }
-
-  private pad2(n: number): string {
-    return n < 10 ? `0${n}` : `${n}`
   }
 
   /** 发送追问：追加 user 轮 → followUp → 追加 assistant 轮；Loading 中防重入 */
@@ -203,36 +162,6 @@ struct DivFollowUpPage {
     }).catch((err: Object): void => {
       this.sending = false
     })
-  }
-
-  @Builder
-  SummaryBar() {
-    Row() {
-      DivSeal({ text: this.chartSeal, sealSize: 32, fontSize: 12 })
-      Column().width(10)
-      DivSerifText({
-        text: this.chartName.length > 0 ? this.chartName : divMethodName(this.record?.method ?? ''),
-        textSize: 11.5,
-        weight: 500,
-        spacing: 2,
-        color: DivPalette.textPrimary,
-        maxLines: 1,
-        overflow: TextOverflow.Ellipsis
-      })
-        .layoutWeight(1)
-      DivSerifText({
-        text: this.timeText,
-        textSize: 9.5,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textTertiary
-      })
-    }
-    .width('100%')
-    .padding({ left: 20, right: 20, top: 6, bottom: 6 })
-    .borderRadius(12)
-    .backgroundColor(DivPalette.surface)
-    .alignItems(VerticalAlign.Center)
   }
 
   /**
@@ -338,9 +267,6 @@ struct DivFollowUpPage {
               .width('100%')
               .padding({ top: 80 })
           } else {
-            // 盘面摘要条
-            this.SummaryBar()
-
             // 聊天流（画板：项距 16）
             List({ scroller: this.scroller, space: 16 }) {
               if (this.history.length === 0) {

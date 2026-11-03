@@ -458,7 +458,8 @@ struct DivChartPage {
 
   build() {
     NavDestination() {
-      DivinationScreen() {
+      // 卦盘为全屏画布页：整页扩展到系统安全区外（页头不再额外避让，避免双重避让）
+      DivinationScreen({ immersive: true }) {
         if (this.loading) {
           // loading 态无页头（对齐安卓）：金色水波指示 + 文字 12
           Column() {
@@ -505,14 +506,14 @@ struct DivChartPage {
             .opacity(0.75)
             .padding({ left: 20, right: 20, top: 4, bottom: 4 })
 
-          // 奇门口径徽标
+          // 奇门口径徽标（文字取语义金 goldText，对齐安卓 c.goldText）
           if (this.method === 'qimen') {
             DivSerifText({
               text: this.juDeclaration(),
               textSize: 12,
               weight: 500,
               spacing: 3,
-              color: DivPalette.gold,
+              color: DivPalette.goldText,
               textAlign: TextAlign.Center
             })
               .width('100%')
