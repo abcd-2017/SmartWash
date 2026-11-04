@@ -31,8 +31,8 @@ data class WorkbenchEntryVo(
     /** 入口标题 */
     val title: String = "",
 
-    /** 副标题描述 */
-    val description: String = "",
+    /** 副标题描述（后端 DEFAULT NULL，空文案如实下发 null，端上映射层兜底空串） */
+    val description: String? = null,
 
     /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/science/gamepad/default） */
     val icon: String = "",
