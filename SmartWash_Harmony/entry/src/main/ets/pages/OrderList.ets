@@ -11,6 +11,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { logger } from "../utils/Logger"
 import vibrator from '@ohos.vibrator'
 
 // 分页每页条数
@@ -71,6 +72,7 @@ struct OrderList {
     // 安全取参（评审 #31）：参数缺失/非法时兜底第 0 个页签
     this.currIndex = getNumberParam(RouteNames.ORDER_LIST) ?? 0
     this.orderStatus = this.list[this.currIndex]
+    logger.debug('orderList', `订单列表页挂载 初始页签=${this.currIndex}`)
     this.fetchOrderPage(1, true)
   }
 
@@ -80,6 +82,7 @@ struct OrderList {
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
   async fetchOrderPage(page: number, replace: boolean): Promise<boolean> {
+    logger.debug('orderList', `拉取订单列表 page=${page} status=${this.orderStatus} replace=${replace}`)
     if (page === 1) {
       this.isLoading = true
     }
@@ -101,6 +104,8 @@ struct OrderList {
       this.contentOpacity = 1
       return true
     }
+    logger.warn('orderList', `订单列表加载失败 page=${page} status=${this.orderStatus} ` +
+      `code=${res.code} message=${res.message ?? ""}`)
     showToastSafety(res.message, "订单加载失败")
     this.isLoading = false
     this.contentOpacity = 1
@@ -182,16 +187,20 @@ struct OrderList {
   /** 确认取消订单：成功后 toast + 当前状态全量重拉，并打标记让订单计数同步刷新 */
   async doCancelOrder() {
     if (this.pendingCancelOrderId === null) {
+      logger.debug('orderList', '取消订单确认回调缺少待取消订单 id，忽略本次触发')
       return
     }
     let res = await cancelOrder(this.pendingCancelOrderId)
     if (res.code === HttpStatusCode.Ok) {
+      logger.info('orderList', `取消订单成功 orderId=${this.pendingCancelOrderId}`)
       // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
       // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
       AppStorage.setOrCreate("refreshOrderCount", true)
       this.refreshOrder()
       showToastSafety("取消成功")
     } else {
+      logger.warn('orderList', `取消订单被拒 orderId=${this.pendingCancelOrderId} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "取消失败")
     }
     this.pendingCancelOrderId = null
@@ -261,6 +270,7 @@ struct OrderList {
               }
               this.currIndex = index
               this.orderStatus = this.list[index]
+              logger.debug('orderList', `切换订单页签 index=${index} status=${this.orderStatus}`)
               this.paging.reset()
               // 切 tab 内容淡出 → 数据到位淡入（对齐安卓 AnimatedContent 300/200）
               this.contentOpacity = 0

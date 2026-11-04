@@ -17,6 +17,9 @@ import { PublicPaths } from './PublicPaths'
 /** 业务码：登录失效（与 HTTP 401 同语义） */
 export const UNAUTHORIZED_CODE: number = 401
 
+/** 业务信封成功码（与 HttpUtil.BizCode.SUCCESS 同值；独立定义避免 Axios→HttpUtil 循环 import） */
+export const BUSINESS_SUCCESS_CODE: number = 200
+
 /**
  * 是否命中公开路径白名单。
  * @param url Axios 请求 URL（相对路径，可能带 query，可能为 undefined）
@@ -52,6 +55,18 @@ export function resolveToken(cached: Object | null): string {
  */
 export function isUnauthorizedCode(code: number | null | undefined): boolean {
   return code === UNAUTHORIZED_CODE
+}
+
+/**
+ * HTTP 200 信封内的业务码是否属于「非 200 且非 401」的业务失败
+ * （如 201/404/500，供响应拦截器 warn 留痕；401 已由 handleUnauthorized 统一处理）。
+ * code 缺省（body 非信封结构）不视为业务失败，避免对非信封响应误报——
+ * 信封缺省的转译兜底在 HttpUtil.decode，语义以该处为准。
+ * @param code 业务信封 code（可能为 null/undefined）
+ */
+export function isBusinessFailureCode(code: number | null | undefined): boolean {
+  return code !== undefined && code !== null &&
+    code !== BUSINESS_SUCCESS_CODE && !isUnauthorizedCode(code)
 }
 
 /**

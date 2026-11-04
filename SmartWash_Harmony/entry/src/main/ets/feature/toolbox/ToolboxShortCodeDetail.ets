@@ -8,7 +8,7 @@
 // 红线：resolve 有点击统计副作用，仅用于「私有码打开」，禁止用于详情刷新/列表。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { pasteboard } from '@kit.BasicServicesKit'
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { common, Want } from '@kit.AbilityKit'
 import { image } from '@kit.ImageKit'
 import { generateBarcode, scanCore } from '@kit.ScanKit'
@@ -41,9 +41,13 @@ import { toolboxCardTransition } from './ToolboxCardTransition'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { ToolboxRenewDialog } from './ToolboxRenewDialog'
 import { AppButton, AppButtonVariant, AppConfirmDialog, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
+import { logger } from '../../utils/Logger'
 import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+
+/** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
+const TAG: string = 'toolboxShortCodeDetail'
 
 @Builder
 export function ToolboxShortCodeDetailBuilder() {
@@ -90,6 +94,7 @@ struct ToolboxShortCodeDetail {
   async aboutToAppear(): Promise<void> {
     // 基础字段由列表路由携带（红线：禁止经 resolve 拉取详情——resolve 会计点击）
     this.param = getObjectParam<ToolboxShortCodeDetailParam>(RouteNames.TOOLBOX_SHORT_CODE_DETAIL)
+    logger.debug(TAG, `详情页挂载 code=${this.param?.code ?? ''} 公开=${this.isPublicCode()}`)
     this.fallbackTimer = setTimeout(() => {
       if (!this.cardEntered) {
         this.cardEntered = true
@@ -125,6 +130,7 @@ struct ToolboxShortCodeDetail {
   private async loadQrCode(): Promise<void> {
     const url = this.getShortUrl()
     if (url.length === 0) {
+      logger.warn(TAG, 'shortUrl 缺失，二维码进入失败态')
       this.qrFailed = true
       this.qrLoading = false
       return
@@ -142,7 +148,9 @@ struct ToolboxShortCodeDetail {
         margin: 2
       })
       this.qrPixelMap = pixelMap
+      logger.debug(TAG, '二维码生成成功')
     } catch (err) {
+      logger.error(TAG, '二维码生成异常', err instanceof Error ? err.message : '')
       this.qrFailed = true
     } finally {
       this.qrLoading = false
@@ -153,12 +161,14 @@ struct ToolboxShortCodeDetail {
   async fetchStats(page: number): Promise<boolean> {
     const id = this.param?.id ?? 0
     if (id <= 0) {
+      logger.warn(TAG, '访问明细拉取中止: 短码 id 缺失')
       return false
     }
     const res = await pageShortCodeStats(id, page, TOOLBOX_PAGE_SIZE)
     if (res.code === HttpStatusCode.Ok && res.data !== null) {
       const records: Array<ShortCodeStatsVo> = res.data.records
       if (records.length === 0) {
+        logger.debug(TAG, `访问明细封底 page=${page} 本页无数据`)
         return false
       }
       if (page === 1) {
@@ -167,15 +177,18 @@ struct ToolboxShortCodeDetail {
       }
       this.statsList.push(...records)
       this.statsAppendError = false
+      logger.debug(TAG, `访问明细加载成功 page=${page} count=${records.length}`)
       return true
     }
     if (page === 1) {
       // 首刷失败：无数据走整卡错误态，有数据走 footer 内联错误（对齐安卓）
+      logger.warn(TAG, `访问明细首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
       this.statsError = true
       showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
       return false
     }
     // 追加失败：置内联错误态并 reject（分页器记失败页不封底，footer 重试重拉同一页）
+    logger.warn(TAG, `访问明细追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
     this.statsAppendError = true
     showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
     throw new Error(ToolboxText.toolbox_stats_error_load)
@@ -190,7 +203,8 @@ struct ToolboxShortCodeDetail {
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, url)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety(ToolboxText.toolbox_copy_success)
-    }).catch(() => {
+    }).catch((err: BusinessError) => {
+      logger.error(TAG, '短链复制到剪贴板失败', `${err.code} ${err.message}`)
       showToastSafety(ToolboxText.toolbox_open_failed)
     })
   }
@@ -215,11 +229,14 @@ struct ToolboxShortCodeDetail {
     try {
       const res = await resolveShortCode(code)
       if (res.code === HttpStatusCode.Ok && res.data !== null && (res.data.target ?? "").length > 0) {
+        logger.debug(TAG, '私有码解析成功，打开目标链接')
         this.openInBrowser(res.data.target ?? "")
       } else {
+        logger.warn(TAG, `私有码解析被拒 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, ToolboxText.toolbox_resolve_failed)
       }
     } catch (err) {
+      logger.error(TAG, '私有码解析异常', err instanceof Error ? err.message : '')
       showToastSafety(ToolboxText.toolbox_resolve_failed)
     } finally {
       this.resolving = false
@@ -240,6 +257,7 @@ struct ToolboxShortCodeDetail {
       }
       context.startAbility(want)
     } catch (err) {
+      logger.error(TAG, '浏览器拉起失败', err instanceof Error ? err.message : '')
       showToastSafety(ToolboxText.toolbox_open_failed)
     }
   }
@@ -294,14 +312,17 @@ struct ToolboxShortCodeDetail {
   /** 续期（PUT expireAt；预设 7 天 / 30 天 / 自定义日期；无永久选项） */
   private async doRenew(controller: CustomDialogController): Promise<void> {
     if (this.renewing) {
+      logger.debug(TAG, '续期进行中，忽略重复确认')
       return
     }
     const id = this.param?.id ?? 0
     if (id <= 0) {
+      logger.warn(TAG, '续期中止: 短码 id 缺失')
       return
     }
     if (this.renewPreset === ExpiryPreset.CUSTOM &&
       (this.renewDate === null || this.renewDate.length === 0)) {
+      logger.warn(TAG, '续期校验拒绝: 自定义有效期未选日期')
       showToastSafety(ToolboxText.toolbox_error_custom_date_required)
       return
     }
@@ -311,15 +332,18 @@ struct ToolboxShortCodeDetail {
         expireAt: expireAtFor(this.renewPreset, this.renewDate, new Date()) ?? ""
       })
       if (res.code === HttpStatusCode.Ok) {
+        logger.info(TAG, `短链续期成功 id=${id} preset=${this.renewPreset}`)
         showToastSafety(ToolboxText.toolbox_toast_renew_success)
         // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
         markShortCodeChanged()
         controller.close()
         pathStack.pop()
       } else {
+        logger.warn(TAG, `续期被拒 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, ToolboxText.toolbox_error_submit)
       }
     } catch (err) {
+      logger.error(TAG, '续期请求异常', err instanceof Error ? err.message : '')
       showToastSafety(ToolboxText.toolbox_error_submit)
     } finally {
       this.renewing = false
@@ -349,10 +373,12 @@ struct ToolboxShortCodeDetail {
   /** 删除（DELETE；后端 data=null，成功一律以 code===200 判定） */
   private async doDelete(): Promise<void> {
     if (this.deleting) {
+      logger.debug(TAG, '删除进行中，忽略重复确认')
       return
     }
     const id = this.param?.id ?? 0
     if (id <= 0) {
+      logger.warn(TAG, '删除中止: 短码 id 缺失')
       return
     }
     this.deleting = true
@@ -360,14 +386,17 @@ struct ToolboxShortCodeDetail {
       const res = await deleteShortCode(id)
       // 红线：DELETE 响应 data 为 null，只判 code
       if (res.code === HttpStatusCode.Ok) {
+        logger.info(TAG, `短链删除成功 id=${id}`)
         showToastSafety(ToolboxText.toolbox_toast_delete_success)
         // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
         markShortCodeChanged()
         pathStack.pop()
       } else {
+        logger.warn(TAG, `删除被拒 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         showToastSafety(res.message, ToolboxText.toolbox_error_submit)
       }
     } catch (err) {
+      logger.error(TAG, '删除请求异常', err instanceof Error ? err.message : '')
       showToastSafety(ToolboxText.toolbox_error_submit)
     } finally {
       this.deleting = false

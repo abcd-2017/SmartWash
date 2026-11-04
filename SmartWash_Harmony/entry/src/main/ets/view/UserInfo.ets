@@ -9,6 +9,7 @@ import { OrderItemCountVo } from "../network/vo/OrderItemCountVo"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
 import { LoadingState } from "./common/AppComponents"
 
@@ -59,7 +60,11 @@ export struct UserInfo {
     if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
       this.avatarUrl = this.userInfo?.avatar ?? null
+      // 回 Tab/绑定/换头像后的刷新为低频动作：debug 留痕
+      logger.debug('userInfo', '用户信息加载成功')
     } else {
+      // 业务失败 warn 留痕（401 已由 Axios 拦截器统一清理并跳登录）
+      logger.warn('userInfo', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "用户信息加载失败")
     }
   }
@@ -81,14 +86,20 @@ export struct UserInfo {
           // 上传成功后全量重拉用户信息：余额等其余字段由服务端在该响应后变更，
           // 直接用响应 data 更新头像会导致页面其余字段陈旧（对齐安卓 UserInfoViewModel.kt:117）
           await this.refreshUserInfo()
+          // 低频关键动作成功：头像上传成功
+          logger.info('userInfo', '头像上传成功')
           showToastSafety("头像上传成功")
         } else {
+          // 上传被服务端拒绝
+          logger.warn('userInfo', `头像上传被拒绝 code=${res.code} message=${res.message ?? ""}`)
           showToastSafety(res.message, "头像上传失败")
         }
         this.isUploading = false
       }
     } catch (err) {
       this.isUploading = false
+      // 外部调用失败（选图/上传异常）：error 留痕，只记 message 摘要，不序列化完整 error
+      logger.error('userInfo', '头像上传流程异常', err instanceof Error ? err.message : "")
       showToastSafety("头像上传失败")
     }
   }
@@ -102,7 +113,10 @@ export struct UserInfo {
     })
     if (res.code === HttpStatusCode.Ok) {
       this.orderItemCount = res.data
+      logger.debug('userInfo', '订单数量加载成功')
     } else {
+      // 业务失败 warn 留痕（401 已由 Axios 拦截器统一清理并跳登录）
+      logger.warn('userInfo', `订单数量加载失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "订单数量加载失败")
     }
   }

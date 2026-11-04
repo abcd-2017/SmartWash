@@ -24,6 +24,7 @@ import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
+import { logger } from '../../../../../utils/Logger'
 
 @Builder
 export function DivFollowUpBuilder() {
@@ -111,14 +112,22 @@ struct DivFollowUpPage {
   async aboutToAppear(): Promise<void> {
     const recordId = getNumberParam(RouteNames.DIV_FOLLOW_UP)
     if (recordId === null) {
+      logger.warn('divFollowUpPage', '追问页路由参数缺失 recordId，按空态呈现')
       this.loadingRecord = false
       return
     }
     try {
       const row = await DivRecordRepository.getById(recordId)
       this.record = row
+      if (row !== null) {
+        logger.debug('divFollowUpPage', `追问页记录加载完成 recordId=${recordId}`)
+      } else {
+        logger.warn('divFollowUpPage', `追问页卦象记录不存在 recordId=${recordId}，按空态呈现`)
+      }
     } catch (err) {
       this.record = null
+      logger.error('divFollowUpPage', '追问页读取卦象记录失败',
+        err instanceof Error ? err.message : '')
     }
     this.loadingRecord = false
   }
@@ -157,10 +166,16 @@ struct DivFollowUpPage {
         const reply: DivMessage = { role: 'assistant', content: resp.data.reply }
         this.history = this.history.concat(reply)
         this.historyLength = this.history.length
+        // 低频关键动作：追问提交成功（追问内容只记长度，不打全文）
+        logger.info('divFollowUpPage', `追问提交成功 recordId=${record.id} turn=${newHistory.length}`)
+      } else {
+        logger.warn('divFollowUpPage', `追问响应异常 recordId=${record.id} code=${resp.code}`)
       }
       this.sending = false
     }).catch((err: Object): void => {
       this.sending = false
+      logger.error('divFollowUpPage', `追问提交失败 recordId=${record.id}`,
+        err instanceof Error ? err.message : '')
     })
   }
 

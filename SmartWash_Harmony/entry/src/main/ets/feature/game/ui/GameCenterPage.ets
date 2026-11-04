@@ -12,6 +12,8 @@
 
 import { BizCode } from '../../../network/HttpUtil'
 import { RouteNames } from '../../../constant/RouteNames'
+import { logger } from '../../../utils/Logger'
+import { BusinessError } from '@kit.BasicServicesKit'
 import {
   DesignColor,
   DesignDimens,
@@ -81,6 +83,7 @@ export struct GameCenterPage {
   @Local selectedCategory: GameCategory | null = null
 
   aboutToAppear(): void {
+    logger.debug('gameCenterPage', '游戏中心挂载，拉取游戏列表')
     this.loadGames()
   }
 
@@ -97,9 +100,14 @@ export struct GameCenterPage {
         this.games = withUniqueKeys(res.data.map((vo: GameVo, index: number): GameItem =>
           gameVoToItem(vo, index)))
       } else {
+        // 业务拒绝留痕：非 200 或数据载荷缺失，进错误态（仅记 code/message 摘要）
+        logger.warn('gameCenterPage', `游戏列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
         this.isError = true
       }
     } catch (err) {
+      // 降级留痕：拉取异常进错误态给重试入口（仅 error.message 摘要，不序列化 error）
+      const e: BusinessError = err as BusinessError
+      logger.warn('gameCenterPage', `游戏列表加载异常，进错误态 err=${e.message}`)
       this.isError = true
     }
     this.isLoading = false
@@ -158,6 +166,8 @@ export struct GameCenterPage {
     if (game.url.length === 0) {
       return
     }
+    // 游戏入场留痕（低频动作按约定记 debug；url 不落日志）
+    logger.debug('gameCenterPage', `入场游戏 gameKey=${game.gameKey}`)
     const param: WebPageParam = new WebPageParam()
     param.url = game.url
     param.title = game.title

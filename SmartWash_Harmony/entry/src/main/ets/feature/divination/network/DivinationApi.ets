@@ -13,6 +13,7 @@
 
 import { BaseResponse } from '../../../network/BaseResponse'
 import { httpUtil } from '../../../network/HttpUtil'
+import { logger } from '../../../utils/Logger'
 
 /** 解读请求体（字段与安卓 DivinationApi.interpret 一致） */
 export interface DivInterpretForm {
@@ -119,12 +120,17 @@ function buildMockReading(form: DivInterpretForm): DivReadingVo {
 
 /** 解读（Mock）：后端就绪后替换为 httpUtil.post 真连 */
 export async function interpret(form: DivInterpretForm): Promise<BaseResponse<DivReadingVo>> {
+  // Mock 留痕（debug）：标记解读内容为本地 Mock 产物，便于排查"内容为模板文本"类反馈；
+  // 问事内容只记长度，chartJson 不打全文
+  logger.debug('divinationApi', `解读 Mock 生成 recordId=${form.recordId} method=${form.method} ` +
+    `category=${form.category} questionLen=${form.question.length}`)
   await delay(600)
   return { code: 200, message: 'ok', data: buildMockReading(form) }
 }
 
 /** 追问（Mock）：沿用原盘原 castAt，不重算（见 Repository 铁律） */
 export async function followUp(form: DivFollowUpForm): Promise<BaseResponse<DivFollowUpVo>> {
+  logger.debug('divinationApi', `追问 Mock 应答 recordId=${form.recordId} turn=${form.history.length}`)
   await delay(600)
   const turn = form.history.length
   const reply = turn <= 2

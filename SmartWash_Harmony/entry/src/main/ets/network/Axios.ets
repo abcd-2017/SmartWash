@@ -11,6 +11,7 @@ import { logger } from '../utils/Logger'
 import { getValue, setValue } from '../utils/StorageUtil'
 import {
   buildAuthorizationHeader,
+  isBusinessFailureCode,
   isUnauthorizedCode,
   isPublicRequest,
   resolveToken,
@@ -32,7 +33,8 @@ import BuildProfile from 'entry/BuildProfile'
 const BASE_URL: string = BuildProfile.BASE_URL
 
 if (BASE_URL === "") {
-  logger.error("BASE_URL 未注入", "release 构建必须在 entry/build-profile.json5 buildOptionSet[release]" +
+  logger.error("axios", "BASE_URL 未注入",
+    "release 构建必须在 entry/build-profile.json5 buildOptionSet[release]" +
     ".arkOptions.buildProfileFields 注入生产 HTTPS 域名后重新出包")
 }
 
@@ -121,16 +123,25 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig): Pr
   }
   return config
 }, (error: AxiosError) => {
+  // 请求阶段拦截器失败（如 header 组装异常）：补 error 留痕后原样 reject，不改失败语义。
+  // 仅记 error.message 摘要，不序列化完整 error（可能携带请求体/手机号等敏感信息，评审 #25）
+  logger.error("axios", "请求拦截器异常", error.message ?? "")
   return Promise.reject(error)
 })
 
 //请求后拦截器：返回完整 AxiosResponse，由 HttpUtil 统一解包业务信封（评审 #11：不做"声明返回 AxiosResponse 实际返回 body"的类型谎言）
 instance.interceptors.response.use((response: AxiosResponse): AxiosResponse => {
   // 仅输出状态码等摘要，不打印完整响应体（含手机号/余额等敏感信息，评审 #25）
-  logger.debug("响应返回", `status=${response.status}`)
+  logger.debug("axios", `响应返回 status=${response.status}`)
   // 后端统一业务信封：HTTP 200 但业务码 401 同样表示登录失效
   if (isUnauthorizedCode(response.data?.code)) {
     handleUnauthorized("登录失效，请重新登录！")
+  } else if (isBusinessFailureCode(response.data?.code)) {
+    // HTTP 200 但业务码非 200/401（如 201/404/500）：此前静默放行，此处补 warn 留痕
+    //（401 已由 handleUnauthorized 统一处理，不再重复记录）。
+    // 仅输出 url + 业务码 + message 摘要，不打印完整响应体（敏感红线，评审 #25）
+    logger.warn("axios", `业务失败响应 url=${response.config.url ?? ""} ` +
+      `code=${response.data?.code} message=${response.data?.message ?? ""}`)
   }
   return response
 }, (error: AxiosError) => {
@@ -151,6 +162,6 @@ instance.interceptors.response.use((response: AxiosResponse): AxiosResponse => {
     }
   }
   // 仅记录错误摘要，不序列化完整 error（可能携带请求体/手机号等敏感信息，评审 #25）
-  logger.error("请求异常", message)
+  logger.error("axios", "请求异常", message)
   return Promise.reject(error)
 })

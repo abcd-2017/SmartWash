@@ -38,6 +38,7 @@ import { DesignElevation, MotionTiming } from '../../../../../constant/DesignSys
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
+import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
 
 /** 六爻起卦方式 */
@@ -101,12 +102,22 @@ struct DivAskPage {
     this.method = DivMethod.ALL.find((m) => m.id === methodId) !== undefined
       ? methodId
       : DivMethod.LIU_YAO.id
+    logger.debug('divAskPage', `问事页挂载 method=${this.method}`)
   }
 
   /** 输入实时分流：高风险整页替换 + 领域关键词自动预选（手动选择后关掉自动） */
   private onQuestionChange(text: string): void {
     this.question = text
-    this.safetyBlocked = this.isHighRisk(text)
+    const blocked = this.isHighRisk(text)
+    // 每输入回调为高频路径，仅在拦截状态翻转瞬间留痕（不记每次输入）
+    if (blocked !== this.safetyBlocked) {
+      if (blocked) {
+        logger.warn('divAskPage', `命中高风险关键词，切换安全分流页 len=${text.length}`)
+      } else {
+        logger.debug('divAskPage', '高风险状态解除，恢复问事表单')
+      }
+    }
+    this.safetyBlocked = blocked
     if (this.categoryAuto) {
       this.category = this.classifyCategory(text)
     }
@@ -164,6 +175,7 @@ struct DivAskPage {
       const chart = QiMenChart.compile(Solar.fromDate(new Date()))
       this.saved([], DivMethod.QI_MEN.id, chart)
     } catch (err) {
+      logger.error('divAskPage', '奇门起局失败', err instanceof Error ? err.message : '')
       showToastSafety('起局失败，请稍后重试')
     }
   }
@@ -182,6 +194,7 @@ struct DivAskPage {
     } catch (err) {
       // 六壬九宗门未实现宗门（伏吟/返吟/遥克等）抛异常，按 UI 口径提示「暂不支持」
       const note = err instanceof Error && err.message.length > 0 ? err.message : '起课暂不支持，敬请期待'
+      logger.warn('divAskPage', `六壬起课受限 note=${note}`)
       showToastSafety(note)
     }
   }
@@ -197,6 +210,7 @@ struct DivAskPage {
   /** 落库（saving 防重）→ 跳卦盘并清空栈回到观象台首页（对齐安卓 popUpTo(DivHome)） */
   private async saved(lines: number[], method: string, chart: Object): Promise<void> {
     if (this.saving) {
+      logger.debug('divAskPage', '排盘入库进行中，忽略重复触发')
       return
     }
     this.saving = true
@@ -206,9 +220,13 @@ struct DivAskPage {
       const id = await DivRecordRepository.save(
         method, this.category, this.question.trim(), JSON.stringify(lines), Date.now(), bundleJson)
       this.saving = false
+      // 低频关键动作：问事排盘入库成功（问事内容只记长度，不打全文）
+      logger.info('divAskPage', `排盘入库成功 recordId=${id} method=${method} ` +
+        `category=${this.category} questionLen=${this.question.trim().length}`)
       this.navigateChart(id)
     } catch (err) {
       this.saving = false
+      logger.error('divAskPage', '排盘入库失败', err instanceof Error ? err.message : '')
       showToastSafety('起卦失败，请稍后重试')
     }
   }

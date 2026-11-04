@@ -33,15 +33,21 @@ struct Index {
   async aboutToAppear() {
     this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
     if (this.token !== "") {
+      // 启动分流过程留痕（debug：一次性低频路径，不打 token 内容）
+      logger.debug('index', '冷启动检测到本地 token，校验学校信息')
       let res = await getUserSchoolId()
       if (res.code === HttpStatusCode.Ok) {
         this.showPageType = res.data === null ? 1 : 2
       } else {
         // 接口异常（含 401，网络层已统一清理并跳登录）时回退登录页
+        // 降级留痕：启动分流回退登录页
+        logger.warn('index', `启动分流学校信息校验失败，回退登录页 code=${res.code}`)
         this.showPageType = 0
       }
     }
     this.isLoading = false
+    // 分流结果：0=登录页 1=完善学校信息 2=首页
+    logger.debug('index', `启动分流完成 showPageType=${this.showPageType}`)
   }
 
   async onUserTokenChange() {
@@ -52,13 +58,22 @@ struct Index {
         if (res.code === HttpStatusCode.Ok) {
           if (res.data === null) {
             this.showPageType = 1
+            // 低频关键动作成功：登录成功但学校信息缺失，进入完善信息页
+            logger.info('index', '登录成功，学校信息缺失，进入完善信息页')
           } else {
             this.showPageType = 2
             AppStorage.setOrCreate("refreshUserInfo", true)
             AppStorage.setOrCreate("refreshOrderCount", true)
-            logger.info("index page show")
+            // 低频关键动作成功：登录成功分流进入首页（存量复核：级别正确，保留）
+            logger.info('index', '登录成功进入首页')
           }
+        } else {
+          // 降级留痕：学校信息校验失败时维持当前渲染（与冷启动回退登录页不同，此处不改变既有行为）
+          logger.warn('index', `登录后学校信息校验失败 code=${res.code}`)
         }
+      } else {
+        // 异常路径：登录态标记触发但本地 token 为空
+        logger.warn('index', '登录态标记触发但本地 token 为空，忽略本次分流')
       }
       this.userLoginFlag = false
     }
