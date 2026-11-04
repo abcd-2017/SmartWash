@@ -7,7 +7,7 @@
 // 卡片右列含「复制短链」描边按钮（对齐安卓 CopyPillButton）。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { pasteboard } from '@kit.BasicServicesKit'
+import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { RouteNames } from '../../constant/RouteNames'
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
 import {
@@ -24,9 +24,13 @@ import {
 import { ExpiryState, expiryStateOf, formatDisplayDateTime, isPublicVisibility } from './ShortCodeRules'
 import { consumeShortCodeChanged } from './ToolboxChangeSignal'
 import { AppButton, EmptyState, IconBox, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
+import { logger } from '../../utils/Logger'
 import { PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+
+/** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
+const TAG: string = 'toolboxShortCodeList'
 
 @Builder
 export function ToolboxShortCodeListBuilder() {
@@ -56,6 +60,7 @@ struct ToolboxShortCodeList {
   )
 
   async aboutToAppear(): Promise<void> {
+    logger.debug(TAG, '列表页挂载，开始首刷')
     await this.fetchPage(1)
     this.isLoadingFirst = false
   }
@@ -69,6 +74,7 @@ struct ToolboxShortCodeList {
     if (res.code === HttpStatusCode.Ok && res.data !== null) {
       const records: Array<ShortCodeVo> = res.data.records
       if (records.length === 0) {
+        logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
         if (this.list.length > 0) {
           showToastSafety("没有更多数据了")
         }
@@ -81,15 +87,18 @@ struct ToolboxShortCodeList {
       }
       this.list.push(...records)
       this.appendError = false
+      logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
       return true
     }
     if (page === 1) {
       // 首刷失败：说明 + 重试（规范 §3.6 错误态），并 toast 提示（对齐安卓 refresh Error toast）
+      logger.warn(TAG, `短链首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
       this.isFirstError = true
       showToastSafety(res.message, ToolboxText.toolbox_error_load)
       return false
     }
     // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
+    logger.warn(TAG, `短链追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
     this.appendError = true
     showToastSafety(res.message, ToolboxText.toolbox_error_load)
     throw new Error(ToolboxText.toolbox_error_load)
@@ -132,7 +141,8 @@ struct ToolboxShortCodeList {
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety(ToolboxText.toolbox_copy_success)
-    }).catch(() => {
+    }).catch((err: BusinessError) => {
+      logger.error(TAG, '短链复制到剪贴板失败', `${err.code} ${err.message}`)
       showToastSafety(ToolboxText.toolbox_open_failed)
     })
   }
@@ -450,6 +460,7 @@ struct ToolboxShortCodeList {
         return
       }
       if (consumeShortCodeChanged()) {
+        logger.debug(TAG, '消费到短链变更信号，重拉列表')
         this.refreshList()
       }
     })

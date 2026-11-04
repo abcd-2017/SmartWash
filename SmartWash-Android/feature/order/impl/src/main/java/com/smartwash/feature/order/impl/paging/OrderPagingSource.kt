@@ -1,8 +1,8 @@
 package com.smartwash.feature.order.impl.paging
 
-import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.impl.OrderImplConstant
 import com.smartwash.feature.order.impl.network.api.OrderServiceApi
@@ -23,8 +23,12 @@ class OrderPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, OrderInfo> {
         return try {
             val currentPage = params.key ?: 1
-            val orderList =
-                orderServiceApi.getOrderList(status, currentPage, pageSize).data?.map { it.toModel() } ?: emptyList()
+            val data = orderServiceApi.getOrderList(status, currentPage, pageSize).data
+            if (data == null) {
+                // 空态降级留痕：与 Repository"null 抛异常"不同，本源静默结束分页，debug 级别（分页热路径）
+                AppLogger.debug(TAG, "load: 订单列表数据为空，按空页结束分页 status=$status page=$currentPage")
+            }
+            val orderList = data?.map { it.toModel() } ?: emptyList()
             val prevKey = if (currentPage == 1) null else currentPage - 1
             // 返回条数不足一页说明已是最后一页，避免整页恰好 10 条时多打一次空页
             val nextKey = if (orderList.size < pageSize) null else currentPage + 1
@@ -35,7 +39,7 @@ class OrderPagingSource(
                 nextKey = nextKey
             )
         } catch (e: Exception) {
-            Log.e(OrderImplConstant.APP_NAME, "OrderPagingSource.load: ${e.message}", e)
+            AppLogger.error(TAG, "OrderPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }
@@ -48,5 +52,10 @@ class OrderPagingSource(
             state.closestPageToPosition(anchor)?.prevKey?.plus(1)
                 ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "OrderPagingSource"
     }
 }

@@ -1,5 +1,6 @@
 package com.smartwash.deeplink
 
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.network.api.DeepLinkApi
 import com.smartwash.network.api.DeeplinkRouteVo
 import kotlinx.coroutines.CancellationException
@@ -46,8 +47,14 @@ class DeepLinkRepositoryImpl @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 // 失败静默：本地解析不受影响；不缓存失败结果，下次调用可重试
+                // 降级留痕：字典失败仅影响未知 host 的合法性兜底，warn 便于排查线上解析问题
+                AppLogger.warn(TAG, "深链路由字典拉取失败，降级为空列表（本地解析不受影响，不缓存失败结果）", e)
                 emptyList()
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "DeepLinkRepository"
     }
 }

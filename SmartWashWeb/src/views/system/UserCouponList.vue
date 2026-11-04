@@ -99,6 +99,7 @@ import { getCouponList } from '@/api/coupon';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const couponOptions = ref([]); // 优惠券选项
 const deletingId = ref(null); // 行内「删除」按钮 loading，防连点
@@ -139,7 +140,9 @@ const fetchCoupons = async () => {
   try {
     const res = await getCouponList();
     couponOptions.value = res.records;
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取优惠券列表失败:', error);
     ElMessage.error('获取优惠券列表失败');
   }
 };
@@ -153,8 +156,11 @@ const handleDelete = async (row) => {
   try {
     await deleteUserCoupon(row.userCouponId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 userCouponId，手机号不入日志（敏感红线）
+    logger.info('删除领取记录成功', `userCouponId=${row.userCouponId}`);
     fetchData();
   } catch (error) {
+    logger.error('删除领取记录失败:', `userCouponId=${row.userCouponId}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;

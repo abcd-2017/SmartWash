@@ -9,6 +9,7 @@ import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontF
 import { getOrderStatusDescription } from "../constant/OrderStatus"
 import { OrderStatusEnum } from "../constant/OrderStatus"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { IconBox } from "./common/AppComponents"
 import { HeroCard } from "./HeroCard"
 import { BizCode } from "../network/HttpUtil"
@@ -39,25 +40,32 @@ export struct IndexPage {
   private pollingFailureCount: number = 0
 
   aboutToAppear() {
+    // 生命周期低频动作：debug 留痕，便于排查轮询定时器启停与泄漏
+    logger.debug('indexPage', '首页挂载，拉取用户信息')
     this.refreshUserInfo()
     if (this.isActive) {
+      logger.debug('indexPage', 'Tab 处于激活态，启动订单轮询')
       this.startPolling()
     }
   }
 
   aboutToDisappear() {
+    logger.debug('indexPage', '首页销毁，停止轮询')
     this.stopPolling()
   }
 
   // @ComponentV2 不存在 onDidUpdate 生命周期，改用 @Monitor 监听 isActive（Tab 切换）启停轮询（评审 #4）
   @Monitor('isActive')
   onIsActiveChange() {
+    // Tab 切换为高频路径：仅 debug（级别约定禁止高频路径 info/warn）
     if (this.isActive) {
       // 重新激活时立即拉取一次（对齐安卓 LaunchedEffect(isActive) → getInfoData），再启动 5s 轮询
+      logger.debug('indexPage', 'Tab 重新激活，立即刷新并恢复轮询')
       this.refreshUserInfo()
       this.getOrderList()
       this.startPolling()
     } else {
+      logger.debug('indexPage', 'Tab 切出，停止轮询')
       this.stopPolling()
     }
   }
@@ -86,6 +94,8 @@ export struct IndexPage {
         this.userInfo = res.data
       } else if (res.code !== BizCode.UNAUTHORIZED) {
         // 401 已由 Axios 拦截器统一处理（清 token → 清登录态 → replace 登录页），此处不重复弹 toast
+        // 业务失败 warn 留痕（低频：仅挂载/重进 Tab 时调用，非 5s 轮询路径）
+        logger.warn('indexPage', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "用户信息加载失败")
       }
     } catch (e) {
@@ -112,7 +122,11 @@ export struct IndexPage {
   /** 轮询失败静默计数：连续失败达到阈值时提示一次 */
   private handlePollingFailure(message: string | null | undefined): void {
     this.pollingFailureCount++
+    // 轮询为 5s 高频路径：失败仅 debug 留痕（级别约定禁止轮询路径 info/warn）
+    logger.debug('indexPage', `订单轮询失败 count=${this.pollingFailureCount}`)
     if (this.pollingFailureCount === POLLING_FAILURE_THRESHOLD) {
+      // 达到阈值提示用户属低频降级事件：warn 留痕
+      logger.warn('indexPage', `订单轮询连续失败 ${POLLING_FAILURE_THRESHOLD} 次，已提示用户`)
       showToastSafety(message, "订单状态刷新失败")
     }
   }

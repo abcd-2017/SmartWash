@@ -1,9 +1,9 @@
 package com.smartwash.init
 
-import android.util.Log
 import com.smartwash.config.ServerConfig
 import com.smartwash.network.api.ServerConfigApi
 import com.smartwash.common.init.InitTask
+import com.smartwash.common.utils.AppLogger
 
 /**
  * 服务端公开配置预热启动任务。
@@ -34,11 +34,20 @@ class ServerConfigInitTask(
             if (config != null) {
                 config.minioEndpoint?.takeIf { it.isNotBlank() }?.let { ServerConfig.minioEndpoint = it }
                 config.shortLinkBaseUrl?.takeIf { it.isNotBlank() }?.let { ServerConfig.shortLinkBaseUrl = it }
+                // 就绪留痕（只记字段存在性，不记具体地址）：WebView 白名单排查时确认配置时机
+                AppLogger.debug(
+                    TAG,
+                    "Server config prefetch ok (minioEndpoint=${config.minioEndpoint != null}, " +
+                        "shortLinkBaseUrl=${config.shortLinkBaseUrl != null})"
+                )
+            } else {
+                // 空响应降级：与异常同语义（白名单只含 API host），warn 预警
+                AppLogger.warn(TAG, "Server config prefetch returned null (degrade: WebView whitelist uses API host only)")
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "Server config prefetch failed (degrade: WebView whitelist uses API host only)", e)
+            AppLogger.warn(TAG, "Server config prefetch failed (degrade: WebView whitelist uses API host only)", e)
         }
     }
 

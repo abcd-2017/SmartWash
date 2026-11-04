@@ -499,6 +499,7 @@ import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close } from '@element-plus/icons-vue';
 import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame } from '@/api/game';
 import { formatTime, formatFileSize } from '@/utils/format';
+import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import {
@@ -632,6 +633,7 @@ const handleFileChange = (uploadFile) => {
   if (!raw) return;
   const error = validateFile(raw);
   if (error) {
+    logger.debug('游戏文件预检未通过，已清空选择:', error);
     ElMessage.error(error);
     uploadRef.value?.clearFiles();
     selectedFile.value = null;
@@ -684,6 +686,7 @@ const handleReadmePick = (event) => {
   event.target.value = ''; // 允许重复选择同一文件
   if (!file) return;
   if (!/^readme\.md$/i.test(file.name)) {
+    logger.debug('README 自动填表：所选文件非 README.md:', file.name);
     ElMessage.error('请选择 README.md');
     return;
   }
@@ -693,7 +696,8 @@ const handleReadmePick = (event) => {
       applyReadmeFields(parseGameReadme(text, ''));
       ElMessage.success('已按 README 填表，请核对后提交');
     })
-    .catch(() => {
+    .catch((readError) => {
+      logger.error('README 文件读取失败:', readError);
       ElMessage.error('README 读取失败，请手动填写表单');
     });
 };
@@ -737,17 +741,20 @@ const handleDirImport = (event) => {
     visible.some((file) => relSegs(file).length > 2) ||
     rootFiles.some((file) => !['index.html', 'README.md'].includes(file.name));
   if (hasExtra) {
+    logger.debug('游戏目录导入预检未通过：目录含不被支持的文件');
     ElMessage.error('目录仅支持「index.html（+ 可选 README.md）」，含其他文件请打包 .zip 手动上传');
     return;
   }
   const htmlFile = rootFiles.find((file) => file.name === 'index.html');
   if (!htmlFile) {
+    logger.debug('游戏目录导入预检未通过：缺少 index.html 入口文件');
     ElMessage.error('目录缺少 index.html 入口文件');
     return;
   }
   const readmeFile = rootFiles.find((file) => file.name === 'README.md');
   const fileError = validateFile(htmlFile);
   if (fileError) {
+    logger.debug('游戏目录导入预检未通过：', fileError);
     ElMessage.error(fileError);
     return;
   }
@@ -766,7 +773,8 @@ const handleDirImport = (event) => {
       applyReadmeFields(parseGameReadme(text, dirName));
       ElMessage.success('已按 README 填表，请核对后提交');
     })
-    .catch(() => {
+    .catch((readError) => {
+      logger.error('README 文件读取失败:', readError);
       ElMessage.error('README 读取失败，请手动填写表单');
     });
 };
@@ -832,9 +840,11 @@ const submitUpload = async () => {
   try {
     await uploadFormRef.value.validate();
   } catch {
+    logger.debug('上传表单校验未通过，已拦截提交');
     return; // 校验失败：el-form 已展示字段错误
   }
   if (!selectedFile.value) {
+    logger.debug('上传提交时未选择游戏文件');
     ElMessage.error('请选择游戏文件');
     return;
   }
@@ -861,8 +871,11 @@ const submitUpload = async () => {
     });
     uploadResult.value = res;
     ElMessage.success('上传成功');
+    // 低频关键写操作成功留痕，业务键仅 gameKey/id，不含文件内容与请求体（敏感红线）
+    logger.info('游戏上传成功', `gameKey=${tempGame.gameKey}`, `id=${res?.id ?? '-'}`);
     fetchData(); // 刷新列表（同 gameKey 覆盖场景也能看到最新元数据）
   } catch (error) {
+    logger.error('游戏上传失败:', `gameKey=${tempGame.gameKey}`, error);
     // 409 gameKey 冲突 / 413 超限 / 403 鉴权等由后端 message 透出
     ElMessage.error(error.message || '上传失败');
   } finally {
@@ -896,8 +909,21 @@ const handleToggleEnabled = async (row) => {
   try {
     await updateGameEnabled(row.id, next);
     ElMessage.success(next === 1 ? '已下发至用户端' : '已停止下发');
+    // 低频关键写操作成功留痕，业务键仅 id/gameKey 与目标状态
+    logger.info(
+      '游戏下发状态更新成功',
+      `id=${row.id}`,
+      `gameKey=${row.gameKey}`,
+      `enabled=${next}`
+    );
   } catch (error) {
     row.enabled = next === 1 ? 0 : 1; // 失败回滚开关状态
+    logger.error(
+      '游戏下发状态切换失败（已回滚开关）:',
+      `id=${row.id}`,
+      `gameKey=${row.gameKey}`,
+      error
+    );
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
@@ -943,6 +969,7 @@ const handleEditFileChange = (uploadFile) => {
   if (!raw) return;
   const error = validateFile(raw);
   if (error) {
+    logger.debug('编辑换包文件预检未通过，已清空选择:', error);
     ElMessage.error(error);
     editUploadRef.value?.clearFiles();
     editFile.value = null;
@@ -993,11 +1020,18 @@ const submitEdit = async () => {
       await updateGame({ id: tempGame.id, ...payload });
     }
     ElMessage.success('修改成功');
+    // 低频关键写操作成功留痕，区分仅改元数据与覆盖上传游戏包；业务键仅 id/gameKey
+    logger.info(
+      editFile.value ? '游戏编辑成功（覆盖上传游戏包）' : '游戏编辑成功（仅元数据）',
+      `id=${tempGame.id}`,
+      `gameKey=${tempGame.gameKey}`
+    );
     editDialogVisible.value = false;
     fetchData();
   } catch (error) {
     // 表单校验失败（字段错误已展示）与接口报错分开提示
     if (error?.message) {
+      logger.error('游戏编辑失败:', `id=${tempGame.id}`, `gameKey=${tempGame.gameKey}`, error);
       ElMessage.error(error.message);
     }
   } finally {
@@ -1017,8 +1051,11 @@ const handleDelete = async (row) => {
   try {
     await deleteGame(row.id);
     ElMessage.success('删除成功');
+    // 低频关键写操作成功留痕，业务键仅 id/gameKey
+    logger.info('游戏删除成功', `id=${row.id}`, `gameKey=${row.gameKey}`);
     fetchData(); // 刷新当前页
   } catch (error) {
+    logger.error('游戏删除失败:', `id=${row.id}`, `gameKey=${row.gameKey}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;

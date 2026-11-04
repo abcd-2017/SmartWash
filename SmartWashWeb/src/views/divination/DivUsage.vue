@@ -96,6 +96,7 @@ import * as echarts from 'echarts';
 import { ElMessage } from 'element-plus';
 import { DIV_METHOD_OPTIONS as methodOptions } from '@/constants/dict';
 import { getUsageStats } from '@/api/divination';
+import logger from '@/utils/logger';
 
 const loading = ref(false);
 const dateRange = ref(null);
@@ -183,7 +184,16 @@ const fetchStats = async () => {
 
     await nextTick();
     renderCharts(records);
+    // 统计查询属用户手动触发的查询路径，成功最多 debug（不污染 info/warn 通道）
+    logger.debug(
+      '用量统计查询成功',
+      `startDate=${params.startDate ?? '-'}`,
+      `endDate=${params.endDate ?? '-'}`,
+      `method=${params.method ?? '-'}`,
+      `records=${records.length}`
+    );
   } catch (error) {
+    logger.error('用量统计查询失败:', error);
     ElMessage.error(error.message || '获取用量数据失败');
   } finally {
     loading.value = false;

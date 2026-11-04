@@ -1,7 +1,7 @@
 package com.smartwash.common.network.interceptor
 
-import android.util.Log
 import com.google.gson.Gson
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.network.R
@@ -26,18 +26,20 @@ class ResponseInterceptor @Inject constructor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        // 手机号脱敏：验证码接口路径含手机号，URL 入日志前统一打码
+        val url = AppLogger.maskPhone(request.url.toString())
         try {
             val response = chain.proceed(request)
 
             // HTTP 401 必须在通用 !response.isSuccessful 之前处理，否则会被拦截为"请求失败"
             if (response.code == 401) {
-                Log.w(TAG, "Response: ${request.method} ${request.url} — HTTP 401 登录失效")
+                AppLogger.warn(TAG, "Response: ${request.method} $url — HTTP 401 登录失效")
                 handleSessionExpired()
                 throw NetworkException("登录失效，请重新登录", R.string.error_login_expired)
             }
 
             if (!response.isSuccessful) {
-                Log.w(TAG, "Response: ${request.method} ${request.url} — HTTP ${response.code}")
+                AppLogger.warn(TAG, "Response: ${request.method} $url — HTTP ${response.code}")
                 throw NetworkException("请求失败", R.string.error_network_fail)
             }
 
@@ -48,12 +50,12 @@ class ResponseInterceptor @Inject constructor(
                 if (responseData != null) {
                     when (responseData.code) {
                         HttpStatusCode.Unauthorized.code -> {
-                            Log.w(TAG, "Response: ${request.method} ${request.url} — 业务码 401 登录失效")
+                            AppLogger.warn(TAG, "Response: ${request.method} $url — 业务码 401 登录失效")
                             handleSessionExpired()
                             throw NetworkException("登录失效，请重新登录", R.string.error_login_expired)
                         }
                         HttpStatusCode.Fail.code -> {
-                            Log.w(TAG, "Response: ${request.method} ${request.url} — 业务错误: ${responseData.message}")
+                            AppLogger.warn(TAG, "Response: ${request.method} $url — 业务错误: ${responseData.message}")
                             throw NetworkException(responseData.message, R.string.error_network_fail)
                         }
                     }
@@ -63,13 +65,13 @@ class ResponseInterceptor @Inject constructor(
         } catch (e: NetworkException) {
             throw e
         } catch (e: SocketTimeoutException) {
-            Log.w(TAG, "Response: ${request.method} ${request.url} — 请求超时", e)
+            AppLogger.warn(TAG, "Response: ${request.method} $url — 请求超时", e)
             throw NetworkException("请求超时，请检查网络", R.string.error_timeout)
         } catch (e: IOException) {
-            Log.w(TAG, "Response: ${request.method} ${request.url} — 网络连接失败", e)
+            AppLogger.warn(TAG, "Response: ${request.method} $url — 网络连接失败", e)
             throw NetworkException("网络连接失败，请检查网络", R.string.error_connection)
         } catch (e: Exception) {
-            Log.e(TAG, "Response: ${request.method} ${request.url} — 未知错误", e)
+            AppLogger.error(TAG, "Response: ${request.method} $url — 未知错误", e)
             throw NetworkException("未知错误", R.string.error_unknown)
         }
     }
@@ -84,7 +86,7 @@ class ResponseInterceptor @Inject constructor(
     }
 
     private companion object {
-        /** 日志 TAG（原 app 内 AppConstant.APP_NAME，迁移后模块内自定义常量） */
-        const val TAG = "SmartWash"
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "ResponseInterceptor"
     }
 }

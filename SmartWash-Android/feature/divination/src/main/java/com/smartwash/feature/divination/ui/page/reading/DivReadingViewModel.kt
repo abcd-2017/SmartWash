@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.feature.divination.R
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivCategory
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.data.DivChartBundle
@@ -51,6 +52,9 @@ class DivReadingViewModel @Inject constructor(
     private fun load() {
         viewModelScope.launch {
             val record = recordRepository.getById(recordId)
+            if (record == null) {
+                AppLogger.warn(TAG, "解读页卦历记录不存在 recordId=$recordId，页面按空态兜底")
+            }
             val bundle = record?.let { DivChartCodec.decode(it.chartJson) }
             _uiState.value = _uiState.value.copy(
                 record = record,
@@ -75,15 +79,21 @@ class DivReadingViewModel @Inject constructor(
                 chartLine = bundle?.let { DivChartCodec.encode(it) } ?: record.chartJson,
             )
         }
-        _uiState.value = if (result.isSuccess) {
-            _uiState.value.copy(reading = result.getOrNull(), readingState = RequestState.Success)
+        if (result.isSuccess) {
+            _uiState.value = _uiState.value.copy(reading = result.getOrNull(), readingState = RequestState.Success)
+            AppLogger.info(TAG, "解读生成成功 recordId=${record.id} method=${record.method}")
         } else {
-            _uiState.value.copy(
+            AppLogger.error(TAG, "DivReadingViewModel.interpret: ${result.exceptionOrNull()?.message}", result.exceptionOrNull())
+            _uiState.value = _uiState.value.copy(
                 readingState = RequestState.Error(
                     messageResId = R.string.div_reading_error,
                     message = result.exceptionOrNull()?.message,
                 ),
             )
         }
+    }
+
+    private companion object {
+        const val TAG = "DivReadingViewModel"
     }
 }

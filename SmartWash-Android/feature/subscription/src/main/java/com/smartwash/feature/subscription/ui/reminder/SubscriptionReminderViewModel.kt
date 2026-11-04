@@ -3,6 +3,7 @@ package com.smartwash.feature.subscription.ui.reminder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.subscription.R
 import com.smartwash.feature.subscription.network.ReminderVo
@@ -57,8 +58,10 @@ class SubscriptionReminderViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionReminderViewModel.load: ${e.message}", e)
                 _listState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionReminderViewModel.load: ${e.message}", e)
                 _listState.value = RequestState.Error(R.string.subscription_reminder_error_load)
             }
         }
@@ -76,11 +79,14 @@ class SubscriptionReminderViewModel @Inject constructor(
                     _items.value.map { if (it.reminderId == reminderId) it.copy(isRead = 1) else it }
                 }
                 _markReadState.value = RequestState.Success
+                AppLogger.debug(TAG, "提醒已标记已读 reminderId=$reminderId 未读模式=${_unreadOnly.value}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionReminderViewModel.markRead: ${e.message}", e)
                 _markReadState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionReminderViewModel.markRead: ${e.message}", e)
                 _markReadState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -88,5 +94,9 @@ class SubscriptionReminderViewModel @Inject constructor(
 
     fun resetMarkReadState() {
         _markReadState.value = RequestState.Idle
+    }
+
+    private companion object {
+        const val TAG = "SubscriptionReminderViewModel"
     }
 }

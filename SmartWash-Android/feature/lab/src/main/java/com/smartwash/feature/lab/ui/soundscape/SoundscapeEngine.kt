@@ -3,6 +3,7 @@ package com.smartwash.feature.lab.ui.soundscape
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import com.smartwash.common.utils.AppLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,6 +142,7 @@ class SoundscapeEngine {
 
     private fun runEngine(gen: Int) {
         val track = createTrack() ?: run {
+            AppLogger.warn(TAG, "createTrack 失败，声景本次播放无法开始")
             isPlaying = false
             _playing.value = false
             return
@@ -157,8 +159,9 @@ class SoundscapeEngine {
             track.stop()
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
-        } catch (_: Throwable) {
-            // 音频设备异常：静默停止（玩具页不崩溃）
+        } catch (e: Throwable) {
+            // 音频设备异常：静默停止（玩具页不崩溃），降级留痕（低频：每次播放会话至多一次）
+            AppLogger.warn(TAG, "音频渲染线程异常退出，声景停止", e)
         } finally {
             track.release()
             if (generation.get() == gen) {
@@ -542,6 +545,8 @@ class SoundscapeEngine {
 
         /** 默认音量（0..100），仅用于未显式设置的声道 */
         const val DEFAULT_VOLUME = 60
+
+        private const val TAG = "SoundscapeEngine"
 
         private const val SAMPLE_RATE = 44_100
         private const val SAMPLE_DT = 1f / SAMPLE_RATE

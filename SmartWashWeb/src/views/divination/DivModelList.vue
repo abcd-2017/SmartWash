@@ -162,6 +162,7 @@ import {
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -279,14 +280,34 @@ const submitForm = async () => {
     }
     if (dialogType.value === 'create') {
       await createModel(submitData);
+      // 密钥红线：日志只记业务键，绝不打印 apiKey/submitData
+      logger.info('模型新增成功', `name=${tempModel.name}`, `modelId=${tempModel.modelId}`);
       ElMessage.success('新增成功');
     } else {
       await updateModel(submitData.id, submitData);
+      logger.info(
+        '模型编辑成功',
+        `id=${submitData.id}`,
+        `name=${tempModel.name}`,
+        `modelId=${tempModel.modelId}`
+      );
       ElMessage.success('修改成功');
     }
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('模型表单校验未通过，已拦截提交');
+    } else {
+      logger.error(
+        '模型提交失败:',
+        `type=${dialogType.value}`,
+        `id=${tempModel.id ?? '-'}`,
+        `name=${tempModel.name}`,
+        error
+      );
+    }
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -299,9 +320,11 @@ const handleDelete = async (row) => {
   deletingId.value = row.id;
   try {
     await deleteModel(row.id);
+    logger.info('模型删除成功', `id=${row.id}`, `name=${row.name}`);
     ElMessage.success('删除成功');
     fetchData();
   } catch (error) {
+    logger.error('模型删除失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;
@@ -312,9 +335,11 @@ const handleTest = async (row) => {
   testingId.value = row.id;
   try {
     await testModelConnectivity(row.id);
+    logger.info('模型连通性测试通过', `id=${row.id}`, `name=${row.name}`);
     ElMessage.success('连通性测试通过');
     fetchData();
   } catch (error) {
+    logger.error('模型连通性测试失败:', `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || '连通性测试失败');
   } finally {
     testingId.value = null;
@@ -327,10 +352,13 @@ const handleToggle = async (row) => {
   if (!confirmed) return;
   togglingId.value = row.id;
   try {
-    await updateModel(row.id, { enabled: row.enabled === 1 ? 0 : 1 });
+    const targetEnabled = row.enabled === 1 ? 0 : 1;
+    await updateModel(row.id, { enabled: targetEnabled });
+    logger.info(`模型${action}成功`, `id=${row.id}`, `name=${row.name}`, `enabled=${targetEnabled}`);
     ElMessage.success(`${action}成功`);
     fetchData();
   } catch (error) {
+    logger.error(`模型${action}失败:`, `id=${row.id}`, `name=${row.name}`, error);
     ElMessage.error(error.message || `${action}失败`);
   } finally {
     togglingId.value = null;

@@ -213,6 +213,7 @@ import { formatTime } from '@/utils/format';
 import { couponStatusTagType, couponStatusText } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const tableRef = ref(null);
 const formRef = ref(null);
@@ -295,9 +296,12 @@ const handleBatchDelete = async () => {
     const ids = multipleSelection.value.map((item) => item.couponId).join(',');
     await deleteCoupon(ids);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅优惠券 ID 串与条数
+    logger.info('批量删除优惠券成功', `count=${count}`, `couponIds=${ids}`);
     fetchData();
     tableRef.value.clearSelection();
   } catch (error) {
+    logger.error('批量删除优惠券失败:', `count=${count}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };
@@ -347,14 +351,19 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addCoupon(submitData);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：业务键仅标题（新增无 couponId）
+      logger.info('新增优惠券成功', `title=${tempCoupon.title}`);
     } else {
       await updateCoupon(submitData);
       ElMessage.success('修改成功');
+      logger.info('修改优惠券成功', `couponId=${tempCoupon.couponId}`, `title=${tempCoupon.title}`);
     }
 
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('保存优惠券失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -369,8 +378,11 @@ const handleDelete = async (row) => {
   try {
     await deleteCoupon(row.couponId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 couponId/title
+    logger.info('删除优惠券成功', `couponId=${row.couponId}`, `title=${row.title}`);
     fetchData();
   } catch (error) {
+    logger.error('删除优惠券失败:', `couponId=${row.couponId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };

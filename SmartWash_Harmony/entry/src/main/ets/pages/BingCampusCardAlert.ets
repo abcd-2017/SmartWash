@@ -6,6 +6,7 @@ import { BaseResponse } from "../network/BaseResponse"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 
 @Builder
 export function BingCampusCardAlertBuilder() {
@@ -35,6 +36,7 @@ struct BingCampusCardAlert {
     // 安全取参（评审 #31）：参数缺失/非对象时返回 null，isBingFlag 兜底为绑定态
     this.userInfo = getObjectParam<UserInfoVo>(RouteNames.BING_CAMPUS_CARD_ALERT)
     this.isBingFlag = (this.userInfo?.campusCard ?? "") === ""
+    logger.debug('bingCampusCardAlert', `校园卡弹窗挂载，操作=${this.isBingFlag ? "绑定" : "解绑"}`)
     // 首帧后再触发，保证初始 0.92/0 先上屏，过渡才可见（退出动画窗口层不支持，两端一致不做）
     setTimeout(() => {
       animateTo(MotionTiming.DIALOG_ENTER, () => {
@@ -54,6 +56,7 @@ struct BingCampusCardAlert {
   /** 确认绑定/解绑（防重：请求进行中忽略后续点击） */
   async confirmAction() {
     if (this.submitting) {
+      logger.debug('bingCampusCardAlert', '请求进行中，忽略重复点击')
       return
     }
     let res: BaseResponse<boolean>
@@ -78,10 +81,14 @@ struct BingCampusCardAlert {
       }
     }
     if (res.code === HttpStatusCode.Ok) {
+      // 低频关键动作成功留 info（卡号不落日志）
+      logger.info('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}成功`)
       this.inputController.stopEditing()
       pathStack.pop()
       showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
     } else {
+      // 业务拒绝留痕：仅记 code/message 摘要（卡号不落日志）
+      logger.warn('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}被拒绝 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "操作失败")
     }
   }

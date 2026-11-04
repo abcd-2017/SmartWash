@@ -154,6 +154,7 @@ import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const tableRef = ref(null);
 const formRef = ref(null);
@@ -234,7 +235,9 @@ onMounted(() => {
 const fetchRoles = async () => {
   try {
     roleOptions.value = await roleOptionsCache.load();
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取角色列表失败:', error);
     ElMessage.error('获取角色列表失败');
   }
 };
@@ -254,9 +257,12 @@ const handleBatchDelete = async () => {
     const ids = multipleSelection.value.map((item) => item.adminId).join(',');
     await deleteAdminUser(ids);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：仅记 adminId 串，绝不含密码字段
+    logger.info('批量删除管理员成功', `count=${count}`, `adminIds=${ids}`);
     fetchData();
     tableRef.value.clearSelection();
   } catch (error) {
+    logger.error('批量删除管理员失败:', `count=${count}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };
@@ -300,14 +306,19 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addAdminUser(submitData);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：仅记用户名，密码字段绝不入日志
+      logger.info('新增管理员成功', `username=${tempAdmin.username}`);
     } else {
       await updateAdminUser(submitData);
       ElMessage.success('修改成功');
+      logger.info('修改管理员成功', `adminId=${tempAdmin.adminId}`, `username=${tempAdmin.username}`);
     }
 
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本，防止密码入日志
+    logger.error('保存管理员失败:', error instanceof Error ? error : '表单校验未通过');
     if (error.message) {
       ElMessage.error(error.message);
     } else {
@@ -326,8 +337,11 @@ const handleDelete = async (row) => {
   try {
     await deleteAdminUser(row.adminId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：仅记 adminId/username，绝不含密码字段
+    logger.info('删除管理员成功', `adminId=${row.adminId}`, `username=${row.username}`);
     fetchData();
   } catch (error) {
+    logger.error('删除管理员失败:', `adminId=${row.adminId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };

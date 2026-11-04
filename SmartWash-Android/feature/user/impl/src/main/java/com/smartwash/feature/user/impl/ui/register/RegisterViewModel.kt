@@ -1,13 +1,12 @@
 package com.smartwash.feature.user.impl.ui.register
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.user.impl.R
-import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.feature.user.impl.network.entity.user.RegisterUser
 import com.smartwash.feature.user.impl.repository.UserRepository
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -35,12 +34,16 @@ class RegisterViewModel @Inject constructor(
                 _captchaState.value = RequestState.Loading
                 val responseData = userRepository.getCaptcha(phoneNumber)
                 if (responseData.code == HttpStatusCode.Success.code) {
+                    // 验证码发送状态事件（只打状态，验证码值本身绝不入日志）
+                    AppLogger.debug(TAG, "验证码发送成功（倒计时启动）")
                     _captchaState.value = RequestState.Success
                 } else {
+                    // 业务拒绝（后端非成功码，如发送频率限制）
+                    AppLogger.warn(TAG, "验证码发送被拒绝 code=${responseData.code}")
                     _captchaState.value = RequestState.Error(R.string.error_get_captcha_failed)
                 }
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "RegisterViewModel.getCaptcha: ${e.message}", e)
+                AppLogger.error(TAG, "RegisterViewModel.getCaptcha: ${e.message}", e)
                 _captchaState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -56,8 +59,10 @@ class RegisterViewModel @Inject constructor(
                 sessionManager.saveToken(token)
                 // 会话建立广播（注册即登录，UserApiImpl 桥接为 LoginEvent.LoggedIn）
                 sessionEventBus.notifyLoggedIn()
+                // 低频关键动作成功（手机号必须脱敏后才可入日志）
+                AppLogger.info(TAG, "注册成功 phone=${AppLogger.maskPhone(phoneNumber)}")
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "RegisterViewModel.userRegister: ${e.message}", e)
+                AppLogger.error(TAG, "RegisterViewModel.userRegister: ${e.message}", e)
                 _registerState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -73,5 +78,10 @@ class RegisterViewModel @Inject constructor(
 
     fun setCaptchaLoading() {
         _captchaState.value = RequestState.Loading
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "RegisterViewModel"
     }
 }

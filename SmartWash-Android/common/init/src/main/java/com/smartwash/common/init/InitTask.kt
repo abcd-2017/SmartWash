@@ -36,10 +36,11 @@ abstract class InitTask {
 
     /** 失败回调（可选），默认仅记日志 */
     open fun onFailed(e: Throwable) {
-        android.util.Log.e(TAG, "InitTask failed: $taskId", e)
+        LogCore.error(TAG, "InitTask failed: $taskId", e)
     }
 
     private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 LogCore 统一拼接） */
         const val TAG = "InitTask"
     }
 }

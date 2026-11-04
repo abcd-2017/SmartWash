@@ -1,5 +1,5 @@
 import { HttpStatusCode } from "@ohos/axios"
-import { pasteboard } from "@kit.BasicServicesKit"
+import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from '@ohos.vibrator'
 import { RouteNames } from "../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
@@ -10,6 +10,7 @@ import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState } from "../view/common/AppComponents"
 import { DrumIllustration } from "../view/DrumIllustration"
+import { logger } from "../utils/Logger"
 
 @Builder
 export function OrderDetailBuilder() {
@@ -75,6 +76,7 @@ struct OrderDetail {
   async aboutToAppear() {
     // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
     this.orderId = getNumberParam(RouteNames.ORDER_DETAIL)
+    logger.debug('orderDetail', `订单详情页挂载 orderId=${this.orderId}`)
     await this.loadOrderDetail()
   }
 
@@ -86,6 +88,7 @@ struct OrderDetail {
   async loadOrderDetail(): Promise<void> {
     if (this.orderId === null) {
       // 参数缺失（异常路由进入）：提示后停留空态，不发起无效请求（鸿蒙更优，保留）
+      logger.warn('orderDetail', '订单详情缺少路由参数 orderId，停留空态不发起请求')
       showToastSafety("订单信息加载失败")
       this.isLoading = false
       return
@@ -94,9 +97,12 @@ struct OrderDetail {
     this.loadFailed = false
     let res = await getOrderInfo(this.orderId)
     if (res.code === HttpStatusCode.Ok) {
+      logger.debug('orderDetail', `订单详情加载成功 orderId=${this.orderId} status=${res.data?.status ?? ""}`)
       this.orderInfo = res.data
       this.loadFailed = false
     } else {
+      logger.warn('orderDetail', `订单详情加载失败 orderId=${this.orderId} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
       this.loadFailed = true
       showToastSafety(res.message, "订单详情加载失败")
     }
@@ -435,10 +441,14 @@ struct OrderDetail {
           const code = this.parsePickupCode()
           if ((status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.READY_FOR_PICKUP) &&
             code !== "") {
+            // 取件码值不入日志（敏感红线），仅记 orderId 与柜号
+            logger.debug('orderDetail', `打开取件码弹窗 orderId=${this.orderId} ` +
+              `柜号=${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`)
             this.pickupCodeText = code
             this.lockerNumberText = this.orderInfo?.lockersVo?.lockerNumber ?? 0
             this.pickupCodeDialogController.open()
           } else {
+            logger.debug('orderDetail', `取件码暂不可用 orderId=${this.orderId} status=${status ?? ""}`)
             showToastSafety("暂无取件码，请稍后再试")
           }
         })
@@ -645,7 +655,8 @@ export struct PickupCodeDialog {
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, this.pickupCode)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety("取件码已复制")
-    }).catch(() => {
+    }).catch((err: BusinessError) => {
+      logger.error('orderDetail', '取件码复制到剪贴板失败', `${err.code} ${err.message}`)
       showToastSafety("复制失败")
     })
     this.onDismiss()

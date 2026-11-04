@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.update.R
 import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.feature.update.repository.AppUpdateRepository
@@ -97,6 +98,8 @@ class UpdateViewModel @Inject constructor(
                 }
                 isChecking = false
             } catch (e: NetworkException) {
+                // 外部调用失败（版本检查网络失败）= error，静默/手动仅作来源区分
+                AppLogger.error(TAG, "检查更新失败（${if (silent) "静默" else "手动"}）", e)
                 if (!silent) {
                     _state.value = UpdateState.Error(e.message ?: "检查更新失败")
                 } else {
@@ -105,6 +108,7 @@ class UpdateViewModel @Inject constructor(
                 }
                 isChecking = false
             } catch (e: Exception) {
+                AppLogger.error(TAG, "检查更新失败（${if (silent) "静默" else "手动"}）", e)
                 if (!silent) {
                     _state.value = UpdateState.Error(e.message ?: "检查更新失败")
                 } else {
@@ -123,12 +127,19 @@ class UpdateViewModel @Inject constructor(
      * 已被用户关闭的同版本、下载/安装流程进行中的版本（不打断进度弹窗）。
      */
     fun onUpdateAvailable(version: AppVersionVo) {
-        if (version.versionCode == dismissedVersionCode) return
+        if (version.versionCode == dismissedVersionCode) {
+            // 幂等命中（事件重放），debug 足够
+            AppLogger.debug(TAG, "版本事件重放命中已关闭版本 versionCode=${version.versionCode}，忽略")
+            return
+        }
         val current = _state.value
         if (current is UpdateState.Downloading ||
             current is UpdateState.Downloaded ||
             current is UpdateState.Installing
-        ) return
+        ) {
+            AppLogger.debug(TAG, "版本事件在下载/安装流程中到达（state=${current::class.simpleName}），忽略以不打断进度")
+            return
+        }
         latestVersion = version
         _state.value = UpdateState.UpdateAvailable(version)
     }
@@ -145,17 +156,25 @@ class UpdateViewModel @Inject constructor(
      * 启动下载流程：先获取预签名下载地址，成功后通过 downloadUrl 暴露给 UI 层
      */
     fun startDownload(context: Context) {
-        val version = latestVersion ?: return
+        val version = latestVersion ?: run {
+            // 业务拒绝：未先完成版本检查即请求下载（调用时序异常）
+            AppLogger.warn(TAG, "startDownload 在未持有最新版本信息时被调用，忽略")
+            return
+        }
         viewModelScope.launch {
             try {
                 val url = repository.getPresignedDownloadUrl()
+                // 低频关键动作成功：预签名地址不含敏感个人信息，但签名凭证不打入日志
+                AppLogger.info(TAG, "已获取 APK 预签名下载地址，准备调度下载（versionCode=${version.versionCode}）")
                 _downloadUrl.value = url
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "获取 APK 预签名下载地址失败", e)
                 _state.value = UpdateState.Error(
                     e.message ?: context.getString(R.string.download_url_empty),
                     ErrorSource.Download,
                 )
             } catch (e: Exception) {
+                AppLogger.error(TAG, "获取 APK 预签名下载地址失败", e)
                 _state.value = UpdateState.Error(
                     e.message ?: context.getString(R.string.download_url_empty),
                     ErrorSource.Download,
@@ -227,4 +246,9 @@ class UpdateViewModel @Inject constructor(
      * 获取缓存的最新版本信息
      */
     fun getLatestVersion(): AppVersionVo? = latestVersion
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "UpdateViewModel"
+    }
 }

@@ -6,9 +6,16 @@ apply from: "$rootDir/config/hilt.gradle"
 
 android {
     namespace 'com.smartwash.common.utils'
+
+    buildFeatures {
+        // AppLogger 按 BuildConfig.DEBUG 门控日志输出（library 变体跟随 app debug/release）
+        buildConfig true
+    }
 }
 
 dependencies {
+    // AppLogger 委托 LogCore（common:init 零依赖日志内核）；common → common:init 为铁律 1 合法方向
+    implementation project(':common:init')
     // 原 common:model 的依赖（ApiResult/PageData/HttpStatusCode/RequestState）
     implementation libs.androidx.annotation
     // SharePreferenceUtils：DataStore Preferences 封装

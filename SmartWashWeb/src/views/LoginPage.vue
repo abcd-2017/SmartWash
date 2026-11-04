@@ -60,6 +60,7 @@ import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import { login } from '@/api/auth';
 import { useAuthStore } from '@/stores/auth';
+import logger from '@/utils/logger';
 
 const router = useRouter();
 const route = useRoute();
@@ -98,10 +99,14 @@ const handleLogin = async () => {
     authStore.login(data.token, data.role);
 
     ElMessage.success('登录成功');
+    // 低频关键动作留痕：用户名可能是手机号形态，不记用户名明文，仅记后端返回的角色名
+    logger.info('管理员登录成功', `role=${data.role}`);
     // 原路返回：仅接受站内路径（/ 开头），防止 redirect 参数被外链利用
     const redirect = route.query.redirect;
     router.push(typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/');
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含密码明文），非 Error 时仅记文本，防止密码入日志
+    logger.error('管理员登录失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '登录失败');
   } finally {
     loading.value = false;

@@ -190,6 +190,7 @@ import { orderStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 // 数据
 const statusOptions = ref({}); // 状态选项
@@ -252,7 +253,9 @@ const fetchStatus = async () => {
   try {
     const res = await getOrderStatus();
     statusOptions.value = res;
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取状态失败:', error);
     ElMessage.error('获取状态失败');
   }
 };
@@ -261,7 +264,9 @@ const fetchStatus = async () => {
 const fetchSchools = async () => {
   try {
     schoolOptions.value = await schoolOptionsCache.load();
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取学校列表失败:', error);
     ElMessage.error('获取学校列表失败');
   }
 };
@@ -270,7 +275,9 @@ const fetchSchools = async () => {
 const fetchLaundry = async () => {
   try {
     laundryOptions.value = await laundryOptionsCache.load();
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取洗护套餐失败:', error);
     ElMessage.error('获取洗护套餐失败');
   }
 };
@@ -283,8 +290,11 @@ const handleDelete = async (row) => {
   try {
     await deleteOrder(row.orderId);
     ElMessage.success('删除成功');
+    // 管理端写操作成功留痕（低频关键动作），业务键仅 orderId/orderNo，不含用户手机号等敏感字段
+    logger.info('删除订单成功', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`);
     fetchData();
   } catch (error) {
+    logger.error('删除订单失败:', `orderId=${row.orderId}`, `orderNo=${row.orderNo}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };
@@ -312,9 +322,22 @@ const confirmUpdateStatus = async () => {
       status: statusForm.newStatus,
     });
     ElMessage.success('状态更新成功');
+    // 管理端写操作成功留痕（低频关键动作），业务键仅 orderId/orderNo 与目标状态
+    logger.info(
+      '订单状态更新成功',
+      `orderId=${statusForm.orderId}`,
+      `orderNo=${statusForm.orderNo}`,
+      `status=${statusForm.newStatus}`
+    );
     statusDialogVisible.value = false;
     fetchData();
   } catch (error) {
+    logger.error(
+      '订单状态更新失败:',
+      `orderId=${statusForm.orderId}`,
+      `orderNo=${statusForm.orderNo}`,
+      error
+    );
     ElMessage.error(error.message || '状态更新失败');
   } finally {
     submitting.value = false;

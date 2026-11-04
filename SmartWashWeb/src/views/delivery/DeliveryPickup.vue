@@ -104,6 +104,7 @@ import { ElMessage } from 'element-plus';
 import { Postcard, Lock, CircleClose } from '@element-plus/icons-vue';
 import { useRoute, useRouter } from 'vue-router';
 import { DELIVERY_CODE, enterDelivery } from '@/api/delivery';
+import logger from '@/utils/logger';
 import DeliverySession from './DeliverySession.vue';
 
 const route = useRoute();
@@ -132,7 +133,11 @@ onMounted(() => {
 });
 
 function handleEnter() {
-  if (entering.value || !canSubmit.value) return;
+  if (entering.value || !canSubmit.value) {
+    // 进入中或手动输码为空的请求拦截（按钮已禁用，回车键仍可能触发），仅 dev 记录
+    logger.debug('进入请求被拦截：正在进入或投递码为空');
+    return;
+  }
   doEnter(routeCode.value || inputCode.value.trim(), needPassword.value ? inputPassword.value : '');
 }
 
@@ -147,6 +152,12 @@ async function doEnter(code, password) {
       sessionInfo.value = envelope.data || {};
       needPassword.value = false;
       view.value = 'session';
+      // 低频关键动作成功（码即取件凭证，只记来源与是否带密码，凭证值不入日志）
+      logger.info(
+        '进入投递会话成功',
+        `来源=${routeCode.value ? '链接直进' : '手动输码'}`,
+        `带密码=${Boolean(password)}`
+      );
       // 手动输码进入（URL 无码）时把码补进地址：刷新/分享链接后可直接恢复进入流程
       if (!routeCode.value) {
         router.replace(`/d/${encodeURIComponent(code)}`);
@@ -156,17 +167,25 @@ async function doEnter(code, password) {
     if (envelope.code === DELIVERY_CODE.WRONG_PASSWORD) {
       // 首次 403 视为「会话有密码」；带密码仍 403 才提示密码错误
       const firstTry = !needPassword.value;
+      if (firstTry) {
+        // 正常流程分支：发现会话设有密码，非异常
+        logger.debug('会话设有访问密码，已展示密码输入');
+      } else {
+        logger.warn('进入被拒：访问密码错误（403）');
+      }
       needPassword.value = true;
       enterErrorType.value = 'warning';
       enterError.value = firstTry ? '该会话已设置访问密码，请输入后进入' : '进入密码错误，请重试';
       return;
     }
     if (envelope.code === DELIVERY_CODE.CONFLICT) {
+      logger.warn('进入被拒：会话已被其他设备占用（409）');
       enterErrorType.value = 'warning';
       enterError.value = '另一设备已占用此会话，请稍后再试或让手机端重新发起';
       return;
     }
     if (envelope.code === DELIVERY_CODE.GONE) {
+      logger.warn('进入被拒：会话不存在或已过期（404）');
       enterErrorType.value = 'error';
       enterError.value = '会话不存在或已过期';
       // 从链接直进（URL 带码）而码已失效时，回到无码形态展示输码表单，方便用户重输
@@ -176,9 +195,12 @@ async function doEnter(code, password) {
       return;
     }
     // 201 通用业务失败（如码格式非法）等
+    logger.warn('进入被拒：', `code=${envelope.code}`, envelope.message);
     enterErrorType.value = 'error';
     enterError.value = envelope.message || '进入失败，请稍后重试';
-  } catch {
+  } catch (error) {
+    // 页面自有 catch（envelopeHttp 无拦截器留痕），此处兜底记录
+    logger.error('进入投递会话网络异常:', error);
     ElMessage.error('网络异常，请稍后重试');
   } finally {
     entering.value = false;

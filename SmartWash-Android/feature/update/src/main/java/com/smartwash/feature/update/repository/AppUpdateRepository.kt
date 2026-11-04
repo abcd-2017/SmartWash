@@ -2,6 +2,7 @@ package com.smartwash.feature.update.repository
 
 import android.content.Context
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.update.model.AppVersionVo
 import com.smartwash.feature.update.network.AppUpdateApi
 import com.smartwash.feature.update.R
@@ -24,6 +25,9 @@ class AppUpdateRepository @Inject constructor(
      */
     private val packageInfo = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0)
+    }.onFailure {
+        // 降级预警：versionCode 兜底 MAX_VALUE 后 shouldUpdate 恒为 false，用户将收不到任何更新提示
+        AppLogger.warn(TAG, "本地包信息读取失败，versionCode 兜底为 Int.MAX_VALUE（将不再提示更新）", it)
     }.getOrNull()
 
     /**
@@ -63,4 +67,9 @@ class AppUpdateRepository @Inject constructor(
      */
     fun shouldForceUpdate(remoteVo: AppVersionVo): Boolean =
         getCurrentVersionCode() < remoteVo.minVersionCode
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "AppUpdateRepository"
+    }
 }

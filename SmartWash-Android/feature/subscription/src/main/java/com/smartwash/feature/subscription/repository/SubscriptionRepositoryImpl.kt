@@ -2,6 +2,7 @@ package com.smartwash.feature.subscription.repository
 
 import com.smartwash.common.network.R
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.subscription.network.AddUsageRequest
 import com.smartwash.feature.subscription.network.ReminderVo
@@ -25,13 +26,17 @@ class SubscriptionRepositoryImpl @Inject constructor(
 ) : SubscriptionRepository {
 
     override suspend fun createSubscription(request: SaveSubscriptionRequest): SubscriptionVo {
-        return subscriptionApi.createSubscription(request).data
-            ?: throw NetworkException("订阅数据为空", R.string.error_network_fail)
+        return subscriptionApi.createSubscription(request).data ?: run {
+            AppLogger.warn(TAG, "createSubscription: 新建订阅响应 data 为空，按失败上抛")
+            throw NetworkException("订阅数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun updateSubscription(id: Long, request: UpdateSubscriptionRequest): SubscriptionVo {
-        return subscriptionApi.updateSubscription(id, request).data
-            ?: throw NetworkException("订阅数据为空", R.string.error_network_fail)
+        return subscriptionApi.updateSubscription(id, request).data ?: run {
+            AppLogger.warn(TAG, "updateSubscription: 更新订阅响应 data 为空（id=$id），按失败上抛")
+            throw NetworkException("订阅数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun deleteSubscription(id: Long) {
@@ -40,13 +45,17 @@ class SubscriptionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun pageSubscriptions(page: Int, size: Int, status: String?): PageData<SubscriptionVo> {
-        return subscriptionApi.pageSubscriptions(page = page, size = size, status = status).data
-            ?: throw NetworkException("订阅列表为空", R.string.error_network_fail)
+        return subscriptionApi.pageSubscriptions(page = page, size = size, status = status).data ?: run {
+            AppLogger.warn(TAG, "pageSubscriptions: 订阅列表响应 data 为空（page=$page status=$status），按失败上抛")
+            throw NetworkException("订阅列表为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun getSubscription(id: Long): SubscriptionVo {
-        return subscriptionApi.getSubscription(id).data
-            ?: throw NetworkException("订阅详情为空", R.string.error_network_fail)
+        return subscriptionApi.getSubscription(id).data ?: run {
+            AppLogger.warn(TAG, "getSubscription: 订阅详情响应 data 为空（id=$id），按失败上抛")
+            throw NetworkException("订阅详情为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun pauseSubscription(id: Long) {
@@ -70,8 +79,10 @@ class SubscriptionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun pageUsages(id: Long, page: Int, size: Int): PageData<UsageLogVo> {
-        return subscriptionApi.pageUsages(id = id, page = page, size = size).data
-            ?: throw NetworkException("使用记录为空", R.string.error_network_fail)
+        return subscriptionApi.pageUsages(id = id, page = page, size = size).data ?: run {
+            AppLogger.warn(TAG, "pageUsages: 使用记录响应 data 为空（id=$id page=$page），按失败上抛")
+            throw NetworkException("使用记录为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun deleteUsage(id: Long, usageId: Long) {
@@ -79,8 +90,10 @@ class SubscriptionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun listReminders(unreadOnly: Boolean?): List<ReminderVo> {
-        return subscriptionApi.listReminders(unread = unreadOnly).data
-            ?: throw NetworkException("提醒列表为空", R.string.error_network_fail)
+        return subscriptionApi.listReminders(unread = unreadOnly).data ?: run {
+            AppLogger.warn(TAG, "listReminders: 提醒列表响应 data 为空（unreadOnly=$unreadOnly），按失败上抛")
+            throw NetworkException("提醒列表为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun markReminderRead(reminderId: Long) {
@@ -88,7 +101,13 @@ class SubscriptionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getStats(): SubscriptionStatsVo {
-        return subscriptionApi.getStats().data
-            ?: throw NetworkException("统计数据为空", R.string.error_network_fail)
+        return subscriptionApi.getStats().data ?: run {
+            AppLogger.warn(TAG, "getStats: 统计响应 data 为空，按失败上抛")
+            throw NetworkException("统计数据为空", R.string.error_network_fail)
+        }
+    }
+
+    private companion object {
+        const val TAG = "SubscriptionRepository"
     }
 }

@@ -7,6 +7,7 @@ import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { reservationLaundry } from "../network/api/OrderApi"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppInfoDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import vibrator from '@ohos.vibrator'
@@ -50,6 +51,7 @@ struct Laundry {
   })
 
   async aboutToAppear() {
+    logger.debug('laundry', '预约寄存页挂载，拉取用户信息与套餐列表')
     // 路由预选参数（F1）：服务页套餐行携 id 跳入时落地默认选中（缺失/非法 = 不指定）
     const routeItemId = getNumberParam(RouteNames.LAUNDRY)
     if (routeItemId !== null && routeItemId > 0) {
@@ -63,12 +65,14 @@ struct Laundry {
     if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
+      logger.warn('laundry', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "用户信息加载失败")
     }
     if (itemRes.code === HttpStatusCode.Ok) {
       this.laundryItemList = itemRes.data
       this.applyRoutePreselection()
     } else {
+      logger.warn('laundry', `套餐列表加载失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
       showToastSafety(itemRes.message, "套餐加载失败")
       this.loadFailed = true
     }
@@ -87,6 +91,8 @@ struct Laundry {
     if (target !== undefined) {
       this.selectItemId = target.itemId
       this.totalPrice = target.basePrice
+      // 路由预选落地留痕（低频一次性，记 debug）
+      logger.debug('laundry', `路由预选套餐 itemId=${target.itemId}`)
     }
   }
 
@@ -99,6 +105,7 @@ struct Laundry {
       this.laundryItemList = itemRes.data
       this.applyRoutePreselection()
     } else {
+      logger.warn('laundry', `套餐重试仍失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
       showToastSafety(itemRes.message, "套餐加载失败")
       this.loadFailed = true
     }
@@ -124,6 +131,7 @@ struct Laundry {
       return
     }
     if (this.reserving) {
+      logger.debug('laundry', '预约请求进行中，忽略重复触发')
       return
     }
     this.reserving = true
@@ -134,13 +142,17 @@ struct Laundry {
       })
       if (res.code === HttpStatusCode.Ok) {
         if (res.data !== null) {
+          // 低频关键动作成功：预约提交成功（资金链路入口）留 info，仅记套餐与金额摘要
+          logger.info('laundry', `预约提交成功 itemId=${this.selectItemId} totalPrice=${this.totalPrice?.toFixed(2)} orderId=${res.data}`)
           pathStack.pop()
           // 统一传 number 类型 orderId（评审 #6：原模板字符串导致 Payment 收到字符串）
           pathStack.pushPathByName(RouteNames.PAYMENT, res.data)
         } else {
+          logger.warn('laundry', `下单成功但未返回订单号 code=${res.code} message=${res.message ?? ""}`)
           showToastSafety(res.message, "下单失败，请稍后重试")
         }
       } else {
+        logger.warn('laundry', `预约被拒绝 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "下单失败，请稍后重试")
       }
     } finally {

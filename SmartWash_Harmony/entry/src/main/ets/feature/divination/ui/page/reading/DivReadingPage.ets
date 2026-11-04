@@ -26,6 +26,7 @@ import {
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
+import { logger } from '../../../../../utils/Logger'
 
 /** 解读正文状态（对齐安卓 RequestState） */
 type ReadingState = 'idle' | 'loading' | 'success' | 'error'
@@ -101,6 +102,7 @@ struct DivReadingPage {
   async aboutToAppear(): Promise<void> {
     const recordId = getNumberParam(RouteNames.DIV_READING)
     if (recordId === null) {
+      logger.warn('divReadingPage', '解读页路由参数缺失 recordId，按空态呈现')
       this.loadingRecord = false
       return
     }
@@ -110,9 +112,14 @@ struct DivReadingPage {
       if (row !== null) {
         this.chartName = this.resolveName(row)
         this.chartSeal = this.resolveSeal(row.method, this.chartName)
+        logger.debug('divReadingPage', `解读页记录加载完成 recordId=${recordId} method=${row.method}`)
+      } else {
+        logger.warn('divReadingPage', `解读页卦象记录不存在 recordId=${recordId}，按空态呈现`)
       }
     } catch (err) {
       this.record = null
+      logger.error('divReadingPage', '解读页读取卦象记录失败',
+        err instanceof Error ? err.message : '')
     }
     this.loadingRecord = false
     if (this.record !== null) {
@@ -168,11 +175,17 @@ struct DivReadingPage {
       if (resp.code === 200 && resp.data !== null) {
         this.reading = resp.data
         this.readingState = 'success'
+        // 低频关键动作：解读生成成功
+        logger.info('divReadingPage', `解读生成成功 recordId=${record.id} ` +
+          `sections=${resp.data.sections.length}`)
       } else {
         this.readingState = 'error'
+        logger.warn('divReadingPage', `解读响应异常 recordId=${record.id} code=${resp.code}`)
       }
     }).catch((err: Object): void => {
       this.readingState = 'error'
+      logger.error('divReadingPage', `解读生成失败 recordId=${record.id}`,
+        err instanceof Error ? err.message : '')
     })
   }
 

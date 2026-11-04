@@ -1,6 +1,5 @@
 package com.smartwash.common.init
 
-import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,14 +70,14 @@ class InitEngine(
             asyncScope.launch {
                 val result = executeTaskWithTimeout(task)
                 if (result !is TaskResult.Success) {
-                    Log.w(TAG, "Non-blocking init task did not succeed: $result")
+                    LogCore.warn(TAG, "Non-blocking init task did not succeed: $result")
                 }
             }
         }
 
         _progress.value = InitProgress.Completed
         _report.value = InitReport(results, success = true)
-        Log.i(TAG, "Init completed: ${_report.value?.summary}")
+        LogCore.info(TAG, "Init completed: ${_report.value?.summary}")
     }
 
     /** 执行单个任务（带超时保护）；协程取消必须向上传播 */
@@ -123,7 +122,7 @@ class InitEngine(
                     adjacency[depId]?.add(task.taskId)
                     inDegree[task.taskId] = (inDegree[task.taskId] ?: 0) + 1
                 } else {
-                    Log.w(TAG, "Task ${task.taskId} depends on unknown task: $depId")
+                    LogCore.warn(TAG, "Task ${task.taskId} depends on unknown task: $depId")
                 }
             }
         }
@@ -148,13 +147,14 @@ class InitEngine(
         }
 
         if (sorted.size != tasks.size) {
-            Log.e(TAG, "Circular dependency detected! Sorted ${sorted.size} of ${tasks.size} tasks, falling back to original order")
+            LogCore.error(TAG, "Circular dependency detected! Sorted ${sorted.size} of ${tasks.size} tasks, falling back to original order")
             return tasks
         }
         return sorted
     }
 
     private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 LogCore 统一拼接） */
         const val TAG = "InitEngine"
     }
 }

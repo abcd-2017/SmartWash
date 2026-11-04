@@ -2,6 +2,7 @@ package com.smartwash.feature.subscription.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.subscription.SubscriptionConstant
 import com.smartwash.feature.subscription.network.SubscriptionVo
 import com.smartwash.feature.subscription.repository.SubscriptionRepository
@@ -25,6 +26,10 @@ class SubscriptionPagingSource(
                 status = status,
             )
             val records = pageData.records
+            if (records.isEmpty()) {
+                // 空页留痕：分页热路径，debug 级别
+                AppLogger.debug(TAG, "load: 订阅列表空页，结束分页 status=$status page=$currentPage")
+            }
             LoadResult.Page(
                 data = records,
                 prevKey = if (currentPage == 1) null else currentPage - 1,
@@ -33,11 +38,16 @@ class SubscriptionPagingSource(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            AppLogger.error(TAG, "SubscriptionPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }
 
     override fun getRefreshKey(state: PagingState<Int, SubscriptionVo>): Int? {
         return state.anchorPosition
+    }
+
+    private companion object {
+        const val TAG = "SubscriptionPagingSource"
     }
 }

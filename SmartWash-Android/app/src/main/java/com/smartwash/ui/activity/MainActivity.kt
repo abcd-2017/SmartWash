@@ -38,6 +38,7 @@ import com.smartwash.R
 import com.smartwash.common.ui.theme.AuthGradientBottom
 import com.smartwash.common.ui.theme.AuthGradientTop
 import com.smartwash.common.ui.theme.SmartWashAndroidTheme
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.deeplink.DeepLinkAction
@@ -150,6 +151,8 @@ class MainActivity : ComponentActivity() {
                     throw e
                 } catch (e: Exception) {
                     // resolve 内部已静默字典失败，此处兜意外异常，按不支持链接提示
+                    // （LaunchedEffect 一次性副作用分支，留痕上限 debug）
+                    AppLogger.debug(TAG, "深链消费意外异常，降级不支持提示：uri=$uri", e)
                     deepLinkHandler.navigate(navController, DeepLinkAction.Unknown(uri))
                 }
             }
@@ -163,6 +166,8 @@ class MainActivity : ComponentActivity() {
                     when (event) {
                         is LoginEvent.LoggedOut -> when (event.reason) {
                             LogoutReason.NEED_LOGIN -> {
+                                // 未登录拦截跳登录（低频会话事件；LaunchedEffect 副作用分支留痕上限 debug）
+                                AppLogger.debug(TAG, "会话事件 NEED_LOGIN：壳层跳转登录页")
                                 Toast.makeText(
                                     context,
                                     context.getString(R.string.please_login),
@@ -175,6 +180,9 @@ class MainActivity : ComponentActivity() {
                             }
 
                             LogoutReason.UNAUTHORIZED -> {
+                                // 401 登录失效跳转（低频会话事件；LaunchedEffect 副作用分支留痕上限 debug，
+                                // release 侧留痕由 user-impl 事件源/拦截器承担）
+                                AppLogger.debug(TAG, "会话事件 UNAUTHORIZED：壳层跳转登录页（401 去重后单次跳转）")
                                 view.performHaptic(HapticEffect.ERROR)
                                 delay(200)
                                 Toast.makeText(
@@ -282,5 +290,10 @@ class MainActivity : ComponentActivity() {
         intent.takeIf { it.action == Intent.ACTION_VIEW }
             ?.data?.toString()?.takeIf { it.isNotBlank() }
             ?.let { pendingDeepLinkUri = it }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "MainActivity"
     }
 }

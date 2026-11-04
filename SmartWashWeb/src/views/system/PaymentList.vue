@@ -137,6 +137,7 @@ import { formatTime } from '@/utils/format';
 import { payStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
+import logger from '@/utils/logger';
 
 const payTypeOptions = ref({});
 const payStatusOptions = ref({});
@@ -188,7 +189,9 @@ const fetchPayTypes = async () => {
   try {
     const res = await getPayTypes();
     payTypeOptions.value = res;
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取支付类型失败:', error);
     ElMessage.error('获取支付类型失败');
   }
 };
@@ -198,7 +201,9 @@ const fetchPayStatus = async () => {
   try {
     const res = await getPayStatus();
     payStatusOptions.value = res;
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取支付状态失败:', error);
     ElMessage.error('获取支付状态失败');
   }
 };
@@ -208,6 +213,8 @@ const validatePhone = () => {
   const phone = listQuery.phoneNumber;
   if (phone && !/^(?:\+86)?1[3-9]\d{9}$/.test(phone)) {
     ElMessage.warning('手机号格式不正确');
+    // 清空用户输入属于静默丢弃动作，留 debug 便于开发期排查；不打输入值（可能含真实手机号）
+    logger.debug('支付记录筛选：手机号格式校验未通过，已清空输入');
     listQuery.phoneNumber = '';
   }
 };

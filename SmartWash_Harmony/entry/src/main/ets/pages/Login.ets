@@ -7,6 +7,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
+import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import vibrator from "@ohos.vibrator"
 
@@ -87,6 +88,8 @@ struct Login {
     }
     this.check()
     if (this.checkPhoneNumber || this.checkPassword) {
+      // 登录提交本地校验拒绝：只记校验事实布尔值，不落输入内容（敏感红线）
+      logger.warn('login', `登录提交校验未通过 phone=${this.checkPhoneNumber} password=${this.checkPassword}`)
       this.performHaptic(true)
       return
     }
@@ -107,6 +110,8 @@ struct Login {
         // 后端登录信封 data 为 {token, role} 对象（评审 #1 适配），取 data.token 持久化
         const token = res.data?.token ?? ""
         if (token === "") {
+          // 信封异常降级：code 成功但 data.token 缺失
+          logger.warn('login', '登录响应缺少 token，按登录失败处理')
           showToastSafety(res.message, "登录失败，请稍后重试")
           return
         }
@@ -114,6 +119,8 @@ struct Login {
         await setValue(CommonConstants.USER_TOKEN, token)
         // role 存入 AppStorage 备用（普通用户固定 "user"）
         AppStorage.setOrCreate("userRole", res.data?.role ?? "user")
+        // 低频关键动作成功：登录成功（不带手机号，敏感红线）
+        logger.info('login', '登录成功')
         // 登录成功 toast（对齐安卓 LoginPage.kt:140「登录成功」）
         showToastSafety("登录成功")
         const infoRes = await getUserInfo()
@@ -126,6 +133,10 @@ struct Login {
           const studentId = infoRes.data.studentId ?? ""
           schoolMissing = schoolId <= 0 || studentId.trim() === ""
         }
+        if (infoRes.code !== HttpStatusCode.Ok || infoRes.data === null) {
+          // 降级留痕：无法确认学校信息时按齐全放行（401 已由网络层统一清理并跳登录）
+          logger.warn('login', '登录后拉取用户信息失败，跳过学校信息缺失判定（默认放行）')
+        }
         if (schoolMissing) {
           pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
         } else {
@@ -135,6 +146,8 @@ struct Login {
           AppStorage.setOrCreate("userLoginFlag", true)
         }
       } else {
+        // 业务拒绝（如密码错误/账号不存在）：warn 留痕，message 为服务端提示文案，无敏感字段
+        logger.warn('login', `登录被拒绝 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "登录失败，请稍后重试")
       }
     } finally {

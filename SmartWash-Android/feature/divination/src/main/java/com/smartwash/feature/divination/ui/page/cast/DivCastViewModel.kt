@@ -3,6 +3,7 @@ package com.smartwash.feature.divination.ui.page.cast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nlf.calendar.Solar
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.CoinTosser
 import com.smartwash.feature.divination.core.DivCategory
 import com.smartwash.feature.divination.core.DivMethod
@@ -70,7 +71,12 @@ class DivCastViewModel @Inject constructor(
                 bundle = DivChartBundle(DivMethod.LIU_YAO.id, liuyao = chart),
             )
             _uiState.value = _uiState.value.copy(saving = false)
+            AppLogger.info(TAG, "摇卦成卦入库 recordId=$id category=${category.id}")
             onSaved(id)
         }
+    }
+
+    private companion object {
+        const val TAG = "DivCastViewModel"
     }
 }

@@ -3,6 +3,7 @@ package com.smartwash.feature.review.ui.material
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.review.R
 import com.smartwash.feature.review.ReviewConstant
@@ -78,8 +79,10 @@ class MaterialListViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MaterialListViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MaterialListViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(R.string.review_error_load)) }
             }
         }
@@ -103,8 +106,10 @@ class MaterialListViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MaterialListViewModel.loadMore: ${e.message}", e)
                 _state.update { it.copy(loadMoreState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MaterialListViewModel.loadMore: ${e.message}", e)
                 _state.update { it.copy(loadMoreState = RequestState.Error(R.string.review_error_load_more)) }
             }
         }
@@ -181,6 +186,7 @@ class MaterialListViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MaterialListViewModel.loadCardsPage: ${e.message}", e)
                 _state.update {
                     if (it.expandedMaterialId == materialId) {
                         it.copy(cardsState = RequestState.Error(e.resId, e.message))
@@ -189,6 +195,7 @@ class MaterialListViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MaterialListViewModel.loadCardsPage: ${e.message}", e)
                 _state.update {
                     if (it.expandedMaterialId == materialId) {
                         it.copy(cardsState = RequestState.Error(R.string.review_error_load))
@@ -242,7 +249,8 @@ class MaterialListViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(createState = RequestState.Loading) }
             try {
-                repository.createMaterial(title = title, rawText = rawText.ifEmpty { null })
+                val materialId = repository.createMaterial(title = title, rawText = rawText.ifEmpty { null })
+                AppLogger.info(TAG, "复习资料创建成功 materialId=$materialId rawText=${rawText != null}")
                 _state.update {
                     it.copy(
                         createState = RequestState.Success,
@@ -255,8 +263,10 @@ class MaterialListViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MaterialListViewModel.submitCreateMaterial: ${e.message}", e)
                 _state.update { it.copy(createState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MaterialListViewModel.submitCreateMaterial: ${e.message}", e)
                 _state.update { it.copy(createState = RequestState.Error(R.string.review_error_load)) }
             }
         }
@@ -333,7 +343,8 @@ class MaterialListViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(addCardState = RequestState.Loading) }
             try {
-                repository.addCard(materialId = materialId, question = question, answer = answer)
+                val cardId = repository.addCard(materialId = materialId, question = question, answer = answer)
+                AppLogger.info(TAG, "问答卡创建成功 cardId=$cardId materialId=$materialId")
                 _state.update {
                     it.copy(
                         addCardState = RequestState.Success,
@@ -349,8 +360,10 @@ class MaterialListViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MaterialListViewModel.submitAddCard: ${e.message}", e)
                 _state.update { it.copy(addCardState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MaterialListViewModel.submitAddCard: ${e.message}", e)
                 _state.update { it.copy(addCardState = RequestState.Error(R.string.review_error_load)) }
             }
         }
@@ -365,5 +378,9 @@ class MaterialListViewModel @Inject constructor(
                 it
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "MaterialListViewModel"
     }
 }

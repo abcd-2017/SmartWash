@@ -1,10 +1,9 @@
 package com.smartwash.ui.page.index
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.common.utils.AppConstant
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderBrief
 import com.smartwash.feature.user.api.UserApi
@@ -39,7 +38,7 @@ class IndexViewModel @Inject constructor(
                 _orderList.value = orderApi.getWashingOrder()
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(AppConstant.APP_NAME, "IndexViewModel.getInfoData: ${e.message}", e)
+                AppLogger.error(TAG, "IndexViewModel.getInfoData: ${e.message}", e)
                 _userInfoStatus.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -47,5 +46,10 @@ class IndexViewModel @Inject constructor(
 
     fun resetState() {
         _userInfoStatus.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "IndexViewModel"
     }
 }

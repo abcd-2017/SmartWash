@@ -3,6 +3,7 @@ package com.smartwash.feature.review.ui.queue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.review.R
 import com.smartwash.feature.review.ReviewConstant
@@ -54,8 +55,10 @@ class ReviewQueueViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ReviewQueueViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ReviewQueueViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(R.string.review_error_load)) }
             }
         }
@@ -74,9 +77,16 @@ class ReviewQueueViewModel @Inject constructor(
             if (page.toLong() * ReviewConstant.PAGE_SIZE >= data.total) break
             if (data.records.isEmpty()) break
         }
+        if (titles.size < ids.size) {
+            AppLogger.warn(TAG, "loadMaterialTitles: 资料标题翻页结束仍未完全覆盖 ids=${ids.size} covered=${titles.size}")
+        }
         return titles
     }
 
     /** 队列条目（复习入口按卡片定位） */
     fun cardAt(index: Int): ReviewCardVo? = _state.value.queue?.cards?.getOrNull(index)
+
+    private companion object {
+        const val TAG = "ReviewQueueViewModel"
+    }
 }

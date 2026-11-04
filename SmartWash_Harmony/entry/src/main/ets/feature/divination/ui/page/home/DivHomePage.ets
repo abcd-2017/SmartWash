@@ -32,6 +32,7 @@ import { RouteNames } from '../../../../../constant/RouteNames'
 import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
+import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
 
 /** 四术玉牌展示元数据（对齐安卓 DivHomePage.kt:101-106 的 Quad 列表） */
@@ -92,13 +93,17 @@ struct DivHomePage {
     } catch (err) {
       // 无签数据时不显示卡（对齐 DivHomePage.kt:129-160 的 sign !== null 分支）
       this.hasTodaySign = false
+      logger.warn('divHomePage', `今日一签计算失败，隐藏签卡, ${err instanceof Error ? err.message : ''}`)
     }
 
     try {
       this.records = await DivRecordRepository.recent(3)
     } catch (err) {
       this.records = []
+      logger.warn('divHomePage', `案卷加载失败，按空态呈现, ${err instanceof Error ? err.message : ''}`)
     }
+    logger.debug('divHomePage', `观象台首页加载完成 hasTodaySign=${this.hasTodaySign} ` +
+      `records=${this.records.length}`)
   }
 
   /**
@@ -114,11 +119,14 @@ struct DivHomePage {
     let id: number
     if (existing !== null) {
       id = existing.id
+      // 幂等命中：同日同签复用既有记录，不重复落库
+      logger.debug('divHomePage', `今日一签幂等命中，复用当日记录 recordId=${existing.id}`)
     } else {
       const chartJson = encodeChartJson(chart)
       const bundleJson = encodeBundleToJson(encodeBundle('meihua', chartJson))
       id = await DivRecordRepository.save(
         'meihua', 'other', question, JSON.stringify(chart.lines), Date.now(), bundleJson)
+      logger.info('divHomePage', `今日一签落库成功 recordId=${id}`)
     }
     // 跳卦盘（DivChart 路由随卦盘批次注册；复盘入口不播动爻进场动画）
     const chartParam: DivChartParam = { recordId: id, animate: false }

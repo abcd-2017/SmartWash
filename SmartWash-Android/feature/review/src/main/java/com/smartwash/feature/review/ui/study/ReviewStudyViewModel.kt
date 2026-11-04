@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.review.R
 import com.smartwash.feature.review.ReviewConstant
@@ -96,8 +97,10 @@ class ReviewStudyViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ReviewStudyViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ReviewStudyViewModel.load: ${e.message}", e)
                 _state.update { it.copy(loadState = RequestState.Error(R.string.review_error_load)) }
             }
         }
@@ -143,11 +146,17 @@ class ReviewStudyViewModel @Inject constructor(
                     )
                 }
                 cardShownAtMs = System.currentTimeMillis()
+                AppLogger.debug(TAG, "卡片评分成功 cardId=${current.id} rating=${rating.code} 剩余=${_state.value.cards.size}")
+                if (_state.value.cards.isEmpty()) {
+                    AppLogger.info(TAG, "本轮复习完成 total=${_state.value.total}")
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ReviewStudyViewModel.rate: ${e.message}", e)
                 _state.update { it.copy(answerState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ReviewStudyViewModel.rate: ${e.message}", e)
                 _state.update { it.copy(answerState = RequestState.Error(R.string.review_error_answer)) }
             }
         }
@@ -158,5 +167,9 @@ class ReviewStudyViewModel @Inject constructor(
         _state.update {
             if (it.answerState is RequestState.Error) it.copy(answerState = RequestState.Idle) else it
         }
+    }
+
+    private companion object {
+        const val TAG = "ReviewStudyViewModel"
     }
 }

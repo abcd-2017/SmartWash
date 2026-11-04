@@ -65,9 +65,11 @@ public class LockersController {
     @PostMapping("/add")
     public Result<String> addLocker(@RequestBody @Valid AddLockerFrom addLockerFrom) {
         if (lockersService.getLockerById(addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber()) != null) {
+            log.warn("新增寄存柜被拒绝：编号已被使用, schoolId: {}, lockerNumber: {}", addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber());
             return Result.failMsg("给存储柜名已被使用");
         }
         lockersService.addLockers(addLockerFrom);
+        log.info("新增寄存柜成功, schoolId: {}, lockerNumber: {}", addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber());
         return Result.ok("添加成功");
     }
 
@@ -75,15 +77,18 @@ public class LockersController {
     @PostMapping("/update")
     public Result<String> updateLocker(@RequestBody @Valid UpdateLockerFrom lockerFrom) {
         if (lockersService.getById(lockerFrom.getLockerId()) == null) {
+            log.warn("更新寄存柜被拒绝：寄存柜不存在, lockerId: {}", lockerFrom.getLockerId());
             return Result.failMsg("寄存柜不存在");
         }
         lockersService.updateLockers(lockerFrom);
+        log.info("更新寄存柜成功, lockerId: {}", lockerFrom.getLockerId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除柜子", description = "根据ID批量删除寄存柜，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteLockers(@PathVariable("ids") @Parameter(description = "寄存柜ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除寄存柜, ids: {}", ids);
         return Result.ok(lockersService.deleteLockers(ids));
     }
 }

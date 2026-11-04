@@ -129,6 +129,7 @@ import {
 import { getRagDocumentList, uploadRagDocument } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const uploadRef = ref(null);
@@ -218,10 +219,24 @@ const submitUpload = async () => {
     formData.append('book', uploadForm.book);
     formData.append('method', uploadForm.method);
     await uploadRagDocument(formData);
+    // 只记业务键与文件名，formData 含文件二进制绝不入日志
+    logger.info(
+      '古籍上传成功',
+      `title=${uploadForm.title}`,
+      `book=${uploadForm.book}`,
+      `method=${uploadForm.method}`,
+      `file=${selectedFile.value?.name ?? '-'}`
+    );
     ElMessage.success('上传成功，正在后台切片与 Embedding');
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('古籍上传表单校验未通过，已拦截提交');
+    } else {
+      logger.error('古籍上传失败:', `title=${uploadForm.title}`, error);
+    }
     ElMessage.error(error.message || '上传失败');
   } finally {
     uploading.value = false;

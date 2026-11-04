@@ -10,6 +10,7 @@ import com.smartwash.divination.mapper.DivRecordMapper;
 import com.smartwash.divination.service.DivSafetyService;
 import com.smartwash.divination.service.DivUsageService;
 import com.smartwash.divination.service.IDivInterpretationService;
+import com.smartwash.config.MdcTaskDecorator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,9 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final DivSafetyService safetyService;
     private final DivUsageService usageService;
 
+    /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
+    private final MdcTaskDecorator mdcTaskDecorator;
+
     /** 异步推流线程池 */
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -57,14 +61,15 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     public SseEmitter interpret(Long recordId, String question, Long userId, boolean isFollowup) {
         SseEmitter emitter = new SseEmitter(120_000L); // 120s 超时
 
-        executor.execute(() -> {
+        // 经 MdcTaskDecorator 包装，把当前请求的 traceId 传播到推流线程，日志可跨线程串联
+        executor.execute(mdcTaskDecorator.decorate(() -> {
             try {
                 doInterpret(emitter, recordId, question, userId, isFollowup);
             } catch (Exception e) {
                 log.error("解读异常, recordId: {}", recordId, e);
                 sseBridge.sendError(emitter, 500, "解读服务异常，请稍后再试");
             }
-        });
+        }));
 
         // 设置完成/超时回调
         emitter.onCompletion(() -> log.debug("SSE 推送完成, recordId: {}", recordId));
@@ -104,6 +109,9 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         try {
             resolved = llmGateway.resolveProvider(null);
         } catch (IllegalStateException e) {
+            // 供应商解析失败 = 服务降级（SSE 返回 503），warn 留痕便于排查密钥/平台配置问题
+            log.warn("LLM 供应商解析失败，SSE 降级返回 503, recordId: {}, userId: {}, 原因: {}",
+                    recordId, userId, e.getMessage());
             sseBridge.sendError(emitter, 503, "解读服务暂不可用，请稍后再试");
             return;
         }
@@ -120,7 +128,9 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             contentBuilder.append(chunk);
             try {
                 Thread.sleep(50); // 模拟流式延迟
-            } catch (InterruptedException ignored) {
+            } catch (InterruptedException e) {
+                // 线程关闭信号，恢复中断标志（原行为保持不变，仅补 debug 留痕）
+                log.debug("解读流式推送延迟被中断，线程恢复中断标志, recordId: {}", recordId);
                 Thread.currentThread().interrupt();
             }
         }

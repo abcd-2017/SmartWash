@@ -3,6 +3,7 @@ package com.smartwash.feature.toolbox.repository
 import com.smartwash.common.network.R
 import com.smartwash.common.network.TokenProvider
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.common.utils.model.HttpStatusCode
 import com.smartwash.feature.toolbox.network.AddDeliverySessionRequest
@@ -82,7 +83,10 @@ class DeliveryRepositoryImpl @Inject constructor(
             override fun contentType() = "application/octet-stream".toMediaTypeOrNull()
             override fun contentLength(): Long = size
             override fun writeTo(sink: BufferedSink) {
-                val input = content() ?: throw NetworkException("所选内容已失效", R.string.error_network_fail)
+                val input = content() ?: run {
+                    AppLogger.warn(TAG, "publishFile: 内容流工厂返回空，所选内容已失效 fileName=$fileName size=$size")
+                    throw NetworkException("所选内容已失效", R.string.error_network_fail)
+                }
                 input.use { sink.writeAll(it.source()) }
             }
         }
@@ -111,6 +115,7 @@ class DeliveryRepositoryImpl @Inject constructor(
             val response = downloadClient.newCall(request).execute()
             try {
                 if (!response.isSuccessful) {
+                    AppLogger.error(TAG, "openFileContent: 内容下载传输层失败 http=${response.code} itemId=$itemId")
                     throw NetworkException("请求失败", R.string.error_network_fail)
                 }
                 val contentType = response.header("Content-Type")
@@ -119,10 +124,13 @@ class DeliveryRepositoryImpl @Inject constructor(
                     val body = response.body?.string().orEmpty()
                     val code2 = runCatching { JSONObject(body).optInt("code") }.getOrDefault(HttpStatusCode.Error.code)
                     val message = runCatching { JSONObject(body).optString("message") }.getOrDefault("")
+                    AppLogger.warn(TAG, "openFileContent: 内容下载返回错误信封 code=$code2 itemId=$itemId")
                     throw DeliveryException(code2, message.ifBlank { "投递内容获取失败" })
                 }
-                val body = response.body
-                    ?: throw NetworkException("投递内容为空", R.string.error_network_fail)
+                val body = response.body ?: run {
+                    AppLogger.warn(TAG, "openFileContent: 内容下载响应体为空 itemId=$itemId")
+                    throw NetworkException("投递内容为空", R.string.error_network_fail)
+                }
                 DeliveryFileContent(
                     contentType = contentType?.substringBefore(';')?.trim(),
                     contentLength = body.contentLength().takeIf { it >= 0 },
@@ -141,8 +149,16 @@ class DeliveryRepositoryImpl @Inject constructor(
     /** 信封校验：code=200 取 data，否则按业务码抛 [DeliveryException]（403/404/409/413…不触发 401 语义） */
     private fun <T> ApiResult<T>.requireDeliveryData(emptyMessage: String): T {
         if (code != HttpStatusCode.Success.code) {
+            AppLogger.warn(TAG, "requireDeliveryData: 投递业务拒绝 code=$code")
             throw DeliveryException(code, message)
         }
-        return data ?: throw NetworkException(emptyMessage, R.string.error_network_fail)
+        return data ?: run {
+            AppLogger.warn(TAG, "requireDeliveryData: 投递响应 data 为空（$emptyMessage），按失败上抛")
+            throw NetworkException(emptyMessage, R.string.error_network_fail)
+        }
+    }
+
+    private companion object {
+        const val TAG = "DeliveryRepository"
     }
 }

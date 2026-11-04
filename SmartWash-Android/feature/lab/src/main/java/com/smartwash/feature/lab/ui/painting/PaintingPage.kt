@@ -64,6 +64,7 @@ import com.smartwash.common.ui.theme.AppColorScheme
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.performHaptic
@@ -562,20 +563,33 @@ private fun saveBitmapToGallery(context: Context, bitmap: Bitmap): Boolean {
         put(MediaStore.Images.Media.IS_PENDING, 1)
     }
 
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return false
+    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: run {
+        AppLogger.error(TAG, "saveBitmapToGallery: 相册插入记录失败，画作保存中止")
+        return false
+    }
     return try {
-        val stream = resolver.openOutputStream(uri) ?: return false
+        val stream = resolver.openOutputStream(uri) ?: run {
+            AppLogger.error(TAG, "saveBitmapToGallery: 相册输出流打开失败，画作保存中止")
+            return false
+        }
         val compressed = stream.use { out ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
-        if (!compressed) return false
+        if (!compressed) {
+            AppLogger.error(TAG, "saveBitmapToGallery: PNG 编码失败，画作保存中止")
+            return false
+        }
         values.clear()
         values.put(MediaStore.Images.Media.IS_PENDING, 0)
         resolver.update(uri, values, null, null)
+        AppLogger.info(TAG, "画作保存相册成功 displayName=$displayName")
         true
     } catch (e: Exception) {
         // 失败清掉半成品，避免相册出现空文件
+        AppLogger.error(TAG, "saveBitmapToGallery: 画作写入失败，半成品已清理", e)
         runCatching { resolver.delete(uri, null, null) }
         false
     }
 }
+
+private const val TAG = "PaintingPage"

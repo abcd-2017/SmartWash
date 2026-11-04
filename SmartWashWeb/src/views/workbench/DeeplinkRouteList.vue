@@ -178,6 +178,7 @@ import {
   deeplinkPlatformText,
   deeplinkPlatformTagType,
 } from '@/constants/dict';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -265,9 +266,17 @@ const handleToggleEnabled = async (row) => {
   togglingId.value = row.id;
   try {
     await updateDeeplinkRoute(buildRowUpdatePayload(row, { enabled: next }));
+    logger.info('跳转路由启停成功', `id=${row.id}`, `host=${row.host}`, `enabled=${next}`);
     ElMessage.success(next === 1 ? '已启用' : '已停用');
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
+    logger.error(
+      '跳转路由启停失败:',
+      `id=${row.id}`,
+      `host=${row.host}`,
+      `enabled=${next}`,
+      error
+    );
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
@@ -331,14 +340,33 @@ const submitForm = async () => {
 
     if (dialogType.value === 'create') {
       await addDeeplinkRoute(buildSubmitPayload());
+      logger.info('跳转路由新增成功', `host=${tempRoute.host}`, `name=${tempRoute.name}`);
       ElMessage.success('新增成功');
     } else {
       await updateDeeplinkRoute(buildSubmitPayload());
+      logger.info(
+        '跳转路由编辑成功',
+        `id=${tempRoute.id}`,
+        `host=${tempRoute.host}`,
+        `name=${tempRoute.name}`
+      );
       ElMessage.success('修改成功');
     }
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('跳转路由表单校验未通过，已拦截提交');
+    } else {
+      logger.error(
+        '跳转路由提交失败:',
+        `type=${dialogType.value}`,
+        `host=${tempRoute.host}`,
+        `id=${tempRoute.id ?? '-'}`,
+        error
+      );
+    }
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -355,9 +383,11 @@ const handleDelete = async (row) => {
   deletingId.value = row.id;
   try {
     await deleteDeeplinkRoute(row.id);
+    logger.info('跳转路由删除成功', `id=${row.id}`, `host=${row.host}`);
     ElMessage.success('删除成功');
     fetchData(); // 刷新当前页
   } catch (error) {
+    logger.error('跳转路由删除失败:', `id=${row.id}`, `host=${row.host}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;

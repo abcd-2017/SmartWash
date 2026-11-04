@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.feature.divination.R
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.data.DivChartBundle
 import com.smartwash.feature.divination.data.DivChartCodec
@@ -50,6 +51,9 @@ class DivFollowUpViewModel @Inject constructor(
     private fun load() {
         viewModelScope.launch {
             val record = recordRepository.getById(recordId)
+            if (record == null) {
+                AppLogger.warn(TAG, "追问页卦历记录不存在 recordId=$recordId，页面按空态兜底")
+            }
             val bundle = record?.let { DivChartCodec.decode(it.chartJson) }
             _uiState.value = _uiState.value.copy(
                 record = record,
@@ -87,7 +91,9 @@ class DivFollowUpViewModel @Inject constructor(
                     history = newHistory + reply,
                     followUpState = RequestState.Success,
                 )
+                AppLogger.debug(TAG, "追问回复成功 recordId=$recordId 轮次=${newHistory.size / 2}")
             } else {
+                AppLogger.error(TAG, "DivFollowUpViewModel.send: ${result.exceptionOrNull()?.message}", result.exceptionOrNull())
                 _uiState.value = _uiState.value.copy(
                     followUpState = RequestState.Error(
                         messageResId = R.string.div_reading_error,
@@ -96,5 +102,9 @@ class DivFollowUpViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "DivFollowUpViewModel"
     }
 }

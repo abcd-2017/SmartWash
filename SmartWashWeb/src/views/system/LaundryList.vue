@@ -115,6 +115,7 @@ import { laundryOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -199,15 +200,20 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addLaundry(tempLaundry);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：业务键仅套餐名称（新增无 itemId）
+      logger.info('新增套餐成功', `itemName=${tempLaundry.itemName}`);
     } else {
       await updateLaundry(tempLaundry);
       ElMessage.success('修改成功');
+      logger.info('修改套餐成功', `itemId=${tempLaundry.itemId}`, `itemName=${tempLaundry.itemName}`);
     }
     // 套餐数据有变，失效套餐下拉的全量缓存（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('保存套餐失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -222,10 +228,13 @@ const handleDelete = async (row) => {
   try {
     await deleteLaundry(row.itemId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 itemId/itemName
+    logger.info('删除套餐成功', `itemId=${row.itemId}`, `itemName=${row.itemName}`);
     // 套餐下拉缓存同步失效（评审 #15 的失效入口）
     laundryOptionsCache.invalidate();
     fetchData();
   } catch (error) {
+    logger.error('删除套餐失败:', `itemId=${row.itemId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };

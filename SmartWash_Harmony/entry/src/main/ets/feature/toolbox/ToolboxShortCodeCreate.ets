@@ -17,8 +17,12 @@ import { ExpiryPreset, expireAtFor, isValidCustomCode, isValidTarget } from './S
 import { markShortCodeChanged } from './ToolboxChangeSignal'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
+import { logger } from '../../utils/Logger'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+
+/** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
+const TAG: string = 'toolboxShortCodeCreate'
 
 @Builder
 export function ToolboxShortCodeCreateBuilder() {
@@ -71,19 +75,23 @@ struct ToolboxShortCodeCreate {
    */
   async submit(): Promise<void> {
     if (this.submitting) {
+      logger.debug(TAG, '提交进行中，忽略重复触发')
       return
     }
     const code = this.customCode.trim()
     if (!isValidTarget(this.target)) {
+      logger.warn(TAG, '创建校验拒绝: 目标链接格式不合法')
       this.errorMessage = ToolboxText.toolbox_error_invalid_target
       return
     }
     if (code.length > 0 && !isValidCustomCode(code)) {
+      logger.warn(TAG, '创建校验拒绝: 自定义短码格式不合法')
       this.errorMessage = ToolboxText.toolbox_error_invalid_custom_code
       return
     }
     if (this.preset === ExpiryPreset.CUSTOM &&
       (this.customDate === null || this.customDate.length === 0)) {
+      logger.warn(TAG, '创建校验拒绝: 自定义有效期未选日期')
       this.errorMessage = ToolboxText.toolbox_error_custom_date_required
       return
     }
@@ -100,14 +108,17 @@ struct ToolboxShortCodeCreate {
     try {
       const res = await createShortCode(form)
       if (res.code === HttpStatusCode.Ok) {
+        logger.info(TAG, `短链创建成功 code=${res.data?.code ?? ''} 公开=${this.isPublic}`)
         showToastSafety(ToolboxText.toolbox_toast_create_success)
         // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
         markShortCodeChanged()
         pathStack.pop()
       } else {
+        logger.warn(TAG, `创建被拒 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.errorMessage = res.message ?? ToolboxText.toolbox_error_submit
       }
     } catch (err) {
+      logger.error(TAG, '创建请求异常', err instanceof Error ? err.message : '')
       this.errorMessage = ToolboxText.toolbox_error_submit
     } finally {
       this.submitting = false

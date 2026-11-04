@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pagingFlow
 import com.smartwash.feature.subscription.R
@@ -82,8 +83,10 @@ class SubscriptionDetailViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(R.string.subscription_error_load_detail)
             }
         }
@@ -99,8 +102,10 @@ class SubscriptionDetailViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.loadStats: ${e.message}", e)
                 _statsState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.loadStats: ${e.message}", e)
                 _statsState.value = RequestState.Error(R.string.subscription_stats_error)
             }
         }
@@ -121,11 +126,14 @@ class SubscriptionDetailViewModel @Inject constructor(
             try {
                 repository.deleteSubscription(subscriptionId)
                 _deleteState.value = RequestState.Success
+                AppLogger.info(TAG, "订阅删除成功 id=$subscriptionId")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.delete: ${e.message}", e)
                 _deleteState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.delete: ${e.message}", e)
                 _deleteState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -138,11 +146,14 @@ class SubscriptionDetailViewModel @Inject constructor(
             try {
                 repository.checkInUsage(subscriptionId, AddUsageRequest())
                 _checkInState.value = RequestState.Success
+                AppLogger.info(TAG, "订阅打卡成功 id=$subscriptionId")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.checkIn: ${e.message}", e)
                 _checkInState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.checkIn: ${e.message}", e)
                 _checkInState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -155,11 +166,14 @@ class SubscriptionDetailViewModel @Inject constructor(
             try {
                 repository.deleteUsage(subscriptionId, usageId)
                 _undoState.value = RequestState.Success
+                AppLogger.info(TAG, "订阅打卡撤销成功 id=$subscriptionId usageId=$usageId")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.undoUsage: ${e.message}", e)
                 _undoState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.undoUsage: ${e.message}", e)
                 _undoState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -197,11 +211,14 @@ class SubscriptionDetailViewModel @Inject constructor(
             try {
                 block()
                 _transitionState.value = RequestState.Success
+                AppLogger.info(TAG, "订阅状态流转成功 id=$subscriptionId")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.transition: ${e.message}", e)
                 _transitionState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionDetailViewModel.transition: ${e.message}", e)
                 _transitionState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -209,5 +226,7 @@ class SubscriptionDetailViewModel @Inject constructor(
 
     companion object {
         const val ARG_ID = "id"
+
+        private const val TAG = "SubscriptionDetailViewModel"
     }
 }

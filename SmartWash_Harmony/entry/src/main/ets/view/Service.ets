@@ -6,6 +6,7 @@ import { LaundryItem } from "../network/vo/LaundryItem"
 import { RouteNames } from "../constant/RouteNames"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import vibrator from '@ohos.vibrator'
 
 /**
@@ -38,8 +39,12 @@ export struct Service {
     this.loadFailed = false
     let res = await getLaundryItems()
     if (res.code === HttpStatusCode.Ok) {
+      // Tab 首载/重试成功：debug 留痕（低频，非关键动作不打 info）
+      logger.debug('service', `套餐加载成功 count=${res.data?.length ?? 0}`)
       this.laundryItem = res.data
     } else {
+      // 业务失败 warn 留痕（与失败态 UI 对应；401 已由网络层统一清理并跳登录）
+      logger.warn('service', `套餐加载失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "套餐加载失败")
       this.loadFailed = true
     }

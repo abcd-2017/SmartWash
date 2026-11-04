@@ -2,6 +2,7 @@ package com.smartwash.feature.game.repository
 
 import com.smartwash.common.network.R
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.game.network.GameApi
 import com.smartwash.feature.game.network.GameVo
 import javax.inject.Inject
@@ -19,7 +20,13 @@ class GameRepositoryImpl @Inject constructor(
 ) : GameRepository {
 
     override suspend fun getGameList(): List<GameVo> {
-        return gameApi.getGameList().data
-            ?: throw NetworkException("游戏列表为空", R.string.error_network_fail)
+        return gameApi.getGameList().data ?: run {
+            AppLogger.warn(TAG, "getGameList: 游戏列表响应 data 为空，按失败上抛")
+            throw NetworkException("游戏列表为空", R.string.error_network_fail)
+        }
+    }
+
+    private companion object {
+        const val TAG = "GameRepository"
     }
 }

@@ -2,6 +2,7 @@ package com.smartwash.feature.mood.repository
 
 import com.smartwash.common.network.R
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.mood.network.MoodApi
 import com.smartwash.feature.mood.network.MoodCalendarDayVo
 import com.smartwash.feature.mood.network.MoodRecordVo
@@ -21,18 +22,28 @@ class MoodRepositoryImpl @Inject constructor(
 ) : MoodRepository {
 
     override suspend fun saveToday(request: SaveMoodRequest): MoodRecordVo {
-        return moodApi.saveToday(request).data
-            ?: throw NetworkException("心情记录为空", R.string.error_network_fail)
+        return moodApi.saveToday(request).data ?: run {
+            AppLogger.warn(TAG, "saveToday: 心情记录响应 data 为空，按失败上抛")
+            throw NetworkException("心情记录为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun monthCalendar(ym: String): List<MoodCalendarDayVo> {
         // 空月 data=[] 是合法成功；data 缺失（null）才按失败处理
-        return moodApi.monthCalendar(ym).data
-            ?: throw NetworkException("月历数据为空", R.string.error_network_fail)
+        return moodApi.monthCalendar(ym).data ?: run {
+            AppLogger.warn(TAG, "monthCalendar: 月历响应 data 为空（ym=$ym），按失败上抛")
+            throw NetworkException("月历数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun monthStats(ym: String): MoodStatsVo {
-        return moodApi.monthStats(ym).data
-            ?: throw NetworkException("趋势数据为空", R.string.error_network_fail)
+        return moodApi.monthStats(ym).data ?: run {
+            AppLogger.warn(TAG, "monthStats: 趋势响应 data 为空（ym=$ym），按失败上抛")
+            throw NetworkException("趋势数据为空", R.string.error_network_fail)
+        }
+    }
+
+    private companion object {
+        const val TAG = "MoodRepository"
     }
 }

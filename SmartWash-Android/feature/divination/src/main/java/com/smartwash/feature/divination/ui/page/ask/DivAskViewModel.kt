@@ -3,6 +3,7 @@ package com.smartwash.feature.divination.ui.page.ask
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nlf.calendar.Solar
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivCategory
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.GanZhi
@@ -137,10 +138,13 @@ class DivAskViewModel @Inject constructor(
             bundle = bundle,
         )
         _uiState.value = state.copy(saving = false)
+        AppLogger.info(TAG, "排盘入库成功 method=${bundle.method} recordId=$id category=${state.category.id}")
         onSaved(id)
     }
 
     companion object {
+        private const val TAG = "DivAskViewModel"
+
         /** 高风险问题：医疗/生死/胎儿性别/失踪 —— 直接分流现实求助，不排盘不解读 */
         private val HIGH_RISK_KEYWORDS = listOf(
             "病", "癌", "瘤", "医", "药", "手术", "诊断", "抑郁", "怀孕", "妊",

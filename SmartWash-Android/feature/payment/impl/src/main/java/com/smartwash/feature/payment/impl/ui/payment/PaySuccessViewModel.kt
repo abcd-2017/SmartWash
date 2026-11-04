@@ -1,10 +1,9 @@
 package com.smartwash.feature.payment.impl.ui.payment
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.feature.payment.impl.PaymentImplConstant
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.common.utils.model.RequestState
@@ -36,7 +35,7 @@ class PaySuccessViewModel @Inject constructor(
                 _orderInfo.value = orderApi.getOrderInfo(orderId)
                 _getOrderInfoDetail.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(PaymentImplConstant.APP_NAME, "PaySuccessViewModel.getOrderDetail: ${e.message}", e)
+                AppLogger.error(TAG, "PaySuccessViewModel.getOrderDetail: ${e.message}", e)
                 _getOrderInfoDetail.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -44,5 +43,10 @@ class PaySuccessViewModel @Inject constructor(
 
     fun resetState() {
         _getOrderInfoDetail.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "PaySuccessViewModel"
     }
 }

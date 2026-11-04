@@ -6,6 +6,7 @@ import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
 import { HttpStatusCode } from "@ohos/axios"
 import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { PagingController } from "../utils/PagingUtil"
 
 // 分页每页条数
@@ -34,6 +35,7 @@ struct RechargeRecord {
   )
 
   async aboutToAppear(): Promise<void> {
+    logger.debug('rechargeRecord', '充值记录页挂载，拉取首页数据')
     await this.fetchRecordPage(1)
     this.isLoadingFirst = false
   }
@@ -69,6 +71,8 @@ struct RechargeRecord {
       let records = res.data!.records
       if (records === null || records.length === 0) {
         if (this.recordList.length > 0) {
+          // 正常封底提示，非异常：debug 即可（分页高频路径禁 info/warn）
+          logger.debug('rechargeRecord', `已到末页 page=${page} 已加载=${this.recordList.length} 条`)
           showToastSafety("没有更多数据了")
         }
         return false
@@ -76,11 +80,16 @@ struct RechargeRecord {
       if (page === 1) {
         // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
         this.recordList = records
+        // 分页成功加载为高频路径：debug 即可，禁 info/warn
+        logger.debug('rechargeRecord', `充值记录首页加载成功 count=${records.length}`)
         return true
       }
       this.recordList.push(...records)
+      logger.debug('rechargeRecord', `充值记录分页加载成功 page=${page} count=${records.length}`)
       return true
     }
+    logger.warn('rechargeRecord', `充值记录加载失败 page=${page} ` +
+      `code=${res.code} message=${res.message ?? ""}`)
     showToastSafety(res.message, "充值记录加载失败")
     return false
   }

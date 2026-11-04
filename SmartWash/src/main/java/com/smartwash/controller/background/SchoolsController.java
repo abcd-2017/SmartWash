@@ -45,9 +45,11 @@ public class SchoolsController {
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddSchoolsFrom addSchoolsFrom) {
         if (schoolsService.getSearchByName(addSchoolsFrom.getSchoolName()) != null) {
+            log.warn("新增学校被拒绝：学校名已存在, schoolName: {}", addSchoolsFrom.getSchoolName());
             return Result.failMsg("该学校已经存在了");
         }
         schoolsService.addSchools(addSchoolsFrom);
+        log.info("新增学校成功, schoolName: {}", addSchoolsFrom.getSchoolName());
         return Result.ok("添加成功");
     }
 
@@ -55,19 +57,23 @@ public class SchoolsController {
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
         if (schoolsService.getById(schoolsFrom.getSchoolId()) == null) {
+            log.warn("更新学校被拒绝：学校不存在, schoolId: {}", schoolsFrom.getSchoolId());
             return Result.failMsg("学校不存在");
         }
         Schools school = schoolsService.getSearchByName(schoolsFrom.getSchoolName());
         if (school != null && !Objects.equals(school.getSchoolId(), schoolsFrom.getSchoolId())) {
+            log.warn("更新学校被拒绝：学校名已存在, schoolId: {}, schoolName: {}", schoolsFrom.getSchoolId(), schoolsFrom.getSchoolName());
             return Result.failMsg("该学校已经存在了");
         }
         schoolsService.updateSchool(schoolsFrom);
+        log.info("更新学校成功, schoolId: {}", schoolsFrom.getSchoolId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除学校", description = "根据ID批量删除学校，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteSchools(@PathVariable("ids") @Parameter(description = "学校ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除学校, ids: {}", ids);
         return Result.ok(schoolsService.deleteSchools(ids));
     }
 }

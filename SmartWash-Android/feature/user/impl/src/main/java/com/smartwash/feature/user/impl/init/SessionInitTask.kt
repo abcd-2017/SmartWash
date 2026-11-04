@@ -1,7 +1,7 @@
 package com.smartwash.feature.user.impl.init
 
-import android.util.Log
 import com.smartwash.common.init.InitTask
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.user.impl.session.SessionManager
 import kotlinx.coroutines.CancellationException
 
@@ -33,11 +33,12 @@ class SessionInitTask(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "Session warm-up failed, token treated as absent", e)
+            AppLogger.warn(TAG, "Session warm-up failed, token treated as absent", e)
         }
     }
 
     private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         const val TAG = "SessionInitTask"
     }
 }

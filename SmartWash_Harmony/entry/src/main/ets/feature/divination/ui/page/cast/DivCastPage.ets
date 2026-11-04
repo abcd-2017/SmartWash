@@ -31,6 +31,7 @@ import { AppConfirmDialog } from '../../../../../view/common/AppComponents'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { getObjectParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
+import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
 
 /** 铜钱尺寸 / 间距（对齐安卓 CoinAndMeridian.kt:214 的 72dp 币身 + 12dp 币间距） */
@@ -94,6 +95,7 @@ struct DivCastPage {
       isDanger: true,
       onConfirm: () => {
         // 弃局：清空掷卦进度，避免下次进入恢复出过期状态
+        logger.debug('divCastPage', `弃局确认，清空掷卦进度 tossed=${this.lines.length}`)
         this.clearProgress()
         pathStack.pop()
       },
@@ -114,6 +116,7 @@ struct DivCastPage {
     }
     this.restoreProgress()
     this.drawCoins()
+    logger.debug('divCastPage', `摇卦页挂载 category=${this.category} questionLen=${this.question.length}`)
   }
 
   aboutToDisappear(): void {
@@ -135,6 +138,8 @@ struct DivCastPage {
         this.pendingYao = YaoValue.fromCode(savedCode)
       } catch (err) {
         this.pendingYao = null
+        logger.warn('divCastPage', `恢复待落定爻失败，按无待落定爻处理 savedCode=${savedCode}, ` +
+          `${err instanceof Error ? err.message : ''}`)
       }
     }
     const savedTossId = AppStorage.get<number>(KEY_TOSS_ID)
@@ -286,9 +291,12 @@ struct DivCastPage {
       const id = await DivRecordRepository.save(
         'liuyao', this.category, this.question, JSON.stringify(lines), castAt, bundleJson)
       this.saving = false
+      // 低频关键动作：六掷完成成卦入库成功（问事内容只记长度，不打全文）
+      logger.info('divCastPage', `成卦入库成功 recordId=${id} category=${this.category} castAt=${castAt}`)
       this.navigateChart(id)
     } catch (err) {
       this.saving = false
+      logger.error('divCastPage', '成卦入库失败', err instanceof Error ? err.message : '')
       showToastSafety('成卦失败，请稍后重试')
     }
   }

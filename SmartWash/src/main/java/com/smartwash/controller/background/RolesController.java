@@ -45,9 +45,11 @@ public class RolesController {
     @PostMapping("/add")
     public Result<String> addRole(@RequestBody @Valid AddRolesFrom addRolesFrom) {
         if (StringUtils.hasText(addRolesFrom.getRoleName()) && rolesService.getByRoleName(addRolesFrom.getRoleName()) != null) {
+            log.warn("新增角色被拒绝：角色名重复, roleName: {}", addRolesFrom.getRoleName());
             return Result.failMsg("该角色名重复");
         }
         rolesService.addRoles(addRolesFrom);
+        log.info("新增角色成功, roleName: {}", addRolesFrom.getRoleName());
         return Result.ok("添加成功");
     }
 
@@ -56,18 +58,22 @@ public class RolesController {
     public Result<String> updateRole(@RequestBody @Valid UpdateRolesFrom rolesFrom) {
         Roles user = rolesService.getById(rolesFrom.getRoleId());
         if (user == null) {
+            log.warn("更新角色被拒绝：角色不存在, roleId: {}", rolesFrom.getRoleId());
             return Result.failMsg("角色不存在");
         }
         if (!Objects.equals(user.getRoleName(), rolesFrom.getRoleName()) && rolesService.getByRoleName(rolesFrom.getRoleName()) != null) {
+            log.warn("更新角色被拒绝：角色名重复, roleId: {}, roleName: {}", rolesFrom.getRoleId(), rolesFrom.getRoleName());
             return Result.failMsg("该角色名重复");
         }
         rolesService.updateRoles(rolesFrom);
+        log.info("更新角色成功, roleId: {}", rolesFrom.getRoleId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除角色", description = "根据ID批量删除角色，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteRoles(@PathVariable("ids") @Parameter(description = "角色ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除角色, ids: {}", ids);
         return Result.ok(rolesService.deleteRoles(ids));
     }
 }

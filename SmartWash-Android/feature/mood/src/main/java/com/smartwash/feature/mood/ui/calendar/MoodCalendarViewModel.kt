@@ -3,6 +3,7 @@ package com.smartwash.feature.mood.ui.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.mood.MoodMonth
 import com.smartwash.feature.mood.R
@@ -64,9 +65,15 @@ class MoodCalendarViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: NetworkException) {
+            AppLogger.error(TAG, "MoodCalendarViewModel.load: ${e.message}", e)
             _uiState.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
         } catch (e: Exception) {
+            AppLogger.error(TAG, "MoodCalendarViewModel.load: ${e.message}", e)
             _uiState.update { it.copy(loadState = RequestState.Error(R.string.mood_error_load)) }
         }
+    }
+
+    private companion object {
+        const val TAG = "MoodCalendarViewModel"
     }
 }

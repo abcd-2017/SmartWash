@@ -4,6 +4,7 @@ import { CouponVo } from "../network/vo/CouponVo"
 import { UserCouponVo } from "../network/vo/UserCouponVo"
 import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
@@ -39,6 +40,7 @@ struct Coupon {
   private readonly tabTitles: string[] = ["可用", "已领取", "历史"]
 
   async aboutToAppear() {
+    logger.debug('coupon', '优惠券页挂载，拉取三类券列表')
     await this.loadAllCoupons()
   }
 
@@ -61,6 +63,8 @@ struct Coupon {
       this.claimedCoupons = res.data.claimed ?? []
       this.historicalCoupons = res.data.historical ?? []
     } else {
+      // 列表加载失败留痕（领取成功后的全量刷新同样走此分支）
+      logger.warn('coupon', `优惠券列表加载失败 code=${res.code} message=${res.message ?? ""}`)
       this.loadFailed = true
       showToastSafety(res.message, "优惠券加载失败")
     }
@@ -103,15 +107,20 @@ struct Coupon {
   async doReceiveCoupon(couponId: number) {
     // 逐券防重：已有领取请求在进行时直接拦截（对齐安卓 claimingId 禁点）
     if (this.claimingCouponId !== null) {
+      logger.debug('coupon', '领取请求进行中，忽略重复触发')
       return
     }
     this.claimingCouponId = couponId
     try {
       let res = await receiveCoupon(couponId)
       if (res.code === HttpStatusCode.Ok) {
+        // 低频关键动作成功：领取优惠券留 info
+        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
         await this.loadAllCoupons()
         showToastSafety("领取成功")
       } else {
+        // 业务拒绝留痕：仅记 code/message 摘要
+        logger.warn('coupon', `优惠券领取被拒 couponId=${couponId} code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "领取失败")
       }
     } finally {
