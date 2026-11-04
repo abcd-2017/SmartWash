@@ -12,6 +12,7 @@ import { PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
+import { safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
 
 // 分页每页条数
@@ -86,30 +87,41 @@ struct OrderList {
     if (page === 1) {
       this.isLoading = true
     }
-    let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
-    if (res.code === HttpStatusCode.Ok) {
-      if (res.data === null || res.data === undefined || res.data.length === 0) {
-        if (page === 1) {
-          this.sections = []
-          this.sectionCache.set(this.orderStatus, [])
-        } else if (this.orderListLength() > 0) {
-          showToastSafety("没有更多数据了")
+    try {
+      let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
+      if (res.code === HttpStatusCode.Ok) {
+        if (res.data === null || res.data === undefined || res.data.length === 0) {
+          if (page === 1) {
+            this.sections = []
+            this.sectionCache.set(this.orderStatus, [])
+          } else if (this.orderListLength() > 0) {
+            showToastSafety("没有更多数据了")
+          }
+          this.isLoading = false
+          this.contentOpacity = 1
+          return false
         }
+        this.appendOrders(res.data, replace)
         this.isLoading = false
         this.contentOpacity = 1
-        return false
+        return true
       }
-      this.appendOrders(res.data, replace)
+      logger.warn('orderList', `订单列表加载失败 page=${page} status=${this.orderStatus} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
+      showToastSafety(res.message, "订单加载失败")
       this.isLoading = false
       this.contentOpacity = 1
-      return true
+      return false
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并复位加载态，避免 isLoading 卡死永久骨架
+      if (page === 1) {
+        this.sections = []
+      }
+      showToastSafety("网络异常，请稍后重试")
+      this.isLoading = false
+      this.contentOpacity = 1
+      return false
     }
-    logger.warn('orderList', `订单列表加载失败 page=${page} status=${this.orderStatus} ` +
-      `code=${res.code} message=${res.message ?? ""}`)
-    showToastSafety(res.message, "订单加载失败")
-    this.isLoading = false
-    this.contentOpacity = 1
-    return false
   }
 
   /** 当前状态下的订单总数（跨月份段累计） */
@@ -190,20 +202,28 @@ struct OrderList {
       logger.debug('orderList', '取消订单确认回调缺少待取消订单 id，忽略本次触发')
       return
     }
-    let res = await cancelOrder(this.pendingCancelOrderId)
-    if (res.code === HttpStatusCode.Ok) {
-      logger.info('orderList', `取消订单成功 orderId=${this.pendingCancelOrderId}`)
-      // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
-      // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
-      AppStorage.setOrCreate("refreshOrderCount", true)
-      this.refreshOrder()
-      showToastSafety("取消成功")
-    } else {
-      logger.warn('orderList', `取消订单被拒 orderId=${this.pendingCancelOrderId} ` +
-        `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "取消失败")
+    try {
+      let res = await cancelOrder(this.pendingCancelOrderId)
+        logger.info('orderList', `取消订单成功 orderId=${this.pendingCancelOrderId}`)
+      // 后端 Result.ok(boolean) 直传：data=false（CAS 失败，订单已被支付/取消）必须按失败处理，
+      // 不能只看 code=200 就弹「取消成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
+      if (res.code === HttpStatusCode.Ok && res.data === true) {
+        // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
+        // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
+        AppStorage.setOrCreate("refreshOrderCount", true)
+        this.refreshOrder()
+        showToastSafety("取消成功")
+      } else {
+        logger.warn('orderList', `取消订单被拒 orderId=${this.pendingCancelOrderId} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
+        showToastSafety(res.message, "取消失败，订单状态可能已变更")
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 pendingCancelOrderId 卡死
+      showToastSafety("网络异常，请稍后重试")
+    } finally {
+      this.pendingCancelOrderId = null
     }
-    this.pendingCancelOrderId = null
   }
 
   @Builder
@@ -404,6 +424,8 @@ struct OrderList {
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

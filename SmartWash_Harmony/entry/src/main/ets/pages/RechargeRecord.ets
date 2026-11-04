@@ -1,5 +1,6 @@
 import { EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { RechargeType } from "../constant/RechargeType"
 import { getRechargeRecordList } from "../network/api/ReChargeApi"
 import { RechargeRecordVo } from "../network/vo/RechargeRecordVo"
@@ -66,32 +67,39 @@ struct RechargeRecord {
     const param: Record<string, Object> = {}
     param['page'] = page
     param['size'] = PAGE_SIZE
-    let res = await getRechargeRecordList(param)
-    if (res.code === HttpStatusCode.Ok && res.data !== null) {
-      let records = res.data!.records
-      if (records === null || records.length === 0) {
-        if (this.recordList.length > 0) {
-          // 正常封底提示，非异常：debug 即可（分页高频路径禁 info/warn）
-          logger.debug('rechargeRecord', `已到末页 page=${page} 已加载=${this.recordList.length} 条`)
-          showToastSafety("没有更多数据了")
+    try {
+      let res = await getRechargeRecordList(param)
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        let records = res.data!.records
+        if (records === null || records.length === 0) {
+          if (this.recordList.length > 0) {
+            logger.debug('rechargeRecord', `已到末页 page=${page} 已加载=${this.recordList.length} 条`)
+            showToastSafety("没有更多数据了")
+          }
+          return false
         }
-        return false
-      }
-      if (page === 1) {
-        // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
-        this.recordList = records
-        // 分页成功加载为高频路径：debug 即可，禁 info/warn
-        logger.debug('rechargeRecord', `充值记录首页加载成功 count=${records.length}`)
+        if (page === 1) {
+          // stale-while-revalidate（对齐安卓）：刷新成功才整体替换，刷新期间旧内容保持可读
+          this.recordList = records
+          logger.debug('rechargeRecord', `充值记录首页加载成功 count=${records.length}`)
+          return true
+        }
+        this.recordList.push(...records)
+        logger.debug('rechargeRecord', `充值记录分页加载成功 page=${page} count=${records.length}`)
         return true
       }
-      this.recordList.push(...records)
-      logger.debug('rechargeRecord', `充值记录分页加载成功 page=${page} count=${records.length}`)
-      return true
+      logger.warn('rechargeRecord', `充值记录加载失败 page=${page} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
+      showToastSafety(res.message, "充值记录加载失败")
+      return false
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败页返回，避免 isLoadingFirst 卡死永久骨架
+      if (page === 1) {
+        this.recordList = []
+      }
+      showToastSafety("网络异常，请稍后重试")
+      return false
     }
-    logger.warn('rechargeRecord', `充值记录加载失败 page=${page} ` +
-      `code=${res.code} message=${res.message ?? ""}`)
-    showToastSafety(res.message, "充值记录加载失败")
-    return false
   }
 
   refreshRecords() {
@@ -199,7 +207,7 @@ struct RechargeRecord {
             }
             .width("100%")
             .height("100%")
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: safeBottomVp() })
             .onScrollIndex((start: number, end: number) => {
               this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
             })
@@ -222,6 +230,8 @@ struct RechargeRecord {
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
     }
     .width("100%")
     .height("100%")

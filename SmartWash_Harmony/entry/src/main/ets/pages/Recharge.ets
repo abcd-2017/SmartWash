@@ -9,6 +9,7 @@ import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { AppButton, AppConfirmDialog, IconBox, SelectionDot } from "../view/common/AppComponents"
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
@@ -579,6 +580,8 @@ struct Recharge {
         }
         .width("100%")
         .layoutWeight(1)
+        // 内容不足一屏顶对齐（Scroll 默认居中）
+        .align(Alignment.Top)
 
         // 底部固定 CTA 条（对齐安卓 RechargePage.kt:344-361：surface 底 + 0.5 顶线 + 24/16/20）
         Column() {
@@ -593,13 +596,15 @@ struct Recharge {
               this.confirmDialogController.open()
             }
           })
-          .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 16, bottom: 20 })
+          .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 16, bottom: 20 + safeBottomVp() })
         }
         .width("100%")
         .backgroundColor(DesignColor.SURFACE)
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
     }
     .width("100%")
     .height("100%")

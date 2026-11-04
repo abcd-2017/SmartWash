@@ -13,6 +13,7 @@ import vibrator from "@ohos.vibrator"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { logger } from "../utils/Logger"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -314,7 +315,7 @@ struct PickUp {
       left: DesignDimens.PAGE_PADDING,
       right: DesignDimens.PAGE_PADDING,
       top: DesignDimens.SPACE_MD,
-      bottom: DesignDimens.SPACE_MD
+      bottom: DesignDimens.SPACE_MD + safeBottomVp()
     })
   }
 
@@ -400,6 +401,8 @@ struct PickUp {
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

@@ -22,6 +22,7 @@ import {
   DesignFontWeight
 } from '../../../constant/DesignSystem'
 import { pathStack } from '../../../utils/PathStackUtil'
+import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { AppButton, EmptyState, IconBox, PageHeader, SkeletonBlock } from '../../../view/common/AppComponents'
 import { WebPageParam } from '../../../pages/WebPage'
 import {
@@ -284,7 +285,7 @@ export struct GameCenterPage {
           `${index}_${row.length}_${row.length > 0 ? row[0].gameKey : ''}`)
       }
       .width('100%')
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS })
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: safeBottomVp() })
     }
     .scrollBar(BarState.Off)
     .width('100%')
@@ -399,6 +400,8 @@ export struct GameCenterPage {
       }
       .width('100%')
       .height('100%')
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

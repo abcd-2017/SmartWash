@@ -14,6 +14,7 @@ import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
 import { AppButton, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 @Builder
 export function PaymentBuilder() {
@@ -241,6 +242,11 @@ struct Payment {
     return coupon.couponVo?.threshold === 0 ?
       "无门槛" :
       `满${coupon.couponVo?.threshold?.toFixed(0)}元可用`
+  }
+
+  /** 空值兜底展示（问题8）：null/undefined/空串 → 「—」 */
+  private displayValue(value: string | null | undefined): string {
+    return value !== null && value !== undefined && value.length > 0 ? value : "—"
   }
 
   @Builder
@@ -511,8 +517,10 @@ struct Payment {
                 .color(DesignColor.HAIRLINE)
                 .margin({ top: 16, bottom: 16 })
 
-              this.InfoLine("订单编号", `${this.orderInfo?.orderNo ?? ""}`)
-              this.InfoLine("服务类型", `${this.orderInfo?.laundryPackageVo?.itemName ?? ""}`)
+              // 订单号/服务类型缺失时兜底「—」（问题8：老版后端可能不下发 orderNo/laundryPackageVo，
+              // 空串观感是"数据丢了"，占位符语义为"暂无"）
+              this.InfoLine("订单编号", this.displayValue(this.orderInfo?.orderNo))
+              this.InfoLine("服务类型", this.displayValue(this.orderInfo?.laundryPackageVo?.itemName))
               this.InfoLine("预计完成", "24小时内")
             }
             .width("100%")
@@ -709,10 +717,12 @@ struct Payment {
           }
           .width("100%")
           .backgroundColor(DesignColor.SURFACE)
-          .padding({ left: 24, right: 24, top: 16, bottom: 20 })
+          .padding({ left: 24, right: 24, top: 16, bottom: 20 + safeBottomVp() })
         }
         .width("100%")
         .height("100%")
+        // 沉浸式：内容避让状态栏（背景延伸）
+        .padding({ top: safeTopVp() })
         .backgroundColor(DesignColor.BACKGROUND)
 
         // 首载骨架（recap §3-F5/S1）：对齐 Android LoadingState，遮罩淡入淡出近似 Crossfade

@@ -398,8 +398,10 @@ struct DivAskPage {
           // 问事表单层
           Column() {
           // 1. 问题卡（hint 12/16 textSecondary；卡内边距 14）
+          // clickable=true：DivCard 默认 enabled(false) 会禁用整棵子树（问题13 根因——
+          // 输入框弹不起键盘、领域 chips/方式单选全不可点），卡自身无行点击动作，仅为放行子交互
           Column() {
-            DivCard() {
+            DivCard({ clickable: true }) {
               Column() {
                 DivSerifText({
                   text: DivText.askHint,
@@ -460,7 +462,8 @@ struct DivAskPage {
           DivSectionTitle({ title: DivText.askCastMethodLabel })
 
           Column() {
-          DivCard() {
+          // clickable=true：放行内部方式单选（DivCard 默认整树禁用，见上方问题13注释）
+          DivCard({ clickable: true }) {
             Column() {
               if (this.method === DivMethod.LIU_YAO.id) {
                 DivRadioRow({

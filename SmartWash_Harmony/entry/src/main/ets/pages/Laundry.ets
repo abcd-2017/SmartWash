@@ -10,6 +10,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppInfoDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
 
 @Builder
@@ -60,23 +61,32 @@ struct Laundry {
     // ArkTS 禁止解构声明（arkts-no-destruct-decls），改为先并发发起、再逐个 await（保持并发语义）
     const resTask = getUserInfo()
     const itemResTask = getLaundryItems()
-    let res = await resTask
-    let itemRes = await itemResTask
-    if (res.code === HttpStatusCode.Ok) {
-      this.userInfo = res.data
-    } else {
-      logger.warn('laundry', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "用户信息加载失败")
-    }
-    if (itemRes.code === HttpStatusCode.Ok) {
-      this.laundryItemList = itemRes.data
-      this.applyRoutePreselection()
-    } else {
-      logger.warn('laundry', `套餐列表加载失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
-      showToastSafety(itemRes.message, "套餐加载失败")
+    this.pageLoading = true
+    this.loadFailed = false
+    try {
+      let res = await resTask
+      let itemRes = await itemResTask
+      if (res.code === HttpStatusCode.Ok) {
+        this.userInfo = res.data
+      } else {
+        showToastSafety(res.message, "用户信息加载失败")
+      }
+      if (itemRes.code === HttpStatusCode.Ok) {
+        this.laundryItemList = itemRes.data
+        this.applyRoutePreselection()
+      } else {
+        logger.warn('laundry', `套餐列表加载失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
+        logger.warn('laundry', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
+        showToastSafety(itemRes.message, "套餐加载失败")
+        this.loadFailed = true
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 pageLoading 卡死永久骨架
+      showToastSafety("网络异常，请稍后重试")
       this.loadFailed = true
+    } finally {
+      this.pageLoading = false
     }
-    this.pageLoading = false
   }
 
   /**
@@ -100,16 +110,23 @@ struct Laundry {
   async retryFetchItems() {
     this.pageLoading = true
     this.loadFailed = false
-    let itemRes = await getLaundryItems()
-    if (itemRes.code === HttpStatusCode.Ok) {
-      this.laundryItemList = itemRes.data
-      this.applyRoutePreselection()
-    } else {
-      logger.warn('laundry', `套餐重试仍失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
-      showToastSafety(itemRes.message, "套餐加载失败")
+    try {
+      let itemRes = await getLaundryItems()
+      if (itemRes.code === HttpStatusCode.Ok) {
+        this.laundryItemList = itemRes.data
+        this.applyRoutePreselection()
+      } else {
+        logger.warn('laundry', `套餐重试仍失败 code=${itemRes.code} message=${itemRes.message ?? ""}`)
+        showToastSafety(itemRes.message, "套餐加载失败")
+        this.loadFailed = true
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 pageLoading 卡死永久骨架
+      showToastSafety("网络异常，请稍后重试")
       this.loadFailed = true
+    } finally {
+      this.pageLoading = false
     }
-    this.pageLoading = false
   }
 
   /** 选择触感（I1，对齐安卓 HapticEffect.SELECTION）：设备不支持时静默忽略 */
@@ -259,12 +276,9 @@ struct Laundry {
       this.selectItemId = item.itemId
       this.totalPrice = item.basePrice
     })
-    // V8 列表项间距：卡间距 16（对齐安卓每项后置 Spacer 16）
-    .margin({
-      bottom: DesignDimens.CARD_SPACING,
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING
-    })
+    // V8 列表项间距：卡间距 16（对齐安卓每项后置 Spacer 16）；
+    // 水平边距由 List 的 padding 承担（原 left/right margin 叠加 width 100% 会把卡片推出右屏，问题7）
+    .margin({ bottom: DesignDimens.CARD_SPACING })
   }
 
   build() {
@@ -361,16 +375,17 @@ struct Laundry {
             Column()
               .height(12)
 
-            // 套餐列表（补 ForEach key：itemId，对齐安卓 LazyColumn key）
-            Row() {
-              List() {
-                ForEach(this.laundryItemList, (item: LaundryItem) => {
-                  ListItem() {
-                    this.LaundryTypeItem(item)
-                  }
-                }, (item: LaundryItem) => item.itemId?.toString())
-              }
+            // 套餐列表（补 ForEach key：itemId，对齐安卓 LazyColumn key）；
+            // 水平内边距收在 List 上，ListItem 宽度即为卡宽（修复卡片横向溢出，问题7）
+            List() {
+              ForEach(this.laundryItemList, (item: LaundryItem) => {
+                ListItem() {
+                  this.LaundryTypeItem(item)
+                }
+              }, (item: LaundryItem) => item.itemId?.toString())
             }
+            .width("100%")
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
             // 内容区 bottom 预留（V10）：底部 CTA 实高 ≈ 0.5 + 16 + 按钮 + 20
             Column()
@@ -381,6 +396,8 @@ struct Laundry {
         .width("100%")
         .height("100%")
         .align(Alignment.Top)
+        // 沉浸式：内容避让状态栏（背景延伸，问题5/1）
+        .padding({ top: safeTopVp() })
         .backgroundColor(DesignColor.BACKGROUND)
 
         // 底部操作栏（V2/V3：0.5dp 分隔 + 全宽按钮 + 金额内嵌文案，移除左置「预估费用」）
@@ -403,7 +420,7 @@ struct Laundry {
             left: DesignDimens.PAGE_PADDING,
             right: DesignDimens.PAGE_PADDING,
             top: DesignDimens.SPACE_MD,
-            bottom: DesignDimens.SPACE_LG
+            bottom: DesignDimens.SPACE_LG + safeBottomVp()
           })
         }
         .width("100%")
@@ -446,5 +463,7 @@ struct Laundry {
         }
       }
     }
+    // 修复（问题6）：未隐藏系统标题栏导致页面出现两个返回按钮（系统圆钮 + 自绘 PageHeader）
+    .hideTitleBar(true)
   }
 }

@@ -45,6 +45,7 @@ import { logger } from '../../utils/Logger'
 import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeDetail'
@@ -94,12 +95,14 @@ struct ToolboxShortCodeDetail {
   async aboutToAppear(): Promise<void> {
     // 基础字段由列表路由携带（红线：禁止经 resolve 拉取详情——resolve 会计点击）
     this.param = getObjectParam<ToolboxShortCodeDetailParam>(RouteNames.TOOLBOX_SHORT_CODE_DETAIL)
+    // 兜底定时器：customTransition 事件未触发时也要让信息卡展开（问题15观感：
+    // 600ms 才出现像"没做转场"，缩到 120ms 保证动画在转场期内接管）
     logger.debug(TAG, `详情页挂载 code=${this.param?.code ?? ''} 公开=${this.isPublicCode()}`)
     this.fallbackTimer = setTimeout(() => {
       if (!this.cardEntered) {
         this.cardEntered = true
       }
-    }, 600)
+    }, 120)
     await this.loadQrCode()
     await this.fetchStats(1)
     this.statsLoadingFirst = false
@@ -137,9 +140,9 @@ struct ToolboxShortCodeDetail {
     }
     this.qrLoading = true
     this.qrFailed = false
+    // 问题15：部分设备/系统版本对扩展参数（level/margin）校验更严会整单抛错，
+    // 两段降级——先全参生成，失败后用最小参数集重试，仍失败才进可重试失败态
     try {
-      // 方案取舍：优先用系统 ScanKit（零三方依赖、直接产出 PixelMap）；
-      // 设备无 ScanKit 能力时进入失败态并可点击重试（不阻塞页面其余部分）。
       const pixelMap: image.PixelMap = await generateBarcode.createBarcode(url, {
         scanType: scanCore.ScanType.QR_CODE,
         width: 512,
@@ -150,8 +153,17 @@ struct ToolboxShortCodeDetail {
       this.qrPixelMap = pixelMap
       logger.debug(TAG, '二维码生成成功')
     } catch (err) {
+      try {
+        const fallbackMap: image.PixelMap = await generateBarcode.createBarcode(url, {
+          scanType: scanCore.ScanType.QR_CODE,
+          width: 512,
+          height: 512
+        })
+        this.qrPixelMap = fallbackMap
+      } catch (retryErr) {
+        this.qrFailed = true
+      }
       logger.error(TAG, '二维码生成异常', err instanceof Error ? err.message : '')
-      this.qrFailed = true
     } finally {
       this.qrLoading = false
     }
@@ -164,34 +176,47 @@ struct ToolboxShortCodeDetail {
       logger.warn(TAG, '访问明细拉取中止: 短码 id 缺失')
       return false
     }
-    const res = await pageShortCodeStats(id, page, TOOLBOX_PAGE_SIZE)
-    if (res.code === HttpStatusCode.Ok && res.data !== null) {
-      const records: Array<ShortCodeStatsVo> = res.data.records
-      if (records.length === 0) {
-        logger.debug(TAG, `访问明细封底 page=${page} 本页无数据`)
-        return false
+    try {
+      const res = await pageShortCodeStats(id, page, TOOLBOX_PAGE_SIZE)
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        const records: Array<ShortCodeStatsVo> = res.data.records
+        if (records.length === 0) {
+          logger.debug(TAG, `访问明细封底 page=${page} 本页无数据`)
+          return false
+        }
+        if (page === 1) {
+          this.statsList = []
+          this.statsError = false
+        }
+        this.statsList.push(...records)
+        this.statsAppendError = false
+        logger.debug(TAG, `访问明细加载成功 page=${page} count=${records.length}`)
+        return true
       }
       if (page === 1) {
-        this.statsList = []
-        this.statsError = false
+        // 首刷失败：无数据走整卡错误态，有数据走 footer 内联错误（对齐安卓）
+        logger.warn(TAG, `访问明细首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
+        this.statsError = true
+        showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
+        return false
       }
-      this.statsList.push(...records)
-      this.statsAppendError = false
-      logger.debug(TAG, `访问明细加载成功 page=${page} count=${records.length}`)
-      return true
-    }
-    if (page === 1) {
-      // 首刷失败：无数据走整卡错误态，有数据走 footer 内联错误（对齐安卓）
-      logger.warn(TAG, `访问明细首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
-      this.statsError = true
+      // 追加失败：置内联错误态并 reject（分页器记失败页不封底，footer 重试重拉同一页）
+      logger.warn(TAG, `访问明细追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
+      this.statsAppendError = true
       showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
-      return false
+      throw new Error(ToolboxText.toolbox_stats_error_load)
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）；
+      // 首刷则进错误态，避免 statsLoadingFirst 卡死明细骨架常驻
+      if (page === 1) {
+        this.statsError = true
+        showToastSafety("网络异常，请稍后重试")
+        return false
+      }
+      this.statsAppendError = true
+      showToastSafety("网络异常，请稍后重试")
+      throw new Error(ToolboxText.toolbox_stats_error_load)
     }
-    // 追加失败：置内联错误态并 reject（分页器记失败页不封底，footer 重试重拉同一页）
-    logger.warn(TAG, `访问明细追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
-    this.statsAppendError = true
-    showToastSafety(res.message, ToolboxText.toolbox_stats_error_load)
-    throw new Error(ToolboxText.toolbox_stats_error_load)
   }
 
   /** 复制短链到剪贴板 */
@@ -204,8 +229,9 @@ struct ToolboxShortCodeDetail {
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety(ToolboxText.toolbox_copy_success)
     }).catch((err: BusinessError) => {
+      // 复制失败与「找不到浏览器」是两种失败，各用各的文案（原复用 open_failed 属误导）
+      showToastSafety(ToolboxText.toolbox_copy_failed)
       logger.error(TAG, '短链复制到剪贴板失败', `${err.code} ${err.message}`)
-      showToastSafety(ToolboxText.toolbox_open_failed)
     })
   }
 
@@ -255,7 +281,10 @@ struct ToolboxShortCodeDetail {
         uri: url,
         entities: ['entity.system.browsable']
       }
-      context.startAbility(want)
+      // startAbility 返回 Promise：异步 reject（无浏览器/参数非法）try/catch 抓不到，必须 .catch 兜底
+      context.startAbility(want).catch(() => {
+        showToastSafety(ToolboxText.toolbox_open_failed)
+      })
     } catch (err) {
       logger.error(TAG, '浏览器拉起失败', err instanceof Error ? err.message : '')
       showToastSafety(ToolboxText.toolbox_open_failed)
@@ -674,6 +703,7 @@ struct ToolboxShortCodeDetail {
     NavDestination() {
       Column() {
         // 页面标题 + 右上「删除」危险文字按钮（对齐安卓 PageHeader：删除 18/600 dangerInk + 48 热区）
+        // 沉浸式：内容避让状态栏（背景延伸）
         Row() {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
@@ -818,7 +848,7 @@ struct ToolboxShortCodeDetail {
         .width('100%')
         .layoutWeight(1)
         .scrollBar(BarState.Off)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM + safeBottomVp() })
         .divider({ strokeWidth: 0, color: Color.Transparent })
         // 触底加载：列表项 = 信息卡 + 二维码卡 + 明细标题 + 明细行
         .onScrollIndex((start: number, end: number) => {
@@ -831,6 +861,8 @@ struct ToolboxShortCodeDetail {
       }
       .width('100%')
       .height('100%')
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

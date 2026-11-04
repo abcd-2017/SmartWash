@@ -11,7 +11,8 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
-import { LoadingState } from "./common/AppComponents"
+import { AppButton, AppButtonVariant, EmptyState, LoadingState } from "./common/AppComponents"
+import { safeTopVp } from "../utils/SafeArea"
 
 /**
  * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:623-624 maskPhone）：
@@ -29,6 +30,8 @@ function maskPhone(phone: string | null): string {
 export struct UserInfo {
   private scroller: Scroller = new Scroller()
   @State userInfo: UserInfoVo | null = null
+  // 首载失败标记：网络异常/401 拒绝时 promise 会 throw，兜住后进错误态，避免「我的」tab 永久骨架
+  @State loadFailed: boolean = false
   @StorageLink('refreshUserInfo') @Watch("onUserInfoChange") refreshFlag: boolean = false
   @State orderItemCount: OrderItemCountVo | null = null
   @StorageLink('refreshOrderCount') @Watch("onOrderCountChange") orderCountFlag: boolean = false
@@ -56,16 +59,21 @@ export struct UserInfo {
   }
 
   async refreshUserInfo() {
-    let res = await getUserInfo()
-    if (res.code === HttpStatusCode.Ok) {
-      this.userInfo = res.data
-      this.avatarUrl = this.userInfo?.avatar ?? null
-      // 回 Tab/绑定/换头像后的刷新为低频动作：debug 留痕
-      logger.debug('userInfo', '用户信息加载成功')
-    } else {
-      // 业务失败 warn 留痕（401 已由 Axios 拦截器统一清理并跳登录）
-      logger.warn('userInfo', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "用户信息加载失败")
+    try {
+      let res = await getUserInfo()
+      if (res.code === HttpStatusCode.Ok) {
+        this.userInfo = res.data
+        this.avatarUrl = this.userInfo?.avatar ?? null
+        logger.debug('userInfo', '用户信息加载成功')
+        this.loadFailed = false
+      } else {
+        logger.warn('userInfo', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
+        this.loadFailed = true
+        showToastSafety(res.message, "用户信息加载失败")
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：置失败态由 UI 出重试，不再让骨架常驻
+      this.loadFailed = true
     }
   }
 
@@ -277,8 +285,27 @@ export struct UserInfo {
     Scroll(this.scroller) {
       Column() {
         if (this.userInfo === null) {
-          // 首载骨架（对齐安卓 UserInfoPage.kt:180-195 LoadingState；回 tab/绑定/换头像后的刷新保留现有内容）
-          LoadingState()
+          if (this.loadFailed) {
+            // 首载失败（网络异常/401）：EmptyState + 重试，替代无限骨架（对齐规范 §3.6）
+            Column() {
+              EmptyState({ message: "用户信息加载失败" }) {
+                AppButton({
+                  text: "重试",
+                  variant: AppButtonVariant.SECONDARY,
+                  click: () => {
+                    this.refreshUserInfo()
+                  }
+                })
+                .margin({ top: DesignDimens.SPACE_MD })
+              }
+            }
+            .width("100%")
+            .layoutWeight(1)
+            .justifyContent(FlexAlign.Center)
+          } else {
+            // 首载骨架（对齐安卓 UserInfoPage.kt:180-195 LoadingState；回 tab/绑定/换头像后的刷新保留现有内容）
+            LoadingState()
+          }
         } else {
           // ========== 标题行（对齐安卓 UserInfoPage.kt:202-240） ==========
           Row() {
@@ -588,6 +615,7 @@ export struct UserInfo {
     .height("100%")
     .align(Alignment.TopStart)
     .backgroundColor(DesignColor.BACKGROUND)
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    // 沉浸式：内容避让状态栏（背景延伸）
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
   }
 }
