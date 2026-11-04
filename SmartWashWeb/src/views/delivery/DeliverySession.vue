@@ -141,6 +141,7 @@ import {
   publishDeliveryText,
   publishDeliveryFile,
 } from '@/api/delivery';
+import logger from '@/utils/logger';
 
 const props = defineProps({
   code: { type: String, required: true },
@@ -178,8 +179,9 @@ async function refreshItems() {
       sessionGone();
     }
     // 其余业务码/网络异常：轮询天然自愈，静默等待下一轮
-  } catch {
-    // 网络异常静默，下一轮重试
+  } catch (error) {
+    // 网络异常静默自愈，下一轮重试；轮询为高频路径仅记 debug（envelopeHttp 无拦截器留痕，生产不输出）
+    logger.debug('投递条目轮询本轮未成功，等待下一轮自愈:', error);
   } finally {
     refreshing.value = false;
   }
@@ -217,6 +219,8 @@ function sessionGone() {
   if (stopped) return;
   stopped = true;
   stopPolling();
+  // 低频关键状态迁移（轮询404/本地倒计时归零/条目操作遇404多路汇聚，stopped 守卫保证只记一次）
+  logger.info('投递会话已失效，退出会话页（过期/被关闭/读取404/倒计时归零）');
   emit('expired');
 }
 
@@ -287,17 +291,23 @@ async function handleCopyTake(item) {
     const envelope = await takeDeliveryItem(props.code, item.id);
     if (envelope.code === DELIVERY_CODE.OK) {
       await copyToClipboard(envelope.data?.textContent || '');
+      // 低频关键动作成功（取走即焚毁，不可逆）
+      logger.info('投递文本取件成功', `itemId=${item.id}`);
       ElMessage.success('已复制到剪贴板，原文本已焚毁');
       refreshItems();
     } else if (envelope.code === DELIVERY_CODE.CONFLICT) {
+      logger.warn('取件被拒：条目已被取走（409）', `itemId=${item.id}`);
       ElMessage.warning('条目已被取走');
       refreshItems();
     } else if (envelope.code === DELIVERY_CODE.GONE) {
       sessionGone();
     } else {
+      logger.warn('取件被拒：', `itemId=${item.id}`, `code=${envelope.code}`, envelope.message);
       ElMessage.error(envelope.message || '取走失败，请稍后重试');
     }
-  } catch {
+  } catch (error) {
+    // 页面自有 catch（envelopeHttp 无拦截器留痕），此处兜底记录
+    logger.error('文本取件失败:', `itemId=${item.id}`, error);
     ElMessage.error('网络异常，请稍后重试');
   } finally {
     actingId.value = null;
@@ -311,6 +321,7 @@ async function handleDownloadTake(item) {
   try {
     const takeEnvelope = await takeDeliveryItem(props.code, item.id);
     if (takeEnvelope.code === DELIVERY_CODE.CONFLICT) {
+      logger.warn('取件被拒：条目已被取走（409）', `itemId=${item.id}`);
       ElMessage.warning('条目已被取走');
       refreshItems();
       return;
@@ -320,26 +331,44 @@ async function handleDownloadTake(item) {
       return;
     }
     if (takeEnvelope.code !== DELIVERY_CODE.OK) {
+      logger.warn(
+        '取件被拒：',
+        `itemId=${item.id}`,
+        `code=${takeEnvelope.code}`,
+        takeEnvelope.message
+      );
       ElMessage.error(takeEnvelope.message || '取走失败，请稍后重试');
       return;
     }
 
     const contentUrl = takeEnvelope.data?.contentUrl;
     if (!contentUrl) {
+      // 认领已成功但拿不到下载路径，属契约异常，降级告警
+      logger.warn('下载路径缺失（条目已认领但无 contentUrl）', `itemId=${item.id}`);
       ElMessage.error('下载路径缺失，请稍后重试');
       return;
     }
     const { blob, filename } = await downloadDeliveryFile(props.code, contentUrl, item.title);
     triggerSave(blob, filename);
+    // 低频关键动作成功（流式下载完成即焚毁，不可逆）
+    logger.info(
+      '投递文件下载成功',
+      `itemId=${item.id}`,
+      `fileName=${filename}`,
+      `size=${blob.size}`
+    );
     ElMessage.success('已下载，原文件已焚毁');
     refreshItems();
   } catch (error) {
     if (error?.businessCode === DELIVERY_CODE.GONE) {
       sessionGone();
     } else if (error?.businessCode === DELIVERY_CODE.CONFLICT) {
+      logger.warn('下载被拒：条目状态已变化（409）', `itemId=${item.id}`);
       ElMessage.warning('条目尚未取走或状态已变化，请重试');
       refreshItems();
     } else {
+      // 页面自有 catch（envelopeHttp 无拦截器留痕），此处兜底记录
+      logger.error('文件下载失败:', `itemId=${item.id}`, error);
       ElMessage.error(error?.message || '网络异常，请稍后重试');
     }
   } finally {
@@ -388,14 +417,19 @@ async function handleSendText() {
   try {
     const envelope = await publishDeliveryText(props.code, text);
     if (envelope.code === DELIVERY_CODE.OK) {
+      // 低频写操作成功（正文内容不入日志，只记返回条目 id）
+      logger.info('投递文本发送成功', `itemId=${envelope.data?.id ?? '-'}`);
       draftText.value = '';
       refreshItems();
     } else if (envelope.code === DELIVERY_CODE.GONE) {
       sessionGone();
     } else {
+      logger.warn('文本发送被拒：', `code=${envelope.code}`, envelope.message);
       ElMessage.error(envelope.message || '发送失败，请稍后重试');
     }
-  } catch {
+  } catch (error) {
+    // 页面自有 catch（envelopeHttp 无拦截器留痕），此处兜底记录
+    logger.error('文本发送失败:', error);
     ElMessage.error('网络异常，请稍后重试');
   } finally {
     sendingText.value = false;
@@ -410,6 +444,7 @@ async function handleFilesSelected(event) {
   try {
     for (const file of files) {
       if (file.size > DELIVERY_MAX_FILE_SIZE) {
+        logger.warn('文件超过 20MB 已跳过', `fileName=${file.name}`, `size=${file.size}`);
         ElMessage.warning(`「${file.name}」超过 20MB，已跳过`);
         continue;
       }
@@ -417,16 +452,31 @@ async function handleFilesSelected(event) {
       // 逐个串行上传，失败不中断后续文件（413 等业务错误逐个提示）
       const envelope = await publishDeliveryFile(props.code, kind, file);
       if (envelope.code === DELIVERY_CODE.OK) {
+        // 低频写操作成功（文件内容不入日志，只记元数据）
+        logger.info(
+          '投递文件上传成功',
+          `fileName=${file.name}`,
+          `size=${file.size}`,
+          `kind=${kind}`
+        );
         continue;
       }
       if (envelope.code === DELIVERY_CODE.GONE) {
         sessionGone();
         return;
       }
+      logger.warn(
+        '文件上传被拒：',
+        `fileName=${file.name}`,
+        `code=${envelope.code}`,
+        envelope.message
+      );
       ElMessage.error(`「${file.name}」${envelope.message || '上传失败'}`);
     }
     refreshItems();
-  } catch {
+  } catch (error) {
+    // 页面自有 catch（envelopeHttp 无拦截器留痕），此处兜底记录
+    logger.error('文件上传失败:', error);
     ElMessage.error('网络异常，请稍后重试');
   } finally {
     uploading.value = false;

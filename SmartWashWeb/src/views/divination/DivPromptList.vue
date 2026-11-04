@@ -163,6 +163,7 @@ import { getPromptList, createPrompt, updatePrompt, activatePrompt } from '@/api
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -289,14 +290,38 @@ const submitForm = async () => {
     }
     if (dialogType.value === 'create') {
       await createPrompt(submitData);
+      logger.info(
+        'Prompt 新增成功',
+        `method=${tempPrompt.method}`,
+        `version=${tempPrompt.version}`
+      );
       ElMessage.success('新增成功');
     } else {
       await updatePrompt(submitData.id, submitData);
+      logger.info(
+        'Prompt 编辑成功',
+        `id=${submitData.id}`,
+        `method=${tempPrompt.method}`,
+        `version=${tempPrompt.version}`
+      );
       ElMessage.success('修改成功');
     }
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('Prompt 表单校验未通过，已拦截提交');
+    } else {
+      logger.error(
+        'Prompt 提交失败:',
+        `type=${dialogType.value}`,
+        `id=${tempPrompt.id ?? '-'}`,
+        `method=${tempPrompt.method}`,
+        `version=${tempPrompt.version}`,
+        error
+      );
+    }
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -312,9 +337,22 @@ const handleActivate = async (row) => {
   activatingId.value = row.id;
   try {
     await activatePrompt(row.id);
+    logger.info(
+      'Prompt 激活成功',
+      `id=${row.id}`,
+      `method=${row.method}`,
+      `version=${row.version}`
+    );
     ElMessage.success('激活成功');
     fetchData();
   } catch (error) {
+    logger.error(
+      'Prompt 激活失败:',
+      `id=${row.id}`,
+      `method=${row.method}`,
+      `version=${row.version}`,
+      error
+    );
     ElMessage.error(error.message || '激活失败');
   } finally {
     activatingId.value = null;
@@ -331,9 +369,22 @@ const handleDelete = async (row) => {
   try {
     // 后端未提供删除接口，此处通过标记退役实现（或扩展 delete 接口）
     await updatePrompt(row.id, { status: 2 });
+    logger.info(
+      'Prompt 退役成功',
+      `id=${row.id}`,
+      `method=${row.method}`,
+      `version=${row.version}`
+    );
     ElMessage.success('Prompt 已退役');
     fetchData();
   } catch (error) {
+    logger.error(
+      'Prompt 退役失败:',
+      `id=${row.id}`,
+      `method=${row.method}`,
+      `version=${row.version}`,
+      error
+    );
     ElMessage.error(error.message || '操作失败');
   } finally {
     deletingId.value = null;

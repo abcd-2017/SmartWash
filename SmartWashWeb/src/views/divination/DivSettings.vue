@@ -117,6 +117,7 @@ import {
   getModelList,
 } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const loading = ref(false);
@@ -148,6 +149,7 @@ const fetchModelOptions = async () => {
     const res = await getModelList({ page: 1, size: 100 });
     modelOptions.value = res.records || [];
   } catch (error) {
+    logger.error('获取模型选项失败:', error);
     ElMessage.error(error.message || '获取模型列表失败');
   }
 };
@@ -164,6 +166,7 @@ const fetchSettings = async () => {
       platformDailyLimit: res.platformDailyLimit ?? 20,
     });
   } catch (error) {
+    logger.error('获取平台设置失败:', error);
     ElMessage.error(error.message || '获取平台设置失败');
   } finally {
     loading.value = false;
@@ -175,8 +178,22 @@ const submitForm = async () => {
     await formRef.value.validate();
     submitting.value = true;
     await updatePlatformSettings({ ...settings });
+    // settings 不含密钥字段，业务键可安全入日志
+    logger.info(
+      '平台设置保存成功',
+      `defaultModelId=${settings.defaultModelId}`,
+      `byokEnabled=${settings.byokEnabled}`,
+      `byokDailyLimit=${settings.byokDailyLimit}`,
+      `platformDailyLimit=${settings.platformDailyLimit}`
+    );
     ElMessage.success('保存成功');
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('平台设置表单校验未通过，已拦截提交');
+    } else {
+      logger.error('平台设置保存失败:', error);
+    }
     ElMessage.error(error.message || '保存失败');
   } finally {
     submitting.value = false;
@@ -192,8 +209,11 @@ const handleRotateKey = async () => {
   rotating.value = true;
   try {
     await rotateMasterKey();
+    // 高危关键动作必留痕；密钥材料一律不入日志
+    logger.info('主密钥轮换已启动');
     ElMessage.success('主密钥轮换已启动，后台正在分批重加密');
   } catch (error) {
+    logger.error('主密钥轮换失败:', error);
     ElMessage.error(error.message || '主密钥轮换失败');
   } finally {
     rotating.value = false;

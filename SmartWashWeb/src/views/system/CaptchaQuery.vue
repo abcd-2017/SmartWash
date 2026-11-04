@@ -67,6 +67,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { queryCaptcha } from '@/api/captcha';
+import logger from '@/utils/logger';
 
 const PHONE_REGEX = /^(\+86)?1[3-9]\d{9}$/;
 
@@ -96,9 +97,13 @@ async function handleQuery() {
   try {
     const data = await queryCaptcha(phone);
     result.value = data;
-  } catch {
-    // 查询失败静默处理：HTTP 层错误已由 http.js 拦截器统一 ElMessage 提示；
-    // 业务失败（code !== 200）拦截器仅 reject 不提示，这里仅清空结果保持 UI 一致
+    // 读操作仅 debug 留痕：记条数便于对账；手机号与验证码值均不入日志（敏感红线）
+    logger.debug('验证码查询成功', `count=${data?.captchas?.length ?? 0}`);
+  } catch (error) {
+    // HTTP 层错误已由 http.js 拦截器统一 ElMessage 提示，这里归因到页面动作；
+    // 业务失败（code !== 200）拦截器仅 reject 不提示，这里仅清空结果保持 UI 一致；
+    // error 仅保留 message/stack（sanitize 丢弃 config），手机号与验证码值不入日志
+    logger.error('验证码查询失败:', error);
   } finally {
     loading.value = false;
   }

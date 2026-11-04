@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
+import logger from '@/utils/logger';
 
 // baseURL 从环境变量读取：开发环境为 /api（走 vite 代理转发），
 // 生产环境由 .env.production 注入完整地址；生产建议改用 Nginx 反代 + HTTPS 域名
@@ -97,12 +98,24 @@ http.interceptors.response.use(
       return Promise.reject(new Error(res.message || '登录已过期'));
     }
     if (res.code !== 200) {
+      // 业务拒绝留痕：只记 method/url/业务码/message 摘要，不打完整请求/响应体（敏感红线）
+      logger.warn(
+        `业务码非200 ${response.config?.method?.toUpperCase()} ${response.config?.url}`,
+        `code=${res.code}`,
+        res.message
+      );
       return Promise.reject(new Error(res.message || 'Error'));
     }
     // 成功时解包统一响应信封，直接返回业务数据 res.data
     return res.data;
   },
   (error) => {
+    // HTTP 层错误留痕：只记 method/url/status/message 摘要，不打完整请求/响应体（敏感红线）
+    logger.warn(
+      `HTTP错误 ${error.config?.method?.toUpperCase() || 'UNKNOWN'} ${error.config?.url || ''}`,
+      `status=${error.response?.status ?? '-'}`,
+      error.response?.data?.message || error.message
+    );
     if (error.response?.status === 401) {
       // HTTP 401：认证失败（token 缺失/过期等），统一清登录态并跳转登录页
       handleUnauthorized();

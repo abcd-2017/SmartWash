@@ -77,6 +77,7 @@ import { ref, computed, onMounted } from 'vue';
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
 import { getDashboardStats } from '@/api/dashboard';
 import { useAnimatedNumber } from '@/composables/useAnimatedNumber';
+import logger from '@/utils/logger';
 
 const stats = ref({
   schoolCount: 0,
@@ -101,8 +102,9 @@ onMounted(async () => {
   try {
     const data = await getDashboardStats();
     stats.value = data;
-  } catch {
-    // 请求失败由 http 拦截器统一弹出提示，页面保持默认 0 值展示
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败；页面保持默认 0 值展示
+    logger.error('工作台统计数据加载失败:', error);
   }
 });
 </script>

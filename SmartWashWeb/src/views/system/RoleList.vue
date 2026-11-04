@@ -92,6 +92,7 @@ import { roleOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -165,15 +166,20 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addRole(tempRole);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：业务键仅角色名称（新增无 roleId）
+      logger.info('新增角色成功', `roleName=${tempRole.roleName}`);
     } else {
       await updateRole(tempRole);
       ElMessage.success('修改成功');
+      logger.info('修改角色成功', `roleId=${tempRole.roleId}`, `roleName=${tempRole.roleName}`);
     }
     // 角色数据有变，失效角色下拉的全量缓存（评审 #15 的失效入口）
     roleOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('保存角色失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -188,10 +194,13 @@ const handleDelete = async (row) => {
   try {
     await deleteRole(row.roleId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 roleId/roleName
+    logger.info('删除角色成功', `roleId=${row.roleId}`, `roleName=${row.roleName}`);
     // 角色下拉缓存同步失效（评审 #15 的失效入口）
     roleOptionsCache.invalidate();
     fetchData();
   } catch (error) {
+    logger.error('删除角色失败:', `roleId=${row.roleId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };
