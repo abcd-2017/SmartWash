@@ -8,9 +8,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.Result;
 import com.smartwash.from.locker.AddLockerFrom;
+import com.smartwash.from.locker.BatchAddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
 import com.smartwash.service.ILockersService;
+import com.smartwash.service.ISchoolsService;
+import com.smartwash.vo.locker.BatchAddLockerVo;
 import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
 import jakarta.validation.Valid;
@@ -37,6 +40,8 @@ import java.util.Map;
 public class LockersController {
     @Autowired
     private ILockersService lockersService;
+    @Autowired
+    private ISchoolsService schoolsService;
 
     @Operation(summary = "获取柜子状态枚举", description = "获取所有寄存柜状态的枚举值及描述")
     @GetMapping("/status")
@@ -71,6 +76,19 @@ public class LockersController {
         lockersService.addLockers(addLockerFrom);
         log.info("新增寄存柜成功, schoolId: {}, lockerNumber: {}", addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber());
         return Result.ok("添加成功");
+    }
+
+    @Operation(summary = "批量新增柜子", description = "批量新增寄存柜，自动避开已占用编号")
+    @PostMapping("/batchAdd")
+    public Result<BatchAddLockerVo> batchAddLocker(@RequestBody @Valid BatchAddLockerFrom from) {
+        if (schoolsService.getById(from.getSchoolId()) == null) {
+            log.warn("批量新增寄存柜被拒绝：学校不存在, schoolId: {}", from.getSchoolId());
+            return Result.failMsg("学校不存在");
+        }
+        BatchAddLockerVo vo = lockersService.batchAddLockers(from);
+        log.info("批量新增寄存柜成功, schoolId: {}, addedCount: {}, range: {}-{}",
+                from.getSchoolId(), vo.getAddedCount(), vo.getFirstNumber(), vo.getLastNumber());
+        return Result.ok(vo);
     }
 
     @Operation(summary = "更新柜子", description = "修改寄存柜信息")

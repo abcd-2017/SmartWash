@@ -55,6 +55,13 @@ export default defineConfig({
     }
   },
   test: {
-    environment: 'happy-dom'
+    environment: 'happy-dom',
+    server: {
+      deps: {
+        // Element Plus 按需引入会注入 .css，内联后由 vitest 忽略样式，
+        // 避免 SSR 加载器报 "Unknown file extension .css"
+        inline: ['element-plus'],
+      },
+    },
   }
 })

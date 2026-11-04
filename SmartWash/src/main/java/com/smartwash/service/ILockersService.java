@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.entity.Lockers;
 import com.smartwash.from.locker.AddLockerFrom;
+import com.smartwash.from.locker.BatchAddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
 import com.smartwash.from.locker.UpdateLockerFrom;
+import com.smartwash.vo.locker.BatchAddLockerVo;
 import com.smartwash.vo.locker.LockerStatusSummaryVo;
 import com.smartwash.vo.locker.LockersVo;
 
@@ -28,6 +30,8 @@ public interface ILockersService extends IService<Lockers> {
     Boolean deleteLockers(String ids);
 
     Boolean addLockers(AddLockerFrom addLockerFrom);
+
+    BatchAddLockerVo batchAddLockers(BatchAddLockerFrom from);
 
     Boolean deleteLockersBySchoolId(Long schoolId);
 
