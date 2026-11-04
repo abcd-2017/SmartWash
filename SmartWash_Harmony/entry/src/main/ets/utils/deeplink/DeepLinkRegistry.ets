@@ -1,18 +1,23 @@
 // 深链路由注册表 — host → 路由目标集中映射（对齐安卓 app 壳层 deeplink/DeepLinkRegistry.kt）
 //
-// 安卓按域经 Hilt 贡献者聚合；鸿蒙单 entry 本就是集中式路由（RouteNames.ets 为单一事实来源），
-// 故收敛为一张表。host 清单与安卓完全一致，路由名直引 RouteNames 常量（禁止字面量）。
+// 安卓按域经 Hilt 贡献者聚合（各域 *DeepLinkModule @IntoSet）；鸿蒙单 entry 本就是集中式路由
+// （RouteNames.ets 为单一事实来源），故收敛为一张表。host 清单与安卓完全一致，
+// 路由名直引 RouteNames 常量（禁止字面量）。
 //
-// host 清单（与安卓 docs/deeplink-对接文档.md §4 对齐）：
+// host 清单（与安卓各域 DeepLinkModule 注册一致）：
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
-//   pickup / laundry / divination / divination-history / toolbox-short-code / game-center /
-//   t/{code} / web(内建)
+//   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
+//   t/{code} / game-center / lab / mood / review / subscription / ai-work / web(内建)
+//
+// 未实现域的兜底（对齐「先兜底实现」排期）：
+//   lab / mood / review / subscription / delivery / ai-work 在鸿蒙端页面未实现（P1-P3 排期），
+//   但后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），故注册到
+//   ComingSoon 占位页（pages/ComingSoon.ets）——卡片点击有明确落点而非裸 toast；
+//   各域页面落地后把对应 host 的 routeName 换成真实路由即可，ComingSoon 保留通用兜底。
 //
 // 未注册 host 与原因（对齐安卓 §5 取舍）：
 // - user-info / service：两页是 Home 页 Tabs 的内容页，非独立路由；跳转等价「进 Home 切 tab」，
 //   需要改 Home 的路由注册形态并让 Home 从参数观察初始 tab，成本高于收益，故不注册；
-// - ai-work：AI 工具工作台鸿蒙未实现（安卓 PageConstant.AiWork），无目标路由可映射，
-//   未命中统一走「后端字典留痕 + 暂不支持该链接」提示；
 // - web：由 DeepLinkParser 内建处理（WebView 分支），不经本表。
 
 import { RouteNames } from '../../constant/RouteNames'
@@ -56,6 +61,18 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('toolbox-short-code', { routeName: RouteNames.TOOLBOX_SHORT_CODE_LIST, param: null })
   // 游戏中心域（对齐安卓 GameDeepLinkModule：game-center → GameRoute.Center）
   routes.set('game-center', { routeName: RouteNames.GAME_CENTER, param: null })
+  // 工具箱域设备投递（对齐安卓 ToolboxDeepLinkModule：delivery → ToolboxRoute.Delivery；
+  // 鸿蒙端投递页未实现，兜底到建设中占位页）
+  routes.set('delivery', { routeName: RouteNames.COMING_SOON, param: null })
+  // 新增域兜底（对齐安卓各域 DeepLinkModule 的 host 注册；鸿蒙端页面 P1-P3 排期未落地，
+  // 统一落到 ComingSoon 占位页，保证后端下发的工作台卡片点击有明确落点）
+  // lab → LabRoute.Home / mood → MoodRoute.Today / review → ReviewRoute.Queue /
+  // subscription → SubscriptionRoute.List / ai-work → 壳层 AiWorkPage
+  routes.set('lab', { routeName: RouteNames.COMING_SOON, param: null })
+  routes.set('mood', { routeName: RouteNames.COMING_SOON, param: null })
+  routes.set('review', { routeName: RouteNames.COMING_SOON, param: null })
+  routes.set('subscription', { routeName: RouteNames.COMING_SOON, param: null })
+  routes.set('ai-work', { routeName: RouteNames.COMING_SOON, param: null })
   return routes
 }
 

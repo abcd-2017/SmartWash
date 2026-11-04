@@ -1,4 +1,4 @@
-# 月面轻降（gameKey：`moon-lander`，category 建议：`physics`）
+# 月面轻降（gameKey：`moon-lander`，category 建议：`arcade`）
 
 原创实现的月面着陆物理游戏（玩法参考原型 `mini-browser-games/moon-lander.html`，代码全部重写，与原型无代码继承）。
 

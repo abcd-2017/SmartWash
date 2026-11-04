@@ -19,6 +19,9 @@ import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
 import { getValue, setValue } from "../../utils/StorageUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
+import { logger } from "../../utils/Logger"
+import { BusinessError } from "@kit.BasicServicesKit"
+import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
 import {
   WorkbenchBlock,
@@ -69,6 +72,7 @@ export struct Workbench {
 
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
+    logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
     this.loadEntries()
     // 最近使用/公告关闭记录异步回读（对齐安卓 init 回读 DataStore）
     this.loadLocalState()
@@ -100,11 +104,14 @@ export struct Workbench {
           workbenchEntryVoToTool(vo, index)))
         this.loadState = LoadState.SUCCESS
       } else {
+        logger.warn('workbench', `工具入口列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
         this.tools = []
         this.loadState = LoadState.ERROR
       }
     } catch (err) {
       // 失败：真实错误态（Error 仅日志留痕，页面出重试）
+      const e: BusinessError = err as BusinessError
+      logger.warn('workbench', `工具入口列表加载异常，进错误态 err=${e.message}`)
       this.tools = []
       this.loadState = LoadState.ERROR
     }
@@ -116,6 +123,8 @@ export struct Workbench {
    * 观象台域 7 页已落地（#29），直接入栈。
    */
   private onDivinationCardClick(): void {
+    // 工具入口点击跳转留痕（低频动作按约定记 debug）
+    logger.debug('workbench', '点击观象台特色卡，入栈观象台首页')
     pathStack.pushPathByName(RouteNames.DIV_HOME, null)
   }
 
@@ -131,9 +140,13 @@ export struct Workbench {
    */
   private onToolClick(tool: WorkbenchTool): void {
     if (tool.target.length === 0) {
+      // 占位项点击留痕（不走深链链路，仅提示建设中）
+      logger.debug('workbench', `工具未配置跳转目标，提示建设中 entryKey=${tool.entryKey}`)
       showToastSafety(WorkbenchText.workbench_coming_soon)
       return
     }
+    // 工具点击跳转留痕（深链分发内部另有留痕，此处只记入口）
+    logger.debug('workbench', `点击工具，交深链分发 entryKey=${tool.entryKey}`)
     this.recordRecent(tool.entryKey)
     handleDeepLink(tool.target)
   }
@@ -813,6 +826,7 @@ export struct Workbench {
         })
     }
     .width('100%')
+    .padding({ top: safeTopVp(), bottom: safeBottomVp() })
   }
 
   /** 工具区主体：搜索态平铺两列；常态 = 玄墨品牌位 → 最近使用 → 类型化分区 */

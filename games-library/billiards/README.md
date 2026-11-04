@@ -1,4 +1,4 @@
-# 粉笔台球（gameKey：`billiards`，category 建议：`physics`）
+# 粉笔台球（gameKey：`billiards`，category 建议：`board`）
 
 原创实现的竖屏台球物理游戏（玩法参考原型 `mini-browser-games/chalk-billiards.html`，代码全部重写，与原型无代码继承）。
 

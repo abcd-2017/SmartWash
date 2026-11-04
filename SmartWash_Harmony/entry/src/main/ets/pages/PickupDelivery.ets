@@ -9,6 +9,7 @@ import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, Loa
 import { BaseResponse } from "../network/BaseResponse"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
 
 /**
@@ -75,19 +76,27 @@ struct PickupDelivery {
     if (orderId !== null) {
       this.isLoading = true
       this.loadFailed = false
-      let detailRes = await getOrderInfo(orderId)
-      if (detailRes.code === HttpStatusCode.Ok && detailRes.data !== null) {
-        logger.debug('pickupDelivery', `订单详情加载成功 orderId=${orderId}`)
-        this.orderInfo = detailRes.data
-        this.loadFailed = false
-      } else {
-        logger.warn('pickupDelivery', `订单详情加载失败 orderId=${orderId} ` +
-          `code=${detailRes.code} message=${detailRes.message ?? ""}`)
+      try {
+        let detailRes = await getOrderInfo(orderId)
+        if (detailRes.code === HttpStatusCode.Ok && detailRes.data !== null) {
+          logger.debug('pickupDelivery', `订单详情加载成功 orderId=${orderId}`)
+          this.orderInfo = detailRes.data
+          this.loadFailed = false
+        } else {
+          logger.warn('pickupDelivery', `订单详情加载失败 orderId=${orderId} ` +
+            `code=${detailRes.code} message=${detailRes.message ?? ""}`)
+          this.orderInfo = null
+          this.loadFailed = true
+          showToastSafety(detailRes.message, "订单信息加载失败")
+        }
+      } catch (err) {
+        // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
         this.orderInfo = null
         this.loadFailed = true
-        showToastSafety(detailRes.message, "订单信息加载失败")
+        showToastSafety("网络异常，请稍后重试")
+      } finally {
+        this.isLoading = false
       }
-      this.isLoading = false
     } else {
       logger.warn('pickupDelivery', '取寄件页缺少路由参数 orderId，进入失败态')
       this.orderInfo = null
@@ -114,16 +123,23 @@ struct PickupDelivery {
     }
     this.qrLoading = true
     this.qrFailed = false
-    let res = await generateQrCode(this.pickCode)
-    if (res.code === HttpStatusCode.Ok && (res.data ?? "") !== "") {
-      logger.debug('pickupDelivery', '二维码生成成功')
-      this.qrCode = res.data ?? ""
-    } else {
-      logger.warn('pickupDelivery', `二维码生成失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "取件码生成失败")
+    try {
+      let res = await generateQrCode(this.pickCode)
+      if (res.code === HttpStatusCode.Ok && (res.data ?? "") !== "") {
+        logger.debug('pickupDelivery', '二维码生成成功')
+        this.qrCode = res.data ?? ""
+      } else {
+        logger.warn('pickupDelivery', `二维码生成失败 code=${res.code} message=${res.message ?? ""}`)
+        showToastSafety(res.message, "取件码生成失败")
+        this.qrFailed = true
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 qrLoading 卡死骨架常驻
+      showToastSafety("网络异常，请稍后重试")
       this.qrFailed = true
+    } finally {
+      this.qrLoading = false
     }
-    this.qrLoading = false
   }
 
   /** 确认取件/寄件：pickupCode 传完整串（与安卓一致），日志不打码值（敏感红线） */
@@ -147,7 +163,9 @@ struct PickupDelivery {
           pickupCode: this.orderInfo?.pickupCode ?? ""
         })
       }
-      if (res.code === HttpStatusCode.Ok) {
+      // 后端 Result.ok(boolean) 直传：data=false（CAS 失败，订单状态已变更）必须按失败处理，
+      // 不能只看 code=200 就弹「操作成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
+      if (res.code === HttpStatusCode.Ok && res.data === true) {
         logger.info('pickupDelivery',
           `${this.isPickup ? "取件" : "寄件"}确认成功 orderId=${this.orderInfo?.orderId ?? -1}`)
         // 确认成功触感（recap §9-F4，对齐安卓 HapticEffect.SUCCESS）
@@ -159,11 +177,14 @@ struct PickupDelivery {
         showToastSafety("操作成功")
         pathStack.pop()
       } else {
+        showToastSafety(res.message, "操作失败，订单状态可能已变更")
         logger.warn('pickupDelivery',
           `${this.isPickup ? "取件" : "寄件"}确认被拒 orderId=${this.orderInfo?.orderId ?? -1} ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "操作失败")
       }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 confirming/submitting 卡死
+      showToastSafety("网络异常，请稍后重试")
     } finally {
       this.confirming = false
       this.submitting = false
@@ -490,7 +511,7 @@ struct PickupDelivery {
       left: DesignDimens.PAGE_PADDING,
       right: DesignDimens.PAGE_PADDING,
       top: DesignDimens.SPACE_MD,
-      bottom: DesignDimens.SPACE_MD
+      bottom: DesignDimens.SPACE_MD + safeBottomVp()
     })
   }
 
@@ -566,6 +587,8 @@ struct PickupDelivery {
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

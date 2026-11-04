@@ -8,6 +8,7 @@ import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { AppButton } from "../view/common/AppComponents"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 @Builder
 export function AddSchoolBuilder() {
@@ -230,8 +231,10 @@ struct AddSchool {
 
   build() {
     NavDestination() {
-      Stack() {
-        // 滚动内容（底部预留固定 CTA 栏高度，避免被按钮遮挡）
+      // 修复（问题4）：原 Stack 内 layoutWeight 失效 + .align(Alignment.Bottom) 只作用于自身子组件，
+      // 导致滚动内容收成内容高并居中、CTA 栏叠在表单中间。改 Column：Scroll 撑满余量，CTA 栏固定底部。
+      Column() {
+        // 滚动内容
         Scroll() {
           Column() {
             // ===== Hero 区（模板 C：品牌渐变卡 + 64dp 圆图标容器 + 标题 + 副标题）=====
@@ -444,7 +447,7 @@ struct AddSchool {
             .margin({ top: DesignDimens.SPACE_MD })
           }
           .width("100%")
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: 120 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp(), bottom: 24 })
           // 空白处点击收键盘（对齐安卓 UpdateUserInfoPage.kt:164-169 根 pressable clearFocus）
           .onClick(() => {
             this.clearFocusAndKeyboard()
@@ -453,6 +456,8 @@ struct AddSchool {
         .layoutWeight(1)
         .scrollBar(BarState.Off)
         .width("100%")
+        // 内容不足一屏时顶对齐（Scroll 默认居中，会把表单挤到屏幕中部）
+        .align(Alignment.Top)
 
         // ===== 底部固定 CTA 栏（锁定提示常驻 + 主按钮 48 胶囊）=====
         Column() {
@@ -472,9 +477,8 @@ struct AddSchool {
             .margin({ top: DesignDimens.SPACE_MD })
         }
         .width("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 12, bottom: 16 })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 12, bottom: 16 + safeBottomVp() })
         .backgroundColor(DesignColor.BACKGROUND)
-        .align(Alignment.Bottom)
       }
       .width("100%")
       .height("100%")

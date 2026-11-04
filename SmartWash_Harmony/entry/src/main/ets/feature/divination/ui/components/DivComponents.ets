@@ -507,6 +507,8 @@ export struct DivPageHeader {
         }
 
         // 标题（居中；alignStart 时左对齐 x20）
+        // hitTestBehavior=None：标题不可点；通栏/超宽行若参与命中会挡住下层返回热区
+        //（问题13：问事页 tail 行 width 100% 盖住返回键，点击无响应）
         Row() {
           if (this.seal.length > 0) {
             DivSeal({ text: this.seal, sealSize: 30, fontSize: 14, flat: this.flatSeal })
@@ -525,8 +527,9 @@ export struct DivPageHeader {
         .padding(this.alignStart ? { left: 20 } : {})
         .align(Alignment.Center)
         .alignItems(VerticalAlign.Center)
+        .hitTestBehavior(HitTestMode.None)
 
-        // 右侧尾注（金 75%）
+        // 右侧尾注（金 75%）— 通栏行禁命中，避免挡住下层返回热区（问题13）
         if (this.tail.length > 0) {
           Row() {
             DivSerifText({
@@ -543,9 +546,10 @@ export struct DivPageHeader {
           .justifyContent(FlexAlign.End)
           .padding({ right: 20 })
           .align(Alignment.Center)
+          .hitTestBehavior(HitTestMode.None)
         }
 
-        // 右侧固定卦印（解读画板：平涂深朱、印文 14/700；与 tail 互斥）
+        // 右侧固定卦印（解读画板：平涂深朱、印文 14/700；与 tail 互斥）— 同 tail 禁命中
         if (this.sealTrailing.length > 0) {
           Row() {
             DivSeal({ text: this.sealTrailing, sealSize: 30, fontSize: 14, flat: true })
@@ -554,6 +558,7 @@ export struct DivPageHeader {
           .justifyContent(FlexAlign.End)
           .padding({ right: 20 })
           .align(Alignment.Center)
+          .hitTestBehavior(HitTestMode.None)
         }
       }
       .width('100%')

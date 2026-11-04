@@ -215,8 +215,10 @@ fun PickupDeliveryPage(
                     DetailLoadState.CONTENT -> Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = AppDimens.pagePadding)
+                            // scroll 在前、padding 在后：卡外阴影需要视口内的 24dp 容身空间，
+                            // padding 在 scroll 前会把卡片钉在滚动裁剪边界上，左右阴影被裁
                             .verticalScroll(rememberScrollState())
+                            .padding(horizontal = AppDimens.pagePadding)
                     ) {
                         // 寄件注意事项
                         if (type == PickupDeliveryType.DELIVERY.type) {

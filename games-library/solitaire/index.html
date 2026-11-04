@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<meta name="description" content="空当接龙（Klondike Solitaire）单文件 H5：经典翻一张规则，红黑交替点数递减，同花色从 A 收满四方。">
+<title>空当接龙</title>
+<style>
+  /*token:GAME-THEME.md §2（按需取用）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); line-height: 1.4; }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; min-width: 0; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.plain { color: var(--g-text); }
+  .btn {
+    min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .btn.sm { min-height: 44px; padding: 0 12px; font-size: 14px; flex: 0 0 auto; }
+  /* 牌桌 */
+  /* 375px 布局：body 左右各 8px → 内容 359px；board 左右各 6px → 347px；
+     7 列 gap 6px → 每列 (347-36)/7 ≈ 44.4px；牌高 = 列宽 × 7/5 ≈ 62px；
+     列内阶梯 --step:22px（18-24px 区间内），列高由 --n 计算 padding-bottom 撑开。 */
+  .board { background: var(--g-surface); border-radius: var(--g-radius); box-shadow: var(--g-shadow); padding: 8px 6px 10px; }
+  .top { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 10px; }
+  .slot { position: relative; aspect-ratio: 5 / 7; border-radius: 10px; }
+  .slot.ghost { visibility: hidden; }
+  .slot.empty { border: 1px dashed var(--g-border); background: var(--g-surface2); }
+  .slot .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--g-faint); }
+  .slot .recycle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--g-faint); }
+  .slot .count {
+    position: absolute; right: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 10px; background: var(--g-primary-soft); color: var(--g-on-soft);
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .col { position: relative; min-width: 0; --step: 22px; }
+  .col.has-cards { padding-bottom: calc((var(--n) - 1) * var(--step)); }
+  .col-empty {
+    aspect-ratio: 5 / 7; border-radius: 10px; border: 1px dashed var(--g-border);
+    background: var(--g-surface2); display: flex; align-items: center; justify-content: center;
+    color: var(--g-faint); font-size: 14px;
+  }
+  /* 牌面 */
+  .card {
+    position: absolute; left: 0; right: 0; aspect-ratio: 5 / 7;
+    border-radius: 10px; background: var(--g-surface); border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow); color: var(--g-text); cursor: pointer; overflow: hidden;
+  }
+  .col .card { top: calc(var(--i) * var(--step)); }
+  .slot .card { inset: 0; }
+  .card.red { color: var(--g-danger); }
+  .card.down {
+    background: repeating-linear-gradient(45deg, var(--g-primary-soft), var(--g-primary-soft) 5px, var(--g-surface) 5px, var(--g-surface) 10px);
+    border-color: var(--g-primary);
+  }
+  .card.down::after {
+    content: "♠"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--g-primary); opacity: .55;
+  }
+  .card .rk { position: absolute; top: 3px; left: 5px; font-size: 14px; font-weight: 700; line-height: 1; }
+  .card .st { position: absolute; top: 18px; left: 5px; font-size: 12px; line-height: 1; }
+  .card .cen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; }
+  .card[data-sel="1"] { outline: 2px solid var(--g-primary); outline-offset: 1px; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; font-weight: 500; color: var(--g-muted); text-align: center; }
+  .msg.err { color: var(--g-danger); }
+  .msg.win { color: var(--g-success); }
+  .foot { margin: 10px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  /* 覆盖层 */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="sub">经典翻一张 · 红黑交替点数递减</span>
+    <button class="btn sm" id="btnNew">重开</button>
+  </header>
+  <div class="stats">
+    <div class="stat"><span class="label">用时</span><span class="val" id="stTime">00:00</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val plain" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">胜场</span><span class="val plain" id="stWins">0</span></div>
+    <div class="stat"><span class="label">最佳</span><span class="val plain" id="stBest">—</span></div>
+  </div>
+  <div class="board" id="board">
+    <div class="top">
+      <div class="slot" data-zone="stock" id="slotStock"></div>
+      <div class="slot" data-zone="waste" id="slotWaste"></div>
+      <div class="slot ghost" aria-hidden="true"></div>
+      <div class="slot fnd empty" data-zone="fnd" data-f="0" id="fnd0"></div>
+      <div class="slot fnd empty" data-zone="fnd" data-f="1" id="fnd1"></div>
+      <div class="slot fnd empty" data-zone="fnd" data-f="2" id="fnd2"></div>
+      <div class="slot fnd empty" data-zone="fnd" data-f="3" id="fnd3"></div>
+    </div>
+    <div class="cols" id="cols"></div>
+  </div>
+  <p class="msg" id="msg">点牌库翻牌；点明牌选中，再点目标堆</p>
+  <p class="foot">红黑交替 · 点数递减叠放 · 空列仅可放 K · foundation 同花色从 A 递增</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">通关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">再来一局</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 常量与工具 ---------- */
+var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+var SUITS=["♠","♥","♦","♣"]; /* 0 黑桃 1 红桃 2 方块 3 梅花 */
+var RED=[false,true,true,false]; /* 红桃与方块为红色 */
+var KEY="sw.solitaire.v1";
+function $(id){return document.getElementById(id)}
+function isRed(c){return RED[c.s]}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function fmt(ms){var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return(m<10?"0":"")+m+":"+(s<10?"0":"")+s}
+function cardName(c){return SUITS[c.s]+RANKS[c.r]}
+/* 操作模型：sel 记录选中来源（废牌顶，或某列从某张起的一串明牌）；
+   点目标列时先尝试整体移动，失败则取消选中并提示；
+   双击（detail===2 或 320ms 内两次点同一位置）触发 autoFnd 自动进 foundation。 */
+/* ---------- 存档（try/catch 包裹读写） ---------- */
+function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var save=loadSave();
+save.played=Math.max(0,parseInt(save.played,10)||0);
+save.wins=Math.max(0,parseInt(save.wins,10)||0);
+save.bestTime=parseInt(save.bestTime,10)||0;
+/* ---------- 规则（纯函数，可抽验） ---------- */
+/* 叠放：与目标牌颜色相异，且点数恰好小 1 */
+function canStack(mv,base){return isRed(mv)!==isRed(base)&&mv.r+1===base.r}
+/* 空列：仅 K 可入 */
+function canEmpty(mv){return mv.r===12}
+/* foundation：空槽仅 A；否则同花色且点数大 1 */
+function canFoundation(card,top){return top?card.s===top.s&&card.r===top.r+1:card.r===0}
+/* ---------- 状态 ---------- */
+var stock=[],waste=[],fnd=[[],[],[],[]],tab=[[],[],[],[],[],[],[]];
+var sel=null,moves=0,won=false;
+var started=false,t0=0,accum=0,running=false,timerId=null;
+var lastTap={key:"",t:0};
+var els={};
+["board","slotStock","slotWaste","fnd0","fnd1","fnd2","fnd3","cols","msg","stTime","stMoves","stWins","stBest","overlay","ovTitle","ovDesc","ovBtn","btnNew"].forEach(function(id){els[id]=$(id)});
+var colEls=[];
+/* ---------- 计时（切后台自动暂停） ---------- */
+function startTimer(){if(started||won)return;started=true;t0=Date.now();running=true;if(!timerId)timerId=setInterval(tick,250)}
+function tick(){els.stTime.textContent=fmt(elapsed())}
+function elapsed(){return accum+(running?Date.now()-t0:0)}
+function pauseTimer(){if(running){accum+=Date.now()-t0;running=false}}
+function resumeTimer(){if(started&&!won&&!running){t0=Date.now();running=true}}
+document.addEventListener("visibilitychange",function(){if(document.hidden)pauseTimer();else resumeTimer()});
+/* ---------- 消息 ---------- */
+function say(t,cls){els.msg.textContent=t;els.msg.className="msg"+(cls?" "+cls:"")}
+/* ---------- 新局 ---------- */
+function newGame(){
+  var deck=[],s,r,i,j;
+  for(s=0;s<4;s++)for(r=0;r<13;r++)deck.push({s:s,r:r,up:false});
+  shuffle(deck);
+  stock=deck;waste=[];fnd=[[],[],[],[]];tab=[[],[],[],[],[],[],[]];
+  for(i=0;i<7;i++){
+    tab[i]=[];
+    for(j=0;j<=i;j++){
+      var c=stock.pop();
+      c.up=(j===i);
+      tab[i].push(c);
+    }
+  }
+  sel=null;moves=0;won=false;started=false;accum=0;running=false;
+  if(timerId){clearInterval(timerId);timerId=null}
+  save.played++;persist();
+  say("点牌库翻牌；点明牌选中，再点目标堆");
+  render();
+}
+/* ---------- 选中 ---------- */
+function selCards(){
+  if(!sel)return[];
+  if(sel.type==="waste")return waste.length?[waste[waste.length-1]]:[];
+  return tab[sel.col].slice(sel.idx);
+}
+function selectCol(ci,idx){sel={type:"col",col:ci,idx:idx};say("已选中 "+cardName(tab[ci][idx])+" 起的一串，点目标堆")}
+function flipExposed(ci){
+  if(ci<0)return;
+  var col=tab[ci];
+  if(col.length&&!col[col.length-1].up)col[col.length-1].up=true;
+}
+/* ---------- 动作 ---------- */
+function afterAction(fromCol){
+  sel=null;moves++;startTimer();flipExposed(fromCol);render();checkWin();
+}
+function drawStock(){
+  startTimer();
+  if(stock.length){
+    var c=stock.pop();c.up=true;waste.push(c);moves++;
+    say("翻出 "+cardName(c));
+  }else if(waste.length){
+    waste.reverse();
+    for(var i=0;i<waste.length;i++)waste[i].up=false;
+    stock=waste;waste=[];moves++;
+    say("牌库重洗，继续翻牌");
+  }else{
+    say("牌库与废牌堆都空了");
+  }
+  sel=null;render();
+}
+function moveSelToCol(ci){
+  var cards=selCards();
+  if(!cards.length)return false;
+  var fromCol=sel.type==="col"?sel.col:-1;
+  if(fromCol===ci)return false;
+  var dest=tab[ci],top=dest.length?dest[dest.length-1]:null;
+  var ok=top?canStack(cards[0],top):canEmpty(cards[0]);
+  if(!ok)return false;
+  if(sel.type==="waste")waste.pop();
+  else tab[fromCol].length=sel.idx;
+  for(var i=0;i<cards.length;i++)dest.push(cards[i]);
+  afterAction(fromCol);
+  return true;
+}
+function moveSelToFnd(fi){
+  var cards=selCards();
+  if(cards.length!==1){say("foundation 一次只能放一张牌","err");return false}
+  var c=cards[0],pile=fnd[fi],top=pile.length?pile[pile.length-1]:null;
+  if(!canFoundation(c,top)){say("foundation 需同花色从 A 开始递增","err");return false}
+  var fromCol=sel.type==="col"?sel.col:-1;
+  if(sel.type==="waste")waste.pop();else tab[fromCol].length=sel.idx;
+  pile.push(c);
+  afterAction(fromCol);
+  return true;
+}
+function autoFnd(t){
+  if(won)return;
+  var c=null,fromCol=-1;
+  if(t.kind==="waste"){
+    if(!waste.length){say("废牌堆是空的","err");return}
+    c=waste[waste.length-1];
+  }else if(t.kind==="col"){
+    if(t.idx<0)return;
+    var col=tab[t.col];
+    if(t.idx!==col.length-1){say("只有每列顶牌能进 foundation","err");return}
+    c=col[t.idx];fromCol=t.col;
+  }else return;
+  for(var i=0;i<4;i++){
+    var pile=fnd[i],top=pile.length?pile[pile.length-1]:null;
+    if(canFoundation(c,top)){
+      if(t.kind==="waste")waste.pop();else tab[fromCol].length=t.idx;
+      pile.push(c);
+      afterAction(fromCol);
+      say("已送入 foundation","win");
+      return;
+    }
+  }
+  say("这张牌暂时进不了 foundation","err");
+}
+/* ---------- 胜利 ---------- */
+function checkWin(){
+  for(var i=0;i<4;i++)if(fnd[i].length!==13)return;
+  won=true;pauseTimer();
+  var t=elapsed(),isNew=save.bestTime===0||t<save.bestTime;
+  if(isNew)save.bestTime=t;
+  save.wins++;persist();
+  els.ovTitle.textContent="通关！";
+  els.ovDesc.innerHTML="用时 <b>"+fmt(t)+"</b> · 步数 <b>"+moves+"</b><br>"
+    +(isNew?"新纪录！最佳 <b>"+fmt(t)+"</b>":"最佳纪录 "+fmt(save.bestTime))
+    +"<br>战绩 "+save.wins+" 胜 / "+save.played+" 场";
+  els.overlay.classList.add("show");
+  render();
+}
+/* ---------- 渲染 ---------- */
+function cardHtml(c,down,attrs){
+  var a=attrs||"";
+  if(down)return'<div class="card down"'+a+'></div>';
+  return'<div class="card'+(isRed(c)?" red":"")+'"'+a+'>'
+    +'<span class="rk">'+RANKS[c.r]+'</span>'
+    +'<span class="st">'+SUITS[c.s]+'</span>'
+    +'<span class="cen">'+SUITS[c.s]+'</span></div>';
+}
+function render(){
+  var s=els.slotStock;
+  if(stock.length){
+    s.className="slot";
+    s.innerHTML=cardHtml(stock[stock.length-1],true)+'<span class="count">'+stock.length+'</span>';
+  }else{
+    s.className="slot empty";
+    s.innerHTML=waste.length?'<span class="recycle">↻</span>':'';
+  }
+  var w=els.slotWaste;
+  if(waste.length){
+    w.className="slot";
+    w.innerHTML=cardHtml(waste[waste.length-1],false,' data-zone="waste"');
+  }else{
+    w.className="slot empty";
+    w.innerHTML="";
+  }
+  for(var i=0;i<4;i++){
+    var f=els["fnd"+i],pile=fnd[i];
+    f.className="slot fnd"+(pile.length?"":" empty");
+    f.innerHTML=pile.length?cardHtml(pile[pile.length-1],false):'<span class="wm">'+SUITS[i]+'</span>';
+  }
+  for(var k=0;k<7;k++)renderCol(k);
+  syncHud();
+}
+function renderCol(i){
+  var el=colEls[i],col=tab[i],h="";
+  if(col.length){
+    el.className="col has-cards";
+    el.style.setProperty("--n",col.length);
+    for(var j=0;j<col.length;j++){
+      var c=col[j];
+      var on=sel&&sel.type==="col"&&sel.col===i&&j>=sel.idx&&c.up;
+      h+=cardHtml(c,!c.up,' data-col="'+i+'" data-idx="'+j+'" style="--i:'+j+'"'+(on?' data-sel="1"':""));
+    }
+  }else{
+    el.className="col";
+    el.style.removeProperty("--n");
+    h='<div class="col-empty">K</div>';
+  }
+  el.innerHTML=h;
+}
+function syncHud(){
+  els.stTime.textContent=fmt(elapsed());
+  els.stMoves.textContent=moves;
+  els.stWins.textContent=save.wins;
+  els.stBest.textContent=save.bestTime>0?fmt(save.bestTime):"—";
+}
+/* ---------- 输入 ---------- */
+function resolve(e){
+  var card=e.target.closest(".card");
+  var zoneEl=e.target.closest("[data-zone]");
+  var colEl=e.target.closest("[data-col]");
+  if(zoneEl){
+    var z=zoneEl.getAttribute("data-zone");
+    if(z==="stock")return{kind:"stock"};
+    if(z==="waste")return{kind:"waste"};
+    if(z==="fnd")return{kind:"fnd",f:parseInt(zoneEl.getAttribute("data-f"),10)};
+  }
+  if(colEl){
+    var ci=parseInt(colEl.getAttribute("data-col"),10),idx=-1;
+    if(card&&card.getAttribute("data-col")===String(ci))idx=parseInt(card.getAttribute("data-idx"),10);
+    return{kind:"col",col:ci,idx:idx};
+  }
+  return null;
+}
+function isDoubleTap(t){
+  var key=t.kind+":"+(t.col!=null?t.col:"")+":"+(t.idx!=null?t.idx:"")+":"+(t.f!=null?t.f:"");
+  var now=Date.now(),dbl=key===lastTap.key&&now-lastTap.t<320;
+  lastTap.key=key;lastTap.t=now;
+  return dbl;
+}
+function handleTap(t,e){
+  if(won||!t)return;
+  if(t.kind==="stock"){drawStock();return}
+  var dbl=(e&&e.detail===2)||isDoubleTap(t);
+  if(dbl){lastTap.key="";autoFnd(t);return}
+  if(t.kind==="waste"){
+    if(!waste.length){say("废牌堆是空的","err");return}
+    if(sel&&sel.type==="waste"){sel=null;say("已取消选中")}
+    else{sel={type:"waste"};say("已选中废牌顶牌 "+cardName(waste[waste.length-1])+"，点目标堆或 foundation")}
+    render();return;
+  }
+  if(t.kind==="fnd"){
+    if(!sel){say("先选一张牌再进 foundation","err");return}
+    moveSelToFnd(t.f);return;
+  }
+  /* 牌堆列 */
+  var col=tab[t.col];
+  if(sel){
+    if(sel.type==="col"&&sel.col===t.col&&t.idx>=sel.idx){sel=null;say("已取消选中");render();return}
+    if(moveSelToCol(t.col))return;
+    sel=null;say("非法移动：需红黑交替、点数递减","err");render();return;
+  }
+  if(t.idx>=0&&col[t.idx]&&col[t.idx].up){selectCol(t.col,t.idx);render();return}
+  if(!col.length)say("空列只能放 K","err");
+  render();
+}
+els.board.addEventListener("click",function(e){
+  var t=resolve(e);
+  if(t)handleTap(t,e);
+});
+els.btnNew.addEventListener("click",function(){
+  els.overlay.classList.remove("show");
+  newGame();
+});
+els.ovBtn.addEventListener("click",function(){
+  els.overlay.classList.remove("show");
+  newGame();
+});
+/* ---------- 启动 ---------- */
+function buildCols(){
+  var box=els.cols;box.innerHTML="";colEls=[];
+  for(var i=0;i<7;i++){
+    var d=document.createElement("div");
+    d.className="col";d.setAttribute("data-col",i);
+    box.appendChild(d);colEls.push(d);
+  }
+}
+buildCols();
+newGame();
+})();
+</script>
+</body>
+</html>

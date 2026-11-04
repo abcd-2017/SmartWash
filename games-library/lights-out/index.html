@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>点灯谜阵</title>
+<style>
+  /*token:GAME-THEME.md §2（全部 UI 走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .grid5 {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    width: min(420px, 100%); margin: 0 auto;
+  }
+  .lamp {
+    aspect-ratio: 1; border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--g-surface2); box-shadow: inset 0 -2px 0 var(--g-border);
+    transition: background .18s, box-shadow .18s, transform .12s;
+  }
+  .lamp:active { transform: scale(.94); }
+  .lamp.on { background: var(--g-warning); box-shadow: 0 0 14px var(--g-warning), inset 0 -2px 0 rgba(0,0,0,.18); }
+  .lamp.star { position: relative; }
+  .lamp.star::after {
+    content: "★"; position: absolute; right: 4px; top: 2px;
+    font-size: 12px; color: var(--g-on-soft); opacity: .85;
+  }
+  .msg { min-height: 20px; margin: 12px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 10px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn[disabled] { opacity: .45; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.7; }
+  .panel .desc b { color: var(--g-primary-deep); font-size: 22px; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点击翻转十字形五格 · 全部熄灭过关</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">参考最优</span><span class="val" id="stRef">-</span></div>
+  </div>
+  <div class="grid5" id="grid" aria-label="点灯棋盘"></div>
+  <p class="msg" id="msg">亮着的格子要按熄灭，注意十字会连带翻转</p>
+  <div class="tools">
+    <button class="btn" id="btnPrev">上一关</button>
+    <button class="btn" id="btnReset">重开本关</button>
+  </div>
+  <p class="foot">每关由全灭状态倒推生成，保证有解 · 步数 ≤ 参考最优可得 ★ 最优标记 · 50 关后进入无尽模式</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 存档 ---------- */
+var KEY="sw.lightsout.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{lv:Math.max(1,parseInt(s.lv,10)||1),flags:Array.isArray(s.flags)?s.flags:[]}}catch(e){return{lv:1,flags:[]}}}
+function saveGame(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var save=loadSave();
+/* ---------- 状态 ---------- */
+var N=5,lamp=[],lit=[],moves=0,ref=0,lv=save.lv,flags=save.flags,done=false;
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function kOf(n){return Math.min(20,6+n)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+/* ---------- 生成：从全灭反向执行 k 步，参考最优 = 出现奇数次的格数 ---------- */
+function generate(){
+  var k=kOf(lv),guard=0;
+  do{
+    lit=[];for(var i=0;i<N*N;i++)lit.push(false);
+    var odd={},n;
+    for(var s=0;s<k;s++){
+      n=Math.floor(Math.random()*N*N);
+      flipSim(n);
+      odd[n]=!odd[n];
+    }
+    ref=0;for(var key in odd)if(odd[key])ref++;
+  }while(ref<Math.min(6,k)&&guard++<60);
+  moves=0;done=false;
+}
+function flipSim(n){
+  var r=Math.floor(n/N),c=n%N;
+  toggle(n);
+  if(r>0)toggle(n-N);if(r<N-1)toggle(n+N);
+  if(c>0)toggle(n-1);if(c<N-1)toggle(n+1);
+}
+function toggle(n){lit[n]=!lit[n]}
+/* ---------- 渲染 ---------- */
+function buildGrid(){
+  var g=$("grid");g.innerHTML="";lamp=[];
+  for(var i=0;i<N*N;i++){
+    var b=document.createElement("button");
+    b.className="lamp";
+    b.addEventListener("click",function(){
+      if(done)return;
+      var i=+this.dataset.i;
+      flipSim(i);moves++;paint();updStats();checkWin();
+    });
+    b.dataset.i=i;
+    g.appendChild(b);lamp.push(b);
+  }
+}
+function paint(){
+  for(var i=0;i<N*N;i++){
+    lamp[i].className="lamp"+(lit[i]?" on":"")+(flags[lv-1]?" star":"");
+  }
+}
+function updStats(){
+  $("stLv").textContent=lv;
+  $("stMoves").textContent=moves;
+  $("stRef").textContent=ref;
+  $("btnPrev").disabled=lv<=1;
+}
+function checkWin(){
+  var allOff=true;
+  for(var i=0;i<N*N;i++)if(lit[i]){allOff=false;break}
+  if(!allOff)return;
+  done=true;
+  if(moves<=ref)flags[lv-1]=true;
+  saveGame();paint();
+  $("ovTitle").textContent="第 "+lv+" 关 过关！";
+  $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+ref+
+    (moves<=ref?"<br>★ 最优解！":"<br>试试更少的步数拿 ★")+
+    (lv>50?"<br>无尽模式 · 随机阵型":"");
+  $("ovBtn").textContent="下一关";
+  $("overlay").classList.add("show");
+  say("漂亮！"+(moves<=ref?"最优过关":"用了 "+moves+" 步"));
+}
+function startLevel(){
+  generate();paint();updStats();
+  var endless=lv>50;
+  $("stLv").textContent=endless?lv+" · 无尽":lv;
+  say("第 "+lv+" 关 · 参考最优 "+ref+" 步");
+}
+/* ---------- 输入 ---------- */
+$("btnReset").addEventListener("click",startLevel);
+$("btnPrev").addEventListener("click",function(){
+  if(lv>1){lv--;saveGame();startLevel()}
+});
+$("ovBtn").addEventListener("click",function(){
+  $("overlay").classList.remove("show");
+  lv++;saveGame();startLevel();
+});
+buildGrid();startLevel();
+})();
+</script>
+</body>
+</html>

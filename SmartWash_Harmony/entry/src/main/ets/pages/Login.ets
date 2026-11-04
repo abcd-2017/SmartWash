@@ -9,6 +9,7 @@ import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
@@ -258,6 +259,7 @@ struct Login {
               .layoutWeight(1)
               .margin({ left: 12 })
               .key("loginPasswordInput")
+              .showPasswordIcon(false)
               .onChange((it: string) => this.password = it)
 
             // 密码可见性切换 — 图标化 + 48dp 热区（对齐 Android PasswordInput.kt:112-136）
@@ -354,7 +356,9 @@ struct Login {
             })
             .onClick(() => {
               this.navDebouncer.throttle(() => {
-                pathStack.replacePathByName(RouteNames.REGISTER, null)
+                // push 而非 replace：与注册页返回（pop）形成同一组滑动转场，
+                // 修复「注册跳转渐变、返回滑动」的不连贯（问题3）；节流防连点重复压栈
+                pathStack.pushPathByName(RouteNames.REGISTER, null)
               }, NAV_THROTTLE_MS)
             })
         }
@@ -365,7 +369,8 @@ struct Login {
       }
       .width("100%")
       .height("100%")
-      .padding({ left: 24, right: 24 })
+      // 沉浸式：背景渐变延伸到状态栏/底部导航条后方，内容按安全区避让（问题1）
+      .padding({ left: 24, right: 24, top: safeTopVp(), bottom: safeBottomVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,
         // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）

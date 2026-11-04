@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
@@ -257,6 +258,17 @@ fun RechargePage(
                                     value = customAmount,
                                     isSelected = isCustomAmountSelected,
                                     focusRequester = customInputFocusRequester,
+                                    // 选中态与真实焦点对齐（2026-11-04 缺陷：直接点输入框时键盘弹出但
+                                    // 高亮不动，视觉上「焦点没切过去」）。失焦且未输入内容才交还选中态，
+                                    // 已输入的自定义金额在点档位格时由 onClick 显式清选中
+                                    onFocusChange = { focused ->
+                                        if (focused) {
+                                            isCustomAmountSelected = true
+                                            amountError = null
+                                        } else if (customAmount.isEmpty()) {
+                                            isCustomAmountSelected = false
+                                        }
+                                    },
                                     onValueChange = { value ->
                                         if (value.isEmpty() || value.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
                                             customAmount = value
@@ -529,6 +541,7 @@ private fun CustomAmountInput(
     isSelected: Boolean,
     onValueChange: (String) -> Unit,
     focusRequester: FocusRequester? = null,
+    onFocusChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val bgColor = selectedColor(
@@ -551,6 +564,7 @@ private fun CustomAmountInput(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxSize()
+                .onFocusChanged { onFocusChange(it.isFocused) }
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
             placeholder = {
                 Text(

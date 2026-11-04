@@ -145,11 +145,12 @@ fun PaySuccessPage(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = AppDimens.pagePadding)
-                            .verticalScroll(rememberScrollState()),
+                            // scroll 在前、padding 在后：卡外阴影需要视口内的 24dp 容身空间
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = AppDimens.pagePadding),
                     ) {
                         // 庆祝卡（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
-                        // level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；上 40 / 下 44 内边距；
+                        // softCardShadow = CSS 0 2px 12px rgba(20,40,30,.05)；上 40 / 下 44 内边距；
                         // 成功圆 44 = primaryLight 容器 + 勾 28 = primary；结果大标题 28/700，绿字取
                         // primaryDark（浅 #1E8C5C / 深 #5BC894，画板实测）
                         Surface(
