@@ -15,6 +15,58 @@
 
 ## 修订记录
 
+- **2026-11-04（三批）规范对齐与工具沉淀**：
+  1. **布局对齐 §6**：snake（420px→480px、padding 16/12/28→16/8/30）、
+     minesweeper（460px→480px、padding 16/6/28→16/8/30）两款历史版本
+     遗留宽度/内边距统一到现行规范；375px 实开复验无溢出、深色正常。
+  2. **审计工具入库**：`audit-gates.mjs`（§2/§4/§5.1/§6 全条款机器审计，
+     严格模式核对 11 款新游戏、存量模式核对 17 款历史版本）与
+     `theme-gates.mjs`（三关脚本，此前仅存在于仓库外）沉淀进本目录，
+     PROGRESS 中引用的检查脚本现已可在库内直接运行。
+  3. **全库审计结果**：28/28 通过（严格 0 违规、存量 0 违规；历史遗留的
+     旧存档键/素材 token/早期触屏规则缺项按 §6「存档键不改」与 §3 例外
+     记为信息项，不视为违规）。
+
+- **2026-11-04（二批）新增五款（出生即主题化，游戏库 23 → 28 款）**：
+  sokoban（推箱子）/ connect-four（四子棋）/ solitaire（空当接龙）/
+  fruit-slice（切水果）/ air-hockey（空气曲棍球）。
+  补齐牌类（接龙）、棋类（四子棋）、切割与球台对战玩法；全部按 §6 清单接入，
+  存档键 `sw.<key>.v1`，触屏热区 ≥44px。
+
+  | 游戏 | 渲染 | 存档键 | 体积 | 三关 | 375px 实开 | 专项校验 |
+  |---|---|---|---|---|---|---|
+  | sokoban | canvas·rAF | `sw.sokoban.v1` | 15737B | ✅✅✅ | ✅ 过关→下一关→撤销全链路 | BFS 求解器 12/12 可解，难度曲线 1→6 推 |
+  | connect-four | canvas·rAF | `sw.connectfour.v1` | 17656B | ✅✅✅ | ✅ 落子+AI 应手+悬停预览 | AI 深度 4 alpha-beta 13 项断言（胜着/堵截/中列） |
+  | solitaire | DOM 纸牌 | `sw.solitaire.v1` | 20348B | ✅✅✅ | ✅ 翻牌/点选移动/双击进 foundation | 规则函数 6 组断言（叠放/空列/foundation） |
+  | fruit-slice | canvas·rAF | `sw.fruitslice.v1` | 18278B | ✅✅✅ | ✅ 挥刀切中得分 | 线段-圆相交判定断言；连击计分 |
+  | air-hockey | canvas·rAF | `sw.airhockey.v1` | 15817B | ✅✅✅ | ✅ 跟手+开球+AI 对战 | 法向弹性碰撞+球拍速度传递，AI 限速回防 |
+
+  Playwright 375px 全套（初开浅色 / 冒烟交互 / 深色推送 / 非法值拒绝 /
+  无横向溢出 / 无 `<h1>` / 零 JS 异常）：5/5 通过。
+  冒烟中修复 sokoban 两个真实缺陷：`save` 函数与状态变量同名导致过关时
+  抛错（改名 persist）、过关后 `lv` 未自增导致重复加载同一关。
+
+- **2026-11-04 新增六款（出生即主题化，游戏库 17 → 23 款）**：
+  tetris（俄罗斯方块）/ sudoku（数独）/ idiom（猜成语，**word 类别首款**）/
+  pacman（吃豆人）/ invaders（星空保卫战）/ lights-out（点灯谜阵）。
+  全部按 §6 清单接入：无 `<h1>`、桥唯一控制、token 上色、卡片式 `full` chrome、
+  存档键 `sw.<key>.v1`、触屏热区 ≥44px。
+
+  | 游戏 | 渲染 | 存档键 | 体积 | 三关 | 375px 实开 | 专项校验 |
+  |---|---|---|---|---|---|---|
+  | tetris | canvas·rAF | `sw.tetris.v1` | 16503B | ✅✅✅ | ✅ 深浅切换·落块/旋转/硬降可玩 | 按住连移 130ms；7-bag 随机 |
+  | sudoku | DOM 网格 | `sw.sudoku.v1` | 16519B | ✅✅✅ | ✅ 选格填数/笔记/冲突标红 | 生成器 24 局抽测：三档提示格全部命中（40/32/26）且唯一解 |
+  | idiom | DOM 键盘 | `sw.idiom.v1` | 18318B | ✅✅✅ | ✅ 点字组词/逐字反馈/键盘染色 | wordle 双计法用例校验（含「一心一意」重复字） |
+  | pacman | canvas·rAF | `sw.pacman.v1` | 21300B | ✅✅✅ | ✅ 滑动转向/幽灵 AI/能量豆反击 | 迷宫脚本校验：99 豆格全可达·零死胡同·镜像对称·G 区连通 |
+  | invaders | canvas·rAF | `sw.invaders.v1` | 18714B | ✅✅✅ | ✅ 按住拖动跟随/自动开火/掩体侵蚀 | 复刻 susam/invaders（MIT）思路 |
+  | lights-out | DOM 网格 | `sw.lightsout.v1` | 9191B | ✅✅✅ | ✅ 点灯翻转/★最优标记/关卡进度 | 生成器 200 局抽测：反向奇偶集校验全可解 |
+
+  Playwright 375px 全套（初开浅色 / 冒烟交互 / `__applySmartWashTheme` 推深 /
+  非法值拒绝 / 无横向溢出 / 无 `<h1>` / 零 JS 异常）：6/6 通过。
+  同批把存量 README 的 category 建议统一到端上白名单：beat-tap→arcade、
+  billiards→board、blackjack→board、falling-sand→other、moon-lander→arcade
+  （slingshot 版本库中已为 puzzle，仅复位工作区陈旧副本），上传填表不再回落「其他」。
+
 - **2026-11-02 四次修订（用户反馈「游戏与系统标题返回栏不协调」）**：
   1. **标题唯一来源 = App 原生页头**：17 个游戏**全部删除自绘 `<h1>`**（含孤立的 `h1{}` 规则），
      消除「原生页头 + 游戏大标题」两条标题栏叠加；游戏 `<header>` 只留记分块 / 状态行 / 玩法提示 / 操作按钮。

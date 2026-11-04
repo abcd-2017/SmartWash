@@ -47,9 +47,10 @@ export function workbenchTintFromKey(key: string | null | undefined): WorkbenchT
 
 /**
  * 后端 icon 白名单 key → sys.symbol 图标映射（规范 §4.1：功能图标保持系统符号库）。
- * 白名单：calendar/search/book/calculate/history/chat/link/default，未知 key 与 default
- * 同样兜底为「工具格」图标（对齐安卓 Icons.Default.Apps）。
- * 符号名已对照 SDK sysResource.js 核实存在（除 default 外均沿用既有工作台在用符号）。
+ * 白名单：calendar/search/book/calculate/history/chat/link/science/default，未知 key 与 default
+ * 同样兜底为「工具格」图标（对齐安卓 Icons.Default.Apps；安卓白名单见 WorkbenchTool.kt:42-54）。
+ * science 取 sys.symbol.science_technology（对齐安卓 Icons.Default.Science，解压实验舱卡片用；
+ * 符号名已对照 SDK sysResource.js 的 symbol 段核实存在）。
  */
 export function workbenchIconFromKey(key: string | null | undefined): Resource {
   const normalized = key !== undefined && key !== null ? key.toLowerCase() : ''
@@ -68,6 +69,8 @@ export function workbenchIconFromKey(key: string | null | undefined): Resource {
       return $r('sys.symbol.ellipsis_message')
     case 'link':
       return $r('sys.symbol.link')
+    case 'science':
+      return $r('sys.symbol.science_technology')
     default:
       return $r('sys.symbol.square_grid_2x2')
   }

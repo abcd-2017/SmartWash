@@ -4,6 +4,7 @@ import { UserInfo } from "../view/UserInfo"
 import { Workbench } from "../feature/workbench/Workbench"
 import { BottomNavItem } from "../view/BottomNavBar"
 import { DesignColor } from "../constant/DesignSystem"
+import { safeBottomVp } from "../utils/SafeArea"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 import { logger } from "../utils/Logger"
 import vibrator from '@ohos.vibrator'
@@ -28,6 +29,10 @@ struct Home {
   // 未登录放行（对齐安卓取舍）：消费点不做登录前置判断，需要登录的目标页由 401 统一兜底
   // （清 token → 清内存登录态 → replace 登录页）。
   @StorageLink('pendingDeepLinkUri') @Watch('onPendingDeepLinkChange') pendingDeepLinkUri: string = ''
+
+  // 首页可见性刷新信号（问题9）：从充值/订单详情等子页返回时 NavDestination.onShown 触发，
+  // 经 refreshTick 传给 IndexPage（V2 组件不能直接 @StorageLink 消费，由 V1 宿主桥接）
+  @State refreshTick: number = 0
 
   aboutToAppear(): void {
     this.consumePendingDeepLink()
@@ -72,7 +77,8 @@ struct Home {
         TabContent() {
           Column() {
             IndexPage({
-              isActive: this.currentIndex === 0
+              isActive: this.currentIndex === 0,
+              refreshTick: this.refreshTick
             })
           }.height("100%")
           .width("100%")
@@ -113,8 +119,18 @@ struct Home {
       .backgroundColor(DesignColor.BACKGROUND)
       .barBackgroundColor(DesignColor.SURFACE)
       .divider({ strokeWidth: 0.5, color: DesignColor.OUTLINE })
+      .layoutWeight(1)
     }
+    .width("100%")
+    .height("100%")
+    // 沉浸式：底部手势条区域由底栏同色背景延伸填充，tab 内容与底栏仍在安全区内（问题5）
+    .padding({ bottom: safeBottomVp() })
+    .backgroundColor(DesignColor.SURFACE)
     .hideTitleBar(true)
+    // 从子页（充值/订单详情/优惠券等）返回时刷新首页账户卡余额与订单（问题9）
+    .onShown(() => {
+      this.refreshTick++
+    })
     // 非首页 tab 系统返回先回首页 tab（对齐安卓 BackHandler），首页则交还系统退出
     .onBackPressed(() => {
       if (this.currentIndex !== 0) {

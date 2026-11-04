@@ -17,18 +17,23 @@
 
 import { webview } from '@kit.ArkWeb'
 import { common, Want } from '@kit.AbilityKit'
+import { window } from '@kit.ArkUI'
 import { RouteNames } from '../constant/RouteNames'
 import { DesignColor, DesignFontSize } from '../constant/DesignSystem'
 import { AppButton, AppButtonVariant, EmptyState, PageHeader } from '../view/common/AppComponents'
 import { getObjectParam, pathStack } from '../utils/PathStackUtil'
 import { logger } from '../utils/Logger'
+import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
+import BuildProfile from 'entry/BuildProfile'
 
-/** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title 两个 query 参数） */
+/** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title/chrome 三个 query 参数） */
 export class WebPageParam {
   /** 网页地址（调用方保证 http/https，WebPage 内仍做白名单校验兜底） */
   url: string = ''
   /** 页面标题，空串 = 兜底「详情页」 */
   title: string = ''
+  /** chrome 初值（对齐安卓 URL 参数 chrome：full/immersive/none，避免先闪一帧原生栏再隐藏） */
+  chrome: string = 'full'
 }
 
 // 标题兜底文案（对齐安卓 webview_default_title「详情页」）
@@ -41,6 +46,115 @@ const WEB_ERROR_URL_UNSUPPORTED: string = '仅支持打开网页链接'
 const WEB_ERROR_LOAD: string = '页面加载失败，请检查网络后重试'
 // 加载失败重试按钮文案（对齐安卓 webview_action_retry）
 const WEB_ACTION_RETRY: string = '重试'
+
+// ========== 游戏 H5 桥（对齐安卓 GameThemeBridge + GameChrome，问题16） ==========
+
+// chrome 合法取值（对齐安卓 GameChrome：full=标题栏+状态栏 / immersive=保标题栏隐状态栏 / none=全隐）
+const CHROME_FULL: string = 'full'
+const CHROME_IMMERSIVE: string = 'immersive'
+const CHROME_NONE: string = 'none'
+const CHROME_MODES: Array<string> = [CHROME_FULL, CHROME_IMMERSIVE, CHROME_NONE]
+
+// JS 桥注入对象名（H5 侧 window.SmartWashGameBridge，协议与安卓一致）
+const GAME_BRIDGE_NAME: string = 'SmartWashGameBridge'
+// 主题推送脚本（H5 未定义钩子时为空操作；App 固定亮色 → 恒推 light）
+const GAME_THEME_PUSH_SCRIPT: string = "window.__applySmartWashTheme&&__applySmartWashTheme('light')"
+
+/** chrome 归一化：非法/空值回落 full（fail-safe，对齐安卓 GameChrome.normalize） */
+function normalizeChrome(mode: string): string {
+  for (const candidate of CHROME_MODES) {
+    if (candidate === mode) {
+      return mode
+    }
+  }
+  return CHROME_FULL
+}
+
+/**
+ * 从 URL 提取 host（归一化：小写、去尾部 FQDN 点）。
+ * 仅 http/https 放行；解析失败返回 null（fail-closed，对齐安卓 GameThemeBridgePolicy.hostOf）。
+ */
+function hostOf(url: string): string | null {
+  if (url === null || url === undefined || url.length === 0) {
+    return null
+  }
+  const schemeEnd = url.indexOf('://')
+  if (schemeEnd <= 0) {
+    return null
+  }
+  const scheme = url.substring(0, schemeEnd).toLowerCase()
+  if (scheme !== 'http' && scheme !== 'https') {
+    return null
+  }
+  const rest = url.substring(schemeEnd + 3)
+  let host = ''
+  for (let i = 0; i < rest.length; i++) {
+    const ch = rest.charAt(i)
+    if (ch === '/' || ch === ':' || ch === '?' || ch === '#') {
+      break
+    }
+    host += ch
+  }
+  const lower = host.toLowerCase()
+  const trimmed = lower.charAt(lower.length - 1) === '.' ? lower.substring(0, lower.length - 1) : lower
+  return trimmed.length > 0 ? trimmed : null
+}
+
+/** 桥白名单 host 集（服务端同源判定；对齐安卓 whitelistHostsOf(BASE_URL, minio)，本端仅 BASE_URL） */
+function bridgeWhitelist(): Set<string> {
+  const hosts: Set<string> = new Set()
+  const base = hostOf(BuildProfile.BASE_URL)
+  if (base !== null) {
+    hosts.add(base)
+  }
+  return hosts
+}
+
+/**
+ * 游戏 H5 主题/chrome 桥（注册名固定 SmartWashGameBridge，协议对齐安卓）：
+ * - getTheme()：白名单内返回 'light'（App 固定亮色，语义对齐安卓 resolveBridgeThemeMode）；
+ *   白名单外返回空串（H5 端空串走 matchMedia 跟随系统，不报错）；
+ * - setChrome(mode)：白名单内切换原生顶部 chrome（标题栏显隐 + 状态栏显隐），
+ *   白名单外静默忽略——通用容器不得让第三方 H5 改掉 App 的标题栏。
+ */
+class SmartWashGameBridge {
+  /** 当前页 host 快照（onPageBegin 先于页面任何 JS 执行时刷新，覆盖首帧与站内跳转） */
+  private currentPageHost: string | null = null
+  private whitelist: Set<string>
+  private onChromeChange: (mode: string) => void
+
+  constructor(whitelist: Set<string>, onChromeChange: (mode: string) => void) {
+    this.whitelist = whitelist
+    this.onChromeChange = onChromeChange
+  }
+
+  /** onPageBegin 刷新 host 快照（供桥调用时的来源判定） */
+  refreshHost(url: string): void {
+    this.currentPageHost = hostOf(url)
+  }
+
+  private isAllowedHost(): boolean {
+    const host = this.currentPageHost
+    if (host === null || this.whitelist.size === 0) {
+      return false
+    }
+    return this.whitelist.has(host)
+  }
+
+  getTheme(): string {
+    if (!this.isAllowedHost()) {
+      return ''
+    }
+    return 'light'
+  }
+
+  setChrome(mode: string): void {
+    if (!this.isAllowedHost()) {
+      return
+    }
+    this.onChromeChange(normalizeChrome(mode))
+  }
+}
 
 @Builder
 export function WebPageBuilder() {
@@ -57,7 +171,13 @@ struct WebPage {
   @State loadError: boolean = false
   // 网页历史回退可用性（onPageEnd 后刷新，返回键语义跟随用户浏览预期）
   @State canGoBack: boolean = false
+  // chrome 模式（游戏 H5 经桥/路由参数控制，对齐安卓 chromeMode）：控制标题栏显隐与状态栏显隐
+  @State chromeMode: string = CHROME_FULL
   private controller: webview.WebviewController = new webview.WebviewController()
+  // 游戏桥：白名单 host 内才生效（构造即绑定 chrome 回调）
+  private gameBridge: SmartWashGameBridge = new SmartWashGameBridge(bridgeWhitelist(), (mode: string) => {
+    this.applyChrome(mode)
+  })
 
   aboutToAppear(): void {
     // 安全取参（评审 #31 约定）：参数缺失/非法时不崩溃，保持错误态
@@ -65,10 +185,38 @@ struct WebPage {
     if (param !== null) {
       this.url = param.url
       this.title = param.title.length > 0 ? param.title : WEB_DEFAULT_TITLE
-      // 挂载留痕（debug；url 不落日志，深链/运营链接 query 不可控）
+      // chrome 初值经路由参数（避免先闪一帧原生标题栏再隐藏，对齐安卓）
+      this.chromeMode = normalizeChrome(param.chrome)
+    }
+  }
+
+  aboutToDisappear(): void {
+    // 离页复原 chrome（对齐安卓 DisposableEffect onDispose → apply(FULL)）
+    this.applyChrome(CHROME_FULL)
+  }
+
+  /** 是否显示原生标题返回栏（对齐安卓 GameChrome.shouldShowHeader） */
+  private shouldShowHeader(): boolean {
+    return this.chromeMode !== CHROME_NONE
+  }
+
+  /**
+   * 应用 chrome 到窗口（对齐安卓 GameChrome.apply）：
+   * full → 显示状态栏；immersive/none → 隐藏状态栏（H5 多得一行可视高度）。
+   * 系统栏 API 失败静默（部分设备/窗口态不支持），标题栏显隐不受影响。
+   */
+  private applyChrome(mode: string): void {
+    this.chromeMode = mode
+    try {
+      window.getLastWindow(getContext(this)).then((win: window.Window) => {
+        win.setSpecificSystemBarEnabled('status', mode === CHROME_FULL).catch(() => {
+          // 状态栏控制失败静默：标题栏显隐是主要诉求
+        })
+      }).catch(() => {
+      })
+    } catch (err) {
+      // 无窗口上下文时静默（理论不可达：页面已挂载）
       logger.debug('webPage', `WebView 页挂载，标题=${this.title}`)
-    } else {
-      // 降级留痕：参数缺失进「仅支持打开网页链接」错误态
       logger.warn('webPage', '路由参数缺失或非法，展示仅支持网页链接错误态')
     }
   }
@@ -100,7 +248,10 @@ struct WebPage {
         uri: url,
         entities: ['entity.system.browsable']
       }
-      context.startAbility(want)
+      // startAbility 返回 Promise：异步 reject（无应用可处理）try/catch 抓不到，必须 .catch 兜底
+      context.startAbility(want).catch(() => {
+        // 无系统应用可处理该 scheme：静默返回
+      })
     } catch (err) {
       // 无系统应用可处理该 scheme：静默返回（对齐安卓 runCatching 静默，仅补 debug 留痕）
       logger.debug('webPage', '系统无应用可处理外部 scheme，静默忽略')
@@ -141,14 +292,17 @@ struct WebPage {
   build() {
     NavDestination() {
       Column() {
-        PageHeader({
-          title: this.title,
-          backClick: () => {
-            if (!this.handleBack()) {
-              pathStack.pop()
+        // chrome=none 时整条标题返回栏收起（游戏自绘 chrome）；full/immersive 保留返回入口
+        if (this.shouldShowHeader()) {
+          PageHeader({
+            title: this.title,
+            backClick: () => {
+              if (!this.handleBack()) {
+                pathStack.pop()
+              }
             }
-          }
-        })
+          })
+        }
 
         if (this.isHttpUrl()) {
           // Web 容器 + 细进度条 + 加载失败错误态叠加
@@ -156,6 +310,14 @@ struct WebPage {
             Web({ src: this.url, controller: this.controller })
               .javaScriptAccess(true)
               .domStorageAccess(true)
+              // 游戏 H5 桥（问题16）：window.SmartWashGameBridge.getTheme()/setChrome(mode)，
+              // 仅白名单 host（BASE_URL 同源）生效，协议对齐安卓
+              .javaScriptProxy({
+                object: this.gameBridge,
+                name: GAME_BRIDGE_NAME,
+                methodList: ['getTheme', 'setChrome'],
+                controller: this.controller
+              })
               // 外部 scheme 拦截（对齐安卓 shouldOverrideUrlLoading）：http(s) 留应用内，其余交系统
               .onLoadIntercept((event: OnLoadInterceptEvent) => {
                 const requestUrl: string = event.data.getRequestUrl()
@@ -165,10 +327,12 @@ struct WebPage {
                 this.openExternal(requestUrl)
                 return true
               })
-              .onPageBegin(() => {
-                // 新一轮导航开始时复位错误态与进度
+              .onPageBegin((event: OnPageBeginEvent) => {
+                // 新一轮导航开始时复位错误态与进度，并刷新桥的 host 快照
+                //（onPageBegin 先于页面任何 JS 执行，覆盖首帧与站内跳转，对齐安卓 onPageStarted）
                 this.loadError = false
                 this.progress = 0
+                this.gameBridge.refreshHost(event.url)
               })
               .onPageEnd(() => {
                 try {
@@ -177,6 +341,13 @@ struct WebPage {
                   // controller 异常时按不可回退处理，返回键语义降级为直接出栈
                   logger.debug('webPage', '查询网页回退状态失败，按不可回退处理')
                   this.canGoBack = false
+                }
+                // 主题主动推送（双保险之一，对齐安卓 onPageFinished pushGameTheme；白名单校验在脚本消费侧）
+                try {
+                  this.controller.runJavaScript(GAME_THEME_PUSH_SCRIPT).catch(() => {
+                  })
+                } catch (err) {
+                  // controller 未附加（快速返回）时静默
                 }
               })
               .onProgressChange((event: OnProgressChangeEvent) => {
@@ -247,6 +418,11 @@ struct WebPage {
       }
       .width('100%')
       .height('100%')
+      // 沉浸式：标题栏/底部手势条避让（背景延伸；chrome=none 时 H5 全屏自绘，不避让）
+      .padding({
+        top: this.shouldShowHeader() ? safeTopVp() : 0,
+        bottom: this.shouldShowHeader() ? safeBottomVp() : 0
+      })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

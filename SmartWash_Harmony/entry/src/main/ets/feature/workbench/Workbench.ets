@@ -20,6 +20,7 @@ import { showToastSafety } from "../../utils/ToastUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
 import { logger } from "../../utils/Logger"
 import { BusinessError } from "@kit.BasicServicesKit"
+import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
 import {
   WorkbenchText,
@@ -550,6 +551,8 @@ export struct Workbench {
           })
       }
       .width('100%')
+      // 沉浸式：内容避让状态栏，底部手势条留白（背景延伸）
+      .padding({ top: safeTopVp(), bottom: safeBottomVp() })
     }
     .scrollBar(BarState.Off)
     .width('100%')

@@ -209,6 +209,13 @@
       "buildFunction": "GameCenterBuilder",
       "data": {
       }
+    },
+    {
+      "name": "ComingSoon",
+      "pageSourceFile": "src/main/ets/pages/ComingSoon.ets",
+      "buildFunction": "ComingSoonBuilder",
+      "data": {
+      }
     }
   ]
 }

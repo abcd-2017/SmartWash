@@ -6,6 +6,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
 import { getAppVersionName } from "../utils/AppInfoUtil"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
 import vibrator from "@ohos.vibrator"
 
@@ -248,11 +249,17 @@ struct Setting {
         }
         .layoutWeight(1)
         .scrollBar(BarState.Off)
+        // 内容不足一屏顶对齐 + 底部安全区避让（沉浸式）
+        .align(Alignment.Top)
+        .padding({ bottom: safeBottomVp() })
       }
       .width("100%")
       .height("100%")
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
+    // 补齐：隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（问题6）
+    .hideTitleBar(true)
     .onShown(() => {
       // 从权限页 / 系统设置返回后重查授权态（对齐安卓 ON_RESUME）
       this.refreshNotification()

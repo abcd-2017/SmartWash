@@ -8,6 +8,7 @@ import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
 // 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
@@ -377,6 +378,7 @@ struct Register {
                 .layoutWeight(1)
                 .margin({ left: 12 })
                 .key("registerPasswordInput")
+                .showPasswordIcon(false)
                 .onChange((it: string) => this.password = it)
 
               // 密码可见性切换 — 图标化 + 48dp 热区（对齐 Android PasswordInput.kt:112-136）
@@ -475,7 +477,8 @@ struct Register {
         .width("100%")
         .height("100%")
         .alignItems(HorizontalAlign.Center)
-        .padding({ left: 24, right: 24 })
+        // 沉浸式：内容按状态栏/底部导航条避让，背景渐变由 Stack 底层全屏承载（问题1）
+        .padding({ left: 24, right: 24, top: safeTopVp(), bottom: safeBottomVp() })
       }
       .width("100%")
       .height("100%")

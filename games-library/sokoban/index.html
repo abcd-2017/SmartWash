@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>推箱子</title>
+<style>
+  /*token:GAME-THEME.md §2 + §3 素材 token（箱子/目标为玩法素材色）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-success:#2D9B6A;--g-warning:#D98A26;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-bp1:#F2B843;--g-bshade:rgba(20,40,30,.10);color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-success:#4ADE6E;--g-warning:#E2A44E;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-bp1:#F5C45E;--g-bshade:rgba(0,0,0,.4);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-surface2); color: var(--g-text);
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn[disabled] { opacity: .45; }
+  .dpad { display: flex; gap: 8px; }
+  .ctl {
+    flex: 1; min-height: 48px; border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 18px; font-weight: 600; cursor: pointer;
+  }
+  .ctl:active { opacity: .75; }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 340px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; }
+  .lvgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .lvbtn {
+    min-height: 48px; border: 0; border-radius: 12px;
+    background: var(--g-surface2); color: var(--g-text);
+    font: inherit; font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  .lvbtn[disabled] { opacity: .35; }
+  .lvbtn.done { background: var(--g-primary-soft); color: var(--g-on-soft); }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">把箱子推到光圈上 · 一次只能推一个</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1 / 12</span></div>
+    <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
+    <div class="stat"><span class="label">推动</span><span class="val" id="stPush">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" aria-label="推箱子棋盘"></canvas></div>
+  <p class="msg" id="msg">滑动或按方向键移动，箱子只能推不能拉</p>
+  <div class="tools">
+    <button class="btn" id="btnUndo">撤销</button>
+    <button class="btn" id="btnReset">重开</button>
+    <button class="btn" id="btnLv">选关</button>
+  </div>
+  <div class="dpad">
+    <button class="ctl" id="cUp">↑</button>
+    <button class="ctl" id="cLeft">←</button>
+    <button class="ctl" id="cDown">↓</button>
+    <button class="ctl" id="cRight">→</button>
+  </div>
+  <p class="foot">滑屏单步移动 · 支持撤销 · 12 关递进 · 进度本地保存</p>
+</div>
+<div class="overlay" id="overlay">
+  <div class="panel">
+    <h2 id="ovTitle">过关！</h2>
+    <p class="desc" id="ovDesc"></p>
+    <div class="lvgrid" id="lvgrid" hidden></div>
+    <button class="btn" id="ovBtn">下一关</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 调色板：UI 走 token，箱子/目标为玩法素材 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    success:v("--g-success"),warning:v("--g-warning"),box:v("--g-bp1"),shade:v("--g-bshade")};
+}
+window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 自动重绘
+/* ---------- 关卡（#墙 .目标 $箱 @人 *箱在目标 +人在目标） ---------- */
+var LEVELS=[
+["######","#    #","# @$.#","#    #","######"],
+["######","#    #","# @$ #","#  . #","######"],
+["########","#      #","# .$ $.#","#  @   #","########"],
+["########","#  .   #","# #$#  #","# @ $. #","#  #   #","########"],
+["########","#  #   #","# @$ . #","#  $ . #","#  #   #","########"],
+["######","#.   #","#@$  #","#  $.#","######"],
+["########","#      #","#  $   #","# @$.  #","#  .   #","########"],
+["########","# .   #","# $  $ #","#  @   #","#    . #","########"],
+["########","#  .   #","# #$ # #","# @ $  #","#  .   #","#      #","########"],
+["#######","#  .  #","# #$# #","# @ $ #","#  .  #","#######"],
+["#######","#  .  #","# $#$ #","#  @  #","#  .  #","#######"],
+["########","#  . . #","# $$$  #","#  @   #","#  .   #","########"]
+];
+/* ---------- 存档 ---------- */
+var KEY="sw.sokoban.v1";
+function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{lv:Math.min(LEVELS.length-1,Math.max(0,parseInt(s.lv,10)||0))}}catch(e){return{lv:0}}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var save=loadSave();
+/* ---------- 状态 ---------- */
+var lv=save.lv,walls={},targets={},boxes={},px=0,py=0,rows=0,cols=0;
+var moves=0,pushes=0,history=[],done=false;
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+var L={cell:0,ox:0,oy:0,W:0,H:0};
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+function key(x,y){return x+","+y}
+function isFloor(x,y){return !walls[key(x,y)]}
+function boxAt(x,y){return boxes[key(x,y)]}
+/* ---------- 解析 ---------- */
+function loadLevel(n){
+  var rows0=LEVELS[n],w=0;
+  walls={};targets={};boxes={};
+  for(var y=0;y<rows0.length;y++){
+    w=Math.max(w,rows0[y].length);
+    for(var x=0;x<rows0[y].length;x++){
+      var c=rows0[y].charAt(x);
+      if(c==="#")walls[key(x,y)]=1;
+      else{
+        if(c==="."||c==="*"||c==="+")targets[key(x,y)]=1;
+        if(c==="$"||c==="*")boxes[key(x,y)]=1;
+        if(c==="@"||c==="+"){px=x;py=y}
+      }
+    }
+  }
+  cols=w;rows=rows0.length;
+  moves=0;pushes=0;history=[];done=false;
+  updStats();
+  say("第 "+(lv+1)+" 关 · 把箱子推到光圈上");
+}
+function updStats(){
+  $("stLv").textContent=(lv+1)+" / "+LEVELS.length;
+  $("stMoves").textContent=moves;
+  $("stPush").textContent=pushes;
+  $("btnUndo").disabled=!history.length;
+}
+/* ---------- 移动 ---------- */
+function tryMove(dx,dy){
+  if(done)return;
+  var nx=px+dx,ny=py+dy;
+  if(!isFloor(nx,ny))return;
+  var b=boxAt(nx,ny);
+  if(b){
+    var bx=nx+dx,by=ny+dy;
+    if(!isFloor(bx,by)||boxAt(bx,by))return;
+    history.push({p:[px,py],b:b,mv:1});
+    delete boxes[key(nx,ny)];boxes[key(bx,by)]=1;
+    px=nx;py=ny;pushes++;
+  }else{
+    history.push({p:[px,py],b:null,mv:0});
+    px=nx;py=ny;
+  }
+  moves++;
+  updStats();
+  checkWin();
+}
+function undo(){
+  if(!history.length||done)return;
+  var h=history.pop();
+  if(h.b){var cur=key(px,py);delete boxes[cur];boxes[key(h.b[0],h.b[1])]=1}
+  px=h.p[0];py=h.p[1];
+  if(h.mv)pushes--;
+  moves--;
+  updStats();
+  say("撤销一步");
+}
+function checkWin(){
+  for(var k in targets)if(!boxes[k]){return}
+  done=true;
+  if(lv<LEVELS.length-1){
+    save.lv=Math.max(save.lv,lv+1);persist();
+    $("ovTitle").textContent="过关！";
+    $("ovDesc").innerHTML="用步 "+moves+" · 推动 "+pushes+"<br>已解锁第 "+(lv+2)+" 关";
+    $("ovBtn").textContent="下一关";
+  }else{
+    $("ovTitle").textContent="全部通关！";
+    $("ovDesc").innerHTML="12 关全部完成<br>总用步 "+moves+" · 推动 "+pushes;
+    $("ovBtn").textContent="回到第 1 关";
+  }
+  $("overlay").classList.add("show");
+}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  L.cell=Math.floor((w-4)/cols);
+  L.W=L.cell*cols;L.H=L.cell*rows;
+  cv.style.height=L.H+"px";
+  cv.width=Math.round(L.W*dpr);cv.height=Math.round(L.H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function rr(x,y,w2,h2,r){
+  r=Math.min(r,w2/2,h2/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w2,y,x+w2,y+h2,r);ctx.arcTo(x+w2,y+h2,x,y+h2,r);
+  ctx.arcTo(x,y+h2,x,y,r);ctx.arcTo(x,y,x+w2,y,r);ctx.closePath();
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,L.W,L.H);
+  for(var y=0;y<rows;y++)for(var x=0;x<cols;x++){
+    var k=key(x,y),px0=x*L.cell,py0=y*L.cell;
+    if(walls[k]){
+      rr(px0+1,py0+1,L.cell-2,L.cell-2,5);
+      ctx.fillStyle=PAL.surface2;ctx.fill();
+      ctx.fillStyle=PAL.shade;ctx.fillRect(px0+3,py0+L.cell-4,L.cell-6,2);
+    }else{
+      rr(px0+1,py0+1,L.cell-2,L.cell-2,5);
+      ctx.fillStyle=PAL.surface;ctx.fill();
+      if(targets[k]){
+        ctx.strokeStyle=PAL.warning;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(px0+L.cell/2,py0+L.cell/2,L.cell*0.26,0,7);ctx.stroke();
+        ctx.fillStyle=PAL.warning;
+        ctx.beginPath();ctx.arc(px0+L.cell/2,py0+L.cell/2,L.cell*0.08,0,7);ctx.fill();
+      }
+    }
+    if(boxes[k]){
+      var on=targets[k];
+      rr(px0+3,py0+3,L.cell-6,L.cell-6,7);
+      ctx.fillStyle=on?PAL.success:PAL.box;ctx.fill();
+      ctx.strokeStyle=PAL.shade;ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(px0+3,py0+3);ctx.lineTo(px0+L.cell-3,py0+L.cell-3);
+      ctx.moveTo(px0+L.cell-3,py0+3);ctx.lineTo(px0+3,py0+L.cell-3);
+      ctx.stroke();
+    }
+  }
+  //小人
+  var cx=px*L.cell+L.cell/2,cy=py*L.cell+L.cell/2,r=L.cell*0.36;
+  ctx.fillStyle=PAL.primary;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
+  ctx.fillStyle="#FFFFFF";
+  ctx.beginPath();ctx.arc(cx-r*0.35,cy-r*0.2,r*0.13,0,7);ctx.arc(cx+r*0.35,cy-r*0.2,r*0.13,0,7);ctx.fill();
+  ctx.fillStyle=PAL.text;
+  ctx.beginPath();ctx.arc(cx-r*0.35,cy-r*0.2,r*0.06,0,7);ctx.arc(cx+r*0.35,cy-r*0.2,r*0.06,0,7);ctx.fill();
+}
+/* ---------- 主循环 ---------- */
+function loop(){draw();requestAnimationFrame(loop)}
+/* ---------- 输入 ---------- */
+var swipe=null;
+cv.addEventListener("pointerdown",function(e){
+  swipe={x:e.clientX,y:e.clientY};
+  try{cv.setPointerCapture(e.pointerId)}catch(err){}
+  e.preventDefault();
+});
+cv.addEventListener("pointerup",function(e){
+  if(!swipe)return;
+  var dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;
+  swipe=null;
+  if(Math.abs(dx)<14&&Math.abs(dy)<14)return;
+  if(Math.abs(dx)>Math.abs(dy))tryMove(dx>0?1:-1,0);else tryMove(0,dy>0?1:-1);
+});
+cv.addEventListener("pointercancel",function(){swipe=null});
+function bindHold(id,fn,repeat){
+  var el=$(id),iv=null;
+  el.addEventListener("pointerdown",function(e){
+    try{el.setPointerCapture(e.pointerId)}catch(err){}
+    e.preventDefault();fn();
+    if(repeat)iv=setInterval(fn,150);
+  });
+  function stop(){if(iv){clearInterval(iv);iv=null}}
+  el.addEventListener("pointerup",stop);
+  el.addEventListener("pointercancel",stop);
+}
+bindHold("cUp",function(){tryMove(0,-1)},true);
+bindHold("cDown",function(){tryMove(0,1)},true);
+bindHold("cLeft",function(){tryMove(-1,0)},true);
+bindHold("cRight",function(){tryMove(1,0)},true);
+window.addEventListener("keydown",function(e){
+  var k=e.key;
+  if(k==="ArrowUp"||k==="w"){tryMove(0,-1);e.preventDefault()}
+  else if(k==="ArrowDown"||k==="s"){tryMove(0,1);e.preventDefault()}
+  else if(k==="ArrowLeft"||k==="a"){tryMove(-1,0);e.preventDefault()}
+  else if(k==="ArrowRight"||k==="d"){tryMove(1,0);e.preventDefault()}
+  else if(k==="z"||k==="Z"){undo()}
+});
+$("btnUndo").addEventListener("click",undo);
+$("btnReset").addEventListener("click",function(){loadLevel(lv);say("本关已重置")});
+$("btnLv").addEventListener("click",function(){
+  if(done)return;
+  var g=$("lvgrid");g.hidden=false;
+  g.innerHTML="";
+  for(var i=0;i<LEVELS.length;i++){
+    var b=document.createElement("button");
+    b.className="lvbtn"+(i<save.lv?" done":"");
+    b.textContent=i+1;
+    b.disabled=i>save.lv;
+    b.addEventListener("click",function(){
+      lv=+this.textContent-1;save.lv=Math.max(save.lv,lv);persist();
+      loadLevel(lv);hideOverlay();say("第 "+(lv+1)+" 关");
+    });
+    g.appendChild(b);
+  }
+  $("ovTitle").textContent="选择关卡";
+  $("ovDesc").textContent="已通关的关卡会标绿";
+  $("ovBtn").textContent="取消";
+  $("overlay").classList.add("show");
+});
+$("ovBtn").addEventListener("click",function(){
+  hideOverlay();
+  if(done){
+    if(lv>=LEVELS.length-1){lv=0;save.lv=0;persist();loadLevel(0)}
+    else{lv++;loadLevel(lv)}
+  }
+});
+function hideOverlay(){$("overlay").classList.remove("show")}
+window.addEventListener("resize",resize);
+palLoad();loadLevel(lv);resize();loop();
+})();
+</script>
+</body>
+</html>

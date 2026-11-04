@@ -8,6 +8,7 @@ import { logger } from "../utils/Logger"
 import { AppButton, CircleIconBox, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 @Builder
 export function PaymentSuccessBuilder() {
@@ -45,18 +46,24 @@ struct PaymentSuccess {
     }
     this.isLoading = true
     this.loadFailed = false
-    let res = await getOrderInfo(this.orderId)
-    if (res.code === HttpStatusCode.Ok) {
-      this.orderInfo = res.data
-      // 结果确认 debug 即可：支付成功动作已在支付页跳转处留 info，本页不重复
-      logger.debug('paymentSuccess', `订单信息加载成功 orderId=${this.orderId}`)
-    } else {
-      logger.warn('paymentSuccess', `订单信息加载失败 orderId=${this.orderId} ` +
-        `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "订单信息加载失败")
+    try {
+      let res = await getOrderInfo(this.orderId)
+      if (res.code === HttpStatusCode.Ok) {
+        this.orderInfo = res.data
+        logger.debug('paymentSuccess', `订单信息加载成功 orderId=${this.orderId}`)
+      } else {
+        logger.warn('paymentSuccess', `订单信息加载失败 orderId=${this.orderId} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
+        showToastSafety(res.message, "订单信息加载失败")
+        this.loadFailed = true
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
+      showToastSafety("网络异常，请稍后重试")
+    } finally {
+      this.isLoading = false
     }
-    this.isLoading = false
   }
 
   /** 对勾入场动画（首帧后再触发，保证初始 0.6/0 先上屏，过渡才可见） */
@@ -141,11 +148,18 @@ struct PaymentSuccess {
     .alignItems(VerticalAlign.Center)
   }
 
+  /** 空值兜底展示（问题8）：null/undefined/空串 → 「—」 */
+  private displayValue(value: string | null | undefined): string {
+    return value !== null && value !== undefined && value.length > 0 ? value : "—"
+  }
+
   build() {
     NavDestination() {
       Stack() {
-        Column() {
-          this.PageHeader()
+        // 修复（问题10）：原 Column 固定 100% 高，矮屏内容溢出且无法滚动；改 Scroll 承载
+        Scroll() {
+          Column() {
+            this.PageHeader()
 
           // 庆祝卡（recap §4-V1/V2/V3）：CircleIconBox 44 primaryLight + 勾 24 primary；
           // 标题 headlineLarge 28/700 primaryDark；内边距上 40 / 下 44
@@ -196,9 +210,10 @@ struct PaymentSuccess {
             .margin({ top: DesignDimens.SECTION_SPACING, bottom: 12 })
 
           Column({ space: DesignDimens.SPACE_MD }) {
-            this.InfoLine("订单编号", `${this.orderInfo?.orderNo ?? ""}`)
+            // 订单号缺失兜底「—」（同支付页问题8口径）
+            this.InfoLine("订单编号", this.displayValue(this.orderInfo?.orderNo))
             this.InfoLine("支付金额", `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
-            this.InfoLine("下单时间", `${this.orderInfo?.createdAt ?? ""}`)
+            this.InfoLine("下单时间", this.displayValue(this.orderInfo?.createdAt))
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
@@ -274,8 +289,6 @@ struct PaymentSuccess {
           })
           .alignItems(VerticalAlign.Top)
 
-          Blank()
-
           // 底部操作区（recap §4-F2：主按钮 + 48dp 热区「返回首页」文字链）
           Column() {
             AppButton({
@@ -305,12 +318,19 @@ struct PaymentSuccess {
               })
           }
           .width("100%")
-          .padding({ top: DesignDimens.SPACE_MD })
+          .padding({ top: DesignDimens.SPACE_MD, bottom: safeBottomVp() })
+          .alignItems(HorizontalAlign.Center)
         }
         .width("100%")
-        .height("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 沉浸式：内容避让状态栏 + 底部安全区（背景延伸）
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
         .alignItems(HorizontalAlign.Start)
+      }
+      .width("100%")
+      .height("100%")
+      .align(Alignment.Top)
+      .scrollBar(BarState.Off)
+      .backgroundColor(DesignColor.BACKGROUND)
 
         // 加载态
         if (this.isLoading) {
