@@ -262,6 +262,10 @@ fun LoginPage(
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
                     if (it.length <= 16) password = it
+                    // 对齐手机号框的实时清除机制：输入补足有效长度（6–16 位，超长已在组件内
+                    // 截断）即重新校验、立即清除行内错误，不再残留至下次点登录；
+                    // 不足 6 位不新增报错（避免输入中就报错，错误仍由点击登录时检测）
+                    isPasswordError = if (it.length >= 6) false else isPasswordError
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
