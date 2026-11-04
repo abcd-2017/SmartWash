@@ -76,16 +76,27 @@ export struct Workbench {
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
     logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
-    // 键盘避让（问题13）：全局是 RESIZE，会把底部 tab 顶出屏幕；工作台只有顶部搜索框，
-    // 不需要避让，改 NONE 让键盘覆盖内容、底栏保持原位
-    try {
-      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
-    } catch (err) {
-      logger.warn('workbench', '设置键盘避让模式失败')
-    }
+    // 键盘避让（问题13）：全局是 RESIZE，会把整窗压到键盘上沿、底部 tab 被裁出窗口；
+    // 工作台只有顶部搜索框，不需要避让，改 NONE 让键盘覆盖内容、底栏保持原位
+    this.applyKeyboardAvoidNone()
     this.loadEntries()
     // 最近使用/公告关闭记录异步回读（对齐安卓 init 回读 DataStore）
     this.loadLocalState()
+  }
+
+  /**
+   * 键盘避让 NONE 落位（问题13）：窗口默认 RESIZE（EntryAbility 统一设置）。
+   * 2026-11-05 实测：仅挂载期设置一次，模拟器聚焦搜索框时窗口仍被压缩（dump 断言
+   * root 底沿 = 键盘顶沿 1850）；在搜索框聚焦事件里键盘弹出前重设一次才稳定生效。
+   * 回读留痕便于复核；失败静默不阻塞输入。
+   */
+  private applyKeyboardAvoidNone(): void {
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+      logger.debug('workbench', `键盘避让模式已设 NONE，回读=${this.getUIContext().getKeyboardAvoidMode()}`)
+    } catch (err) {
+      logger.warn('workbench', '设置键盘避让模式失败')
+    }
   }
 
   aboutToDisappear(): void {
@@ -815,20 +826,35 @@ export struct Workbench {
         bottom: 16
       })
 
-      // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框）
-      Search({
-        value: this.searchQuery,
-        placeholder: WorkbenchText.workbench_search_hint
-      })
-        .onChange((value: string) => {
-          this.onSearchChange(value)
+      // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框；
+      //    外层 Column 承担左右页边距——安卓 WorkbenchSearchField 的 padding(horizontal =
+      //    pagePadding)；Search 直接 margin + width('100%') 会溢出父容器被居中抵消，故外包一层）
+      Column() {
+        Search({
+          value: this.searchQuery,
+          placeholder: WorkbenchText.workbench_search_hint
         })
-        .width('100%')
-        .height(48)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
-        .borderRadius(DesignDimens.INPUT_RADIUS)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ bottom: DesignDimens.SPACE_MD })
+          .onChange((value: string) => {
+            this.onSearchChange(value)
+          })
+          .onFocus(() => {
+            // 键盘弹出前重设 NONE（模拟器上 ArkUI 避让引擎不跟随 NONE，见
+            // applyKeyboardAvoidNone 注释；真机语义正确，保留为契约兜底）
+            this.applyKeyboardAvoidNone()
+          })
+          .width('100%')
+          .height(48)
+          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .borderRadius(DesignDimens.INPUT_RADIUS)
+          // 图标/文案内边距对齐安卓：start spaceSm / end spaceXs
+          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
+      }
+      .width('100%')
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: DesignDimens.SPACE_MD
+      })
 
       // 3. 骨架 / 错误 / 空态 / 工具区
       if (this.loadState === LoadState.LOADING && this.tools.length === 0) {
@@ -907,6 +933,8 @@ export struct Workbench {
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
+          // chips 少于一行宽时左对齐（Scroll 默认居中，安卓 LazyRow 从页边距起排）
+          .align(Alignment.Start)
           .width('100%')
           .margin({ top: DesignDimens.SPACE_SM })
         }
