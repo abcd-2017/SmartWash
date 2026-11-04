@@ -28,6 +28,7 @@ import { logger } from '../../utils/Logger'
 import { PagingController } from '../../utils/PagingUtil'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeList'
@@ -70,38 +71,51 @@ struct ToolboxShortCodeList {
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
   async fetchPage(page: number): Promise<boolean> {
-    const res = await pageShortCodes(page, TOOLBOX_PAGE_SIZE)
-    if (res.code === HttpStatusCode.Ok && res.data !== null) {
-      const records: Array<ShortCodeVo> = res.data.records
-      if (records.length === 0) {
-        logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
-        if (this.list.length > 0) {
-          showToastSafety("没有更多数据了")
+    try {
+      const res = await pageShortCodes(page, TOOLBOX_PAGE_SIZE)
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        const records: Array<ShortCodeVo> = res.data.records
+        if (records.length === 0) {
+          logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
+          if (this.list.length > 0) {
+            showToastSafety("没有更多数据了")
+          }
+          this.appendError = false
+          return false
         }
+        if (page === 1) {
+          this.list = []
+          this.isFirstError = false
+        }
+        this.list.push(...records)
         this.appendError = false
-        return false
+        logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
+        return true
       }
       if (page === 1) {
-        this.list = []
-        this.isFirstError = false
+        // 首刷失败：说明 + 重试（规范 §3.6 错误态），并 toast 提示（对齐安卓 refresh Error toast）
+        logger.warn(TAG, `短链首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
+        this.isFirstError = true
+        showToastSafety(res.message, ToolboxText.toolbox_error_load)
+        return false
       }
-      this.list.push(...records)
-      this.appendError = false
-      logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
-      return true
-    }
-    if (page === 1) {
-      // 首刷失败：说明 + 重试（规范 §3.6 错误态），并 toast 提示（对齐安卓 refresh Error toast）
-      logger.warn(TAG, `短链首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
-      this.isFirstError = true
+      // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
+      logger.warn(TAG, `短链追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
+      this.appendError = true
       showToastSafety(res.message, ToolboxText.toolbox_error_load)
-      return false
+      throw new Error(ToolboxText.toolbox_error_load)
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）；
+      // 首刷则进错误态，避免 isLoadingFirst 卡死永久骨架
+      if (page === 1) {
+        this.isFirstError = true
+        showToastSafety("网络异常，请稍后重试")
+        return false
+      }
+      this.appendError = true
+      showToastSafety("网络异常，请稍后重试")
+      throw new Error(ToolboxText.toolbox_error_load)
     }
-    // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
-    logger.warn(TAG, `短链追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
-    this.appendError = true
-    showToastSafety(res.message, ToolboxText.toolbox_error_load)
-    throw new Error(ToolboxText.toolbox_error_load)
   }
 
   /** 整列表重置重拉（下拉刷新 + 变更信号回列表刷新共用） */
@@ -142,8 +156,9 @@ struct ToolboxShortCodeList {
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety(ToolboxText.toolbox_copy_success)
     }).catch((err: BusinessError) => {
+      // 复制失败与「找不到浏览器」是两种失败，各用各的文案（原复用 open_failed 属误导）
+      showToastSafety(ToolboxText.toolbox_copy_failed)
       logger.error(TAG, '短链复制到剪贴板失败', `${err.code} ${err.message}`)
-      showToastSafety(ToolboxText.toolbox_open_failed)
     })
   }
 
@@ -433,7 +448,7 @@ struct ToolboxShortCodeList {
             }
             .width('100%')
             .height('100%')
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 })
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 + safeBottomVp() })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
               this.paging.onScrollIndex(end, this.list.length)
@@ -450,6 +465,8 @@ struct ToolboxShortCodeList {
       }
       .width('100%')
       .height('100%')
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

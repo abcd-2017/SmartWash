@@ -11,6 +11,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState } from "../view/common/AppComponents"
 import { DrumIllustration } from "../view/DrumIllustration"
 import { logger } from "../utils/Logger"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 @Builder
 export function OrderDetailBuilder() {
@@ -95,18 +96,25 @@ struct OrderDetail {
     }
     this.isLoading = true
     this.loadFailed = false
-    let res = await getOrderInfo(this.orderId)
-    if (res.code === HttpStatusCode.Ok) {
-      logger.debug('orderDetail', `订单详情加载成功 orderId=${this.orderId} status=${res.data?.status ?? ""}`)
-      this.orderInfo = res.data
-      this.loadFailed = false
-    } else {
-      logger.warn('orderDetail', `订单详情加载失败 orderId=${this.orderId} ` +
-        `code=${res.code} message=${res.message ?? ""}`)
+    try {
+      let res = await getOrderInfo(this.orderId)
+      if (res.code === HttpStatusCode.Ok) {
+        logger.debug('orderDetail', `订单详情加载成功 orderId=${this.orderId} status=${res.data?.status ?? ""}`)
+        this.orderInfo = res.data
+        this.loadFailed = false
+      } else {
+        logger.warn('orderDetail', `订单详情加载失败 orderId=${this.orderId} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
+        this.loadFailed = true
+        showToastSafety(res.message, "订单详情加载失败")
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
-      showToastSafety(res.message, "订单详情加载失败")
+      showToastSafety("网络异常，请稍后重试")
+    } finally {
+      this.isLoading = false
     }
-    this.isLoading = false
   }
 
   /**
@@ -458,7 +466,7 @@ struct OrderDetail {
         left: DesignDimens.PAGE_PADDING,
         right: DesignDimens.PAGE_PADDING,
         top: DesignDimens.SPACE_MD,
-        bottom: DesignDimens.SPACE_MD
+        bottom: DesignDimens.SPACE_MD + safeBottomVp()
       })
     }
     .width("100%")
@@ -524,12 +532,16 @@ struct OrderDetail {
           .layoutWeight(1)
           .width("100%")
           .scrollBar(BarState.Off)
+          // 内容不足一屏顶对齐（Scroll 默认居中）
+          .align(Alignment.Top)
 
           // 底部操作条（联系客服 + 查看取件码）— 与滚动内容同列排布，不遮挡内容
           this.BottomActionBar()
         }
         .width("100%")
         .height("100%")
+        // 沉浸式：内容避让状态栏（背景延伸）
+        .padding({ top: safeTopVp() })
         .backgroundColor(DesignColor.BACKGROUND)
         // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
         // 骨架层以 TransitionEffect.OPACITY 淡入淡出（§2-I2）

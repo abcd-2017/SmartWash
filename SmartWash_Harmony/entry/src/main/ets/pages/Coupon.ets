@@ -9,6 +9,7 @@ import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { TicketDashedLine, TicketNotch } from "../view/TicketNotchShape"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
@@ -55,18 +56,24 @@ struct Coupon {
    */
   async loadAllCoupons() {
     this.isLoading = true
-    let res = await getAllCoupons()
-    this.isLoading = false
-    if (res.code === HttpStatusCode.Ok && res.data !== null) {
-      this.loadFailed = false
-      this.availableCoupons = res.data.available ?? []
-      this.claimedCoupons = res.data.claimed ?? []
-      this.historicalCoupons = res.data.historical ?? []
-    } else {
-      // 列表加载失败留痕（领取成功后的全量刷新同样走此分支）
-      logger.warn('coupon', `优惠券列表加载失败 code=${res.code} message=${res.message ?? ""}`)
+    try {
+      let res = await getAllCoupons()
+      this.isLoading = false
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        this.loadFailed = false
+        this.availableCoupons = res.data.available ?? []
+        this.claimedCoupons = res.data.claimed ?? []
+        this.historicalCoupons = res.data.historical ?? []
+      } else {
+        logger.warn('coupon', `优惠券列表加载失败 code=${res.code} message=${res.message ?? ""}`)
+        this.loadFailed = true
+        showToastSafety(res.message, "优惠券加载失败")
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
+      this.isLoading = false
       this.loadFailed = true
-      showToastSafety(res.message, "优惠券加载失败")
+      showToastSafety("网络异常，请稍后重试")
     }
   }
 
@@ -113,16 +120,19 @@ struct Coupon {
     this.claimingCouponId = couponId
     try {
       let res = await receiveCoupon(couponId)
-      if (res.code === HttpStatusCode.Ok) {
-        // 低频关键动作成功：领取优惠券留 info
-        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
+      // 后端 Result.ok(boolean) 直传：data=false（并发/重复领取被拒）必须按失败处理，
+      // 不能只看 code=200 就弹「领取成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
+      if (res.code === HttpStatusCode.Ok && res.data === true) {
         await this.loadAllCoupons()
         showToastSafety("领取成功")
       } else {
-        // 业务拒绝留痕：仅记 code/message 摘要
         logger.warn('coupon', `优惠券领取被拒 couponId=${couponId} code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "领取失败")
+        showToastSafety(res.message, "领取失败，请稍后重试")
+        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
       }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
+      showToastSafety("网络异常，请稍后重试")
     } finally {
       this.claimingCouponId = null
     }
@@ -160,7 +170,7 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING })
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING, bottom: safeBottomVp() })
     }
   }
 
@@ -179,7 +189,7 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING })
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING, bottom: safeBottomVp() })
     }
   }
 
@@ -198,7 +208,7 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING })
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.CARD_SPACING, bottom: safeBottomVp() })
     }
   }
 
@@ -263,6 +273,8 @@ struct Coupon {
       }
       .width("100%")
       .height("100%")
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

@@ -1,6 +1,7 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
+import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
 import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
 import { promptAction } from "@kit.ArkUI"
@@ -145,6 +146,7 @@ struct PermissionManagement {
 
   build() {
     NavDestination() {
+      // 沉浸式：根容器避让状态栏（内容位置不变，背景延伸）
       Column() {
         PageHeader({ title: "权限管理" })
 
@@ -206,9 +208,13 @@ struct PermissionManagement {
         }
         .layoutWeight(1)
         .scrollBar(BarState.Off)
+        // 内容不足一屏时顶对齐（Scroll 默认居中，会把内容挤到屏幕中部）
+        .align(Alignment.Top)
+        .padding({ bottom: safeBottomVp() })
       }
       .width('100%')
       .height('100%')
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)

@@ -59,37 +59,36 @@ struct BingCampusCardAlert {
       logger.debug('bingCampusCardAlert', '请求进行中，忽略重复点击')
       return
     }
-    let res: BaseResponse<boolean>
-    if (this.isBingFlag) {
-      if (this.campusCard === "") {
-        this.errorMessage = "校园卡号不能为空"
-        return
-      }
-      this.errorMessage = ""
-      this.submitting = true
-      try {
-        res = await bindCampus(this.campusCard)
-      } finally {
-        this.submitting = false
-      }
-    } else {
-      this.submitting = true
-      try {
-        res = await unBindCampus()
-      } finally {
-        this.submitting = false
-      }
+    if (this.isBingFlag && this.campusCard === "") {
+      this.errorMessage = "校园卡号不能为空"
+      return
     }
-    if (res.code === HttpStatusCode.Ok) {
-      // 低频关键动作成功留 info（卡号不落日志）
+    this.errorMessage = ""
+    let res: BaseResponse<boolean> | null = null
+    this.submitting = true
+    try {
+      if (this.isBingFlag) {
+        res = await bindCampus(this.campusCard)
+      } else {
+        res = await unBindCampus()
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住提示，避免 res 未赋值时解引用崩溃
+      showToastSafety("网络异常，请稍后重试")
+      return
+    } finally {
+      this.submitting = false
+    }
+    // 后端 Result.ok(boolean) 直传：data=false（更新失败）必须按失败处理，
+    // 不能只看 code=200 就弹「绑定成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
+    if (res !== null && res.code === HttpStatusCode.Ok && res.data === true) {
       logger.info('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}成功`)
       this.inputController.stopEditing()
       pathStack.pop()
       showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
     } else {
-      // 业务拒绝留痕：仅记 code/message 摘要（卡号不落日志）
+      showToastSafety(res?.message ?? "", this.isBingFlag ? "绑定失败，请重试" : "解绑失败，请重试")
       logger.warn('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}被拒绝 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "操作失败")
     }
   }
 

@@ -44,11 +44,6 @@ export struct DivHistoryPage {
     this.refresh()
   }
 
-  onShown(): void {
-    // 从卦盘/复盘返回后重拉，保证卦历与最新排盘一致（项目现有列表页统一模式）
-    this.refresh()
-  }
-
   private async refresh(): Promise<void> {
     this.isLoading = true
     try {
@@ -122,7 +117,10 @@ export struct DivHistoryPage {
   }
 
   build() {
-    DivinationScreen({ scrollable: false }) {
+    // 修复（问题14）：命名路由的 buildFunction 根节点必须是 NavDestination，
+    // 本页原先裸渲染 DivinationScreen，push 进来直接整页空白
+    NavDestination() {
+      DivinationScreen({ scrollable: false }) {
       Column() {
         // 无返回页头标题左对齐 x20（alignStart）
         DivPageHeader({ title: DivText.historyTitle, showBack: false, alignStart: true })
@@ -223,6 +221,12 @@ export struct DivHistoryPage {
       }
       .width('100%')
       .height('100%')
+      }
     }
+    .hideTitleBar(true)
+    .onShown(() => {
+      // 从卦盘/复盘返回后重拉，保证卦历与最新排盘一致（NavDestination 可见性事件驱动）
+      this.refresh()
+    })
   }
 }

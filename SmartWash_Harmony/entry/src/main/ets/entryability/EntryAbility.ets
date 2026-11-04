@@ -1,5 +1,5 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want, errorManager } from '@kit.AbilityKit';
-import { window } from '@kit.ArkUI';
+import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences, setValue } from '../utils/StorageUtil';
 
@@ -28,6 +28,10 @@ class CrashLogObserver {
 
 // 深链暂存 key：Want.uri 经 AppStorage 过桥到 UI 侧（Home 页挂载后消费）
 const PENDING_DEEP_LINK_KEY: string = 'pendingDeepLinkUri';
+
+// 安全区 AppStorage key：页面根容器按这两个值做内容避让（vp），背景色/渐变自然延伸到系统栏
+const SAFE_AREA_TOP_VP_KEY: string = 'safeAreaTopVp';
+const SAFE_AREA_BOTTOM_VP_KEY: string = 'safeAreaBottomVp';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -58,7 +62,61 @@ export default class EntryAbility extends UIAbility {
       }
       // 低频关键动作成功：首页加载完成（冷启动必经一次）
       logger.info('EntryAbility', '首页加载完成');
+      this.setupImmersiveWindow(windowStage);
     });
+  }
+
+  /**
+   * 沉浸式窗口基建（问题1/5/2 修复）：
+   * - setWindowLayoutFullScreen(true)：窗口内容延伸到状态栏/导航条下方，页面背景色与渐变
+   *   自然铺满全屏，消除状态栏/控制栏与页面的色差与割裂感；
+   * - 各页面根容器按 AppStorage 的 safeAreaTopVp / safeAreaBottomVp 做 padding 避让内容
+   *   （utils/SafeArea.ets 提供读取函数），背景层不避让；
+   * - 键盘避让显式设为 RESIZE（对齐安卓默认 adjustResize）：键盘弹出压缩窗口高度，
+   *   输入框所在滚动容器自动收进可视区，替代默认 OFFSET 的整页上推；
+   * - 窗口尺寸变化（折叠/旋转）时重算安全区，保证避让值始终有效。
+   */
+  private setupImmersiveWindow(windowStage: window.WindowStage): void {
+    let mainWindow: window.Window;
+    try {
+      mainWindow = windowStage.getMainWindowSync();
+    } catch (err) {
+      logger.error('EntryAbility', 'getMainWindowSync 失败', err instanceof Error ? err.message : '');
+      return;
+    }
+    mainWindow.setWindowLayoutFullScreen(true).then(() => {
+      this.updateSafeArea(mainWindow);
+      // 尺寸/折叠态变化时重算安全区
+      mainWindow.on('windowSizeChange', () => {
+        this.updateSafeArea(mainWindow);
+      });
+    }).catch((err: Object) => {
+      logger.error('EntryAbility', 'setWindowLayoutFullScreen 失败', err instanceof Error ? err.message : '');
+    });
+    // 键盘 RESIZE 避让：经窗口 UIContext 设置（API 11+）
+    try {
+      mainWindow.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE);
+    } catch (err) {
+      logger.error('EntryAbility', 'setKeyboardAvoidMode 失败', err instanceof Error ? err.message : '');
+    }
+  }
+
+  /** 计算状态栏高度与底部导航指示器高度（px→vp）写入 AppStorage，供页面根容器避让 */
+  private updateSafeArea(mainWindow: window.Window): void {
+    try {
+      const density = display.getDefaultDisplaySync().densityPixels;
+      if (density <= 0) {
+        return;
+      }
+      // 顶部：系统状态栏（TYPE_SYSTEM 的 topRect）
+      const systemArea = mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM);
+      // 底部：手势指示条（NEXT 设备统一手势导航形态）
+      const indicatorArea = mainWindow.getWindowAvoidArea(window.AvoidAreaType.TYPE_NAVIGATION_INDICATOR);
+      AppStorage.setOrCreate(SAFE_AREA_TOP_VP_KEY, Math.ceil(systemArea.topRect.height / density));
+      AppStorage.setOrCreate(SAFE_AREA_BOTTOM_VP_KEY, Math.ceil(indicatorArea.bottomRect.height / density));
+    } catch (err) {
+      logger.error('EntryAbility', 'updateSafeArea 失败', err instanceof Error ? err.message : '');
+    }
   }
 
   /**
