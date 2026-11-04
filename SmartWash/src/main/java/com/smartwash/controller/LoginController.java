@@ -444,6 +444,8 @@ public class LoginController {
             try {
                 prefix = Integer.parseInt(parts[1]);
             } catch (NumberFormatException e) {
+                // 服务端自身配置的 CIDR 前缀格式非法被跳过，可信代理判定可能失效，warn 预警
+                log.warn("可信代理网段配置解析失败，该网段被跳过, cidr: {}", cidr);
                 continue;
             }
             if (network < 0 || prefix < 0 || prefix > 32) {
@@ -469,6 +471,8 @@ public class LoginController {
             try {
                 value = Integer.parseInt(segment);
             } catch (NumberFormatException e) {
+                // 来源头（X-Forwarded-For 等）可被客户端伪造注入非法格式，仅 debug 留痕防日志刷屏
+                log.debug("IP 地址段解析失败，视为非法 IP, ip: {}", ip);
                 return -1L;
             }
             if (value < 0 || value > 255) {

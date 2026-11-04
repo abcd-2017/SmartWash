@@ -45,9 +45,11 @@ public class LaundryItemsController {
     @PostMapping("/add")
     public Result<String> addLaundryItem(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
         if (laundryItemsService.getSearchByName(addLaundryPackageFrom.getItemName()) != null) {
+            log.warn("新增洗衣项目被拒绝：名称已存在, itemName: {}", addLaundryPackageFrom.getItemName());
             return Result.failMsg("该套餐已经存在了");
         }
         laundryItemsService.addLaundryPackage(addLaundryPackageFrom);
+        log.info("新增洗衣项目成功, itemName: {}", addLaundryPackageFrom.getItemName());
         return Result.ok("添加成功");
     }
 
@@ -56,18 +58,22 @@ public class LaundryItemsController {
     public Result<String> updateLaundryItem(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
         LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
         if (laundryItems == null) {
+            log.warn("更新洗衣项目被拒绝：项目不存在, itemId: {}", laundryPackageFrom.getItemId());
             return Result.failMsg("洗衣项目不存在");
         }
         if (!Objects.equals(laundryItems.getItemName(), laundryPackageFrom.getItemName()) && laundryItemsService.getSearchByName(laundryPackageFrom.getItemName()) != null) {
+            log.warn("更新洗衣项目被拒绝：名称已存在, itemId: {}, itemName: {}", laundryPackageFrom.getItemId(), laundryPackageFrom.getItemName());
             return Result.failMsg("该套餐已经存在了");
         }
         laundryItemsService.updateLaundryPackage(laundryPackageFrom);
+        log.info("更新洗衣项目成功, itemId: {}", laundryPackageFrom.getItemId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除洗衣项目", description = "根据ID批量删除洗衣套餐，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteLaundryPackage(@PathVariable("ids") @Parameter(description = "洗衣项目ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除洗衣项目, ids: {}", ids);
         return Result.ok(laundryItemsService.deleteLaundryPackage(ids));
     }
 }

@@ -321,12 +321,14 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             walk.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
                     Files.delete(path);
-                } catch (java.io.IOException ignore) {
-                    // 临时目录清理尽力而为，系统临时目录兜底
+                } catch (java.io.IOException e) {
+                    // 临时目录清理尽力而为，系统临时目录兜底，debug 留痕即可
+                    log.debug("游戏包临时文件删除失败, path: {}, 原因: {}", path, e.getMessage());
                 }
             });
-        } catch (java.io.IOException ignore) {
-            // 同上
+        } catch (java.io.IOException e) {
+            // 同上：清理失败不阻断主流程
+            log.debug("游戏包临时目录清理失败, tempDir: {}, 原因: {}", tempDir, e.getMessage());
         }
     }
 

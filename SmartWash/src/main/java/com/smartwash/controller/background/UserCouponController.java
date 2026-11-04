@@ -38,6 +38,7 @@ public class UserCouponController {
     @Operation(summary = "批量删除用户优惠券", description = "根据ID批量删除用户优惠券记录，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteCoupon(@PathVariable("ids") @Parameter(description = "用户优惠券ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除用户优惠券记录, ids: {}", ids);
         return Result.ok(userCouponService.deleteCoupon(ids));
     }
 

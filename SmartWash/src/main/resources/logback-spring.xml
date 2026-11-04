@@ -1,31 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 控制台输出 -->
+    <!-- 控制台输出（[%X{traceId}] 为链路追踪标识，由 TraceIdFilter 写入 MDC，每请求唯一且无敏感信息） -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- 文件输出：按天滚动 -->
+    <!-- 文件输出：按天 + 大小滚动（单文件 100MB，总上限 2GB，保留 30 天），防止磁盘被单日洪峰写满 -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/smartwash.log</file>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId}] %-5level %logger{36} - %msg%n</pattern>
             <charset>UTF-8</charset>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/smartwash.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/smartwash.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
-    <!-- 项目包日志级别 -->
-    <logger name="com.smartwash" level="DEBUG"/>
-
-    <!-- MyBatis mapper SQL 日志由 MyBatis-Plus 控制，此处关闭避免重复 -->
-    <logger name="com.smartwash.mapper" level="WARN"/>
+    <!--
+        项目包日志级别按 profile 区分：
+        - dev / 无 profile（本地 demo 默认）：保持 DEBUG；
+        - prod：降为 INFO，减少日志洪峰与磁盘压力。
+        com.smartwash.mapper 一律 WARN：MyBatis SQL 明文日志由 application-dev.yaml 的
+        logging.level.com.smartwash.mapper: debug 在 dev 环境覆盖开启，prod 不开启（无该配置项），
+        不会在 prod 打出 SQL 明文。
+    -->
+    <springProfile name="!prod">
+        <logger name="com.smartwash" level="DEBUG"/>
+        <logger name="com.smartwash.mapper" level="WARN"/>
+    </springProfile>
+    <springProfile name="prod">
+        <logger name="com.smartwash" level="INFO"/>
+        <logger name="com.smartwash.mapper" level="WARN"/>
+    </springProfile>
 
     <!-- 根日志级别 -->
     <root level="INFO">

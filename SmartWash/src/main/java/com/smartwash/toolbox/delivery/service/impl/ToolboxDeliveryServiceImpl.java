@@ -419,6 +419,8 @@ public class ToolboxDeliveryServiceImpl extends ServiceImpl<ToolboxDeliveryItemM
         try {
             Thread.sleep(BRUTE_FORCE_DELAY_MS);
         } catch (InterruptedException ie) {
+            // 线程关闭信号，恢复中断标志即可，debug 留痕
+            log.debug("防爆破延迟等待被中断，线程恢复中断标志");
             Thread.currentThread().interrupt();
         }
     }
