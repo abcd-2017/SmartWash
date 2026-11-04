@@ -113,7 +113,7 @@ fun ToolboxListPage(
                     // 热区 48 高（画板「热区-新建」56×48）
                     Box(
                         modifier = Modifier
-                            .pressable(onClick = { navController.navigate(ToolboxRoute.Create.text) })
+                            .pressable(onClick = { navController.navigate(ToolboxRoute.Create) })
                             .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
                     ) {
                         Text(
@@ -158,7 +158,7 @@ fun ToolboxListPage(
                             action = {
                                 AppButton(
                                     text = stringResource(R.string.toolbox_empty_action),
-                                    onClick = { navController.navigate(ToolboxRoute.Create.text) },
+                                    onClick = { navController.navigate(ToolboxRoute.Create) },
                                 )
                             },
                         )

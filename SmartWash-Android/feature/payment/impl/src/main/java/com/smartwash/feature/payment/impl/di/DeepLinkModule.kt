@@ -25,8 +25,8 @@ object PaymentDeepLinkModule {
     @IntoSet
     fun providePaymentDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "recharge" to DeepLinkRouteFactory { _, _ -> PaymentRoute.Recharge.text },
-            "recharge-record" to DeepLinkRouteFactory { _, _ -> PaymentRoute.RechargeRecord.text },
+            "recharge" to DeepLinkRouteFactory { _, _ -> PaymentRoute.Recharge },
+            "recharge-record" to DeepLinkRouteFactory { _, _ -> PaymentRoute.RechargeRecord },
         )
     }
 }

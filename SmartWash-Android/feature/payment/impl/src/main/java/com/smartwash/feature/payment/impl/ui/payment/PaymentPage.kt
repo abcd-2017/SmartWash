@@ -112,8 +112,8 @@ fun PaymentPage(
                 confirmPayShow = false
                 // 状态重放防护：先复位再导航，避免配置重建时 Success 态重放导致重复跳转
                 paymentViewModel.resetPaymentState()
-                navController.navigate("${PaymentRoute.PaySuccess.text}/${orderId}") {
-                    popUpTo(ShellRoute.HOME)
+                navController.navigate(PaymentRoute.PaySuccess(orderId ?: -1L)) {
+                    popUpTo<ShellRoute.Home>()
                 }
             }
             is RequestState.Error -> {
@@ -432,7 +432,7 @@ fun PaymentPage(
                                 .pressable(
                                     onClick = rememberDebouncedClick {
                                         showBottomSheet = false
-                                        navController.navigate(CouponRoute.Coupon.text)
+                                        navController.navigate(CouponRoute.Coupon)
                                     },
                                     debounce = false,
                                 )
@@ -515,7 +515,7 @@ fun PaymentPage(
             confirmText = stringResource(R.string.go_recharge),
             onConfirm = {
                 showRechargeDialog = false
-                navController.navigate(PaymentRoute.Recharge.text)
+                navController.navigate(PaymentRoute.Recharge)
             },
             onDismiss = { showRechargeDialog = false }
         )

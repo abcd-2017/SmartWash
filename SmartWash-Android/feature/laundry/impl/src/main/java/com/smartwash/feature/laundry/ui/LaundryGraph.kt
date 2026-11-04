@@ -2,34 +2,24 @@ package com.smartwash.feature.laundry.ui
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.laundry.ui.laundry.LaundryPage
 import com.smartwash.feature.laundry.ui.service.ServicePage
 
 /**
  * 洗衣域路由聚合（T8.1）：服务 tab 页 / 洗衣预约页 composable 注册自 app 壳
- * MainActivity NavHost 迁入，宿主侧一行 [laundryGraph] 完成聚合。路由常量取
+ * MainActivity NavHost 迁入，宿主侧一行 [laundryGraph] 完成聚合。类型安全路由取
  * laundry-api 的 [LaundryRoute]（单一事实来源；Service 同为主页底部 tab 路由，
- * 壳层 HomePageConstant.Service 委托其值）。
+ * 壳层 HomePageConstant.Service 标识同源）。
  */
 fun NavGraphBuilder.laundryGraph(navController: NavHostController) {
-    composable(LaundryRoute.Service.text) { ServicePage(navController) }
-    composable(
-        route = LaundryRoute.Laundry.text,
-        arguments = listOf(
-            // 可选参数：服务页套餐行点击跳入时指定默认选中套餐（-1 = 不指定）
-            navArgument(LaundryRoute.Laundry.ARG_ITEM_ID) {
-                type = NavType.LongType
-                defaultValue = -1L
-            }
-        )
-    ) { backStackEntry ->
+    composable<LaundryRoute.Service> { ServicePage(navController) }
+    composable<LaundryRoute.Laundry> { entry ->
         LaundryPage(
             navController = navController,
-            defaultItemId = backStackEntry.arguments?.getLong(LaundryRoute.Laundry.ARG_ITEM_ID) ?: -1L
+            defaultItemId = entry.toRoute<LaundryRoute.Laundry>().itemId,
         )
     }
 }

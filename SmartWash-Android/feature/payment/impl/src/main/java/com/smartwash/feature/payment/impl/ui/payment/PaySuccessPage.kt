@@ -316,9 +316,9 @@ fun PaySuccessPage(
                                 .height(48.dp)
                                 .pressable(onClick = {
                                     navController.navigate(
-                                        "${OrderRoute.PickupDelivery.text}/${orderInfo?.orderId ?: -1}/${OrderRoute.PICKUP_TYPE_DELIVERY}"
+                                        OrderRoute.PickupDelivery(orderInfo?.orderId ?: -1, OrderRoute.PICKUP_TYPE_DELIVERY)
                                     ) {
-                                        popUpTo(PaymentRoute.PaySuccess.text) { inclusive = true }
+                                        popUpTo<PaymentRoute.PaySuccess> { inclusive = true }
                                     }
                                 })
                                 .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
@@ -334,7 +334,7 @@ fun PaySuccessPage(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .pressable(onClick = { navController.popBackStack(ShellRoute.HOME, inclusive = false) })
+                                .pressable(onClick = { navController.popBackStack<ShellRoute.Home>(inclusive = false) })
                                 .padding(vertical = 16.dp),
                             contentAlignment = Alignment.Center
                         ) {

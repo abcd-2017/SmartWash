@@ -1,15 +1,17 @@
 package com.smartwash.common.utils.deeplink
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
+
 /**
  * 深链解析结果（三态，密封类）：
- * - [NativeRoute]：routeLookup 命中，携带可直接 navigate 的路由字符串；
+ * - [NativeRoute]：routeLookup 命中，携带类型安全路由对象；
  * - [WebViewUrl]：http(s) 直链或 smartwash://web 分支，由壳层 WebView 页承载；
  * - [Unknown]：非法或未注册，UI 侧统一提示「暂不支持该链接」。
  */
 sealed class DeepLinkAction {
 
-    /** 原生路由跳转（route 为各域 *Route 注册形态的字符串） */
-    data class NativeRoute(val route: String) : DeepLinkAction()
+    /** 原生路由跳转（route 为各域 @Serializable 路由对象，直接 navigate） */
+    data class NativeRoute(val route: SmartWashRoute) : DeepLinkAction()
 
     /**
      * 内置浏览器打开。

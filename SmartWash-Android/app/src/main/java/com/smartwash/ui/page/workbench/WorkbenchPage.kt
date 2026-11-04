@@ -153,7 +153,7 @@ fun WorkbenchPage(
             // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）；上距取区块令牌
             DivinationEntryCard(
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                onClick = { navController.navigate(DivRoute.Home.text) }
+                onClick = { navController.navigate(DivRoute.Home) }
             )
         }
 

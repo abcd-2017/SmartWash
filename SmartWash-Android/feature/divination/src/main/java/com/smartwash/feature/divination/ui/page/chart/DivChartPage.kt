@@ -285,7 +285,7 @@ fun DivChartPage(
                 fontSize = 12.sp,
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    navController.navigate("${DivRoute.Reading.text}/$recordId")
+                    navController.navigate(DivRoute.Reading(recordId))
                 },
             )
             DivGoldButton(

@@ -101,7 +101,7 @@ fun HomePage(
             is RequestState.Success -> {
                 if (hasUserSchool == -1L) {
                     navController.popBackStack()
-                    navController.navigate(UserRoute.UpdateUserInfo.text)
+                    navController.navigate(UserRoute.UpdateUserInfo)
                 }
             }
             else -> {}

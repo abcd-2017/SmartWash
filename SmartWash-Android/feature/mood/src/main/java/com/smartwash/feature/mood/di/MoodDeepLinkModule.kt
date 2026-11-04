@@ -21,7 +21,7 @@ object MoodDeepLinkModule {
     @IntoSet
     fun provideMoodDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "mood" to DeepLinkRouteFactory { _, _ -> MoodRoute.Today.text },
+            "mood" to DeepLinkRouteFactory { _, _ -> MoodRoute.Today },
         )
     }
 }

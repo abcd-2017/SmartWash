@@ -3,6 +3,7 @@
 apply from: "$rootDir/config/android-library.gradle"
 apply from: "$rootDir/config/compose.gradle"
 apply from: "$rootDir/config/hilt.gradle"
+apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.common.utils'

@@ -8,6 +8,7 @@ import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.deeplink.DeepLinkParser
+import com.smartwash.common.utils.navigation.SmartWashRoute
 import com.smartwash.network.api.DeeplinkRouteDict
 import com.smartwash.ui.page.webview.GameChrome
 import kotlinx.coroutines.CancellationException
@@ -74,13 +75,20 @@ class DeepLinkHandler @Inject constructor(
             is DeepLinkAction.NativeRoute -> navigateSafely(navController, action.route)
 
             is DeepLinkAction.WebViewUrl ->
-                navigateSafely(navController, buildWebViewRoute(action.url, action.title))
+                navigateSafely(
+                    navController,
+                    ShellRoute.WebView(
+                        url = action.url,
+                        title = action.title.orEmpty(),
+                        chrome = GameChrome.normalize(GameChrome.FULL),
+                    )
+                )
 
             is DeepLinkAction.Unknown -> toastUnsupported(navController)
         }
     }
 
-    private fun navigateSafely(navController: NavHostController, route: String) {
+    private fun navigateSafely(navController: NavHostController, route: SmartWashRoute) {
         try {
             navController.navigate(route)
         } catch (e: IllegalArgumentException) {
@@ -96,25 +104,6 @@ class DeepLinkHandler @Inject constructor(
             context.getString(R.string.deeplink_unsupported),
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    /**
-     * WebView 路由构造（注册形态 = ShellRoute.WEB_VIEW + "?url={url}&title={title}&chrome={chrome}"，
-     * 单一事实来源在 common:ui 的 [ShellRoute]；url/title 必须经 Uri.encode 编码）。
-     * chrome 取 [GameChrome] 模式（默认 full），供游戏 H5 在加载前收起原生标题栏/状态栏。
-     */
-    private fun buildWebViewRoute(
-        url: String,
-        title: String?,
-        chrome: String = GameChrome.FULL,
-    ): String {
-        val builder = StringBuilder(ShellRoute.WEB_VIEW)
-            .append("?url=").append(Uri.encode(url))
-        title?.takeIf { it.isNotBlank() }?.let {
-            builder.append("&title=").append(Uri.encode(it))
-        }
-        builder.append("&chrome=").append(GameChrome.normalize(chrome))
-        return builder.toString()
     }
 
     companion object {

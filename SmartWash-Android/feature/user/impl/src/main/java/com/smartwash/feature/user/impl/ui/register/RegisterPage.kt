@@ -185,8 +185,8 @@ fun RegisterPage(
                 Toast.makeText(context, context.getString(R.string.register_success), Toast.LENGTH_SHORT).show()
                 registerViewModel.setRegisterIdle()
                 // 注册成功后跳转填写学校学号信息
-                navController.navigate(UserRoute.UpdateUserInfo.text) {
-                    popUpTo(UserRoute.Login.text) { inclusive = true }
+                navController.navigate(UserRoute.UpdateUserInfo) {
+                    popUpTo<UserRoute.Login> { inclusive = true }
                 }
             }
 

@@ -45,7 +45,7 @@ abstract class DeepLinkRepositoryModule {
 
 /**
  * 壳层自有留守页面的深链贡献者：pickup（取件页）/ ai-work（AI 工具台）。
- * host 字符串就地定义；路由串取壳层 [PageConstant] 单一事实来源。
+ * host 字符串就地定义；类型安全路由取壳层 [PageConstant] 单一事实来源。
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -55,8 +55,8 @@ object ShellDeepLinkModule {
     @IntoSet
     fun provideShellDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "pickup" to DeepLinkRouteFactory { _, _ -> PageConstant.Pickup.text },
-            "ai-work" to DeepLinkRouteFactory { _, _ -> PageConstant.AiWork.text },
+            "pickup" to DeepLinkRouteFactory { _, _ -> PageConstant.Pickup },
+            "ai-work" to DeepLinkRouteFactory { _, _ -> PageConstant.AiWork },
         )
     }
 }

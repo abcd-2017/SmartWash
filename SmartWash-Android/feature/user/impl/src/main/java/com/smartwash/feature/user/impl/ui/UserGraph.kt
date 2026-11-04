@@ -46,8 +46,7 @@ fun NavGraphBuilder.userGraph(
     reduceMotion: Boolean,
     checkUpdateContent: (@Composable () -> Unit)? = null,
 ) {
-    composable(
-        UserRoute.Login.text,
+    composable<UserRoute.Login>(
         // 前进离场：向左滑出（与 Register 的右侧滑入同一方向语义）；
         // 返回入场：自左侧滑回。降级时纯淡入淡出
         exitTransition = { forwardExit(reduceMotion) },
@@ -55,8 +54,7 @@ fun NavGraphBuilder.userGraph(
     ) {
         LoginPage(navController)
     }
-    composable(
-        UserRoute.Register.text,
+    composable<UserRoute.Register>(
         enterTransition = { forwardEnter(reduceMotion) },
         popEnterTransition = { forwardEnter(reduceMotion) },
         exitTransition = { forwardExit(reduceMotion) },
@@ -64,13 +62,13 @@ fun NavGraphBuilder.userGraph(
     ) {
         RegisterPage(navController)
     }
-    composable(UserRoute.UpdateUserInfo.text) {
+    composable<UserRoute.UpdateUserInfo> {
         UpdateUserInfoPage(navController)
     }
-    composable(UserRoute.Setting.text) {
+    composable<UserRoute.Setting> {
         SettingPage(navController, checkUpdateContent)
     }
-    composable(UserRoute.PermissionManagement.text) {
+    composable<UserRoute.PermissionManagement> {
         PermissionManagementPage(navController)
     }
 }

@@ -1,11 +1,12 @@
 package com.smartwash.common.utils.deeplink
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
 import java.net.URLDecoder
 
 /**
  * 深链解析器（纯函数 object，零路由知识、零 Android 依赖，JVM 单测全覆盖——解析全程不抛异常）。
  *
- * 内建判定仅两类，其余全部交给 [routeLookup]（host → 路由串，由壳层合并各域贡献者实现）：
+ * 内建判定仅两类，其余全部交给 [routeLookup]（host → 路由对象，由壳层合并各域贡献者实现）：
  * 1. `http://` / `https://` → [DeepLinkAction.WebViewUrl]（URI 原样，不做改写/解码）；
  * 2. `smartwash://web`：query `url` 必填、`title` 可选（均百分号解码），url 必须为 http/https；
  * 3. 其余 host → [routeLookup](host, pathSegments, query)：
@@ -28,12 +29,12 @@ object DeepLinkParser {
      * 解析入口：任何输入（含畸形 URI）都不抛异常，失败一律 [DeepLinkAction.Unknown]。
      *
      * @param uri 待解析深链
-     * @param routeLookup host → 路由串查找（host 已小写；pathSegments 保留原始大小写；
+     * @param routeLookup host → 路由对象查找（host 已小写；pathSegments 保留原始大小写；
      *   query value 已百分号解码）。由壳层 DeepLinkRegistry 合并各域贡献者后提供。
      */
     fun parse(
         uri: String,
-        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> String?,
+        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,
     ): DeepLinkAction {
         if (uri.isBlank()) return DeepLinkAction.Unknown(uri)
         return try {
@@ -62,7 +63,7 @@ object DeepLinkParser {
 
     private fun parseInternal(
         uri: String,
-        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> String?,
+        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,
     ): DeepLinkAction {
         val schemeEnd = uri.indexOf(SCHEME_SEPARATOR)
         if (schemeEnd <= 0) return DeepLinkAction.Unknown(uri)
@@ -80,7 +81,7 @@ object DeepLinkParser {
     private fun parseSmartwash(
         rest: String,
         rawUri: String,
-        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> String?,
+        routeLookup: (host: String, pathSegments: List<String>, query: Map<String, String>) -> SmartWashRoute?,
     ): DeepLinkAction {
         val queryStart = rest.indexOf('?')
         val pathPart = if (queryStart >= 0) rest.substring(0, queryStart) else rest

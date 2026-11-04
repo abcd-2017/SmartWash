@@ -144,7 +144,7 @@ fun DivHomePage(
                             featured = tagRes != null,
                             onClick = {
                                 view.performHaptic(HapticEffect.LIGHT)
-                                navController.navigate("${DivRoute.Ask.text}?method=${method.id}")
+                                navController.navigate(DivRoute.Ask(method.id))
                             },
                             modifier = Modifier.weight(1f),
                         )
@@ -159,7 +159,7 @@ fun DivHomePage(
             DivCard(
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 12.dp),
-                onClick = { viewModel.ensureTodaySignSaved { id -> navController.navigate("${DivRoute.Chart.text}/$id") } },
+                onClick = { viewModel.ensureTodaySignSaved { id -> navController.navigate(DivRoute.Chart(id)) } },
             ) {
                 Row(
                     Modifier.padding(start = 18.dp, top = 10.dp, end = 10.dp, bottom = 22.dp),
@@ -191,7 +191,7 @@ fun DivHomePage(
         DivSectionTitle(
             title = stringResource(R.string.div_home_ledger),
             tail = stringResource(R.string.div_home_ledger_more),
-            onTailClick = { navController.navigate(DivRoute.History.text) },
+            onTailClick = { navController.navigate(DivRoute.History) },
         )
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(Modifier.padding(horizontal = 14.dp)) {

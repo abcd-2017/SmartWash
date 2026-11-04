@@ -21,7 +21,7 @@ object ReviewDeepLinkModule {
     @IntoSet
     fun provideReviewDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "review" to DeepLinkRouteFactory { _, _ -> ReviewRoute.Queue.text },
+            "review" to DeepLinkRouteFactory { _, _ -> ReviewRoute.Queue },
         )
     }
 }
