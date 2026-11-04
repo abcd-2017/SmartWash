@@ -14,8 +14,8 @@ export function getWorkbenchEntryList(params) {
   });
 }
 
-// 新增工作台入口：entryKey/title/description/icon/color/target/badge/enabled/sort/remark
-// （entryKey 全局唯一且创建后不可修改；icon/color 走端上白名单，后端二次校验）
+// 新增工作台入口：entryKey/title/description/icon/color/type/target/badge/enabled/sort/remark
+// （entryKey 全局唯一且创建后不可修改；icon/color/type 走端上白名单，后端二次校验）
 export function addWorkbenchEntry(data) {
   return request({
     url: '/admin/workbench/entries/add',
@@ -38,5 +38,16 @@ export function deleteWorkbenchEntry(ids) {
   return request({
     url: `/admin/workbench/entries/delete/${ids}`,
     method: 'delete',
+  });
+}
+
+// 上传入口配图：multipart 图片（png/jpeg/webp ≤5MB），返回 MinIO 公网直链（回填表单 imageUrl）
+export function uploadWorkbenchImage(formData) {
+  return request({
+    url: '/admin/workbench/entries/image',
+    method: 'post',
+    data: formData,
+    // axios 检测到 FormData 会自动补 multipart boundary，这里显式声明类型
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }

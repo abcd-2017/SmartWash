@@ -1,9 +1,11 @@
-// 工作台域契约 — 工具条目模型 / 白名单映射 / 服务端下发转换 / 内置兜底数据 / 文案表
+// 工作台域契约 — 工具条目模型 / 白名单映射 / 服务端下发转换 / 渲染折块 / 内置兜底数据 / 文案表
 //
-// 对齐安卓 ui/page/workbench/{WorkbenchTool.kt,WorkbenchViewModel.kt}（服务端入口下发版）：
-// 数据源二选一——服务端下发（GET /web/auth/workbench/entries，经 network/api/workbench.ets）
-// 或本地兜底 DEFAULT_WORKBENCH_TOOLS；点击统一按 target 走深链分发（DeepLinkHandler.handleDeepLink）。
-// 按 feature/README.md 约定：本文件只放声明层（VO 映射 + 枚举 + 内置数据 + 文案），
+// 对齐安卓 ui/page/workbench/{WorkbenchTool.kt,WorkbenchViewModel.kt,WorkbenchPage.kt}（类型化组件版）：
+// 数据源以服务端下发为准（GET /web/auth/workbench/entries，经 network/api/workbench.ets），
+// 失败/空配置给真实错误态/空态（对齐安卓 2026-11-01 缺陷 6，不再静默回落）；
+// DEFAULT_WORKBENCH_TOOLS 仅留作开发参考与深链联调，页面不再消费。
+// 点击统一按 target 走深链分发（DeepLinkHandler.handleDeepLink）。
+// 按 feature/README.md 约定：本文件只放声明层（VO 映射 + 枚举 + 折块 + 内置数据 + 文案），
 // UI 组件与点击分发实现放域内 Workbench.ets。
 
 import { WorkbenchEntryVo } from '../../network/api/workbench'
@@ -46,10 +48,38 @@ export function workbenchTintFromKey(key: string | null | undefined): WorkbenchT
 }
 
 /**
+ * 卡片类型（对齐安卓 WorkbenchLayout，与后端 type 白名单 key 一一对应）：
+ * TILE 两列小卡（默认）/ WIDE 通栏横卡 / ROW 列表行（连续归并一张白卡）/ NOTICE 公告条（可关闭）。
+ * 未知 type key 兜底 TILE（契约：未知值显示默认样式）。
+ */
+export enum WorkbenchLayout {
+  TILE,
+  WIDE,
+  ROW,
+  NOTICE
+}
+
+/** 后端 type key → 卡片类型（tile/wide/row/notice，大小写不敏感，未知兜底 TILE） */
+export function workbenchLayoutFromKey(key: string | null | undefined): WorkbenchLayout {
+  const normalized = key !== undefined && key !== null ? key.toLowerCase() : ''
+  switch (normalized) {
+    case 'wide':
+      return WorkbenchLayout.WIDE
+    case 'row':
+      return WorkbenchLayout.ROW
+    case 'notice':
+      return WorkbenchLayout.NOTICE
+    default:
+      return WorkbenchLayout.TILE
+  }
+}
+
+/**
  * 后端 icon 白名单 key → sys.symbol 图标映射（规范 §4.1：功能图标保持系统符号库）。
- * 白名单：calendar/search/book/calculate/history/chat/link/default，未知 key 与 default
- * 同样兜底为「工具格」图标（对齐安卓 Icons.Default.Apps）。
- * 符号名已对照 SDK sysResource.js 核实存在（除 default 外均沿用既有工作台在用符号）。
+ * 白名单：calendar/search/book/calculate/history/chat/link/science/gamepad/default，
+ * 未知 key 与 default 同样兜底为「工具格」图标（对齐安卓 Icons.Default.Apps）。
+ * 符号名已对照 SDK sysResource.js 核实存在（gamepad=gamecontroller、science=science_technology，
+ * 2026-11-04 与后端 Form 白名单对齐补录）。
  */
 export function workbenchIconFromKey(key: string | null | undefined): Resource {
   const normalized = key !== undefined && key !== null ? key.toLowerCase() : ''
@@ -68,6 +98,10 @@ export function workbenchIconFromKey(key: string | null | undefined): Resource {
       return $r('sys.symbol.ellipsis_message')
     case 'link':
       return $r('sys.symbol.link')
+    case 'science':
+      return $r('sys.symbol.science_technology')
+    case 'gamepad':
+      return $r('sys.symbol.gamecontroller')
     default:
       return $r('sys.symbol.square_grid_2x2')
   }
@@ -93,6 +127,12 @@ export interface WorkbenchTool {
   target: string
   /** 角标文案（如 新/热），空串不显示 */
   badge: string
+  /** 卡片类型（服务端 type 下发映射；页面按类型选组件渲染） */
+  layout: WorkbenchLayout
+  /** 分组标题（服务端下发；与前一 entry 不同时端上渲染区块标题），空串不分组 */
+  sectionTitle: string
+  /** 配图直链（服务端下发），空串 = 纯文字卡片 */
+  imageUrl: string
 }
 
 /**
@@ -108,7 +148,10 @@ export function workbenchEntryVoToTool(vo: WorkbenchEntryVo, index: number): Wor
     icon: workbenchIconFromKey(vo.icon),
     tint: workbenchTintFromKey(vo.color),
     target: vo.target ?? '',
-    badge: vo.badge ?? ''
+    badge: vo.badge ?? '',
+    layout: workbenchLayoutFromKey(vo.type),
+    sectionTitle: vo.sectionTitle ?? '',
+    imageUrl: vo.imageUrl ?? ''
   }
 }
 
@@ -131,9 +174,78 @@ export function withUniqueKeys(tools: Array<WorkbenchTool>): Array<WorkbenchTool
       icon: tool.icon,
       tint: tool.tint,
       target: tool.target,
-      badge: tool.badge
+      badge: tool.badge,
+      layout: tool.layout,
+      sectionTitle: tool.sectionTitle,
+      imageUrl: tool.imageUrl
     }
   })
+}
+
+/**
+ * 页面渲染块（对齐安卓 WorkbenchBlock）：服务端 type + section_title 下发驱动的构图单元。
+ * 按 sort 顺序把条目折成块——sectionTitle 变化处插区块标题，连续 row 归并进一张白卡，
+ * 连续 tile 两列成行，wide/notice 各占一行。
+ */
+export enum WorkbenchBlockKind {
+  SECTION,
+  NOTICE,
+  WIDE,
+  TILE_ROW,
+  ROW_GROUP
+}
+
+export interface WorkbenchBlock {
+  kind: WorkbenchBlockKind
+  /** 区块标题（kind=SECTION 用，其余空串） */
+  title: string
+  /** 公告/通栏单卡（kind=NOTICE/WIDE 用，其余取 tools[0] 占位，渲染时按 kind 分派） */
+  tool: WorkbenchTool
+  /** 两列小卡行 / 列表行组（kind=TILE_ROW/ROW_GROUP 用，其余空数组） */
+  tools: Array<WorkbenchTool>
+}
+
+/**
+ * 按 sort 序折块（对齐安卓 List<WorkbenchTool>.toBlocks）：sectionTitle 与前一 entry 不同 →
+ * 插区块标题（并打断连续归并链，不同分组的 row/tile 各自成组）；随后按 layout 流式归并。
+ */
+export function buildWorkbenchBlocks(tools: Array<WorkbenchTool>): Array<WorkbenchBlock> {
+  const blocks: WorkbenchBlock[] = []
+  let currentSection: string = ''
+  tools.forEach((tool: WorkbenchTool): void => {
+    if (tool.sectionTitle.length > 0 && tool.sectionTitle !== currentSection) {
+      blocks.push({ kind: WorkbenchBlockKind.SECTION, title: tool.sectionTitle, tool: tool, tools: [] })
+      currentSection = tool.sectionTitle
+    }
+    switch (tool.layout) {
+      case WorkbenchLayout.NOTICE:
+        blocks.push({ kind: WorkbenchBlockKind.NOTICE, title: '', tool: tool, tools: [] })
+        break
+      case WorkbenchLayout.WIDE:
+        blocks.push({ kind: WorkbenchBlockKind.WIDE, title: '', tool: tool, tools: [] })
+        break
+      case WorkbenchLayout.ROW: {
+        const last = blocks.length > 0 ? blocks[blocks.length - 1] : null
+        if (last !== null && last.kind === WorkbenchBlockKind.ROW_GROUP) {
+          last.tools.push(tool)
+        } else {
+          blocks.push({ kind: WorkbenchBlockKind.ROW_GROUP, title: '', tool: tool, tools: [tool] })
+        }
+        break
+      }
+      case WorkbenchLayout.TILE:
+      default: {
+        const last = blocks.length > 0 ? blocks[blocks.length - 1] : null
+        if (last !== null && last.kind === WorkbenchBlockKind.TILE_ROW && last.tools.length < 2) {
+          last.tools.push(tool)
+        } else {
+          blocks.push({ kind: WorkbenchBlockKind.TILE_ROW, title: '', tool: tool, tools: [tool] })
+        }
+        break
+      }
+    }
+  })
+  return blocks
 }
 
 /**
@@ -162,6 +274,14 @@ export class WorkbenchText {
   static readonly workbench_tool_short_code_desc: string = "生成并管理跳转短链"
   static readonly workbench_footer: string = "工具会陆续加进来"
   static readonly workbench_coming_soon: string = "功能建设中，敬请期待"
+  // 搜索 / 最近使用 / 公告条 / 真实错误空态（2026-11-04 类型化组件批，键名对齐安卓 strings.xml）
+  static readonly workbench_entries_error: string = "工具列表加载失败，请检查网络后重试"
+  static readonly workbench_entries_empty: string = "工具还在准备中，稍后再来看看"
+  static readonly workbench_retry: string = "重试"
+  static readonly workbench_search_hint: string = "搜索工具"
+  static readonly workbench_search_empty: string = "没有找到相关工具，换个关键词试试"
+  static readonly workbench_recent_title: string = "最近使用"
+  static readonly workbench_notice_dismiss: string = "关闭公告"
 }
 
 /**
@@ -178,7 +298,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("calendar"),
     tint: WorkbenchTint.GREEN,
     target: "", // 洗衣黄历：功能建设中
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   {
     entryKey: "stain_recognition",
@@ -187,7 +310,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("search"),
     tint: WorkbenchTint.BLUE,
     target: "", // 渍迹识别：功能建设中
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   {
     entryKey: "fabric_encyclopedia",
@@ -196,7 +322,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("book"),
     tint: WorkbenchTint.TEAL,
     target: "", // 面料百科：功能建设中
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   {
     entryKey: "cost_estimate",
@@ -205,7 +334,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("calculate"),
     tint: WorkbenchTint.PURPLE,
     target: "", // 费用估算：功能建设中
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   {
     entryKey: "my_history",
@@ -214,7 +346,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("history"),
     tint: WorkbenchTint.PURPLE,
     target: `${DEEPLINK_SCHEME}://divination-history`, // host 由观象台注册（DeepLinkRegistry）
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   {
     entryKey: "ai_assistant",
@@ -225,7 +360,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     // 与安卓差异：安卓 target=smartwash://ai-work（壳层 AiWork 页）；鸿蒙 AI 工具工作台未实现，
     // host 不注册，target 留空走「功能建设中」提示（保持既有行为）
     target: "",
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   },
   // 与安卓的历史差异说明：安卓工作台此前为 6 项假数据、无短链入口；
   // 本项为鸿蒙侧先行追加的第 7 格，安卓工作台服务端下发版已按 entryKey（toolbox_short_code）对齐。
@@ -236,7 +374,10 @@ export const DEFAULT_WORKBENCH_TOOLS: WorkbenchTool[] = [
     icon: workbenchIconFromKey("link"),
     tint: WorkbenchTint.BLUE,
     target: `${DEEPLINK_SCHEME}://toolbox-short-code`, // host 由工具箱注册（DeepLinkRegistry）
-    badge: ""
+    badge: "",
+    layout: WorkbenchLayout.TILE,
+    sectionTitle: "",
+    imageUrl: ""
   }
 ]
 

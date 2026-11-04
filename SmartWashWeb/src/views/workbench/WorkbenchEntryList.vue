@@ -56,6 +56,14 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="类型" min-width="110">
+          <template #default="{ row }">
+            <!-- 端上按 type key 选组件渲染：展示中文文案便于核对，title 悬浮保留原始 key -->
+            <el-tag size="small" type="info" :title="row.type || 'tile'">
+              {{ workbenchEntryTypeText(row.type || 'tile') }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="target" label="跳转 target" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="target-cell">
@@ -199,6 +207,35 @@
         <!-- 跳转与样式 -->
         <el-divider content-position="left">跳转与样式</el-divider>
 
+        <el-form-item label="卡片类型" prop="type">
+          <el-select
+            v-model="tempEntry.type"
+            placeholder="请选择卡片类型"
+            style="width: 100%"
+            @change="handleTypeChange"
+          >
+            <el-option
+              v-for="opt in WORKBENCH_ENTRY_TYPE_OPTIONS"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+          <div class="form-tip">
+            端上按 sort 顺序流式渲染：连续「列表行」归并进同一张白卡、连续「两列小卡」归并为两列网格，「通栏横卡」独占一行，「公告条」为可关闭的运营触达位（target 选填）；配合排序与分组标题即可组合出不同的页面构图
+          </div>
+        </el-form-item>
+
+        <el-form-item label="分组标题">
+          <el-input
+            v-model="tempEntry.sectionTitle"
+            placeholder="选填，如 效率工具"
+            maxlength="32"
+            show-word-limit
+          />
+          <div class="form-tip">端上在与上一项不同时渲染为区块标题；配合排序把入口划进不同分区</div>
+        </el-form-item>
+
         <el-form-item label="图标" prop="icon">
           <el-select v-model="tempEntry.icon" placeholder="请选择图标" style="width: 100%">
             <el-option
@@ -223,6 +260,38 @@
               <span>{{ opt.label }}</span>
             </el-option>
           </el-select>
+        </el-form-item>
+
+        <el-form-item label="配图" prop="imageUrl">
+          <div class="cover-field">
+            <el-upload
+              class="cover-uploader"
+              :show-file-list="false"
+              accept="image/png,image/jpeg,image/webp"
+              :before-upload="handleCoverBeforeUpload"
+              :http-request="handleCoverUpload"
+            >
+              <img
+                v-if="tempEntry.imageUrl"
+                :src="tempEntry.imageUrl"
+                class="cover-preview"
+                alt="配图预览"
+              />
+              <div v-else class="cover-empty" :class="{ uploading: coverUploading }">
+                <el-icon><Plus /></el-icon>
+                <span>{{ coverUploading ? '上传中…' : '上传配图' }}</span>
+              </div>
+            </el-upload>
+            <el-button
+              v-if="tempEntry.imageUrl"
+              size="small"
+              :disabled="coverUploading"
+              @click="tempEntry.imageUrl = ''"
+            >
+              移除配图
+            </el-button>
+          </div>
+          <div class="form-tip">选填：png / jpeg / webp，不超过 5MB；有配图时端上卡片展示图文样式</div>
         </el-form-item>
 
         <el-form-item label="跳转 target" prop="target">
@@ -264,11 +333,13 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import { Plus } from '@element-plus/icons-vue';
 import {
   getWorkbenchEntryList,
   addWorkbenchEntry,
   updateWorkbenchEntry,
   deleteWorkbenchEntry,
+  uploadWorkbenchImage,
 } from '@/api/workbench';
 import { getDeeplinkRouteList } from '@/api/deeplink';
 import { formatTime } from '@/utils/format';
@@ -277,9 +348,11 @@ import { useConfirm } from '@/composables/useConfirm';
 import {
   WORKBENCH_ENTRY_ICON_OPTIONS,
   WORKBENCH_ENTRY_COLOR_OPTIONS,
+  WORKBENCH_ENTRY_TYPE_OPTIONS,
   workbenchEntryIconText,
   workbenchEntryColorText,
   workbenchEntryColorHex,
+  workbenchEntryTypeText,
 } from '@/constants/dict';
 import logger from '@/utils/logger';
 
@@ -324,6 +397,9 @@ const tempEntry = reactive({
   description: '',
   icon: 'default',
   color: 'green',
+  type: 'tile',
+  sectionTitle: '',
+  imageUrl: '',
   target: '',
   badge: '',
   enabled: 1,
@@ -350,15 +426,69 @@ const rules = reactive({
     { max: 32, message: '标题不能超过 32 个字符', trigger: 'blur' },
   ],
   target: [
-    { required: true, message: '请输入跳转 target', trigger: 'blur' },
     {
-      pattern: TARGET_PATTERN,
-      message: '须以 smartwash:// 或 http(s):// 开头且不含空白',
+      // notice 公告条 target 选填（纯文案公告），其余类型必填——与后端业务层校验同语义
+      validator: (rule, value, callback) => {
+        if (tempEntry.type !== 'notice' && !value) {
+          callback(new Error('该卡片类型必须配置跳转 target'));
+          return;
+        }
+        if (value && !TARGET_PATTERN.test(value)) {
+          callback(new Error('须以 smartwash:// 或 http(s):// 开头且不含空白'));
+          return;
+        }
+        if (value && value.length > 512) {
+          callback(new Error('target 不能超过 512 个字符'));
+          return;
+        }
+        callback();
+      },
       trigger: 'blur',
     },
-    { max: 512, message: 'target 不能超过 512 个字符', trigger: 'blur' },
   ],
 });
+
+// 类型切换后重校验 target（notice 选填 ↔ 其他必填的提示需要即时跟随）
+const handleTypeChange = () => {
+  if (dialogType.value === 'create' || dialogType.value === 'edit') {
+    formRef.value?.validateField('target').catch(() => {});
+  }
+};
+
+// ---------- 配图上传 ----------
+
+const coverUploading = ref(false);
+
+const COVER_OK_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+// 上传前置校验：类型与大小拦截（与后端 uploadImage 校验同语义）
+const handleCoverBeforeUpload = (file) => {
+  if (!COVER_OK_TYPES.includes(file.type)) {
+    ElMessage.error('仅支持 png / jpeg / webp 图片');
+    return false;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 5MB');
+    return false;
+  }
+  return true;
+};
+
+// 自定义上传：直传 MinIO（后端 /admin/workbench/entries/image），成功回填 imageUrl
+const handleCoverUpload = async ({ file }) => {
+  coverUploading.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const url = await uploadWorkbenchImage(formData);
+    tempEntry.imageUrl = url;
+    ElMessage.success('配图已上传');
+  } catch (error) {
+    ElMessage.error(error.message || '配图上传失败');
+  } finally {
+    coverUploading.value = false;
+  }
+};
 
 // ---------- 路由字典下拉（target 快捷填充） ----------
 
@@ -398,6 +528,9 @@ const buildRowUpdatePayload = (row, overrides = {}) => ({
   description: row.description,
   icon: row.icon,
   color: row.color,
+  type: row.type || 'tile',
+  sectionTitle: row.sectionTitle,
+  imageUrl: row.imageUrl,
   target: row.target,
   badge: row.badge,
   enabled: row.enabled,
@@ -465,6 +598,9 @@ const handleCreate = () => {
     description: '',
     icon: 'default',
     color: 'green',
+    type: 'tile',
+    sectionTitle: '',
+    imageUrl: '',
     target: '',
     badge: '',
     enabled: 1,
@@ -497,6 +633,9 @@ const buildSubmitPayload = () => {
     description: tempEntry.description,
     icon: tempEntry.icon,
     color: tempEntry.color,
+    type: tempEntry.type,
+    sectionTitle: tempEntry.sectionTitle,
+    imageUrl: tempEntry.imageUrl,
     target: tempEntry.target,
     badge: tempEntry.badge,
     enabled: tempEntry.enabled,
@@ -651,5 +790,47 @@ const handleDelete = async (row) => {
 .route-select {
   width: 100%;
   margin-top: 4px;
+}
+
+/* 配图上传区：固定预览框尺寸，点击整块即触发 el-upload 文件选择 */
+.cover-field {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cover-uploader :deep(.el-upload) {
+  border: 1px dashed var(--border, #dcdfe6);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.cover-uploader :deep(.el-upload:hover) {
+  border-color: var(--el-color-primary);
+}
+
+.cover-preview {
+  display: block;
+  width: 148px;
+  height: 84px;
+  object-fit: cover;
+}
+
+.cover-empty {
+  width: 148px;
+  height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted, #909399);
+  font-size: 12px;
+}
+
+.cover-empty.uploading {
+  opacity: 0.6;
 }
 </style>

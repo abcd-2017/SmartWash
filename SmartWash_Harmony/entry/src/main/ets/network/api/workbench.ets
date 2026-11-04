@@ -10,7 +10,7 @@ import { httpUtil } from '../HttpUtil'
 
 /**
  * 工作台入口 VO（对齐后端 WorkbenchEntryVo / 安卓 WorkbenchEntryVo，字段名逐一勿改）。
- * icon/color 为端上白名单枚举 key，未知值显示默认样式（default 图标 + green 色组）。
+ * icon/color/type 为端上白名单枚举 key，未知值显示默认样式（default 图标 + green 色组 + tile 两列小卡）。
  */
 export interface WorkbenchEntryVo {
   /** 业务唯一标识，端上兜底列表对齐用（兼作列表稳定 key） */
@@ -19,10 +19,16 @@ export interface WorkbenchEntryVo {
   title?: string
   /** 副标题描述 */
   description?: string
-  /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/default） */
+  /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/science/gamepad/default） */
   icon?: string
   /** 图标色组 key（白名单：green/blue/orange/pink/teal/purple） */
   color?: string
+  /** 卡片类型 key（白名单：tile/wide/row/notice；端上按类型选组件渲染，未知值兜底 tile） */
+  type?: string
+  /** 分组标题（端上在与前一 entry 不同时渲染区块标题），空则不分组 */
+  sectionTitle?: string | null
+  /** 配图直链（管理端上传 MinIO），空则纯文字卡片 */
+  imageUrl?: string | null
   /** 跳转 URI：smartwash://... 或 https://...；空 = 功能建设中 */
   target?: string | null
   /** 角标文案（如 新/热），空则不显示 */

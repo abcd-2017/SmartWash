@@ -28,23 +28,35 @@ public class AddWorkbenchEntryFrom {
     @Size(max = 128, message = "描述过长（上限128字符）")
     private String description;
 
-    /** 图标 key（端上白名单枚举映射，未知值显示默认图标；gamepad 对应游戏中心种子入口） */
-    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|gamepad|default)$", message = "图标 key 不在白名单内")
+    /** 图标 key（端上白名单枚举映射，未知值显示默认图标；gamepad 对应游戏中心、science 对应解压实验舱种子入口） */
+    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|science|gamepad|default)$", message = "图标 key 不在白名单内")
     private String icon = "default";
 
     /** 图标色组 key */
     @Pattern(regexp = "^(green|blue|orange|pink|teal|purple)$", message = "色组 key 须为 green/blue/orange/pink/teal/purple")
     private String color = "green";
 
-    /** 跳转 URI：smartwash://... 或 https://... */
-    @NotBlank(message = "跳转 URI 不能为空")
+    /** 卡片类型 key（端上按类型选组件渲染；tile 两列小卡 / wide 通栏卡 / row 列表行 / notice 公告条，未知值端上兜底 tile） */
+    @Pattern(regexp = "^(tile|wide|row|notice)$", message = "卡片类型 key 须为 tile/wide/row/notice")
+    private String type = "tile";
+
+    /** 跳转 URI：smartwash://... 或 https://...；notice 公告条可空（纯文案公告），其余类型业务层校验必填 */
     @Size(max = 512, message = "跳转 URI 过长（上限512字符）")
-    @Pattern(regexp = "^(smartwash://|https?://)\\S+$", message = "跳转 URI 须以 smartwash:// 或 http(s):// 开头且不含空白")
+    @Pattern(regexp = "^$|^(smartwash://|https?://)\\S+$", message = "跳转 URI 须以 smartwash:// 或 http(s):// 开头且不含空白")
     private String target;
 
     /** 角标文案（如 新/热），空则不显示 */
     @Size(max = 16, message = "角标文案过长（上限16字符）")
     private String badge;
+
+    /** 分组标题：端上在与前一项不同时渲染区块标题，空则不分组 */
+    @Size(max = 32, message = "分组标题过长（上限32字符）")
+    private String sectionTitle;
+
+    /** 配图直链（管理端经上传接口获取），空则纯文字卡片 */
+    @Size(max = 512, message = "配图地址过长（上限512字符）")
+    @Pattern(regexp = "^$|^https?://\\S+$", message = "配图地址须以 http(s):// 开头且不含空白")
+    private String imageUrl;
 
     /** 1启用 0停用 */
     @Min(value = 0, message = "enabled 只能为 0 或 1")

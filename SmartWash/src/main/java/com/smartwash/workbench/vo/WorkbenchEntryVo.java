@@ -27,6 +27,15 @@ public class WorkbenchEntryVo {
     /** 图标色组 key：green/blue/orange/pink/teal/purple */
     private String color;
 
+    /** 卡片类型 key：tile/wide/row/notice（端上按类型选组件渲染，未知值兜底 tile 两列小卡） */
+    private String type;
+
+    /** 分组标题：端上在与前一项不同时渲染区块标题，空则不分组 */
+    private String sectionTitle;
+
+    /** 配图直链（管理端上传 MinIO），空则纯文字卡片 */
+    private String imageUrl;
+
     /** 跳转 URI：smartwash://... 或 https://... */
     private String target;
 

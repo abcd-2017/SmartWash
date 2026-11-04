@@ -1217,6 +1217,9 @@ CREATE TABLE `workbench_entry` (
   `description` VARCHAR(128) DEFAULT NULL COMMENT '副标题描述',
   `icon`        VARCHAR(32)  NOT NULL DEFAULT 'default' COMMENT '图标key,端上白名单枚举映射,未知值显示默认图标',
   `color`       VARCHAR(16)  NOT NULL DEFAULT 'green' COMMENT '图标色组key: green/blue/orange/pink/teal/purple',
+  `type`        VARCHAR(16)  NOT NULL DEFAULT 'tile' COMMENT '卡片类型key: tile/wide/row/notice,端上白名单枚举映射,未知值显示默认两列小卡',
+  `section_title` VARCHAR(32) DEFAULT NULL COMMENT '分组标题,端上在与前一项不同时渲染区块标题,空则不分组',
+  `image_url`   VARCHAR(512) DEFAULT NULL COMMENT '配图直链(管理端上传MinIO),空则纯文字卡片',
   `target`      VARCHAR(512) NOT NULL COMMENT '跳转URI: smartwash://... 或 https://...',
   `badge`       VARCHAR(16)  DEFAULT NULL COMMENT '角标文案(如 新/热),空则不显示',
   `enabled`     TINYINT      NOT NULL DEFAULT 1 COMMENT '1启用 0停用',
@@ -1274,17 +1277,19 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
+-- type + section_title 演示构图：游戏中心通栏卡 → 「趣味实验」两列小卡 → 「日常管理」四行列表卡 → 「效率工具」两列小卡
+-- image_url 种子留空，配图由管理端上传接口（POST /admin/workbench/entries/image）产生
 -- ----------------------------
-INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
-  ('toolbox-short-code', '短链工具箱', '生成与管理短链', 'link',    'blue',   'smartwash://toolbox-short-code',   NULL, 1, 1, NULL),
-  ('my-history',         '我的卦历',   NULL,             'history', 'purple', 'smartwash://divination-history',   NULL, 1, 2, NULL),
-  ('ai-assistant',       'AI 助手',    NULL,             'chat',    'blue',   'smartwash://ai-work',              NULL, 1, 3, NULL),
-  ('game-center',        '游戏中心',   'H5 小游戏合集',  'gamepad', 'teal',   'smartwash://game-center',          NULL, 1, 9, NULL),
-  ('mood',               '情绪气象站', '记录每天的心情', 'chat',    'purple', 'smartwash://mood',                 '新', 1, 4, NULL),
-  ('review',             '记忆复习',   'FSRS 复习卡片',  'book',    'blue',   'smartwash://review',               '新', 1, 5, NULL),
-  ('subscription',       '订阅逃生舱', '管理订阅与续费', 'link',    'orange', 'smartwash://subscription',         '新', 1, 6, NULL),
-  ('delivery',           '设备投递',   '手机与电脑互传文件', 'link', 'teal',   'smartwash://delivery',           '新', 1, 7, NULL),
-  ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'smartwash://lab', '新', 1, 10, NULL);
+INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `color`, `type`, `section_title`, `target`, `badge`, `enabled`, `sort`, `remark`) VALUES
+  ('game-center',        '游戏中心',   'H5 小游戏合集',                 'gamepad', 'teal',   'wide',  NULL,      'smartwash://game-center',        NULL, 1, 1, NULL),
+  ('mood',               '情绪气象站', '记录每天的心情',               'chat',    'purple', 'tile',  '趣味实验', 'smartwash://mood',               '新', 1, 2, NULL),
+  ('lab',                '解压实验舱', '泡泡纸 · 呼吸引导 · 指尖鱼群', 'science', 'purple', 'tile',  '趣味实验', 'smartwash://lab',                '新', 1, 3, NULL),
+  ('review',             '记忆复习',   'FSRS 复习卡片',                'book',    'blue',   'row',   '日常管理', 'smartwash://review',             '新', 1, 4, NULL),
+  ('subscription',       '订阅逃生舱', '管理订阅与续费',               'link',    'orange', 'row',   '日常管理', 'smartwash://subscription',       '新', 1, 5, NULL),
+  ('delivery',           '设备投递',   '手机与电脑互传文件',           'link',    'teal',   'row',   '日常管理', 'smartwash://delivery',           '新', 1, 6, NULL),
+  ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 7, NULL),
+  ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 8, NULL),
+  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 9, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）

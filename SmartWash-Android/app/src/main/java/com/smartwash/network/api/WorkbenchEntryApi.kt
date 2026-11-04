@@ -21,7 +21,7 @@ interface WorkbenchEntryApi {
 
 /**
  * 工作台入口 VO（对齐后端 WorkbenchEntryVo，字段名逐一对齐勿改名）。
- * icon/color 为端上白名单枚举 key，未知值显示默认样式（default 图标 + green 色组）。
+ * icon/color/type 为端上白名单枚举 key，未知值显示默认样式（default 图标 + green 色组 + tile 两列小卡）。
  */
 @Keep
 data class WorkbenchEntryVo(
@@ -34,11 +34,20 @@ data class WorkbenchEntryVo(
     /** 副标题描述 */
     val description: String = "",
 
-    /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/science/default） */
+    /** 图标 key（白名单：calendar/search/book/calculate/history/chat/link/science/gamepad/default） */
     val icon: String = "",
 
     /** 图标色组 key（白名单：green/blue/orange/pink/teal/purple） */
     val color: String = "",
+
+    /** 卡片类型 key（白名单：tile/wide/row/notice；端上按类型选组件渲染，未知值兜底 tile） */
+    val type: String = "tile",
+
+    /** 分组标题（端上在与前一 entry 不同时渲染区块标题），空则不分组 */
+    val sectionTitle: String? = null,
+
+    /** 配图直链（管理端上传 MinIO），空则纯文字卡片 */
+    val imageUrl: String? = null,
 
     /** 跳转 URI：smartwash://... 或 https://...；空 = 功能建设中 */
     val target: String? = null,

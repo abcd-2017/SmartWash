@@ -30,6 +30,15 @@ public class AdminWorkbenchEntryVo {
     /** 图标色组 key */
     private String color;
 
+    /** 卡片类型 key：tile/wide/row/notice */
+    private String type;
+
+    /** 分组标题：端上分组边界渲染区块标题 */
+    private String sectionTitle;
+
+    /** 配图直链 */
+    private String imageUrl;
+
     /** 跳转 URI */
     private String target;
 
