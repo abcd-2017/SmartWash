@@ -56,7 +56,7 @@ SmartWash 是校园智能洗衣一站式服务平台：学生在 App（Android /
 
 - `smart_wash.sql`：9 所衡阳市中小学种子数据、5 档洗衣项目价格、完整状态枚举与角色种子。
 - `README.md`：功能模块表、API 契约、默认账号（root/admin/lisi，生产必改）。
-- `.claude/docs/code-review-2026-08-28.md`：四端深度评审问题清单与优先级（做订单/支付/充值/优惠券改动前必读）。
+- `docs/code-review-2026-08-28.md`：四端深度评审问题清单与优先级（做订单/支付/充值/优惠券改动前必读）。
 - `SmartWash-Android/.claude/ui-design-spec.md`：清氧设计系统完整规范（本仓库唯一成文的设计规范文档）。
 - **不存在**：真实用户数据、运营案例、用户评价、媒体报道——任何设计与文案不得虚构此类内容。
 

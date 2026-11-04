@@ -382,7 +382,7 @@ npm run dev
 
 ## 已知风险与待办
 
-详细问题清单与优先级路线图见 **[.claude/docs/code-review-2026-08-28.md](.claude/docs/code-review-2026-08-28.md)**。
+详细问题清单与优先级路线图见 **[docs/code-review-2026-08-28.md](docs/code-review-2026-08-28.md)**。
 
 ### P0（必须修复）
 
