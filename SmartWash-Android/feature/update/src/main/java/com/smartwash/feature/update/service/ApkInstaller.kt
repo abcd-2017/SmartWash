@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import com.smartwash.common.utils.AppLogger
 import java.io.File
 
 /**
@@ -22,6 +23,9 @@ sealed interface InstallRequestResult {
  */
 object ApkInstaller {
 
+    /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+    private const val TAG = "ApkInstaller"
+
     /**
      * 安装点击的完整序列（自壳层 UpdateFlow 下沉）：有安装权限则拉起系统安装器；
      * 无权限跳「允许安装未知应用」设置页。
@@ -32,8 +36,12 @@ object ApkInstaller {
     fun requestInstall(context: Context, apkFile: File): InstallRequestResult {
         return if (canInstallApk(context)) {
             installViaIntent(context, apkFile)
+            // 低频关键动作成功：Intent 已实际发出后再记，避免 startActivity 抛异常时日志失真
+            AppLogger.info(TAG, "已发起 APK 安装：file=${apkFile.name} size=${apkFile.length()} B")
             InstallRequestResult.Installed
         } else {
+            // 低频关键动作（正常分流分支）：引导用户授权安装未知应用
+            AppLogger.info(TAG, "缺少「安装未知应用」权限，跳转系统设置页引导授权")
             openInstallPermissionSettings(context)
             InstallRequestResult.NeedPermission
         }
@@ -97,6 +105,9 @@ object ApkInstaller {
      */
     fun deleteLocalApk(context: Context) {
         val apkFile = File(context.cacheDir, ApkDownloadWorker.APK_FILE_NAME)
-        if (apkFile.exists()) apkFile.delete()
+        if (apkFile.exists()) {
+            apkFile.delete()
+            AppLogger.debug(TAG, "已删除本地缓存 APK：${apkFile.absolutePath}")
+        }
     }
 }

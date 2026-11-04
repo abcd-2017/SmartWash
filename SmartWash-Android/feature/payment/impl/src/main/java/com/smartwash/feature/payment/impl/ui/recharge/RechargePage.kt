@@ -73,6 +73,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
@@ -378,6 +379,13 @@ fun RechargePage(
                 amountError = amountResult.error
                 if (amountResult.error == null && selectedPaymentMethod != null) {
                     rechargeViewModel.userRecharge(amountResult.amount!!, selectedPaymentMethod!!.payType)
+                } else {
+                    // 业务拒绝（客户端校验不过）：留痕拒绝原因与尝试金额，便于对齐「为什么没发起充值」
+                    AppLogger.warn(
+                        TAG,
+                        "充值提交被客户端校验拒绝: amountError=${amountResult.error} " +
+                            "支付方式未选=${selectedPaymentMethod == null} 预设金额=$selectedAmount 自定义输入=$customAmount"
+                    )
                 }
             },
             onDismiss = { showDialog = false }
@@ -626,6 +634,9 @@ private fun PaymentMethodCard(
 
 /** 赠额映射（设计稿 .amount3 em：¥50 送 ¥2 / ¥100 送 ¥8 / ¥200 送 ¥20） */
 private val AmountBonuses = mapOf(50f to 2f, 100f to 8f, 200f to 20f)
+
+/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+private const val TAG = "RechargePage"
 
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)

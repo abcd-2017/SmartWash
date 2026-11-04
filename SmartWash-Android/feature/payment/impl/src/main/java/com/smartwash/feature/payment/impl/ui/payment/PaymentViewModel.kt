@@ -1,9 +1,8 @@
 package com.smartwash.feature.payment.impl.ui.payment
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.smartwash.feature.payment.impl.PaymentImplConstant
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.coupon.api.CouponApi
 import com.smartwash.feature.coupon.api.model.UsableCoupon
 import com.smartwash.feature.payment.impl.network.entity.OrderPayment
@@ -44,7 +43,7 @@ class PaymentViewModel @Inject constructor(
                 _orderInfo.value = orderApi.getOrderInfo(orderId)
                 _initState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(PaymentImplConstant.APP_NAME, "PaymentViewModel.initData: ${e.message}", e)
+                AppLogger.error(TAG, "PaymentViewModel.initData: ${e.message}", e)
                 _initState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -58,7 +57,7 @@ class PaymentViewModel @Inject constructor(
                 _userCouponList.value = canUseCoupon
                 _getUserCouponState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(PaymentImplConstant.APP_NAME, "PaymentViewModel.getaUserCoupon: ${e.message}", e)
+                AppLogger.error(TAG, "PaymentViewModel.getaUserCoupon: ${e.message}", e)
                 _getUserCouponState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -68,10 +67,16 @@ class PaymentViewModel @Inject constructor(
         _calculationOrderState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                _orderInfo.value = orderApi.calculationOrder(orderId, userCouponId)
+                val recalculated = orderApi.calculationOrder(orderId, userCouponId)
+                _orderInfo.value = recalculated
+                // 低频关键动作成功：选券试算完成（结果直接决定应付金额，留痕业务键）
+                AppLogger.info(
+                    TAG,
+                    "calculationOrder: 支付试算完成 orderId=$orderId userCouponId=$userCouponId payPrice=${recalculated.payPrice}"
+                )
                 _calculationOrderState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(PaymentImplConstant.APP_NAME, "PaymentViewModel.calculationOrder: ${e.message}", e)
+                AppLogger.error(TAG, "PaymentViewModel.calculationOrder: ${e.message}", e)
                 _calculationOrderState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -81,10 +86,22 @@ class PaymentViewModel @Inject constructor(
         _paymentState.value = RequestState.Loading
         viewModelScope.launch {
             try {
+                // 发起支付以 debug 留业务键：后端业务拒绝（余额不足/优惠券异常/已支付等）经
+                // ResponseInterceptor 统一 warn 留痕但不带订单号，凭本行在 debug 构建对齐订单
+                AppLogger.debug(
+                    TAG,
+                    "paymentOrder: 发起支付 orderId=$orderId paymentType=$paymentState userCouponId=$userCouponId"
+                )
                 paymentRepository.payment(OrderPayment(orderId, paymentState, userCouponId))
+                // 低频关键动作成功：订单支付完成（资金链路核心留痕，payPrice 为支付前试算应付金额）
+                AppLogger.info(
+                    TAG,
+                    "paymentOrder: 订单支付成功 orderId=$orderId paymentType=$paymentState " +
+                        "userCouponId=$userCouponId payPrice=${_orderInfo.value?.payPrice}"
+                )
                 _paymentState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(PaymentImplConstant.APP_NAME, "PaymentViewModel.paymentOrder: ${e.message}", e)
+                AppLogger.error(TAG, "PaymentViewModel.paymentOrder: ${e.message}", e)
                 _paymentState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -100,5 +117,10 @@ class PaymentViewModel @Inject constructor(
 
     fun resetInitState() {
         _initState.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "PaymentViewModel"
     }
 }

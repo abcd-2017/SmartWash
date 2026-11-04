@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTimestamp
 import android.media.AudioTrack
+import com.smartwash.common.utils.AppLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -141,6 +142,7 @@ class DrumEngine {
 
     private fun runScheduler(gen: Int) {
         val track = createTrack() ?: run {
+            AppLogger.warn(TAG, "createTrack 失败，节拍机本次播放无法开始")
             playing = false
             _currentStep.value = -1
             return
@@ -182,8 +184,9 @@ class DrumEngine {
             track.stop()
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
-        } catch (_: Throwable) {
-            // 音频设备异常：静默停止（玩具页不崩溃）
+        } catch (e: Throwable) {
+            // 音频设备异常：静默停止（玩具页不崩溃），降级留痕（低频：每次播放会话至多一次）
+            AppLogger.warn(TAG, "音频调度线程异常退出，节拍机停止", e)
         } finally {
             track.release()
             if (generation.get() == gen) _currentStep.value = -1
@@ -400,6 +403,8 @@ class DrumEngine {
     companion object {
         const val MIN_BPM = 60
         const val MAX_BPM = 180
+
+        private const val TAG = "DrumEngine"
 
         private const val DEFAULT_BPM = 120
         private const val SAMPLE_RATE = 44_100

@@ -2,6 +2,7 @@ package com.smartwash.feature.toolbox.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.toolbox.ToolboxConstant
 import com.smartwash.feature.toolbox.network.ShortCodeStatsVo
 import com.smartwash.feature.toolbox.repository.ToolboxRepository
@@ -24,6 +25,10 @@ class ShortCodeStatsPagingSource(
                 size = ToolboxConstant.PAGE_SIZE,
             )
             val records = pageData.records
+            if (records.isEmpty()) {
+                // 空页留痕：分页热路径，debug 级别
+                AppLogger.debug(TAG, "load: 访问明细空页，结束分页 shortCodeId=$shortCodeId page=$currentPage")
+            }
             LoadResult.Page(
                 data = records,
                 prevKey = if (currentPage == 1) null else currentPage - 1,
@@ -32,6 +37,7 @@ class ShortCodeStatsPagingSource(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            AppLogger.error(TAG, "ShortCodeStatsPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }
@@ -44,5 +50,9 @@ class ShortCodeStatsPagingSource(
             state.closestPageToPosition(anchor)?.prevKey?.plus(1)
                 ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
         }
+    }
+
+    private companion object {
+        const val TAG = "ShortCodeStatsPagingSource"
     }
 }

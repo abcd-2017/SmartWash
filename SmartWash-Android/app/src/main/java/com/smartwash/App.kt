@@ -5,7 +5,9 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.smartwash.common.init.InitEngine
 import com.smartwash.common.init.InitTaskRegistry
+import com.smartwash.common.utils.AppLogger
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,7 +36,10 @@ class App : Application(), Configuration.Provider {
         // 初始化引擎接入：各模块 InitTask 经 @IntoSet 注册自动纳入调度
         //（会话预热 sessionWarmUp 已迁 :feature:user:impl 的 SessionInitTask——阻塞高优先级，
         //  挂起读 DataStore 保证拦截器首请求即可命中 token；另有 feature:update 的启动静默检查）
-        applicationScope.launch {
+        // 未捕获异常兜底：只记 error 日志（含堆栈），不改变 Job/调度器结构
+        applicationScope.launch(CoroutineExceptionHandler { _, e ->
+            AppLogger.error(TAG, "applicationScope 协程未捕获异常", e)
+        }) {
             InitEngine(initTaskRegistry.getTasks()).executeAll()
         }
     }
@@ -44,4 +49,9 @@ class App : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "App"
+    }
 }

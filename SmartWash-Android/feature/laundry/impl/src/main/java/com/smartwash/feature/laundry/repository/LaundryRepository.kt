@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.smartwash.common.database.AppDatabase
 import com.smartwash.common.database.dao.LaundryItemDao
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.laundry.network.api.LaundryItemsApi
 import com.smartwash.feature.laundry.network.vo.LaundryItem
@@ -46,7 +47,19 @@ class LaundryRepository @Inject constructor(
             // 取消不作为网络错误，直接上抛
             throw e
         } catch (e: Exception) {
-            if (cached.isNotEmpty()) cached else throw e
+            if (cached.isNotEmpty()) {
+                // 降级留痕：网络失败但本地有缓存 → 回落 Room 缓存（调用方按成功数据展示）
+                AppLogger.warn(TAG, "getLaundryItems: 网络加载失败，降级返回 Room 缓存（网络→Room, ${cached.size} 条）: ${e.message}", e)
+                cached
+            } else {
+                // 无缓存可降级：异常上抛，由调用方（ViewModel catch）按 error 记录，此处不重复打
+                throw e
+            }
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "LaundryRepository"
     }
 }

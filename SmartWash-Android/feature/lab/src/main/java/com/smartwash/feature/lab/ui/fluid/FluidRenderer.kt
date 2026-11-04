@@ -5,6 +5,7 @@ import android.opengl.GLES10
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
+import com.smartwash.common.utils.AppLogger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -192,7 +193,9 @@ class FluidRenderer : GLSurfaceView.Renderer {
             dyeWidth = 0
             dyeHeight = 0
             _state.value = FluidRenderState(ready = true, failed = false)
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            // GL 初始化失败：页面 failed 态兜底（低频：surface 创建时至多一次），降级留痕
+            AppLogger.warn(TAG, "GL 初始化失败，流体页按失败态兜底", e)
             initialized = false
             _state.value = FluidRenderState(ready = false, failed = true)
         }
@@ -667,6 +670,8 @@ class FluidRenderer : GLSurfaceView.Renderer {
 
     companion object {
         // ---------- 着色器（GLSL ES 3.00，全屏三角形 + uv） ----------
+
+        private const val TAG = "FluidRenderer"
 
         private const val VERTEX_SHADER = """#version 300 es
 layout(location = 0) in vec2 aPosition;

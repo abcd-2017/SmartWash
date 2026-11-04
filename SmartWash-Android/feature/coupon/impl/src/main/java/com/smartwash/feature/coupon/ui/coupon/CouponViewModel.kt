@@ -1,12 +1,11 @@
 package com.smartwash.feature.coupon.ui.coupon
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
-import com.smartwash.feature.coupon.CouponImplConstant
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.coupon.repository.CouponRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,7 +45,7 @@ class CouponViewModel @Inject constructor(
                 _historicalCoupons.value = data.historical
                 _loadState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(CouponImplConstant.APP_NAME, "CouponViewModel.loadAllCoupons: ${e.message}", e)
+                AppLogger.error(TAG, "CouponViewModel.loadAllCoupons: ${e.message}", e)
                 _loadState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -56,10 +55,12 @@ class CouponViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 couponRepository.receiveCoupon(couponId)
+                // 领取成功 = 低频关键动作成功，info 级（couponId 为业务键，无敏感信息）
+                AppLogger.info(TAG, "领取优惠券成功，couponId=$couponId")
                 _receiveCouponState.value = RequestState.Success
                 loadAllCoupons()
             } catch (e: NetworkException) {
-                Log.e(CouponImplConstant.APP_NAME, "CouponViewModel.receiveCoupon: ${e.message}", e)
+                AppLogger.error(TAG, "CouponViewModel.receiveCoupon: ${e.message}", e)
                 _receiveCouponState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -71,5 +72,10 @@ class CouponViewModel @Inject constructor(
 
     fun resetState() {
         _loadState.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "CouponViewModel"
     }
 }

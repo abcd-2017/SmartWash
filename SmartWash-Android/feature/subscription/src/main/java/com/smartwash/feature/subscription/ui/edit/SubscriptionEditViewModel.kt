@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.subscription.R
 import com.smartwash.feature.subscription.SubscriptionConstant
@@ -76,8 +77,10 @@ class SubscriptionEditViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionEditViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionEditViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(R.string.subscription_error_load_detail)
             }
         }
@@ -226,11 +229,18 @@ class SubscriptionEditViewModel @Inject constructor(
                     )
                 }
                 _submitState.value = RequestState.Success
+                if (isEditMode) {
+                    AppLogger.info(TAG, "订阅更新成功 id=$editId name=$name")
+                } else {
+                    AppLogger.info(TAG, "订阅创建成功 name=$name cycleType=${f.cycleType.raw}")
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "SubscriptionEditViewModel.submit: ${e.message}", e)
                 _submitState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "SubscriptionEditViewModel.submit: ${e.message}", e)
                 _submitState.value = RequestState.Error(R.string.subscription_error_submit)
             }
         }
@@ -263,5 +273,7 @@ class SubscriptionEditViewModel @Inject constructor(
 
     companion object {
         const val ARG_ID = "id"
+
+        private const val TAG = "SubscriptionEditViewModel"
     }
 }

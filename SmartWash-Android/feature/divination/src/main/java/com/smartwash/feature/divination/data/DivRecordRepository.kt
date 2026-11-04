@@ -1,6 +1,7 @@
 package com.smartwash.feature.divination.data
 
 import com.nlf.calendar.Solar
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.meihua.MeiHuaChart
 import com.smartwash.feature.divination.database.DivRecordDao
@@ -70,14 +71,25 @@ class DivRecordRepository @Inject constructor(
         }.timeInMillis
 
         val existing = dao.findTodaySign(DivMethod.MEI_HUA.id, question, dayStart, dayStart + 24 * 3600_000L)
-        val id = existing?.id ?: save(
-            method = DivMethod.MEI_HUA,
-            category = category,
-            question = question,
-            lines = chart.lines,
-            castAt = System.currentTimeMillis(),
-            bundle = DivChartBundle(method = DivMethod.MEI_HUA.id, meihua = chart),
-        )
+        val id = existing?.id ?: run {
+            val newId = save(
+                method = DivMethod.MEI_HUA,
+                category = category,
+                question = question,
+                lines = chart.lines,
+                castAt = System.currentTimeMillis(),
+                bundle = DivChartBundle(method = DivMethod.MEI_HUA.id, meihua = chart),
+            )
+            AppLogger.info(TAG, "今日一签入库 recordId=$newId")
+            newId
+        }
+        if (existing != null) {
+            AppLogger.debug(TAG, "todaySign: 今日一签幂等命中，复用当日记录 recordId=${existing.id}")
+        }
         return id to chart
+    }
+
+    private companion object {
+        const val TAG = "DivRecordRepository"
     }
 }

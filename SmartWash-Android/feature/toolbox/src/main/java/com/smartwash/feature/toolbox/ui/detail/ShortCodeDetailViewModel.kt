@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pagingFlow
 import com.smartwash.feature.toolbox.R
@@ -82,11 +83,14 @@ class ShortCodeDetailViewModel @Inject constructor(
                     ),
                 )
                 _updateState.value = RequestState.Success
+                AppLogger.info(TAG, "短链续期成功 id=${shortCode.id} preset=${preset.name}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.renewExpire: ${e.message}", e)
                 _updateState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.renewExpire: ${e.message}", e)
                 _updateState.value = RequestState.Error(R.string.toolbox_error_submit)
             }
         }
@@ -98,11 +102,14 @@ class ShortCodeDetailViewModel @Inject constructor(
             try {
                 repository.deleteShortCode(shortCode.id)
                 _deleteState.value = RequestState.Success
+                AppLogger.info(TAG, "短链删除成功 id=${shortCode.id}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.delete: ${e.message}", e)
                 _deleteState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.delete: ${e.message}", e)
                 _deleteState.value = RequestState.Error(R.string.toolbox_error_submit)
             }
         }
@@ -119,8 +126,10 @@ class ShortCodeDetailViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.resolveTarget: ${e.message}", e)
                 _resolveState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ShortCodeDetailViewModel.resolveTarget: ${e.message}", e)
                 _resolveState.value = RequestState.Error(R.string.toolbox_error_submit)
             }
         }
@@ -149,5 +158,7 @@ class ShortCodeDetailViewModel @Inject constructor(
         const val ARG_EXPIRE_AT = "expireAt"
         const val ARG_SHORT_URL = "shortUrl"
         const val ARG_CREATED_AT = "createdAt"
+
+        private const val TAG = "ShortCodeDetailViewModel"
     }
 }

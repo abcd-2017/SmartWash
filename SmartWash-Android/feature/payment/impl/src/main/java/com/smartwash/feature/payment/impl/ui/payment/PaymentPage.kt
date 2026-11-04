@@ -71,6 +71,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
@@ -363,6 +364,12 @@ fun PaymentPage(
                                     if (orderInfo!!.userVo.balance >= orderInfo!!.payPrice) {
                                         confirmPayShow = true
                                     } else {
+                                        // 业务拒绝（余额不足）：留痕订单与金额，引导充值由下方弹窗承接
+                                        AppLogger.warn(
+                                            TAG,
+                                            "余额不足，拦截支付并引导充值: orderId=${orderInfo!!.orderId} " +
+                                                "balance=${orderInfo!!.userVo.balance} payPrice=${orderInfo!!.payPrice}"
+                                        )
                                         showRechargeDialog = true
                                     }
                                 }
@@ -661,3 +668,6 @@ private fun NoCouponItem(
  * 传 -1 会走到 `userCouponMapper.selectById(-1)` 并抛「优惠券异常」。
  */
 private const val NO_COUPON_USER_COUPON_ID = 0L
+
+/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+private const val TAG = "PaymentPage"

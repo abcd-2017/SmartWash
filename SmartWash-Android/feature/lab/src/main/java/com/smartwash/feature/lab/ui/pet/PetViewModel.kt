@@ -2,6 +2,7 @@ package com.smartwash.feature.lab.ui.pet
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.SharePreferenceUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,10 +50,17 @@ class PetViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val stageName = runCatching { prefs.getData(KEY_STAGE, PetStage.BUBBLE.name) }
+                .onFailure { AppLogger.warn(TAG, "宠物阶段读取失败，按初始阶段降级", it) }
                 .getOrDefault(PetStage.BUBBLE.name)
-            val stage = runCatching { PetStage.valueOf(stageName) }.getOrDefault(PetStage.BUBBLE)
-            val count = runCatching { prefs.getData(KEY_COUNT, 0) }.getOrDefault(0)
-            val lastSeen = runCatching { prefs.getData(KEY_LAST_SEEN, 0L) }.getOrDefault(0L)
+            val stage = runCatching { PetStage.valueOf(stageName) }
+                .onFailure { AppLogger.warn(TAG, "宠物阶段枚举还原失败 stageName=$stageName，按初始阶段降级", it) }
+                .getOrDefault(PetStage.BUBBLE)
+            val count = runCatching { prefs.getData(KEY_COUNT, 0) }
+                .onFailure { AppLogger.warn(TAG, "宠物互动计数读取失败，按 0 降级", it) }
+                .getOrDefault(0)
+            val lastSeen = runCatching { prefs.getData(KEY_LAST_SEEN, 0L) }
+                .onFailure { AppLogger.warn(TAG, "宠物上次见面时刻读取失败，按 0 降级", it) }
+                .getOrDefault(0L)
 
             engine.restore(stage, count, lastSeen)
             // 先取放置回报（刷新前），再标记本次见面
@@ -108,6 +116,8 @@ class PetViewModel @Inject constructor(
                 prefs.saveData(KEY_STAGE, snapshot.stage.name)
                 prefs.saveData(KEY_COUNT, snapshot.interactionCount)
                 prefs.saveData(KEY_LAST_SEEN, snapshot.lastSeenAt)
+            }.onFailure {
+                AppLogger.warn(TAG, "宠物进度落盘失败，进度回退至上次持久化", it)
             }
         }
     }
@@ -117,5 +127,7 @@ class PetViewModel @Inject constructor(
         private const val KEY_STAGE = "lab_pet_stage"
         private const val KEY_COUNT = "lab_pet_interaction_count"
         private const val KEY_LAST_SEEN = "lab_pet_last_seen"
+
+        private const val TAG = "PetViewModel"
     }
 }

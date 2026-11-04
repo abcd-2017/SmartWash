@@ -3,6 +3,7 @@ package com.smartwash.feature.mood.ui.trend
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.mood.MoodConstant
 import com.smartwash.feature.mood.MoodMonth
@@ -78,10 +79,16 @@ class MoodTrendViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MoodTrendViewModel.load: ${e.message}", e)
                 _uiState.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MoodTrendViewModel.load: ${e.message}", e)
                 _uiState.update { it.copy(loadState = RequestState.Error(R.string.mood_trend_error_load)) }
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "MoodTrendViewModel"
     }
 }

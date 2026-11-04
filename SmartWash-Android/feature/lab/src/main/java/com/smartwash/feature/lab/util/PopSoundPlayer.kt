@@ -3,6 +3,7 @@ package com.smartwash.feature.lab.util
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import com.smartwash.common.utils.AppLogger
 import java.util.concurrent.Executors
 import kotlin.math.PI
 import kotlin.math.exp
@@ -72,15 +73,19 @@ class PopSoundPlayer {
             Thread.sleep(POP_DURATION_MS + RELEASE_LAG_MS.toLong())
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
             // AudioTrack 未初始化 / play() 抛 IllegalStateException 等：静默降级为无声
             // （声音是增强反馈非必需；catch Throwable 防执行器线程未捕获异常）
+            // 戳泡为高频路径，失败仅 debug 留痕（release 静默）
+            AppLogger.debug(TAG, "pop 音效播放失败，降级为无声", e)
         } finally {
             track.release()
         }
     }
 
     companion object {
+
+        private const val TAG = "PopSoundPlayer"
 
         private const val SAMPLE_RATE = 44_100
 

@@ -1,6 +1,6 @@
 package com.smartwash.deeplink
 
-import android.util.Log
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.deeplink.DeepLinkContributor
 import com.smartwash.common.utils.deeplink.DeepLinkRouteFactory
 import javax.inject.Inject
@@ -24,7 +24,7 @@ class DeepLinkRegistry @Inject constructor(
             contributor.routes().forEach { (host, factory) ->
                 val previous = put(host.lowercase(), factory)
                 if (previous != null) {
-                    Log.w(
+                    AppLogger.warn(
                         TAG,
                         "深链 host 重复注册，忽略后到者（贡献者#$index）：host=$host"
                     )

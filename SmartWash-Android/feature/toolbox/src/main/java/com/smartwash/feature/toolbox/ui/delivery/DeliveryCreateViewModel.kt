@@ -3,6 +3,7 @@ package com.smartwash.feature.toolbox.ui.delivery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
@@ -29,6 +30,8 @@ class DeliveryCreateViewModel @Inject constructor(
     companion object {
         /** 有效期预设（分钟），对齐契约 1-120、缺省 30 */
         val DURATION_PRESETS = listOf(10, 30, 60, 120)
+
+        private const val TAG = "DeliveryCreateViewModel"
     }
 
     /** 表单状态（默认 30 分钟 + 无密码，对齐后端缺省） */
@@ -80,13 +83,17 @@ class DeliveryCreateViewModel @Inject constructor(
                 )
                 _session.value = vo
                 _createState.value = RequestState.Success
+                AppLogger.info(TAG, "投递会话创建成功 code=${vo.code} duration=${f.durationMinutes}min 带密码=${password.isNotEmpty()}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliveryCreateViewModel.createSession: ${e.message}", e)
                 _createState.value = RequestState.Error(e.resId, e.message)
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "DeliveryCreateViewModel.createSession: 业务拒绝 businessCode=${e.businessCode}")
                 _createState.value = RequestState.Error(R.string.toolbox_delivery_error_create, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliveryCreateViewModel.createSession: ${e.message}", e)
                 _createState.value = RequestState.Error(R.string.toolbox_delivery_error_create)
             }
         }
@@ -101,14 +108,18 @@ class DeliveryCreateViewModel @Inject constructor(
             try {
                 repository.closeSession(code)
                 _closeState.value = RequestState.Success
+                AppLogger.info(TAG, "投递会话手动关闭成功 code=$code")
                 resetToForm()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliveryCreateViewModel.closeSession: ${e.message}", e)
                 _closeState.value = RequestState.Error(e.resId, e.message)
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "DeliveryCreateViewModel.closeSession: 业务拒绝 businessCode=${e.businessCode}")
                 _closeState.value = RequestState.Error(R.string.toolbox_delivery_error_close, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliveryCreateViewModel.closeSession: ${e.message}", e)
                 _closeState.value = RequestState.Error(R.string.toolbox_delivery_error_close)
             }
         }

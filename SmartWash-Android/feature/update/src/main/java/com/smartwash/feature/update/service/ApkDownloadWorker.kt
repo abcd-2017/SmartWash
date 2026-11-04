@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
@@ -17,6 +16,7 @@ import androidx.work.Data
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.update.R
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -91,6 +91,7 @@ class ApkDownloadWorker @AssistedInject constructor(
         // 前台服务类型（minSdk 30，常量可直接引用；须与 Manifest 声明一致）
         private const val FGS_TYPE = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
         private const val TAG = "ApkDownloadWorker"
 
         /**
@@ -138,10 +139,22 @@ class ApkDownloadWorker @AssistedInject constructor(
         buildForegroundInfo(buildProgressNotification(0, 0L, 0L))
 
     override suspend fun doWork(): Result {
-        val apkUrl = inputData.getString(KEY_APK_URL)
-            ?: return Result.failure(workDataOf(KEY_ERROR to "APK 下载地址为空"))
+        val apkUrl = inputData.getString(KEY_APK_URL) ?: run {
+            // 任务入参契约被破坏（调度侧未写入下载地址）：放弃并告警
+            AppLogger.warn(TAG, "Worker 输入缺少 APK 下载地址（$KEY_APK_URL），放弃任务")
+            return Result.failure(workDataOf(KEY_ERROR to "APK 下载地址为空"))
+        }
         val expectedSha256 = inputData.getString(KEY_SHA256)?.takeIf { it.isNotBlank() }
         val versionName = inputData.getString(KEY_VERSION_NAME) ?: ""
+
+        // 下载开始（低频关键动作）：URL 为 MinIO 预签名链接，查询参数含签名凭证，剥离后仅记 host+path
+        AppLogger.info(
+            TAG,
+            "开始下载 APK：versionName=$versionName url=${apkUrl.substringBefore('?')} attempt=$runAttemptCount",
+        )
+        if (runAttemptCount > 0) {
+            AppLogger.warn(TAG, "APK 下载任务第 $runAttemptCount 次重跑（进程死亡后重投递），继续下载")
+        }
 
         val apkFile = File(applicationContext.cacheDir, APK_FILE_NAME)
 
@@ -158,6 +171,7 @@ class ApkDownloadWorker @AssistedInject constructor(
 
             if (!response.isSuccessful) {
                 val errorMsg = "下载失败: HTTP ${response.code}"
+                AppLogger.error(TAG, "APK 下载失败：HTTP ${response.code} url=${apkUrl.substringBefore('?')}")
                 setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                 notifyFailed(errorMsg)
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
@@ -165,6 +179,7 @@ class ApkDownloadWorker @AssistedInject constructor(
 
             val body = response.body ?: run {
                 val errorMsg = "下载失败: 空响应体"
+                AppLogger.error(TAG, "APK 下载失败：响应体为空 url=${apkUrl.substringBefore('?')}")
                 setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                 notifyFailed(errorMsg)
                 return Result.failure(workDataOf(KEY_ERROR to errorMsg))
@@ -207,11 +222,18 @@ class ApkDownloadWorker @AssistedInject constructor(
                 if (!actualSha256.equals(expectedSha256, ignoreCase = true)) {
                     apkFile.delete()
                     val errorMsg = "文件校验失败，SHA256 不匹配"
+                    AppLogger.error(TAG, "APK 下载失败：SHA256 校验不匹配 expected=$expectedSha256 actual=$actualSha256")
                     setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
                     notifyFailed(errorMsg)
                     return Result.failure(workDataOf(KEY_ERROR to errorMsg))
                 }
             }
+
+            // 下载完成（低频关键动作）：文件大小与落盘路径一并记录
+            AppLogger.info(
+                TAG,
+                "APK 下载完成：versionName=$versionName size=${formatFileSize(apkFile.length())} path=${apkFile.absolutePath}",
+            )
 
             // 下载完成：完成通知走独立 ID（Worker 结束时被回收的是前台通知，不是它），
             // 保证用户划掉 App 后仍有「点击安装」入口
@@ -225,11 +247,13 @@ class ApkDownloadWorker @AssistedInject constructor(
                 )
             )
         } catch (e: CancellationException) {
-            // 取消时删除残件并向上传播
+            // 取消时删除残件并向上传播；取消属正常路径，仅 debug
+            AppLogger.debug(TAG, "APK 下载被取消，清理残留文件")
             if (apkFile.exists()) apkFile.delete()
             throw e
         } catch (e: Exception) {
             // 失败时删除残件
+            AppLogger.error(TAG, "APK 下载异常", e)
             if (apkFile.exists()) apkFile.delete()
             val errorMsg = e.message ?: "下载失败"
             setForeground(buildForegroundInfo(buildFailedNotification(errorMsg)))
@@ -267,6 +291,9 @@ class ApkDownloadWorker @AssistedInject constructor(
         notify(NOTIFICATION_ID_FAILED, buildFailedNotification(error))
     }
 
+    /** 「通知不可用」降级告警去重标记：进度通知每 5% 触发一次 notify，同一轮下载仅告警一次（Worker 每次运行重建实例，标记按轮生效） */
+    private var notificationUnavailableLogged = false
+
     /**
      * 经 [NotificationManagerCompat] 直发通知（独立于前台服务生命周期）。
      * 通知权限被拒 / 用户在系统设置关掉通知时 [NotificationManagerCompat.areNotificationsEnabled]
@@ -275,7 +302,10 @@ class ApkDownloadWorker @AssistedInject constructor(
     private fun notify(notificationId: Int, notification: Notification) {
         val manager = NotificationManagerCompat.from(applicationContext)
         if (!manager.areNotificationsEnabled()) {
-            Log.w(TAG, "通知不可用（权限未授或系统设置已关闭），跳过通知 id=$notificationId")
+            if (!notificationUnavailableLogged) {
+                notificationUnavailableLogged = true
+                AppLogger.warn(TAG, "通知不可用（权限未授或系统设置已关闭），跳过通知 id=$notificationId（本轮仅告警一次）")
+            }
             return
         }
         manager.notify(notificationId, notification)

@@ -1,6 +1,7 @@
 package com.smartwash.feature.user.impl.session
 
 import com.smartwash.common.network.TokenProvider
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.feature.user.impl.UserImplConstant
 import kotlinx.coroutines.CoroutineScope
@@ -76,6 +77,8 @@ class SessionManager @Inject constructor(
         cachedRole = role
         sharePreferenceUtils.saveData(UserImplConstant.TOKEN, token)
         sharePreferenceUtils.saveData(UserImplConstant.USER_ROLE, role ?: "")
+        // 登录态变更基建节点（低频；token 值绝不入日志，业务动作的 info 由页面层记录）
+        AppLogger.debug(TAG, "会话已持久化（内存缓存 + DataStore）")
     }
 
     /**
@@ -87,10 +90,21 @@ class SessionManager @Inject constructor(
         val hadRole = cachedRole?.isNotEmpty() == true
         cachedToken = ""
         cachedRole = ""
-        if (!hadToken && !hadRole) return
+        if (!hadToken && !hadRole) {
+            // 幂等命中（并发多请求同时 401 时的预期去重路径，debug 便于排查 401 风暴）
+            AppLogger.debug(TAG, "clearToken 幂等命中，跳过重复清除")
+            return
+        }
+        // 登录态变更基建节点（低频；业务动作的 info 由页面层记录，401 路径的事件流另有 debug）
+        AppLogger.debug(TAG, "会话已清除（登出/登录失效），异步落盘")
         scope.launch {
             sharePreferenceUtils.saveData(UserImplConstant.TOKEN, "")
             sharePreferenceUtils.saveData(UserImplConstant.USER_ROLE, "")
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "SessionManager"
     }
 }

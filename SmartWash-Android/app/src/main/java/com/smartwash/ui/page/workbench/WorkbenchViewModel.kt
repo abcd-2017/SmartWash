@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.deeplink.DeepLinkHandler
@@ -62,10 +63,15 @@ class WorkbenchViewModel @Inject constructor(
                 val entries = workbenchEntryRepository.getEntries()
                 _tools.value = entries.mapIndexed { index, vo -> vo.toTool(index) }
                     .withUniqueKeys()
+                if (_tools.value.isEmpty()) {
+                    // 空态预警：服务端 workbench_entry 未下发任何条目（新端上线/配置清空的可见信号）
+                    AppLogger.warn(TAG, "工作台入口配置为空（服务端未下发条目），页面展示空态")
+                }
                 _entriesState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                AppLogger.error(TAG, "WorkbenchViewModel.loadEntries 失败，工作台降级错误态", e)
                 _tools.value = emptyList()
                 _entriesState.value = RequestState.Error(R.string.workbench_entries_error)
             }
@@ -84,6 +90,7 @@ class WorkbenchViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                AppLogger.error(TAG, "WorkbenchViewModel.onToolClick 深链解析异常，降级 Unknown：entryKey=${tool.entryKey}", e)
                 _navigateAction.emit(DeepLinkAction.Unknown(tool.target))
             }
         }
@@ -104,7 +111,13 @@ class WorkbenchViewModel @Inject constructor(
         val seen = mutableMapOf<String, Int>()
         return map { tool ->
             val count = seen.merge(tool.entryKey, 1, Int::plus) ?: 1
-            if (count == 1) tool else tool.copy(entryKey = "${tool.entryKey}_$count")
+            if (count == 1) {
+                tool
+            } else {
+                // 数据异常预警：entryKey 本应服务端唯一，重复即配置错误
+                AppLogger.warn(TAG, "工作台入口 entryKey 重复，追加序号去重防崩溃：entryKey=${tool.entryKey} 出现 $count 次")
+                tool.copy(entryKey = "${tool.entryKey}_$count")
+            }
         }
     }
 
@@ -118,4 +131,9 @@ class WorkbenchViewModel @Inject constructor(
         target = target.orEmpty(),
         badge = badge?.takeIf { it.isNotBlank() },
     )
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "WorkbenchViewModel"
+    }
 }

@@ -2,6 +2,7 @@ package com.smartwash.feature.toolbox.repository
 
 import com.smartwash.common.network.R
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.PageData
 import com.smartwash.feature.toolbox.network.AddShortCodeRequest
 import com.smartwash.feature.toolbox.network.ShortCodeStatsVo
@@ -23,13 +24,17 @@ class ToolboxRepositoryImpl @Inject constructor(
 ) : ToolboxRepository {
 
     override suspend fun createShortCode(request: AddShortCodeRequest): ShortCodeVo {
-        return toolboxApi.createShortCode(request).data
-            ?: throw NetworkException("短链数据为空", R.string.error_network_fail)
+        return toolboxApi.createShortCode(request).data ?: run {
+            AppLogger.warn(TAG, "createShortCode: 建短链响应 data 为空，按失败上抛")
+            throw NetworkException("短链数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun updateShortCode(id: Long, request: UpdateShortCodeRequest): ShortCodeVo {
-        return toolboxApi.updateShortCode(id, request).data
-            ?: throw NetworkException("短链数据为空", R.string.error_network_fail)
+        return toolboxApi.updateShortCode(id, request).data ?: run {
+            AppLogger.warn(TAG, "updateShortCode: 更新短链响应 data 为空（id=$id），按失败上抛")
+            throw NetworkException("短链数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun deleteShortCode(id: Long) {
@@ -38,17 +43,27 @@ class ToolboxRepositoryImpl @Inject constructor(
     }
 
     override suspend fun resolveShortCode(code: String): ShortCodeVo {
-        return toolboxApi.resolveShortCode(code).data
-            ?: throw NetworkException("短链数据为空", R.string.error_network_fail)
+        return toolboxApi.resolveShortCode(code).data ?: run {
+            AppLogger.warn(TAG, "resolveShortCode: 短链解析响应 data 为空，按失败上抛")
+            throw NetworkException("短链数据为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun pageMyShortCodes(page: Int, size: Int): PageData<ShortCodeVo> {
-        return toolboxApi.pageShortCodes(page = page, size = size).data
-            ?: throw NetworkException("短链列表为空", R.string.error_network_fail)
+        return toolboxApi.pageShortCodes(page = page, size = size).data ?: run {
+            AppLogger.warn(TAG, "pageMyShortCodes: 短链列表响应 data 为空（page=$page），按失败上抛")
+            throw NetworkException("短链列表为空", R.string.error_network_fail)
+        }
     }
 
     override suspend fun pageShortCodeStats(id: Long, page: Int, size: Int): PageData<ShortCodeStatsVo> {
-        return toolboxApi.pageShortCodeStats(id = id, page = page, size = size).data
-            ?: throw NetworkException("访问明细为空", R.string.error_network_fail)
+        return toolboxApi.pageShortCodeStats(id = id, page = page, size = size).data ?: run {
+            AppLogger.warn(TAG, "pageShortCodeStats: 访问明细响应 data 为空（id=$id page=$page），按失败上抛")
+            throw NetworkException("访问明细为空", R.string.error_network_fail)
+        }
+    }
+
+    private companion object {
+        const val TAG = "ToolboxRepository"
     }
 }

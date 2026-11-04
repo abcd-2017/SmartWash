@@ -6,9 +6,14 @@ apply from: "$rootDir/config/hilt.gradle"
 android {
     namespace 'com.smartwash.common.init'
 
+    buildFeatures {
+        // LogCore 按 BuildConfig.DEBUG 门控日志输出（library 变体跟随 app debug/release）
+        buildConfig true
+    }
+
     testOptions {
         unitTests {
-            // JVM 单测中 android.util.Log（InitEngine 日志 / InitTask 默认 onFailed）返回默认值而非抛 not mocked
+            // JVM 单测中 android.util.Log（LogCore 内核 / InitEngine 日志 / InitTask 默认 onFailed）返回默认值而非抛 not mocked
             returnDefaultValues = true
         }
     }
