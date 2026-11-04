@@ -21,6 +21,7 @@ import { RouteNames } from '../constant/RouteNames'
 import { DesignColor, DesignFontSize } from '../constant/DesignSystem'
 import { AppButton, AppButtonVariant, EmptyState, PageHeader } from '../view/common/AppComponents'
 import { getObjectParam, pathStack } from '../utils/PathStackUtil'
+import { logger } from '../utils/Logger'
 
 /** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title 两个 query 参数） */
 export class WebPageParam {
@@ -64,6 +65,11 @@ struct WebPage {
     if (param !== null) {
       this.url = param.url
       this.title = param.title.length > 0 ? param.title : WEB_DEFAULT_TITLE
+      // 挂载留痕（debug；url 不落日志，深链/运营链接 query 不可控）
+      logger.debug('webPage', `WebView 页挂载，标题=${this.title}`)
+    } else {
+      // 降级留痕：参数缺失进「仅支持打开网页链接」错误态
+      logger.warn('webPage', '路由参数缺失或非法，展示仅支持网页链接错误态')
     }
   }
 
@@ -96,7 +102,8 @@ struct WebPage {
       }
       context.startAbility(want)
     } catch (err) {
-      // 无系统应用可处理该 scheme：静默返回
+      // 无系统应用可处理该 scheme：静默返回（对齐安卓 runCatching 静默，仅补 debug 留痕）
+      logger.debug('webPage', '系统无应用可处理外部 scheme，静默忽略')
     }
   }
 
@@ -113,6 +120,7 @@ struct WebPage {
       return true
     } catch (err) {
       // controller 未附加等异常（理论不可达：canGoBack 仅在页面加载后置位），降级出栈
+      logger.debug('webPage', '网页回退控制器异常，降级直接出栈')
       return false
     }
   }
@@ -124,7 +132,8 @@ struct WebPage {
     try {
       this.controller.refresh()
     } catch (err) {
-      // controller 异常时按当前 url 重新装载兜底
+      // controller 异常时按当前 url 重新装载兜底（重试动作降级留 warn）
+      logger.warn('webPage', '刷新重试失败，改为重新装载当前页')
       this.controller.loadUrl(this.url)
     }
   }
@@ -166,6 +175,7 @@ struct WebPage {
                   this.canGoBack = this.controller.accessBackward()
                 } catch (err) {
                   // controller 异常时按不可回退处理，返回键语义降级为直接出栈
+                  logger.debug('webPage', '查询网页回退状态失败，按不可回退处理')
                   this.canGoBack = false
                 }
               })
@@ -175,6 +185,10 @@ struct WebPage {
               .onErrorReceive((event: OnErrorReceiveEvent) => {
                 // 仅主框架失败才进错误态（子资源 404/超时不应打断整页）
                 if (event.request.isMainFrame()) {
+                  // 外部加载失败（WebView 运行期回调，非渲染路径）：对齐安卓 WebViewPage，
+                  // 只记 errorCode + errorInfo 摘要，不记 URL（深链/运营链接 query 不可控）
+                  logger.error('webPage',
+                    `WebView 主框架加载失败 errorCode=${event.error.getErrorCode()} errorInfo=${event.error.getErrorInfo()}`)
                   this.loadError = true
                 }
               })

@@ -1,3 +1,4 @@
+import { BusinessError } from '@kit.BasicServicesKit'
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
@@ -7,6 +8,7 @@ import { getUserInfo } from "../network/api/UserApi"
 import { HttpStatusCode } from "@ohos/axios"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { AppButton, AppConfirmDialog, IconBox, SelectionDot } from "../view/common/AppComponents"
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
@@ -50,13 +52,19 @@ struct Recharge {
   @State pressedKey: number = -1
 
   async aboutToAppear(): Promise<void> {
+    logger.debug('recharge', '充值页挂载，拉取账户余额')
     try {
       let res = await getUserInfo()
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
         this.balance = res.data!.balance ?? 0
+      } else {
+        // 降级留痕：余额拉取失败按 0 兜底展示（不打断充值主流程）
+        logger.warn('recharge', `余额加载失败，按 0 兜底展示 code=${res.code} message=${res.message ?? ""}`)
       }
     } catch (err) {
-      // 余额仅作展示，取数失败不打断充值主流程（对齐安卓 balance ?: 0f）
+      // 余额仅作展示，取数失败不打断充值主流程（对齐安卓 balance ?: 0f）；降级补 warn 留痕（仅摘要，不序列化 error）
+      const e: BusinessError = err as BusinessError
+      logger.warn('recharge', `余额加载异常，按 0 兜底展示 err=${e.message}`)
     }
   }
 
@@ -360,14 +368,20 @@ struct Recharge {
   async doRecharge() {
     this.check()
     if (this.checkPayType || this.checkPayNumber) {
+      // 业务拒绝：提交校验未通过（未选支付方式/金额非法），仅记校验结论摘要
+      logger.warn('recharge', `充值提交校验未通过 ` +
+        `payType=${this.payType === null ? "未选" : "已选"} reason=${this.checkPayNumberMsg}`)
       return
     }
     // 防连点：请求进行中直接忽略
     if (this.isRecharging) {
+      logger.debug('recharge', '充值请求进行中，忽略重复触发')
       return
     }
     this.isRecharging = true
     try {
+      // 仅记金额与渠道摘要，不打完整请求体（敏感红线）
+      logger.debug('recharge', `发起充值 amount=${this.payNum.toFixed(2)} rechargeType=${this.payType === PaymentMethod.WECHAT ? RechargeType.WECHAT : RechargeType.ALIPAY}`)
       let res = await userRecharge({
         amount: this.payNum,
         // 充值渠道类型码用具名常量，替代魔法值（评审 #30）：1=微信 2=支付宝
@@ -375,9 +389,13 @@ struct Recharge {
           RechargeType.WECHAT : RechargeType.ALIPAY
       })
       if (res.code === HttpStatusCode.Ok) {
+        // 低频关键动作成功：充值完成留 info
+        logger.info('recharge', `充值成功 amount=${this.payNum.toFixed(2)}`)
         pathStack.pop()
         showToastSafety("充值成功")
       } else {
+        logger.warn('recharge', `充值被拒绝 amount=${this.payNum.toFixed(2)} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "充值失败")
       }
     } finally {

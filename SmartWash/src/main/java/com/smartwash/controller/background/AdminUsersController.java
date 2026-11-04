@@ -48,9 +48,11 @@ public class AdminUsersController {
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddAdminUserFrom adminUserFrom) {
         if (adminUsersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
+            log.warn("新增管理员被拒绝：用户名已被使用, username: {}", adminUserFrom.getUsername());
             return Result.failMsg("给管理员用户名已被使用");
         }
         adminUsersService.addAdminUsers(adminUserFrom);
+        log.info("新增管理员成功, username: {}", adminUserFrom.getUsername());
         return Result.ok("添加成功");
     }
 
@@ -66,18 +68,22 @@ public class AdminUsersController {
     public Result<String> updateAdminUser(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
         if (user == null) {
+            log.warn("更新管理员被拒绝：管理员不存在, adminId: {}", adminUsersFrom.getAdminId());
             return Result.failMsg("管理员不存在");
         }
         if (!Objects.equals(user.getUsername(), adminUsersFrom.getUsername()) && adminUsersService.getAdminUserByName(adminUsersFrom.getUsername()) != null) {
+            log.warn("更新管理员被拒绝：用户名已被使用, adminId: {}, username: {}", adminUsersFrom.getAdminId(), adminUsersFrom.getUsername());
             return Result.failMsg("给管理员用户名已被使用");
         }
         adminUsersService.updateAdminUsers(adminUsersFrom);
+        log.info("更新管理员成功, adminId: {}", adminUsersFrom.getAdminId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除管理员", description = "根据ID批量删除管理员用户，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteAdminUsers(@PathVariable("ids") @Parameter(description = "管理员ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除管理员, ids: {}", ids);
         return Result.ok(adminUsersService.deleteAdminUsers(ids));
     }
 }

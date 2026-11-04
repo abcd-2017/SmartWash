@@ -1,4 +1,5 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { logger } from "../utils/Logger"
 import { AppConfirmDialog, AppCard, PageHeader } from "../view/common/AppComponents"
 import { notificationManager } from "@kit.NotificationKit"
 import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
@@ -73,6 +74,8 @@ struct PermissionManagement {
         this.settingsDialogController.open()
       }
     }).catch(() => {
+      // 业务拒绝留痕：用户拒绝授权或系统弹窗拉起失败（引导系统设置的成因）
+      logger.warn('permissionManagement', '通知权限申请被拒或拉起失败，引导系统设置')
       this.settingsDialogController.open()
     })
   }
@@ -81,6 +84,8 @@ struct PermissionManagement {
   private openNotificationSettings(): void {
     const context = getContext(this) as common.UIAbilityContext
     notificationManager.openNotificationSettings(context).catch(() => {
+      // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
+      logger.warn('permissionManagement', '打开系统通知设置失败，已 toast 兜底')
       promptAction.showToast({ message: "无法打开系统设置" })
     })
   }

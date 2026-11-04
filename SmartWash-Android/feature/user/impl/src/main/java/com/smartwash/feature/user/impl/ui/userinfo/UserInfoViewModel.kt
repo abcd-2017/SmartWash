@@ -2,13 +2,12 @@ package com.smartwash.feature.user.impl.ui.userinfo
 
 import android.app.Application
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.user.impl.R
-import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.feature.user.impl.network.vo.user.UserInfoVo
 import com.smartwash.feature.user.impl.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +42,7 @@ class UserInfoViewModel @Inject constructor(
                 _userInfo.value = userRepository.getUserInfo()
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.getUserInfo: ${e.message}", e)
+                AppLogger.error(TAG, "UserInfoViewModel.getUserInfo: ${e.message}", e)
                 _userInfoStatus.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -67,10 +66,15 @@ class UserInfoViewModel @Inject constructor(
             try {
                 if (userRepository.bindCampus(campusCard)) {
                     getUserInfo()
+                    // 低频关键动作成功
+                    AppLogger.info(TAG, "校园卡绑定成功")
                     _bindCampusState.value = RequestState.Success
+                } else {
+                    // 业务拒绝：后端未确认绑定（data 非 true）
+                    AppLogger.warn(TAG, "校园卡绑定被后端拒绝")
                 }
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.bindCampus: ${e.message}", e)
+                AppLogger.error(TAG, "UserInfoViewModel.bindCampus: ${e.message}", e)
                 _bindCampusState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -82,10 +86,15 @@ class UserInfoViewModel @Inject constructor(
             try {
                 if (userRepository.unBindCampus()) {
                     getUserInfo()
+                    // 低频关键动作成功
+                    AppLogger.info(TAG, "校园卡解绑成功")
                     _unBindCampusState.value = RequestState.Success
+                } else {
+                    // 业务拒绝：后端未确认解绑（data 非 true）
+                    AppLogger.warn(TAG, "校园卡解绑被后端拒绝")
                 }
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.unBindCampus: ${e.message}", e)
+                AppLogger.error(TAG, "UserInfoViewModel.unBindCampus: ${e.message}", e)
                 _unBindCampusState.value = RequestState.Error(e.resId, e.message)
             }
         }
@@ -103,12 +112,14 @@ class UserInfoViewModel @Inject constructor(
                 val part = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
                 userRepository.uploadAvatar(part)
                 getUserInfo()
+                // 低频关键动作成功（资料变更）
+                AppLogger.info(TAG, "头像上传成功 size=${bytes.size}B")
                 _avatarUploadState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
+                AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
                 _avatarUploadState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
-                Log.e(UserImplConstant.APP_NAME, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
+                AppLogger.error(TAG, "UserInfoViewModel.uploadAvatar: ${e.message}", e)
                 _avatarUploadState.value = RequestState.Error(R.string.avatar_upload_failed, e.message)
             }
         }
@@ -116,5 +127,10 @@ class UserInfoViewModel @Inject constructor(
 
     fun resetAvatarUploadState() {
         _avatarUploadState.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "UserInfoViewModel"
     }
 }

@@ -18,6 +18,8 @@ import { DivColor } from "../../constant/DivTheme"
 import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
+import { logger } from "../../utils/Logger"
+import { BusinessError } from "@kit.BasicServicesKit"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
 import {
   WorkbenchText,
@@ -219,6 +221,7 @@ export struct Workbench {
 
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
+    logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
     this.loadEntries()
   }
 
@@ -236,11 +239,14 @@ export struct Workbench {
         this.tools = withUniqueKeys(res.data.map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
           workbenchEntryVoToTool(vo, index)))
       } else {
-        // 服务端未配置（成功但空列表）：真实空态（对齐安卓 Success + tools.isEmpty()）
+        // 空态预警留痕：业务拒绝或服务端未配置入口（成功但空列表），进真实空态
+        logger.warn('workbench', `工具入口列表未生效，进空态 code=${res.code} message=${res.message ?? ""}`)
         this.tools = []
       }
     } catch (err) {
       // 失败：真实错误态 + 重试（对齐安卓 RequestState.Error(R.string.workbench_entries_error)）
+      const e: BusinessError = err as BusinessError
+      logger.warn('workbench', `工具入口列表加载异常，进错误态 err=${e.message}`)
       this.tools = []
       this.isError = true
     }
@@ -252,6 +258,8 @@ export struct Workbench {
    * 观象台域 7 页已落地（#29），直接入栈。
    */
   private onDivinationCardClick(): void {
+    // 工具入口点击跳转留痕（低频动作按约定记 debug）
+    logger.debug('workbench', '点击观象台特色卡，入栈观象台首页')
     pathStack.pushPathByName(RouteNames.DIV_HOME, null)
   }
 
@@ -262,9 +270,13 @@ export struct Workbench {
    */
   private onToolClick(tool: WorkbenchTool): void {
     if (tool.target.length === 0) {
+      // 占位项点击留痕（不走深链链路，仅提示建设中）
+      logger.debug('workbench', `工具未配置跳转目标，提示建设中 entryKey=${tool.entryKey}`)
       showToastSafety(WorkbenchText.workbench_coming_soon)
       return
     }
+    // 工具点击跳转留痕（深链分发内部另有留痕，此处只记入口）
+    logger.debug('workbench', `点击工具，交深链分发 entryKey=${tool.entryKey}`)
     handleDeepLink(tool.target)
   }
 

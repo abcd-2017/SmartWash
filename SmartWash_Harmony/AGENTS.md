@@ -101,6 +101,15 @@ entry/src/main/ets/
 - 新组件优先 `@ComponentV2` + `@Param`/`@Local`/`@Event`。
 - 存储经 `utils/StorageUtil.ets` 封装；toast 统一封装兜底（message 为 undefined 不弹 "undefined"）。
 
+### 日志规范（逐页面扫描遵循）
+
+- **统一走 `utils/Logger.ets` 的 `logger`**：四方法 `debug/info/warn/error(tag, msg, errorSummary?)`（形状对齐 Android 端 `AppLogger`）；**禁止直接调用 hilog**。
+- **TAG**：调用方只传页面/模块名（小写，如 `index`、`axios`、`deeplink`、`EntryAbility`），Logger 统一拼接 `SmartWash/` 全局前缀输出（对齐 Android 端 `SmartWash/` 前缀）。
+- **级别约定**：外部调用失败/异常 = error；业务拒绝、幂等命中、降级、空态预警 = warn；低频关键动作成功（登录、支付完成、订单流转等）= info；高频路径（渲染、轮询、每输入回调、每请求成功）禁止 info/warn，最多 debug。
+- **构建门控**：debug 级在 release 构建直接短路（`BuildProfile.BUILD_MODE_NAME` 判定）；info/warn/error 全模式保留。
+- **敏感红线**：手机号必须脱敏（如 `138****5678`）；密码、token、验证码、完整请求/响应体一律不打日志；错误只记 `error.message` 摘要 + name，禁止序列化完整 error 对象。
+- **全局兜底**：未捕获异常由 `EntryAbility.onCreate` 注册的 `errorManager.on('error')` 观测统一落 error 日志，页面代码无需重复兜底记录。
+
 ---
 
 ## 八、构建与运行

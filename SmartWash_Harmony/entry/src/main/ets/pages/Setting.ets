@@ -3,6 +3,7 @@ import { RouteNames } from "../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
+import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
 import { getAppVersionName } from "../utils/AppInfoUtil"
 import { notificationManager } from "@kit.NotificationKit"
@@ -49,6 +50,8 @@ struct Setting {
       onConfirm: () => {
         // 登出是不可逆的确认操作：先给中触，再清会话（对齐安卓 SettingPage.kt:291）
         this.performHaptic()
+        // 低频关键动作成功：退出登录留 info（token 等凭据不落日志）
+        logger.info('setting', '退出登录，清本地会话并跳转登录页')
         // 登出链路（对齐安卓 SettingViewModel.logout）：清本地 token + 清 role + 复位内存登录态，
         // 再清栈跳登录页。userRole 属登录态脏数据，必须一并清理，
         // 否则下次登录前的 AppStorage 仍残留上一位用户的角色
@@ -106,6 +109,8 @@ struct Setting {
   private toggleHaptic(): void {
     const newValue = !this.hapticEnabled
     this.hapticEnabled = newValue
+    // 偏好开关切换（低频非关键动作，记 debug）
+    logger.debug('setting', `触感反馈开关切换为 ${newValue ? "开" : "关"}`)
     setValue(HAPTIC_PREF_KEY, newValue)
     if (newValue) {
       this.performHaptic()

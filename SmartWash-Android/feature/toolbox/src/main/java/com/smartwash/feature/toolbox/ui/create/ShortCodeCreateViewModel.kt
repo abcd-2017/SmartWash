@@ -3,6 +3,7 @@ package com.smartwash.feature.toolbox.ui.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.ToolboxConstant
@@ -96,11 +97,14 @@ class ShortCodeCreateViewModel @Inject constructor(
                     )
                 )
                 _submitState.value = RequestState.Success
+                AppLogger.info(TAG, "短链创建成功 customCode=${f.customCode.trim().ifEmpty { "auto" }} 公开=${f.isPublic}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "ShortCodeCreateViewModel.submit: ${e.message}", e)
                 _submitState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "ShortCodeCreateViewModel.submit: ${e.message}", e)
                 _submitState.value = RequestState.Error(R.string.toolbox_error_submit)
             }
         }
@@ -108,5 +112,9 @@ class ShortCodeCreateViewModel @Inject constructor(
 
     fun resetSubmitState() {
         _submitState.value = RequestState.Idle
+    }
+
+    private companion object {
+        const val TAG = "ShortCodeCreateViewModel"
     }
 }

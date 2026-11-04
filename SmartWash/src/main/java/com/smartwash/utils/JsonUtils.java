@@ -1,6 +1,7 @@
 package com.smartwash.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,7 +21,9 @@ import java.util.Map;
  * <ul>
  *   <li>注册 {@link JavaTimeModule} 并关闭时间戳输出，日期序列化为 ISO-8601 字符串；</li>
  *   <li>忽略未知字段，避免端上加字段导致反序列化失败；</li>
- *   <li>保留 null 字段（与全局异常处理器/响应信封输出一致）。</li>
+ *   <li>保留 null 字段（与全局异常处理器/响应信封输出一致）；</li>
+ *   <li>宽容解析特性对齐 FastJSON 既有行为（前导零数字、单引号、注释、无引号字段名、尾逗号），
+ *       避免迁移后外部/历史 JSON 文件解析回归。</li>
  * </ul>
  */
 public final class JsonUtils {
@@ -35,6 +38,12 @@ public final class JsonUtils {
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 宽容解析：对齐 FastJSON 既有容忍度（迁移行为等价，防外部 JSON 文件解析回归）
+        mapper.enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS.mappedFeature()); // 前导零数字（如 01）
+        mapper.enable(JsonReadFeature.ALLOW_SINGLE_QUOTES.mappedFeature());            // 单引号字符串
+        mapper.enable(JsonReadFeature.ALLOW_JAVA_COMMENTS.mappedFeature());            // JSON 注释
+        mapper.enable(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES.mappedFeature());     // 无引号字段名
+        mapper.enable(JsonReadFeature.ALLOW_TRAILING_COMMA.mappedFeature());           // 尾逗号
         return mapper;
     }
 

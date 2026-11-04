@@ -77,6 +77,7 @@ public class PaymentsController {
 //            return Result.fail("给付款记录名已被使用");
 //        }
         paymentsService.addPayment(paymentsFrom);
+        log.info("管理员新增支付记录, orderId: {}, userId: {}, amount: {}", paymentsFrom.getOrderId(), paymentsFrom.getUserId(), paymentsFrom.getAmount());
         return Result.ok("添加成功");
     }
 
@@ -84,9 +85,11 @@ public class PaymentsController {
     @PostMapping("/update")
     public Result<String> updatePayment(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
         if (paymentsService.getById(paymentsFrom.getPaymentId()) == null) {
+            log.warn("更新支付记录被拒绝：支付记录不存在, paymentId: {}", paymentsFrom.getPaymentId());
             return Result.failMsg("支付记录不存在");
         }
         paymentsService.updatePayment(paymentsFrom);
+        log.info("管理员更新支付记录, paymentId: {}", paymentsFrom.getPaymentId());
         return Result.ok("修改成功");
     }
 

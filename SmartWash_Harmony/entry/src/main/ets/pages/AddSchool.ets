@@ -4,6 +4,7 @@ import { getUserByStudentId, getUserInfo, updateUserInfo } from "../network/api/
 import { SchoolName } from "../network/vo/SchoolName"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { AppButton } from "../view/common/AppComponents"
@@ -65,6 +66,7 @@ struct AddSchool {
   private searchSeq: number = 0
 
   aboutToAppear() {
+    logger.debug('addSchool', '完善信息页挂载，拉取用户信息与学校列表')
     // 先拉一次当前用户信息：已填写学校/学号的进入只读态，防止本页被反复提交变更
     this.loadCurrentInfo()
     this.getSchoolName()
@@ -90,7 +92,12 @@ struct AddSchool {
         this.schoolName = res.data.schoolVo?.schoolName ?? null
         this.studentId = studentId
         this.isInfoLocked = true
+        // 只读态成因留痕（低频一次性状态，记 debug）
+        logger.debug('addSchool', '学校与学号已完备，进入只读态')
       }
+    } else {
+      // 降级留痕：信息回填失败按未填写处理（不打断页面，不打用户数据）
+      logger.warn('addSchool', `用户信息未生效，按未填写处理 code=${res.code} message=${res.message ?? ""}`)
     }
   }
 
@@ -123,6 +130,9 @@ struct AddSchool {
     if (res.code === HttpStatusCode.Ok) {
       schoolListCache = res.data ?? []
       this.schoolList = keyword.length === 0 ? schoolListCache : filterSchoolList(keyword)
+    } else {
+      // 学校搜索失败留痕（搜索关键字不落日志）
+      logger.warn('addSchool', `学校搜索失败 code=${res.code} message=${res.message ?? ""}`)
     }
   }
 
@@ -184,11 +194,15 @@ struct AddSchool {
       // 学号查重（对齐决策 D6）：接口失败统一 toast 网络错误并阻止提交，
       // 既不像安卓失败误报「已注册」，也不像原实现失败放行导致绕过查重
       if (checkStudentRes.code !== HttpStatusCode.Ok) {
+        // 学号查重接口失败留痕（学号不落日志）
+        logger.warn('addSchool', `学号查重失败，阻止提交 code=${checkStudentRes.code} message=${checkStudentRes.message ?? ""}`)
         showToastSafety("网络异常，请稍后重试")
         return
       }
       // 后端 getUserByStudentId 返回 data = (该学号用户不存在)，true 才可提交（对齐安卓 checkStudentId）
       if (checkStudentRes.data !== true) {
+        // 业务拒绝留痕：学号已被注册（学号不落日志）
+        logger.warn('addSchool', '学号查重未通过（学号已注册），阻止提交')
         showToastSafety("该学号已注册")
         return
       }
@@ -197,12 +211,16 @@ struct AddSchool {
         studentId: this.studentId
       })
       if (res.code === HttpStatusCode.Ok) {
+        // 低频关键动作成功：完善学校信息留 info（仅记 schoolId 摘要）
+        logger.info('addSchool', `学校信息保存成功 schoolId=${this.schoolId}`)
         showToastSafety("修改成功")
         if (pathStack.size() > 0) {
           pathStack.clear()
         }
         AppStorage.setOrCreate("userLoginFlag", true)
       } else {
+        // 业务拒绝留痕：保存被拒绝（仅记 code/message 摘要）
+        logger.warn('addSchool', `学校信息保存被拒绝 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "学校信息保存失败")
       }
     } finally {

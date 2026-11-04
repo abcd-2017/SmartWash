@@ -23,6 +23,7 @@ import {
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack } from '../../../../../utils/PathStackUtil'
+import { logger } from '../../../../../utils/Logger'
 
 /** 术数筛选选项（「全部」+ 四术） */
 const FILTER_ALL = 'all'
@@ -53,8 +54,11 @@ export struct DivHistoryPage {
     try {
       const all = await DivRecordRepository.observeAll()
       this.records = all
+      // 全量拉取（无分页），成功仅 debug 留痕
+      logger.debug('divHistoryPage', `卦历加载完成 total=${all.length}`)
     } catch (err) {
       this.records = []
+      logger.warn('divHistoryPage', `卦历加载失败，按空态呈现, ${err instanceof Error ? err.message : ''}`)
     }
     this.isLoading = false
   }

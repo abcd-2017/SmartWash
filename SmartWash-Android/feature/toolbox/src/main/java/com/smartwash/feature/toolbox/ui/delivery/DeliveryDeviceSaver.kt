@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.annotation.StringRes
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
 import kotlinx.coroutines.Dispatchers
@@ -69,6 +70,10 @@ internal suspend fun resolvePickedFile(context: Context, uri: Uri): DeliveryPick
                 size = probe.length()
             }
             probe.delete()
+            if (size < 0) {
+                // 元信息查询与补测均失败：发布必然被 20MB 前置校验/后端拒，降级留痕
+                AppLogger.warn(TAG, "resolvePickedFile: 文件大小探测失败，按 0 字节降级 uri=$uri")
+            }
         }
         DeliveryPickedFile(uri = uri, displayName = name, size = size.coerceAtLeast(0))
     }
@@ -148,6 +153,8 @@ internal suspend fun saveDeliveryContent(
 private const val PICTURES_PATH = "Pictures/SmartWash"
 private const val DOWNLOADS_PATH = "Download/SmartWash"
 
+private const val TAG = "DeliveryDeviceSaver"
+
 /**
  * 缓存文件解码预览位图：先读边界再按 2048dp 长边取样，防 20MB 原图整张进内存。
  * 解码失败（异形格式）返回 null，调用方回退「直接保存」文案。
@@ -162,7 +169,12 @@ internal suspend fun decodeSampledBitmap(file: File, maxDim: Int = 2048): Bitmap
                 sample *= 2
             }
             BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
-        }.getOrNull()
+        }.getOrNull().also { bitmap ->
+            if (bitmap == null) {
+                // 异形格式解码失败：调用方回退「直接保存原文件」路径，降级留痕
+                AppLogger.warn(TAG, "decodeSampledBitmap: 预览位图解码失败，回退直接保存 file=${file.name}")
+            }
+        }
     }
 
 /** 文件大小未知的防御展示（理论到不了：发布前置了 20MB 校验） */

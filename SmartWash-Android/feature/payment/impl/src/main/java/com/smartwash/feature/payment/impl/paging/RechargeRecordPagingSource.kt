@@ -1,9 +1,8 @@
 package com.smartwash.feature.payment.impl.paging
 
-import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import com.smartwash.feature.payment.impl.PaymentImplConstant
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.payment.impl.network.api.RechargeApi
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
 
@@ -24,7 +23,7 @@ class RechargeRecordPagingSource(
                 nextKey = nextKey
             )
         } catch (e: Exception) {
-            Log.e(PaymentImplConstant.APP_NAME, "RechargeRecordPagingSource.load: ${e.message}", e)
+            AppLogger.error(TAG, "RechargeRecordPagingSource.load: ${e.message}", e)
             LoadResult.Error(throwable = e)
         }
     }
@@ -37,5 +36,10 @@ class RechargeRecordPagingSource(
             state.closestPageToPosition(anchor)?.prevKey?.plus(1)
                 ?: state.closestPageToPosition(anchor)?.nextKey?.minus(1)
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "RechargeRecordPagingSource"
     }
 }

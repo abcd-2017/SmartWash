@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.logic.DeliveryRules
@@ -77,6 +78,8 @@ class DeliverySessionViewModel @Inject constructor(
 
         /** 连续失败指数退避封顶 */
         private const val MAX_POLL_INTERVAL_MS = 10_000L
+
+        private const val TAG = "DeliverySessionViewModel"
     }
 
     private var sessionCode: String? = null
@@ -161,15 +164,19 @@ class DeliverySessionViewModel @Inject constructor(
                 } catch (e: DeliveryException) {
                     if (e.businessCode == DeliveryBusinessCode.GONE) {
                         // 会话过期/关闭：读路径即时失效语义，立即退出（不与全局 404/401 语义混淆）
+                        AppLogger.warn(TAG, "轮询遇会话失效 businessCode=${e.businessCode}，退出会话")
                         markSessionGone(e.message)
                         break
                     }
+                    AppLogger.debug(TAG, "轮询条目流业务异常 businessCode=${e.businessCode}，退避重试")
                     onPollFailure(e.message)
                     intervalMs = backoff(intervalMs)
                 } catch (e: NetworkException) {
+                    AppLogger.debug(TAG, "轮询条目流网络异常，退避重试")
                     onPollFailure(e.message)
                     intervalMs = backoff(intervalMs)
                 } catch (e: Exception) {
+                    AppLogger.debug(TAG, "轮询条目流未知异常", e)
                     onPollFailure(null)
                     intervalMs = backoff(intervalMs)
                 }
@@ -180,6 +187,8 @@ class DeliverySessionViewModel @Inject constructor(
 
     private fun onPollFailure(message: String?) {
         if (_loadState.value is RequestState.Loading) {
+            // 首次加载即失败（非轮询途中自愈场景），error 留痕
+            AppLogger.error(TAG, "首次拉取条目流失败 message=$message")
             _loadState.value = RequestState.Error(R.string.toolbox_delivery_error_load, message)
         }
         _pollFailed.value = true
@@ -219,14 +228,18 @@ class DeliverySessionViewModel @Inject constructor(
                 repository.publishText(code = code, textContent = text, title = null)
                 _draft.value = ""
                 _sendState.value = RequestState.Success
+                AppLogger.info(TAG, "文本条目发布成功 code=$code length=${text.length}")
                 refreshNow()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.sendText: ${e.message}", e)
                 _sendState.value = RequestState.Error(e.resId, e.message)
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "DeliverySessionViewModel.sendText: 业务拒绝 businessCode=${e.businessCode}")
                 _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_send, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.sendText: ${e.message}", e)
                 _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_send)
             }
         }
@@ -258,14 +271,18 @@ class DeliverySessionViewModel @Inject constructor(
                     content = { appContext.contentResolver.openInputStream(uri) },
                 )
                 _sendState.value = RequestState.Success
+                AppLogger.info(TAG, "文件条目发布成功 code=$code kind=${kind.name} fileName=${picked.displayName} size=${picked.size}B")
                 refreshNow()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.publishPicked: ${e.message}", e)
                 _sendState.value = RequestState.Error(e.resId, e.message)
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "DeliverySessionViewModel.publishPicked: 业务拒绝 businessCode=${e.businessCode}")
                 _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_send, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.publishPicked: ${e.message}", e)
                 _sendState.value = RequestState.Error(R.string.toolbox_delivery_error_send)
             }
         }
@@ -288,10 +305,13 @@ class DeliverySessionViewModel @Inject constructor(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: DeliveryException) {
+                        AppLogger.warn(TAG, "文本预览业务拒绝 businessCode=${e.businessCode} itemId=${item.id}")
                         closePreviewWithError(generation, toastFor(e, R.string.toolbox_delivery_preview_error))
                     } catch (e: NetworkException) {
+                        AppLogger.error(TAG, "DeliverySessionViewModel.openItem: ${e.message}", e)
                         closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, e.message))
                     } catch (e: Exception) {
+                        AppLogger.error(TAG, "DeliverySessionViewModel.openItem: ${e.message}", e)
                         closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error))
                     }
                 }
@@ -331,6 +351,7 @@ class DeliverySessionViewModel @Inject constructor(
                 mimeType = confirm.item.mimeType,
                 source = content.stream,
             )
+            AppLogger.info(TAG, "投递文件已保存并焚毁 itemId=${confirm.item.id}")
             writePreview(previewGeneration, null)
             _toast.value = ToastEvent(R.string.toolbox_delivery_toast_saved_file)
             refreshNow()
@@ -345,6 +366,7 @@ class DeliverySessionViewModel @Inject constructor(
             val take = repository.takeItem(code, ready.item.id)
             val text = take.textContent ?: ready.text.orEmpty()
             copyToClipboard(appContext, text)
+            AppLogger.info(TAG, "投递文本已复制并焚毁 itemId=${ready.item.id}")
             writePreview(previewGeneration, null)
             _toast.value = ToastEvent(R.string.toolbox_delivery_toast_copy_success)
             refreshNow()
@@ -362,6 +384,7 @@ class DeliverySessionViewModel @Inject constructor(
                 mimeType = ready.item.mimeType,
                 source = ready.cacheFile.inputStream(),
             )
+            AppLogger.info(TAG, "投递图片已保存相册并焚毁 itemId=${ready.item.id}")
             writePreview(previewGeneration, null)
             _toast.value = ToastEvent(R.string.toolbox_delivery_toast_saved_gallery)
             refreshNow()
@@ -387,14 +410,18 @@ class DeliverySessionViewModel @Inject constructor(
             try {
                 repository.closeSession(code)
                 _closeState.value = RequestState.Success
+                AppLogger.info(TAG, "投递会话关闭成功 code=$code")
                 pollingJob?.cancel()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.closeSession: ${e.message}", e)
                 _closeState.value = RequestState.Error(e.resId, e.message)
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "DeliverySessionViewModel.closeSession: 业务拒绝 businessCode=${e.businessCode}")
                 _closeState.value = RequestState.Error(R.string.toolbox_delivery_error_close, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.closeSession: ${e.message}", e)
                 _closeState.value = RequestState.Error(R.string.toolbox_delivery_error_close)
             }
         }
@@ -424,13 +451,17 @@ class DeliverySessionViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: DeliveryException) {
+                AppLogger.warn(TAG, "预览动作业务拒绝 businessCode=${e.businessCode}")
                 closePreviewWithError(generation, toastFor(e, R.string.toolbox_delivery_preview_error))
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.runPreviewAction: ${e.message}", e)
                 closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error, e.message))
             } catch (e: DeliveryMediaException) {
                 // 媒体库写入失败：文案由 saver 以资源 id 携带，此处映射为 Toast（无硬编码中文）
+                AppLogger.error(TAG, "预览动作媒体库写入失败 resId=${e.resId}", e)
                 closePreviewWithError(generation, ToastEvent(e.resId))
             } catch (e: Exception) {
+                AppLogger.error(TAG, "DeliverySessionViewModel.runPreviewAction: ${e.message}", e)
                 closePreviewWithError(generation, ToastEvent(R.string.toolbox_delivery_preview_error))
             } finally {
                 _previewAction.value = RequestState.Idle

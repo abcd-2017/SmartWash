@@ -37,6 +37,7 @@ import { DivMiniCard, LiurenCourses, LiurenPan, LiuYaoPan, MeiHuaTripleCards, Qi
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { getObjectParam, getNumberParam, getBooleanParam, pathStack } from '../../../../../utils/PathStackUtil'
+import { logger } from '../../../../../utils/Logger'
 
 /** 爻位名（自初爻到上爻，索引 0..5） */
 const POSITION_NAMES: string[] = ['初', '二', '三', '四', '五', '上']
@@ -79,6 +80,7 @@ struct DivChartPage {
     }
     this.animateEntry = animate
     if (recordId === null) {
+      logger.warn('divChartPage', '卦盘页路由参数缺失 recordId，按空态呈现')
       this.loading = false
       return
     }
@@ -88,10 +90,15 @@ struct DivChartPage {
       if (row !== null) {
         this.method = row.method
         this.decode(row)
+        logger.debug('divChartPage', `卦盘解码成功 recordId=${recordId} method=${this.method}`)
+      } else {
+        logger.warn('divChartPage', `卦盘记录不存在 recordId=${recordId}，按空态呈现`)
       }
     } catch (err) {
       // 读取/解码失败按空态呈现
       this.record = null
+      logger.warn('divChartPage', `卦盘记录读取/解码失败 recordId=${recordId}, ` +
+        `${err instanceof Error ? err.message : ''}`)
     }
     this.loading = false
   }

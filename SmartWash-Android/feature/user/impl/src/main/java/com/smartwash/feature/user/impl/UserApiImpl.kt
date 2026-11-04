@@ -1,5 +1,6 @@
 package com.smartwash.feature.user.impl
 
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.api.model.LoginEvent
 import com.smartwash.feature.user.api.model.LogoutReason
@@ -68,6 +69,8 @@ class UserApiImpl @Inject constructor(
                     SessionEvent.LoggedIn -> LoginEvent.LoggedIn
                     SessionEvent.LoggedOut -> LoginEvent.LoggedOut(LogoutReason.LOGOUT)
                 }
+                // 事件总线分发路径 debug 封顶（只打事件类型，不带任何载荷数据）
+                AppLogger.debug(TAG, "转发会话事件: $event → $loginEvent")
                 _loginEvents.emit(loginEvent)
             }
         }
@@ -85,7 +88,8 @@ class UserApiImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // 契约语义：获取失败返回 null，调用方无需区分失败原因
+            // 外部调用失败：原来完全静默，排查无从下手；降级语义（返回 null）保持不变
+            AppLogger.error(TAG, "getUserInfo 失败，按契约降级返回 null", e)
             null
         }
     }
@@ -105,6 +109,8 @@ class UserApiImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            // 外部调用失败：降级语义（返回 null、缓存不动）保持不变
+            AppLogger.error(TAG, "refreshUserInfo 失败，按契约降级返回 null", e)
             null
         }
     }
@@ -132,4 +138,9 @@ class UserApiImpl @Inject constructor(
             lockerCount = schoolVo.lockerCount ?: 0,
         ),
     )
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "UserApiImpl"
+    }
 }

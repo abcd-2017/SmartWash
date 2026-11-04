@@ -1,13 +1,12 @@
 package com.smartwash.feature.user.impl.ui.login
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.R
-import com.smartwash.feature.user.impl.UserImplConstant
 import com.smartwash.feature.user.impl.network.entity.user.LoginUser
 import com.smartwash.feature.user.impl.repository.UserRepository
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -38,7 +37,7 @@ class LoginViewModel @Inject constructor(
                 val token = loginVo.token
                 if (token.isNullOrBlank()) {
                     // 响应 data/token 为空时按失败处理：不落空 token、不置 Success，避免首页鉴权循环闪屏
-                    Log.e(UserImplConstant.APP_NAME, "LoginViewModel.loginUser: 登录响应数据为空")
+                    AppLogger.error(TAG, "LoginViewModel.loginUser: 登录响应数据为空")
                     _loginState.value = RequestState.Error(R.string.error_login_failed)
                     return@launch
                 }
@@ -46,9 +45,11 @@ class LoginViewModel @Inject constructor(
                 sessionManager.saveToken(token, loginVo.role)
                 // 会话建立广播（UserApiImpl 桥接为 LoginEvent.LoggedIn，并使用户信息缓存失效）
                 sessionEventBus.notifyLoggedIn()
+                // 低频关键动作成功（手机号必须脱敏后才可入日志）
+                AppLogger.info(TAG, "登录成功 phone=${AppLogger.maskPhone(phoneNumber)}")
                 _loginState.value = RequestState.Success
             } catch (e: NetworkException) {
-                Log.e(UserImplConstant.APP_NAME, "LoginViewModel.loginUser: ${e.message}", e)
+                AppLogger.error(TAG, "LoginViewModel.loginUser: ${e.message}", e)
                 _loginState.value = RequestState.Error(R.string.error_login_failed, e.message)
             }
         }
@@ -77,8 +78,13 @@ class LoginViewModel @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(UserImplConstant.APP_NAME, "LoginViewModel.schoolInfoMissing: ${e.message}", e)
+            AppLogger.error(TAG, "LoginViewModel.schoolInfoMissing: ${e.message}", e)
             null
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "LoginViewModel"
     }
 }

@@ -178,6 +178,9 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         // 3.入账：incrUserBalance 无条件累加，但幂等闸门已确保仅执行一次；
         //   影响行数==0 说明用户不存在，抛异常回滚闸门更新
         if (usersMapper.incrUserBalance(record.getUserId(), record.getAmount()) == 0) {
+            // 入账失败 = 幂等闸门已通过但用户缺失，属资金链路数据一致性异常，以 error 留痕
+            log.error("充值入账失败（用户不存在或已删除），充值事务将回滚, outTradeNo: {}, userId: {}, amount: {}",
+                    outTradeNo, record.getUserId(), record.getAmount());
             throw new CustomExceptions("充值入账失败，用户不存在");
         }
         log.info("充值回调完成, userId: {}, amount: {}, outTradeNo: {}",

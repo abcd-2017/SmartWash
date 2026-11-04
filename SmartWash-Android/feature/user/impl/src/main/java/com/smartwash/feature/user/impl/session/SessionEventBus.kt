@@ -1,6 +1,7 @@
 package com.smartwash.feature.user.impl.session
 
 import com.smartwash.common.network.SessionEventNotifier
+import com.smartwash.common.utils.AppLogger
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -66,12 +67,19 @@ class SessionEventBus @Inject constructor() : SessionEventNotifier {
     private fun emit(event: SessionEvent) {
         val now = System.nanoTime() / 1_000_000L
         val last = lastEmitElapsedMs.get()
-        if (now - last < DEDUP_INTERVAL_MS) return
+        if (now - last < DEDUP_INTERVAL_MS) {
+            // 幂等命中（并发多请求同时 401 的预期去重路径；事件总线分发路径 debug 封顶）
+            AppLogger.debug(TAG, "会话事件在去重窗口内被抑制: $event")
+            return
+        }
         if (!lastEmitElapsedMs.compareAndSet(last, now)) return
         _events.tryEmit(event)
     }
 
     private companion object {
         const val DEDUP_INTERVAL_MS = 1500L
+
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "SessionEventBus"
     }
 }

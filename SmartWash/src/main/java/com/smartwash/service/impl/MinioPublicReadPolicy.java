@@ -2,6 +2,7 @@ package com.smartwash.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.smartwash.utils.JsonUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * 不授予 ListBucket/写入，其余前缀不再匿名可读——堵住全桶公共读的桶级泄露面。
  * 独立纯函数便于单测：只做策略文档构造与判定，不触碰 MinIO 客户端。
  */
+@Slf4j
 public final class MinioPublicReadPolicy {
 
     /** 匿名只读白名单前缀（新增前缀必须同步评估三端直链消费方，禁止静默扩白名单） */
@@ -53,7 +55,8 @@ public final class MinioPublicReadPolicy {
         try {
             root = JsonUtils.readTree(existingPolicy);
         } catch (Exception e) {
-            // 非法策略文档按不满足处理，由覆盖写入纠正
+            // 非法策略文档按不满足处理（降级），由覆盖写入纠正；此处留痕便于发现桶策略被外部篡改
+            log.warn("MinIO 桶策略文档解析失败，按不满足处理并触发覆盖写入, bucket: {}, 原因: {}", bucket, e.getMessage());
             return false;
         }
         JsonNode statements = root == null ? null : root.get("Statement");

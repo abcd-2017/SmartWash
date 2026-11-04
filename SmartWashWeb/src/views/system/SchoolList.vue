@@ -238,6 +238,7 @@ import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import RegionCascader from '@/components/RegionCascader.vue';
 import AmapPicker from '@/components/AmapPicker.vue';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -378,15 +379,20 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addSchool(tempSchool);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：业务键仅学校名称，联系电话等敏感字段不入日志（新增无 schoolId）
+      logger.info('新增学校成功', `schoolName=${tempSchool.schoolName}`);
     } else {
       await updateSchool(tempSchool);
       ElMessage.success('修改成功');
+      logger.info('修改学校成功', `schoolId=${tempSchool.schoolId}`, `schoolName=${tempSchool.schoolName}`);
     }
     // 学校数据有变，失效学校下拉的全量缓存，其他页面下次进入时重新拉取
     schoolOptionsCache.invalidate();
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('保存学校失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -401,10 +407,13 @@ const handleDelete = async (row) => {
   try {
     await deleteSchool(row.schoolId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 schoolId/schoolName，联系电话不入日志
+    logger.info('删除学校成功', `schoolId=${row.schoolId}`, `schoolName=${row.schoolName}`);
     // 学校下拉缓存同步失效（评审 #15 的失效入口）
     schoolOptionsCache.invalidate();
     fetchData();
   } catch (error) {
+    logger.error('删除学校失败:', `schoolId=${row.schoolId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };

@@ -297,11 +297,15 @@ public class PaymentsServiceImpl extends ServiceImpl<PaymentsMapper, Payments> i
         // 5.条件扣款（balance >= amount 防超扣），金额取库内支付流水
         if (payment.getAmount().compareTo(BigDecimal.ZERO) > 0
                 && usersMapper.decrUserBalance(payment.getUserId(), payment.getAmount()) == 0) {
+            log.warn("条件扣款失败（余额不足或余额变动），支付事务将回滚, outTradeNo: {}, orderId: {}, userId: {}, amount: {}",
+                    outTradeNo, payment.getOrderId(), payment.getUserId(), payment.getAmount());
             throw new CustomExceptions("余额不足或扣减失败");
         }
         // 6.原子核销优惠券：影响行数==0 即并发下已被使用，抛异常回滚整个事务
         if (orders.getUserCouponId() != null
                 && userCouponMapper.markUsed(orders.getUserCouponId(), payment.getUserId(), orders.getOrderId()) == 0) {
+            log.warn("优惠券核销失败（并发下已被使用或状态变更），支付事务将回滚, outTradeNo: {}, orderId: {}, userId: {}, userCouponId: {}",
+                    outTradeNo, orders.getOrderId(), payment.getUserId(), orders.getUserCouponId());
             throw new CustomExceptions("优惠券已被使用");
         }
         // 7.订单置待寄件 + 生成取件码（当前处于订单行锁保护内，updateById 安全）。

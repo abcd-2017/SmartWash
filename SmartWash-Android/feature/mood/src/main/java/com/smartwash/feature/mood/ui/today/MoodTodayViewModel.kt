@@ -3,6 +3,7 @@ package com.smartwash.feature.mood.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.mood.MoodConstant
 import com.smartwash.feature.mood.MoodMonth
@@ -73,8 +74,10 @@ class MoodTodayViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MoodTodayViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MoodTodayViewModel.load: ${e.message}", e)
                 _loadState.value = RequestState.Error(R.string.mood_error_load)
             }
         }
@@ -135,11 +138,14 @@ class MoodTodayViewModel @Inject constructor(
                     )
                 }
                 _saveState.value = RequestState.Success
+                AppLogger.info(TAG, "心情记录保存成功 level=$level（${if (current.hasRecord) "覆盖" else "新建"}）")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
+                AppLogger.error(TAG, "MoodTodayViewModel.save: ${e.message}", e)
                 _saveState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
+                AppLogger.error(TAG, "MoodTodayViewModel.save: ${e.message}", e)
                 _saveState.value = RequestState.Error(R.string.mood_error_save)
             }
         }
@@ -148,5 +154,9 @@ class MoodTodayViewModel @Inject constructor(
     /** 保存反馈消费后复位（避免返回页面重复触发） */
     fun resetSaveState() {
         _saveState.value = RequestState.Idle
+    }
+
+    private companion object {
+        const val TAG = "MoodTodayViewModel"
     }
 }

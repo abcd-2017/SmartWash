@@ -91,6 +91,7 @@ import { ref, onMounted } from 'vue';
 import { getAuditList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
+import logger from '@/utils/logger';
 
 const detailDialogVisible = ref(false);
 const currentAudit = ref(null);
@@ -135,6 +136,8 @@ const formatJson = (json) => {
     if (typeof json === 'string') return JSON.stringify(JSON.parse(json), null, 2);
     return JSON.stringify(json, null, 2);
   } catch {
+    // 降级为原文展示；审计明细可能含用户问事内容，日志只记异常事实不打内容
+    logger.warn('审计明细 JSON 解析失败，已按原文兜底展示');
     return String(json);
   }
 };

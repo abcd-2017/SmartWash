@@ -2,6 +2,7 @@ package com.smartwash.feature.game.ui.center
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.game.GameCategory
 import com.smartwash.feature.game.GameTint
@@ -68,13 +69,18 @@ class GameCenterViewModel @Inject constructor(
         viewModelScope.launch {
             _listState.value = RequestState.Loading
             try {
-                _games.value = repository.getGameList()
+                val games = repository.getGameList()
                     .mapIndexed { index, vo -> vo.toItem(index) }
                     .withUniqueKeys()
+                _games.value = games
+                if (games.isEmpty()) {
+                    AppLogger.debug(TAG, "loadGames: 游戏列表为空（后端未上架或未配置）")
+                }
                 _listState.value = RequestState.Success
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                AppLogger.error(TAG, "GameCenterViewModel.loadGames: ${e.message}", e)
                 _listState.value = RequestState.Error(R.string.game_error_load)
             }
         }
@@ -110,5 +116,9 @@ class GameCenterViewModel @Inject constructor(
             val count = seen.merge(game.gameKey, 1, Int::plus) ?: 1
             if (count == 1) game else game.copy(gameKey = "${game.gameKey}_$count")
         }
+    }
+
+    private companion object {
+        const val TAG = "GameCenterViewModel"
     }
 }

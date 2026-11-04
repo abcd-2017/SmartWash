@@ -104,6 +104,8 @@ public class DeliveryObjectStorage {
         try {
             return URLDecoder.decode(objectName, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException e) {
+            // 编码非法按原值返回，debug 留痕即可
+            log.debug("对象名 URL 解码失败，按原值返回, objectName: {}", objectName);
             return objectName;
         }
     }

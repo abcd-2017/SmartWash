@@ -43,11 +43,15 @@ import androidx.navigation.NavHostController
 import com.smartwash.BuildConfig
 import com.smartwash.config.ServerConfig
 import com.smartwash.R
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
+
+/** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接；供 WebViewClient 回调留痕） */
+private const val TAG = "WebViewPage"
 
 /**
  * 内置浏览器页（壳层留守页面，深链 web 分支与运营位 H5 承载）：
@@ -222,7 +226,15 @@ private fun WebViewContent(
                     error: WebResourceError,
                 ) {
                     // 仅主框架失败才进错误态（子资源 404/超时不应打断整页）
-                    if (request.isForMainFrame) loadError = true
+                    if (request.isForMainFrame) {
+                        // 外部加载失败（WebViewClient 运行期回调，非组合期渲染路径）；
+                        // 只记错误码与描述，不记完整 URL（深链/运营链接 query 不可控）
+                        AppLogger.error(
+                            TAG,
+                            "WebView 主框架加载失败：code=${error.errorCode} desc=${error.description}"
+                        )
+                        loadError = true
+                    }
                 }
 
                 @Deprecated("Deprecated in Java")

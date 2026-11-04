@@ -9,6 +9,7 @@ import { getUserInfo } from "../network/api/UserApi"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { payment } from "../network/api/PaymentApi"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
 import { AppButton, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
@@ -74,11 +75,14 @@ struct Payment {
   async aboutToAppear() {
     // 安全取参（评审 #31 / #6）：统一走 getNumberParam，缺失/非法返回 null（Number() 显式转换，NaN 同视为缺失）
     this.orderId = getNumberParam(RouteNames.PAYMENT)
+    logger.debug('payment', `支付页挂载 orderId=${this.orderId}`)
     if (this.orderId !== null) {
       let res = await getOrderInfo(this.orderId)
       if (res.code === HttpStatusCode.Ok) {
         this.orderInfo = res.data
       } else {
+        logger.warn('payment', `支付页订单信息加载失败 orderId=${this.orderId} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "订单信息加载失败")
       }
     }
@@ -90,6 +94,7 @@ struct Payment {
     if (res.code === HttpStatusCode.Ok) {
       this.userInfo = res.data
     } else {
+      logger.warn('payment', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "用户信息加载失败")
     }
   }
@@ -99,6 +104,8 @@ struct Payment {
     if (couponRes.code === HttpStatusCode.Ok) {
       this.userCoupon = couponRes.data
     } else {
+      logger.warn('payment', `可用优惠券加载失败 orderId=${this.orderId} ` +
+        `code=${couponRes.code} message=${couponRes.message ?? ""}`)
       showToastSafety(couponRes.message, "优惠券加载失败")
     }
   }
@@ -121,6 +128,8 @@ struct Payment {
         this.orderInfo = res.data
         this.fadeAmountIn()
       } else {
+        logger.warn('payment', `优惠券试算失败 orderId=${this.orderId} ` +
+          `couponId=${coupon?.userCouponId ?? 0} code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "优惠券试算失败")
         this.amountVisible = true
       }
@@ -167,10 +176,15 @@ struct Payment {
    */
   async doPay() {
     if (this.paying) {
+      logger.debug('payment', '支付请求进行中，忽略重复触发')
       return
     }
     this.paying = true
     try {
+      // 发起前留痕：仅记 orderId/金额/券 id 摘要，不打完整请求体（敏感红线）
+      logger.debug('payment', `发起支付 orderId=${this.orderId} ` +
+        `payPrice=${(this.orderInfo?.payPrice ?? 0).toFixed(2)} ` +
+        `couponId=${this.selectCoupon?.userCouponId ?? null}`)
       let res = await payment({
         orderId: this.orderId,
         // PaymentType 已对齐安卓 string 契约，直接传枚举值
@@ -181,6 +195,8 @@ struct Payment {
         // 对齐 Android：支付成功不弹 toast，直接导航（recap §3-T2）
         this.goToPaySuccess()
       } else {
+        logger.warn('payment', `支付被拒绝 orderId=${this.orderId} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "支付失败，请稍后重试")
       }
     } finally {
@@ -190,6 +206,9 @@ struct Payment {
 
   /** 支付成功导航：对齐 Android popUpTo(HOME) —— 回退到首页再入栈支付成功页，避免支付页残留返回栈 */
   private goToPaySuccess() {
+    // 低频关键动作成功：支付完成在跳转处留 info（支付成功页不再重复记录）
+    logger.info('payment', `支付成功，跳转支付成功页 orderId=${this.orderId} ` +
+      `payPrice=${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
     const homeIndex = pathStack.popToName(RouteNames.HOME)
     if (homeIndex < 0) {
       pathStack.pop()
@@ -205,6 +224,10 @@ struct Payment {
     if ((this.userInfo?.balance ?? 0) >= (this.orderInfo?.payPrice ?? 0)) {
       this.confirmPayController.open()
     } else {
+      // 业务拒绝：余额不足拦截（金额可打，不含手机号等敏感字段）
+      logger.warn('payment', `余额不足拦截 orderId=${this.orderId} ` +
+        `balance=${(this.userInfo?.balance ?? 0).toFixed(2)} ` +
+        `payPrice=${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
       this.insufficientDialogController.open()
     }
   }

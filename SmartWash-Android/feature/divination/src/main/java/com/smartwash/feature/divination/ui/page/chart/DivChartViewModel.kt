@@ -3,6 +3,7 @@ package com.smartwash.feature.divination.ui.page.chart
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.liuyao.LiuYaoChart
 import com.smartwash.feature.divination.core.liuyao.LiuYaoFacts
 import com.smartwash.feature.divination.data.DivChartBundle
@@ -40,7 +41,13 @@ class DivChartViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val record = repository.getById(recordId)
+            if (record == null) {
+                AppLogger.warn(TAG, "卦盘记录不存在 recordId=$recordId，页面按空态兜底")
+            }
             val bundle = record?.let { DivChartCodec.decode(it.chartJson) }
+            if (record != null && bundle == null) {
+                AppLogger.warn(TAG, "卦盘 chart JSON 解码失败 recordId=$recordId，页面按空态兜底")
+            }
             val liuYao = bundle?.liuyao
             _uiState.value = DivChartUiState(
                 record = record,
@@ -60,6 +67,8 @@ class DivChartViewModel @Inject constructor(
     fun linesText(): String = _uiState.value.record?.lines ?: "[]"
 
     companion object {
+        private const val TAG = "DivChartViewModel"
+
         fun decode(json: String): DivChartBundle? = DivChartCodec.decode(json)
         fun extractLiuYao(bundle: DivChartBundle): LiuYaoChart? = bundle.liuyao
     }

@@ -45,9 +45,11 @@ public class CouponController {
     @PostMapping("/add")
     public Result<String> addCoupon(@RequestBody @Valid AddCouponFrom addCouponFrom) {
         if (couponService.getSearchByName(addCouponFrom.getTitle()) != null) {
+            log.warn("新增优惠券被拒绝：标题已存在, title: {}", addCouponFrom.getTitle());
             return Result.failMsg("该种类优惠券已经存在了");
         }
         couponService.addCoupon(addCouponFrom);
+        log.info("新增优惠券成功, title: {}", addCouponFrom.getTitle());
         return Result.ok("添加成功");
     }
 
@@ -56,18 +58,22 @@ public class CouponController {
     public Result<String> updateCoupon(@RequestBody @Valid UpdateCouponFrom couponFrom) {
         Coupon coupon = couponService.getById(couponFrom.getCouponId());
         if (coupon == null) {
+            log.warn("更新优惠券被拒绝：优惠券不存在, couponId: {}", couponFrom.getCouponId());
             return Result.failMsg("优惠券不存在");
         }
         if (!Objects.equals(coupon.getTitle(), couponFrom.getTitle()) && couponService.getSearchByName(couponFrom.getTitle()) != null) {
+            log.warn("更新优惠券被拒绝：标题已存在, couponId: {}, title: {}", couponFrom.getCouponId(), couponFrom.getTitle());
             return Result.failMsg("该种类优惠券已经存在了");
         }
         couponService.updateCoupon(couponFrom);
+        log.info("更新优惠券成功, couponId: {}", couponFrom.getCouponId());
         return Result.ok("修改成功");
     }
 
     @Operation(summary = "批量删除优惠券", description = "根据ID批量删除优惠券模板，多个ID用逗号分隔")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteCoupon(@PathVariable("ids") @Parameter(description = "优惠券ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
+        log.info("批量删除优惠券, ids: {}", ids);
         return Result.ok(couponService.deleteCoupon(ids));
     }
 }

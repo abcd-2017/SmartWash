@@ -8,10 +8,11 @@ import { LoadingFooter } from "../view/LoadingFooter"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
-import { pasteboard } from "@kit.BasicServicesKit"
+import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from "@ohos.vibrator"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
+import { logger } from "../utils/Logger"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -45,6 +46,7 @@ struct PickUp {
   )
 
   aboutToAppear(): void {
+    logger.debug('pickup', '取件页挂载，拉取可取订单')
     this.fetchPickupPage(1)
   }
 
@@ -53,6 +55,7 @@ struct PickUp {
    * @returns 本页是否有数据（供 PagingController 判断是否封底）
    */
   async fetchPickupPage(page: number): Promise<boolean> {
+    logger.debug('pickup', `拉取可取订单 page=${page}`)
     try {
       let res = await getOrderList({
         status: OrderStatusEnum.READY_FOR_PICKUP,
@@ -72,6 +75,8 @@ struct PickUp {
         this.orderList.push(...res.data)
         return true
       }
+      logger.warn('pickup', `可取订单加载失败 page=${page} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "取件订单加载失败")
       return false
     } finally {
@@ -90,6 +95,8 @@ struct PickUp {
    */
   private copyPickupCode(code: string): void {
     if (code === "") {
+      // 无码分支只记事实，不记码值（敏感红线）
+      logger.debug('pickup', '复制取件码跳过：当前订单无取件码')
       showToastSafety("暂无取件码，请稍后再试")
       return
     }
@@ -101,7 +108,8 @@ struct PickUp {
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, code)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
       showToastSafety("取件码已复制")
-    }).catch(() => {
+    }).catch((err: BusinessError) => {
+      logger.error('pickup', '取件码复制到剪贴板失败', `${err.code} ${err.message}`)
       showToastSafety("复制失败")
     })
   }

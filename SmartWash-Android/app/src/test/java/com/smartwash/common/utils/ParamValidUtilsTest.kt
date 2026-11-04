@@ -7,8 +7,11 @@ import org.junit.Test
 /**
  * [ParamValidUtils] JVM 单测（锚点）：
  * - [isValidPhone] 正则 `^1[3-9]\d{9}$` 全分支（合法号段边界、位数、非数字字符、
- *   非 1 开头、`+86` 前缀与前导/尾随空格、空串）；
- * - [isValidPassword] 长度 6-16 边界（下界 5/6、上界 16/17、空串、纯空白）。
+ *   非 1 开头、`+86` 前缀与前导/尾随空格、空串）。
+ *
+ * 注：原提交附带的 isValidPassword 段落引用了从未存在于 ParamValidUtils 的 API
+ * （密码校验实现在 feature/toolbox 的 DeliveryRules.isValidPassword），导致 :app
+ * 单测编译失败，此处移除该段落以恢复测试可编译（本地验证用修复）。
  */
 class ParamValidUtilsTest {
 
@@ -57,29 +60,5 @@ class ParamValidUtilsTest {
     fun `空串与纯空白被拦截`() {
         assertFalse(isValidPhone(""))
         assertFalse(isValidPhone("   "))
-    }
-
-    // ---------- isValidPassword ----------
-
-    @Test
-    fun `密码长度 6-16 位通过校验`() {
-        assertTrue(isValidPassword("123456")) // 下界 6
-        assertTrue(isValidPassword("1234567890123456")) // 上界 16
-        assertTrue(isValidPassword("abcdef"))
-        assertTrue(isValidPassword("a b c d e f")) // 空格计入长度
-    }
-
-    @Test
-    fun `密码长度不足 6 位被拦截`() {
-        assertFalse(isValidPassword(""))
-        assertFalse(isValidPassword("1"))
-        assertFalse(isValidPassword("12345"))
-        assertFalse(isValidPassword("     ")) // 5 个空格
-    }
-
-    @Test
-    fun `密码长度超过 16 位被拦截`() {
-        assertFalse(isValidPassword("12345678901234567")) // 17 位
-        assertFalse(isValidPassword("a".repeat(32)))
     }
 }

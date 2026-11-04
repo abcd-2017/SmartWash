@@ -182,6 +182,7 @@ import { ElMessage } from 'element-plus';
 import dayjs from 'dayjs';
 import { getShortCodeList, getShortCodeDetail, deleteShortCode } from '@/api/toolbox';
 import { formatTime } from '@/utils/format';
+import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
 import {
@@ -238,6 +239,8 @@ const handleDetail = async (row) => {
   try {
     detail.value = await getShortCodeDetail(row.id);
   } catch (error) {
+    // 页面自有 catch（列表拉取失败已由 useTableList/拦截器留痕，这里只兜底详情请求）
+    logger.error('短码详情获取失败:', `id=${row.id}`, error);
     ElMessage.error(error.message || '获取短码详情失败');
     detailVisible.value = false;
   } finally {
@@ -253,9 +256,12 @@ const handleDelete = async (row) => {
   deletingId.value = row.id;
   try {
     await deleteShortCode(row.id);
+    // 低频写操作成功（短链码与目标 URL 非凭证，可入日志；ownerPhone 不主动传参）
+    logger.info('短码删除成功', `id=${row.id}`, `code=${row.code}`);
     ElMessage.success('删除成功');
     fetchData(); // 刷新当前页
   } catch (error) {
+    logger.error('短码删除失败:', `id=${row.id}`, `code=${row.code}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;

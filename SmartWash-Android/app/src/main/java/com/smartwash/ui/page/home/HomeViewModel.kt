@@ -3,6 +3,7 @@ package com.smartwash.ui.page.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.R
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.user.api.UserApi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,8 +33,15 @@ class HomeViewModel @Inject constructor(
                 _userSchoolId.value = userInfo.school.schoolId
                 _getSchoolState.value = RequestState.Success
             } else {
+                // 空态预警：未登录/用户信息获取失败（契约约定返回 null），页面降级不引导绑定学校
+                AppLogger.warn(TAG, "主页壳获取用户信息返回 null（未登录或用户接口失败），学校引导降级跳过")
                 _getSchoolState.value = RequestState.Error(R.string.error_network_fail)
             }
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "HomeViewModel"
     }
 }

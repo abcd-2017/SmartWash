@@ -1,11 +1,11 @@
 package com.smartwash.common.network.interceptor
 
-import android.util.Log
 import com.smartwash.common.network.R
 import com.smartwash.common.network.SessionEventNotifier
 import com.smartwash.common.network.TokenProvider
 import com.smartwash.common.network.annotation.RequireAuthorization
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -16,6 +16,8 @@ class RequestInterceptor @Inject constructor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        // 手机号脱敏：验证码接口路径含手机号，URL 入日志前统一打码
+        val url = AppLogger.maskPhone(request.url.toString())
 
         val tag = request.tag(retrofit2.Invocation::class.java)
         val method = tag?.method()
@@ -26,24 +28,24 @@ class RequestInterceptor @Inject constructor(
             val token = tokenProvider.currentToken().orEmpty()
 
             if (token.isBlank()) {
-                Log.w(TAG, "Request: ${request.method} ${request.url} — token 为空，拦截请求")
+                AppLogger.warn(TAG, "Request: ${request.method} $url — token 为空，拦截请求")
                 sessionEventNotifier.notifyNeedLogin()
                 throw NetworkException("未登录，请先登录", R.string.error_login_expired)
             }
 
-            Log.d(TAG, "Request: ${request.method} ${request.url} — 携带 token")
+            AppLogger.debug(TAG, "Request: ${request.method} $url — 携带 token")
             val modifiedRequest = request.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
                 .build()
             return chain.proceed(modifiedRequest)
         }
 
-        Log.d(TAG, "Request: ${request.method} ${request.url}")
+        AppLogger.debug(TAG, "Request: ${request.method} $url")
         return chain.proceed(request)
     }
 
     private companion object {
-        /** 日志 TAG（原 app 内 AppConstant.APP_NAME，迁移后模块内自定义常量） */
-        const val TAG = "SmartWash"
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "RequestInterceptor"
     }
 }

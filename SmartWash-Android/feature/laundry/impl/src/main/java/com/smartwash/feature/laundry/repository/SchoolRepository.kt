@@ -2,6 +2,7 @@ package com.smartwash.feature.laundry.repository
 
 import com.smartwash.common.database.dao.SchoolNameDao
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.laundry.network.api.SchoolApi
 import com.smartwash.feature.laundry.network.vo.SchoolName
@@ -33,6 +34,9 @@ class SchoolRepository @Inject constructor(
         // 2. 数据库缓存命中
         val cached = schoolNameDao.getAll().map { it.toVo() }
         if (cached.isNotEmpty()) {
+            // 降级留痕：内存未命中（冷启动首个请求才会走到），回落 Room 缓存并后台刷新网络；
+            // 之后内存缓存已建立，本 warn 每次进程生命周期至多出现一次
+            AppLogger.warn(TAG, "getAllSchools: 内存缓存未命中，降级读 Room 缓存（内存→Room, ${cached.size} 条），随后后台刷新网络")
             allSchools = cached
             refreshFromNetwork()
             return@withLock filterSchools(keyword)
@@ -45,6 +49,8 @@ class SchoolRepository @Inject constructor(
             allSchools = networkData
             schoolNameDao.deleteAll()
             schoolNameDao.insertAll(networkData.map { it.toEntity() })
+            // 冷启动首次全量加载（缓存建立时刻）：低频，但搜索链路整体属高频路径，只打 debug
+            AppLogger.debug(TAG, "getAllSchools: 学校数据网络加载成功并入库, size=${networkData.size}")
         }
         networkData
     }
@@ -56,8 +62,10 @@ class SchoolRepository @Inject constructor(
             allSchools = networkData
             schoolNameDao.deleteAll()
             schoolNameDao.insertAll(networkData.map { it.toEntity() })
-        } catch (_: Exception) {
-            // 后台刷新失败静默处理
+        } catch (e: Exception) {
+            // 后台刷新失败静默处理（用户已拿到 Room 数据，无感知）：
+            // 属降级留痕而非用户可感知的失败，打 warn 不打 error
+            AppLogger.warn(TAG, "refreshFromNetwork: 后台刷新学校数据失败，继续使用 Room 缓存: ${e.message}", e)
         }
     }
 
@@ -67,5 +75,10 @@ class SchoolRepository @Inject constructor(
         } else {
             allSchools.filter { it.schoolName.contains(keyword, ignoreCase = true) }
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "SchoolRepository"
     }
 }

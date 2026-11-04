@@ -6,6 +6,7 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
+import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
@@ -106,6 +107,8 @@ struct Register {
     }
     this.checkPhone()
     if (this.checkPhoneNumber) {
+      // 发送验证码前本地校验拒绝：只记事实，不落手机号（敏感红线）
+      logger.warn('register', '发送验证码前手机号校验未通过')
       return
     }
     this.captchaLoading = true
@@ -113,8 +116,12 @@ struct Register {
     try {
       let res = await getCaptcha(this.phoneNumber ?? "")
       if (res.code === HttpStatusCode.Ok) {
+        // 低频关键动作成功：验证码已发出（不打验证码值与手机号）
+        logger.info('register', '验证码发送成功')
         showToastSafety(res.data, "验证码已发送，请查看短信")
       } else {
+        // 发送被拒（频控/服务端拒绝）：回滚倒计时允许立即重试
+        logger.warn('register', `验证码发送被拒 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "验证码获取失败")
         this.resetCountDown()
       }
@@ -424,6 +431,8 @@ struct Register {
               }
               this.check()
               if (this.checkPhoneNumber || this.checkPassword || this.checkCode) {
+                // 注册提交本地校验拒绝：只记校验事实布尔值，不落输入内容（敏感红线）
+                logger.warn('register', `注册提交校验未通过 phone=${this.checkPhoneNumber} code=${this.checkCode} password=${this.checkPassword}`)
                 return
               }
               this.registering = true
@@ -484,12 +493,16 @@ struct Register {
       })
       if (res.code === HttpStatusCode.Ok) {
         this.showPassword = false
+        // 低频关键动作成功：注册成功
+        logger.info('register', '注册成功')
         showToastSafety("注册成功")
         // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
         await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
         // 注册成功后去向：鸿蒙对应页 AddSchool，等价 Android UpdateUserInfo
         pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
       } else {
+        // 注册业务拒绝（验证码错误/手机号已注册等）
+        logger.warn('register', `注册被拒绝 code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "注册失败")
       }
     } finally {

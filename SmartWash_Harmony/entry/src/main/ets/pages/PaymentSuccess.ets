@@ -4,6 +4,7 @@ import { getOrderInfo } from "../network/api/OrderApi"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
+import { logger } from "../utils/Logger"
 import { AppButton, CircleIconBox, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
@@ -29,6 +30,7 @@ struct PaymentSuccess {
   async aboutToAppear() {
     // 安全取参（评审 #31）：参数缺失/非法时返回 null，不再 as 强转崩溃
     this.orderId = getNumberParam(RouteNames.PAYMENT_SUCCESS)
+    logger.debug('paymentSuccess', `支付成功页挂载 orderId=${this.orderId}`)
     this.playCheckEnter()
     await this.loadOrder()
   }
@@ -36,6 +38,7 @@ struct PaymentSuccess {
   /** 拉取订单详情（首载与「重试」共用，recap §4-F1/S1） */
   async loadOrder() {
     if (this.orderId === null) {
+      logger.warn('paymentSuccess', '缺少路由参数 orderId，进入失败态')
       this.loadFailed = true
       this.isLoading = false
       return
@@ -45,7 +48,11 @@ struct PaymentSuccess {
     let res = await getOrderInfo(this.orderId)
     if (res.code === HttpStatusCode.Ok) {
       this.orderInfo = res.data
+      // 结果确认 debug 即可：支付成功动作已在支付页跳转处留 info，本页不重复
+      logger.debug('paymentSuccess', `订单信息加载成功 orderId=${this.orderId}`)
     } else {
+      logger.warn('paymentSuccess', `订单信息加载失败 orderId=${this.orderId} ` +
+        `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "订单信息加载失败")
       this.loadFailed = true
     }

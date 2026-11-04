@@ -8,6 +8,7 @@ import { OrderItemRow } from "../view/OrderItemRow"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { BaseResponse } from "../network/BaseResponse"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { logger } from "../utils/Logger"
 import vibrator from "@ohos.vibrator"
 
 /**
@@ -70,20 +71,25 @@ struct PickupDelivery {
     const param = getObjectParam<PickupDeliveryParam>(RouteNames.PICKUP_DELIVERY)
     this.isPickup = param?.isPickup ?? false
     const orderId = param?.order?.orderId ?? null
+    logger.debug('pickupDelivery', `取寄件页初始化 isPickup=${this.isPickup} orderId=${orderId}`)
     if (orderId !== null) {
       this.isLoading = true
       this.loadFailed = false
       let detailRes = await getOrderInfo(orderId)
       if (detailRes.code === HttpStatusCode.Ok && detailRes.data !== null) {
+        logger.debug('pickupDelivery', `订单详情加载成功 orderId=${orderId}`)
         this.orderInfo = detailRes.data
         this.loadFailed = false
       } else {
+        logger.warn('pickupDelivery', `订单详情加载失败 orderId=${orderId} ` +
+          `code=${detailRes.code} message=${detailRes.message ?? ""}`)
         this.orderInfo = null
         this.loadFailed = true
         showToastSafety(detailRes.message, "订单信息加载失败")
       }
       this.isLoading = false
     } else {
+      logger.warn('pickupDelivery', '取寄件页缺少路由参数 orderId，进入失败态')
       this.orderInfo = null
       this.loadFailed = true
       this.isLoading = false
@@ -100,6 +106,8 @@ struct PickupDelivery {
   /** 请求二维码（可重试）：生成期间占位，失败可点击重试 */
   async loadQrCode() {
     if (this.pickCode === "") {
+      // 无码将导致无法扫码取寄件（空态预警）；码值不入日志（敏感红线）
+      logger.warn('pickupDelivery', '取件码为空，跳过二维码生成')
       this.qrFailed = true
       this.qrLoading = false
       return
@@ -108,17 +116,20 @@ struct PickupDelivery {
     this.qrFailed = false
     let res = await generateQrCode(this.pickCode)
     if (res.code === HttpStatusCode.Ok && (res.data ?? "") !== "") {
+      logger.debug('pickupDelivery', '二维码生成成功')
       this.qrCode = res.data ?? ""
     } else {
+      logger.warn('pickupDelivery', `二维码生成失败 code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "取件码生成失败")
       this.qrFailed = true
     }
     this.qrLoading = false
   }
 
-  /** 确认取件/寄件：pickupCode 传完整串（与安卓一致） */
+  /** 确认取件/寄件：pickupCode 传完整串（与安卓一致），日志不打码值（敏感红线） */
   async doConfirm() {
     if (this.confirming) {
+      logger.debug('pickupDelivery', '确认操作进行中，忽略重复触发')
       return
     }
     this.confirming = true
@@ -137,6 +148,8 @@ struct PickupDelivery {
         })
       }
       if (res.code === HttpStatusCode.Ok) {
+        logger.info('pickupDelivery',
+          `${this.isPickup ? "取件" : "寄件"}确认成功 orderId=${this.orderInfo?.orderId ?? -1}`)
         // 确认成功触感（recap §9-F4，对齐安卓 HapticEffect.SUCCESS）
         try {
           vibrator.startVibration({ type: 'time', duration: 30 }, { id: 0, usage: 'unknown' })
@@ -146,6 +159,9 @@ struct PickupDelivery {
         showToastSafety("操作成功")
         pathStack.pop()
       } else {
+        logger.warn('pickupDelivery',
+          `${this.isPickup ? "取件" : "寄件"}确认被拒 orderId=${this.orderInfo?.orderId ?? -1} ` +
+          `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "操作失败")
       }
     } finally {

@@ -1,10 +1,11 @@
 package com.smartwash.deeplink
 
-import android.util.Log
+import android.net.Uri
 import android.widget.Toast
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.common.ui.navigation.ShellRoute
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.deeplink.DeepLinkAction
 import com.smartwash.common.utils.deeplink.DeepLinkParser
 import com.smartwash.common.utils.navigation.SmartWashRoute
@@ -45,7 +46,9 @@ class DeepLinkHandler @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // 字典失败已在仓库层静默，此处兜底防意外实现变更破坏 resolve 契约
+            // 字典失败已在仓库层静默（仓库层 warn 留痕），此处兜意外实现变更破坏 resolve 契约，
+            // debug 留痕避免与仓库层双记 warn
+            AppLogger.debug(TAG, "深链字典查询意外异常（resolve 契约防御分支），按空字典兜底", e)
             emptyList()
         }
         val hostKnown = routes.any {
@@ -54,7 +57,7 @@ class DeepLinkHandler @Inject constructor(
                 (it.platform == DeeplinkRouteDict.PLATFORM_ANDROID ||
                     it.platform == DeeplinkRouteDict.PLATFORM_BOTH)
         }
-        Log.d(
+        AppLogger.debug(
             TAG,
             "deeplink 本地未命中：host=$host 后端字典合法=$hostKnown " +
                 "（合法属端上未注册能力缺口，仍按暂不支持提示）uri=$uri 已注册host=${deepLinkRegistry.hosts}"
@@ -89,7 +92,7 @@ class DeepLinkHandler @Inject constructor(
         try {
             navController.navigate(route)
         } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "深链路由未注册：route=$route（贡献者路由与各域 Route 漂移？）")
+            AppLogger.warn(TAG, "深链路由未注册：route=$route（贡献者路由串与各域 Route 漂移？）")
             toastUnsupported(navController)
         }
     }

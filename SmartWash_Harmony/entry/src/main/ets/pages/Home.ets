@@ -5,6 +5,7 @@ import { Workbench } from "../feature/workbench/Workbench"
 import { BottomNavItem } from "../view/BottomNavBar"
 import { DesignColor } from "../constant/DesignSystem"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
+import { logger } from "../utils/Logger"
 import vibrator from '@ohos.vibrator'
 
 @Builder
@@ -44,6 +45,8 @@ struct Home {
       return
     }
     this.pendingDeepLinkUri = ''
+    // 低频动作 debug 留痕：交由深链处理器分发（uri 内容不落本层日志，由 deeplink 模块按需记录摘要）
+    logger.debug('home', '检测到待消费深链，交由处理器分发')
     // handleDeepLink 内部全量兜底不抛异常（网络字典失败静默），此处不 await
     handleDeepLink(uri)
   }

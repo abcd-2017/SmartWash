@@ -185,6 +185,7 @@ import { lockerStatusTagType } from '@/constants/dict';
 import { useTableList } from '@/composables/useTableList';
 import { useTimeRange } from '@/composables/useTimeRange';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 // 数据
 const statusOptions = ref({}); // 状态选项（键值对格式）
@@ -263,7 +264,9 @@ const fetchStatus = async () => {
   try {
     const res = await getLockerStatus();
     statusOptions.value = res;
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取状态失败:', error);
     ElMessage.error('获取状态失败');
   }
 };
@@ -277,7 +280,9 @@ const fetchSchools = async () => {
       map[school.schoolId] = school;
       return map;
     }, {});
-  } catch {
+  } catch (error) {
+    // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
+    logger.error('获取学校列表失败:', error);
     ElMessage.error('获取学校列表失败');
   }
 };
@@ -316,14 +321,23 @@ const submitForm = async () => {
     if (dialogType.value === 'create') {
       await addLocker(submitData);
       ElMessage.success('新增成功');
+      // 写操作成功留痕：业务键仅 schoolId/lockerNumber（新增无 lockerId）
+      logger.info('新增寄存柜成功', `schoolId=${tempLocker.schoolId}`, `lockerNumber=${tempLocker.lockerNumber}`);
     } else {
       await updateLocker(submitData);
       ElMessage.success('修改成功');
+      logger.info(
+        '修改寄存柜成功',
+        `lockerId=${tempLocker.lockerId}`,
+        `lockerNumber=${tempLocker.lockerNumber}`
+      );
     }
 
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('保存寄存柜失败:', error instanceof Error ? error : '表单校验未通过');
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -338,8 +352,11 @@ const handleDelete = async (row) => {
   try {
     await deleteLocker(row.lockerId);
     ElMessage.success('删除成功');
+    // 写操作成功留痕：业务键仅 lockerId/lockerNumber
+    logger.info('删除寄存柜成功', `lockerId=${row.lockerId}`, `lockerNumber=${row.lockerNumber}`);
     fetchData();
   } catch (error) {
+    logger.error('删除寄存柜失败:', `lockerId=${row.lockerId}`, error);
     ElMessage.error(error.message || '删除失败');
   }
 };

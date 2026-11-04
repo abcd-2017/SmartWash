@@ -1,8 +1,8 @@
 package com.smartwash.feature.order.impl.ui.order
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.ShowOrderStatus
@@ -74,7 +74,7 @@ class OrderViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(OrderImplConstant.APP_NAME, "OrderViewModel.loadAllOrders: ${e.message}", e)
+                AppLogger.error(TAG, "OrderViewModel.loadAllOrders: ${e.message}", e)
                 _loadState.value = RequestState.Error(R.string.error_network_fail)
             }
         }
@@ -100,7 +100,7 @@ class OrderViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(OrderImplConstant.APP_NAME, "OrderViewModel.loadMore: ${e.message}", e)
+                AppLogger.error(TAG, "OrderViewModel.loadMore: ${e.message}", e)
             } finally {
                 val state = _uiState.value
                 _uiState.value = state.copy(loadingMore = state.loadingMore + (status to false))
@@ -118,7 +118,7 @@ class OrderViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(OrderImplConstant.APP_NAME, "OrderViewModel.cancelOrder: ${e.message}", e)
+                AppLogger.error(TAG, "OrderViewModel.cancelOrder: ${e.message}", e)
                 _cancelOrderState.value = RequestState.Error(R.string.error_cancel_order_failed)
             }
         }
@@ -126,5 +126,10 @@ class OrderViewModel @Inject constructor(
 
     fun resetCancelOrderState() {
         _cancelOrderState.value = RequestState.Idle
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "OrderViewModel"
     }
 }

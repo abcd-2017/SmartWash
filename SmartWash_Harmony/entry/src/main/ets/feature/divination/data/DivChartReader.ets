@@ -19,6 +19,7 @@ import { MeiHuaChart, TiYongRelation } from '../core/meihua/MeiHuaChart'
 import { QiMenChart } from '../core/qimen/QiMenChart'
 import { LiuRenChart, LiuRenCourse } from '../core/liuren/LiuRenChart'
 import { decodeChartJson } from './DivChartCodec'
+import { logger } from '../../../utils/Logger'
 
 /** 解码产物的键值容器（JSON 解析结果，键为字符串） */
 type Raw = Record<string, Object>
@@ -428,7 +429,9 @@ export function chartNameOf(method: string, chartJson: string): string {
       return '大六壬'
     }
   } catch (err) {
-    // 解码失败回退术数名
+    // 解码失败回退术数名（降级留痕；仅解读页加载时低频调用，chartJson 不打全文）
+    logger.warn('divChartReader', `卦盘摘要解码失败，回退术数名 method=${method}, ` +
+      `${err instanceof Error ? err.message : ''}`)
   }
   return divMethodName(method)
 }

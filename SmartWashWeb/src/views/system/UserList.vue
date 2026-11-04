@@ -173,6 +173,7 @@ import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -252,7 +253,7 @@ const fetchSchools = async () => {
     schoolOptions.value = await schoolOptionsCache.load();
   } catch (error) {
     // HTTP 层错误已由拦截器统一提示，这里仅记录日志避免未处理 rejection
-    console.error('获取学校列表失败:', error);
+    logger.error('获取学校列表失败:', error);
   }
 };
 

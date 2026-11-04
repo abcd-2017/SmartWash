@@ -18,6 +18,7 @@ com.smartwash.common.utils
 │   └── DeepLinkContributor.kt— 贡献者契约（fun interface）：各域 impl @IntoSet 贡献 host → 路由工厂
 ├── AnimationUtils.kt       — 动效工具函数
 ├── AppConstant.kt          — 应用常量（APP_NAME, TOKEN_KEY 等）
+├── AppLogger.kt            — 统一日志对外 API（debug/info/warn/error + maskPhone，委托 common:init 的 LogCore 内核）
 ├── BitmapUtil.kt           — ZXing 二维码生成
 ├── HapticUtils.kt          — 触感反馈工具
 ├── PagingUtils.kt          — pagingFlow() 扩展
@@ -28,6 +29,7 @@ com.smartwash.common.utils
 
 ## 公开 API
 - `AppConstant` — 全局常量访问点
+- `AppLogger` — 统一日志（TAG 输出 `SmartWash/{tag}`；debug 构建全量、release 仅 warn/error；手机号必须先经 maskPhone 脱敏）
 - `SharePreferenceUtils` — DataStore 的 suspend / 阻塞双模式读写
 - `PressFeedbackModifier` — 按压缩放动效 Modifier 扩展
 - `PagingUtils.pagingFlow()` — Flow 分页扩展（debounce + flatMapLatest + cachedIn）
@@ -40,7 +42,7 @@ com.smartwash.common.utils
 - `deeplink.DeepLinkContributor` / `DeepLinkRouteFactory` — 贡献者契约（各域 impl `@Provides @IntoSet` 注册，模式同 common:init 的 InitTask）
 
 ## 依赖关系
-- **依赖**: Android SDK、DataStore、ZXing、Hilt（仅 @Singleton 标注）、androidx.annotation
+- **依赖**: Android SDK、DataStore、ZXing、Hilt（仅 @Singleton 标注）、androidx.annotation、common:init（AppLogger 委托 LogCore，铁律 1 合法方向）
 - **被依赖**: common:network、common:ui 及所有 feature 模块（含原 common:model 的数据契约）
 
 ## 内部约定

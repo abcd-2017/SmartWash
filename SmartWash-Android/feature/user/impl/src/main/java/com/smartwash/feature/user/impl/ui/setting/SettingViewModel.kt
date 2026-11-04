@@ -2,6 +2,7 @@ package com.smartwash.feature.user.impl.ui.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.HapticSettings
 import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -40,6 +41,8 @@ class SettingViewModel @Inject constructor(
                     HapticSettings.enabled = it
                     _hapticEnabled.value = it
                 }
+                // 降级：读取失败保持默认值（开启）
+                .onFailure { AppLogger.warn(TAG, "触感反馈开关初值读取失败，使用默认值", it) }
         }
     }
 
@@ -49,6 +52,8 @@ class SettingViewModel @Inject constructor(
      * 并使用户信息缓存失效）。
      */
     fun logout() {
+        // 低频关键动作（主动登出；会话清除的基建侧记录见 SessionManager）
+        AppLogger.info(TAG, "用户主动登出")
         sessionManager.clearToken()
         sessionEventBus.notifyLoggedOut()
     }
@@ -59,7 +64,16 @@ class SettingViewModel @Inject constructor(
         _hapticEnabled.value = enabled
         viewModelScope.launch {
             runCatching { prefs.saveData(HapticSettings.STORAGE_KEY, enabled) }
-                .onFailure { HapticSettings.enabled = !enabled; _hapticEnabled.value = !enabled }
+                .onFailure {
+                    // 降级：落盘失败回滚内存态（本次会话内生效，重启后丢失）
+                    AppLogger.warn(TAG, "触感反馈开关落盘失败，已回滚内存态", it)
+                    HapticSettings.enabled = !enabled; _hapticEnabled.value = !enabled
+                }
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "SettingViewModel"
     }
 }

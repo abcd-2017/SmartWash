@@ -281,6 +281,7 @@ import {
   workbenchEntryColorText,
   workbenchEntryColorHex,
 } from '@/constants/dict';
+import logger from '@/utils/logger';
 
 const formRef = ref(null);
 const dialogVisible = ref(false);
@@ -371,8 +372,9 @@ const loadRouteOptions = async () => {
   try {
     const res = await getDeeplinkRouteList({ page: 1, size: 100, enabled: 1 });
     routeOptions.value = res.records || [];
-  } catch {
-    // 字典加载失败不阻塞主流程，target 仍可手输
+  } catch (error) {
+    // 字典加载失败不阻塞主流程，target 仍可手输（降级，warn 留痕）
+    logger.warn('路由字典加载失败，已降级为手输 target:', error);
     routeOptions.value = [];
   } finally {
     routeOptionsLoading.value = false;
@@ -412,9 +414,22 @@ const handleToggleEnabled = async (row) => {
   togglingId.value = row.id;
   try {
     await updateWorkbenchEntry(buildRowUpdatePayload(row, { enabled: next }));
+    logger.info(
+      '工作台入口启停成功',
+      `id=${row.id}`,
+      `entryKey=${row.entryKey}`,
+      `enabled=${next}`
+    );
     ElMessage.success(next === 1 ? '已启用' : '已停用');
   } catch (error) {
     row.enabled = prev; // 失败回滚开关状态
+    logger.error(
+      '工作台入口启停失败:',
+      `id=${row.id}`,
+      `entryKey=${row.entryKey}`,
+      `enabled=${next}`,
+      error
+    );
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
@@ -427,7 +442,8 @@ const handleCopyTarget = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
     ElMessage.success('已复制');
-  } catch {
+  } catch (error) {
+    logger.error('工作台入口 target 复制失败:', error);
     ElMessage.error('复制失败，请手动选择复制');
   }
 };
@@ -501,14 +517,37 @@ const submitForm = async () => {
 
     if (dialogType.value === 'create') {
       await addWorkbenchEntry(buildSubmitPayload());
+      logger.info(
+        '工作台入口新增成功',
+        `entryKey=${tempEntry.entryKey}`,
+        `title=${tempEntry.title}`
+      );
       ElMessage.success('新增成功');
     } else {
       await updateWorkbenchEntry(buildSubmitPayload());
+      logger.info(
+        '工作台入口编辑成功',
+        `id=${tempEntry.id}`,
+        `entryKey=${tempEntry.entryKey}`,
+        `title=${tempEntry.title}`
+      );
       ElMessage.success('修改成功');
     }
     dialogVisible.value = false;
     fetchData();
   } catch (error) {
+    // validate() 校验失败的特征是错误对象带 fields；与接口失败区分级别（校验失败不属系统错误）
+    if (error?.fields) {
+      logger.debug('工作台入口表单校验未通过，已拦截提交');
+    } else {
+      logger.error(
+        '工作台入口提交失败:',
+        `type=${dialogType.value}`,
+        `entryKey=${tempEntry.entryKey}`,
+        `id=${tempEntry.id ?? '-'}`,
+        error
+      );
+    }
     ElMessage.error(error.message || '操作失败');
   } finally {
     submitting.value = false;
@@ -523,9 +562,16 @@ const handleDelete = async (row) => {
   deletingId.value = row.id;
   try {
     await deleteWorkbenchEntry(row.id);
+    logger.info(
+      '工作台入口删除成功',
+      `id=${row.id}`,
+      `entryKey=${row.entryKey}`,
+      `title=${row.title}`
+    );
     ElMessage.success('删除成功');
     fetchData(); // 刷新当前页
   } catch (error) {
+    logger.error('工作台入口删除失败:', `id=${row.id}`, `entryKey=${row.entryKey}`, error);
     ElMessage.error(error.message || '删除失败');
   } finally {
     deletingId.value = null;

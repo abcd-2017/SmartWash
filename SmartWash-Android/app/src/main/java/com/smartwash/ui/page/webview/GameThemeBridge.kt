@@ -1,8 +1,8 @@
 package com.smartwash.ui.page.webview
 
-import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.smartwash.common.utils.AppLogger
 import java.net.URI
 
 /** 主题桥白名单与模式解析的纯函数集（单测锚定 GameThemeBridgePolicyTest） */
@@ -59,7 +59,7 @@ object GameThemeMode {
     const val SYSTEM = "system"
 }
 
-private const val TAG = "SmartWashGameBridge"
+private const val TAG = "GameThemeBridge"
 
 /**
  * 游戏 H5 深色主题桥（注入对象名固定为 [GAME_THEME_BRIDGE_NAME]，H5 侧按此名取值）。
@@ -78,7 +78,7 @@ private const val TAG = "SmartWashGameBridge"
 internal class SmartWashGameBridge(
     private val whitelist: Set<String>,
     private val themeModeProvider: () -> String,
-    private val onHostRejected: (String?) -> Unit = { Log.w(TAG, "桥调用拒绝非白名单来源: $it") },
+    private val onHostRejected: (String?) -> Unit = { AppLogger.warn(TAG, "桥调用拒绝非白名单来源: $it") },
     /** chrome 模式切换回调（JS 桥线程 → UI 线程的 Compose 状态）；默认空实现供单测/非游戏页使用 */
     private val onChromeChange: (String) -> Unit = {},
 ) {
@@ -126,7 +126,7 @@ internal const val GAME_THEME_PUSH_SCRIPT = "window.__applySmartWashTheme&&__app
 internal fun pushGameTheme(webView: WebView, mode: String, whitelist: Set<String>) {
     val host = GameThemeBridgePolicy.hostOf(webView.url)
     if (!GameThemeBridgePolicy.isAllowedHost(host, whitelist)) {
-        Log.w(TAG, "主题推送跳过非白名单来源: $host")
+        AppLogger.warn(TAG, "主题推送跳过非白名单来源: $host")
         return
     }
     webView.evaluateJavascript(GAME_THEME_PUSH_SCRIPT.format(mode), null)

@@ -1,11 +1,10 @@
 package com.smartwash.feature.laundry.ui.service
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.feature.laundry.LaundryImplConstant
 import com.smartwash.feature.laundry.network.vo.LaundryItem
 import com.smartwash.feature.laundry.repository.LaundryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,12 +35,19 @@ class ServiceViewModel @Inject constructor(
             try {
                 _laundryItems.value = laundryRepository.getLaundryItems()
                 _getLaundryItemState.value = RequestState.Success
+                // 主页底部 Tab 页，切换即触发（偏高频路径）：加载完成只打 debug，不打 info
+                AppLogger.debug(TAG, "getLaundryItem: 洗衣项目加载完成, size=${_laundryItems.value.size}")
             } catch (e: NetworkException) {
-                Log.e(LaundryImplConstant.APP_NAME, "ServiceViewModel.getLaundryItem: ${e.message}", e)
+                AppLogger.error(TAG, "ServiceViewModel.getLaundryItem: ${e.message}", e)
                 if (cached.isEmpty()) {
                     _getLaundryItemState.value = RequestState.Error(e.resId, e.message)
                 }
             }
         }
+    }
+
+    private companion object {
+        /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
+        const val TAG = "ServiceViewModel"
     }
 }
