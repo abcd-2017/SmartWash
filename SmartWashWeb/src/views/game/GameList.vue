@@ -223,6 +223,14 @@
               游戏唯一标识，小写字母开头、3-64 位小写字母/数字/_/-；输入标题后自动生成，可修改。 同
               gameKey 重复上传视为覆盖更新
             </div>
+            <el-alert
+              v-if="keyExists"
+              class="key-conflict-alert"
+              type="warning"
+              :closable="false"
+              show-icon
+              title="该 gameKey 已存在：本次提交为覆盖更新，包文件与元数据将被替换，上架状态与排序保留"
+            />
           </el-form-item>
 
           <el-form-item label="分类" prop="category">
@@ -337,7 +345,9 @@
       <template #footer>
         <template v-if="!uploadResult">
           <el-button :disabled="uploading" @click="uploadDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="uploading" @click="submitUpload">确认上传</el-button>
+          <el-button type="primary" :loading="uploading" @click="submitUpload">
+            {{ keyExists ? '覆盖更新' : '确认上传' }}
+          </el-button>
         </template>
         <template v-else>
           <el-button @click="handleReupload">再传一个</el-button>
@@ -609,6 +619,8 @@ const uploadPercent = ref(0); // 上传进度 0-100
 const uploadResult = ref(null); // 上传成功返回的 AdminGameVo（含 url 可玩地址）
 const keyEdited = ref(false); // 用户手动改过 gameKey 后停止自动生成
 const uploadKeySeed = ref(''); // 本次弹窗自动 gameKey 的时间戳尾巴，弹窗期间保持稳定
+const keyExists = ref(false); // gameKey 冲突实时检查结果：true = 提交将覆盖更新已存在的游戏
+let keyCheckTimer = null; // 冲突检查防抖定时器
 
 // 前端预检：扩展名白名单 + 10MB 上限（方案 §四；后端仍有 413 兜底）
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -786,13 +798,16 @@ const handleRemoveFile = () => {
   uploadFormRef.value?.validateField('file').catch(() => {});
 };
 
-// 标题 → gameKey 自动生成：提取英文数字段小写拼接；非法/过短回退 game-{seed}
+// 标题 → gameKey 自动生成：提取英文数字段小写拼接，数字开头补 game- 前缀（如 2048 → game-2048），
+// 同标题确定性地生成同一 gameKey，重复上传自动落到覆盖更新；纯中文等无可用字符时才回退 game-{seed}
 const slugFromTitle = (title) => {
   const segs = (title || '').toLowerCase().match(/[a-z0-9]+/g) || [];
-  const slug = segs.join('-');
-  return /^[a-z]/.test(slug) && slug.length >= 3
-    ? slug.slice(0, 63)
-    : `game-${uploadKeySeed.value}`;
+  const raw = segs.join('-');
+  if (!raw) {
+    return `game-${uploadKeySeed.value}`;
+  }
+  const slug = /^[a-z]/.test(raw) ? raw : `game-${raw}`;
+  return slug.length >= 3 ? slug.slice(0, 63) : `game-${uploadKeySeed.value}`;
 };
 
 // 输入标题自动生成 gameKey（用户手动改过后不再覆盖）
@@ -802,6 +817,26 @@ watch(
     if (uploadDialogVisible.value && !keyEdited.value) {
       tempGame.gameKey = slugFromTitle(title);
     }
+  }
+);
+
+// gameKey 冲突实时检查：防抖查询列表（keyword 模糊后前端精确比对），命中即提示覆盖语义，
+// 让「新增还是更新」在上传前可见；检查失败保持 false 静默，不阻断上传（后端唯一索引与覆盖语义兜底）
+watch(
+  () => tempGame.gameKey,
+  (key) => {
+    if (!uploadDialogVisible.value) return;
+    keyExists.value = false;
+    clearTimeout(keyCheckTimer);
+    if (!key || key.length < 3) return;
+    keyCheckTimer = setTimeout(async () => {
+      try {
+        const res = await getGameList({ page: 1, size: 100, keyword: key });
+        keyExists.value = (res.records || []).some((r) => r.gameKey === key);
+      } catch {
+        // 宁可少提示也不误报
+      }
+    }, 400);
   }
 );
 
@@ -833,6 +868,8 @@ const handleUploadDialogClosed = () => {
   selectedFile.value = null;
   uploadResult.value = null;
   uploadPercent.value = 0;
+  keyExists.value = false;
+  clearTimeout(keyCheckTimer);
 };
 
 // 提交上传：表单校验 → 组装 multipart（file + 表单字段）→ 进度回传
@@ -1123,6 +1160,12 @@ onMounted(() => {
   font-size: 12px;
   line-height: 1.6;
   color: var(--text-secondary);
+}
+
+/* gameKey 冲突覆盖提示：贴在 gameKey 表单行内，与输入框同宽 */
+.key-conflict-alert {
+  width: 100%;
+  margin-top: 4px;
 }
 
 /* 开关同行的行内说明 */
