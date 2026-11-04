@@ -15,6 +15,25 @@
 
 ## 修订记录
 
+- **2026-11-04（二批）新增五款（出生即主题化，游戏库 23 → 28 款）**：
+  sokoban（推箱子）/ connect-four（四子棋）/ solitaire（空当接龙）/
+  fruit-slice（切水果）/ air-hockey（空气曲棍球）。
+  补齐牌类（接龙）、棋类（四子棋）、切割与球台对战玩法；全部按 §6 清单接入，
+  存档键 `sw.<key>.v1`，触屏热区 ≥44px。
+
+  | 游戏 | 渲染 | 存档键 | 体积 | 三关 | 375px 实开 | 专项校验 |
+  |---|---|---|---|---|---|---|
+  | sokoban | canvas·rAF | `sw.sokoban.v1` | 15737B | ✅✅✅ | ✅ 过关→下一关→撤销全链路 | BFS 求解器 12/12 可解，难度曲线 1→6 推 |
+  | connect-four | canvas·rAF | `sw.connectfour.v1` | 17656B | ✅✅✅ | ✅ 落子+AI 应手+悬停预览 | AI 深度 4 alpha-beta 13 项断言（胜着/堵截/中列） |
+  | solitaire | DOM 纸牌 | `sw.solitaire.v1` | 20348B | ✅✅✅ | ✅ 翻牌/点选移动/双击进 foundation | 规则函数 6 组断言（叠放/空列/foundation） |
+  | fruit-slice | canvas·rAF | `sw.fruitslice.v1` | 18278B | ✅✅✅ | ✅ 挥刀切中得分 | 线段-圆相交判定断言；连击计分 |
+  | air-hockey | canvas·rAF | `sw.airhockey.v1` | 15817B | ✅✅✅ | ✅ 跟手+开球+AI 对战 | 法向弹性碰撞+球拍速度传递，AI 限速回防 |
+
+  Playwright 375px 全套（初开浅色 / 冒烟交互 / 深色推送 / 非法值拒绝 /
+  无横向溢出 / 无 `<h1>` / 零 JS 异常）：5/5 通过。
+  冒烟中修复 sokoban 两个真实缺陷：`save` 函数与状态变量同名导致过关时
+  抛错（改名 persist）、过关后 `lv` 未自增导致重复加载同一关。
+
 - **2026-11-04 新增六款（出生即主题化，游戏库 17 → 23 款）**：
   tetris（俄罗斯方块）/ sudoku（数独）/ idiom（猜成语，**word 类别首款**）/
   pacman（吃豆人）/ invaders（星空保卫战）/ lights-out（点灯谜阵）。
