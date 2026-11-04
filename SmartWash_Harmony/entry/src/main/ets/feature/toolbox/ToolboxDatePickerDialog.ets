@@ -44,8 +44,10 @@ export struct ToolboxDatePickerDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      Text(this.title)
+      Column() {
+        Text(this.title)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
@@ -95,22 +97,27 @@ export struct ToolboxDatePickerDialog {
       }
       .width('100%')
       .margin({ top: 8 })
+      }
+      .width('100%')
+      // 横向留白由外层容器统一给出，卡片只保留纵向内边距（问题16）
+      .padding({ top: 20, bottom: 20 })
+      .backgroundColor(DesignColor.SURFACE)
+      // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+      })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
     .width('100%')
-    .padding(20)
-    .backgroundColor(DesignColor.SURFACE)
-    // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

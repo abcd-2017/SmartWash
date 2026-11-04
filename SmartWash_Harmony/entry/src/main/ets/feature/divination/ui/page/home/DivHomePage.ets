@@ -406,7 +406,8 @@ struct DivHomePage {
           }
           }
           .width('100%')
-          .padding({ left: 20, right: 20, top: 14, bottom: 14 })
+          // 卡外边距 horizontal=20 / vertical=12（对齐安卓 DivCard padding(horizontal=20, vertical=12)）
+          .padding({ left: 20, right: 20, top: 12, bottom: 12 })
         }
 
         // 6. 案卷
@@ -462,7 +463,8 @@ struct DivHomePage {
               .animation({ duration: 180, curve: Curve.EaseInOut })
             }
             .width('100%')
-            .padding({ left: 14, top: 4, bottom: 4 })
+            // 案卷卡内层左右 14 对称（原缺 right 导致内容贴卡片右边界）
+            .padding({ left: 14, right: 14, top: 4, bottom: 4 })
           }
         }
         .width('100%')

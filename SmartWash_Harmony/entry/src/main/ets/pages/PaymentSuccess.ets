@@ -15,6 +15,39 @@ export function PaymentSuccessBuilder() {
   PaymentSuccess()
 }
 
+/**
+ * 卡内「标签 — 值」信息行（对齐 Android InfoLine：bodySmall 12 + tnum、纵向 padding 4）。
+ * 必须是组件而非 @Builder：支付页 loading 是覆盖层、内容树在 orderInfo 为 null 时就已构建，
+ * @Builder 按值传参只在首帧求值，数据到达后不会刷新——订单号会永远定格在「—」（问题6）。
+ */
+@ComponentV2
+struct PayInfoLine {
+  @Param label: string = ""
+  @Param value: string = ""
+
+  build() {
+    Row() {
+      Text(this.label)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+
+      // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
+      Text(this.value)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontFeature(DesignFontFeature.TNUM)
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .textAlign(TextAlign.End)
+    }
+    .width("100%")
+    .padding({ top: 4, bottom: 4 })
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
+}
+
 @Component
 struct PaymentSuccess {
   @State orderId: number | null = null
@@ -123,31 +156,6 @@ struct PaymentSuccess {
     .alignItems(VerticalAlign.Center)
   }
 
-  /**
-   * 卡内「标签 — 值」信息行（对齐 Android InfoRow：bodySmall 12 + tnum、行高 16）。
-   * 字号取 CAPTION 12：Android `bodySmall` 槽位在 Type.kt:176-181 映射为 caption 12/16/400，
-   * InfoRow.kt:33,45 标签与值均用 bodySmall（PaySuccessPage.kt:219-221 另传 valueStyle=bodySmall+tnum）。
-   */
-  @Builder
-  InfoLine(title: string, value: string) {
-    Row() {
-      Text(title)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      Blank()
-
-      Text(value)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .fontFeature(DesignFontFeature.TNUM)
-    }
-    .width("100%")
-    .height(16)
-    .justifyContent(FlexAlign.SpaceBetween)
-    .alignItems(VerticalAlign.Center)
-  }
-
   /** 空值兜底展示（问题8）：null/undefined/空串 → 「—」 */
   private displayValue(value: string | null | undefined): string {
     return value !== null && value !== undefined && value.length > 0 ? value : "—"
@@ -211,9 +219,9 @@ struct PaymentSuccess {
 
           Column({ space: DesignDimens.SPACE_MD }) {
             // 订单号缺失兜底「—」（同支付页问题8口径）
-            this.InfoLine("订单编号", this.displayValue(this.orderInfo?.orderNo))
-            this.InfoLine("支付金额", `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
-            this.InfoLine("下单时间", this.displayValue(this.orderInfo?.createdAt))
+            PayInfoLine({ label: "订单编号", value: this.displayValue(this.orderInfo?.orderNo) })
+            PayInfoLine({ label: "支付金额", value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}` })
+            PayInfoLine({ label: "下单时间", value: this.displayValue(this.orderInfo?.createdAt) })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })

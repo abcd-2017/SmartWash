@@ -21,7 +21,10 @@ import { getValue, setValue } from "../../utils/StorageUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
 import { logger } from "../../utils/Logger"
 import { BusinessError } from "@kit.BasicServicesKit"
+import { KeyboardAvoidMode } from "@kit.ArkUI"
 import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
+import { parse, DeepLinkKind } from "../../utils/deeplink/DeepLinkParser"
+import { lookup } from "../../utils/deeplink/DeepLinkRegistry"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
 import {
   WorkbenchBlock,
@@ -73,9 +76,44 @@ export struct Workbench {
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
     logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
+    // 键盘避让（问题13）：全局是 RESIZE，会把底部 tab 顶出屏幕；工作台只有顶部搜索框，
+    // 不需要避让，改 NONE 让键盘覆盖内容、底栏保持原位
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+    } catch (err) {
+      logger.warn('workbench', '设置键盘避让模式失败')
+    }
     this.loadEntries()
     // 最近使用/公告关闭记录异步回读（对齐安卓 init 回读 DataStore）
     this.loadLocalState()
+  }
+
+  aboutToDisappear(): void {
+    // 离开工作台恢复全局 RESIZE，避免影响登录/充值等需要避让的输入页
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
+    } catch (err) {
+      logger.warn('workbench', '恢复键盘避让模式失败')
+    }
+  }
+
+  /**
+   * 工具是否已落地（问题15）：后端 workbench_entry 对全部端统一下发，其中
+   * mood/lab/review/subscription/delivery/ai-work 在鸿蒙端未实现，深链注册表把它们
+   * 指向 ComingSoon 占位页。这里在渲染前过滤掉，避免用户点进去看到「正在实现中」。
+   * target 为空的公告条不算未实现（纯文案，不可点）。
+   */
+  private isImplementedTarget(target: string): boolean {
+    if (target.length === 0) {
+      return true
+    }
+    try {
+      const result = parse(target, lookup)
+      return !(result.kind === DeepLinkKind.ROUTE && result.routeName === RouteNames.COMING_SOON)
+    } catch (err) {
+      // 解析异常保守保留（顶多进了占位页，不应因为过滤逻辑把入口吞掉）
+      return true
+    }
   }
 
   /** 回读本地记忆：最近使用 + 已关闭公告（逗号连接存储） */
@@ -100,8 +138,11 @@ export struct Workbench {
     try {
       const res = await getWorkbenchEntries()
       if (res.code === BizCode.SUCCESS) {
-        this.tools = withUniqueKeys((res.data ?? []).map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
-          workbenchEntryVoToTool(vo, index)))
+        const all: Array<WorkbenchTool> = (res.data ?? []).map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
+          workbenchEntryVoToTool(vo, index))
+        // 过滤未落地域（问题15）：避免卡片点进「正在实现中」占位页
+        const implemented: Array<WorkbenchTool> = all.filter((tool: WorkbenchTool) => this.isImplementedTarget(tool.target))
+        this.tools = withUniqueKeys(implemented)
         this.loadState = LoadState.SUCCESS
       } else {
         logger.warn('workbench', `工具入口列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
@@ -299,7 +340,8 @@ export struct Workbench {
           })
         }
         .width('100%')
-        .padding({ top: DesignDimens.SPACE_MD, left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 左右页边距已由 EmptyState 的 action 插槽统一给出，这里只补上间距（问题14）
+        .padding({ top: DesignDimens.SPACE_MD })
       }
     }
   }

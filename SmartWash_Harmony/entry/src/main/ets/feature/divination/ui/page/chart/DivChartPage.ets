@@ -36,6 +36,7 @@ import {
 import { DivMiniCard, LiurenCourses, LiurenPan, LiuYaoPan, MeiHuaTripleCards, QimenGrid } from '../../components/DivPanels'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { getObjectParam, getNumberParam, getBooleanParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 
@@ -315,7 +316,7 @@ struct DivChartPage {
       .layoutWeight(1)
     }
     .width('100%')
-    .padding({ left: 20, right: 20 })
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 
   @Builder
@@ -341,7 +342,7 @@ struct DivChartPage {
         }
         .width('100%')
         .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-      .margin({ left: 20, right: 20 })
+      .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       }
     }
   }
@@ -385,7 +386,7 @@ struct DivChartPage {
         .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: 20, right: 20 })
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
   }
 
@@ -401,7 +402,7 @@ struct DivChartPage {
         textAlign: TextAlign.Center
       })
         .width('100%')
-        .padding({ left: 20, right: 20 })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         .margin({ top: 8 })
     }
   }
@@ -511,7 +512,12 @@ struct DivChartPage {
           })
             .width('100%')
             .opacity(0.75)
-            .padding({ left: 20, right: 20, top: 4, bottom: 4 })
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: 4,
+              bottom: 4
+            })
 
           // 奇门口径徽标（文字取语义金 goldText，对齐安卓 c.goldText）
           if (this.method === 'qimen') {
@@ -532,18 +538,18 @@ struct DivChartPage {
           // 四套盘面
           if (this.liuYao !== null) {
             LiuYaoPan({ chart: this.liuYao, facts: this.liuYaoFacts, animateEntry: this.animateEntry })
-              .margin({ left: 20, right: 20 })
+              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             // 画板：末行到事实卡间距 24
             Column().height(24)
             this.LiuYaoCards()
           } else if (this.meiHua !== null) {
             MeiHuaTripleCards({ chart: this.meiHua })
-              .margin({ left: 20, right: 20 })
+              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             Column().height(12)
             this.MeiHuaTiyongCard()
           } else if (this.qimen !== null) {
             QimenGrid({ chart: this.qimen })
-              .margin({ left: 20, right: 20 })
+              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             Column().height(12)
             this.QimenCards()
           } else if (this.liuren !== null) {
@@ -554,13 +560,13 @@ struct DivChartPage {
             .alignItems(HorizontalAlign.Center)
             Column().height(12)
             LiurenCourses({ chart: this.liuren })
-              .margin({ left: 20, right: 20 })
+              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             this.LiurenFooter()
           }
 
           Column().height(16)
 
-          // 底部双按钮（画板：36 高小胶囊 + 12 号字 + 间距 12 + start16/end20）
+          // 底部双按钮（36 高小胶囊 + 12 号字 + 间距 12 + 左右 PAGE_PADDING 对称留白）
           Row({ space: 12 }) {
             Column() {
               DivGoldButton({
@@ -588,7 +594,8 @@ struct DivChartPage {
             .layoutWeight(1)
           }
           .width('100%')
-          .padding({ left: 16, right: 20 })
+          // 底部按钮行左右对称（统一 PAGE_PADDING，替代 16/20 不对称留白）
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
           DivFooterNote({ text: DivText.disclaimerFooter })
         }

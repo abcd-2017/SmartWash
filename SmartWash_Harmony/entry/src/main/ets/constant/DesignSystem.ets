@@ -28,98 +28,98 @@ export function toColorString(color: number): string {
  */
 export class DesignColor {
   // 主色 — 自然绿
-  static readonly PRIMARY: number = 0xFF2D9B6A
-  static readonly ON_PRIMARY: number = 0xFFFFFFFF
-  static readonly PRIMARY_CONTAINER: number = 0xFFF0FBF4
-  static readonly ON_PRIMARY_CONTAINER: number = 0xFF17322B
+  static PRIMARY: number = 0xFF2D9B6A
+  static ON_PRIMARY: number = 0xFFFFFFFF
+  static PRIMARY_CONTAINER: number = 0xFFF0FBF4
+  static ON_PRIMARY_CONTAINER: number = 0xFF17322B
 
   // 主色变体
-  static readonly PRIMARY_LIGHT: number = 0xFFF0FBF4 // 超浅绿，图标容器/票券底（= primaryContainer）
+  static PRIMARY_LIGHT: number = 0xFFF0FBF4 // 超浅绿，图标容器/票券底（= primaryContainer）
   // 浅绿选中底（DESIGN.md primary-soft）——与 PRIMARY_LIGHT 是两个绿，勿合并
-  static readonly PRIMARY_SOFT: number = 0xFFE8F6EF
-  static readonly ON_PRIMARY_SOFT: number = 0xFF0B3625 // 浅绿选中底上的深绿字
-  static readonly PRIMARY_DARK: number = 0xFF1E8C5C  // 深绿，按下态
+  static PRIMARY_SOFT: number = 0xFFE8F6EF
+  static ON_PRIMARY_SOFT: number = 0xFF0B3625 // 浅绿选中底上的深绿字
+  static PRIMARY_DARK: number = 0xFF1E8C5C  // 深绿，按下态
 
   // 次要色
-  static readonly SECONDARY: number = 0xFF8E8E93
-  static readonly ON_SECONDARY: number = 0xFFFFFFFF
-  static readonly SECONDARY_CONTAINER: number = 0xFFF2F2F7
-  static readonly ON_SECONDARY_CONTAINER: number = 0xFF1C1C1E
+  static SECONDARY: number = 0xFF8E8E93
+  static ON_SECONDARY: number = 0xFFFFFFFF
+  static SECONDARY_CONTAINER: number = 0xFFF2F2F7
+  static ON_SECONDARY_CONTAINER: number = 0xFF1C1C1E
 
   // 第三色
-  static readonly TERTIARY: number = 0xFF6B7280
-  static readonly ON_TERTIARY: number = 0xFFFFFFFF
-  static readonly TERTIARY_CONTAINER: number = 0xFFF2F2F7
-  static readonly ON_TERTIARY_CONTAINER: number = 0xFF1C1C1E
+  static TERTIARY: number = 0xFF6B7280
+  static ON_TERTIARY: number = 0xFFFFFFFF
+  static TERTIARY_CONTAINER: number = 0xFFF2F2F7
+  static ON_TERTIARY_CONTAINER: number = 0xFF1C1C1E
 
   // 背景 & 表面
   // v0.4：background 与 surfaceVariant 的取值相较 2026-10-06 版**互换**了，以安卓 Color.kt 为准
-  static readonly BACKGROUND: number = 0xFFF5F6F3        // 页面底色
-  static readonly ON_BACKGROUND: number = 0xFF1C1C1E
-  static readonly SURFACE: number = 0xFFFFFFFF           // 纯白卡片
-  static readonly ON_SURFACE: number = 0xFF1C1C1E
-  static readonly SURFACE_VARIANT: number = 0xFFEFF1EE   // 卡内次级块（输入框底、嵌套卡）
-  static readonly ON_SURFACE_VARIANT: number = 0xFF6B6E73
-  static readonly GROUP_BACKGROUND: number = 0xFFE7EAE4  // 分组容器底（比页面底再深一档）
-  static readonly HAIRLINE: number = 0xFFEFF1EE          // 容器内部行分隔线底色
+  static BACKGROUND: number = 0xFFF5F6F3        // 页面底色
+  static ON_BACKGROUND: number = 0xFF1C1C1E
+  static SURFACE: number = 0xFFFFFFFF           // 纯白卡片
+  static ON_SURFACE: number = 0xFF1C1C1E
+  static SURFACE_VARIANT: number = 0xFFEFF1EE   // 卡内次级块（输入框底、嵌套卡）
+  static ON_SURFACE_VARIANT: number = 0xFF6B6E73
+  static GROUP_BACKGROUND: number = 0xFFE7EAE4  // 分组容器底（比页面底再深一档）
+  static HAIRLINE: number = 0xFFEFF1EE          // 容器内部行分隔线底色
 
   // 边框 & 辅助
-  static readonly OUTLINE: number = 0xFFE6E9E6           // 卡片描边（1px）
-  static readonly OUTLINE_VARIANT: number = 0xFFEFF1EE
+  static OUTLINE: number = 0xFFE6E9E6           // 卡片描边（1px）
+  static OUTLINE_VARIANT: number = 0xFFEFF1EE
 
   // 错误（v0.4 收敛为单一 error 角色 #A8435A，弃 iOS 红 #FF3B30）
-  static readonly ERROR: number = 0xFFA8435A
-  static readonly ON_ERROR: number = 0xFFFFFFFF
-  static readonly ERROR_CONTAINER: number = 0xFFF7E9EC
-  static readonly ON_ERROR_CONTAINER: number = 0xFFA8435A
+  static ERROR: number = 0xFFA8435A
+  static ON_ERROR: number = 0xFFFFFFFF
+  static ERROR_CONTAINER: number = 0xFFF7E9EC
+  static ON_ERROR_CONTAINER: number = 0xFFA8435A
 
   // 警告 — 规范语义橙
-  static readonly WARNING: number = 0xFFD98A26
-  static readonly ON_WARNING: number = 0xFFFFFFFF
-  static readonly WARNING_CONTAINER: number = 0xFFFDF3E7
-  static readonly ON_WARNING_CONTAINER: number = 0xFF92400E
+  static WARNING: number = 0xFFD98A26
+  static ON_WARNING: number = 0xFFFFFFFF
+  static WARNING_CONTAINER: number = 0xFFFDF3E7
+  static ON_WARNING_CONTAINER: number = 0xFF92400E
 
   // 状态语义（进行中 / 危险）
   // v0.4：ongoingInk 与 ongoing 合并，不再单列小字变体
-  static readonly ONGOING: number = 0xFFD98A26
-  static readonly ONGOING_INK: number = 0xFFD98A26
-  static readonly DANGER: number = 0xFFA8435A
-  static readonly DANGER_INK: number = 0xFFA8435A
+  static ONGOING: number = 0xFFD98A26
+  static ONGOING_INK: number = 0xFFD98A26
+  static DANGER: number = 0xFFA8435A
+  static DANGER_INK: number = 0xFFA8435A
 
   // 成功（v0.4 收敛：success 与 done 合并为 #2D9B6A）
-  static readonly SUCCESS: number = 0xFF2D9B6A
-  static readonly ON_SUCCESS: number = 0xFFFFFFFF
-  static readonly SUCCESS_CONTAINER: number = 0xFFF0FBF4
-  static readonly ON_SUCCESS_CONTAINER: number = 0xFF17322B
+  static SUCCESS: number = 0xFF2D9B6A
+  static ON_SUCCESS: number = 0xFFFFFFFF
+  static SUCCESS_CONTAINER: number = 0xFFF0FBF4
+  static ON_SUCCESS_CONTAINER: number = 0xFF17322B
 
   // 文字色阶
-  static readonly TEXT_PRIMARY: number = 0xFF1C1C1E
-  static readonly TEXT_SECONDARY: number = 0xFF6B6E73 // 次文本
-  static readonly TEXT_TERTIARY: number = 0xFFA9AEA9  // 弱文本
+  static TEXT_PRIMARY: number = 0xFF1C1C1E
+  static TEXT_SECONDARY: number = 0xFF6B6E73 // 次文本
+  static TEXT_TERTIARY: number = 0xFFA9AEA9  // 弱文本
 
   // 分隔线
-  static readonly DIVIDER: number = 0xFFEFF1EE
+  static DIVIDER: number = 0xFFEFF1EE
 
   // 水意象（次要强调、进度、水滴）
-  static readonly WATER: number = 0xFF4A9FD4
-  static readonly WATER_SOFT: number = 0xFFDCEFF7     // 水色浅底容器
+  static WATER: number = 0xFF4A9FD4
+  static WATER_SOFT: number = 0xFFDCEFF7     // 水色浅底容器
 
   // 图标容器六色浅底（规范 §2.1）
   // v0.4：绿与青同值 #F0FBF4（安卓 Color.kt 同名同值）
-  static readonly ICON_CONTAINER_GREEN: number = 0xFFF0FBF4   // 洗护/主
-  static readonly ICON_CONTAINER_BLUE: number = 0xFFEEF2FB    // 物流/寄件
-  static readonly ICON_CONTAINER_ORANGE: number = 0xFFFDF3E7  // 取件/待办
-  static readonly ICON_CONTAINER_PINK: number = 0xFFFDEEF0    // 异常/取消
-  static readonly ICON_CONTAINER_TEAL: number = 0xFFF0FBF4    // 账户/安全
-  static readonly ICON_CONTAINER_PURPLE: number = 0xFFF4F0FB  // 观象台/AI
+  static ICON_CONTAINER_GREEN: number = 0xFFF0FBF4   // 洗护/主
+  static ICON_CONTAINER_BLUE: number = 0xFFEEF2FB    // 物流/寄件
+  static ICON_CONTAINER_ORANGE: number = 0xFFFDF3E7  // 取件/待办
+  static ICON_CONTAINER_PINK: number = 0xFFFDEEF0    // 异常/取消
+  static ICON_CONTAINER_TEAL: number = 0xFFF0FBF4    // 账户/安全
+  static ICON_CONTAINER_PURPLE: number = 0xFFF4F0FB  // 观象台/AI
 
   // 图标前景六色（规范 §2.1 六色深色版）
-  static readonly ICON_FOREGROUND_GREEN: number = 0xFF2D9B6A
-  static readonly ICON_FOREGROUND_BLUE: number = 0xFF4A67C9
-  static readonly ICON_FOREGROUND_ORANGE: number = 0xFFD98A26
-  static readonly ICON_FOREGROUND_PINK: number = 0xFFC9526B
-  static readonly ICON_FOREGROUND_TEAL: number = 0xFF3F9D78
-  static readonly ICON_FOREGROUND_PURPLE: number = 0xFF7C3AED
+  static ICON_FOREGROUND_GREEN: number = 0xFF2D9B6A
+  static ICON_FOREGROUND_BLUE: number = 0xFF4A67C9
+  static ICON_FOREGROUND_ORANGE: number = 0xFFD98A26
+  static ICON_FOREGROUND_PINK: number = 0xFFC9526B
+  static ICON_FOREGROUND_TEAL: number = 0xFF3F9D78
+  static ICON_FOREGROUND_PURPLE: number = 0xFF7C3AED
 
   // ========== 清氧设计系统 — 暗色主题（对齐 Android Color.kt Dark* 系） ==========
 
@@ -198,42 +198,42 @@ export class DesignColor {
   static readonly DARK_ICON_FOREGROUND_PURPLE: number = 0xFFB49CE8
 
   // ========== 认证页渐变色（160deg 三段 #1A9E6E → #0D7A4A@50% → #0B5C3A） ==========
-  static readonly AUTH_GRADIENT_TOP: number = 0xFF1A9E6E
-  static readonly AUTH_GRADIENT_MID: number = 0xFF0D7A4A
-  static readonly AUTH_GRADIENT_BOTTOM: number = 0xFF0B5C3A
+  static AUTH_GRADIENT_TOP: number = 0xFF1A9E6E
+  static AUTH_GRADIENT_MID: number = 0xFF0D7A4A
+  static AUTH_GRADIENT_BOTTOM: number = 0xFF0B5C3A
 
   // ========== 毛玻璃效果色 ==========
-  static readonly GLASS_BG_SUBTLE: number = 0x1AFFFFFF // 极淡底色（白 10%）
-  static readonly GLASS_BG: number = 0x26FFFFFF // 标准底色（白 15%）
-  static readonly GLASS_BORDER_SUBTLE: number = 0x2EFFFFFF // 淡边框（白 18%）
-  static readonly GLASS_BORDER: number = 0x33FFFFFF // 标准边框（白 20%）
-  static readonly GLASS_INPUT: number = 0x4DFFFFFF // 输入框/按钮底（白 30%）
-  static readonly GLASS_TEXT_SECONDARY: number = 0x66FFFFFF // 次要文字（白 40%）
-  static readonly GLASS_TEXT_HINT: number = 0x99FFFFFF // 提示文字（白 60%）
-  static readonly GLASS_TEXT_DISABLED: number = 0xB3FFFFFF // 禁用文字（白 70%）
-  static readonly GLASS_TEXT_ACTIVE: number = 0xCCFFFFFF // 激活文字（白 80%）
+  static GLASS_BG_SUBTLE: number = 0x1AFFFFFF // 极淡底色（白 10%）
+  static GLASS_BG: number = 0x26FFFFFF // 标准底色（白 15%）
+  static GLASS_BORDER_SUBTLE: number = 0x2EFFFFFF // 淡边框（白 18%）
+  static GLASS_BORDER: number = 0x33FFFFFF // 标准边框（白 20%）
+  static GLASS_INPUT: number = 0x4DFFFFFF // 输入框/按钮底（白 30%）
+  static GLASS_TEXT_SECONDARY: number = 0x66FFFFFF // 次要文字（白 40%）
+  static GLASS_TEXT_HINT: number = 0x99FFFFFF // 提示文字（白 60%）
+  static GLASS_TEXT_DISABLED: number = 0xB3FFFFFF // 禁用文字（白 70%）
+  static GLASS_TEXT_ACTIVE: number = 0xCCFFFFFF // 激活文字（白 80%）
 
   // ========== 第三方品牌色 ==========
-  static readonly WECHAT_GREEN: number = 0xFF07C160
-  static readonly ALIPAY_BLUE: number = 0xFF1677FF
+  static WECHAT_GREEN: number = 0xFF07C160
+  static ALIPAY_BLUE: number = 0xFF1677FF
   // 品牌色 10% 透明底，用于支付渠道图标容器背景（评审 #18：收敛页面硬编码色值）
-  static readonly WECHAT_GREEN_LIGHT: number = 0x1A07C160
-  static readonly ALIPAY_BLUE_LIGHT: number = 0x1A1677FF
+  static WECHAT_GREEN_LIGHT: number = 0x1A07C160
+  static ALIPAY_BLUE_LIGHT: number = 0x1A1677FF
 
   // ========== 服务类型色彩（页面自有语义，非令牌层） ==========
-  static readonly SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿
-  static readonly SERVICE_WASH_LIGHT: number = 0xFFF0FBF4
+  static SERVICE_WASH: number = 0xFF2D9B6A       // 标准洗 — 自然绿
+  static SERVICE_WASH_LIGHT: number = 0xFFF0FBF4
   // 干洗 — 取 Android 代码现状「干→蓝」（ServicePage.kt:305 iconForegroundBlue/iconContainerBlue）。
   // ⚠️ 冲突记录：DESIGN.md 服务五色写「干洗紫 #7C3AED」，与 Android 代码现状（蓝 #4A67C9）不一致；
   //    按「基准 = Android 代码」以蓝为准，待设计确认后再统一。
-  static readonly SERVICE_DRY: number = 0xFF4A67C9        // 干洗 — 蓝（对齐 Android iconForegroundBlue）
-  static readonly SERVICE_DRY_LIGHT: number = 0xFFEEF2FB  // 干洗浅底 — 蓝（对齐 Android iconContainerBlue）
-  static readonly SERVICE_PRESS: number = 0xFFE07B00      // 熨烫 — 暖橙
-  static readonly SERVICE_PRESS_LIGHT: number = 0xFFFFF7ED
-  static readonly SERVICE_LUXURY: number = 0xFF0EA5E9     // 奢护 — 清澈蓝
-  static readonly SERVICE_LUXURY_LIGHT: number = 0xFFEFF6FF
-  static readonly SERVICE_SHOES: number = 0xFFDC2626      // 洗鞋 — 活力红
-  static readonly SERVICE_SHOES_LIGHT: number = 0xFFFEF2F2
+  static SERVICE_DRY: number = 0xFF4A67C9        // 干洗 — 蓝（对齐 Android iconForegroundBlue）
+  static SERVICE_DRY_LIGHT: number = 0xFFEEF2FB  // 干洗浅底 — 蓝（对齐 Android iconContainerBlue）
+  static SERVICE_PRESS: number = 0xFFE07B00      // 熨烫 — 暖橙
+  static SERVICE_PRESS_LIGHT: number = 0xFFFFF7ED
+  static SERVICE_LUXURY: number = 0xFF0EA5E9     // 奢护 — 清澈蓝
+  static SERVICE_LUXURY_LIGHT: number = 0xFFEFF6FF
+  static SERVICE_SHOES: number = 0xFFDC2626      // 洗鞋 — 活力红
+  static SERVICE_SHOES_LIGHT: number = 0xFFFEF2F2
 
   // ========== 阴影色（规范 §2.4 全应用仅两档，替代组件内散落的写死色） ==========
   // 字符串类型：shadow.color 接受 ResourceColor，rgba() 直译设计稿 CSS 值
@@ -241,6 +241,74 @@ export class DesignColor {
   static readonly SHADOW_COLOR_FLOAT: string = 'rgba(20, 40, 30, 0.10)'  // 浮层/弹窗档
 }
 
+
+/**
+ * 应用深浅色主题（问题17）：EntryAbility 在冷启动与系统色模式变更时调用。
+ * 令牌字段为可变静态值，调用后页面 rebuild 读取即得新色值；
+ * 未定义 DARK_ 变体的令牌（渐变/毛玻璃/品牌色等）深浅色同值，不在此列出。
+ */
+export function applyDesignTheme(dark: boolean): void {
+  DesignColor.PRIMARY = dark ? DesignColor.DARK_PRIMARY : 0xFF2D9B6A
+  DesignColor.ON_PRIMARY = dark ? DesignColor.DARK_ON_PRIMARY : 0xFFFFFFFF
+  DesignColor.PRIMARY_CONTAINER = dark ? DesignColor.DARK_PRIMARY_CONTAINER : 0xFFF0FBF4
+  DesignColor.ON_PRIMARY_CONTAINER = dark ? DesignColor.DARK_ON_PRIMARY_CONTAINER : 0xFF17322B
+  DesignColor.PRIMARY_LIGHT = dark ? DesignColor.DARK_PRIMARY_LIGHT : 0xFFF0FBF4 // 超浅绿，图标容器/票券底（= primaryContainer）
+  DesignColor.PRIMARY_SOFT = dark ? DesignColor.DARK_PRIMARY_SOFT : 0xFFE8F6EF
+  DesignColor.ON_PRIMARY_SOFT = dark ? DesignColor.DARK_ON_PRIMARY_SOFT : 0xFF0B3625 // 浅绿选中底上的深绿字
+  DesignColor.PRIMARY_DARK = dark ? DesignColor.DARK_PRIMARY_DARK : 0xFF1E8C5C  // 深绿，按下态
+  DesignColor.SECONDARY = dark ? DesignColor.DARK_SECONDARY : 0xFF8E8E93
+  DesignColor.ON_SECONDARY = dark ? DesignColor.DARK_ON_SECONDARY : 0xFFFFFFFF
+  DesignColor.SECONDARY_CONTAINER = dark ? DesignColor.DARK_SECONDARY_CONTAINER : 0xFFF2F2F7
+  DesignColor.ON_SECONDARY_CONTAINER = dark ? DesignColor.DARK_ON_SECONDARY_CONTAINER : 0xFF1C1C1E
+  DesignColor.TERTIARY = dark ? DesignColor.DARK_TERTIARY : 0xFF6B7280
+  DesignColor.ON_TERTIARY = dark ? DesignColor.DARK_ON_TERTIARY : 0xFFFFFFFF
+  DesignColor.TERTIARY_CONTAINER = dark ? DesignColor.DARK_TERTIARY_CONTAINER : 0xFFF2F2F7
+  DesignColor.ON_TERTIARY_CONTAINER = dark ? DesignColor.DARK_ON_TERTIARY_CONTAINER : 0xFF1C1C1E
+  DesignColor.BACKGROUND = dark ? DesignColor.DARK_BACKGROUND : 0xFFF5F6F3        // 页面底色
+  DesignColor.ON_BACKGROUND = dark ? DesignColor.DARK_ON_BACKGROUND : 0xFF1C1C1E
+  DesignColor.SURFACE = dark ? DesignColor.DARK_SURFACE : 0xFFFFFFFF           // 纯白卡片
+  DesignColor.ON_SURFACE = dark ? DesignColor.DARK_ON_SURFACE : 0xFF1C1C1E
+  DesignColor.SURFACE_VARIANT = dark ? DesignColor.DARK_SURFACE_VARIANT : 0xFFEFF1EE   // 卡内次级块（输入框底、嵌套卡）
+  DesignColor.ON_SURFACE_VARIANT = dark ? DesignColor.DARK_ON_SURFACE_VARIANT : 0xFF6B6E73
+  DesignColor.GROUP_BACKGROUND = dark ? DesignColor.DARK_GROUP_BACKGROUND : 0xFFE7EAE4  // 分组容器底（比页面底再深一档）
+  DesignColor.HAIRLINE = dark ? DesignColor.DARK_HAIRLINE : 0xFFEFF1EE          // 容器内部行分隔线底色
+  DesignColor.OUTLINE = dark ? DesignColor.DARK_OUTLINE : 0xFFE6E9E6           // 卡片描边（1px）
+  DesignColor.OUTLINE_VARIANT = dark ? DesignColor.DARK_OUTLINE_VARIANT : 0xFFEFF1EE
+  DesignColor.ERROR = dark ? DesignColor.DARK_ERROR : 0xFFA8435A
+  DesignColor.ON_ERROR = dark ? DesignColor.DARK_ON_ERROR : 0xFFFFFFFF
+  DesignColor.ERROR_CONTAINER = dark ? DesignColor.DARK_ERROR_CONTAINER : 0xFFF7E9EC
+  DesignColor.ON_ERROR_CONTAINER = dark ? DesignColor.DARK_ON_ERROR_CONTAINER : 0xFFA8435A
+  DesignColor.WARNING = dark ? DesignColor.DARK_WARNING : 0xFFD98A26
+  DesignColor.ON_WARNING = dark ? DesignColor.DARK_ON_WARNING : 0xFFFFFFFF
+  DesignColor.WARNING_CONTAINER = dark ? DesignColor.DARK_WARNING_CONTAINER : 0xFFFDF3E7
+  DesignColor.ON_WARNING_CONTAINER = dark ? DesignColor.DARK_ON_WARNING_CONTAINER : 0xFF92400E
+  DesignColor.ONGOING = dark ? DesignColor.DARK_ONGOING : 0xFFD98A26
+  DesignColor.ONGOING_INK = dark ? DesignColor.DARK_ONGOING_INK : 0xFFD98A26
+  DesignColor.DANGER = dark ? DesignColor.DARK_DANGER : 0xFFA8435A
+  DesignColor.DANGER_INK = dark ? DesignColor.DARK_DANGER_INK : 0xFFA8435A
+  DesignColor.SUCCESS = dark ? DesignColor.DARK_SUCCESS : 0xFF2D9B6A
+  DesignColor.ON_SUCCESS = dark ? DesignColor.DARK_ON_SUCCESS : 0xFFFFFFFF
+  DesignColor.SUCCESS_CONTAINER = dark ? DesignColor.DARK_SUCCESS_CONTAINER : 0xFFF0FBF4
+  DesignColor.ON_SUCCESS_CONTAINER = dark ? DesignColor.DARK_ON_SUCCESS_CONTAINER : 0xFF17322B
+  DesignColor.TEXT_PRIMARY = dark ? DesignColor.DARK_TEXT_PRIMARY : 0xFF1C1C1E
+  DesignColor.TEXT_SECONDARY = dark ? DesignColor.DARK_TEXT_SECONDARY : 0xFF6B6E73 // 次文本
+  DesignColor.TEXT_TERTIARY = dark ? DesignColor.DARK_TEXT_TERTIARY : 0xFFA9AEA9  // 弱文本
+  DesignColor.DIVIDER = dark ? DesignColor.DARK_DIVIDER : 0xFFEFF1EE
+  DesignColor.WATER = dark ? DesignColor.DARK_WATER : 0xFF4A9FD4
+  DesignColor.WATER_SOFT = dark ? DesignColor.DARK_WATER_SOFT : 0xFFDCEFF7     // 水色浅底容器
+  DesignColor.ICON_CONTAINER_GREEN = dark ? DesignColor.DARK_ICON_CONTAINER_GREEN : 0xFFF0FBF4   // 洗护/主
+  DesignColor.ICON_CONTAINER_BLUE = dark ? DesignColor.DARK_ICON_CONTAINER_BLUE : 0xFFEEF2FB    // 物流/寄件
+  DesignColor.ICON_CONTAINER_ORANGE = dark ? DesignColor.DARK_ICON_CONTAINER_ORANGE : 0xFFFDF3E7  // 取件/待办
+  DesignColor.ICON_CONTAINER_PINK = dark ? DesignColor.DARK_ICON_CONTAINER_PINK : 0xFFFDEEF0    // 异常/取消
+  DesignColor.ICON_CONTAINER_TEAL = dark ? DesignColor.DARK_ICON_CONTAINER_TEAL : 0xFFF0FBF4    // 账户/安全
+  DesignColor.ICON_CONTAINER_PURPLE = dark ? DesignColor.DARK_ICON_CONTAINER_PURPLE : 0xFFF4F0FB  // 观象台/AI
+  DesignColor.ICON_FOREGROUND_GREEN = dark ? DesignColor.DARK_ICON_FOREGROUND_GREEN : 0xFF2D9B6A
+  DesignColor.ICON_FOREGROUND_BLUE = dark ? DesignColor.DARK_ICON_FOREGROUND_BLUE : 0xFF4A67C9
+  DesignColor.ICON_FOREGROUND_ORANGE = dark ? DesignColor.DARK_ICON_FOREGROUND_ORANGE : 0xFFD98A26
+  DesignColor.ICON_FOREGROUND_PINK = dark ? DesignColor.DARK_ICON_FOREGROUND_PINK : 0xFFC9526B
+  DesignColor.ICON_FOREGROUND_TEAL = dark ? DesignColor.DARK_ICON_FOREGROUND_TEAL : 0xFF3F9D78
+  DesignColor.ICON_FOREGROUND_PURPLE = dark ? DesignColor.DARK_ICON_FOREGROUND_PURPLE : 0xFF7C3AED
+}
 // ========== 设计 Token ==========
 
 /**

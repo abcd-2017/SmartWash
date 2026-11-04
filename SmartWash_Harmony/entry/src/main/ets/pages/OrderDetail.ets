@@ -169,11 +169,30 @@ struct OrderDetail {
     return meta
   }
 
-  /** 当前状态在时间线中的节点下标（未知状态兜底第 0 节点，对齐安卓 coerceAtLeast(0)） */
+  /**
+   * 当前状态在时间线中的节点下标（对齐安卓 OrderDetailPage ProgressTimeline 的 currentIndex）。
+   * 中间态必须映射到所在阶段节点：已收取/清洗中→2，已烘干/配送中/待取件→3；
+   * 原实现用 findIndex 精确匹配 5 节点，遇到 RECEIVED/DRIED/IN_DELIVERY 会落到兜底 0，
+   * 导致进度线一直卡在「待支付」（问题 9「时间进度线位置不对」）。
+   */
   private currentIndex(): number {
-    const status = this.orderInfo?.status
-    const index = this.nodes.findIndex((node: TimelineNode): boolean => node.status === status)
-    return index >= 0 ? index : 0
+    switch (this.orderInfo?.status) {
+      case OrderStatusEnum.PENDING_PAYMENT:
+        return 0
+      case OrderStatusEnum.PENDING_SHIPMENT:
+        return 1
+      case OrderStatusEnum.RECEIVED:
+      case OrderStatusEnum.WASHING:
+        return 2
+      case OrderStatusEnum.DRIED:
+      case OrderStatusEnum.IN_DELIVERY:
+      case OrderStatusEnum.READY_FOR_PICKUP:
+        return 3
+      case OrderStatusEnum.COMPLETED:
+        return 4
+      default:
+        return 0
+    }
   }
 
   /** 时间线首节点副行：真实下单时间 HH:mm（格式异常不显示，对齐安卓 D-OD2） */
@@ -242,6 +261,9 @@ struct OrderDetail {
           ForEach(this.railKeys(), (index: number) => {
             Column()
               .layoutWeight(1)
+              // 每段左右各 6dp 内缩（对齐安卓 rail Box 的 padding(horizontal = 6.dp)），
+              // 避免相邻段首尾相接成一条通线
+              .padding({ left: 6, right: 6 })
               .height(2)
               .backgroundColor(index < this.currentIndex() ? DesignColor.PRIMARY : DesignColor.HAIRLINE)
           }, (index: number) => index.toString())
@@ -615,11 +637,20 @@ struct InfoRow {
           .fontWeight(this.valueWeight)
           .fontColor(this.valueColor)
           .fontFeature(DesignFontFeature.TNUM)
+          // 值侧占满剩余宽度 + 单行省略：长地址/长单号不得溢出（问题9）
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .textAlign(TextAlign.End)
       } else {
         Text(this.value)
           .fontSize(this.valueSize)
           .fontWeight(this.valueWeight)
           .fontColor(this.valueColor)
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .textAlign(TextAlign.End)
       }
     }
     .width("100%")
@@ -676,97 +707,104 @@ export struct PickupCodeDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      // 内容区
       Column() {
-        Text("取件码")
-          .fontSize(DesignFontSize.ROOT_TITLE)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+        // 内容区
+        Column() {
+          Text("取件码")
+            .fontSize(DesignFontSize.ROOT_TITLE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.TEXT_PRIMARY)
 
-        Text(`寄存柜: ${this.lockerNumber}`)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .fontFeature(DesignFontFeature.TNUM)
-          .margin({ top: 4 })
-
-        if (this.pickupCode !== '') {
-          // 取件码大字 — DataLarge（36/44/700 + tnum，规范 §2.2 取件码槽位）
-          Text(this.pickupCode)
-            .fontSize(DesignFontSize.DATA_LARGE)
-            .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
-            .fontFeature(DesignFontFeature.TNUM)
-            .maxLines(1)
-            .margin({ top: 12 })
-        } else {
-          Text("暂无取件码，请稍后再试")
-            .fontSize(DesignFontSize.BODY_SMALL)
+          Text(`寄存柜: ${this.lockerNumber}`)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.TEXT_SECONDARY)
-            .margin({ top: 12 })
+            .fontFeature(DesignFontFeature.TNUM)
+            .margin({ top: 4 })
+
+          if (this.pickupCode !== '') {
+            // 取件码大字 — DataLarge（36/44/700 + tnum，规范 §2.2 取件码槽位）
+            Text(this.pickupCode)
+              .fontSize(DesignFontSize.DATA_LARGE)
+              .fontWeight(DesignFontWeight.BOLD)
+              .fontColor(DesignColor.PRIMARY_DARK)
+              .fontFeature(DesignFontFeature.TNUM)
+              .maxLines(1)
+              .margin({ top: 12 })
+          } else {
+            Text("暂无取件码，请稍后再试")
+              .fontSize(DesignFontSize.BODY_SMALL)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .margin({ top: 12 })
+          }
         }
-      }
-      .width("100%")
-      .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        top: 20,
-        bottom: 20
-      })
-      .alignItems(HorizontalAlign.Center)
+        .width("100%")
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: 20,
+          bottom: 20
+        })
+        .alignItems(HorizontalAlign.Center)
 
-      // 分隔线（0.5dp，切动作区）
-      Divider()
-        .color(DesignColor.DIVIDER)
-        .strokeWidth(0.5)
-
-      // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
-      Row() {
-        Text("取消")
-          .fontSize(DesignFontSize.BODY)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .layoutWeight(1)
-          .height(48)
-          .textAlign(TextAlign.Center)
-          .onClick(() => {
-            this.onDismiss()
-            this.controller.close()
-          })
-
+        // 分隔线（0.5dp，切动作区）
         Divider()
-          .vertical(true)
           .color(DesignColor.DIVIDER)
           .strokeWidth(0.5)
-          .height(48)
 
-        Text("复制取件码")
-          .fontSize(DesignFontSize.BODY)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.PRIMARY)
-          .layoutWeight(1)
-          .height(48)
-          .textAlign(TextAlign.Center)
-          .onClick(() => {
-            this.copyCode()
-          })
+        // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
+        Row() {
+          Text("取消")
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .layoutWeight(1)
+            .height(48)
+            .textAlign(TextAlign.Center)
+            .onClick(() => {
+              this.onDismiss()
+              this.controller.close()
+            })
+
+          Divider()
+            .vertical(true)
+            .color(DesignColor.DIVIDER)
+            .strokeWidth(0.5)
+            .height(48)
+
+          Text("复制取件码")
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(DesignColor.PRIMARY)
+            .layoutWeight(1)
+            .height(48)
+            .textAlign(TextAlign.Center)
+            .onClick(() => {
+              this.copyCode()
+            })
+        }
+        .width("100%")
       }
       .width("100%")
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+      })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
-    .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .width("100%")
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

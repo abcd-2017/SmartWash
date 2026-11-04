@@ -10,6 +10,7 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
+import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { AppButton, AppConfirmDialog, IconBox, SelectionDot } from "../view/common/AppComponents"
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
@@ -70,7 +71,8 @@ struct Recharge {
   }
 
   aboutToDisappear(): void {
-    AppStorage.setOrCreate("refreshUserInfo", true)
+    // 自增 tick（问题3）：布尔标记重复 setOrCreate(true) 不产生变更事件，首页 @Watch 收不到
+    bumpUserInfoRefresh()
   }
 
   // 预设档是否选中（自定义档选中时预设档一律不高亮，对齐安卓 isCustomAmountSelected 互斥）

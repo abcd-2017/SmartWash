@@ -18,8 +18,6 @@ import {
   shouldInjectToken
 } from './RequestRules'
 import { CommonConstants } from '../constant/CommonConstants'
-import { RouteNames } from '../constant/RouteNames'
-import { pathStack } from '../utils/PathStackUtil'
 import BuildProfile from 'entry/BuildProfile'
 
 /**
@@ -67,21 +65,39 @@ function showErrorToast(message: string): void {
   promptAction.showToast({ message: message })
 }
 
-/** 清空本地 token 与内存登录态（401/退出登录统一语义，CLAUDE.md 硬规则） */
-async function clearLoginState(): Promise<void> {
-  await setValue(CommonConstants.USER_TOKEN, "")
-  // role 与 userLoginFlag 同属登录态，一并复位：
-  // 只清 token 会残留上一位用户的角色与登录标志，下次登录前读到脏数据
+/**
+ * 清空本地 token 与内存登录态（401/退出登录统一语义，CLAUDE.md 硬规则）。
+ *
+ * 会话态 isLoggedIn 是**唯一**的登录根页切换信号：Index 监听它，把 Login 作为
+ * Navigation 根内容渲染并清空页面栈 —— Home 随之销毁，其 5s 订单轮询停止。
+ * 不再使用 pushPathByName/replacePathByName(LOGIN)：那种写法会把 Login 压到
+ * 仍然活着的 Home 之上，导致侧滑能回首页、重登后停在旧 tab、轮询持续 401、
+ * 反复 replace 掉用户正在输入的登录页（输入法被关 + "请先登录" toast）。
+ */
+export async function clearLoginState(): Promise<void> {
+  // 先置会话态，保证 UI 立即切回登录根页（不等待 preferences 落盘）
   AppStorage.setOrCreate("userRole", "")
   AppStorage.setOrCreate("userLoginFlag", false)
+  AppStorage.setOrCreate("isLoggedIn", false)
+  await setValue(CommonConstants.USER_TOKEN, "")
+}
+
+/** 登录成功置会话态（Index 据此把 Home 作为根内容渲染） */
+export function markLoggedIn(): void {
+  AppStorage.setOrCreate("isLoggedIn", true)
 }
 
 /**
- * 401 统一处理：清 token → 清内存登录态 → replace 到登录页。
- * 使用 replacePathByName 避免压栈；1.5s 时间窗防抖，并发请求同时 401 不重复跳转、不重复压栈。
+ * 401 统一处理：清 token → 清内存登录态 → 切回登录根页（经 isLoggedIn 会话态，不再压栈）。
+ * 1.5s 时间窗防抖；已处于未登录态时静默返回，避免轮询/并发请求重复弹 toast、重复跳页。
  * @param toastMessage 提示文案，传空串则不弹 toast（如本地无 token 的静默跳转场景）
  */
 function handleUnauthorized(toastMessage: string): void {
+  // 已确认未登录：静默拒绝。否则 Home 里仍在跑的轮询会持续触发本函数，
+  // 在用户输入手机号时反复弹 toast / 替换登录页（问题 2）
+  if (AppStorage.get<boolean>("isLoggedIn") === false) {
+    return
+  }
   const now = Date.now()
   if (now - lastUnauthorizedAt < UNAUTHORIZED_DEBOUNCE_MS) {
     return
@@ -91,7 +107,6 @@ function handleUnauthorized(toastMessage: string): void {
     showErrorToast(toastMessage)
   }
   clearLoginState()
-  pathStack.replacePathByName(RouteNames.LOGIN, null)
 }
 
 export const instance: AxiosInstance = axios.create({
@@ -116,8 +131,12 @@ instance.interceptors.request.use(async (config: InternalAxiosRequestConfig): Pr
     if (tokenCache !== "") {
       config.headers['Authorization'] = buildAuthorizationHeader(tokenCache)
     } else {
-      // 本地无 token：复位登录态并替换到登录页（防抖避免重复压栈），本次请求直接失败
-      handleUnauthorized("请先登录")
+      // 本地无 token：仅在「会话态仍为已登录」（token 异常丢失）时才按 401 处理；
+      // 已确认未登录（退出登录 / 首次 401 之后）静默拒绝，避免轮询持续弹 toast、
+      // 重复跳页替换掉用户正在输入的登录页（问题 2）
+      if (AppStorage.get<boolean>("isLoggedIn") === true) {
+        handleUnauthorized("请先登录")
+      }
       return Promise.reject(new Error("未登录"))
     }
   }

@@ -7,6 +7,7 @@ import { DesignColor } from "../constant/DesignSystem"
 import { safeBottomVp } from "../utils/SafeArea"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 import { logger } from "../utils/Logger"
+import { bumpOrderRefresh, bumpUserInfoRefresh, ORDER_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 import vibrator from '@ohos.vibrator'
 
 @Builder
@@ -34,6 +35,14 @@ struct Home {
   // 经 refreshTick 传给 IndexPage（V2 组件不能直接 @StorageLink 消费，由 V1 宿主桥接）
   @State refreshTick: number = 0
 
+  // ========== 返回刷新双保险（问题3）==========
+  // 单靠 NavDestination.onShown 不可靠（根内容返回时不一定回调）；充值页 aboutToDisappear
+  // 等会 bump 自增 tick —— 这里直接监听两个 tick，变化即抬 refreshTick，
+  // IndexPage 的 @Monitor 随即拉取最新账户数据。
+  // 注意必须用自增 tick：布尔标记重复 setOrCreate(true) 不产生变更事件，@Watch 不触发。
+  @StorageLink(USER_INFO_TICK_KEY) @Watch('onUserInfoTick') userInfoTick: number = 0
+  @StorageLink(ORDER_TICK_KEY) @Watch('onOrderTick') orderTick: number = 0
+
   aboutToAppear(): void {
     this.consumePendingDeepLink()
   }
@@ -41,6 +50,20 @@ struct Home {
   /** @Watch 回调：热启动 onNewWant 更新暂存时触发 */
   onPendingDeepLinkChange(): void {
     this.consumePendingDeepLink()
+  }
+
+  /** @Watch 回调：账户数据刷新 tick（充值/下单/取消等）→ 抬 refreshTick */
+  onUserInfoTick(): void {
+    if (this.userInfoTick > 0) {
+      this.refreshTick++
+    }
+  }
+
+  /** @Watch 回调：订单刷新 tick → 抬 refreshTick（IndexPage 统一刷新账户卡） */
+  onOrderTick(): void {
+    if (this.orderTick > 0) {
+      this.refreshTick++
+    }
   }
 
   /** 消费暂存深链：先清空再分发（防重复消费；置空写回再次触发的 @Watch 读到空串直接返回） */
@@ -109,8 +132,8 @@ struct Home {
           // 忽略不支持触感的设备
         }
         if (i === 3) {
-          AppStorage.setOrCreate("refreshUserInfo", true)
-          AppStorage.setOrCreate("refreshOrderCount", true)
+          bumpUserInfoRefresh()
+          bumpOrderRefresh()
         }
       })
       // 底栏规范 §4.5：68dp 高、纯白底、0.5dp outline 顶部分隔线（对齐安卓 BottomBar）

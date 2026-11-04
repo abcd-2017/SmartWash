@@ -14,6 +14,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../
 import { logger } from "../utils/Logger"
 import { safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
+import { bumpOrderRefresh, bumpUserInfoRefresh } from "../utils/RefreshSignal"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -174,8 +175,9 @@ struct OrderList {
 
   aboutToDisappear(): void {
     this.clearFadeTimer()
-    AppStorage.setOrCreate("refreshOrderCount", true)
-    AppStorage.setOrCreate("refreshUserInfo", true)
+    // 自增 tick（问题3）：布尔标记重复 setOrCreate(true) 不产生变更事件
+    bumpOrderRefresh()
+    bumpUserInfoRefresh()
   }
 
   /** 清理切 tab 淡入定时器（避免页面销毁后回调改状态） */
@@ -210,7 +212,7 @@ struct OrderList {
       if (res.code === HttpStatusCode.Ok && res.data === true) {
         // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
         // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
-        AppStorage.setOrCreate("refreshOrderCount", true)
+        bumpOrderRefresh()
         this.refreshOrder()
         showToastSafety("取消成功")
       } else {

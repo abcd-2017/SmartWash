@@ -12,13 +12,46 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
-import { AppButton, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
+import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 
 @Builder
 export function PaymentBuilder() {
   Payment()
+}
+
+/**
+ * 卡内「标签 — 值」信息行（对齐 Android InfoLine：bodySmall 12 + tnum、纵向 padding 4）。
+ * 必须是组件而非 @Builder：支付页 loading 是覆盖层、内容树在 orderInfo 为 null 时就已构建，
+ * @Builder 按值传参只在首帧求值，数据到达后不会刷新——订单号会永远定格在「—」（问题6）。
+ */
+@ComponentV2
+struct PayInfoLine {
+  @Param label: string = ""
+  @Param value: string = ""
+
+  build() {
+    Row() {
+      Text(this.label)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+
+      // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
+      Text(this.value)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontFeature(DesignFontFeature.TNUM)
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .textAlign(TextAlign.End)
+    }
+    .width("100%")
+    .padding({ top: 4, bottom: 4 })
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
 }
 
 @Component
@@ -34,6 +67,8 @@ struct Payment {
   @State selectedPaymentMethod: string = "balance"
   // 首载骨架门控（对齐 Android Crossfade(orderInfo === null) → LoadingState）
   @State isLoading: boolean = true
+  // 失败态：getOrderInfo 失败或 data 为空 → EmptyState + 重试（问题6，对齐 OrderDetail.loadFailed）
+  @State loadFailed: boolean = false
   // 支付请求进行中标记：AppButton loading 展示并拦截连点，防止重复扣款（评审 #12）
   @State paying: boolean = false
   // 按压反馈（recap §3-I1 / G3）：可点行 scale 0.97 + onTouch，对齐安卓 pressable
@@ -77,17 +112,42 @@ struct Payment {
     // 安全取参（评审 #31 / #6）：统一走 getNumberParam，缺失/非法返回 null（Number() 显式转换，NaN 同视为缺失）
     this.orderId = getNumberParam(RouteNames.PAYMENT)
     logger.debug('payment', `支付页挂载 orderId=${this.orderId}`)
-    if (this.orderId !== null) {
+    await this.loadOrderInfo()
+  }
+
+  /**
+   * 拉取订单详情（首载 / 「重试」共用）。
+   * 失败或 data 为空置 loadFailed → 渲染 EmptyState + 重试，不再静默显示「—」空卡（问题6）。
+   */
+  async loadOrderInfo(): Promise<void> {
+    if (this.orderId === null) {
+      logger.warn('payment', '缺少路由参数 orderId，进入失败态')
+      this.loadFailed = true
+      this.isLoading = false
+      return
+    }
+    this.isLoading = true
+    this.loadFailed = false
+    try {
       let res = await getOrderInfo(this.orderId)
-      if (res.code === HttpStatusCode.Ok) {
-        this.orderInfo = res.data
+      // 显式收窄为可空类型，兼容后端漏传 data（运行期 undefined）与 null 两种空态
+      let data: OrderInfo | null | undefined = res.data
+      if (res.code === HttpStatusCode.Ok && data !== null && data !== undefined) {
+        this.orderInfo = data
+        logger.debug('payment', `支付页订单信息加载成功 orderId=${this.orderId}`)
       } else {
         logger.warn('payment', `支付页订单信息加载失败 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "订单信息加载失败")
+        this.loadFailed = true
       }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
+      this.loadFailed = true
+      showToastSafety("网络异常，请稍后重试")
+    } finally {
+      this.isLoading = false
     }
-    this.isLoading = false
   }
 
   async getCurrUserInfo() {
@@ -277,27 +337,6 @@ struct Payment {
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     .alignItems(VerticalAlign.Center)
     .backgroundColor(DesignColor.BACKGROUND)
-  }
-
-  /** 卡内「标签 — 值」信息行（对齐 Android InfoLine：bodySmall 12 + tnum、纵向 padding 4） */
-  @Builder
-  InfoLine(label: string, value: string) {
-    Row() {
-      Text(label)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      Blank()
-
-      Text(value)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .fontFeature(DesignFontFeature.TNUM)
-    }
-    .width("100%")
-    .padding({ top: 4, bottom: 4 })
-    .justifyContent(FlexAlign.SpaceBetween)
-    .alignItems(VerticalAlign.Center)
   }
 
   @Builder
@@ -519,9 +558,9 @@ struct Payment {
 
               // 订单号/服务类型缺失时兜底「—」（问题8：老版后端可能不下发 orderNo/laundryPackageVo，
               // 空串观感是"数据丢了"，占位符语义为"暂无"）
-              this.InfoLine("订单编号", this.displayValue(this.orderInfo?.orderNo))
-              this.InfoLine("服务类型", this.displayValue(this.orderInfo?.laundryPackageVo?.itemName))
-              this.InfoLine("预计完成", "24小时内")
+              PayInfoLine({ label: "订单编号", value: this.displayValue(this.orderInfo?.orderNo) })
+              PayInfoLine({ label: "服务类型", value: this.displayValue(this.orderInfo?.laundryPackageVo?.itemName) })
+              PayInfoLine({ label: "预计完成", value: "24小时内" })
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
@@ -733,6 +772,31 @@ struct Payment {
             .backgroundColor(DesignColor.BACKGROUND)
             .zIndex(2)
             .transition(TransitionEffect.OPACITY)
+        }
+
+        // 失败态（问题6）：EmptyState 母题 + 「重试」行动按钮，不再静默显示「—」空卡
+        if (!this.isLoading && this.loadFailed) {
+          Column() {
+            EmptyState({
+              message: "订单信息加载失败",
+              action: () => {
+                AppButton({
+                  text: "重试",
+                  variant: AppButtonVariant.SECONDARY,
+                  click: () => {
+                    this.loadOrderInfo()
+                  }
+                })
+                  .margin({ top: DesignDimens.SPACE_MD })
+              }
+            })
+          }
+          .width("100%")
+          .height("100%")
+          .backgroundColor(DesignColor.BACKGROUND)
+          .justifyContent(FlexAlign.Center)
+          .zIndex(2)
+          .transition(TransitionEffect.OPACITY)
         }
       }
       .width("100%")

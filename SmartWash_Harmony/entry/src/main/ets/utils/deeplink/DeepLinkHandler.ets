@@ -16,6 +16,7 @@ import { pathStack } from '../PathStackUtil'
 import { getValue } from '../StorageUtil'
 import { showToastSafety } from '../ToastUtil'
 import { WebPageParam } from '../../pages/WebPage'
+import { clearLoginState } from '../../network/Axios'
 import { DeepLinkKind, DeepLinkResult, parse } from './DeepLinkParser'
 import { lookup } from './DeepLinkRegistry'
 
@@ -35,7 +36,7 @@ let routeDictCache: Array<DeeplinkRouteVo> | null = null
 /**
  * 深链统一入口。冷启动/热启动的 Want.uri 经 AppStorage 暂存后由 Home 页挂载时调起。
  * 未登录放行（对齐安卓取舍）：本地不做登录前置判断，需要登录的目标页由 401 统一兜底
- * （清 token → 清内存登录态 → replace 登录页，Axios 拦截器既有语义）。
+ * （清 token → 清内存登录态 → 置 isLoggedIn=false，Index 据此切回登录根页，Axios 拦截器既有语义）。
  */
 export async function handleDeepLink(uri: string): Promise<void> {
   try {
@@ -60,6 +61,13 @@ export async function handleDeepLink(uri: string): Promise<void> {
 /** 注册表命中：push 目标路由（参数对象由页面经 PathStackUtil.getXxxParam 消费） */
 function navigateRoute(result: DeepLinkResult): void {
   try {
+    // smartwash://login：走会话态切换（Login 作为根内容渲染 + 清栈），
+    // 不能 push —— 否则 Home 仍存活，侧滑可回（与退出登录同一坑）
+    if (result.routeName === RouteNames.LOGIN) {
+      clearLoginState()
+      pathStack.clear()
+      return
+    }
     pathStack.pushPathByName(result.routeName, result.routeParam)
   } catch (err) {
     // 路由名与 router_map 漂移时兜底提示（对齐安卓 IllegalArgumentException 捕获降级）

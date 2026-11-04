@@ -1,5 +1,5 @@
-import { CommonConstants } from "../constant/CommonConstants"
 import { RouteNames } from "../constant/RouteNames"
+import { clearLoginState } from "../network/Axios"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
@@ -54,13 +54,11 @@ struct Setting {
         // 低频关键动作成功：退出登录留 info（token 等凭据不落日志）
         logger.info('setting', '退出登录，清本地会话并跳转登录页')
         // 登出链路（对齐安卓 SettingViewModel.logout）：清本地 token + 清 role + 复位内存登录态，
-        // 再清栈跳登录页。userRole 属登录态脏数据，必须一并清理，
-        // 否则下次登录前的 AppStorage 仍残留上一位用户的角色
-        setValue(CommonConstants.USER_TOKEN, "")
-        AppStorage.setOrCreate("userRole", "")
-        AppStorage.setOrCreate("userLoginFlag", false)
+        // 再置会话态 isLoggedIn=false —— Index 监听后把 Login 作为根内容渲染并清空页面栈，
+        // Home 随之销毁（5s 订单轮询停止）。不再 push 登录页：旧写法会让 Home 存活，
+        // 侧滑能回首页、重登停在旧 tab（问题 1/2）
+        clearLoginState()
         pathStack.clear()
-        pathStack.pushPathByName(RouteNames.LOGIN, null)
       }
     }),
     autoCancel: true,

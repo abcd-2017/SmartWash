@@ -46,6 +46,7 @@ import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
+import BuildProfile from 'entry/BuildProfile'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeDetail'
@@ -116,7 +117,18 @@ struct ToolboxShortCodeDetail {
   }
 
   private getShortUrl(): string {
-    return this.param?.shortUrl ?? ""
+    const carried = this.param?.shortUrl ?? ""
+    if (carried.length > 0) {
+      return carried
+    }
+    // 深链 smartwash://t/{code} 入口只带 code（见 DeepLinkRegistry.resolveShortCodeDetail），
+    // 不带 shortUrl 会让本地二维码生成必然失败。这里用与后端 shortUrlOf 同构的
+    // `{public-base-url}/web/t/{code}` 兜底（public-base-url 未配置时后端同样回落到请求域名）。
+    const code = this.param?.code ?? ""
+    if (code.length === 0) {
+      return ""
+    }
+    return `${BuildProfile.BASE_URL}/web/t/${code}`
   }
 
   private isPublicCode(): boolean {

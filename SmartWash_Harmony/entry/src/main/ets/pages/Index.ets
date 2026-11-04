@@ -4,6 +4,7 @@ import { getUserSchoolId } from '../network/api/UserApi';
 import { logger } from '../utils/Logger';
 import { pathStack } from '../utils/PathStackUtil';
 import { getValue } from '../utils/StorageUtil';
+import { bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
 import { DesignColor } from '../constant/DesignSystem';
 import { AddSchoolBuilder } from './AddSchool';
 import { HomeBuilder } from './Home';
@@ -30,6 +31,16 @@ struct Index {
   // 对 P2 体验项而言回归风险大于收益，故本批次不改行为、仅固化时序契约说明。
   @StorageLink('userLoginFlag') @Watch("onUserTokenChange") userLoginFlag: boolean = false
 
+  // ========== 会话态（问题 1/2 修复）==========
+  // isLoggedIn 是登录根页的唯一切换信号：false 时把 Login 作为 Navigation 根内容渲染
+  // 并清空页面栈 —— Home 随之销毁，其 5s 订单轮询停止。
+  // 401 / 退出登录只改本会话态，不再 push/replace 登录页：旧写法会让 Home 一直存活
+  // （侧滑能回首页、重登停在旧 tab、轮询持续 401、反复替换掉正在输入的登录页）。
+  @StorageLink('isLoggedIn') @Watch("onLoginStateChanged") isLoggedIn: boolean = false
+
+  // 系统深浅色（问题17）：build 内读取以建立依赖，色模式变更时整页重建、DesignColor 令牌刷新
+  @StorageLink('darkMode') darkMode: boolean = false
+
   async aboutToAppear() {
     this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
     if (this.token !== "") {
@@ -46,8 +57,24 @@ struct Index {
       }
     }
     this.isLoading = false
+    // 冷启动会话态：只有真正分流到首页才算已登录（避免脏 isLoggedIn 误切登录页）
+    AppStorage.setOrCreate('isLoggedIn', this.showPageType === 2)
     // 分流结果：0=登录页 1=完善学校信息 2=首页
     logger.debug('index', `启动分流完成 showPageType=${this.showPageType}`)
+  }
+
+  /**
+   * 会话态切换（问题 1/2）：置 false 时把 Login 作为根内容渲染并清空页面栈。
+   * 必须清栈 —— 否则 Home 作为栈底内容继续存活，侧滑可回、轮询不停。
+   */
+  onLoginStateChanged() {
+    if (!this.isLoggedIn && this.showPageType !== 0) {
+      this.showPageType = 0
+      this.isLoading = false
+      if (pathStack.size() > 0) {
+        pathStack.clear()
+      }
+    }
   }
 
   async onUserTokenChange() {
@@ -62,8 +89,10 @@ struct Index {
             logger.info('index', '登录成功，学校信息缺失，进入完善信息页')
           } else {
             this.showPageType = 2
-            AppStorage.setOrCreate("refreshUserInfo", true)
-            AppStorage.setOrCreate("refreshOrderCount", true)
+            // 会话态置真：后续 401 才能被 Axios 识别为「已登录失效」并切回登录页
+            AppStorage.setOrCreate("isLoggedIn", true)
+            bumpUserInfoRefresh()
+            bumpOrderRefresh()
             // 低频关键动作成功：登录成功分流进入首页（存量复核：级别正确，保留）
             logger.info('index', '登录成功进入首页')
           }
@@ -100,7 +129,7 @@ struct Index {
         } else {
           HomeBuilder()
         }
-      }.backgroundColor(DesignColor.BACKGROUND)
+      }.backgroundColor(this.darkMode ? DesignColor.DARK_BACKGROUND : DesignColor.BACKGROUND)
       .hideTitleBar(true)
       .mode(NavigationMode.Stack)
     }.height('100%')

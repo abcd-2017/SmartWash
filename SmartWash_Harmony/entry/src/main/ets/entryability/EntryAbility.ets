@@ -1,7 +1,8 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want, errorManager } from '@kit.AbilityKit';
+import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want, errorManager } from '@kit.AbilityKit';
 import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
-import { initPreferences, setValue } from '../utils/StorageUtil';
+import { initPreferences } from '../utils/StorageUtil';
+import { applyDesignTheme } from '../constant/DesignSystem';
 
 // 崩溃摘要最大长度：onUnhandledException 的 errMsg 含完整调用栈，截断防超长刷屏
 const CRASH_SUMMARY_MAX_LEN: number = 300;
@@ -37,12 +38,37 @@ export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     // 全局兜底最先注册：让后续初始化阶段的未捕获异常也能留下 error 日志
     errorManager.on('error', new CrashLogObserver());
-    // 决策 D1（差异分析 2026-10-27）：固定亮色模式。
-    // DesignSystem.ets 仅有亮色令牌，此前跟随系统会出现"深色模式下界面仍为亮色配色"的不一致；
-    // 待暗色主题整套 Dark* 令牌补齐后再切回 COLOR_MODE_NOT_SET 跟随系统。
-    this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
+    // 深浅色跟随系统（问题17）：不再强制 COLOR_MODE_LIGHT。
+    // 系统色模式检测值写入 AppStorage('darkMode')，DesignColor 的每个令牌据此返回深/浅值。
+    this.syncDarkMode();
     // 冷启动深链：onCreate 先于 loadContent 执行，此处暂存 uri，待 Home 页挂载后消费
     this.savePendingDeepLink(want);
+  }
+
+  /**
+   * 系统深浅色切换（问题17）：更新 AppStorage('darkMode')。
+   * 未声明 configChanges，系统色模式变更会重建 Ability，冷启动会再读一次；
+   * 这里同步更新，覆盖不重建时的实时切换。
+   */
+  onConfigurationUpdate(newConfig: Configuration): void {
+    this.syncDarkMode();
+  }
+
+  /**
+   * 读取系统色模式（-1 未指定 / 0 亮 / 1 暗）：写入 AppStorage('darkMode') 供 Index 建立
+   * 依赖并重建，同时调用 applyDesignTheme 刷新 DesignColor 的全部可变令牌值。
+   */
+  private syncDarkMode(): void {
+    try {
+      // UIAbilityContext 经 config 属性取当前 Configuration（getConfiguration 不在该类型上）
+      const config: Configuration | undefined = this.context.config;
+      const dark: boolean = config !== undefined &&
+        config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
+      AppStorage.setOrCreate('darkMode', dark);
+      applyDesignTheme(dark);
+    } catch (err) {
+      logger.error('EntryAbility', '读取系统色模式失败', err instanceof Error ? err.message : '');
+    }
   }
 
   // 热启动深链：应用已在运行（如浏览器拉起），复用既有实例走 onNewWant
