@@ -37,6 +37,7 @@
     <string name="toolbox_expiry_custom_pick">选择过期日期</string>
     <string name="toolbox_date_confirm">确定</string>
     <string name="toolbox_date_cancel">取消</string>
+    <string name="toolbox_date_headline_placeholder">请选择日期</string>
     <string name="toolbox_submit_create">创建</string>
     <string name="toolbox_toast_create_success">创建成功</string>
     <string name="toolbox_error_invalid_target">目标链接须以 http:// 或 https:// 开头</string>
