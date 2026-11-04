@@ -50,7 +50,7 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import { DIV_METHOD_OPTIONS as methodOptions, divinationMethodText } from '@/constants/dict';
+import { divinationMethodText } from '@/constants/dict';
 import { getBlockedList } from '@/api/divination';
 import { formatTime } from '@/utils/format';
 import { useTableList } from '@/composables/useTableList';
