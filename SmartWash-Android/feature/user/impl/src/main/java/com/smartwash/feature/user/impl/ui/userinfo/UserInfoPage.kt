@@ -482,7 +482,9 @@ fun UserInfoPage(
                                     tint = AppColors.colorScheme.textTertiary
                                 )
                             },
-                            onClick = { Toast.makeText(context, context.getString(R.string.feature_in_development), Toast.LENGTH_SHORT).show() }
+                            // 待收货地址功能立项后接入（走查 P-501；全工程无地址页面/路由、后端无地址表，
+                            // 四端均未立项；对齐 OrderDetailPage D-OD12 约定：先以 Toast 兜底给用户明确反馈）
+                            onClick = { Toast.makeText(context, context.getString(R.string.shipping_address_unavailable), Toast.LENGTH_SHORT).show() }
                         )
                     }
 
