@@ -60,7 +60,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -254,12 +253,9 @@ fun AppCard(
                 if (onClick != null) Modifier.pressable(onClick = onClick, scaleFactor = 0.97f)
                 else Modifier
             )
-            // 阴影与 GroupCard / 页面侧卡片同一条路径：§2.4 映射表 → AppElevation.level1
-            .shadow(
-                elevation = AppElevation.level1,
-                shape = shape,
-                clip = false,
-            )
+            // 阴影与 GroupCard / 页面侧卡片同一条路径：§2.4 卡片档自绘柔阴影
+            // （elevation 平台阴影实测是硬边深线，见 SoftShadow.kt 说明，禁止回退）
+            .softCardShadow(cornerRadius = AppDimens.radiusLg)
             .border(1.dp, AppColors.colorScheme.outline, shape)
             .background(MaterialTheme.colorScheme.surface, shape),
     ) {
