@@ -124,7 +124,7 @@ fun LaundryPage(
     LaunchedEffect(reservationState) {
         when (reservationState) {
             is RequestState.Success -> {
-                navController.navigate("${PaymentRoute.Payment.text}/${orderId}") {
+                navController.navigate(PaymentRoute.Payment(orderId)) {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
                     launchSingleTop = true
                     restoreState = true

@@ -1,9 +1,25 @@
 package com.smartwash.common.utils.deeplink
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
+/** 测试用类型安全路由（模拟各域贡献者返回的路由对象） */
+@Serializable
+@SerialName("Login")
+data object TestLogin : SmartWashRoute
+
+@Serializable
+@SerialName("Order")
+data class TestOrder(val tab: Int) : SmartWashRoute
+
+@Serializable
+@SerialName("ToolboxShortCodeDetail")
+data class TestShortCodeDetail(val code: String) : SmartWashRoute
 
 /**
  * DeepLinkParser 全分支 JVM 单测（锚点）：
@@ -11,30 +27,30 @@ import org.junit.Test
  * 参数传递（host 归一化、pathSegments 保留大小写、query 解码）、非 smartwash scheme、
  * 大小写、query 编码解码、全程不抛异常。
  * 注：host → 路由的映射知识（含 t/{code} 校验）在各域贡献者，不在 parser——
- * 这里用 lambda 模拟 routeLookup 行为。
+ * 这里用 lambda 模拟 routeLookup 行为（返回类型安全路由对象）。
  */
 class DeepLinkParserTest {
 
     /** 记录 routeLookup 收到的参数（断言归一化与下传语义用） */
-    private class LookupSpy(var result: String? = null) {
+    private class LookupSpy(var result: SmartWashRoute? = null) {
         var host: String? = null
         var pathSegments: List<String>? = null
         var query: Map<String, String>? = null
 
-        fun lookup(h: String, p: List<String>, q: Map<String, String>): String? {
+        fun lookup(h: String, p: List<String>, q: Map<String, String>): SmartWashRoute? {
             host = h; pathSegments = p; query = q
             return result
         }
     }
 
-    private fun spyLookup(result: String?) = LookupSpy(result)
+    private fun spyLookup(result: SmartWashRoute?) = LookupSpy(result)
 
     // ---------- 1. http/https → WebViewUrl（原样） ----------
 
     @Test
     fun `http 直链原样进 WebView 且不解码不改写`() {
         val uri = "http://8.148.70.81:9000/web/t/ab12?x=%E6%B4%97"
-        val action = DeepLinkParser.parse(uri) { _, _, _ -> "whatever" }
+        val action = DeepLinkParser.parse(uri) { _, _, _ -> null }
         assertEquals(DeepLinkAction.WebViewUrl(uri, null), action)
     }
 
@@ -57,7 +73,7 @@ class DeepLinkParserTest {
     fun `web 分支 url 与 title 均解码`() {
         val action = DeepLinkParser.parse(
             "smartwash://web?url=https%3A%2F%2Fa.b.com%2Fc%3Fd%3D1&title=%E6%B4%97%E8%A1%A3%E6%94%BB%E7%95%A5"
-        ) { _, _, _ -> "never" }
+        ) { _, _, _ -> null }
         assertEquals(
             DeepLinkAction.WebViewUrl("https://a.b.com/c?d=1", "洗衣攻略"),
             action
@@ -74,13 +90,13 @@ class DeepLinkParserTest {
 
     @Test
     fun `web 分支缺 url 为 Unknown`() {
-        val action = DeepLinkParser.parse("smartwash://web?title=abc") { _, _, _ -> "Login" }
+        val action = DeepLinkParser.parse("smartwash://web?title=abc") { _, _, _ -> TestLogin }
         assertEquals(DeepLinkAction.Unknown("smartwash://web?title=abc"), action)
     }
 
     @Test
     fun `web 分支无 query 为 Unknown`() {
-        val action = DeepLinkParser.parse("smartwash://web") { _, _, _ -> "Login" }
+        val action = DeepLinkParser.parse("smartwash://web") { _, _, _ -> TestLogin }
         assertEquals(DeepLinkAction.Unknown("smartwash://web"), action)
     }
 
@@ -89,7 +105,7 @@ class DeepLinkParserTest {
         // javascript: 伪协议必须拒之门外
         val action = DeepLinkParser.parse(
             "smartwash://web?url=javascript%3Aalert(1)"
-        ) { _, _, _ -> "Login" }
+        ) { _, _, _ -> TestLogin }
         assertEquals(DeepLinkAction.Unknown("smartwash://web?url=javascript%3Aalert(1)"), action)
     }
 
@@ -97,7 +113,7 @@ class DeepLinkParserTest {
     fun `web 分支 url 畸形百分号编码时丢弃该参数走 Unknown`() {
         val action = DeepLinkParser.parse(
             "smartwash://web?url=http%3A%2F%2Fa.com%2F%ZZ"
-        ) { _, _, _ -> "Login" }
+        ) { _, _, _ -> TestLogin }
         assertEquals(DeepLinkAction.Unknown("smartwash://web?url=http%3A%2F%2Fa.com%2F%ZZ"), action)
     }
 
@@ -114,8 +130,8 @@ class DeepLinkParserTest {
 
     @Test
     fun `routeLookup 命中返回 NativeRoute`() {
-        val action = DeepLinkParser.parse("smartwash://login") { _, _, _ -> "Login" }
-        assertEquals(DeepLinkAction.NativeRoute("Login"), action)
+        val action = DeepLinkParser.parse("smartwash://login") { _, _, _ -> TestLogin }
+        assertEquals(DeepLinkAction.NativeRoute(TestLogin), action)
     }
 
     @Test
@@ -127,9 +143,9 @@ class DeepLinkParserTest {
     @Test
     fun `routeLookup 收到归一化小写 host 与原始大小写 pathSegments`() {
         // toolbox 的 t/{code}：host 归一化小写，code 段保留原始大小写（短码大小写敏感）
-        val spy = spyLookup("ToolboxShortCodeDetail?code=Ab12")
+        val spy = spyLookup(TestShortCodeDetail("Ab12"))
         val action = DeepLinkParser.parse("smartwash://T/Ab12", spy::lookup)
-        assertEquals(DeepLinkAction.NativeRoute("ToolboxShortCodeDetail?code=Ab12"), action)
+        assertEquals(DeepLinkAction.NativeRoute(TestShortCodeDetail("Ab12")), action)
         assertEquals("t", spy.host)
         assertEquals(listOf("Ab12"), spy.pathSegments)
         assertEquals(emptyMap<String, String>(), spy.query)
@@ -162,9 +178,9 @@ class DeepLinkParserTest {
 
     @Test
     fun `routeLookup 收到的 query 已百分号解码`() {
-        val spy = spyLookup("Order/2")
+        val spy = spyLookup(TestOrder(2))
         val action = DeepLinkParser.parse("smartwash://order?tab=2&label=%E8%AE%A2%E5%8D%95", spy::lookup)
-        assertEquals(DeepLinkAction.NativeRoute("Order/2"), action)
+        assertEquals(DeepLinkAction.NativeRoute(TestOrder(2)), action)
         assertEquals(mapOf("tab" to "2", "label" to "订单"), spy.query)
     }
 
@@ -195,7 +211,7 @@ class DeepLinkParserTest {
     fun `其他 scheme 为 Unknown`() {
         assertEquals(
             DeepLinkAction.Unknown("alipays://platformapi/startapp"),
-            DeepLinkParser.parse("alipays://platformapi/startapp") { _, _, _ -> "Login" }
+            DeepLinkParser.parse("alipays://platformapi/startapp") { _, _, _ -> TestLogin }
         )
     }
 
@@ -229,16 +245,16 @@ class DeepLinkParserTest {
     @Test
     fun `scheme 大小写不敏感`() {
         assertEquals(
-            DeepLinkAction.NativeRoute("Login"),
-            DeepLinkParser.parse("SMARTWASH://login") { _, _, _ -> "Login" }
+            DeepLinkAction.NativeRoute(TestLogin),
+            DeepLinkParser.parse("SMARTWASH://login") { _, _, _ -> TestLogin }
         )
     }
 
     @Test
     fun `host 大小写不敏感且下传前归一化`() {
-        val spy = spyLookup("Login")
+        val spy = spyLookup(TestLogin)
         val action = DeepLinkParser.parse("smartwash://LOGIN", spy::lookup)
-        assertEquals(DeepLinkAction.NativeRoute("Login"), action)
+        assertEquals(DeepLinkAction.NativeRoute(TestLogin), action)
         assertEquals("login", spy.host)
     }
 

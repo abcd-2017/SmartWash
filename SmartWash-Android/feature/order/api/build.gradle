@@ -9,6 +9,7 @@
 //    OrderStatus/ShowOrderStatus 状态枚举是订单域对外契约（index/detail/pickup 页
 //    与 T6.3 后的 user-impl 计数查询都消费），单一事实来源放本模块避免双份漂移。
 apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.order.api'
@@ -21,4 +22,6 @@ dependencies {
     implementation libs.androidx.paging.common
     // @StringRes（OrderStatus/ShowOrderStatus 的状态文案资源引用）
     implementation libs.androidx.annotation
+    // SmartWashRoute 类型安全路由契约（OrderRoute 实现该接口，供公共层深链持有）
+    implementation project(':common:utils')
 }

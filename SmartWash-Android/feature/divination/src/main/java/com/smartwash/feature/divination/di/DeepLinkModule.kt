@@ -25,8 +25,8 @@ object DivinationDeepLinkModule {
     @IntoSet
     fun provideDivinationDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "divination" to DeepLinkRouteFactory { _, _ -> DivRoute.Home.text },
-            "divination-history" to DeepLinkRouteFactory { _, _ -> DivRoute.History.text },
+            "divination" to DeepLinkRouteFactory { _, _ -> DivRoute.Home },
+            "divination-history" to DeepLinkRouteFactory { _, _ -> DivRoute.History },
         )
     }
 }

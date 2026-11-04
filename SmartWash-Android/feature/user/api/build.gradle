@@ -5,6 +5,7 @@
 // 注意：与 app 内 Retrofit 接口 com.smartwash.network.api.UserApi 同名不同包，
 // T5.2 迁移 UserRepository 时两者会共存于 user-impl，import 需显式区分（或届时重命名 Retrofit 侧）。
 apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.user.api'
@@ -13,4 +14,6 @@ android {
 dependencies {
     // SharedFlow / Flow 契约（kotlinx.coroutines.flow 位于 coroutines-core，无需 android 变体）
     implementation libs.kotlinx.coroutines.core
+    // SmartWashRoute 类型安全路由契约（UserRoute 实现该接口，供公共层深链持有）
+    implementation project(':common:utils')
 }

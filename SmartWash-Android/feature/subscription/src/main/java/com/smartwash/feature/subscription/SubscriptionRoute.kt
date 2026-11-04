@@ -1,25 +1,44 @@
 package com.smartwash.feature.subscription
 
+import com.smartwash.common.utils.navigation.SmartWashRoute
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 /**
- * 订阅域路由常量（模块内单一事实来源，模式同 ToolboxRoute/DivRoute）。
+ * 订阅域类型安全路由（模块内单一事实来源）。
  *
- * 模块内页面跳转一律引用本常量；当前无任何宿主入口指向本路由，页面仅作为独立
- * 路由经 [com.smartwash.feature.subscription.ui.subscriptionGraph] 注册，
- * 宿主 NavHost 一行 subscriptionGraph 完成聚合（入口接入由后续任务执行）。
+ * 迁移前为 `sealed class SubscriptionRoute(val text: String)` 字符串常量；现改为
+ * sealed interface + @Serializable 路由对象，@SerialName 固定路由串与迁移前
+ * 完全一致（"SubscriptionList"/"SubscriptionEdit"/...）；模块内页面跳转一律引用
+ * 本类。
+ *
+ * 参数形态：id 带默认值 -1L → query（缺省 -1 = 新建；属性名即 SavedStateHandle key，
+ * 与 ui/edit/SubscriptionEditViewModel、ui/detail/SubscriptionDetailViewModel 的 ARG_ID 对齐）。
+ *
+ * 当前无任何宿主入口指向本路由，页面仅作为独立路由经
+ * [com.smartwash.feature.subscription.ui.subscriptionGraph] 注册。
  */
-sealed class SubscriptionRoute(val text: String) {
+sealed interface SubscriptionRoute : SmartWashRoute {
 
     /** 订阅列表 */
-    data object List : SubscriptionRoute("SubscriptionList")
+    @Serializable
+    @SerialName("SubscriptionList")
+    data object List : SubscriptionRoute
 
-    /** 添加/编辑表单（query 携带 id，缺省 -1 = 新建，见 [ui.edit.SubscriptionEditViewModel]） */
-    data object Edit : SubscriptionRoute("SubscriptionEdit")
+    /** 添加/编辑表单（id 缺省 -1 = 新建） */
+    @Serializable
+    @SerialName("SubscriptionEdit")
+    data class Edit(val id: Long = -1L) : SubscriptionRoute
 
-    /** 订阅详情（query 携带 id，详情数据实时拉取保证状态/派生字段新鲜） */
-    data object Detail : SubscriptionRoute("SubscriptionDetail")
+    /** 订阅详情（id；详情数据实时拉取保证状态/派生字段新鲜） */
+    @Serializable
+    @SerialName("SubscriptionDetail")
+    data class Detail(val id: Long = -1L) : SubscriptionRoute
 
     /** 提醒列表（未读/全部筛选，点击标记已读） */
-    data object Reminders : SubscriptionRoute("SubscriptionReminders")
+    @Serializable
+    @SerialName("SubscriptionReminders")
+    data object Reminders : SubscriptionRoute
 
     companion object {
         /**

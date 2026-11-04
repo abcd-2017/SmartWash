@@ -64,8 +64,8 @@ private const val TAG = "WebViewPage"
  * - chrome 模式（[GameChrome]）供游戏 H5 经桥/URL 参数收起原生标题栏与系统状态栏，
  *   初值取路由参数 `chrome`（避免先闪一帧原生栏），运行期由桥调用切换。
  *
- * 路由：PageConstant.WebView（= ShellRoute.WEB_VIEW），注册形态
- * "WebView?url={url}&title={title}&chrome={chrome}"，url/title 由调用方 Uri.encode 编码、
+ * 路由：[com.smartwash.common.ui.navigation.ShellRoute.WebView]，注册形态
+ * "WebView?url={url}&title={title}&chrome={chrome}"，url/title 由 NavType 自动 URL 编码、
  * Navigation 解析后自动解码回原文。
  */
 @Composable

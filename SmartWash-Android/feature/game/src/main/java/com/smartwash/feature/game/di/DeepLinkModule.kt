@@ -25,7 +25,7 @@ object GameDeepLinkModule {
     @IntoSet
     fun provideGameDeepLinkContributor(): DeepLinkContributor = DeepLinkContributor {
         mapOf(
-            "game-center" to DeepLinkRouteFactory { _, _ -> GameRoute.Center.text },
+            "game-center" to DeepLinkRouteFactory { _, _ -> GameRoute.Center },
         )
     }
 }

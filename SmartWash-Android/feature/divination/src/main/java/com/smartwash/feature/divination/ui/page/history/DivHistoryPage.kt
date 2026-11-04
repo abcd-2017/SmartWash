@@ -124,7 +124,7 @@ fun DivHistoryPage(
                         HistoryCard(
                             record = record,
                             onClick = {
-                                navController.navigate("${DivRoute.Chart.text}/${record.id}?animate=false")
+                                navController.navigate(DivRoute.Chart(record.id, animate = false))
                             },
                             // 筛选切换的位移补间：reduced motion 取消（规范 §8）
                             // （animateItemPlacement 已废弃且需 OptIn 实验 API，改用其官方替代 animateItem）

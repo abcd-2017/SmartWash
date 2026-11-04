@@ -225,7 +225,7 @@ fun UserInfoPage(
                                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                                 .background(AppColors.colorScheme.iconContainerTeal)
                                 .pressable(
-                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting.text) },
+                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting) },
                                     debounce = false,
                                 ),
                             contentAlignment = Alignment.Center
@@ -369,7 +369,7 @@ fun UserInfoPage(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressable(
-                                        onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge.text) },
+                                        onClick = rememberDebouncedClick { navController.navigate(PaymentRoute.Recharge) },
                                         debounce = false,
                                     )
                             ) {
@@ -392,7 +392,7 @@ fun UserInfoPage(
                                     modifier = Modifier
                                         .weight(1f)
                                         .pressable(
-                                            onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon.text) },
+                                            onClick = rememberDebouncedClick { navController.navigate(CouponRoute.Coupon) },
                                             debounce = false,
                                         ),
                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -514,7 +514,7 @@ fun UserInfoPage(
                                     tint = AppColors.colorScheme.textTertiary
                                 )
                             },
-                            onClick = { navController.navigate("${OrderRoute.Order.text}/0") }
+                            onClick = { navController.navigate(OrderRoute.Order(0)) }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(
@@ -530,7 +530,7 @@ fun UserInfoPage(
                                     tint = AppColors.colorScheme.textTertiary
                                 )
                             },
-                            onClick = { navController.navigate(UserRoute.Setting.text) }
+                            onClick = { navController.navigate(UserRoute.Setting) }
                         )
                     }
 

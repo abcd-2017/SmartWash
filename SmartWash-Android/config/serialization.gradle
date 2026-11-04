@@ -1,0 +1,11 @@
+// Kotlin Serialization 模块配置：kotlin serialization 编译器插件 + serialization-core 运行时。
+// 用法：apply from: "$rootDir/config/serialization.gradle"
+// 注意：需在 android-library.gradle 之后应用（插件 id 与 libs.versions.toml 的 kotlin-serialization 对齐）。
+// 用途：Navigation 2.8 类型安全路由要求路由类标注 @Serializable 并由编译器插件生成 serializer；
+// navigation-common 2.8.9 仅以 runtime scope 传递 serialization-core，编译期需显式声明。
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
+
+def libs = rootProject.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension).named('libs')
+dependencies {
+    implementation libs.findLibrary('kotlinx-serialization-core').get()
+}

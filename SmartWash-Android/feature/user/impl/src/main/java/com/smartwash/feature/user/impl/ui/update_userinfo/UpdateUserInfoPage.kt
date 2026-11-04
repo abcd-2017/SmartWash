@@ -127,7 +127,7 @@ fun UpdateUserInfoPage(
                 Toast.makeText(context, context.getString(R.string.modify_success), Toast.LENGTH_SHORT).show()
                 userInfoViewModel.setStateIdle()
                 // 提交成功回主页并清栈——不能停留在本页：锁定态下输入与按钮均禁用，停留即被困
-                navController.navigate(ShellRoute.HOME) {
+                navController.navigate(ShellRoute.Home) {
                     popUpTo(0) { inclusive = true }
                 }
             }

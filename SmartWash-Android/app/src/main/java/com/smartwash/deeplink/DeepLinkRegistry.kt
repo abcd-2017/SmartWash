@@ -3,6 +3,7 @@ package com.smartwash.deeplink
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.deeplink.DeepLinkContributor
 import com.smartwash.common.utils.deeplink.DeepLinkRouteFactory
+import com.smartwash.common.utils.navigation.SmartWashRoute
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,14 +38,14 @@ class DeepLinkRegistry @Inject constructor(
     val hosts: Set<String> get() = routes.keys
 
     /**
-     * host → 路由串查找（供 DeepLinkParser.parse 的 routeLookup 消费）。
+     * host → 路由对象查找（供 DeepLinkParser.parse 的 routeLookup 消费）。
      *
      * @param host 已归一化小写的 scheme host
      * @param pathSegments host 之后的剩余 path 段（保留原始大小写）
      * @param query query 参数（value 已百分号解码）
-     * @return 可直接 navigate 的路由字符串；未注册/工厂返回 null 均为 null
+     * @return 可直接 navigate 的路由对象；未注册/工厂返回 null 均为 null
      */
-    fun lookup(host: String, pathSegments: List<String>, query: Map<String, String>): String? {
+    fun lookup(host: String, pathSegments: List<String>, query: Map<String, String>): SmartWashRoute? {
         return routes[host]?.route(pathSegments, query)
     }
 

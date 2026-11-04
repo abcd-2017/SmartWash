@@ -9,9 +9,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.smartwash.common.ui.navigation.ShellRoute
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_SCREEN_MS
@@ -25,83 +24,46 @@ import com.smartwash.ui.page.detail.OrderDetailPage
 import com.smartwash.ui.page.home.HomePage
 import com.smartwash.ui.page.pickup.PickupDeliveryPage
 import com.smartwash.ui.page.pickup.PickupPage
-import com.smartwash.ui.page.webview.GameChrome
 import com.smartwash.ui.page.webview.WebViewPage
 
 /**
  * 壳层留守页面路由聚合（T8.1）：主页壳（HomePage）+ 订单详情/寄件取件/取件/AI 工具台/
  * 内置浏览器五页面（T6.1/T7.1 调研结论：页面留 app 壳）的 composable 注册，自 MainActivity
- * NavHost 迁入。路由取值：主页壳/内置浏览器走 common:ui 的 [ShellRoute] 壳层契约；
+ * NavHost 迁入。类型安全路由取值：主页壳/内置浏览器走 common:ui 的 [ShellRoute] 壳层契约；
  * 订单详情/寄件取件语义归订单域，走 order-api 的 [OrderRoute]；取件页/AI 工具台为
- * 壳层自有常量（[PageConstant.Pickup] / [PageConstant.AiWork]）。
+ * 壳层自有路由（[PageConstant.Pickup] / [PageConstant.AiWork]）。
  */
 fun NavGraphBuilder.shellGraph(navController: NavHostController) {
-    composable(ShellRoute.HOME) {
+    composable<ShellRoute.Home> {
         HomePage(navController)
     }
-    composable(
-        route = "${OrderRoute.OrderDetail.text}/{orderId}",
-        arguments = listOf(
-            navArgument("orderId") {
-                type = NavType.LongType
-                defaultValue = -1
-            }
-        )
-    ) { entity ->
-        OrderDetailPage(
-            navController,
-            entity.arguments?.getLong("orderId") ?: -1
-        )
+    composable<OrderRoute.OrderDetail> { entry ->
+        OrderDetailPage(navController, entry.toRoute<OrderRoute.OrderDetail>().orderId)
     }
-    composable(
-        route = "${OrderRoute.PickupDelivery.text}/{orderId}/{pickupType}",
-        arguments = listOf(
-            navArgument("orderId") {
-                type = NavType.LongType
-                defaultValue = -1L
-            }, navArgument("pickupType") {
-                type = NavType.IntType
-                defaultValue = 0
-            }
-        )
-    ) { entity ->
+    composable<OrderRoute.PickupDelivery> { entry ->
+        val route = entry.toRoute<OrderRoute.PickupDelivery>()
         PickupDeliveryPage(
-            entity.arguments?.getInt("pickupType") ?: 0,
+            route.pickupType,
             navController,
-            entity.arguments?.getLong("orderId") ?: -1L
+            route.orderId,
         )
     }
-    composable(PageConstant.Pickup.text) {
+    composable<PageConstant.Pickup> {
         PickupPage(navController)
     }
-    composable(PageConstant.AiWork.text) {
+    composable<PageConstant.AiWork> {
         AiWorkPage(onBack = { navController.popBackStack() })
     }
     // 内置浏览器页：url 必填（仅 http/https，非法值页面内展示错误态）、title 可选；
-    // chrome 可选（GameChrome：full/immersive/none，供游戏 H5 收起原生标题栏与状态栏）；
-    // 字符串参数一律经 Uri.encode 编码（完整 URL 含 / ? & 等保留字），模式同 Toolbox 详情页
-    composable(
-        route = "${PageConstant.WebView.text}?url={url}&title={title}&chrome={chrome}",
-        arguments = listOf(
-            navArgument("url") {
-                type = NavType.StringType
-                defaultValue = ""
-            },
-            navArgument("title") {
-                type = NavType.StringType
-                defaultValue = ""
-            },
-            navArgument("chrome") {
-                type = NavType.StringType
-                defaultValue = GameChrome.FULL
-            }
-        )
-    ) { entity ->
+    // chrome 可选（full/immersive/none，供游戏 H5 收起原生标题栏与状态栏，缺省 full）；
+    // 字符串参数由 NavType 自动 URL 编码（完整 URL 含 / ? & 等保留字）
+    composable<ShellRoute.WebView> { entry ->
+        val route = entry.toRoute<ShellRoute.WebView>()
         WebViewPage(
             navController,
-            url = entity.arguments?.getString("url").orEmpty(),
-            title = entity.arguments?.getString("title").orEmpty(),
-            chrome = entity.arguments?.getString("chrome").orEmpty(),
+            url = route.url,
+            title = route.title,
+            chrome = route.chrome,
         )
     }
 }

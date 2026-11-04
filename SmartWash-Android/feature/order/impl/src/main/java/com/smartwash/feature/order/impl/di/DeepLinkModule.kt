@@ -30,7 +30,7 @@ object OrderDeepLinkModule {
                 // tab 非法/缺省回 0；越界防御夹取（与 OrderPage 入参 coerce 口径一致）
                 val tab = (query["tab"]?.trim()?.toIntOrNull() ?: 0)
                     .coerceIn(0, ShowOrderStatus.entries.size - 1)
-                "${OrderRoute.Order.text}/$tab"
+                OrderRoute.Order(tab)
             },
         )
     }
