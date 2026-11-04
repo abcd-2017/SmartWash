@@ -89,9 +89,12 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         GameConfig existing = getByGameKey(gameKey);
         try {
             if (existing != null) {
-                // 覆盖更新：保留 id/created_at，刷新包信息与元数据
+                // 覆盖更新：保留 id/created_at，刷新包信息与元数据；
+                // enabled/sort 沿用原值——热修包不该静默下架，排序由编辑接口调整
                 config.setId(existing.getId())
-                        .setCreatedAt(existing.getCreatedAt());
+                        .setCreatedAt(existing.getCreatedAt())
+                        .setEnabled(existing.getEnabled())
+                        .setSort(existing.getSort());
                 this.updateById(config);
             } else {
                 this.save(config);
@@ -170,7 +173,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 .setObjectKey(OBJECT_ROOT + gameKey + "/")
                 .setFileSize(fileSize)
                 .setBadge(StrUtil.isBlank(from.getBadge()) ? null : from.getBadge())
-                // 上传后默认不下发，是否上架由开关接口显式选择
+                // 新增游戏默认不下发，是否上架由开关接口显式选择（覆盖上传保留原值，见 upload）
                 .setEnabled(0)
                 .setSort(from.getSort() == null ? 100 : from.getSort())
                 .setRemark(StrUtil.isBlank(from.getRemark()) ? null : from.getRemark());
