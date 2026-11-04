@@ -195,8 +195,26 @@ export const WORKBENCH_ENTRY_ICON_OPTIONS = [
   { value: 'history', label: '卦历' },
   { value: 'chat', label: 'AI 助手' },
   { value: 'link', label: '短链' },
+  { value: 'science', label: '实验' },
+  { value: 'gamepad', label: '游戏' },
   { value: 'default', label: '默认' },
 ];
+
+/**
+ * 入口卡片类型选项（表单下拉用）。
+ * 端上按 key 选组件渲染（tile 两列小卡 / wide 通栏卡 / row 列表行），未知 key 兜底 tile；
+ * 连续 row 在端上归并进同一张白卡、连续 tile 归并为两列网格，type + sort 组合即页面构图。
+ */
+export const WORKBENCH_ENTRY_TYPE_OPTIONS = [
+  { value: 'tile', label: '两列小卡（默认）' },
+  { value: 'wide', label: '通栏横卡' },
+  { value: 'row', label: '列表行' },
+  { value: 'notice', label: '公告条（可关闭，target 选填）' },
+];
+
+/** 卡片类型 key → 文案（未知值回显原值） */
+export const workbenchEntryTypeText = (type) =>
+  WORKBENCH_ENTRY_TYPE_OPTIONS.find((o) => o.value === type)?.label || type || '-';
 
 /**
  * 入口色组选项（表单下拉用，hex 供选项/表格色块渲染）。

@@ -145,6 +145,63 @@ class WorkbenchEntryServiceImplTest {
         assertEquals(1, saved.getSort());
     }
 
+    // ==================== 新增：类型与必填校验（2026-11-04 类型化组件批） ====================
+
+    @Test
+    @DisplayName("新增：notice 公告条允许无 target（纯文案公告），target/imageUrl 空串落 NULL")
+    void add_noticeWithoutTarget_allowed() {
+        when(entryMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(entryMapper.insert(any(WorkbenchEntry.class))).thenReturn(1);
+
+        AddWorkbenchEntryFrom from = addFrom("notice-board");
+        from.setType("notice");
+        from.setTarget("");
+        from.setSectionTitle("运营公告");
+        from.setImageUrl("");
+
+        service.addEntry(from);
+
+        ArgumentCaptor<WorkbenchEntry> captor = ArgumentCaptor.forClass(WorkbenchEntry.class);
+        verify(entryMapper).insert(captor.capture());
+        WorkbenchEntry saved = captor.getValue();
+        assertEquals("notice", saved.getType());
+        assertNull(saved.getTarget(), "notice 空 target 落 NULL");
+        assertEquals("运营公告", saved.getSectionTitle());
+        assertNull(saved.getImageUrl(), "imageUrl 空串落 NULL");
+    }
+
+    @Test
+    @DisplayName("新增：非 notice 类型缺 target 拒绝，不触库")
+    void add_tileWithoutTarget_rejected() {
+        when(entryMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+
+        AddWorkbenchEntryFrom from = addFrom("no-target");
+        from.setTarget("");
+
+        CustomExceptions ex = assertThrows(CustomExceptions.class, () -> service.addEntry(from));
+
+        assertEquals("该卡片类型必须配置跳转 target", ex.getMessage());
+        verify(entryMapper, never()).insert(any(WorkbenchEntry.class));
+    }
+
+    @Test
+    @DisplayName("新增：type 缺省 tile，分组标题正常映射落库")
+    void add_typeDefaultTile_mapsSectionTitle() {
+        when(entryMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(entryMapper.insert(any(WorkbenchEntry.class))).thenReturn(1);
+
+        AddWorkbenchEntryFrom from = addFrom("default-type");
+        from.setType("wide");
+        from.setSectionTitle("效率工具");
+
+        service.addEntry(from);
+
+        ArgumentCaptor<WorkbenchEntry> captor = ArgumentCaptor.forClass(WorkbenchEntry.class);
+        verify(entryMapper).insert(captor.capture());
+        assertEquals("wide", captor.getValue().getType());
+        assertEquals("效率工具", captor.getValue().getSectionTitle());
+    }
+
     // ==================== 用户端列表：enabled 过滤 + sort 排序 ====================
 
     @Test
@@ -223,6 +280,33 @@ class WorkbenchEntryServiceImplTest {
         assertNull(updated.getBadge(), "badge 空串必须清空为 NULL");
         assertEquals("运营位", updated.getRemark(), "未传字段不得被修改");
         assertEquals("toolbox-short-code", updated.getEntryKey(), "entry_key 是端上对齐标识，不可修改");
+    }
+
+    @Test
+    @DisplayName("更新：sectionTitle 空串清空为 NULL；切到非 notice 且无 target 时拒绝")
+    void update_typeSwitchRequiresTargetAndSectionTitleClears() {
+        WorkbenchEntry existing = record(1L, "notice-item", 1, 1)
+                .setType("notice")
+                .setSectionTitle("旧分组");
+        existing.setTarget(null);
+        when(entryMapper.selectById(1L)).thenReturn(existing);
+        when(entryMapper.updateById(any(WorkbenchEntry.class))).thenReturn(1);
+
+        // 空串清空分组：notice 类型无 target，守卫放行
+        UpdateWorkbenchEntryFrom clear = new UpdateWorkbenchEntryFrom();
+        clear.setId(1L);
+        clear.setSectionTitle("");
+        service.updateEntry(clear);
+        ArgumentCaptor<WorkbenchEntry> cleared = ArgumentCaptor.forClass(WorkbenchEntry.class);
+        verify(entryMapper).updateById(cleared.capture());
+        assertNull(cleared.getValue().getSectionTitle(), "sectionTitle 空串必须清空为 NULL");
+
+        // notice 改 tile 且存量无 target：拒绝（避免端上点击无落点）
+        UpdateWorkbenchEntryFrom switchType = new UpdateWorkbenchEntryFrom();
+        switchType.setId(1L);
+        switchType.setType("tile");
+        CustomExceptions ex = assertThrows(CustomExceptions.class, () -> service.updateEntry(switchType));
+        assertEquals("该卡片类型必须配置跳转 target", ex.getMessage());
     }
 
     @Test

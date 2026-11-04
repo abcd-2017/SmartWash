@@ -195,6 +195,12 @@
     <string name="workbench_entries_error">工具列表加载失败，请检查网络后重试</string>
     <string name="workbench_entries_empty">工具还在准备中，稍后再来看看</string>
     <string name="workbench_retry">重试</string>
+    <!-- 搜索 / 最近使用 / 公告条（2026-11-04 工作台类型化组件批） -->
+    <string name="workbench_search_hint">搜索工具</string>
+    <string name="workbench_search_clear">清除搜索</string>
+    <string name="workbench_search_empty">没有找到相关工具，换个关键词试试</string>
+    <string name="workbench_recent_title">最近使用</string>
+    <string name="workbench_notice_dismiss">关闭公告</string>
 
     <!-- ==================== 内置浏览器页（壳层留守，深链 web 分支承载） ==================== -->
     <string name="webview_default_title">详情页</string>

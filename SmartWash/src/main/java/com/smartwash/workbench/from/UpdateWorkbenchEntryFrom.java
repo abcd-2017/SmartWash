@@ -27,13 +27,26 @@ public class UpdateWorkbenchEntryFrom {
     @Size(max = 128, message = "描述过长（上限128字符）")
     private String description;
 
-    /** 图标 key（端上白名单枚举映射；gamepad 对应游戏中心种子入口） */
-    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|gamepad|default)$", message = "图标 key 不在白名单内")
+    /** 图标 key（端上白名单枚举映射；gamepad 对应游戏中心、science 对应解压实验舱种子入口） */
+    @Pattern(regexp = "^(calendar|search|book|calculate|history|chat|link|science|gamepad|default)$", message = "图标 key 不在白名单内")
     private String icon;
 
     /** 图标色组 key */
     @Pattern(regexp = "^(green|blue|orange|pink|teal|purple)$", message = "色组 key 须为 green/blue/orange/pink/teal/purple")
     private String color;
+
+    /** 卡片类型 key：tile/wide/row/notice，不传即不修改 */
+    @Pattern(regexp = "^(tile|wide|row|notice)$", message = "卡片类型 key 须为 tile/wide/row/notice")
+    private String type;
+
+    /** 分组标题，空字符串=清空 */
+    @Size(max = 32, message = "分组标题过长（上限32字符）")
+    private String sectionTitle;
+
+    /** 配图直链，空字符串=清空 */
+    @Size(max = 512, message = "配图地址过长（上限512字符）")
+    @Pattern(regexp = "^$|^https?://\\S+$", message = "配图地址须以 http(s):// 开头且不含空白")
+    private String imageUrl;
 
     /** 跳转 URI：smartwash://... 或 https://... */
     @Size(max = 512, message = "跳转 URI 过长（上限512字符）")

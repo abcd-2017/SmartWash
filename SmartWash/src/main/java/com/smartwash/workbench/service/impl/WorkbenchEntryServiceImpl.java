@@ -11,6 +11,7 @@ import com.smartwash.workbench.from.SearchWorkbenchEntryFrom;
 import com.smartwash.workbench.from.UpdateWorkbenchEntryFrom;
 import com.smartwash.workbench.mapper.WorkbenchEntryMapper;
 import com.smartwash.workbench.service.WorkbenchEntryService;
+import com.smartwash.workbench.storage.WorkbenchImageStorage;
 import com.smartwash.workbench.vo.AdminWorkbenchEntryVo;
 import com.smartwash.workbench.vo.WorkbenchEntryVo;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +24,11 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * 工作台入口配置服务实现。
@@ -46,6 +50,16 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
     @Lazy
     @Autowired
     private WorkbenchEntryServiceImpl self;
+
+    /** 配图存储（MinIO workbench/covers/ 前缀） */
+    @Autowired
+    private WorkbenchImageStorage workbenchImageStorage;
+
+    /** 配图大小上限 5MB */
+    private static final long IMAGE_MAX_BYTES = 5L * 1024 * 1024;
+
+    /** 配图类型白名单 */
+    private static final Set<String> IMAGE_CONTENT_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
 
     // ==================== 管理端 ====================
 
@@ -70,14 +84,29 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
         if (this.getByEntryKey(from.getEntryKey()) != null) {
             throw new CustomExceptions("entry_key 已存在");
         }
+        // notice 公告条允许无跳转（纯文案公告）；其余类型必须配 target，端上点击才有落点
+        if (!"notice".equals(from.getType()) && !StringUtils.hasText(from.getTarget())) {
+            throw new CustomExceptions("该卡片类型必须配置跳转 target");
+        }
         WorkbenchEntry entry = new WorkbenchEntry();
         BeanUtils.copyProperties(from, entry);
+        // 空串统一落 NULL（target/sectionTitle/imageUrl 与 description/badge 同语义）
+        if (!StringUtils.hasText(from.getTarget())) {
+            entry.setTarget(null);
+        }
+        if (!StringUtils.hasText(from.getSectionTitle())) {
+            entry.setSectionTitle(null);
+        }
+        if (!StringUtils.hasText(from.getImageUrl())) {
+            entry.setImageUrl(null);
+        }
         try {
             this.save(entry);
         } catch (DuplicateKeyException e) {
             throw new CustomExceptions("entry_key 已存在");
         }
-        log.info("新增工作台入口, entryKey: {}, title: {}, sort: {}", entry.getEntryKey(), entry.getTitle(), entry.getSort());
+        log.info("新增工作台入口, entryKey: {}, title: {}, type: {}, sort: {}",
+                entry.getEntryKey(), entry.getTitle(), entry.getType(), entry.getSort());
     }
 
     @Override
@@ -100,8 +129,17 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
         if (StrUtil.isNotBlank(from.getColor())) {
             entry.setColor(from.getColor());
         }
+        if (StrUtil.isNotBlank(from.getType())) {
+            entry.setType(from.getType());
+        }
         if (StrUtil.isNotBlank(from.getTarget())) {
             entry.setTarget(from.getTarget());
+        }
+        if (from.getSectionTitle() != null) {
+            entry.setSectionTitle(from.getSectionTitle().isEmpty() ? null : from.getSectionTitle());
+        }
+        if (from.getImageUrl() != null) {
+            entry.setImageUrl(from.getImageUrl().isEmpty() ? null : from.getImageUrl());
         }
         if (from.getBadge() != null) {
             entry.setBadge(from.getBadge().isEmpty() ? null : from.getBadge());
@@ -114,6 +152,10 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
         }
         if (from.getRemark() != null) {
             entry.setRemark(from.getRemark().isEmpty() ? null : from.getRemark());
+        }
+        // 类型切换到非 notice 时兜底校验 target（避免存量 notice 改 tile 后端上点击无落点）
+        if (!"notice".equals(entry.getType()) && !StringUtils.hasText(entry.getTarget())) {
+            throw new CustomExceptions("该卡片类型必须配置跳转 target");
         }
         this.updateById(entry);
         log.info("更新工作台入口, id: {}, entryKey: {}", entry.getId(), entry.getEntryKey());
@@ -135,6 +177,28 @@ public class WorkbenchEntryServiceImpl extends ServiceImpl<WorkbenchEntryMapper,
             return Long.parseLong(id.trim());
         } catch (NumberFormatException e) {
             throw new CustomExceptions("ids 必须为逗号分隔的数字");
+        }
+    }
+
+    @Override
+    public String uploadImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new CustomExceptions("请选择要上传的图片");
+        }
+        if (file.getSize() > IMAGE_MAX_BYTES) {
+            throw new CustomExceptions(413, "图片大小不能超过5MB");
+        }
+        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
+        if (!IMAGE_CONTENT_TYPES.contains(contentType)) {
+            throw new CustomExceptions("仅支持 png / jpeg / webp 图片");
+        }
+        try {
+            return workbenchImageStorage.putImage(file.getBytes(), contentType);
+        } catch (CustomExceptions e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("工作台配图上传失败", e);
+            throw new CustomExceptions("图片上传失败，请稍后重试");
         }
     }
 

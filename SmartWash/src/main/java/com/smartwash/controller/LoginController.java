@@ -176,8 +176,21 @@ public class LoginController {
 
     @Operation(summary = "用户注册", description = "用户通过手机号、密码和验证码注册新账号，注册成功返回JWT令牌")
     @PostMapping("/user/register")
-    public Result<String> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom) {
+    public Result<String> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom, HttpServletRequest request) {
         String phone = userRegisterFrom.getPhoneNumber();
+        String clientIp = getClientIp(request);
+        // IP 维度统一风控：与登录共享同一 IP 锁，达到阈值后一刀切限流
+        if (isLocked(LOGIN_IP_LOCK_KEY_PREFIX + clientIp)) {
+            return Result.failMsg("操作过于频繁，请稍后再试");
+        }
+        // 已注册手机号无法注册成功：发码接口会为其签发重置密码用途的验证码（见 getCaptcha 的 purpose 推断），
+        // 若放行到验证码校验将永远报"验证码已过期"，误导用户反复重发陷入死循环；在此提前拦截并给出明确指引。
+        // 该分支与"验证码已过期"文案可区分、会暴露手机号注册状态，故与登录一致计入 IP 失败数限流防枚举。
+        if (usersService.getUserByPhone(phone) != null) {
+            log.warn("注册拒绝：手机号已注册, phone: {}, ip: {}", maskPhone(phone), clientIp);
+            recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            return Result.failMsg("该手机号已注册，请直接登录或使用忘记密码找回");
+        }
         // 使用注册用途（register）的独立 key 校验，杜绝重置密码场景的验证码跨场景使用
         CaptchaVerifyResult verifyResult = verifyCaptcha(CAPTCHA_PURPOSE_REGISTER, phone, userRegisterFrom.getCode());
         if (verifyResult != CaptchaVerifyResult.SUCCESS) {
@@ -243,8 +256,21 @@ public class LoginController {
 
     @Operation(summary = "重置密码", description = "通过短信验证码重置用户密码")
     @PostMapping("/user/resetPassword")
-    public Result<String> resetPassword(@RequestBody @Valid ResetPasswordFrom resetPasswordFrom) {
+    public Result<String> resetPassword(@RequestBody @Valid ResetPasswordFrom resetPasswordFrom, HttpServletRequest request) {
         String phone = resetPasswordFrom.getPhoneNumber();
+        String clientIp = getClientIp(request);
+        // IP 维度统一风控：与登录共享同一 IP 锁，达到阈值后一刀切限流
+        if (isLocked(LOGIN_IP_LOCK_KEY_PREFIX + clientIp)) {
+            return Result.failMsg("操作过于频繁，请稍后再试");
+        }
+        // 未注册手机号无法重置密码：发码接口会为其签发注册用途的验证码，若放行到验证码校验将永远报
+        // "验证码已过期"误导用户；在此提前拦截并给出明确指引（与 register 的已注册拦截对称）。
+        // 该分支同样会暴露手机号注册状态，计入 IP 失败数限流防枚举。
+        if (usersService.getUserByPhone(phone) == null) {
+            log.warn("重置密码拒绝：手机号未注册, phone: {}, ip: {}", maskPhone(phone), clientIp);
+            recordIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp, LOGIN_IP_LOCK_KEY_PREFIX + clientIp, clientIp);
+            return Result.failMsg("该手机号未注册，请先注册");
+        }
         // 使用重置密码用途（reset）的独立 key 校验，杜绝注册场景的验证码跨场景使用
         CaptchaVerifyResult verifyResult = verifyCaptcha(CAPTCHA_PURPOSE_RESET, phone, resetPasswordFrom.getCode());
         if (verifyResult != CaptchaVerifyResult.SUCCESS) {

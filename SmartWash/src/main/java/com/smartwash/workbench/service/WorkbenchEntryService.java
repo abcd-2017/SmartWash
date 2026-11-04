@@ -8,6 +8,7 @@ import com.smartwash.workbench.from.SearchWorkbenchEntryFrom;
 import com.smartwash.workbench.from.UpdateWorkbenchEntryFrom;
 import com.smartwash.workbench.vo.AdminWorkbenchEntryVo;
 import com.smartwash.workbench.vo.WorkbenchEntryVo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,6 +30,9 @@ public interface WorkbenchEntryService extends IService<WorkbenchEntry> {
 
     /** 管理端：批量物理删除（ids 逗号分隔） */
     void deleteEntries(String ids);
+
+    /** 管理端：上传入口配图（png/jpeg/webp ≤5MB，存 MinIO workbench/covers/ 前缀），返回公网直链 */
+    String uploadImage(MultipartFile file);
 
     /** 用户端：启用中的入口列表（sort 升序、id 升序，不分页），走缓存 */
     List<WorkbenchEntryVo> listEnabledEntries();

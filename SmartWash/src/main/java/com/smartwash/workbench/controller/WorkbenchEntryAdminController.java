@@ -2,6 +2,7 @@ package com.smartwash.workbench.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.exception.CustomExceptions;
 import com.smartwash.workbench.from.AddWorkbenchEntryFrom;
 import com.smartwash.workbench.from.SearchWorkbenchEntryFrom;
 import com.smartwash.workbench.from.UpdateWorkbenchEntryFrom;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 工作台入口配置管理端控制器。
@@ -58,5 +60,15 @@ public class WorkbenchEntryAdminController {
     public Result<Boolean> delete(@PathVariable("ids") @Pattern(regexp = "^\\d+(,\\d+)*$", message = "ids 必须为逗号分隔的数字") @Parameter(description = "入口ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         workbenchEntryService.deleteEntries(ids);
         return Result.ok(true);
+    }
+
+    @Operation(summary = "上传入口配图", description = "multipart 图片（png/jpeg/webp，≤5MB），存 MinIO workbench/covers/ 前缀并返回公网直链，直链回填 imageUrl 字段")
+    @PostMapping("/image")
+    public Result<String> uploadImage(@RequestPart("file") @Parameter(description = "图片文件", required = true) MultipartFile file) {
+        // 业务层强制 5MB 上限（对齐 game 模块的控制器层拦截风格）
+        if (file.getSize() > 5L * 1024 * 1024) {
+            throw new CustomExceptions(413, "图片大小不能超过5MB");
+        }
+        return Result.ok(workbenchEntryService.uploadImage(file));
     }
 }
