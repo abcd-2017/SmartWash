@@ -27,4 +27,4 @@ tools: Read, Edit, Write, Bash, Grep, Glob
 - App.globalRequestBefore/AfterCallback 静态 lateinit 在 setContent 前发请求会崩（已移除，鉴权失败走 SessionEventNotifier）
 - 测试除模板类外还有观象台四套算法内核的锚点单测
 
-完整项目规则见 `SmartWash-Android/CLAUDE.md`，通用规则见 `.claude/docs/shared-rules.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。
+完整项目规则见 `SmartWash-Android/CLAUDE.md`，通用规则见 `.claude/docs/shared-rules.md`，评审报告见 `docs/code-review-2026-08-28.md`。

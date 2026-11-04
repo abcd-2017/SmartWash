@@ -95,4 +95,4 @@ mvn clean package -DskipTests  # 打包
 
 通用红线（直接 push 到 main、修改 CLAUDE.md 需团队共识、声称完成 without 验证）见 [.claude/docs/shared-rules.md](../.claude/docs/shared-rules.md)。
 
-完整项目规则见本子目录 `CLAUDE.md`，评审报告见 `.claude/docs/code-review-2026-08-28.md`。
+完整项目规则见本子目录 `CLAUDE.md`，评审报告见 `docs/code-review-2026-08-28.md`。

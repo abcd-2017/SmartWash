@@ -134,7 +134,7 @@ code-linter --fix      # Lint
 
 ## 十、已知问题
 
-完整评审清单（含行号）见 `.claude/docs/code-review-2026-08-28.md` 第四章。P0 级：
+完整评审清单（含行号）见 `docs/code-review-2026-08-28.md` 第四章。P0 级：
 
 - baseURL 硬编码演示服务器明文 HTTP 且与 Android 不对齐（`network/Axios.ets:22`）——待环境化
 - 401 处理已修复：清 token + 清内存登录态 + replace 登录 + 1.5s 防抖（原 `Axios.ets:32,45-49` 问题已解决）
