@@ -270,26 +270,6 @@ fun WorkbenchPage(
                 )
             }
 
-        item(key = "wb_divination") {
-            // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）；上距取区块令牌
-            DivinationEntryCard(
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                onClick = { navController.navigate(DivRoute.Home) }
-            )
-        }
-
-        item(key = "wb_tools_header") {
-            // 全部工具（设计稿实测：特色卡底→标题 32、标题底→网格 12；字距 0.3 与观象台卡标题同款）
-            Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
-            Text(
-                text = stringResource(R.string.workbench_all_tools),
-                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
-                color = AppColors.colorScheme.textPrimary,
-                modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
-            )
-            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-        }
-
         if (showSkeleton) {
             // 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 cardSpacing）
             item(key = "wb_tools_skeleton") {
@@ -313,7 +293,8 @@ fun WorkbenchPage(
                         }
                     }
                 }
-            } else if (entriesState is RequestState.Error) {
+            }
+        } else if (entriesState is RequestState.Error) {
                 // 真实错误态（2026-11-01 缺陷 6：原失败静默回落本地假列表）——说明 + 重试
                 item(key = "wb_tools_error") {
                     EmptyState(
