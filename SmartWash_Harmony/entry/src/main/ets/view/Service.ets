@@ -3,6 +3,7 @@ import { HttpStatusCode } from "@ohos/axios"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
+import { safeTopVp } from "../utils/SafeArea"
 import { RouteNames } from "../constant/RouteNames"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
@@ -37,18 +38,21 @@ export struct Service {
   async fetchItems() {
     this.isLoading = true
     this.loadFailed = false
-    let res = await getLaundryItems()
-    if (res.code === HttpStatusCode.Ok) {
-      // Tab 首载/重试成功：debug 留痕（低频，非关键动作不打 info）
-      logger.debug('service', `套餐加载成功 count=${res.data?.length ?? 0}`)
-      this.laundryItem = res.data
-    } else {
-      // 业务失败 warn 留痕（与失败态 UI 对应；401 已由网络层统一清理并跳登录）
-      logger.warn('service', `套餐加载失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "套餐加载失败")
+    try {
+      let res = await getLaundryItems()
+      if (res.code === HttpStatusCode.Ok) {
+        this.laundryItem = res.data
+      } else {
+        showToastSafety(res.message, "套餐加载失败")
+        this.loadFailed = true
+      }
+    } catch (err) {
+      // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
+      showToastSafety("网络异常，请稍后重试")
       this.loadFailed = true
+    } finally {
+      this.isLoading = false
     }
-    this.isLoading = false
   }
 
   /**
@@ -269,7 +273,9 @@ export struct Service {
         .scrollBar(BarState.Off)
         .width("100%")
         .height("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 沉浸式状态栏避让 + 内容不足一屏顶对齐（问题11 布局部分：原默认居中导致内容悬在中部）
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
+        .align(Alignment.Top)
       }
       .width("100%")
       .height("100%")

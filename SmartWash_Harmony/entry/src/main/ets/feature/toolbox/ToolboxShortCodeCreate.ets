@@ -20,6 +20,7 @@ import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
 import { logger } from '../../utils/Logger'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
+import { safeTopVp } from '../../utils/SafeArea'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeCreate'
@@ -349,9 +350,11 @@ struct ToolboxShortCodeCreate {
       .width('100%')
       .height('100%')
       .align(Alignment.TopStart)
+      // 沉浸式：内容避让状态栏（背景延伸）
+      .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
-      // 键盘避让（对齐安卓 imePadding）：输入框聚焦时页面整体上移，避免被软键盘遮挡
-      .expandSafeArea([SafeAreaType.KEYBOARD], [SafeAreaEdge.BOTTOM])
+      // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；
+      // 原 expandSafeArea(KEYBOARD, BOTTOM) 是反向语义（把内容伸进键盘区），已移除
     }
     .hideTitleBar(true)
   }

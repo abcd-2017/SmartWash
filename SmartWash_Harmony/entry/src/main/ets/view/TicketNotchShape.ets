@@ -38,8 +38,10 @@ export struct TicketNotch {
         .borderRadius(this.notchRadius)
         .backgroundColor(this.notchColor)
         .offset({ x: -this.notchRadius })
+        .hitTestBehavior(HitTestMode.None)
 
       Blank()
+        .hitTestBehavior(HitTestMode.None)
 
       // 右孔：自然位置 x ∈ [width-2r, width]，offset +r 后圆心落在 x=width
       Column()
@@ -48,6 +50,7 @@ export struct TicketNotch {
         .borderRadius(this.notchRadius)
         .backgroundColor(this.notchColor)
         .offset({ x: this.notchRadius })
+        .hitTestBehavior(HitTestMode.None)
     }
     .width('100%')
     .height('100%')
@@ -87,6 +90,7 @@ export struct TicketDashedLine {
           .height(DASH_SEGMENT_HEIGHT)
           .backgroundColor(this.dashColor)
           .borderRadius(0.5)
+          .hitTestBehavior(HitTestMode.None)
       }, (index: number) => index.toString())
     }
     .height(this.dashHeight)

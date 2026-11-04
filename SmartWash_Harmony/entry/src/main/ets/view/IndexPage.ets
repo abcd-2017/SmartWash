@@ -13,6 +13,7 @@ import { logger } from "../utils/Logger"
 import { IconBox } from "./common/AppComponents"
 import { HeroCard } from "./HeroCard"
 import { BizCode } from "../network/HttpUtil"
+import { safeTopVp } from "../utils/SafeArea"
 
 // 连续轮询失败达到该次数才提示一次（评审 #4：避免每 5s 弹 toast）
 const POLLING_FAILURE_THRESHOLD: number = 3
@@ -33,6 +34,8 @@ export struct IndexPage {
   @Local userInfo: UserInfoVo | null = null
   @Local orderList: Array<OrderVo> | null = []
   @Param isActive: boolean = true
+  // 宿主可见性刷新信号（问题9）：Home NavDestination.onShown 递增，充值等子页返回时拉新余额
+  @Param refreshTick: number = 0
   // 余额大字按可用宽度分档（对齐安卓 BoxWithConstraints：36 / 28 / 22 阶梯内降级）
   @Local balanceFontSize: number = DesignFontSize.DATA_LARGE
   private pollingTimer: number = -1
@@ -67,6 +70,14 @@ export struct IndexPage {
     } else {
       logger.debug('indexPage', 'Tab 切出，停止轮询')
       this.stopPolling()
+    }
+  }
+
+  // 充值/订单变动返回首页时刷新账户卡（问题9）
+  @Monitor('refreshTick')
+  onRefreshTickChange() {
+    if (this.refreshTick > 0) {
+      this.refreshUserInfo()
     }
   }
 
@@ -454,6 +465,8 @@ export struct IndexPage {
     .width("100%")
     .height("100%")
     .align(Alignment.TopStart)
+    // 沉浸式：内容避让状态栏（背景延伸）
+    .padding({ top: safeTopVp() })
     .backgroundColor(DesignColor.BACKGROUND)
   }
 }

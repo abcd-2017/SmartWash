@@ -155,6 +155,7 @@ export class ToolboxText {
   static readonly toolbox_action_copy: string = "复制短链"
   static readonly toolbox_action_open: string = "打开链接"
   static readonly toolbox_copy_success: string = "短链已复制"
+  static readonly toolbox_copy_failed: string = "复制失败，请重试"
   static readonly toolbox_open_failed: string = "未找到可打开链接的应用"
   static readonly toolbox_resolve_failed: string = "解析失败，请重试"
   static readonly toolbox_toast_renew_success: string = "有效期已更新"
