@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -82,6 +83,11 @@ fun AiWorkPage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 设计规范 §4：键盘弹出时输入框保持可见（imePadding）。此前无 ime 处理，
+            // 键盘弹出时系统为露出底部输入框整窗上移（pan）——页头标题滚出视口、
+            // LazyColumn 内容可滚入状态栏与时钟重叠；输入条随键盘上移后系统不再 pan，
+            // 布局顶部（页头/滚动边界）保持稳定，内容不再顶入状态栏
+            .imePadding()
     ) {
         PageHeader(
             title = stringResource(R.string.ai_workbench_title),

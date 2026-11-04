@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -130,6 +131,10 @@ fun RechargePage(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
+            // 设计规范 §4：表单页键盘弹出时输入框保持可见（imePadding）——键盘弹出时整页
+            // 上收，支付方式区可经 LazyColumn 滚动查看，底部「立即充值」按钮不被键盘遮挡；
+            // 底部按钮的 navigationBarsPadding 与本 inset 经 Compose 消费链自动协调（弹出时不双计）
+            .imePadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
