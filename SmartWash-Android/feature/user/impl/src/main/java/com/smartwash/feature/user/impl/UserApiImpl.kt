@@ -78,6 +78,9 @@ class UserApiImpl @Inject constructor(
 
     override fun isLogin(): Boolean = sessionManager.currentToken().isNotEmpty()
 
+    // 挂起读 token（缓存未命中读 DataStore 回填）：覆盖 SessionInitTask 预热完成前的窗口
+    override suspend fun hasSession(): Boolean = sessionManager.getToken().isNotBlank()
+
     override suspend fun getUserInfo(): UserInfo? {
         // 命中缓存直接返回（登录后首次拉取走网络）
         cachedUserInfo?.let { return it }

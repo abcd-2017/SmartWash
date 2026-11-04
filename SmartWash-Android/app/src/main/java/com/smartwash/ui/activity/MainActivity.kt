@@ -138,14 +138,35 @@ class MainActivity : ComponentActivity() {
 
             // 深链统一消费端：冷启动（onCreate）与热启动（onNewIntent）都写
             // [pendingDeepLinkUri]，这里在 NavHost 图组合完成后 resolve + navigate。
-            // 登录取舍：未登录也直接放行跳目标——目标页的鉴权接口遇 401 会经
-            // ResponseInterceptor → SessionEventNotifier 兜底拉回登录页（既有壳层职责），
-            // 此处不做登录前置判断，避免与后端字典 requireLogin 语义重复实现两套真源。
+            // 登录守卫（P-2001）：未登录不放行受保护深链——公开深链（WebView / 认证页自身 /
+            // 纯本地页）与 Unknown（仅 Toast 不导航）直接分发；受保护 host 未登录时落登录页
+            // （对齐 401 / 未登录拦截语义的落点），已登录才执行目标导航。
+            // 会话判断用挂起读 [UserApi.hasSession]：冷启动深链可能早于 SessionInitTask
+            // 预热完成，isLogin() 的内存同步读存在误报未登录的竞态窗口。
             LaunchedEffect(pendingDeepLinkUri) {
                 val uri = pendingDeepLinkUri ?: return@LaunchedEffect
                 pendingDeepLinkUri = null // 先消费再处理，防止异常/重组导致重复导航
                 try {
                     val action = deepLinkHandler.resolve(uri)
+                    if (!deepLinkHandler.isPublicAction(action, uri) && !userApi.hasSession()) {
+                        // 未登录 + 受保护深链：拦截并落登录页（低频动作；LaunchedEffect 副作用分支留痕上限 debug）
+                        AppLogger.debug(TAG, "深链登录守卫拦截：uri=$uri（未登录 + 受保护 host）")
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.please_login),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        // 冷启动未登录时当前即登录页（startDestination），不重复压栈；
+                        // 其余残留页面场景补跳登录页（launchSingleTop 防堆叠）
+                        if (navController.currentBackStackEntry?.destination
+                                ?.hasRoute<UserRoute.Login>() == false
+                        ) {
+                            navController.navigate(UserRoute.Login) {
+                                launchSingleTop = true
+                            }
+                        }
+                        return@LaunchedEffect
+                    }
                     deepLinkHandler.navigate(navController, action)
                 } catch (e: CancellationException) {
                     // 协程取消原样 rethrow（组件销毁等），不能吞成「不支持」
