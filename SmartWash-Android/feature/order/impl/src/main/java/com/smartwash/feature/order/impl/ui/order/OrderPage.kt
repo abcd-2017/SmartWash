@@ -31,11 +31,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -44,18 +47,22 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppConfirmDialog
@@ -105,13 +112,15 @@ private sealed interface OrderListItem {
  */
 private data class OrderContentKey(val pillIndex: Int, val skeleton: Boolean)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderPage(
     navController: NavHostController,
     itemId: Int,
     orderViewModel: OrderViewModel = hiltViewModel(),
 ) {
-    var selectedPillIndex by remember {
+    // 用 rememberSaveable：从订单详情返回时组合会重建，tab 选择需保留（原 remember 会重置回路由初始值）
+    var selectedPillIndex by rememberSaveable {
         mutableIntStateOf(itemId.coerceIn(0, ShowOrderStatus.entries.size - 1))
     }
 
@@ -137,6 +146,19 @@ fun OrderPage(
             }
             else -> {}
         }
+    }
+
+    // 从订单详情/支付/寄件页返回时刷新列表（ON_RESUME）；首次进入跳过（VM init 已加载，避免重复请求）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by rememberSaveable { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) isFirstResume = false else orderViewModel.loadAllOrders()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val status = ShowOrderStatus.entries[selectedPillIndex].status
@@ -167,6 +189,8 @@ fun OrderPage(
             // 取消订单成功后 VM 会整表 loadAllOrders()（loadState=Loading），此时 paging 仍保留旧列表，
             // 走 stale-while-revalidate，不再把有数据的列表整屏换成骨架。
             val showSkeleton = loadState is RequestState.Loading && orderList.isEmpty()
+            // 下拉刷新指示器：仅「已有列表数据且正在刷新」时转圈，首刷走骨架（对齐 SubscriptionListPage）
+            val isRefreshing = loadState is RequestState.Loading && orderList.isNotEmpty()
 
             // 内容区进出场（动效语言 v0.4）：进 300ms 减速淡入 / 出 200ms 加速淡出；
             // reduced motion 统一降级为 180ms 纯淡入（规范 §8：取消位移/缩放/旋转，保留可读性）
@@ -182,52 +206,58 @@ fun OrderPage(
             } else {
                 exitTween<Float>(DURATION_MICRO_MS)
             }
-            AnimatedContent(
-                targetState = OrderContentKey(selectedPillIndex, showSkeleton),
-                modifier = Modifier.fillMaxSize(),
-                transitionSpec = {
-                    fadeIn(contentEnterSpec) togetherWith fadeOut(contentExitSpec)
-                },
-                label = "orderContent"
-            ) { contentKey ->
-                if (contentKey.skeleton) {
-                    LoadingState(modifier = Modifier.fillMaxSize())
-                } else if (orderList.isNotEmpty()) {
-                    // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
-                    val listItems = remember(orderList) {
-                        val sorted = orderList.sortedByDescending { it.createdAt }
-                        val grouped = sorted.groupBy { it.createdAt.take(7) }
-                        val sortedKeys = grouped.keys.sortedDescending()
-                        buildList {
-                            for (key in sortedKeys) {
-                                add(OrderListItem.Header(key))
-                                grouped[key]?.let { add(OrderListItem.Group(key, it)) }
+            // 下拉刷新（规范 §3.6）：全项目列表页统一 PullToRefreshBox，刷新走 loadAllOrders 整表重载
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { orderViewModel.loadAllOrders() },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                AnimatedContent(
+                    targetState = OrderContentKey(selectedPillIndex, showSkeleton),
+                    modifier = Modifier.fillMaxSize(),
+                    transitionSpec = {
+                        fadeIn(contentEnterSpec) togetherWith fadeOut(contentExitSpec)
+                    },
+                    label = "orderContent"
+                ) { contentKey ->
+                    if (contentKey.skeleton) {
+                        LoadingState(modifier = Modifier.fillMaxSize())
+                    } else if (orderList.isNotEmpty()) {
+                        // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
+                        val listItems = remember(orderList) {
+                            val sorted = orderList.sortedByDescending { it.createdAt }
+                            val grouped = sorted.groupBy { it.createdAt.take(7) }
+                            val sortedKeys = grouped.keys.sortedDescending()
+                            buildList {
+                                for (key in sortedKeys) {
+                                    add(OrderListItem.Header(key))
+                                    grouped[key]?.let { add(OrderListItem.Group(key, it)) }
+                                }
                             }
                         }
-                    }
 
-                    val listState = rememberLazyListState()
+                        val listState = rememberLazyListState()
 
-                    // 加载更多触发：derivedStateOf 派生"滚动接近末尾"，snapshotFlow 监听触发 loadMore
-                    val nearListEnd by remember {
-                        derivedStateOf {
-                            val layoutInfo = listState.layoutInfo
-                            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                            layoutInfo.totalItemsCount > 0 &&
-                                lastVisibleIndex >= layoutInfo.totalItemsCount - 2
-                        }
-                    }
-                    LaunchedEffect(status) {
-                        snapshotFlow {
-                            nearListEnd to (uiState.orders[status]?.size ?: 0)
-                        }.collect { (nearEnd, listSize) ->
-                            if (!nearEnd || listSize == 0) return@collect
-                            val current = uiState
-                            if (current.hasMore[status] == true && current.loadingMore[status] != true) {
-                                orderViewModel.loadMore(status)
+                        // 加载更多触发：derivedStateOf 派生"滚动接近末尾"，snapshotFlow 监听触发 loadMore
+                        val nearListEnd by remember {
+                            derivedStateOf {
+                                val layoutInfo = listState.layoutInfo
+                                val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                                layoutInfo.totalItemsCount > 0 &&
+                                    lastVisibleIndex >= layoutInfo.totalItemsCount - 2
                             }
                         }
-                    }
+                        LaunchedEffect(status) {
+                            snapshotFlow {
+                                nearListEnd to (uiState.orders[status]?.size ?: 0)
+                            }.collect { (nearEnd, listSize) ->
+                                if (!nearEnd || listSize == 0) return@collect
+                                val current = uiState
+                                if (current.hasMore[status] == true && current.loadingMore[status] != true) {
+                                    orderViewModel.loadMore(status)
+                                }
+                            }
+                        }
 
                         LazyColumn(
                             state = listState,
@@ -282,37 +312,45 @@ fun OrderPage(
                                 }
                             }
                             // 分页尾部 loading：AnimatedVisibility 淡入淡出替代 if 硬插拔；
-                            // reduced motion 时降级为静态三点灰占位（取消无限旋转，保留"还在加载"的可读性）
+                            // reduced motion 时降级为静态三点灰占位（取消无限旋转，保留"还在加载"的可读性）。
+                            // 外层套 Column 提供 ColumnScope：PullToRefreshBox 的 BoxScope 在外层，
+                            // 遮蔽了 AnimatedContent 的 ColumnScope 隐式接收器，否则 AnimatedVisibility 解析失败。
                             item(key = "load_more_footer") {
-                                AnimatedVisibility(
-                                    visible = isLoadingMore,
-                                    enter = fadeIn(tween<Float>(CROSSFADE_ALT_MS)),
-                                    exit = fadeOut(tween<Float>(CROSSFADE_ALT_MS))
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    if (LocalReduceMotion.current) {
-                                        LoadingDots(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    } else {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                                .wrapContentWidth(Alignment.CenterHorizontally),
-                                            color = AppColors.colorScheme.primary,
-                                            strokeWidth = 2.dp
-                                        )
+                                    AnimatedVisibility(
+                                        visible = isLoadingMore,
+                                        enter = fadeIn(tween<Float>(CROSSFADE_ALT_MS)),
+                                        exit = fadeOut(tween<Float>(CROSSFADE_ALT_MS))
+                                    ) {
+                                        if (LocalReduceMotion.current) {
+                                            LoadingDots(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                            )
+                                        } else {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp)
+                                                    .wrapContentWidth(Alignment.CenterHorizontally),
+                                                color = AppColors.colorScheme.primary,
+                                                strokeWidth = 2.dp
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                } else {
-                    EmptyState(
-                        icon = Icons.Default.LocalLaundryService,
-                        message = stringResource(R.string.no_orders)
-                    )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Default.LocalLaundryService,
+                            message = stringResource(R.string.no_orders)
+                        )
+                    }
                 }
             }
         }
