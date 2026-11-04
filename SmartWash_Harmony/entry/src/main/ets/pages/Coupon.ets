@@ -175,7 +175,9 @@ struct Coupon {
               }
             })
           }
-        }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}`)
+        // 键必须含状态指纹（问题5 根因）：领取成功 loadAllCoupons 整表替换对象，
+        // 仅用 couponId 时键不变 → ForEach 复用旧子组件、@Param 不同步 → 按钮定格「立即领取」
+        }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}:${coupon.status ?? ""}`)
       }
       .width("100%")
       .height("100%")
@@ -213,7 +215,8 @@ struct Coupon {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: true })
           }
-        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}`)
+        // 键含 isUsed 指纹：核销状态变化后对象替换、键不变会复用旧子组件（同可用 tab 键问题）
+        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
       }
       .width("100%")
       .height("100%")

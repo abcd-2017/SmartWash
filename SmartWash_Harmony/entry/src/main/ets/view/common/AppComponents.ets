@@ -709,6 +709,11 @@ export struct DrumMark {
     Canvas(this.ctx)
       .width(this.sizeValue)
       .height(this.sizeValue)
+      // onReady 兜底重绘（问题：aboutToAppear 时渲染表面未挂载，首帧绘制被丢弃导致空态滚筒空白；
+      // onReady 时 ctx 保证可绘，drawMark 以 clearRect 起步幂等，重复触发无叠加副作用）
+      .onReady(() => {
+        this.drawMark()
+      })
   }
 }
 

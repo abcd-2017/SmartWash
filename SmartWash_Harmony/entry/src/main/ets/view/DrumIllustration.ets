@@ -140,5 +140,10 @@ export struct DrumIllustration {
     Canvas(this.ctx)
       .width(this.sizeValue)
       .height(this.sizeValue)
+      // onReady 兜底重绘（问题：aboutToAppear 时渲染表面未挂载，首帧绘制被丢弃，
+      // 订单详情 120 滚筒插画整片空白；draw 以 clearRect 起步幂等，重复触发无叠加副作用）
+      .onReady(() => {
+        this.draw()
+      })
   }
 }
