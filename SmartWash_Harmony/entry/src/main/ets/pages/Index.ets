@@ -4,10 +4,10 @@ import { getUserSchoolId } from '../network/api/UserApi';
 import { logger } from '../utils/Logger';
 import { pathStack } from '../utils/PathStackUtil';
 import { getValue } from '../utils/StorageUtil';
-import { bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
+import { bumpHomeTabBack, bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
 import { DesignColor } from '../constant/DesignSystem';
 import { AddSchoolBuilder } from './AddSchool';
-import { HomeBuilder } from './Home';
+import { HomeBuilder, HOME_TAB_INDEX_KEY } from './Home';
 import { LoginBuilder } from './Login';
 
 @Entry
@@ -75,6 +75,21 @@ struct Index {
         pathStack.clear()
       }
     }
+  }
+
+  /**
+   * 系统返回键拦截（@Entry 层）：Navigation 栈为空（Login/AddSchool/Home 均为根内容）时，
+   * Home 的 NavDestination.onBackPressed 不会触发（API 17 实测按返回直接退后台），
+   * 故在 @Entry 层兜底：Home 显示且非首页 tab 时切回首页 tab 并消费返回事件
+   * （对齐安卓 HomePage.kt BackHandler enabled = settledPage != 0）；
+   * 首页 tab / 登录页 / 完善信息页 → 交还系统默认（退后台）。
+   */
+  onBackPress(): boolean {
+    if (this.showPageType === 2 && (AppStorage.get<number>(HOME_TAB_INDEX_KEY) ?? 0) !== 0) {
+      bumpHomeTabBack()
+      return true
+    }
+    return false
   }
 
   async onUserTokenChange() {

@@ -7,13 +7,16 @@ import { DesignColor } from "../constant/DesignSystem"
 import { safeBottomVp } from "../utils/SafeArea"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 import { logger } from "../utils/Logger"
-import { bumpOrderRefresh, bumpUserInfoRefresh, ORDER_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
+import { bumpOrderRefresh, bumpUserInfoRefresh, HOME_TAB_BACK_TICK_KEY, ORDER_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 import vibrator from '@ohos.vibrator'
 
 @Builder
 export function HomeBuilder() {
   Home()
 }
+
+/** 首页当前 tab 下标（Home 写，Index.onBackPress 读）：系统返回键回首页 tab 的判定依据 */
+export const HOME_TAB_INDEX_KEY: string = 'homeTabIndex'
 
 @Component
 struct Home {
@@ -42,8 +45,12 @@ struct Home {
   // 注意必须用自增 tick：布尔标记重复 setOrCreate(true) 不产生变更事件，@Watch 不触发。
   @StorageLink(USER_INFO_TICK_KEY) @Watch('onUserInfoTick') userInfoTick: number = 0
   @StorageLink(ORDER_TICK_KEY) @Watch('onOrderTick') orderTick: number = 0
+  // 系统返回键切回首页 tab 信号：Index.onBackPress 拦截后 bump（见 RefreshSignal 注释）
+  @StorageLink(HOME_TAB_BACK_TICK_KEY) @Watch('onHomeTabBackTick') homeTabBackTick: number = 0
 
   aboutToAppear(): void {
+    // 同步初始 tab 下标（0），防止上一次会话的残留值污染 Index.onBackPress 的判定
+    AppStorage.setOrCreate(HOME_TAB_INDEX_KEY, 0)
     this.consumePendingDeepLink()
   }
 
@@ -63,6 +70,14 @@ struct Home {
   onOrderTick(): void {
     if (this.orderTick > 0) {
       this.refreshTick++
+    }
+  }
+
+  /** @Watch 回调：非首页 tab 按系统返回键（Index.onBackPress 拦截）→ 切回首页 tab */
+  onHomeTabBackTick(): void {
+    if (this.homeTabBackTick > 0 && this.currentIndex !== 0) {
+      this.currentIndex = 0
+      this.controller.changeIndex(0)
     }
   }
 
@@ -125,6 +140,8 @@ struct Home {
       }
       .onChange(i => {
         this.currentIndex = i
+        // 同步当前 tab 下标供 Index.onBackPress 判定（系统返回键回首页 tab）
+        AppStorage.setOrCreate(HOME_TAB_INDEX_KEY, i)
         // 滑动切 tab 落定触感（对齐安卓 LaunchedEffect(settledPage) → performHaptic(SELECTION)）
         try {
           vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
@@ -154,14 +171,8 @@ struct Home {
     .onShown(() => {
       this.refreshTick++
     })
-    // 非首页 tab 系统返回先回首页 tab（对齐安卓 BackHandler），首页则交还系统退出
-    .onBackPressed(() => {
-      if (this.currentIndex !== 0) {
-        this.currentIndex = 0
-        this.controller.changeIndex(0)
-        return true
-      }
-      return false
-    })
+    // 非首页 tab 的系统返回拦截不在本页：Home 是 Navigation 根内容而非栈成员，
+    // NavDestination.onBackPressed 不会触发（API 17 实测按返回直接退后台），
+    // 由 @Entry Index.onBackPress 统一拦截并经 homeTabBackTick 通知本页切回 tab 0
   }
 }

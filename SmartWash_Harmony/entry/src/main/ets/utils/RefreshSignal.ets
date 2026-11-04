@@ -20,6 +20,18 @@ export function bumpOrderRefresh(): void {
   AppStorage.setOrCreate(ORDER_TICK_KEY, current + 1)
 }
 
+/**
+ * 「非首页 tab 按系统返回键切回首页 tab」信号。
+ * Home 是 Navigation 根内容而非页面栈成员，其 NavDestination.onBackPressed 不会触发
+ * （API 17 实测按返回直接退后台）；由 @Entry Index.onBackPress 拦截后 bump 本 tick，
+ * Home 经 @Watch 切回 tab 0（对齐安卓 HomePage.kt BackHandler）。
+ */
+export function bumpHomeTabBack(): void {
+  const current = AppStorage.get<number>(HOME_TAB_BACK_TICK_KEY) ?? 0
+  AppStorage.setOrCreate(HOME_TAB_BACK_TICK_KEY, current + 1)
+}
+
 /** AppStorage key（写读双方共用，避免字符串漂移） */
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
+export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
