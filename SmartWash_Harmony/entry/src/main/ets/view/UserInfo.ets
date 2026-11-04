@@ -383,15 +383,27 @@ export struct UserInfo {
 
           // ========== 账户卡 GroupCard（对齐安卓 UserInfoPage.kt:441-487） ==========
           Column() {
-            this.settingRow($r('sys.symbol.creditcard'), "校园卡",
-              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-              this.isCampusCardBound() ? "已绑定" : "未绑定",
-              this.isCampusCardBound() ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY,
-              () => {
-                pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
-                  this.refreshUserInfo()
-                }, false)
-              })
+            // 校园卡行尾状态不能走 @Builder 按值参数（已知坑：参数首帧定格，绑定/解绑后不刷新）；
+            // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
+            if (this.isCampusCardBound()) {
+              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
+                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+                "已绑定", DesignColor.PRIMARY,
+                () => {
+                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                    this.refreshUserInfo()
+                  }, false)
+                })
+            } else {
+              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
+                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+                "未绑定", DesignColor.TEXT_SECONDARY,
+                () => {
+                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                    this.refreshUserInfo()
+                  }, false)
+                })
+            }
 
             Divider()
               .strokeWidth(0.5)

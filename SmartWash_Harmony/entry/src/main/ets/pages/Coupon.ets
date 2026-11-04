@@ -132,12 +132,13 @@ struct Coupon {
       // 后端 Result.ok(boolean) 直传：data=false（并发/重复领取被拒）必须按失败处理，
       // 不能只看 code=200 就弹「领取成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
       if (res.code === HttpStatusCode.Ok && res.data === true) {
+        // 低频关键动作成功：领券完成留 info
+        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
         await this.loadAllCoupons()
         showToastSafety("领取成功")
       } else {
         logger.warn('coupon', `优惠券领取被拒 couponId=${couponId} code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "领取失败，请稍后重试")
-        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
@@ -359,7 +360,8 @@ struct AvailableCouponCard {
               .fontColor(Color.White)
           }
         }
-        .width("100%")
+        // 真机缺陷修复（T4）：内层 Row 不可设 width("100%")——父 Column 为 wrap-content，
+        // 百分比会取父约束最大宽度把胶囊撑满整行；去掉后恢复 wrap-content（对齐安卓 ClaimAction）
         .height("100%")
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)

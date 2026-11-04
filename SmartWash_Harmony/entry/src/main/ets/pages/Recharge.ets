@@ -1,5 +1,5 @@
 import { BusinessError } from '@kit.BasicServicesKit'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
@@ -43,6 +43,9 @@ struct Recharge {
   @State isCustomSelected: boolean = false
   @State customAmount: string = ""
   @State checkPayType: boolean = false
+  // 支付方式校验错误文案（与 checkPayNumberMsg 同款机制：If 分支体内读取 @State 文案，
+  // 其变更事件驱动分支重渲染——真机实测仅条件读取不触发 If 重渲染，节点永不出现）
+  @State checkPayTypeMsg: string = ""
   @State checkPayNumber: boolean = false
   // 金额校验失败的具体文案（评审 #19：错误提示友好化）
   @State checkPayNumberMsg: string = "请选择或输入充值金额"
@@ -178,6 +181,36 @@ struct Recharge {
     })
   }
 
+  // 错误行统一走 @Builder（对齐 SummaryLine 的渲染链路——真机实测 build() 直排 if 块的
+  // 条件/分支依赖在弹窗确认后不触发重渲染，@Builder 内同等结构可正常 live 更新）
+  @Builder
+  AmountErrorLine() {
+    if (this.checkPayNumber) {
+      Text(this.checkPayNumberMsg)
+        .fontColor(DesignColor.ERROR)
+        .fontSize(DesignFontSize.CAPTION)
+        .margin({ top: 8 })
+        .alignSelf(ItemAlign.Start)
+        .transition(TransitionEffect.OPACITY)
+        .animation({ duration: 200, curve: Curve.EaseOut })
+    }
+  }
+
+  // 未选支付方式错误行（真机缺陷修复：分支体读取 checkPayTypeMsg，
+  // 其变更事件驱动 If 重渲染；仅条件读取 checkPayType 时节点永不出现，见 checkPayTypeMsg 注释）
+  @Builder
+  PayTypeErrorLine() {
+    if (this.checkPayType) {
+      Text(this.checkPayTypeMsg)
+        .fontColor(DesignColor.ERROR)
+        .fontSize(DesignFontSize.CAPTION)
+        .margin({ top: 8 })
+        .alignSelf(ItemAlign.Start)
+        .transition(TransitionEffect.OPACITY)
+        .animation({ duration: 200, curve: Curve.EaseOut })
+    }
+  }
+
   // 动态到账说明的赠额：仅预设档生效（对齐安卓 RechargeSummaryLine：isCustom 时 bonus = 0，
   // 否则自定义输入 50 会被误加预设档赠额 2）
   private summaryBonus(): number {
@@ -261,6 +294,42 @@ struct Recharge {
     .margin({ top: 8 })
   }
 
+  // 选中圆点（视觉对齐共享 SelectionDot：24 外环 + 12 内圆）。
+  // 真机缺陷修复（T4）：本区块内不使用任何子组件——PayTypeCard 所在闭包内创建
+  // ViewV2 子组件（SelectionDot）后，其后节点的依赖注册被破坏（支付方式错误行 If
+  // 从不随 checkPayType 重渲染）。改用 if 插入绘制并直接读取 payType，
+  // 与 SummaryLine 的已验证 live 更新模式一致。
+  @Builder
+  PayDot(method: PaymentMethod) {
+    Stack() {
+      if (this.payType === method) {
+        // 外环：选中态 primary 描边
+        Column()
+          .width(24)
+          .height(24)
+          .borderRadius(12)
+          .border({ width: 1, color: DesignColor.PRIMARY, style: BorderStyle.Solid })
+          .transition(TransitionEffect.OPACITY.animation(MotionTiming.ENTER))
+        // 内圆：选中时出现
+        Column()
+          .width(12)
+          .height(12)
+          .borderRadius(6)
+          .backgroundColor(DesignColor.PRIMARY)
+          .transition(TransitionEffect.scale({ x: 0, y: 0 }).animation(MotionTiming.ENTER))
+      } else {
+        Column()
+          .width(24)
+          .height(24)
+          .borderRadius(12)
+          .border({ width: 1, color: DesignColor.OUTLINE, style: BorderStyle.Solid })
+      }
+    }
+    .width(24)
+    .height(24)
+    .alignContent(Alignment.Center)
+  }
+
   @Builder
   PayTypeCard(method: PaymentMethod, title: string, icon: Resource, index: number) {
     Row() {
@@ -284,7 +353,7 @@ struct Recharge {
         .margin({ left: 12 })
         .layoutWeight(1)
 
-      SelectionDot({ selected: this.payType === method, dotSize: 24 })
+      this.PayDot(method)
     }
     .width("100%")
     .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: 15, bottom: 15 })
@@ -326,6 +395,7 @@ struct Recharge {
     // 金额精确校验（评审 #19）：不合法时 checkPayNumberMsg 已写入具体原因
     this.checkPayNumber = !this.validateAmount()
     this.checkPayType = this.payType === null
+    this.checkPayTypeMsg = this.checkPayType ? "请选择充值方式" : ""
   }
 
   /**
@@ -522,15 +592,7 @@ struct Recharge {
                 offsetX: 0,
                 offsetY: 2
               })
-              if (this.checkPayNumber) {
-                Text(this.checkPayNumberMsg)
-                  .fontColor(DesignColor.ERROR)
-                  .fontSize(DesignFontSize.CAPTION)
-                  .margin({ top: 8 })
-                  .alignSelf(ItemAlign.Start)
-                  .transition(TransitionEffect.OPACITY)
-                  .animation({ duration: 200, curve: Curve.EaseOut })
-              }
+              this.AmountErrorLine()
             }
             .width("100%")
             .alignItems(HorizontalAlign.Start)
@@ -542,6 +604,11 @@ struct Recharge {
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
                 .fontColor(DesignColor.TEXT_PRIMARY)
                 .margin({ bottom: 12 })
+
+              // 未选支付方式错误行：置于卡片之前（真机实测 T4：本页区块内"卡片之后"的
+              // 条件节点依赖注册失效、键盘 resize 整树重渲染前永不出现；卡片之前可正常 live 渲染。
+              // 安卓基准为卡下方，此处为可靠渲染作位置取舍，见报告 04-wallet-coupon）
+              this.PayTypeErrorLine()
 
               Column() {
                 this.PayTypeCard(PaymentMethod.WECHAT, "微信支付", $r('app.media.wechat'), 0)
@@ -564,15 +631,6 @@ struct Recharge {
                 offsetX: 0,
                 offsetY: 2
               })
-              if (this.checkPayType) {
-                Text("请选择充值方式")
-                  .fontColor(DesignColor.ERROR)
-                  .fontSize(DesignFontSize.CAPTION)
-                  .margin({ top: 8 })
-                  .alignSelf(ItemAlign.Start)
-                  .transition(TransitionEffect.OPACITY)
-                  .animation({ duration: 200, curve: Curve.EaseOut })
-              }
             }
             .width("100%")
             .alignItems(HorizontalAlign.Start)

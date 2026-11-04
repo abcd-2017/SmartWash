@@ -473,6 +473,9 @@ export struct AppPillTabRow {
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width('100%')
+    // 真机缺陷修复（T4）：Scroll 内容窄于视口时默认居中，导致胶囊 tab 整行右移 ~52vp；
+    // 对齐安卓 AppPillTabRow 的左对齐（leading）布局，须显式 Start 对齐
+    .align(Alignment.Start)
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
   }

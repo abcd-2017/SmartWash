@@ -7,6 +7,7 @@ import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
+import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
 
 @Builder
 export function BingCampusCardAlertBuilder() {
@@ -43,6 +44,13 @@ struct BingCampusCardAlert {
         this.entered = true
       })
     }, 16)
+  }
+
+  aboutToDisappear(): void {
+    // 自增 tick（跨页刷新约定，同 Recharge）：绑定/解绑成功后刷新「我的」页校园卡状态行。
+    // 真机实测（T4）：DIALOG 模式 NavDestination 的 pushPathByName onPop 回调不触发，
+    // 入口处的 refreshUserInfo 永远不执行，导致绑定成功后行内仍显示「未绑定」。
+    bumpUserInfoRefresh()
   }
 
   /** 输入框描边色：错误 > 聚焦 > 常规（对齐安卓 OutlinedTextField 三态） */
