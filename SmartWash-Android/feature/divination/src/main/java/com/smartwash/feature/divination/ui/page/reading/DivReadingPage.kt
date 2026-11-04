@@ -143,30 +143,33 @@ fun DivReadingPage(
                         }
 
                         else -> if (reading != null) {
-                            // 解读章节（画板：卡宽 320、页边距 20、卡间 12）
+                            // 注意：Crossfade 的内容容器是 BoxScope（CrossfadeScope），此前章节卡/
+                            // 「总结与行动」卡/主按钮三件直接作为其子组件按 TopStart 叠放
+                            // （P-1701：「继 续 追 问」按钮压在「总结与行动」卡片标题上），
+                            // 收拢进单个 Column 恢复流式排列（画板：卡宽 320、页边距 20、卡间 12）
                             Column(Modifier.padding(horizontal = 20.dp)) {
                                 reading.sections.forEachIndexed { index, section ->
                                     ReadingSectionCard(section, index)
                                 }
+
+                                // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
+                                ActionCard(reading.action)
+
+                                // 主行动（画板 .actions .btn.gold：flex:1 / 高 44 / 字号 13 / 字距 4；
+                                // 画板另有「分 享」次位按钮，端上暂无分享实现，故只落「继续追问」）
+                                DivGoldButton(
+                                    text = stringResource(R.string.div_reading_followup),
+                                    soft = true,
+                                    height = 44.dp,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier
+                                        .padding(top = 20.dp)
+                                        .fillMaxWidth(),
+                                    onClick = {
+                                        navController.navigate(DivRoute.FollowUp(recordId))
+                                    },
+                                )
                             }
-
-                            // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
-                            ActionCard(reading.action)
-
-                            // 主行动（画板 .actions .btn.gold：flex:1 / 高 44 / 字号 13 / 字距 4；
-                            // 画板另有「分 享」次位按钮，端上暂无分享实现，故只落「继续追问」）
-                            DivGoldButton(
-                                text = stringResource(R.string.div_reading_followup),
-                                soft = true,
-                                height = 44.dp,
-                                fontSize = 13.sp,
-                                modifier = Modifier
-                                    .padding(start = 20.dp, end = 20.dp, top = 20.dp)
-                                    .fillMaxWidth(),
-                                onClick = {
-                                    navController.navigate(DivRoute.FollowUp(recordId))
-                                },
-                            )
                         }
                     }
                 }
@@ -243,11 +246,11 @@ private fun ReadingSectionCard(
     }
 }
 
-/** 「总结与行动」卡（画板无金底卡，与章节卡同款样式） */
+/** 「总结与行动」卡（画板无金底卡，与章节卡同款样式；水平边距由解读正文的 Column 提供） */
 @Composable
 private fun ActionCard(action: String) {
     val c = DivColors.current
-    DivCard(Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp)) {
+    DivCard(Modifier.padding(top = 6.dp)) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
             Text(
                 text = stringResource(R.string.div_reading_action),
