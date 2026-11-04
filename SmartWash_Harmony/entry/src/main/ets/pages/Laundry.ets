@@ -300,66 +300,71 @@ struct Laundry {
             Column()
               .height(12)
 
-            Row() {
-              // 投递柜图标（V6：IconBox 44/24 绿系 tile，替代裸 SymbolGlyph）
-              IconBox({
-                icon: $r('sys.symbol.circle_below_local_filled'),
-                sizeValue: 44,
-                iconSize: 24,
-                containerColor: DesignColor.PRIMARY_LIGHT,
-                iconColor: DesignColor.PRIMARY_DARK
-              })
+            // 学校卡（问题7 同类修复：width("100%") 与 margin 叠加会被布局顶掉导致卡片横贯全屏，
+            // 水平边距改由外层容器 padding 承担——与下方套餐列表 List 的 padding 修法一致）
+            Column() {
+              Row() {
+                // 投递柜图标（V6：IconBox 44/24 绿系 tile，替代裸 SymbolGlyph）
+                IconBox({
+                  icon: $r('sys.symbol.circle_below_local_filled'),
+                  sizeValue: 44,
+                  iconSize: 24,
+                  containerColor: DesignColor.PRIMARY_LIGHT,
+                  iconColor: DesignColor.PRIMARY_DARK
+                })
 
-              Column() {
-                Text(`${this.userInfo?.schoolVo?.schoolName}`)
-                  .fontSize(DesignFontSize.CARD_TITLE)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                Column() {
+                  Text(`${this.userInfo?.schoolVo?.schoolName}`)
+                    .fontSize(DesignFontSize.CARD_TITLE)
+                    .fontWeight(DesignFontWeight.SEMI_BOLD)
+                    .fontColor(DesignColor.TEXT_PRIMARY)
 
-                Text(`${this.userInfo?.schoolVo?.location}`)
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
-                  .maxLines(1)
-                  .textOverflow({ overflow: TextOverflow.Ellipsis })
-              }
-              .alignItems(HorizontalAlign.Start)
-              .layoutWeight(1)
-              .margin({ left: 12 })
-
-              // 「更换」动作（V7）：16/600 primaryDark + 12/12 热区，弹「联系客服」提示弹窗
-              Column() {
-                Text("更换")
-                  .fontSize(DesignFontSize.BODY)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.PRIMARY_DARK)
-                  .padding({ left: 12, right: 12, top: 12, bottom: 12 })
-              }
-              .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
-              .onTouch((event: TouchEvent) => {
-                if (event.type === TouchType.Down) {
-                  this.changePressed = true
-                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                  this.changePressed = false
+                  Text(`${this.userInfo?.schoolVo?.location}`)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .maxLines(1)
+                    .textOverflow({ overflow: TextOverflow.Ellipsis })
                 }
+                .alignItems(HorizontalAlign.Start)
+                .layoutWeight(1)
+                .margin({ left: 12 })
+
+                // 「更换」动作（V7）：16/600 primaryDark + 12/12 热区，弹「联系客服」提示弹窗
+                Column() {
+                  Text("更换")
+                    .fontSize(DesignFontSize.BODY)
+                    .fontWeight(DesignFontWeight.SEMI_BOLD)
+                    .fontColor(DesignColor.PRIMARY_DARK)
+                    .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                }
+                .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
+                .onTouch((event: TouchEvent) => {
+                  if (event.type === TouchType.Down) {
+                    this.changePressed = true
+                  } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                    this.changePressed = false
+                  }
+                })
+                .onClick(() => {
+                  this.changeSchoolDialogController.open()
+                })
+              }
+              .width("100%")
+              .alignItems(VerticalAlign.Center)
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .backgroundColor(DesignColor.SURFACE)
+              // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+              .border({ width: 1, color: DesignColor.OUTLINE })
+              .shadow({
+                radius: DesignElevation.LEVEL_1,
+                color: DesignColor.SHADOW_COLOR_CARD,
+                offsetX: 0,
+                offsetY: 2
               })
-              .onClick(() => {
-                this.changeSchoolDialogController.open()
-              })
+              .padding(DesignDimens.CARD_PADDING)
             }
             .width("100%")
-            .alignItems(VerticalAlign.Center)
-            .borderRadius(DesignDimens.CARD_RADIUS)
-            .backgroundColor(DesignColor.SURFACE)
-            // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-            .border({ width: 1, color: DesignColor.OUTLINE })
-            .shadow({
-              radius: DesignElevation.LEVEL_1,
-              color: DesignColor.SHADOW_COLOR_CARD,
-              offsetX: 0,
-              offsetY: 2
-            })
-            .padding(DesignDimens.CARD_PADDING)
-            .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
             Column()
               .height(DesignDimens.SECTION_SPACING)
