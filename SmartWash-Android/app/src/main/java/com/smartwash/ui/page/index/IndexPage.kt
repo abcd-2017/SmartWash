@@ -27,10 +27,13 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
 import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,12 +47,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
@@ -78,6 +84,7 @@ import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
 import androidx.compose.ui.text.style.TextAlign
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IndexPage(
     isActive: Boolean,
@@ -88,10 +95,33 @@ fun IndexPage(
     val userInfoStatus by indexViewModel.userInfoStatus.collectAsState()
     val userInfo by indexViewModel.userInfo.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
+    val isRefreshing by indexViewModel.refreshing.collectAsState()
 
     // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
     LaunchedEffect(isActive) {
         if (isActive) indexViewModel.getInfoData()
+    }
+
+    // ON_RESUME 静默强刷（P-603/P-701）：App 从后台回前台时服务端余额/订单状态可能
+    // 已变化（他人代寄、管理员流转），getUserInfo 内存缓存不会自行失效，此处强制走
+    // 网络对齐 SettingPage/PermissionManagementPage 的既有 DisposableEffect 模式。
+    // 首次 ON_RESUME 跳过：LifecycleRegistry 对新注册 observer 会重放 ON_RESUME，
+    // 与上方 LaunchedEffect(isActive) 的首载重复。应用内导航返回（支付/充值页回首页）
+    // 不经过 Activity 生命周期，由 LaunchedEffect(isActive) 重跑 + 写链路刷新缓存覆盖。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    indexViewModel.refreshData()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val errorContext = LocalContext.current
@@ -123,6 +153,15 @@ fun IndexPage(
             if (skeleton) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else {
+                // 下拉刷新（P-603）：走 refreshData 强刷用户信息与进行中订单（refreshUserInfo
+                // 强制走网络，不读 UserApiImpl 缓存——下拉语义就是「拿服务端最新值」）；
+                // 指示器进度由 VM 独立 refreshing 状态承载（Loading 语义已被骨架屏占用）；
+                // 骨架态不包裹（首载无内容可拉，对齐 WorkbenchPage 的 isRefreshing 口径）
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { indexViewModel.refreshData() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -250,6 +289,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(44.dp))
                     ServiceTips()
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+                }
                 }
                 }
             }

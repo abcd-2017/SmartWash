@@ -11,6 +11,7 @@ import com.smartwash.feature.user.api.model.UserInfo
 import com.smartwash.R
 import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -28,6 +29,10 @@ class IndexViewModel @Inject constructor(
     private val _orderList = MutableStateFlow<List<OrderBrief>>(emptyList())
     val orderList = _orderList.asStateFlow()
 
+    /** 静默强刷进行中标记：驱动下拉刷新指示器（Loading 语义已被骨架屏占用，不复用 userInfoStatus） */
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing = _refreshing.asStateFlow()
+
     fun getInfoData() {
         viewModelScope.launch {
             _userInfoStatus.value = RequestState.Loading
@@ -40,6 +45,34 @@ class IndexViewModel @Inject constructor(
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "IndexViewModel.getInfoData: ${e.message}", e)
                 _userInfoStatus.value = RequestState.Error(e.resId, e.message)
+            }
+        }
+    }
+
+    /**
+     * 静默强刷（P-603/P-701）：ON_RESUME 回首页与下拉刷新共用入口。
+     *
+     * 与 [getInfoData] 的两点差异：
+     * 1. 用户信息走 [UserApi.refreshUserInfo] 强制走网络——余额/统计在服务端被支付、
+     *    充值、订单流转等操作改变后，仅重读 UserApiImpl 内存缓存拿不到新值；
+     * 2. 不置 userInfoStatus（不清空现有内容、不触发骨架/Crossfade 闪变），刷新进度
+     *    由 [refreshing] 独立承载（下拉指示器）。失败静默降级保留现有数据。
+     */
+    fun refreshData() {
+        // 防重入：下拉刷新与 ON_RESUME 短窗口内可能并发触发，同一时间只允许一轮在跑
+        if (_refreshing.value) return
+        viewModelScope.launch {
+            _refreshing.value = true
+            try {
+                // refreshUserInfo 失败返回 null（实现方已 catch），保留旧值不覆盖
+                _userInfo.value = userApi.refreshUserInfo() ?: _userInfo.value
+                _orderList.value = orderApi.getWashingOrder()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                AppLogger.warn(TAG, "refreshData: 静默强刷失败，保留现有数据", e)
+            } finally {
+                _refreshing.value = false
             }
         }
     }

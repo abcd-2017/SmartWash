@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,10 +54,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -110,6 +114,27 @@ fun UserInfoPage(
     // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
     LaunchedEffect(isActive) {
         if (isActive) userInfoViewModel.getUserInfo()
+    }
+
+    // ON_RESUME 刷新（P-603）：App 从后台回前台时重新拉取用户信息（本页 getUserInfo
+    // 直连网络、无缓存，天然拿到最新余额/统计），对齐 SettingPage 的既有
+    // DisposableEffect + LifecycleEventObserver 模式。首次 ON_RESUME 跳过：
+    // LifecycleRegistry 对新注册 observer 会重放 ON_RESUME，与上方 LaunchedEffect
+    // (isActive) 的首载重复。已有数据时 Loading 不触发骨架（showSkeleton 仅首载成立）。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    userInfoViewModel.getUserInfo()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     // 首载一旦落定（成功或失败）就不再回骨架：失败后 resetState 回到 Idle，
     // 若只看 Idle/Loading 会让骨架永久停留（本页没有重试入口）
