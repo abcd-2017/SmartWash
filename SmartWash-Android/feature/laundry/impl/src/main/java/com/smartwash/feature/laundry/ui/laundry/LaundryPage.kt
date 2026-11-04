@@ -47,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -313,12 +312,6 @@ private fun LaundryTypeItem(
         animationSpec = defaultSpring(),
         label = "borderColor"
     )
-    // 指示器容器底色：随选中态走 selectedColor 弹簧过渡（200ms 档，reduced motion 降级 180ms）。
-    // 此前该动画色声明后未接线，容器仍 0ms 硬切，与卡片 200ms 渐变不同步造成单选框「抽动」
-    val indicatorColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primaryLight
-        else AppColors.colorScheme.surfaceVariant
-    )
     // 指示器圆环色：选中 primary / 未选中 outline（空心环语义）
     val indicatorRingColor = selectedColor(
         if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
@@ -356,35 +349,31 @@ private fun LaundryTypeItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // 选中指示器 — 36dp 盒 + radiusSmall，底色走 indicatorColor 弹簧过渡（与卡片同步渐变）。
+                // 选中指示器 — 20dp 圆环 + 勾，对齐公共 SelectionDot 的语言
+                // （未选 = outline 空心环 / 选中 = primary 环 + 勾）。
                 // 2026-11-01：未选中态由「灰实心点」改为空心圆环（原实心点观感突兀）；
-                // 两态统一 20dp 尺寸——原选中勾 20dp ↔ 未选中灰点 12dp 的尺寸跳变正是切换「抽搐」的根因
+                // 2026-11-04：移除 36dp 灰盒底 —— 未选态灰盒(surfaceVariant #EFF1EE)与浅环
+                // (outline #E3E7E2)对比度仅 Δ9/255，环几乎不可见、观感是一块「脏灰」；
+                // 选中态盒底与卡面同色本就不可见，盒底纯属噪音。去掉后环直接落卡面（Δ25，
+                // 与支付/充值页 SelectionDot 同口径），行高仍由右侧两行文字决定，布局无变化
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusSmall))
-                        .background(indicatorColor),
+                        .size(20.dp)
+                        .border(1.5.dp, indicatorRingColor, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Box(
+                    // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
                         modifier = Modifier
-                            .size(20.dp)
-                            .border(1.5.dp, indicatorRingColor, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(12.dp)
-                                .graphicsLayer {
-                                    scaleX = checkScale
-                                    scaleY = checkScale
-                                },
-                            tint = AppColors.colorScheme.primary
-                        )
-                    }
+                            .size(12.dp)
+                            .graphicsLayer {
+                                scaleX = checkScale
+                                scaleY = checkScale
+                            },
+                        tint = AppColors.colorScheme.primary
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {

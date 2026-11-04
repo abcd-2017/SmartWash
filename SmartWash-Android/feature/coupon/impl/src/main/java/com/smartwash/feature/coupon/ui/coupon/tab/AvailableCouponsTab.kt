@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -142,8 +143,12 @@ fun CouponCard(
         border = BorderStroke(1.dp, AppColors.colorScheme.outline)
     ) {
         Row(
+            // IntrinsicSize.Min 必须加：右列内容撑起行高后，左侧面额区的 fillMaxHeight 才有界可填。
+            // 直接 fillMaxHeight 在 LazyColumn 的无界高度约束下是 no-op，面额区会塌缩成内容高
+            // 被 Row 顶到左上角（与已领取/历史 tab 的固定 88dp 行不同，本卡行高由右列决定）
             modifier = Modifier
                 .fillMaxWidth()
+                .height(IntrinsicSize.Min)
         ) {
             // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（纵向贯通两行）
             Box(
