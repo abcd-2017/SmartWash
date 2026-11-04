@@ -214,7 +214,12 @@ fun OrderDetailPage(
                 }
 
                 // 底部操作条（设计稿屏 6：border-top + surface 底 + padding 16/24，D-OD5/6/7）
+                // P-901：取件码语义只存在于待寄件/待取件（与 D-OD1 弹窗判定同一口径），
+                // 已取消/已完成/待支付/清洗中等状态隐藏「查看取件码」按钮，仅保留联系客服
+                val currentStatus = OrderStatus.fromStatus(orderInfo?.status ?: "-1")
                 OrderDetailActionBar(
+                    showPickupCode = currentStatus == OrderStatus.PENDING_SHIPMENT ||
+                        currentStatus == OrderStatus.READY_FOR_PICKUP,
                     onContactServiceClick = {
                         // 待客服功能立项后接入（D-OD12，用户已确认：先以 Toast 兜底）
                         Toast.makeText(context, context.getString(R.string.contact_service_unavailable), Toast.LENGTH_SHORT).show()
@@ -636,11 +641,13 @@ private fun DrumIllustration() {
  * 底部固定操作条 — 设计稿屏 6 实测：1dp 顶线（outline）+ surface 底 + padding 16/24 + 按钮间距 12（D-OD5/6/7）
  * 按钮规格（实测）：高 48 / radiusFull 胶囊 / 文字 font.title 18/600；
  * 主按钮纯色 primary + onPrimary 白/墨绿字（ls 1）；次按钮透明底 + 1dp outline 描边 + primaryDark 字（§5 次级按钮描边样式，§10 绿字红线 green.700）
+ * 主按钮显隐由 [showPickupCode] 控制（P-901：取件码语义仅待寄件/待取件，隐藏后次按钮 weight(1f) 占满整行）；
  * 点击行为由页面回调承接（D-OD1/D-OD12）
  */
 @Composable
 private fun OrderDetailActionBar(
     modifier: Modifier = Modifier,
+    showPickupCode: Boolean,
     onContactServiceClick: () -> Unit = {},
     onPickupCodeClick: () -> Unit = {},
 ) {
@@ -681,22 +688,25 @@ private fun OrderDetailActionBar(
                         color = AppColors.colorScheme.primaryDark
                     )
                 }
-                // 主按钮 — 纯色 primary 胶囊（屏 6 实测无渐变），onPrimary 双主题成对
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .pressable(onClick = onPickupCodeClick, debounce = false)
-                        .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.view_pickup_code),
-                        style = MaterialTheme.typography.titleMedium,
-                        // 屏 6 实测主按钮字距 ls=1
-                        letterSpacing = 1.sp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                // 主按钮 — 纯色 primary 胶囊（屏 6 实测无渐变），onPrimary 双主题成对；
+                // P-901：无取件码语义的状态（已取消/已完成等）不渲染该按钮
+                if (showPickupCode) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .pressable(onClick = onPickupCodeClick, debounce = false)
+                            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.view_pickup_code),
+                            style = MaterialTheme.typography.titleMedium,
+                            // 屏 6 实测主按钮字距 ls=1
+                            letterSpacing = 1.sp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
         }
