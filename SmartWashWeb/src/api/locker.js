@@ -37,3 +37,12 @@ export function deleteLocker(ids) {
     method: 'delete',
   });
 }
+
+// 批量新增：后端自动跳过该学校已占用编号，返回实际生成的编号范围
+export function batchAddLocker(data) {
+  return request({
+    url: '/admin/lockers/batchAdd',
+    method: 'post',
+    data,
+  });
+}

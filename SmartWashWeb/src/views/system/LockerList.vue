@@ -70,6 +70,7 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
           <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
+          <el-button @click="handleBatchCreate">批量新增</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -166,6 +167,56 @@
         <el-button type="primary" :loading="submitting" @click="submitForm">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量新增弹窗 -->
+    <el-dialog title="批量新增寄存柜" v-model="batchDialogVisible" width="600px">
+      <el-form ref="batchFormRef" :model="tempBatchLocker" label-width="120px" :rules="batchRules">
+        <el-form-item label="学校" prop="schoolId">
+          <el-select
+            v-model="tempBatchLocker.schoolId"
+            placeholder="请选择学校"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="school in schoolOptions"
+              :key="school.schoolId"
+              :label="school.schoolName"
+              :value="school.schoolId"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="起始柜号" prop="startNumber">
+          <el-input-number
+            v-model="tempBatchLocker.startNumber"
+            :min="1"
+            controls-position="right"
+            style="width: 100%"
+          />
+          <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px">
+            系统将自动跳过该学校已占用的编号
+          </div>
+        </el-form-item>
+
+        <el-form-item label="新增数量" prop="count">
+          <el-input-number
+            v-model="tempBatchLocker.count"
+            :min="1"
+            :max="1000"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="batchDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="batchSubmitting" @click="submitBatchForm"
+          >确认</el-button
+        >
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -178,6 +229,7 @@ import {
   addLocker,
   updateLocker,
   deleteLocker,
+  batchAddLocker,
 } from '@/api/locker';
 import { schoolOptionsCache } from '@/utils/optionCache';
 import { formatTime } from '@/utils/format';
@@ -252,6 +304,32 @@ const rules = reactive({
   status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 });
 
+// 批量新增弹窗状态
+const batchDialogVisible = ref(false);
+const batchFormRef = ref(null);
+const batchSubmitting = ref(false);
+
+const tempBatchLocker = reactive({
+  schoolId: null,
+  startNumber: 1,
+  count: 100,
+});
+
+const batchRules = reactive({
+  schoolId: [
+    { required: true, message: '请选择学校', trigger: 'change' },
+    { type: 'number', min: 1, message: '学校ID必须大于0' },
+  ],
+  startNumber: [
+    { required: true, message: '请输入起始柜号', trigger: 'change' },
+    { type: 'number', min: 1, message: '起始柜号必须大于0' },
+  ],
+  count: [
+    { required: true, message: '请输入新增数量', trigger: 'change' },
+    { type: 'number', min: 1, message: '新增数量必须大于0' },
+  ],
+});
+
 // 初始化数据
 onMounted(async () => {
   await fetchStatus();
@@ -284,6 +362,47 @@ const fetchSchools = async () => {
     // 传输层失败已由 http.js 拦截器统一留痕，这里归因到页面动作，避免静默失败
     logger.error('获取学校列表失败:', error);
     ElMessage.error('获取学校列表失败');
+  }
+};
+
+// 打开批量新增弹窗
+const handleBatchCreate = () => {
+  batchDialogVisible.value = true;
+  Object.assign(tempBatchLocker, {
+    schoolId: null,
+    startNumber: 1,
+    count: 100,
+  });
+};
+
+// 提交批量新增
+const submitBatchForm = async () => {
+  batchSubmitting.value = true;
+  try {
+    await batchFormRef.value.validate();
+
+    const res = await batchAddLocker({
+      schoolId: tempBatchLocker.schoolId,
+      startNumber: tempBatchLocker.startNumber,
+      count: tempBatchLocker.count,
+    });
+
+    ElMessage.success(`批量新增成功：${res.addedCount} 个（${res.firstNumber}-${res.lastNumber}）`);
+    // 写操作成功留痕：业务键仅 schoolId/编号范围（批量新增无 lockerId）
+    logger.info(
+      '批量新增寄存柜成功',
+      `schoolId=${tempBatchLocker.schoolId}`,
+      `addedCount=${res.addedCount}`,
+      `range=${res.firstNumber}-${res.lastNumber}`
+    );
+    batchDialogVisible.value = false;
+    fetchData();
+  } catch (error) {
+    // validate 校验失败 reject 的是字段对象（fieldValue 含输入明文），非 Error 时仅记文本
+    logger.error('批量新增寄存柜失败:', error instanceof Error ? error : '表单校验未通过');
+    ElMessage.error(error.message || '操作失败');
+  } finally {
+    batchSubmitting.value = false;
   }
 };
 
@@ -322,7 +441,11 @@ const submitForm = async () => {
       await addLocker(submitData);
       ElMessage.success('新增成功');
       // 写操作成功留痕：业务键仅 schoolId/lockerNumber（新增无 lockerId）
-      logger.info('新增寄存柜成功', `schoolId=${tempLocker.schoolId}`, `lockerNumber=${tempLocker.lockerNumber}`);
+      logger.info(
+        '新增寄存柜成功',
+        `schoolId=${tempLocker.schoolId}`,
+        `lockerNumber=${tempLocker.lockerNumber}`
+      );
     } else {
       await updateLocker(submitData);
       ElMessage.success('修改成功');
