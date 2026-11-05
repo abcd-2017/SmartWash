@@ -29,6 +29,19 @@ export function uploadGame(formData, onUploadProgress) {
   });
 }
 
+// 上传游戏封面：multipart 图片（png/jpeg/webp，≤5MB），返回 MinIO 公网直链。
+// 直链回填表单 coverUrl 字段（上传/编辑接口共用）；留空则端上用本地兜底封面
+export function uploadGameCover(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request({
+    url: '/admin/game/cover',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
 // 编辑游戏：id + title/description/icon/color/category/badge/sort/remark
 // （gameKey/source_type/url/文件不在此接口修改范围，方案 §五）
 export function updateGame(data) {
