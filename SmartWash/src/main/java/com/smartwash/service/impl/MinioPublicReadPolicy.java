@@ -16,8 +16,14 @@ import java.util.List;
 @Slf4j
 public final class MinioPublicReadPolicy {
 
-    /** 匿名只读白名单前缀（新增前缀必须同步评估三端直链消费方，禁止静默扩白名单） */
-    public static final List<String> PUBLIC_READ_PREFIXES = List.of("game/", "avatar/", "default/");
+    /**
+     * 匿名只读白名单前缀（新增前缀必须同步评估三端直链消费方，禁止静默扩白名单）。
+     * <p>覆盖：游戏包(game/)、用户头像(avatar/)、默认头像(default/)、
+     * 游戏封面(game-covers/)、工作台配图(workbench/covers/)。
+     * 后两者由端上 Coil 匿名直拉（不带 token），必须公共读，否则封面/配图 403。</p>
+     */
+    public static final List<String> PUBLIC_READ_PREFIXES =
+            List.of("game/", "avatar/", "default/", "game-covers/", "workbench/covers/");
 
     private static final String GET_OBJECT = "s3:GetObject";
 
