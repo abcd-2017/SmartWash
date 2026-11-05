@@ -5,6 +5,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.display.DisplayManager
+import android.view.Display
 import android.view.Surface
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -136,7 +138,13 @@ class StarMapViewModel @Inject constructor(
         val g = gravity ?: return
         val m = magnetic ?: return
         val matrix = StarMapEngine.computeRotationMatrix(g, m) ?: return
-        val rotation = context.display?.rotation ?: Surface.ROTATION_0
+        // P0 崩溃修复：[context] 是 @ApplicationContext，Android 17 起 Context.getDisplay() 对非
+        // 可视化 Context 直接抛 UnsupportedOperationException（复现路径：工作台 → 解压实验舱 →
+        // 滚动到底 → 掌上星图 → 传感器回调即崩）。改用 DisplayManager 按 DEFAULT_DISPLAY 取 display，
+        // Application Context 全程可用，空安全回退 ROTATION_0 保持原有降级语义。
+        val displayManager = context.getSystemService(DisplayManager::class.java)
+        val rotation = displayManager?.getDisplay(Display.DEFAULT_DISPLAY)?.rotation
+            ?: Surface.ROTATION_0
         val remapped = StarMapEngine.remapForScreenRotation(matrix, rotation)
         _state.value = _state.value.copy(rotationMatrix = remapped)
     }
