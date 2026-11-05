@@ -30,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +54,9 @@ import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
+import com.smartwash.common.ui.theme.ImageScrim
+import com.smartwash.common.ui.theme.OnImagePrimary
+import com.smartwash.common.ui.theme.OnImageSecondary
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.game.GameCategory
@@ -63,14 +68,11 @@ import com.smartwash.feature.game.ui.navigateToGameWebView
 /** 网格列数（对齐工作台两列卡，方案 §六） */
 private const val GRID_COLUMNS = 2
 
+/** 封面宽高比（设计稿封面 800×450 横版；服务端上传与本地兜底同一比例） */
+private const val GAME_CARD_ASPECT_RATIO = 16f / 9f
+
 /** 网格卡片间距（方案 §六 明确 8dp：touch-spacing 网格密排，取间距令牌 spaceXs） */
 private val GRID_SPACING = AppDimens.spaceXs
-
-/**
- * 骨架卡高度（与真实卡构成对齐：卡内边距 20 + 图标块 44 + 间距 12 + 标题行 20 +
- * 间距 4 + 描述两行 32 + 卡内边距 20）
- */
-private val SKELETON_CARD_HEIGHT = 152.dp
 
 /**
  * 游戏中心页（方案 §六）：PageHeader + 分类筛选 chips（本地过滤）+ 两列网格卡片。
@@ -233,11 +235,15 @@ private fun GameGrid(
 }
 
 /**
- * 游戏卡（卡片唯一画法：白 surface + 1dp outline 描边 + level1 阴影，规范 §3.1）：
- * 44dp 图标色块（色组 Token 六色浅底 + 对应前景色；圆角 16dp 为方案 §六 tile 语言
- * 明确规定，较 §3.2 图标容器 12dp 档放宽）+ 标题 + 描述两行截断 + badge 文字角标
- * （文字传达，非纯色）。整卡 pressable（scale 0.97 / 80-150ms 档，transform-only，
- * reduced motion 降级透明度）；a11y：contentDescription = title + description。
+ * 游戏卡（卡片唯一画法：白 surface + 1dp outline 描边 + level1 阴影，规范 §3.1）。
+ * 两种构图按有无封面分流：
+ * - 有封面（服务端 MinIO 直链优先，缺失回退本地自绘兜底）：封面主导 — 16:9 满幅占卡，
+ *   底部黑渐变遮罩压白字（标题 + 单行描述），语言同首页 hero 深底白字先例（IndexPage）；
+ *   badge 升白胶囊（surface 底 + textPrimary 字）保证任意封面底色下可读。
+ * - 无封面：原回退卡 — 44dp 图标色块（六色浅底 + 对应前景色，圆角 16dp 方案 §六）
+ *   + 标题 + 描述两行截断。
+ * 整卡 pressable（scale 0.97 / 80-150ms 档，transform-only，reduced motion 降级透明度）；
+ * a11y：contentDescription = title + description，封面为装饰图不出语义。
  */
 @Composable
 private fun GameCard(
@@ -272,26 +278,63 @@ private fun GameCard(
             // 服务端封面优先（管理端上传 MinIO），缺失回退本地自绘兜底封面
             val hasServerCover = !game.coverUrl.isNullOrBlank()
             val hasCover = hasServerCover || localCover != null
-            Column {
-                if (hasServerCover) {
-                    SmartWashAsyncImage(
-                        url = game.coverUrl.orEmpty(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f),
+            if (hasServerCover) {
+                SmartWashAsyncImage(
+                    url = game.coverUrl.orEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(GAME_CARD_ASPECT_RATIO),
+                    contentScale = ContentScale.Crop,
+                )
+            } else if (localCover != null) {
+                Image(
+                    painter = painterResource(localCover),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(GAME_CARD_ASPECT_RATIO),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            if (hasCover) {
+                // 底部渐变遮罩（ImageScrim 令牌）：上 45% 全透明 → 底部最深档，保证压在插画上的白字可读
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                0.45f to Color.Transparent,
+                                1f to ImageScrim,
+                            )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
+                ) {
+                    Text(
+                        text = game.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OnImagePrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                } else if (localCover != null) {
-                    Image(
-                        painter = painterResource(localCover),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f),
-                        contentScale = ContentScale.Crop
-                    )
+                    if (game.description.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                        Text(
+                            text = game.description,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = OnImageSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
+            } else {
                 Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                if (!hasCover) {
                     // 图标色块：44dp 容器（v0.4 §3.2 主容器档）+ 24dp 图标，圆角取 16dp（方案 §六）
                     Box(
                         modifier = Modifier
@@ -308,14 +351,13 @@ private fun GameCard(
                         )
                     }
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-                }
-                Text(
-                    text = game.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                    Text(
+                        text = game.title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = game.description,
@@ -326,17 +368,20 @@ private fun GameCard(
                     )
                 }
             }
-            // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字
-            // （文字角标非纯色传达；语言对齐工作台 ToolTile）
+            // badge 角标（服务端下发文案，文字传达非纯色）：有封面时升白胶囊
+            // （surface 底 + textPrimary 字，任意插画底色下可读）；无封面保持
+            // 主色浅底/主色文字胶囊（语言对齐工作台 ToolTile）
             if (!game.badge.isNullOrBlank()) {
+                val badgeColor = if (hasCover) scheme.textPrimary else scheme.primary
+                val badgeContainer = if (hasCover) scheme.surface else scheme.primaryLight
                 Text(
                     text = game.badge,
                     style = MaterialTheme.typography.labelSmall,
-                    color = scheme.primary,
+                    color = badgeColor,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm)
-                        .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
+                        .background(badgeContainer, RoundedCornerShape(AppDimens.radiusFull))
                         .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
                 )
             }
@@ -347,6 +392,7 @@ private fun GameCard(
 /**
  * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；行距同真实网格 8dp，
  * 微光扫过经 SkeletonBlock，reduced motion 自动退化为静态浅灰块）。
+ * 骨架卡与封面主导真实卡同为 16:9（aspectRatio 随宽度自适应，不再定高）。
  */
 @Composable
 private fun GameGridSkeleton(modifier: Modifier = Modifier) {
@@ -363,7 +409,7 @@ private fun GameGridSkeleton(modifier: Modifier = Modifier) {
                     SkeletonBlock(
                         modifier = Modifier
                             .weight(1f)
-                            .height(SKELETON_CARD_HEIGHT),
+                            .aspectRatio(GAME_CARD_ASPECT_RATIO),
                         shape = RoundedCornerShape(AppDimens.radiusLg),
                     )
                 }

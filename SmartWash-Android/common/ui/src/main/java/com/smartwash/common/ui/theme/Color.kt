@@ -276,3 +276,8 @@ val DivSpiritBai = Color(0xFFC9C2B0)
 val DivSpiritHei = Color(0xFF54679C)
 val DivSpiritHuang = Color(0xFFC9A961)
 val DivSpiritZi = Color(0xFF8A7A9C)
+
+// 压图文字/遮罩（封面主导卡用；图片上的沉浸层不随深浅色切换，两主题共用）
+val ImageScrim = Color.Black.copy(alpha = 0.62f)        // 封面底部渐变遮罩最深档（保证压插画白字可读）
+val OnImagePrimary = Color.White                         // 压图主文字（对齐首页 hero 白字先例）
+val OnImageSecondary = Color.White.copy(alpha = 0.78f)   // 压图次文字（一句话描述）
