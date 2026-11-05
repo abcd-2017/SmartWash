@@ -1313,7 +1313,7 @@ CREATE TABLE `game_config` (
   `object_key`  VARCHAR(512) DEFAULT NULL COMMENT 'source_type=1: MinIO对象键前缀 game/{game_key}/',
   `file_size`   BIGINT       DEFAULT NULL COMMENT '包体积字节(source_type=1)',
   `badge`       VARCHAR(16)  DEFAULT NULL COMMENT '角标文案(新/热),空不显示',
-  `cover_url`   VARCHAR(512) DEFAULT NULL COMMENT '封面直链(管理端上传MinIO game-covers/ 前缀),空则端上用本地兜底封面',
+  `cover_url`   VARCHAR(512) DEFAULT NULL COMMENT '封面对象键(MinIO game-covers/ 前缀),读时拼公共读直链,空则端上用本地兜底封面',
   `enabled`     TINYINT      NOT NULL DEFAULT 0 COMMENT '1下发 0不下发(上架开关)',
   `sort`        INT          NOT NULL DEFAULT 100 COMMENT '排序,越小越靠前',
   `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',

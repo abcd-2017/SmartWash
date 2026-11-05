@@ -193,6 +193,31 @@ class GameConfigServiceImplTest {
     }
 
     @Test
+    @DisplayName("封面上传：完整直链归一化为对象键落库，下发时拼回公共读直链")
+    void upload_coverUrl_normalizedToKey() {
+        when(gameMapper.selectOne(any(Wrapper.class))).thenReturn(null);
+        when(gameMapper.insert(any(GameConfig.class))).thenAnswer(inv -> {
+            inv.getArgument(0, GameConfig.class).setId(8L);
+            return 1;
+        });
+        GameConfig stored = record(8L, "snake", 0, 1);
+        stored.setCoverUrl("game-covers/20261105/abc.png");
+        when(gameMapper.selectById(8L)).thenReturn(stored);
+
+        UploadGameFrom from = uploadFrom("snake");
+        from.setCoverUrl("http://minio.local:9000/smartwash/game-covers/20261105/abc.png");
+
+        AdminGameVo vo = service.upload(from, htmlFile());
+
+        ArgumentCaptor<GameConfig> savedCaptor = ArgumentCaptor.forClass(GameConfig.class);
+        verify(gameMapper).insert(savedCaptor.capture());
+        // 落库为对象键（剥离端点与桶前缀），换 MinIO 域名不必刷库
+        assertEquals("game-covers/20261105/abc.png", savedCaptor.getValue().getCoverUrl());
+        // 下发/管理视图读时拼回公共读直链
+        assertEquals("http://minio.local:9000/smartwash/game-covers/20261105/abc.png", vo.getCoverUrl());
+    }
+
+    @Test
     @DisplayName("上传单 html：同 gameKey 重复上传 = 覆盖更新，保留原 enabled/sort，URL 不变")
     void upload_duplicateGameKey_overwrites() {
         GameConfig existing = record(7L, "snake", 1, 1);
