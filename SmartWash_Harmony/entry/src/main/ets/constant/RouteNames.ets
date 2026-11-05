@@ -42,6 +42,10 @@ export class RouteNames {
   static readonly WEB_PAGE: string = "WebPage"
   // 游戏中心页（对齐安卓 GameRoute.Center；入口为深链 smartwash://game-center 与后端 workbench_entry 卡片）
   static readonly GAME_CENTER: string = "GameCenter"
+  // 情绪气象站域路由名（对齐安卓 MoodRoute.Today/Calendar/Trend）
+  static readonly MOOD_TODAY: string = "MoodToday"
+  static readonly MOOD_CALENDAR: string = "MoodCalendar"
+  static readonly MOOD_TREND: string = "MoodTrend"
   // 建设中占位页（深链兜底：安卓新增域 lab/mood/review/subscription/delivery/ai-work
   // 在鸿蒙端未实现，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"

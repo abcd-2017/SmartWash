@@ -31,7 +31,17 @@ export function bumpHomeTabBack(): void {
   AppStorage.setOrCreate(HOME_TAB_BACK_TICK_KEY, current + 1)
 }
 
+/**
+ * 情绪气象站数据（今日/月历/趋势）需要刷新。
+ * 今日页保存成功后 bump，月历/趋势页经 @StorageLink + @Watch 消费重拉。
+ */
+export function bumpMoodRefresh(): void {
+  const current = AppStorage.get<number>(MOOD_TICK_KEY) ?? 0
+  AppStorage.setOrCreate(MOOD_TICK_KEY, current + 1)
+}
+
 /** AppStorage key（写读双方共用，避免字符串漂移） */
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
 export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
+export const MOOD_TICK_KEY: string = 'refreshMoodTick'
