@@ -3,6 +3,8 @@ package com.smartwash.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.config.MinioConfig;
+import com.smartwash.mapper.OrdersMapper;
+import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.vo.users.TransactionVo;
@@ -46,12 +48,17 @@ class UsersServiceImplTest {
     private MinioConfig minioConfig;
     @Mock
     private UsersMapper usersMapper;
+    // getUserInfo 统计装配依赖（orderCount/couponCount）；本类只测交易流水，mock 不被 stub 即可
+    @Mock
+    private OrdersMapper ordersMapper;
+    @Mock
+    private UserCouponMapper userCouponMapper;
 
     private UsersServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new UsersServiceImpl(schoolsService, minioConfig);
+        service = new UsersServiceImpl(schoolsService, minioConfig, ordersMapper, userCouponMapper);
         // ServiceImpl 父类 baseMapper（交易流水 UNION 分页/count 走它），构造注入不会填充，手动注入
         ReflectionTestUtils.setField(service, "baseMapper", usersMapper);
     }
