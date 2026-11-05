@@ -33,6 +33,9 @@ public class GameVo {
     /** 角标文案（如 新/热），空则不显示 */
     private String badge;
 
+    /** 封面直链（管理端上传 MinIO），空则端上用本地兜底封面 */
+    private String coverUrl;
+
     /** 最终可玩地址：MinIO 对象直链（指向入口文件），端上 WebView 直接加载 */
     private String url;
 }

@@ -51,6 +51,9 @@ public class AdminGameVo {
     /** 角标文案，空则不显示 */
     private String badge;
 
+    /** 封面直链（管理端上传 MinIO），空则端上用本地兜底封面 */
+    private String coverUrl;
+
     /** 1下发 0不下发（上架开关） */
     private Integer enabled;
 

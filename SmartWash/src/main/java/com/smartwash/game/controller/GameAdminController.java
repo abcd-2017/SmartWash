@@ -53,6 +53,12 @@ public class GameAdminController {
         return Result.ok(gameConfigService.upload(from, file));
     }
 
+    @Operation(summary = "上传游戏封面", description = "multipart 图片（png/jpeg/webp，≤5MB），存 MinIO game-covers/ 前缀并返回公网直链，直链回填 coverUrl 字段（上传/编辑接口共用）")
+    @PostMapping("/cover")
+    public Result<String> uploadCover(@RequestPart("file") @Parameter(description = "封面图片", required = true) MultipartFile file) {
+        return Result.ok(gameConfigService.uploadCover(file));
+    }
+
     @Operation(summary = "分页查询游戏列表", description = "管理视角含未启用项；keyword 模糊匹配 title/gameKey + category/enabled 精确筛选，按 sort/id 升序")
     @GetMapping("/list")
     public Result<Page<AdminGameVo>> list(SearchGameFrom from) {

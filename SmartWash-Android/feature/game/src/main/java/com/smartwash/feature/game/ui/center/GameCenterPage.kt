@@ -1,8 +1,10 @@
 package com.smartwash.feature.game.ui.center
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,15 +31,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.LocalCoverArt
+import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.EmptyState
@@ -262,23 +268,47 @@ private fun GameCard(
         border = BorderStroke(1.dp, scheme.outline),
     ) {
         Box {
-            Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                // 图标色块：44dp 容器（v0.4 §3.2 主容器档）+ 24dp 图标，圆角取 16dp（方案 §六）
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusLg))
-                        .background(containerColor),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = game.icon,
+            val localCover = LocalCoverArt.gameCover(game.gameKey)
+            // 服务端封面优先（管理端上传 MinIO），缺失回退本地自绘兜底封面
+            val hasServerCover = !game.coverUrl.isNullOrBlank()
+            val hasCover = hasServerCover || localCover != null
+            Column {
+                if (hasServerCover) {
+                    SmartWashAsyncImage(
+                        url = game.coverUrl.orEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f),
+                    )
+                } else if (localCover != null) {
+                    Image(
+                        painter = painterResource(localCover),
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = iconTint,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f),
+                        contentScale = ContentScale.Crop
                     )
                 }
-                Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
+                if (!hasCover) {
+                    // 图标色块：44dp 容器（v0.4 §3.2 主容器档）+ 24dp 图标，圆角取 16dp（方案 §六）
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(AppDimens.radiusLg))
+                            .background(containerColor),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = game.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = iconTint,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+                }
                 Text(
                     text = game.title,
                     style = MaterialTheme.typography.bodyMedium,
@@ -286,14 +316,15 @@ private fun GameCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
-                Text(
-                    text = game.description,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.textSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
+                    Text(
+                        text = game.description,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字
             // （文字角标非纯色传达；语言对齐工作台 ToolTile）

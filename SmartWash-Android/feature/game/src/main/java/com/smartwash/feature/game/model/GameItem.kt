@@ -15,6 +15,7 @@ import com.smartwash.feature.game.GameTint
  * @param category 分类（本地筛选 chips 依据，未知值兜底 OTHER）
  * @param badge   角标文案（如 新/热），null/空不显示
  * @param url     最终可玩地址（后端下发即用，端上零拼装；空串时不响应点击）
+ * @param coverUrl 封面直链（管理端上传 MinIO），空则用本地兜底封面
  */
 data class GameItem(
     val gameKey: String,
@@ -25,4 +26,5 @@ data class GameItem(
     val category: GameCategory,
     val badge: String? = null,
     val url: String = "",
+    val coverUrl: String? = null,
 )

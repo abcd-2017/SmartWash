@@ -77,6 +77,9 @@ class GameConfigServiceImplTest {
     @Mock
     private GameObjectStorage objectStorage;
 
+    @Mock
+    private com.smartwash.game.storage.GameCoverStorage gameCoverStorage;
+
     private GameConfigServiceImpl service;
 
     @TempDir
@@ -94,7 +97,7 @@ class GameConfigServiceImplTest {
         MinioConfig minioConfig = new MinioConfig();
         minioConfig.setEndpoint("http://minio.local:9000");
         minioConfig.setBucketName("smartwash");
-        service = new GameConfigServiceImpl(new GamePackageValidator(), objectStorage, minioConfig);
+        service = new GameConfigServiceImpl(new GamePackageValidator(), objectStorage, minioConfig, gameCoverStorage);
         ReflectionTestUtils.setField(service, "baseMapper", gameMapper);
         ReflectionTestUtils.setField(service, "self", service);
     }
@@ -190,7 +193,7 @@ class GameConfigServiceImplTest {
     }
 
     @Test
-    @DisplayName("上传单 html：同 gameKey 重复上传 = 覆盖更新（updateById 而非 insert），URL 不变")
+    @DisplayName("上传单 html：同 gameKey 重复上传 = 覆盖更新，保留原 enabled/sort，URL 不变")
     void upload_duplicateGameKey_overwrites() {
         GameConfig existing = record(7L, "snake", 1, 1);
         when(gameMapper.selectOne(any(Wrapper.class))).thenReturn(existing);
@@ -200,8 +203,13 @@ class GameConfigServiceImplTest {
         service.upload(uploadFrom("snake"), htmlFile());
 
         verify(gameMapper, never()).insert(any(GameConfig.class));
-        verify(gameMapper).updateById(any(GameConfig.class));
         verify(objectStorage).removeObjectsByPrefix("game/snake/");
+        ArgumentCaptor<GameConfig> updatedCaptor = ArgumentCaptor.forClass(GameConfig.class);
+        verify(gameMapper).updateById(updatedCaptor.capture());
+        GameConfig updated = updatedCaptor.getValue();
+        assertEquals(7L, updated.getId(), "覆盖更新必须沿用原 id");
+        assertEquals(1, updated.getEnabled(), "覆盖上传保留原上架状态，热修包不得静默下架");
+        assertEquals(1, updated.getSort(), "覆盖上传保留原排序（表单 sort=3 不生效）");
     }
 
     @Test

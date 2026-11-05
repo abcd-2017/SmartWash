@@ -103,6 +103,7 @@ class GameCenterViewModel @Inject constructor(
         category = GameCategory.fromKey(category),
         badge = badge?.takeIf { it.isNotBlank() },
         url = url,
+        coverUrl = coverUrl?.takeIf { it.isNotBlank() },
     )
 
     /**

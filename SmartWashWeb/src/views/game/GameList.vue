@@ -41,8 +41,16 @@
           <template #default="{ row }">
             <div class="title-cell">
               <div class="title-row">
+                <!-- 封面缩略图(有则展示,无则用色块占位) -->
+                <img
+                  v-if="row.coverUrl"
+                  class="cover-thumb"
+                  :src="row.coverUrl"
+                  :alt="row.title || '封面'"
+                  loading="lazy"
+                />
                 <!-- 端上按 icon/color key 白名单映射，色块直观展示色组、tag 展示 icon key 便于两端对齐 -->
-                <span class="icon-block" :style="{ backgroundColor: gameColorHex(row.color) }" />
+                <span v-else class="icon-block" :style="{ backgroundColor: gameColorHex(row.color) }" />
                 <span class="title-main">{{ row.title || '-' }}</span>
                 <el-tag v-if="row.badge" size="small" type="warning" effect="plain">
                   {{ row.badge }}
@@ -201,6 +209,39 @@
             </div>
           </el-form-item>
 
+          <el-form-item label="封面图">
+            <el-upload
+              ref="coverUploadRef"
+              class="cover-uploader"
+              :auto-upload="false"
+              :limit="1"
+              :show-file-list="false"
+              accept="image/png,image/jpeg,image/webp"
+              :on-change="handleCoverChange"
+              :on-exceed="handleCoverExceed"
+            >
+              <div v-if="coverPreview" class="cover-preview">
+                <img :src="coverPreview" alt="封面预览" />
+                <el-button
+                  size="small"
+                  circle
+                  type="danger"
+                  plain
+                  :icon="Close"
+                  aria-label="移除封面"
+                  class="cover-remove"
+                  @click.stop="handleCoverRemove"
+                />
+              </div>
+              <div v-else class="upload-empty cover-empty">
+                <el-icon class="upload-empty-icon"><Picture /></el-icon>
+                <div class="upload-empty-text">上传封面图（选填）</div>
+                <div class="upload-empty-tip">png / jpeg / webp，≤5MB；留空则端上用本地兜底封面</div>
+              </div>
+            </el-upload>
+            <div class="form-tip">目录自动填表时若含 cover.png 会自动识别为封面</div>
+          </el-form-item>
+
           <el-divider content-position="left">基本信息</el-divider>
 
           <el-form-item label="标题" prop="title">
@@ -223,6 +264,14 @@
               游戏唯一标识，小写字母开头、3-64 位小写字母/数字/_/-；输入标题后自动生成，可修改。 同
               gameKey 重复上传视为覆盖更新
             </div>
+            <el-alert
+              v-if="keyExists"
+              class="key-conflict-alert"
+              type="warning"
+              :closable="false"
+              show-icon
+              title="该 gameKey 已存在：本次提交为覆盖更新，包文件与元数据将被替换，上架状态与排序保留"
+            />
           </el-form-item>
 
           <el-form-item label="分类" prop="category">
@@ -337,7 +386,9 @@
       <template #footer>
         <template v-if="!uploadResult">
           <el-button :disabled="uploading" @click="uploadDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="uploading" @click="submitUpload">确认上传</el-button>
+          <el-button type="primary" :loading="uploading" @click="submitUpload">
+            {{ keyExists ? '覆盖更新' : '确认上传' }}
+          </el-button>
         </template>
         <template v-else>
           <el-button @click="handleReupload">再传一个</el-button>
@@ -399,6 +450,39 @@
               </div>
             </div>
           </el-upload>
+        </el-form-item>
+
+        <el-form-item label="封面图">
+          <el-upload
+            ref="editCoverUploadRef"
+            class="cover-uploader"
+            :auto-upload="false"
+            :limit="1"
+            :show-file-list="false"
+            accept="image/png,image/jpeg,image/webp"
+            :on-change="handleCoverChange"
+            :on-exceed="handleCoverExceed"
+          >
+            <div v-if="coverPreview" class="cover-preview">
+              <img :src="coverPreview" alt="封面预览" />
+              <el-button
+                size="small"
+                circle
+                type="danger"
+                plain
+                :icon="Close"
+                aria-label="移除封面"
+                class="cover-remove"
+                @click.stop="handleCoverRemove"
+              />
+            </div>
+            <div v-else class="upload-empty cover-empty">
+              <el-icon class="upload-empty-icon"><Picture /></el-icon>
+              <div class="upload-empty-text">上传封面图（选填）</div>
+              <div class="upload-empty-tip">png / jpeg / webp，≤5MB；留空则端上用本地兜底封面</div>
+            </div>
+          </el-upload>
+          <div class="form-tip">目录自动填表时若含 cover.png 会自动识别为封面</div>
         </el-form-item>
 
         <el-form-item label="标题" prop="title">
@@ -496,8 +580,8 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Document, UploadFilled, CircleCheckFilled, Close } from '@element-plus/icons-vue';
-import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame } from '@/api/game';
+import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
+import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame, uploadGameCover } from '@/api/game';
 import { formatTime, formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
@@ -604,11 +688,57 @@ const uploadDialogVisible = ref(false);
 const uploadFormRef = ref(null);
 const uploadRef = ref(null);
 const selectedFile = ref(null); // 已选文件（el-upload 的 raw File）
+// 封面图:本地选中文件 + 预览 URL + 已上传直链(编辑态回填)
+const coverFile = ref(null);
+const coverPreview = ref('');
+const coverUrl = ref('');
+
+const COVER_ACCEPT = ['image/png', 'image/jpeg', 'image/webp'];
+const COVER_MAX_BYTES = 5 * 1024 * 1024;
+
+// 封面选中:校验类型/大小后保留 raw File 并生成预览
+const handleCoverChange = (uploadFile) => {
+  const raw = uploadFile && uploadFile.raw;
+  if (!raw) return;
+  const type = (raw.type || '').toLowerCase();
+  if (!COVER_ACCEPT.includes(type)) {
+    ElMessage.error('封面仅支持 png / jpeg / webp 图片');
+    return;
+  }
+  if (raw.size > COVER_MAX_BYTES) {
+    ElMessage.error('封面大小不能超过 5MB');
+    return;
+  }
+  if (coverPreview.value) URL.revokeObjectURL(coverPreview.value);
+  coverFile.value = raw;
+  coverPreview.value = URL.createObjectURL(raw);
+};
+
+const handleCoverRemove = () => {
+  if (coverPreview.value) URL.revokeObjectURL(coverPreview.value);
+  coverFile.value = null;
+  coverPreview.value = '';
+  coverUrl.value = '';
+};
+
+const handleCoverExceed = () => {
+  ElMessage.error('最多只能选择 1 张封面图');
+};
+
+// 封面上传(可选):成功返回直链;失败抛错由调用方中断提交
+const uploadCoverIfNeeded = async () => {
+  if (!coverFile.value) return coverUrl.value || '';
+  const url = await uploadGameCover(coverFile.value);
+  coverUrl.value = url;
+  return url;
+};
 const uploading = ref(false);
 const uploadPercent = ref(0); // 上传进度 0-100
 const uploadResult = ref(null); // 上传成功返回的 AdminGameVo（含 url 可玩地址）
 const keyEdited = ref(false); // 用户手动改过 gameKey 后停止自动生成
 const uploadKeySeed = ref(''); // 本次弹窗自动 gameKey 的时间戳尾巴，弹窗期间保持稳定
+const keyExists = ref(false); // gameKey 冲突实时检查结果：true = 提交将覆盖更新已存在的游戏
+let keyCheckTimer = null; // 冲突检查防抖定时器
 
 // 前端预检：扩展名白名单 + 10MB 上限（方案 §四；后端仍有 413 兜底）
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -737,12 +867,16 @@ const handleDirImport = (event) => {
   const visible = files.filter((file) => relSegs(file).every((seg) => !seg.startsWith('.')));
   // 结构：根目录只允许 index.html（必须）+ README.md（可选）；子目录或额外文件一律拒绝（多文件请打包 zip）
   const rootFiles = visible.filter((file) => relSegs(file).length === 2);
+  const COVER_NAMES = ['cover.png', 'cover.jpg', 'cover.jpeg', 'cover.webp'];
   const hasExtra =
     visible.some((file) => relSegs(file).length > 2) ||
-    rootFiles.some((file) => !['index.html', 'README.md'].includes(file.name));
+    rootFiles.some((file) => {
+      const name = file.name.toLowerCase();
+      return !['index.html', 'readme.md', ...COVER_NAMES].includes(name);
+    });
   if (hasExtra) {
     logger.debug('游戏目录导入预检未通过：目录含不被支持的文件');
-    ElMessage.error('目录仅支持「index.html（+ 可选 README.md）」，含其他文件请打包 .zip 手动上传');
+    ElMessage.error('目录仅支持「index.html（+ 可选 README.md / cover.png）」，含其他文件请打包 .zip 手动上传');
     return;
   }
   const htmlFile = rootFiles.find((file) => file.name === 'index.html');
@@ -761,6 +895,13 @@ const handleDirImport = (event) => {
 
   selectedFile.value = htmlFile;
   uploadFormRef.value?.validateField('file').catch(() => {});
+
+  // 目录内封面自动识别:cover.png / cover.jpg / cover.jpeg / cover.webp(取首个)
+  const coverPicked = rootFiles.find((file) => COVER_NAMES.includes(file.name.toLowerCase()));
+  if (coverPicked) {
+    handleCoverChange({ raw: coverPicked });
+    ElMessage.success('已识别目录中的封面图');
+  }
 
   // README 可选：无则字段留空（gameKey 仍取目录名），有则解析预填
   if (!readmeFile) {
@@ -786,13 +927,16 @@ const handleRemoveFile = () => {
   uploadFormRef.value?.validateField('file').catch(() => {});
 };
 
-// 标题 → gameKey 自动生成：提取英文数字段小写拼接；非法/过短回退 game-{seed}
+// 标题 → gameKey 自动生成：提取英文数字段小写拼接，数字开头补 game- 前缀（如 2048 → game-2048），
+// 同标题确定性地生成同一 gameKey，重复上传自动落到覆盖更新；纯中文等无可用字符时才回退 game-{seed}
 const slugFromTitle = (title) => {
   const segs = (title || '').toLowerCase().match(/[a-z0-9]+/g) || [];
-  const slug = segs.join('-');
-  return /^[a-z]/.test(slug) && slug.length >= 3
-    ? slug.slice(0, 63)
-    : `game-${uploadKeySeed.value}`;
+  const raw = segs.join('-');
+  if (!raw) {
+    return `game-${uploadKeySeed.value}`;
+  }
+  const slug = /^[a-z]/.test(raw) ? raw : `game-${raw}`;
+  return slug.length >= 3 ? slug.slice(0, 63) : `game-${uploadKeySeed.value}`;
 };
 
 // 输入标题自动生成 gameKey（用户手动改过后不再覆盖）
@@ -805,11 +949,32 @@ watch(
   }
 );
 
+// gameKey 冲突实时检查：防抖查询列表（keyword 模糊后前端精确比对），命中即提示覆盖语义，
+// 让「新增还是更新」在上传前可见；检查失败保持 false 静默，不阻断上传（后端唯一索引与覆盖语义兜底）
+watch(
+  () => tempGame.gameKey,
+  (key) => {
+    if (!uploadDialogVisible.value) return;
+    keyExists.value = false;
+    clearTimeout(keyCheckTimer);
+    if (!key || key.length < 3) return;
+    keyCheckTimer = setTimeout(async () => {
+      try {
+        const res = await getGameList({ page: 1, size: 100, keyword: key });
+        keyExists.value = (res.records || []).some((r) => r.gameKey === key);
+      } catch {
+        // 宁可少提示也不误报
+      }
+    }, 400);
+  }
+);
+
 // 打开上传弹窗
 const handleCreate = () => {
   uploadDialogVisible.value = true;
   uploadResult.value = null;
   selectedFile.value = null;
+  handleCoverRemove();
   keyEdited.value = false;
   uploadKeySeed.value = Date.now().toString(36);
   Object.assign(tempGame, {
@@ -833,6 +998,8 @@ const handleUploadDialogClosed = () => {
   selectedFile.value = null;
   uploadResult.value = null;
   uploadPercent.value = 0;
+  keyExists.value = false;
+  clearTimeout(keyCheckTimer);
 };
 
 // 提交上传：表单校验 → 组装 multipart（file + 表单字段）→ 进度回传
@@ -860,6 +1027,16 @@ const submitUpload = async () => {
   formData.append('badge', tempGame.badge);
   formData.append('sort', String(tempGame.sort ?? 100));
   formData.append('remark', tempGame.remark);
+
+  // 封面(可选):先上传取直链再回填;上传失败则中断提交
+  try {
+    formData.append('coverUrl', await uploadCoverIfNeeded());
+  } catch (err) {
+    logger.error('封面上传失败:', err);
+    ElMessage.error('封面上传失败，请稍后重试');
+    uploading.value = false;
+    return;
+  }
 
   uploading.value = true;
   uploadPercent.value = 0;
@@ -942,6 +1119,11 @@ const submitting = ref(false);
 const handleEdit = (row) => {
   editDialogVisible.value = true;
   editFile.value = null;
+  // 已有封面回填预览(不可编辑态下也能看到当前封面);新选文件会覆盖
+  if (coverPreview.value) URL.revokeObjectURL(coverPreview.value);
+  coverFile.value = null;
+  coverUrl.value = row.coverUrl || '';
+  coverPreview.value = row.coverUrl || '';
   Object.assign(tempGame, {
     id: row.id,
     gameKey: row.gameKey,
@@ -961,6 +1143,7 @@ const handleEditDialogClosed = () => {
   editFormRef.value?.resetFields();
   editFormRef.value?.clearValidate();
   editFile.value = null;
+  handleCoverRemove();
 };
 
 // 选择新游戏包（含超限替换）：校验失败清空并提示，与上传弹窗同口径
@@ -1008,6 +1191,21 @@ const submitEdit = async () => {
       sort: tempGame.sort,
       remark: tempGame.remark,
     };
+    // 封面(可选):新选文件先上传取直链;移除封面时清空;未改动沿用原值
+    if (coverFile.value) {
+      try {
+        payload.coverUrl = await uploadCoverIfNeeded();
+      } catch (err) {
+        logger.error('封面上传失败:', err);
+        ElMessage.error('封面上传失败，请稍后重试');
+        submitting.value = false;
+        return;
+      }
+    } else if (!coverPreview.value) {
+      payload.coverUrl = '';
+    } else {
+      payload.coverUrl = coverUrl.value;
+    }
     if (editFile.value) {
       const formData = new FormData();
       formData.append('file', editFile.value);
@@ -1125,6 +1323,12 @@ onMounted(() => {
   color: var(--text-secondary);
 }
 
+/* gameKey 冲突覆盖提示：贴在 gameKey 表单行内，与输入框同宽 */
+.key-conflict-alert {
+  width: 100%;
+  margin-top: 4px;
+}
+
 /* 开关同行的行内说明 */
 .form-tip-inline {
   margin-left: 8px;
@@ -1202,6 +1406,39 @@ onMounted(() => {
 }
 
 /* 已选文件卡片 */
+.cover-thumb {
+  width: 44px;
+  height: 25px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+.cover-empty {
+  min-height: 108px;
+}
+
+.cover-preview {
+  position: relative;
+  width: 160px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.cover-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cover-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
 .picked-file {
   display: flex;
   align-items: center;
