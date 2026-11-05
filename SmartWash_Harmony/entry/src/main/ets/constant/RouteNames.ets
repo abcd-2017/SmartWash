@@ -46,6 +46,10 @@ export class RouteNames {
   static readonly MOOD_TODAY: string = "MoodToday"
   static readonly MOOD_CALENDAR: string = "MoodCalendar"
   static readonly MOOD_TREND: string = "MoodTrend"
+  // 记忆复习域路由名（对齐安卓 ReviewRoute.Queue/Study/Materials）
+  static readonly REVIEW_QUEUE: string = "ReviewQueue"
+  static readonly REVIEW_STUDY: string = "ReviewStudy"
+  static readonly REVIEW_MATERIAL_LIST: string = "ReviewMaterials"
   // 建设中占位页（深链兜底：安卓新增域 lab/mood/review/subscription/delivery/ai-work
   // 在鸿蒙端未实现，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"

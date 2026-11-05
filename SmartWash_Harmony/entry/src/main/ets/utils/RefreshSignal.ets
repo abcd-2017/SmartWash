@@ -40,8 +40,19 @@ export function bumpMoodRefresh(): void {
   AppStorage.setOrCreate(MOOD_TICK_KEY, current + 1)
 }
 
+/**
+ * 记忆复习数据（今日队列）需要刷新。
+ * 资料页建资料/建卡、复习页每次评分成功后 bump，队列页经 @StorageLink + @Watch 消费重拉
+ * （对齐安卓 ReviewRoute.CHANGED_KEY）。
+ */
+export function bumpReviewRefresh(): void {
+  const current = AppStorage.get<number>(REVIEW_TICK_KEY) ?? 0
+  AppStorage.setOrCreate(REVIEW_TICK_KEY, current + 1)
+}
+
 /** AppStorage key（写读双方共用，避免字符串漂移） */
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
 export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
 export const MOOD_TICK_KEY: string = 'refreshMoodTick'
+export const REVIEW_TICK_KEY: string = 'refreshReviewTick'
