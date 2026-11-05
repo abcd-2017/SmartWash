@@ -307,60 +307,67 @@ export struct AppInfoDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
       Column() {
-        if (this.title !== '') {
-          Text(this.title)
-            .fontSize(DesignFontSize.SECTION_TITLE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ bottom: 12 })
-        }
+        Column() {
+          if (this.title !== '') {
+            Text(this.title)
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .margin({ bottom: 12 })
+          }
 
-        Text(this.message)
+          Text(this.message)
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+        }
+        .width('100%')
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: 20,
+          bottom: 20
+        })
+
+        Divider()
+          .color(DesignColor.DIVIDER)
+          .strokeWidth(0.5)
+
+        Button(this.buttonText)
+          .type(ButtonType.Normal)
+          .width('100%')
+          .height(48)
+          .backgroundColor(Color.Transparent)
+          .fontColor(DesignColor.PRIMARY)
           .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .borderRadius(0)
+          .onClick(() => {
+            this.onDismiss()
+            this.controller.close()
+          })
       }
       .width('100%')
-      .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        top: 20,
-        bottom: 20
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
-
-      Divider()
-        .color(DesignColor.DIVIDER)
-        .strokeWidth(0.5)
-
-      Button(this.buttonText)
-        .type(ButtonType.Normal)
-        .width('100%')
-        .height(48)
-        .backgroundColor(Color.Transparent)
-        .fontColor(DesignColor.PRIMARY)
-        .fontSize(DesignFontSize.BODY)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .borderRadius(0)
-        .onClick(() => {
-          this.onDismiss()
-          this.controller.close()
-        })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
-    .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .width('100%')
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }
 
@@ -466,6 +473,9 @@ export struct AppPillTabRow {
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width('100%')
+    // 真机缺陷修复（T4）：Scroll 内容窄于视口时默认居中，导致胶囊 tab 整行右移 ~52vp；
+    // 对齐安卓 AppPillTabRow 的左对齐（leading）布局，须显式 Start 对齐
+    .align(Alignment.Start)
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
   }
@@ -702,6 +712,11 @@ export struct DrumMark {
     Canvas(this.ctx)
       .width(this.sizeValue)
       .height(this.sizeValue)
+      // onReady 兜底重绘（问题：aboutToAppear 时渲染表面未挂载，首帧绘制被丢弃导致空态滚筒空白；
+      // onReady 时 ctx 保证可绘，drawMark 以 clearRect 起步幂等，重复触发无叠加副作用）
+      .onReady(() => {
+        this.drawMark()
+      })
   }
 }
 
@@ -743,8 +758,14 @@ export struct EmptyState {
         .fontSize(DesignFontSize.BODY)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
-      // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）
-      this.action()
+      // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）。
+      // 插槽外层统一给左右页边距：AppButton 非文字变体是 width('100%')，
+      // 不套容器会铺满屏幕（问题14：空态按钮左右无 padding）
+      Column() {
+        this.action()
+      }
+      .width('100%')
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width('100%')
     .padding({ top: 32, bottom: 32 })
@@ -808,89 +829,99 @@ export struct AppConfirmDialog {
   }
 
   build() {
-    // build 只允许单根节点：内容 Column / 分隔线 / 按钮行统一收进一个 Column（原多根节点不满足 UI 语法）
+    // build 只允许单根节点：卡片 Column 收进外层留白容器（原多根节点不满足 UI 语法）。
+    // customStyle:true 的弹窗内容会铺满屏幕宽度，背景必须画在内层卡片上并留左右边距，
+    // 否则弹窗左右贴屏幕（问题16）
     Column() {
-      // 内容区
       Column() {
-        // 标题
-        if (this.title !== '') {
-          Text(this.title)
-            .fontSize(DesignFontSize.SECTION_TITLE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ bottom: 12 })
+        // 内容区
+        Column() {
+          // 标题
+          if (this.title !== '') {
+            Text(this.title)
+              .fontSize(DesignFontSize.SECTION_TITLE)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .margin({ bottom: 12 })
+          }
+
+          // 内容
+          Text(this.message)
+            .fontSize(DesignFontSize.BODY)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ bottom: 20 })
         }
+        .width("100%")
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: 20,
+          bottom: 0
+        })
 
-        // 内容
-        Text(this.message)
-          .fontSize(DesignFontSize.BODY)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ bottom: 20 })
-      }
-      .width('100%')
-      .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        top: 20,
-        bottom: 0
-      })
-
-      // 分隔线
-      Divider()
-        .color(DesignColor.DIVIDER)
-        .strokeWidth(0.5)
-
-      // 按钮行
-      Row() {
-        Button(this.cancelText)
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(48)
-          .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .fontSize(DesignFontSize.BODY)
-          .borderRadius(0)
-          .onClick(() => {
-            this.onDismiss()
-            this.controller.close()
-          })
-
+        // 分隔线
         Divider()
-          .vertical(true)
           .color(DesignColor.DIVIDER)
           .strokeWidth(0.5)
-          .height(48)
 
-        Button(this.confirmText)
-          .type(ButtonType.Normal)
-          .layoutWeight(1)
-          .height(48)
-          .backgroundColor(Color.Transparent)
-          // 危险操作确认键用 dangerInk（#A8435A），普通确认用品牌绿
-          .fontColor(this.isDanger ? DesignColor.DANGER_INK : DesignColor.PRIMARY)
-          .fontSize(DesignFontSize.BODY)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .borderRadius(0)
-          .onClick(() => {
-            this.onConfirm()
-            this.controller.close()
-          })
+        // 按钮行
+        Row() {
+          Button(this.cancelText)
+            .type(ButtonType.Normal)
+            .layoutWeight(1)
+            .height(48)
+            .backgroundColor(Color.Transparent)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontSize(DesignFontSize.BODY)
+            .borderRadius(0)
+            .onClick(() => {
+              this.onDismiss()
+              this.controller.close()
+            })
+
+          Divider()
+            .vertical(true)
+            .color(DesignColor.DIVIDER)
+            .strokeWidth(0.5)
+            .height(48)
+
+          Button(this.confirmText)
+            .type(ButtonType.Normal)
+            .layoutWeight(1)
+            .height(48)
+            .backgroundColor(Color.Transparent)
+            // 危险操作确认键用 dangerInk（#A8435A），普通确认用品牌绿
+            .fontColor(this.isDanger ? DesignColor.DANGER_INK : DesignColor.PRIMARY)
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .borderRadius(0)
+            .onClick(() => {
+              // 先关窗再执行回调：回调内常有导航（push/pop），导航后弹窗内容实例已销毁、
+              // this.controller 变 undefined，后关会抛 jscrash（DivAskPage:669 同款）
+              this.controller.close()
+              this.onConfirm()
+            })
+        }
+        .width("100%")
       }
-      .width('100%')
+      .width("100%")
+      .backgroundColor(DesignColor.SURFACE)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+      })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
-    .backgroundColor(DesignColor.SURFACE)
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .width("100%")
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

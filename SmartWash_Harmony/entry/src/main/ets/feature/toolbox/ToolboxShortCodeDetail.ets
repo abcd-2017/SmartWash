@@ -46,6 +46,8 @@ import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
+import BuildProfile from 'entry/BuildProfile'
+import { createQrPixelMap } from './QrFallback'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeDetail'
@@ -116,7 +118,18 @@ struct ToolboxShortCodeDetail {
   }
 
   private getShortUrl(): string {
-    return this.param?.shortUrl ?? ""
+    const carried = this.param?.shortUrl ?? ""
+    if (carried.length > 0) {
+      return carried
+    }
+    // 深链 smartwash://t/{code} 入口只带 code（见 DeepLinkRegistry.resolveShortCodeDetail），
+    // 不带 shortUrl 会让本地二维码生成必然失败。这里用与后端 shortUrlOf 同构的
+    // `{public-base-url}/web/t/{code}` 兜底（public-base-url 未配置时后端同样回落到请求域名）。
+    const code = this.param?.code ?? ""
+    if (code.length === 0) {
+      return ""
+    }
+    return `${BuildProfile.BASE_URL}/web/t/${code}`
   }
 
   private isPublicCode(): boolean {
@@ -160,8 +173,16 @@ struct ToolboxShortCodeDetail {
           height: 512
         })
         this.qrPixelMap = fallbackMap
-      } catch (retryErr) {
-        this.qrFailed = true
+      } catch (scanKitErr) {
+        // ScanKit 在模拟器等环境直接抛 "Emulator is not supported"（两段降级全失败）；
+        // 用纯 ArkTS 兜底编码器出图，保证任何环境都有二维码可扫（见 QrFallback 注释）
+        try {
+          this.qrPixelMap = await createQrPixelMap(url)
+          logger.debug(TAG, 'ScanKit 不可用，纯 ArkTS 兜底二维码已生成')
+        } catch (fallbackErr) {
+          this.qrFailed = true
+          logger.error(TAG, '二维码兜底生成失败', fallbackErr instanceof Error ? fallbackErr.message : '')
+        }
       }
       logger.error(TAG, '二维码生成异常', err instanceof Error ? err.message : '')
     } finally {

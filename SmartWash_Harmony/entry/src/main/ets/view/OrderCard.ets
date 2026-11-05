@@ -170,12 +170,12 @@ export struct OrderMonthCard {
       Column() {
         Text(`¥${(order.payPrice ?? 0).toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-          // AMOUNT_MEDIUM（18）属 font.title 档，规范 weight=600；原 BOLD(700) 属滥用，收敛
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          // 金额两位小数（N1）+ tnum（G5）；已取消置灰，余态 primaryDark（绿字红线）
+          // 对齐安卓 OrderPage.kt OrderRow：AmountMedium.copy(fontWeight = Bold)
+          .fontWeight(DesignFontWeight.BOLD)
+          // 金额两位小数（N1）+ tnum（G5）；已取消置灰（对齐安卓 textSecondary），余态 primaryDark（绿字红线）
           .fontFeature(DesignFontFeature.TNUM)
           .fontColor(order.status === OrderStatusEnum.CANCELED ?
-            DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK)
+            DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY_DARK)
 
         Column() {
           if (order.status === OrderStatusEnum.PENDING_PAYMENT) {
@@ -188,6 +188,8 @@ export struct OrderMonthCard {
               }
               .constraintSize({ minHeight: 44 })
               .padding({ left: 4, right: 4 })
+              // 与「去支付」胶囊间距 8（对齐安卓 Spacer(width = spaceXs)）
+              .margin({ right: DesignDimens.SPACE_XS })
               .justifyContent(FlexAlign.Center)
               .scale({
                 x: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1,
@@ -217,7 +219,7 @@ export struct OrderMonthCard {
             })
           } else if (order.status === OrderStatusEnum.WASHING) {
             Text("清洗中")
-              .fontSize(DesignFontSize.CAPTION)
+              .fontSize(DesignFontSize.BODY_SMALL)
               .fontColor(DesignColor.TEXT_SECONDARY)
           } else if (order.status === OrderStatusEnum.READY_FOR_PICKUP) {
             this.ActionButton("去取件", `${order.orderId}:pickup`, () => {
@@ -225,7 +227,7 @@ export struct OrderMonthCard {
             })
           } else {
             Text(getOrderStatusDescription(order.status))
-              .fontSize(DesignFontSize.CAPTION)
+              .fontSize(DesignFontSize.BODY_SMALL)
               .fontColor(DesignColor.TEXT_SECONDARY)
           }
         }

@@ -34,7 +34,7 @@ import {
   DivText
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
-import { DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
 import { RouteNames } from '../../../../../constant/RouteNames'
 import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
@@ -238,38 +238,45 @@ struct DivAskPage {
     pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
-  // ========== 弹窗（每次新建控制器，保证入参为最新） ==========
+  // ========== 弹窗控制器 ==========
+  //
+  // 控制器必须由结构体字段持有（与 Setting.ets / DivCastPage.ets 同款）：
+  // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，
+  // 弹窗内 this.controller 为 undefined，点击「装卦 / 确定」即抛
+  // 「Cannot read property close of undefined」jscrash（11-04 DivAskPage.ets:669）。
+  // 两个弹窗入参都是稳定闭包（不随打开时机变化），故字段持有一次即可。
+  private linesDialogController: CustomDialogController = new CustomDialogController({
+    builder: ManualLinesDialog({
+      onConfirm: (lines: number[]) => {
+        this.castManualLines(lines)
+      },
+      onDismiss: () => {
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  private numbersDialogController: CustomDialogController = new CustomDialogController({
+    builder: NumbersDialog({
+      onConfirm: (a: number, b: number) => {
+        this.castMeiHuaNumbers(a, b)
+      },
+      onDismiss: () => {
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
 
   private openLinesDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ManualLinesDialog({
-        onConfirm: (lines: number[]) => {
-          this.castManualLines(lines)
-        },
-        onDismiss: () => {
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.linesDialogController.open()
   }
 
   private openNumbersDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: NumbersDialog({
-        onConfirm: (a: number, b: number) => {
-          this.castMeiHuaNumbers(a, b)
-        },
-        onDismiss: () => {
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.numbersDialogController.open()
   }
 
   // ========== 辅助 ==========
@@ -322,7 +329,7 @@ struct DivAskPage {
 
       DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 26 })
 
-      Column().height(20)
+      Column().height(DesignDimens.SPACE_LG)
 
       DivSerifText({
         text: DivText.safetyTitle,
@@ -343,7 +350,7 @@ struct DivAskPage {
         color: DivPalette.textSecondary,
         textAlign: TextAlign.Center
       })
-        .padding({ left: 12, right: 12 })
+        .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
 
       Column().height(28)
 
@@ -356,7 +363,7 @@ struct DivAskPage {
       })
     }
     .width('100%')
-    .padding({ left: 20, right: 20 })
+    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     .alignItems(HorizontalAlign.Center)
   }
 
@@ -370,7 +377,7 @@ struct DivAskPage {
         .backgroundColor(DivPalette.hair)
     }
     .width('100%')
-    .padding({ left: 16, right: 16 })
+    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
   }
 
   build() {
@@ -397,7 +404,7 @@ struct DivAskPage {
 
           // 问事表单层
           Column() {
-          // 1. 问题卡（hint 12/16 textSecondary；卡内边距 14）
+          // 1. 问题卡（hint 12/16 textSecondary；卡内边距 CARD_PADDING）
           // clickable=true：DivCard 默认 enabled(false) 会禁用整棵子树（问题13 根因——
           // 输入框弹不起键盘、领域 chips/方式单选全不可点），卡自身无行点击动作，仅为放行子交互
           Column() {
@@ -427,11 +434,11 @@ struct DivAskPage {
                   })
               }
               .width('100%')
-              .padding(14)
+              .padding(DesignDimens.CARD_PADDING)
             }
           }
           .width('100%')
-          .padding({ left: 20, right: 20 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
           // 2. 所问领域（自动识别 / 手动选择）
           DivSectionTitle({
@@ -451,7 +458,7 @@ struct DivAskPage {
                 })
               }, (item: [string, string]) => item[0])
             }
-            .padding({ left: 20, right: 20 })
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
@@ -523,9 +530,10 @@ struct DivAskPage {
         }
           }
           .width('100%')
-          .padding({ left: 20, right: 20 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-          Column().height(24)
+          // 卡片间距统一 CARD_SPACING（16）
+          Column().height(DesignDimens.CARD_SPACING)
 
           // 4. 开始
           DivGoldButton({
@@ -535,7 +543,7 @@ struct DivAskPage {
               this.onGo()
             }
           })
-            .padding({ left: 20, right: 20 })
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
           // 5. 页脚安全提示
           DivFooterNote({ text: DivText.askSafetyHint })
@@ -618,15 +626,17 @@ struct ManualLinesDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗内容铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      DivSerifText({
-        text: DivText.manualTitle,
-        textSize: 15,
-        weight: 600,
-        spacing: 3,
-        color: DivPalette.textPrimary
-      })
-        .margin({ bottom: 12 })
+      Column() {
+        DivSerifText({
+          text: DivText.manualTitle,
+          textSize: 15,
+          weight: 600,
+          spacing: 3,
+          color: DivPalette.textPrimary
+        })
+          .margin({ bottom: 12 })
 
       ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
         Row() {
@@ -658,30 +668,34 @@ struct ManualLinesDialog {
         .alignItems(VerticalAlign.Center)
       }, (index: number) => index.toString())
 
-      Column().height(16)
+      Column().height(DesignDimens.SPACE_MD)
 
-      DivGoldButton({
-        text: DivText.manualConfirm,
-        btnHeight: 42,
-        fontSize: 13,
-        onAction: () => {
-          this.onConfirm(this.lines)
-          this.controller.close()
-        }
+        DivGoldButton({
+          text: DivText.manualConfirm,
+          btnHeight: 42,
+          fontSize: 13,
+          onAction: () => {
+            this.onConfirm(this.lines)
+            this.controller.close()
+          }
+        })
+      }
+      .width('100%')
+      .padding(DesignDimens.CARD_PADDING)
+      .borderRadius(16)
+      .backgroundColor(DivPalette.surface2)
+      .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
+      // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
+      .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
       })
     }
     .width('100%')
-    .padding(20)
-    .borderRadius(16)
-    .backgroundColor(DivPalette.surface2)
-    .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
-    // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
-    .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }
 
@@ -731,103 +745,109 @@ struct NumbersDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗内容铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      DivSerifText({
-        text: DivText.numbersTitle,
-        textSize: 15,
-        weight: 600,
-        spacing: 3,
-        color: DivPalette.textPrimary
-      })
-        .margin({ bottom: 6 })
+      Column() {
+        DivSerifText({
+          text: DivText.numbersTitle,
+          textSize: 15,
+          weight: 600,
+          spacing: 3,
+          color: DivPalette.textPrimary
+        })
+          .margin({ bottom: 6 })
 
-      DivSerifText({
-        text: DivText.numbersHint,
-        textSize: 11,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textTertiary
-      })
-        .margin({ bottom: 14 })
+        DivSerifText({
+          text: DivText.numbersHint,
+          textSize: 11,
+          weight: 400,
+          spacing: 0,
+          color: DivPalette.textTertiary
+        })
+          .margin({ bottom: 14 })
 
-      Row({ space: 12 }) {
-        // 下划线指示（聚焦 goldLine / 未聚焦 hair；onFocus/onBlur 驱动）
-        Column() {
-          TextInput({ text: this.first, placeholder: '1–999' })
-            .width('100%')
-            .backgroundColor(Color.Transparent)
-            .caretColor(DivPalette.gold)
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontFamily('serif')
-            .fontColor(DivPalette.textPrimary)
-            .onFocus(() => {
-              this.firstFocused = true
-            })
-            .onBlur(() => {
-              this.firstFocused = false
-            })
-            .onChange((value: string) => {
-              this.first = this.filterDigits(value)
-            })
-          Column()
-            .width('100%')
-            .height(1)
-            .backgroundColor(this.firstFocused ? DivPalette.goldLine : DivPalette.hair)
+        Row({ space: 12 }) {
+          // 下划线指示（聚焦 goldLine / 未聚焦 hair；onFocus/onBlur 驱动）
+          Column() {
+            TextInput({ text: this.first, placeholder: '1–999' })
+              .width('100%')
+              .backgroundColor(Color.Transparent)
+              .caretColor(DivPalette.gold)
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontFamily('serif')
+              .fontColor(DivPalette.textPrimary)
+              .onFocus(() => {
+                this.firstFocused = true
+              })
+              .onBlur(() => {
+                this.firstFocused = false
+              })
+              .onChange((value: string) => {
+                this.first = this.filterDigits(value)
+              })
+            Column()
+              .width('100%')
+              .height(1)
+              .backgroundColor(this.firstFocused ? DivPalette.goldLine : DivPalette.hair)
+          }
+          .layoutWeight(1)
+
+          Column() {
+            TextInput({ text: this.second, placeholder: '1–999' })
+              .width('100%')
+              .backgroundColor(Color.Transparent)
+              .caretColor(DivPalette.gold)
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .fontFamily('serif')
+              .fontColor(DivPalette.textPrimary)
+              .onFocus(() => {
+                this.secondFocused = true
+              })
+              .onBlur(() => {
+                this.secondFocused = false
+              })
+              .onChange((value: string) => {
+                this.second = this.filterDigits(value)
+              })
+            Column()
+              .width('100%')
+              .height(1)
+              .backgroundColor(this.secondFocused ? DivPalette.goldLine : DivPalette.hair)
+          }
+          .layoutWeight(1)
         }
-        .layoutWeight(1)
+        .width('100%')
 
-        Column() {
-          TextInput({ text: this.second, placeholder: '1–999' })
-            .width('100%')
-            .backgroundColor(Color.Transparent)
-            .caretColor(DivPalette.gold)
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .fontFamily('serif')
-            .fontColor(DivPalette.textPrimary)
-            .onFocus(() => {
-              this.secondFocused = true
-            })
-            .onBlur(() => {
-              this.secondFocused = false
-            })
-            .onChange((value: string) => {
-              this.second = this.filterDigits(value)
-            })
-          Column()
-            .width('100%')
-            .height(1)
-            .backgroundColor(this.secondFocused ? DivPalette.goldLine : DivPalette.hair)
-        }
-        .layoutWeight(1)
+        Column().height(DesignDimens.SPACE_MD)
+
+        DivGoldButton({
+          text: DivText.manualConfirm,
+          isEnabled: this.isValid(),
+          btnHeight: 42,
+          fontSize: 13,
+          onAction: () => {
+            this.onConfirm(Number(this.first), Number(this.second))
+            this.controller.close()
+          }
+        })
       }
       .width('100%')
-
-      Column().height(16)
-
-      DivGoldButton({
-        text: DivText.manualConfirm,
-        isEnabled: this.isValid(),
-        btnHeight: 42,
-        fontSize: 13,
-        onAction: () => {
-          this.onConfirm(Number(this.first), Number(this.second))
-          this.controller.close()
-        }
+      .padding(20)
+      .borderRadius(16)
+      .backgroundColor(DivPalette.surface2)
+      .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
+      // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
+      .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
       })
     }
     .width('100%')
-    .padding(20)
-    .borderRadius(16)
-    .backgroundColor(DivPalette.surface2)
-    .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
-    // 安卓对应 DivCard（含 level1 阴影）；弹窗内容卡与遮罩的分离由窗口层承担
-    .shadow({ radius: DesignElevation.LEVEL_1, color: 'rgba(20,40,30,0.05)', offsetX: 0, offsetY: 2 })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

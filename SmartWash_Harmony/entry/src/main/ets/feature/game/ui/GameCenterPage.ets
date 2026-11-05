@@ -206,8 +206,16 @@ export struct GameCenterPage {
     }
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
+    // 左对齐 + 左右页边距（对齐安卓 AppPillTabRow：horizontalScroll Row 内 padding(horizontal =
+    // pagePadding)；Scroll 默认居中会把 chips 推到屏幕中央）
+    .align(Alignment.Start)
     .width('100%')
-    .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_SM })
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
+      top: DesignDimens.SPACE_XS,
+      bottom: DesignDimens.SPACE_SM
+    })
   }
 
   @Builder

@@ -76,8 +76,10 @@ export struct ToolboxRenewDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      Text(ToolboxText.toolbox_renew_title)
+      Column() {
+        Text(ToolboxText.toolbox_renew_title)
         .fontSize(DesignFontSize.STATUS_LARGE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
@@ -153,23 +155,27 @@ export struct ToolboxRenewDialog {
           })
       }
       .width('100%')
+      }
+      .width('100%')
+      // 对齐安卓 RenewDialog（vertical spaceLg 20）；横向留白由外层容器统一给出
+      .padding({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_LG })
+      .backgroundColor(DesignColor.SURFACE)
+      // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+      })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
     .width('100%')
-    // 对齐安卓 RenewDialog（horizontal spaceXl 24 / vertical spaceLg 20）与鸿蒙 AppInfoDialog 既有内边距
-    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL, top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_LG })
-    .backgroundColor(DesignColor.SURFACE)
-    // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

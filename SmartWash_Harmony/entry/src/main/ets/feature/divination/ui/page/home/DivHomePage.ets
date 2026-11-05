@@ -29,7 +29,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { Debouncer } from '../../../../../utils/DebounceUtil'
 import { logger } from '../../../../../utils/Logger'
@@ -333,7 +333,7 @@ struct DivHomePage {
             .margin({ top: 6 })
         }
         .width('100%')
-        .padding({ left: 20, right: 20 })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         // 3. 罗盘（画板 104dp）
         Column() {
@@ -343,10 +343,10 @@ struct DivHomePage {
         .padding({ top: 8, bottom: 12 })
         .alignItems(HorizontalAlign.Center)
 
-        // 4. 四术玉牌 2×2（gap 12）
-        Column({ space: 12 }) {
+        // 4. 四术玉牌 2×2（卡间距统一 CARD_SPACING）
+        Column({ space: DesignDimens.CARD_SPACING }) {
           ForEach(this.buildRows(), (row: Array<[string, string, string, string]>, rowIndex: number) => {
-            Row({ space: 12 }) {
+            Row({ space: DesignDimens.CARD_SPACING }) {
               ForEach(row, (item: [string, string, string, string]) => {
                 Column() {
                   this.JadeTile(item[0], item[1], item[2], item[3])
@@ -362,7 +362,7 @@ struct DivHomePage {
           }, (row: Array<[string, string, string, string]>, index: number) => index.toString())
         }
         .width('100%')
-        .padding({ left: 20, right: 20 })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         // 5. 今日一签卡（无签数据时不显示）
         if (this.hasTodaySign) {
@@ -406,7 +406,13 @@ struct DivHomePage {
           }
           }
           .width('100%')
-          .padding({ left: 20, right: 20, top: 14, bottom: 14 })
+          // 卡外边距：横向统一 PAGE_PADDING，纵向 SPACE_SM（12）
+          .padding({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.SPACE_SM
+          })
         }
 
         // 6. 案卷
@@ -462,11 +468,17 @@ struct DivHomePage {
               .animation({ duration: 180, curve: Curve.EaseInOut })
             }
             .width('100%')
-            .padding({ left: 14, top: 4, bottom: 4 })
+            // 案卷卡内层左右 CARD_PADDING 对称（原缺 right 导致内容贴卡片右边界）
+            .padding({
+              left: DesignDimens.CARD_PADDING,
+              right: DesignDimens.CARD_PADDING,
+              top: DesignDimens.SPACE_XXS,
+              bottom: DesignDimens.SPACE_XXS
+            })
           }
         }
         .width('100%')
-        .padding({ left: 20, right: 20 })
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         // 7. 页脚免责声明
         DivFooterNote({ text: DivText.disclaimerFooter })

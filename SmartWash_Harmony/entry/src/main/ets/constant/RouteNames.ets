@@ -38,10 +38,28 @@ export class RouteNames {
   static readonly TOOLBOX_SHORT_CODE_LIST: string = "ToolboxShortCodeList"
   static readonly TOOLBOX_SHORT_CODE_CREATE: string = "ToolboxShortCodeCreate"
   static readonly TOOLBOX_SHORT_CODE_DETAIL: string = "ToolboxShortCodeDetail"
+  // 工具箱设备投递域路由名（对齐安卓 ToolboxRoute.Delivery / DeliverySession）
+  static readonly TOOLBOX_DELIVERY: string = "ToolboxDelivery"
+  static readonly TOOLBOX_DELIVERY_SESSION: string = "ToolboxDeliverySession"
+  // AI 助手页（对齐安卓壳层 PageConstant.AiWork；深链 smartwash://ai-work 与工作台卡片入口）
+  static readonly AI_WORK: string = "AiWork"
   // 内置浏览器页（深链 web 分支与运营位 H5 承载，对齐安卓 ShellRoute.WEB_VIEW）
   static readonly WEB_PAGE: string = "WebPage"
   // 游戏中心页（对齐安卓 GameRoute.Center；入口为深链 smartwash://game-center 与后端 workbench_entry 卡片）
   static readonly GAME_CENTER: string = "GameCenter"
+  // 情绪气象站域路由名（对齐安卓 MoodRoute.Today/Calendar/Trend）
+  static readonly MOOD_TODAY: string = "MoodToday"
+  static readonly MOOD_CALENDAR: string = "MoodCalendar"
+  static readonly MOOD_TREND: string = "MoodTrend"
+  // 记忆复习域路由名（对齐安卓 ReviewRoute.Queue/Study/Materials）
+  static readonly REVIEW_QUEUE: string = "ReviewQueue"
+  static readonly REVIEW_STUDY: string = "ReviewStudy"
+  static readonly REVIEW_MATERIAL_LIST: string = "ReviewMaterials"
+  // 订阅逃生舱域路由名（对齐安卓 SubscriptionRoute.List/Edit/Detail/Reminders）
+  static readonly SUBSCRIPTION_LIST: string = "SubscriptionList"
+  static readonly SUBSCRIPTION_EDIT: string = "SubscriptionEdit"
+  static readonly SUBSCRIPTION_DETAIL: string = "SubscriptionDetail"
+  static readonly SUBSCRIPTION_REMINDERS: string = "SubscriptionReminders"
   // 建设中占位页（深链兜底：安卓新增域 lab/mood/review/subscription/delivery/ai-work
   // 在鸿蒙端未实现，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"

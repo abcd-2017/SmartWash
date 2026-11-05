@@ -25,6 +25,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 
@@ -82,8 +83,8 @@ struct ReadingSectionCard {
           })
         }
         .width('100%')
-        .padding(14)
-        .margin({ top: 6, bottom: 6 })
+        .padding(DesignDimens.CARD_PADDING)
+        .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
         .opacity(this.alpha)
       }
     }
@@ -227,8 +228,8 @@ struct DivReadingPage {
         })
       }
       .width('100%')
-      .padding(14)
-    .margin({ top: 6, bottom: 6 })
+      .padding(DesignDimens.CARD_PADDING)
+    .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
     }
   }
 
@@ -253,7 +254,6 @@ struct DivReadingPage {
             color: DivPalette.textTertiary,
             textAlign: TextAlign.Center
           })
-            .width('100%')
             .padding({ top: 120 })
         } else if (this.record === null) {
           DivSerifText({
@@ -264,7 +264,6 @@ struct DivReadingPage {
             color: DivPalette.textTertiary,
             textAlign: TextAlign.Center
           })
-            .width('100%')
             .padding({ top: 80 })
         } else {
           // 内容统一左右 20（对齐安卓页边距；卡片不再通栏）
@@ -298,7 +297,6 @@ struct DivReadingPage {
                   color: DivPalette.textTertiary,
                   textAlign: TextAlign.Center
                 })
-                  .width('100%')
                   .padding({ top: 24, bottom: 24 })
               }
             } else if (this.hasReading()) {
@@ -326,13 +324,17 @@ struct DivReadingPage {
                 pathStack.pushPathByName(RouteNames.DIV_FOLLOW_UP, id)
               }
             })
-              .padding({ left: 20, right: 20, top: 20 })
+              .padding({
+                left: DesignDimens.PAGE_PADDING,
+                right: DesignDimens.PAGE_PADDING,
+                top: DesignDimens.SPACE_LG
+              })
 
             // 页脚免责声明（常驻）
             DivFooterNote({ text: DivText.disclaimerReading })
           }
           .width('100%')
-          .padding({ left: 20, right: 20 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         }
       }
     }

@@ -29,6 +29,7 @@ import {
 import { DivinationScreen } from '../../DivinationScreen'
 import { AppConfirmDialog } from '../../../../../view/common/AppComponents'
 import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { getObjectParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { logger } from '../../../../../utils/Logger'
@@ -484,8 +485,8 @@ struct DivCastPage {
                 color: DivPalette.textSecondary,
                 textAlign: TextAlign.Center
               })
-                .width('100%')
-                .margin({ top: 10 })
+                // 标题顶距统一 8（8pt 网格档位，替代 magic number 10）
+                .margin({ top: DesignDimens.SPACE_XS })
 
               DivSerifText({
                 text: `第 ${Math.min(this.tossCount(), 6)} 掷 · 共 6 掷`,
@@ -495,9 +496,9 @@ struct DivCastPage {
                 color: DivPalette.goldText,
                 textAlign: TextAlign.Center
               })
-                .width('100%')
                 .opacity(0.75)
-                .padding({ top: 6, bottom: 20 })
+                // 进度区上下间距收敛到 8 的倍数（8 / 16）
+                .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_MD })
 
               // 2. 三币
               Column() {
@@ -514,7 +515,7 @@ struct DivCastPage {
               // 画板：铜钱底到节点区顶间距 48
               Column().height(48)
 
-              // 3. 子午线：六节点，自上爻(顶)到初爻(底)；左右让位 36
+              // 3. 子午线：六节点，自上爻(顶)到初爻(底)；左右让位 PAGE_PADDING（24，横向留白统一档位）
               Column() {
                 Stack() {
                   // 中线：20% 金实色（画板口径）
@@ -543,10 +544,10 @@ struct DivCastPage {
                 .width('100%')
               }
               .width('100%')
-              .padding({ left: 36, right: 36 })
+              .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-              // 节点区下留白（画板 800 基准取 24）
-              Column().height(24)
+              // 节点区下留白（画板 800 基准取 SPACE_XL 24）
+              Column().height(DesignDimens.SPACE_XL)
             }
             .width('100%')
           }
@@ -563,7 +564,13 @@ struct DivCastPage {
               this.onMainButtonClick()
             }
           })
-            .padding({ left: 76, right: 76, top: 14, bottom: 14 })
+            // 按钮横向留白统一 PAGE_PADDING（替代 magic number 76）
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: 14,
+              bottom: 14
+            })
         }
         .width('100%')
         .height('100%')

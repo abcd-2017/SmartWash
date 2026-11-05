@@ -44,8 +44,10 @@ export struct ToolboxDatePickerDialog {
   }
 
   build() {
+    // 外层留白容器：customStyle 弹窗铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
-      Text(this.title)
+      Column() {
+        Text(this.title)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
@@ -57,6 +59,9 @@ export struct ToolboxDatePickerDialog {
         .onDateChange((value: Date) => {
           this.selected = value
         })
+        // 必须显式给宽：Column 内未设宽度的 DatePicker 在部分设备/窗口下会塌成细条，
+        // 弹窗只剩标题 + 按钮（真机实测 T6）
+        .width('100%')
         .height(200)
 
       Row() {
@@ -89,28 +94,35 @@ export struct ToolboxDatePickerDialog {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
           .onClick(() => {
-            this.onConfirm(formatDate(this.selected))
+            // 先关窗再执行回调：回调内可能导航，导航后弹窗内容实例已销毁、
+            // this.controller 变 undefined，后关会抛 jscrash（DivAskPage:669 同款）
             this.controller.close()
+            this.onConfirm(formatDate(this.selected))
           })
       }
       .width('100%')
       .margin({ top: 8 })
+      }
+      .width('100%')
+      // 横向留白由外层容器统一给出，卡片只保留纵向内边距（问题16）
+      .padding({ top: 20, bottom: 20 })
+      .backgroundColor(DesignColor.SURFACE)
+      // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .shadow({
+        radius: DesignElevation.FLOAT_SHADOW_RADIUS,
+        color: DesignColor.SHADOW_COLOR_FLOAT,
+        offsetX: 0,
+        offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
+      })
+      .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
+      .opacity(this.entered ? 1 : 0)
+      .onAppear(() => {
+        this.playEnterMotion()
+      })
     }
     .width('100%')
-    .padding(20)
-    .backgroundColor(DesignColor.SURFACE)
-    // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
-    .borderRadius(DesignDimens.CARD_RADIUS)
-    .shadow({
-      radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_FLOAT,
-      offsetX: 0,
-      offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
-    })
-    .scale({ x: this.entered ? 1 : 0.92, y: this.entered ? 1 : 0.92 })
-    .opacity(this.entered ? 1 : 0)
-    .onAppear(() => {
-      this.playEnterMotion()
-    })
+    .justifyContent(FlexAlign.Center)
+    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
   }
 }

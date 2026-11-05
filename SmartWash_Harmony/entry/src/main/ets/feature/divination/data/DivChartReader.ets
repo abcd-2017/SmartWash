@@ -175,12 +175,22 @@ function ganZhiField(raw: Object, key: string): GanZhi {
   return ganZhiOf(mustString(ganChild, 'label') + mustString(zhiChild, 'label'))
 }
 
+/**
+ * 四柱还原。chartJson 里四柱是嵌套对象 `siZhu: { year/month/day/hour: { gan, zhi } }`，
+ * 不是与卦盘字段同级（SiZhu 为独立类实例，Gson/JSON.stringify 均按嵌套序列化）。
+ * 原实现直接在卦盘根上取 year/month/day/hour，导致六爻与奇门盘读库必然抛
+ * 「卦盘字段缺失: year」，卦盘页永远落到「未找到卦盘记录」。
+ */
 function siZhuOf(raw: Object): SiZhu {
+  const siZhuRaw = get(raw, 'siZhu')
+  if (siZhuRaw === null) {
+    throw new Error('卦盘字段缺失: siZhu')
+  }
   return new SiZhu(
-    ganZhiField(raw, 'year'),
-    ganZhiField(raw, 'month'),
-    ganZhiField(raw, 'day'),
-    ganZhiField(raw, 'hour'))
+    ganZhiField(siZhuRaw, 'year'),
+    ganZhiField(siZhuRaw, 'month'),
+    ganZhiField(siZhuRaw, 'day'),
+    ganZhiField(siZhuRaw, 'hour'))
 }
 
 function trigramField(raw: Object, key: string): Trigram {

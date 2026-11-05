@@ -4,7 +4,6 @@ import { generateQrCode, getOrderInfo, pickupOrder, shippingOrder } from "../net
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
-import { OrderItemRow } from "../view/OrderItemRow"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { BaseResponse } from "../network/BaseResponse"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
@@ -219,13 +218,13 @@ struct PickupDelivery {
     .alignItems(VerticalAlign.Center)
   }
 
-  /** 二维码区（recap §9-V5）：80dp 成图 / 80dp 占位，成图交叉淡变（recap §9-I2） */
+  /** 二维码区（recap §9-V5）：120dp 成图 / 120dp 占位，成图交叉淡变（recap §9-I2） */
   @Builder
   QrCodeArea() {
     Stack() {
       if (this.qrCode !== "") {
         Image(`data:image/png;base64,${this.qrCode}`)
-          .size({ width: 80, height: 80 })
+          .size({ width: 120, height: 120 })
           .borderRadius(DesignDimens.CARD_RADIUS)
           .transition(TransitionEffect.OPACITY)
       } else {
@@ -253,7 +252,7 @@ struct PickupDelivery {
             }
           }
         }
-        .size({ width: 80, height: 80 })
+        .size({ width: 120, height: 120 })
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .backgroundColor(DesignColor.SURFACE)
@@ -266,8 +265,8 @@ struct PickupDelivery {
         })
       }
     }
-    .width(80)
-    .height(80)
+    .width(120)
+    .height(120)
   }
 
   /**
@@ -286,6 +285,7 @@ struct PickupDelivery {
           iconColor: DesignColor.ICON_FOREGROUND_ORANGE
         })
         Column() {
+          // 标题 titleSmall 14/500（BODY_SMALL + MEDIUM）；正文 bodySmall 12/400 无顶部间距
           Text("注意事项")
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
@@ -296,11 +296,11 @@ struct PickupDelivery {
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.ON_WARNING_CONTAINER)
             .lineHeight(16)
-            .margin({ top: 2 })
         }
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
-        .margin({ left: DesignDimens.SPACE_MD })
+        // 图标与文字间距 12（对齐安卓 InfoSection 的 Spacer(12)）
+        .margin({ left: DesignDimens.SPACE_SM })
       }
       .width("100%")
       .alignItems(VerticalAlign.Top)
@@ -320,7 +320,7 @@ struct PickupDelivery {
     .alignItems(HorizontalAlign.Start)
   }
 
-  /** 二维码卡（recap §9-V2/V5）：80dp 码图 + 18/600 标题（textPrimary + ls0.3）+ DataLarge 36 tnum 码 */
+  /** 二维码卡（recap §9-V2/V5）：120dp 码图 + 18/600 标题（textPrimary + ls0.3）+ DataLarge 36 tnum 码 */
   @Builder
   QrCard() {
     Column() {
@@ -357,6 +357,31 @@ struct PickupDelivery {
     .alignItems(HorizontalAlign.Center)
   }
 
+  /**
+   * 寄存柜信息行（对齐安卓 InfoRow）：标签 12/400 textSecondary，值 12/400 textPrimary，行高 56（§3.4）。
+   * 仅柜号行开 tnum（编号类数字，DESIGN.md 数字等宽规则）；OrderItemRow 固定 14/13/Medium 且恒 tnum，
+   * 不满足按行切换，故页内自绘（不改动 view/OrderItemRow.ets）。
+   */
+  @Builder
+  LockerInfoRow(title: string, content: string, valueTnum: boolean) {
+    Row() {
+      Text(title)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.NORMAL)
+        .fontColor(DesignColor.TEXT_SECONDARY)
+
+      Text(content)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.NORMAL)
+        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontFeature(valueTnum ? DesignFontFeature.TNUM : 'normal')
+    }
+    .width("100%")
+    .height(56)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .alignItems(VerticalAlign.Center)
+  }
+
   /** 寄存柜信息卡（recap §9-F6/V6）：IconBox 36/20 + 3 行（学校/地址/柜号），码已在上方大字展示不再重复 */
   @Builder
   LockerInfoCard() {
@@ -373,16 +398,18 @@ struct PickupDelivery {
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.TEXT_PRIMARY)
-          .margin({ left: DesignDimens.SPACE_MD })
+          // 图标与标题间距 12（对齐安卓 InfoSection 的 Spacer(12)）
+          .margin({ left: DesignDimens.SPACE_SM })
       }
       .justifyContent(FlexAlign.Start)
       .width("100%")
       .margin({ bottom: 4 })
 
       Column({ space: 14 }) {
-        OrderItemRow({ title: "学校名称", content: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
-        OrderItemRow({ title: "地址", content: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
-        OrderItemRow({ title: "寄存柜柜号", content: `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}` })
+        this.LockerInfoRow("学校名称", `${this.orderInfo?.schoolsVo?.schoolName ?? ""}`, false)
+        this.LockerInfoRow("地址", `${this.orderInfo?.schoolsVo?.location ?? ""}`, false)
+        // 柜号是编号类数字，开 tnum（对齐安卓 InfoRow valueStyle = bodySmall.copy(tnum)）
+        this.LockerInfoRow("寄存柜柜号", `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`, true)
       }
       .width("100%")
     }
@@ -444,9 +471,10 @@ struct PickupDelivery {
     Row() {
       // 次按钮 — 联系客服：透明底 + 1dp outline 描边
       Column() {
+        // 文字 titleMedium 16/500（对齐安卓 PickupDeliveryActionBar）
         Text("联系客服")
-          .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.PRIMARY_DARK)
       }
       .layoutWeight(1)
@@ -476,9 +504,10 @@ struct PickupDelivery {
             .height(20)
             .color(DesignColor.ON_PRIMARY)
         } else {
+          // 文字 titleMedium 16/500（对齐安卓 PickupDeliveryActionBar）
           Text(this.isPickup ? "确认已取件" : "确认已寄件")
-            .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.ON_PRIMARY)
         }
       }
@@ -521,6 +550,9 @@ struct PickupDelivery {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
         PageHeader({ title: this.isPickup ? "取件" : "寄件" })
 
+        // 页头下 8dp 间距（对齐安卓 PickupDeliveryPage 的 Spacer(8)）
+        Blank().height(DesignDimens.SPACE_XS)
+
         // 内容区三态（recap §9-F1/S2）
         if (this.isLoading) {
           // 首载骨架（对齐安卓 LoadingState）
@@ -553,18 +585,19 @@ struct PickupDelivery {
               // 注意事项（仅寄件模式）
               if (!this.isPickup) {
                 this.NotesCard()
-                Blank().height(DesignDimens.SECTION_SPACING)
+                // 卡片间距统一 12（用户反馈信息间隔过大，三处卡片间节奏一致）
+                Blank().height(DesignDimens.SPACE_SM)
               }
 
               // 二维码卡
               this.QrCard()
 
-              Blank().height(DesignDimens.CARD_SPACING)
+              Blank().height(DesignDimens.SPACE_SM)
 
               // 寄存柜信息
               this.LockerInfoCard()
 
-              Blank().height(DesignDimens.CARD_SPACING)
+              Blank().height(DesignDimens.SPACE_SM)
 
               // 操作指引
               this.GuideCard()

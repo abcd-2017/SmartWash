@@ -10,10 +10,13 @@
 //   t/{code} / game-center / lab / mood / review / subscription / ai-work / web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
-//   lab / mood / review / subscription / delivery / ai-work 在鸿蒙端页面未实现（P1-P3 排期），
+//   lab 在鸿蒙端页面未实现（P1-P3 排期），
 //   但后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），故注册到
 //   ComingSoon 占位页（pages/ComingSoon.ets）——卡片点击有明确落点而非裸 toast；
 //   各域页面落地后把对应 host 的 routeName 换成真实路由即可，ComingSoon 保留通用兜底。
+//   （mood 已落地为 MoodRoute.Today、review 已落地为 ReviewRoute.Queue、
+//    subscription 已落地为 SubscriptionRoute.List、delivery 已落地为 ToolboxRoute.Delivery、
+//    ai-work 已落地为壳层 AiWorkPage，均不再走兜底。）
 //
 // 未注册 host 与原因（对齐安卓 §5 取舍）：
 // - user-info / service：两页是 Home 页 Tabs 的内容页，非独立路由；跳转等价「进 Home 切 tab」，
@@ -61,18 +64,20 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('toolbox-short-code', { routeName: RouteNames.TOOLBOX_SHORT_CODE_LIST, param: null })
   // 游戏中心域（对齐安卓 GameDeepLinkModule：game-center → GameRoute.Center）
   routes.set('game-center', { routeName: RouteNames.GAME_CENTER, param: null })
-  // 工具箱域设备投递（对齐安卓 ToolboxDeepLinkModule：delivery → ToolboxRoute.Delivery；
-  // 鸿蒙端投递页未实现，兜底到建设中占位页）
-  routes.set('delivery', { routeName: RouteNames.COMING_SOON, param: null })
+  // 工具箱域设备投递（对齐安卓 ToolboxDeepLinkModule：delivery → ToolboxRoute.Delivery）
+  routes.set('delivery', { routeName: RouteNames.TOOLBOX_DELIVERY, param: null })
   // 新增域兜底（对齐安卓各域 DeepLinkModule 的 host 注册；鸿蒙端页面 P1-P3 排期未落地，
   // 统一落到 ComingSoon 占位页，保证后端下发的工作台卡片点击有明确落点）
-  // lab → LabRoute.Home / mood → MoodRoute.Today / review → ReviewRoute.Queue /
-  // subscription → SubscriptionRoute.List / ai-work → 壳层 AiWorkPage
+  // lab → LabRoute.Home
   routes.set('lab', { routeName: RouteNames.COMING_SOON, param: null })
-  routes.set('mood', { routeName: RouteNames.COMING_SOON, param: null })
-  routes.set('review', { routeName: RouteNames.COMING_SOON, param: null })
-  routes.set('subscription', { routeName: RouteNames.COMING_SOON, param: null })
-  routes.set('ai-work', { routeName: RouteNames.COMING_SOON, param: null })
+  // mood 已落地（对齐安卓 MoodDeepLinkModule：mood → MoodRoute.Today）
+  routes.set('mood', { routeName: RouteNames.MOOD_TODAY, param: null })
+  // review 已落地（对齐安卓 ReviewDeepLinkModule：review → ReviewRoute.Queue 今日队列页）
+  routes.set('review', { routeName: RouteNames.REVIEW_QUEUE, param: null })
+  // subscription 已落地（对齐安卓 SubscriptionDeepLinkModule：subscription → SubscriptionRoute.List）
+  routes.set('subscription', { routeName: RouteNames.SUBSCRIPTION_LIST, param: null })
+  // ai-work 已落地（对齐安卓壳层 DeepLinkModule：ai-work → PageConstant.AiWork）
+  routes.set('ai-work', { routeName: RouteNames.AI_WORK, param: null })
   return routes
 }
 

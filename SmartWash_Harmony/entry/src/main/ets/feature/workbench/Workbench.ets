@@ -21,7 +21,10 @@ import { getValue, setValue } from "../../utils/StorageUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
 import { logger } from "../../utils/Logger"
 import { BusinessError } from "@kit.BasicServicesKit"
+import { KeyboardAvoidMode } from "@kit.ArkUI"
 import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
+import { parse, DeepLinkKind } from "../../utils/deeplink/DeepLinkParser"
+import { lookup } from "../../utils/deeplink/DeepLinkRegistry"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
 import {
   WorkbenchBlock,
@@ -73,9 +76,55 @@ export struct Workbench {
   aboutToAppear(): void {
     // TabContent 懒加载：首次切到工作台 tab 才拉取（对齐安卓 WorkbenchViewModel init 拉取）
     logger.debug('workbench', '工作台挂载，拉取服务端入口配置')
+    // 键盘避让（问题13）：全局是 RESIZE，会把整窗压到键盘上沿、底部 tab 被裁出窗口；
+    // 工作台只有顶部搜索框，不需要避让，改 NONE 让键盘覆盖内容、底栏保持原位
+    this.applyKeyboardAvoidNone()
     this.loadEntries()
     // 最近使用/公告关闭记录异步回读（对齐安卓 init 回读 DataStore）
     this.loadLocalState()
+  }
+
+  /**
+   * 键盘避让 NONE 落位（问题13）：窗口默认 RESIZE（EntryAbility 统一设置）。
+   * 2026-11-05 实测：仅挂载期设置一次，模拟器聚焦搜索框时窗口仍被压缩（dump 断言
+   * root 底沿 = 键盘顶沿 1850）；在搜索框聚焦事件里键盘弹出前重设一次才稳定生效。
+   * 回读留痕便于复核；失败静默不阻塞输入。
+   */
+  private applyKeyboardAvoidNone(): void {
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.NONE)
+      logger.debug('workbench', `键盘避让模式已设 NONE，回读=${this.getUIContext().getKeyboardAvoidMode()}`)
+    } catch (err) {
+      logger.warn('workbench', '设置键盘避让模式失败')
+    }
+  }
+
+  aboutToDisappear(): void {
+    // 离开工作台恢复全局 RESIZE，避免影响登录/充值等需要避让的输入页
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
+    } catch (err) {
+      logger.warn('workbench', '恢复键盘避让模式失败')
+    }
+  }
+
+  /**
+   * 工具是否已落地（问题15）：后端 workbench_entry 对全部端统一下发，其中
+   * lab/delivery/ai-work 在鸿蒙端未实现，深链注册表把它们指向 ComingSoon 占位页。
+   * 这里在渲染前过滤掉，避免用户点进去看到「正在实现中」。
+   * target 为空的公告条不算未实现（纯文案，不可点）。
+   */
+  private isImplementedTarget(target: string): boolean {
+    if (target.length === 0) {
+      return true
+    }
+    try {
+      const result = parse(target, lookup)
+      return !(result.kind === DeepLinkKind.ROUTE && result.routeName === RouteNames.COMING_SOON)
+    } catch (err) {
+      // 解析异常保守保留（顶多进了占位页，不应因为过滤逻辑把入口吞掉）
+      return true
+    }
   }
 
   /** 回读本地记忆：最近使用 + 已关闭公告（逗号连接存储） */
@@ -100,8 +149,11 @@ export struct Workbench {
     try {
       const res = await getWorkbenchEntries()
       if (res.code === BizCode.SUCCESS) {
-        this.tools = withUniqueKeys((res.data ?? []).map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
-          workbenchEntryVoToTool(vo, index)))
+        const all: Array<WorkbenchTool> = (res.data ?? []).map((vo: WorkbenchEntryVo, index: number): WorkbenchTool =>
+          workbenchEntryVoToTool(vo, index))
+        // 过滤未落地域（问题15）：避免卡片点进「正在实现中」占位页
+        const implemented: Array<WorkbenchTool> = all.filter((tool: WorkbenchTool) => this.isImplementedTarget(tool.target))
+        this.tools = withUniqueKeys(implemented)
         this.loadState = LoadState.SUCCESS
       } else {
         logger.warn('workbench', `工具入口列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
@@ -299,7 +351,8 @@ export struct Workbench {
           })
         }
         .width('100%')
-        .padding({ top: DesignDimens.SPACE_MD, left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        // 左右页边距已由 EmptyState 的 action 插槽统一给出，这里只补上间距（问题14）
+        .padding({ top: DesignDimens.SPACE_MD })
       }
     }
   }
@@ -773,20 +826,35 @@ export struct Workbench {
         bottom: 16
       })
 
-      // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框）
-      Search({
-        value: this.searchQuery,
-        placeholder: WorkbenchText.workbench_search_hint
-      })
-        .onChange((value: string) => {
-          this.onSearchChange(value)
+      // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框；
+      //    外层 Column 承担左右页边距——安卓 WorkbenchSearchField 的 padding(horizontal =
+      //    pagePadding)；Search 直接 margin + width('100%') 会溢出父容器被居中抵消，故外包一层）
+      Column() {
+        Search({
+          value: this.searchQuery,
+          placeholder: WorkbenchText.workbench_search_hint
         })
-        .width('100%')
-        .height(48)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
-        .borderRadius(DesignDimens.INPUT_RADIUS)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ bottom: DesignDimens.SPACE_MD })
+          .onChange((value: string) => {
+            this.onSearchChange(value)
+          })
+          .onFocus(() => {
+            // 键盘弹出前重设 NONE（模拟器上 ArkUI 避让引擎不跟随 NONE，见
+            // applyKeyboardAvoidNone 注释；真机语义正确，保留为契约兜底）
+            this.applyKeyboardAvoidNone()
+          })
+          .width('100%')
+          .height(48)
+          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .borderRadius(DesignDimens.INPUT_RADIUS)
+          // 图标/文案内边距对齐安卓：start spaceSm / end spaceXs
+          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
+      }
+      .width('100%')
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: DesignDimens.SPACE_MD
+      })
 
       // 3. 骨架 / 错误 / 空态 / 工具区
       if (this.loadState === LoadState.LOADING && this.tools.length === 0) {
@@ -865,6 +933,8 @@ export struct Workbench {
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
+          // chips 少于一行宽时左对齐（Scroll 默认居中，安卓 LazyRow 从页边距起排）
+          .align(Alignment.Start)
           .width('100%')
           .margin({ top: DesignDimens.SPACE_SM })
         }

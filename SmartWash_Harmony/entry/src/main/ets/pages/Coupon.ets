@@ -16,6 +16,15 @@ import vibrator from '@ohos.vibrator'
 // 前端节流 + loading 是唯二防线（对齐安卓 rememberDebouncedClick）
 const RECEIVE_THROTTLE_MS: number = 800
 
+/**
+ * 券面额格式化（对齐安卓 String.format("%.0f") + 非整数保留 2 位）：
+ * 整数不显示小数，非整数保留 2 位；¥ 前缀由调用方统一拼接。
+ */
+function formatCouponAmount(value: number | null | undefined): string {
+  const v = value ?? 0
+  return Number.isInteger(v) ? v.toString() : v.toFixed(2)
+}
+
 @Builder
 export function CouponBuilder() {
   Coupon()
@@ -123,12 +132,13 @@ struct Coupon {
       // 后端 Result.ok(boolean) 直传：data=false（并发/重复领取被拒）必须按失败处理，
       // 不能只看 code=200 就弹「领取成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
       if (res.code === HttpStatusCode.Ok && res.data === true) {
+        // 低频关键动作成功：领券完成留 info
+        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
         await this.loadAllCoupons()
         showToastSafety("领取成功")
       } else {
         logger.warn('coupon', `优惠券领取被拒 couponId=${couponId} code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "领取失败，请稍后重试")
-        logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
@@ -166,7 +176,9 @@ struct Coupon {
               }
             })
           }
-        }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}`)
+        // 键必须含状态指纹（问题5 根因）：领取成功 loadAllCoupons 整表替换对象，
+        // 仅用 couponId 时键不变 → ForEach 复用旧子组件、@Param 不同步 → 按钮定格「立即领取」
+        }, (coupon: CouponVo, index: number) => `${coupon.couponId ?? index}:${coupon.status ?? ""}`)
       }
       .width("100%")
       .height("100%")
@@ -204,7 +216,8 @@ struct Coupon {
           ListItem() {
             CouponTicketCard({ userCoupon: userCoupon, isHistorical: true })
           }
-        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}`)
+        // 键含 isUsed 指纹：核销状态变化后对象替换、键不变会复用旧子组件（同可用 tab 键问题）
+        }, (userCoupon: UserCouponVo, index: number) => `${userCoupon.userCouponId ?? index}:${userCoupon.isUsed ? 1 : 0}`)
       }
       .width("100%")
       .height("100%")
@@ -329,7 +342,7 @@ struct AvailableCouponCard {
   }
 
   // 领取按钮（对齐安卓 ClaimAction：48 热区外层 + 36 高 / r12 视觉胶囊 + 13sp/600 白字；
-  // 领取中原位换 14dp 圆环并禁点，文字位保留占位使宽度不跳变）
+  // 领取中原位换 14dp 圆环并禁点）
   @Builder
   claimAction() {
     Column() {
@@ -347,7 +360,8 @@ struct AvailableCouponCard {
               .fontColor(Color.White)
           }
         }
-        .width("100%")
+        // 真机缺陷修复（T4）：内层 Row 不可设 width("100%")——父 Column 为 wrap-content，
+        // 百分比会取父约束最大宽度把胶囊撑满整行；去掉后恢复 wrap-content（对齐安卓 ClaimAction）
         .height("100%")
         .justifyContent(FlexAlign.Center)
         .alignItems(VerticalAlign.Center)
@@ -355,9 +369,8 @@ struct AvailableCouponCard {
       .height(36)
       .borderRadius(DesignDimens.RADIUS_MD)
       .backgroundColor(this.isReceived() ? DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY)
+      // wrap-content：宽度随文字自适应（对齐安卓 ClaimAction，无最小宽度）
       .padding({ left: 16, right: 16 })
-      // 「立即领取 / 已领取」三态宽度不跳变（对齐安卓 Crossfade 占位）
-      .constraintSize({ minWidth: 84 })
     }
     .height(48)
     .justifyContent(FlexAlign.Center)
@@ -383,7 +396,7 @@ struct AvailableCouponCard {
       Row() {
         // 左侧金额区（票券 face：brand-soft 纯色底 + 面额 + 单位字）
         Column() {
-          Text(`¥${(this.coupon?.discount ?? 0).toFixed(2)}`)
+          Text(`¥${formatCouponAmount(this.coupon?.discount)}`)
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
@@ -501,7 +514,7 @@ struct CouponTicketCard {
       Row() {
         // 左侧金额区（历史态 surfaceVariant，其余 brand-soft 纯色底）
         Column() {
-          Text(`¥${(this.userCoupon?.couponVo?.discount ?? 0).toFixed(2)}`)
+          Text(`¥${formatCouponAmount(this.userCoupon?.couponVo?.discount)}`)
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
@@ -540,7 +553,8 @@ struct CouponTicketCard {
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Start)
-        .padding({ left: 20, top: 20, bottom: 20 })
+        // 仅水平内边距，无上下 padding：内容由外层 Row 的 VerticalAlign.Center 垂直居中（对齐安卓 padding(start=16, end=12)）
+        .padding({ left: 16, right: 12 })
 
         // 状态标签
         Text(this.statusText())

@@ -20,7 +20,9 @@ export function getNumberParam(name: string): number | null {
   if (params.length === 0) {
     return null
   }
-  const value = Number(params[0])
+  // 取栈内最末（栈顶）同名路由参数：栈内存在 2+ 同名路由时 [0] 会读到最旧那条，
+  // 导致新页面拿到旧参数（实测深链推 Home 时卦盘页读到旧 recordId）
+  const value = Number(params[params.length - 1])
   return Number.isNaN(value) ? null : value
 }
 
@@ -37,7 +39,7 @@ export function getStringParam(name: string): string | null {
   if (params.length === 0) {
     return null
   }
-  const value: Object | null = params[0]
+  const value: Object | null = params[params.length - 1]
   if (typeof value === "string") {
     return value
   }
@@ -57,7 +59,7 @@ export function getBooleanParam(name: string): boolean | null {
   if (params.length === 0) {
     return null
   }
-  const value: Object | null = params[0]
+  const value: Object | null = params[params.length - 1]
   if (typeof value === 'boolean') {
     return value
   }
@@ -83,7 +85,7 @@ export function getObjectParam<T extends Object>(name: string): T | null {
   if (params.length === 0) {
     return null
   }
-  const value: Object | null = params[0]
+  const value: Object | null = params[params.length - 1]
   if (value !== null && typeof value === "object") {
     return value as T
   }

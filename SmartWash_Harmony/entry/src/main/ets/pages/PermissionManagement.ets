@@ -81,66 +81,21 @@ struct PermissionManagement {
     })
   }
 
-  /** 打开本应用通知设置页（半模态），失败 toast 兜底 */
+  /**
+   * 打开本应用通知设置页（半模态），失败 toast 兜底。
+   * 半模态窗口不触发 NavDestination onShown，关闭后必须主动重查授权态，
+   * 否则页面停留在旧状态（实测：开启通知返回后仍显示「去授权」）。
+   */
   private openNotificationSettings(): void {
     const context = getContext(this) as common.UIAbilityContext
-    notificationManager.openNotificationSettings(context).catch(() => {
+    notificationManager.openNotificationSettings(context).then(() => {
+      // 系统设置半模态关闭回调：重查通知 / 网络授予态
+      logger.debug('permissionManagement', '系统通知设置已关闭，重查授权态')
+      this.refreshGranted()
+    }).catch(() => {
       // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
       logger.warn('permissionManagement', '打开系统通知设置失败，已 toast 兜底')
       promptAction.showToast({ message: "无法打开系统设置" })
-    })
-  }
-
-  // 权限行（对齐安卓 PermissionRow：72dp 高 / ib32 / 标题+描述 / 行尾状态+箭头）
-  @Builder
-  PermissionRowBuilder(icon: Resource, containerColor: number, iconColor: number,
-    title: string, description: string, granted: boolean, showAction: boolean, onClick: () => void) {
-    Row() {
-      Column() {
-        SymbolGlyph(icon)
-          .fontSize(20)
-          .fontColor([iconColor])
-      }
-      .width(32)
-      .height(32)
-      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(containerColor)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-
-      Column() {
-        Text(title)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-
-        Text(description)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
-      }
-      .layoutWeight(1)
-      .margin({ left: 12 })
-      .alignItems(HorizontalAlign.Start)
-
-      Text(granted ? "已授权" : "去授权")
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(granted ? DesignColor.SUCCESS : DesignColor.PRIMARY)
-        .margin({ right: 4 })
-
-      if (showAction) {
-        SymbolGlyph($r('sys.symbol.chevron_right'))
-          .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
-      }
-    }
-    .width('100%')
-    .height(72)
-    .alignItems(VerticalAlign.Center)
-    .onClick(() => {
-      if (showAction) {
-        onClick()
-      }
     })
   }
 
@@ -162,36 +117,36 @@ struct PermissionManagement {
             // 分组卡：卡内边距仅水平 20（行铺满，卡高 = 行数 × 72），对齐安卓 PermissionGroupCard
             AppCard({ paddingValue: 0 }) {
               Column() {
-                this.PermissionRowBuilder(
-                  $r('sys.symbol.bell'),
-                  DesignColor.ICON_CONTAINER_ORANGE,
-                  DesignColor.ICON_FOREGROUND_ORANGE,
-                  "通知权限",
-                  "订单状态、活动提醒等（系统通知开关）",
-                  this.notificationGranted,
-                  true,
-                  () => {
+                PermissionRow({
+                  icon: $r('sys.symbol.bell'),
+                  containerColor: DesignColor.ICON_CONTAINER_ORANGE,
+                  iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
+                  title: "通知权限",
+                  description: "订单状态、活动提醒等（系统通知开关）",
+                  granted: this.notificationGranted,
+                  showAction: true,
+                  onRowClick: () => {
                     if (!this.notificationGranted) {
                       this.requestNotification()
                     }
                   }
-                )
+                })
 
                 Divider()
                   .color(DesignColor.HAIRLINE)
                   .strokeWidth(0.5)
 
-                this.PermissionRowBuilder(
-                  $r('sys.symbol.wifi'),
-                  DesignColor.ICON_CONTAINER_BLUE,
-                  DesignColor.ICON_FOREGROUND_BLUE,
-                  "网络访问",
-                  "与服务端同步订单、余额与洗衣项目（安装即授予）",
-                  this.internetGranted,
-                  false,
-                  () => {
+                PermissionRow({
+                  icon: $r('sys.symbol.wifi'),
+                  containerColor: DesignColor.ICON_CONTAINER_BLUE,
+                  iconColor: DesignColor.ICON_FOREGROUND_BLUE,
+                  title: "网络访问",
+                  description: "与服务端同步订单、余额与洗衣项目（安装即授予）",
+                  granted: this.internetGranted,
+                  showAction: false,
+                  onRowClick: () => {
                   }
-                )
+                })
               }
               .width('100%')
               .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
@@ -221,6 +176,75 @@ struct PermissionManagement {
     .onShown(() => {
       // 从系统设置 / 授权弹窗返回后重查（对齐安卓 ON_RESUME）
       this.refreshGranted()
+    })
+  }
+}
+
+/**
+ * 权限行（对齐安卓 PermissionRow：72dp 高 / ib32 / 标题+描述 / 行尾状态+箭头）。
+ * 用 @Component + @Prop 而非 @Builder：@Builder 按值参数首帧定格，
+ * 系统设置返回后 granted 变更不刷新（同 UserInfo 校园卡行已知坑）。
+ * 行自身零水平 padding，水平缩进由分组卡内边距统一承载。
+ */
+@Component
+struct PermissionRow {
+  @Prop icon: Resource = $r('sys.symbol.bell')
+  @Prop containerColor: number = DesignColor.ICON_CONTAINER_ORANGE
+  @Prop iconColor: number = DesignColor.ICON_FOREGROUND_ORANGE
+  @Prop title: string = ''
+  @Prop description: string = ''
+  @Prop granted: boolean = false
+  @Prop showAction: boolean = true
+  onRowClick: () => void = () => {
+  }
+
+  build() {
+    Row() {
+      Column() {
+        SymbolGlyph(this.icon)
+          .fontSize(20)
+          .fontColor([this.iconColor])
+      }
+      .width(32)
+      .height(32)
+      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+      .backgroundColor(this.containerColor)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+
+      Column() {
+        Text(this.title)
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+
+        Text(this.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .margin({ top: 2 })
+      }
+      .layoutWeight(1)
+      .margin({ left: 12 })
+      .alignItems(HorizontalAlign.Start)
+
+      Text(this.granted ? "已授权" : "去授权")
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(this.granted ? DesignColor.SUCCESS : DesignColor.PRIMARY)
+        .margin({ right: 4 })
+
+      if (this.showAction) {
+        SymbolGlyph($r('sys.symbol.chevron_right'))
+          .fontSize(20)
+          .fontColor([DesignColor.TEXT_TERTIARY])
+      }
+    }
+    .width('100%')
+    .height(72)
+    .alignItems(VerticalAlign.Center)
+    .onClick(() => {
+      if (this.showAction) {
+        this.onRowClick()
+      }
     })
   }
 }

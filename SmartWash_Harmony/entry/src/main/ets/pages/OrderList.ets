@@ -14,6 +14,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../
 import { logger } from "../utils/Logger"
 import { safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
+import { bumpOrderRefresh, bumpUserInfoRefresh } from "../utils/RefreshSignal"
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -68,6 +69,8 @@ struct OrderList {
       this.isLoadingMore = loading
     }
   )
+  // 请求序号：第 1 页 replace 加载时递增；慢响应后到时按序号丢弃，防旧数据回写新状态
+  private reqSeq: number = 0
 
   aboutToAppear(): void {
     // 安全取参（评审 #31）：参数缺失/非法时兜底第 0 个页签
@@ -87,13 +90,31 @@ struct OrderList {
     if (page === 1) {
       this.isLoading = true
     }
+    // 竞态防护（问题：await 期间用户可切页签/再触发重拉，慢响应回来会以「当前 orderStatus」
+    // 写缓存/覆盖列表，实测 A 页签响应污染 B 页签缓存与显示）：快照发起时的状态与序号，
+    // 响应按快照归属；第 1 页 replace 每次递增序号，旧响应按序号作废。
+    if (page === 1 && replace) {
+      this.reqSeq++
+    }
+    const statusSnapshot = this.orderStatus
+    const seqSnapshot = this.reqSeq
     try {
       let res = await getOrderList({ status: this.orderStatus, page: page, size: PAGE_SIZE })
+      // 已有更新序号的第 1 页响应（连续下拉/重拉）：整体丢弃，防旧数据回写
+      if (page === 1 && replace && seqSnapshot !== this.reqSeq) {
+        logger.debug('orderList', `丢弃过期响应 page=${page} status=${statusSnapshot} seq=${seqSnapshot}`)
+        return false
+      }
       if (res.code === HttpStatusCode.Ok) {
         if (res.data === null || res.data === undefined || res.data.length === 0) {
           if (page === 1) {
-            this.sections = []
-            this.sectionCache.set(this.orderStatus, [])
+            // 状态已切换：空结果只写快照页签的缓存，不覆盖当前页签的 UI
+            if (this.orderStatus !== statusSnapshot) {
+              this.sectionCache.set(statusSnapshot, [])
+            } else {
+              this.sections = []
+              this.sectionCache.set(this.orderStatus, [])
+            }
           } else if (this.orderListLength() > 0) {
             showToastSafety("没有更多数据了")
           }
@@ -101,12 +122,12 @@ struct OrderList {
           this.contentOpacity = 1
           return false
         }
-        this.appendOrders(res.data, replace)
+        this.appendOrders(res.data, replace, statusSnapshot)
         this.isLoading = false
         this.contentOpacity = 1
         return true
       }
-      logger.warn('orderList', `订单列表加载失败 page=${page} status=${this.orderStatus} ` +
+      logger.warn('orderList', `订单列表加载失败 page=${page} status=${statusSnapshot} ` +
         `code=${res.code} message=${res.message ?? ""}`)
       showToastSafety(res.message, "订单加载失败")
       this.isLoading = false
@@ -114,7 +135,8 @@ struct OrderList {
       return false
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并复位加载态，避免 isLoading 卡死永久骨架
-      if (page === 1) {
+      logger.warn('orderList', `订单列表请求异常 page=${page} status=${statusSnapshot}`)
+      if (page === 1 && this.orderStatus === statusSnapshot) {
         this.sections = []
       }
       showToastSafety("网络异常，请稍后重试")
@@ -137,11 +159,17 @@ struct OrderList {
    * 追加订单并重建月份分组（D2 决策：数据源维持单状态分页拉取，
    * 列表结构对齐安卓——按 createdAt 降序、按 yyyy-MM 分组，组间倒序排列）。
    * @param replace true 时仅用本页数据重建（第 1 页语义），false 时与现有列表合并（触底加载）
+   * @param statusKey 发起请求时的页签状态快照：缓存一律按快照键写入；
+   *   响应返回时用户已切走（orderStatus ≠ 快照）则只写缓存不覆盖当前页签 UI，
+   *   防止跨页签响应污染（竞态修复）
    */
-  private appendOrders(data: Array<OrderInfo>, replace: boolean): void {
+  private appendOrders(data: Array<OrderInfo>, replace: boolean, statusKey: string): void {
+    // 快照页签与当前页签一致才允许合并当前 UI 列表；跨页签响应只能基于缓存重建
+    const mergingCurrent = statusKey === this.orderStatus
     const flat: Array<OrderInfo> = []
     if (!replace) {
-      for (const s of this.sections) {
+      const source = mergingCurrent ? this.sections : (this.sectionCache.get(statusKey) ?? [])
+      for (const s of source) {
         flat.push(...s.orders)
       }
     }
@@ -167,15 +195,19 @@ struct OrderList {
         next.push(section)
       }
     }
-    this.sections = next
-    // 缓存当前页签列表（切页签直接复用，不再重建）
-    this.sectionCache.set(this.orderStatus, next)
+    // 缓存按快照页签写入（切页签直接复用，不再重建）
+    this.sectionCache.set(statusKey, next)
+    // 仅快照页签仍为当前页签时才驱动 UI（跨页签响应不覆盖当前列表）
+    if (mergingCurrent) {
+      this.sections = next
+    }
   }
 
   aboutToDisappear(): void {
     this.clearFadeTimer()
-    AppStorage.setOrCreate("refreshOrderCount", true)
-    AppStorage.setOrCreate("refreshUserInfo", true)
+    // 自增 tick（问题3）：布尔标记重复 setOrCreate(true) 不产生变更事件
+    bumpOrderRefresh()
+    bumpUserInfoRefresh()
   }
 
   /** 清理切 tab 淡入定时器（避免页面销毁后回调改状态） */
@@ -210,7 +242,7 @@ struct OrderList {
       if (res.code === HttpStatusCode.Ok && res.data === true) {
         // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
         // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
-        AppStorage.setOrCreate("refreshOrderCount", true)
+        bumpOrderRefresh()
         this.refreshOrder()
         showToastSafety("取消成功")
       } else {
@@ -257,28 +289,34 @@ struct OrderList {
   /**
    * 状态筛选胶囊条（对齐安卓 AppPillTabRow）：
    * 选中 = primary 实底 + 白字；未选中 = surface 白底 + 1px outline 描边 + textSecondary；
-   * radiusFull，视觉高 34（文字行盒 16 + 上下 9），垂直 padding 9 → 14 把触控热区抬到 44；可横滚。
+   * 双层结构对齐安卓「clip→background 在 padding 之前，只扩热区不改视觉」的语义：
+   * 外层热区 Column 44 高（无背景），内层视觉胶囊 34（文字行盒 16 + 上下 9）；可横滚。
    */
   @Builder
   TabBar() {
     Scroll() {
       Row() {
         ForEach(this.list, (title: string, index: number) => {
-          Row() {
-            Text(getShowOrderStatusDescription(title))
-              .fontSize(DesignFontSize.CAPTION)
-              .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+          Column() {
+            Row() {
+              Text(getShowOrderStatusDescription(title))
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+            }
+            .justifyContent(FlexAlign.Center)
+            // 视觉胶囊 34（对齐安卓画板 .seg3：labelMedium 行盒 16 + 上下 9）
+            .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 9, bottom: 9 })
+            .borderRadius(DesignDimens.RADIUS_FULL)
+            .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
+            .border({
+              width: 1,
+              color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
+            })
           }
+          // 触控热区 44（规范 §2.3）；背景画在内层胶囊上，热区透明不影响视觉
+          .height(44)
           .justifyContent(FlexAlign.Center)
-          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变）
-          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
-          .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
-          .border({
-            width: 1,
-            color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
-          })
           .margin({ right: DesignDimens.SPACE_XS })
           .onClick(() => {
             if (this.currIndex !== index) {
@@ -387,7 +425,12 @@ struct OrderList {
                     left: DesignDimens.PAGE_PADDING,
                     right: DesignDimens.PAGE_PADDING
                   })
-                }, (section: MonthSection) => section.monthKey)
+                  // 键值必须含数据指纹：仅用 monthKey 时，同月订单集变化（下拉刷新换新数组、
+                  // 切页签回切缓存）后 ForEach 键相同会复用旧 OrderMonthCard 实例且不重执行
+                  // itemGenerator，@Param orders 不同步 → UI 停留旧数据（实测 3 条列表显示 1 条）。
+                  // 拼接订单 id 串后，数据变则键变触发重建，数据不变键不变仍复用。
+                }, (section: MonthSection) =>
+                  `${section.monthKey}:${section.orders.map((o: OrderInfo) => o.orderId ?? 0).join(",")}`)
 
                 ListItem() {
                   LoadingFooter({ isLoading: !!this.isLoadingMore })

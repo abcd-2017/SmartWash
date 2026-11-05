@@ -1,18 +1,16 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, DesignElevation } from "../constant/DesignSystem"
-import { getOrderItemCount } from "../network/api/OrderApi"
 import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { promptAction } from '@kit.ArkUI'
-import { OrderItemCountVo } from "../network/vo/OrderItemCountVo"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
-import { ShowOrderStatusEnum } from "../constant/ShowOrderStatus"
 import { AppButton, AppButtonVariant, EmptyState, LoadingState } from "./common/AppComponents"
 import { safeTopVp } from "../utils/SafeArea"
+import { USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 
 /**
  * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:623-624 maskPhone）：
@@ -32,30 +30,20 @@ export struct UserInfo {
   @State userInfo: UserInfoVo | null = null
   // 首载失败标记：网络异常/401 拒绝时 promise 会 throw，兜住后进错误态，避免「我的」tab 永久骨架
   @State loadFailed: boolean = false
-  @StorageLink('refreshUserInfo') @Watch("onUserInfoChange") refreshFlag: boolean = false
-  @State orderItemCount: OrderItemCountVo | null = null
-  @StorageLink('refreshOrderCount') @Watch("onOrderCountChange") orderCountFlag: boolean = false
+  // 自增 tick（问题3）：布尔标记重复 setOrCreate(true) 不产生变更事件，@Watch 不触发
+  @StorageLink(USER_INFO_TICK_KEY) @Watch("onUserInfoChange") userInfoTick: number = 0
   @State avatarUrl: string | null = null
   @State isUploading: boolean = false
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
-    if (this.refreshFlag) {
+    if (this.userInfoTick > 0) {
       this.refreshUserInfo()
     }
-    this.refreshFlag = false
-  }
-
-  //监听订单数量刷新状态变化
-  onOrderCountChange() {
-    if (this.orderCountFlag) {
-      this.getOrderCount()
-    }
-    this.orderCountFlag = false
   }
 
   aboutToAppear() {
-    Promise.all([this.refreshUserInfo(), this.getOrderCount()])
+    this.refreshUserInfo()
   }
 
   async refreshUserInfo() {
@@ -109,23 +97,6 @@ export struct UserInfo {
       // 外部调用失败（选图/上传异常）：error 留痕，只记 message 摘要，不序列化完整 error
       logger.error('userInfo', '头像上传流程异常', err instanceof Error ? err.message : "")
       showToastSafety("头像上传失败")
-    }
-  }
-
-  async getOrderCount() {
-    let res = await getOrderItemCount({
-      pendingPaymentStatus: ShowOrderStatusEnum.PENDING_PAYMENT,
-      processingStatus: ShowOrderStatusEnum.WASHING,
-      pendingPickupStatus: ShowOrderStatusEnum.READY_FOR_PICKUP,
-      shippedStatus: ShowOrderStatusEnum.PENDING_SHIPMENT,
-    })
-    if (res.code === HttpStatusCode.Ok) {
-      this.orderItemCount = res.data
-      logger.debug('userInfo', '订单数量加载成功')
-    } else {
-      // 业务失败 warn 留痕（401 已由 Axios 拦截器统一清理并跳登录）
-      logger.warn('userInfo', `订单数量加载失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "订单数量加载失败")
     }
   }
 
@@ -184,7 +155,7 @@ export struct UserInfo {
     } else {
       Column() {
         Text(this.avatarInitial())
-          .fontSize(DesignFontSize.STATUS_LARGE)
+          .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.ON_PRIMARY)
       }
@@ -198,41 +169,6 @@ export struct UserInfo {
         colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
       })
     }
-  }
-
-  /**
-   * 订单快捷入口（鸿蒙独有 F3，保留）：44 容器 + 六色语义底色/前景 + 计数。
-   */
-  @Builder
-  orderQuickEntry(icon: Resource, label: string, count: number, containerColor: number, iconColor: number, onClick: () => void) {
-    Column() {
-      Column() {
-        SymbolGlyph(icon)
-          .fontSize(20)
-          .fontColor([iconColor])
-      }
-      .width(44)
-      .height(44)
-      .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-      .backgroundColor(containerColor)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-
-      Text(label)
-        .fontSize(DesignFontSize.BODY_SMALL)
-        .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ top: 8 })
-
-      Text(count > 0 ? `${count}单` : " ")
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.PRIMARY)
-        .margin({ top: 4 })
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Center)
-    .padding({ top: 16, bottom: 16 })
-    .onClick(onClick)
   }
 
   /**
@@ -263,17 +199,18 @@ export struct UserInfo {
         .layoutWeight(1)
         .margin({ left: 12 })
 
+      // 仅行尾值存在时与 chevron 保持 4dp 间隔（对齐安卓 SettingRow：无 trailing 的行不加间隔）
       if (trailingText !== "") {
         Text(trailingText)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(trailingColor)
           .fontFeature(DesignFontFeature.TNUM)
+          .margin({ right: DesignDimens.SPACE_XXS })
       }
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(20)
         .fontColor([DesignColor.TEXT_TERTIARY])
-        .margin({ left: 4 })
     }
     .width("100%")
     .height(64)
@@ -352,8 +289,8 @@ export struct UserInfo {
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
                 .fontColor(DesignColor.TEXT_PRIMARY)
 
-              // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时回落学号）
-              Text(this.userInfo?.schoolVo?.schoolName ?? `学号：${this.userInfo?.studentId ?? ""}`)
+              // 学校名（对齐安卓 UserInfoPage.kt:343-348；无学校时显示空串）
+              Text(this.userInfo?.schoolVo?.schoolName ?? "")
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(DesignColor.TEXT_SECONDARY)
                 .margin({ top: 4 })
@@ -446,15 +383,27 @@ export struct UserInfo {
 
           // ========== 账户卡 GroupCard（对齐安卓 UserInfoPage.kt:441-487） ==========
           Column() {
-            this.settingRow($r('sys.symbol.creditcard'), "校园卡",
-              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-              this.isCampusCardBound() ? "已绑定" : "未绑定",
-              this.isCampusCardBound() ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY,
-              () => {
-                pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
-                  this.refreshUserInfo()
-                }, false)
-              })
+            // 校园卡行尾状态不能走 @Builder 按值参数（已知坑：参数首帧定格，绑定/解绑后不刷新）；
+            // 用 if 分支包住使 userInfo 变更时分支重跑、以新字面量重新调用 settingRow
+            if (this.isCampusCardBound()) {
+              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
+                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+                "已绑定", DesignColor.PRIMARY,
+                () => {
+                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                    this.refreshUserInfo()
+                  }, false)
+                })
+            } else {
+              this.settingRow($r('sys.symbol.creditcard'), "校园卡",
+                DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
+                "未绑定", DesignColor.TEXT_SECONDARY,
+                () => {
+                  pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
+                    this.refreshUserInfo()
+                  }, false)
+                })
+            }
 
             Divider()
               .strokeWidth(0.5)
@@ -499,29 +448,6 @@ export struct UserInfo {
               () => {
                 pathStack.pushPathByName(RouteNames.SETTING, null)
               })
-
-            Divider()
-              .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
-
-            // 联系客服 / 常见问题（鸿蒙独有 F4，保留为行卡）
-            this.settingRow($r('sys.symbol.service'), "联系客服",
-              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
-              "", DesignColor.TEXT_SECONDARY,
-              () => {
-                promptAction.showToast({ message: "功能开发中，敬请期待" })
-              })
-
-            Divider()
-              .strokeWidth(0.5)
-              .color(DesignColor.HAIRLINE)
-
-            this.settingRow($r('sys.symbol.questionmark_circle'), "常见问题",
-              DesignColor.ICON_CONTAINER_PURPLE, DesignColor.ICON_FOREGROUND_PURPLE,
-              "", DesignColor.TEXT_SECONDARY,
-              () => {
-                promptAction.showToast({ message: "功能开发中，敬请期待" })
-              })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
@@ -535,78 +461,10 @@ export struct UserInfo {
             offsetY: DesignElevation.CARD_SHADOW_OFFSET
           })
           .margin({ top: DesignDimens.CARD_SPACING })
-
-          // ========== 订单管理（鸿蒙独有 F3，保留） ==========
-          Text("订单管理")
-            .fontSize(DesignFontSize.SECTION_TITLE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
-            .width("100%")
-            .margin({ top: DesignDimens.SECTION_SPACING })
-
-          Row() {
-            this.orderQuickEntry($r('sys.symbol.clock'), "待支付",
-              this.orderItemCount?.pendingPaymentCount ?? 0,
-              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
-              () => {
-                this.jumpToOrderList(1)
-              })
-
-            Divider()
-              .strokeWidth(0.5)
-              .vertical(true)
-              .height(72)
-              .color(DesignColor.DIVIDER)
-
-            this.orderQuickEntry($r('sys.symbol.laundry'), "清洗中",
-              this.orderItemCount?.processingCount ?? 0,
-              DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-              () => {
-                this.jumpToOrderList(3)
-              })
-
-            Divider()
-              .strokeWidth(0.5)
-              .vertical(true)
-              .height(72)
-              .color(DesignColor.DIVIDER)
-
-            this.orderQuickEntry($r('sys.symbol.envelope_open'), "待取件",
-              this.orderItemCount?.pendingPickupCount ?? 0,
-              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
-              () => {
-                this.jumpToOrderList(4)
-              })
-
-            Divider()
-              .strokeWidth(0.5)
-              .vertical(true)
-              .height(72)
-              .color(DesignColor.DIVIDER)
-
-            this.orderQuickEntry($r('sys.symbol.arrow_counterclockwise_clock'), "历史订单",
-              0,
-              DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE,
-              () => {
-                this.jumpToOrderList(0)
-              })
-          }
-          .width("100%")
-          .margin({ top: 12 })
-          .padding({ top: 8, bottom: 8 })
-          .backgroundColor(DesignColor.SURFACE)
-          .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
-          .shadow({
-            radius: DesignElevation.CARD_SHADOW_RADIUS,
-            color: DesignColor.SHADOW_COLOR_CARD,
-            offsetX: 0,
-            offsetY: DesignElevation.CARD_SHADOW_OFFSET
-          })
         }
 
-        // 底部安全距离
-        Row().height(72)
+        // 底部留白（对齐安卓 Spacer(24)）
+        Row().height(DesignDimens.SPACE_XL)
       }
     }
     .scrollable(ScrollDirection.Vertical)

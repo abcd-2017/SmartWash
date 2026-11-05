@@ -22,6 +22,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
+import { DesignDimens } from '../../../../../constant/DesignSystem'
 import { pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 
@@ -147,7 +148,7 @@ export struct DivHistoryPage {
               })
             }, (method: string) => method)
           }
-          .padding({ left: 20, right: 20 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         }
         .scrollable(ScrollDirection.Horizontal)
         .scrollBar(BarState.Off)
@@ -171,8 +172,8 @@ export struct DivHistoryPage {
           .opacity(this.filtered().length === 0 ? 1 : 0)
           .animation({ duration: 180, curve: Curve.EaseInOut })
 
-          // 列表层
-          List({ space: 8 }) {
+          // 列表层（记录卡间距统一 CARD_SPACING）
+          List({ space: DesignDimens.CARD_SPACING }) {
             ForEach(this.filtered(), (row: DivRecordRow) => {
               ListItem() {
                 DivCard({
@@ -202,7 +203,13 @@ export struct DivHistoryPage {
                       .fontColor(DivPalette.textSecondary)
                   }
                   .width('100%')
-                  .padding({ left: 14, right: 8, top: 12, bottom: 12 })
+                  // 左内边距 CARD_PADDING；右侧留给 › 箭头，仅 SPACE_XS
+                  .padding({
+                    left: DesignDimens.CARD_PADDING,
+                    right: DesignDimens.SPACE_XS,
+                    top: DesignDimens.SPACE_SM,
+                    bottom: DesignDimens.SPACE_SM
+                  })
                   .alignItems(VerticalAlign.Center)
                 }
               }
@@ -210,7 +217,7 @@ export struct DivHistoryPage {
           }
           .width('100%')
           .height('100%')
-          .padding({ left: 20, right: 20, top: 4 })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XXS })
           .opacity(this.filtered().length === 0 ? 0 : 1)
           .animation({ duration: 180, curve: Curve.EaseInOut })
         }

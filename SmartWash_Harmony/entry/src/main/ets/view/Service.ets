@@ -150,12 +150,11 @@ export struct Service {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.TEXT_PRIMARY)
 
+        // 描述不限行（对齐安卓 ServiceItemRow：可换行，无 maxLines/Ellipsis 约束）
         Text(item.description)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 4 })
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .maxLines(1)
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
@@ -206,14 +205,14 @@ export struct Service {
 
   @Builder
   ServiceListCard() {
-    // 单张卡片包裹全部套餐行，行间 0.5 发丝线分隔（对齐安卓 ServiceListCard，规范 §3.4）
+    // 单张卡片包裹全部套餐行，行间 1dp 发丝线分隔（对齐安卓 ServiceListCard 的 1dp 线）
     Column() {
       if (this.laundryItem !== null) {
         ForEach(this.laundryItem, (item: LaundryItem, index: number) => {
           this.ServiceItemBuilder(item)
           if (index < (this.laundryItem?.length ?? 0) - 1) {
             Divider()
-              .strokeWidth(0.5)
+              .strokeWidth(1)
               .color(DesignColor.HAIRLINE)
               .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
           }
