@@ -471,13 +471,13 @@ fun AppButton(
             } else {
                 Text(
                     text = text,
-                    // §3.3 按钮文字 15sp/600/ls 1sp（v0.4 字阶无 15sp 档，但 §3.3 按钮行为
+                    // §3.3 按钮文字 15sp/600（v0.4 字阶无 15sp 档，但 §3.3 按钮行为
                     // 组件级规格、未被 v0.4 覆写表列入作废，故按 §3.3 取值）；
+                    // U-116：v0.4 字阶已废字距，删除 letterSpacing = 1.sp；
                     // 按钮文案可内嵌金额（确认支付/立即充值），同句开 tnum（规范 §2.2 金额硬规则）
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp,
                         fontFeatureSettings = "tnum",
                     ),
                     color = animatedContentColor,

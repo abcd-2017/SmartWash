@@ -205,12 +205,12 @@ fun LoginPage(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.5.sp
             Text(
                 text = stringResource(R.string.brand_subtitle),
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                color = Color.White,
-                letterSpacing = 0.5.sp
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(32.dp))

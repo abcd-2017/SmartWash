@@ -478,7 +478,9 @@ fun UserInfoPage(
                                     text = if (userInfo?.campusCard != null) stringResource(R.string.bound) else stringResource(R.string.not_bound),
                                     // 画板实测行尾值 12/400（caption 400 档）
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = if (userInfo?.campusCard != null) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
+                                    // U-103：原「已绑定」用 brand green #2D9B6A on 白 3.50:1（§10 绿字红线
+                                    // 禁小号文字）→ 统一 textSecondary #6B6E73（on 白 5.12:1）
+                                    color = AppColors.colorScheme.textSecondary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Icon(

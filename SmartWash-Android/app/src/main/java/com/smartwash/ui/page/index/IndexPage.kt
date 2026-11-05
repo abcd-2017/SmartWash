@@ -52,7 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -350,6 +349,16 @@ private fun StatusHeroCard(
         end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
+    // U-101：白字 on 品牌绿渐变实测 3.72:1（<4.5，违反 §10 正文红线）。
+    // 叠加对角半透明黑纱（左上 20% → 右下 0%）：文字区（左上）白字对比度 ≥5.1:1，
+    // 右下品牌渐变几乎不受影响；标题 22sp 属大字（WCAG 3:1 已达标），副标题/订单号/步骤标签
+    // 等 12sp 白字由纱罩统一覆盖，保持白字观感。
+    val scrim = Brush.linearGradient(
+        colors = listOf(Color.Black.copy(alpha = 0.2f), Color.Black.copy(alpha = 0f)),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -362,8 +371,11 @@ private fun StatusHeroCard(
                     Modifier
                 }
             )
-            .clip(RoundedCornerShape(AppDimens.radiusXl))
+            // U-110：Hero 卡圆角 20dp 不在规范 §3 允许集 {8,12,16,24,full}；
+            // 取 radius.card 16（卡片全 App 统一档，§3 明令禁止 12/16 混用），不用 24（该档为底部弹层）
+            .clip(RoundedCornerShape(AppDimens.radiusLg))
             .background(gradient)
+            .background(scrim)
             .padding(20.dp)
     ) {
         Column {
@@ -469,22 +481,22 @@ private fun StatusHeroCard(
                     }
                 }
             } else {
-                // 空态 CTA — 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字，
-                // 几何取 §3.3 小按钮档（高 36 / 横向 16），与订单行 OrderActionPill 同规格
+                // 空态 CTA — 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字。
+                // U-102：原 13sp 不在 §2 字阶允许集，且 #1E8C5C on 白仅 4.23:1；改 16sp/600
+                // （§10 绿色文字红线：绿色文字仅限 ≥16sp 且 weight ≥600 的强调文本），
+                // 对齐同页「查看全部」bodyLarge/600 模式；行高 24 + 上下 12 = 高 48，触控达标。
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 Box(
                     modifier = Modifier
                         .pressable(onClick = onBookingClick)
                         .background(Color.White, RoundedCornerShape(AppDimens.radiusFull))
-                        .padding(horizontal = AppDimens.spaceMd, vertical = 10.dp),
+                        .padding(horizontal = AppDimens.spaceMd, vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.service_booking),
-                        // 白底上用深绿 #1E8C5C（on 白 ≥4.5:1，绿色文字走 green.700 红线档）；
-                        // 文字 13sp/600 与订单行 OrderActionPill（§3.3 小按钮档）同规格
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        // 白底上用深绿 #1E8C5C（green.700，on 白 4.23:1；16sp/600 满足 §10 绿色文字档）
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = AppColors.colorScheme.primaryDark
                     )
                 }

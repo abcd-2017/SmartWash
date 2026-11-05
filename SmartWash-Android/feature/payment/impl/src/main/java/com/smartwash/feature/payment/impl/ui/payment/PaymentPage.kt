@@ -214,13 +214,13 @@ fun PaymentPage(
                                 color = AppColors.colorScheme.textPrimary
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                            // 选中态画板实测：primarySoft 底（浅 #E8F6EF / 深 #1D3229，规范 §2.1/§6.5，
-                            // 与图标盒浅绿 #F0FBF4 是两个令牌）+ 1px 描边 + level1 阴影
+                            // 选中态：primaryContainer 底（浅 #F0FBF4 / 深 #17322B）+ 1px 描边 + level1 阴影。
+                            // U-117：原 primarySoft #E8F6EF 已被 §1.4 裁决弃用（统一 #F0FBF4）
                             Surface(
                                 modifier = Modifier.fillMaxWidth().softCardShadow(),
                                 shape = RoundedCornerShape(AppDimens.radiusLg),
                                 color = if (selectedPaymentMethod == "balance")
-                                    AppColors.colorScheme.primarySoft
+                                    MaterialTheme.colorScheme.primaryContainer
                                 else AppColors.colorScheme.surface,
                                 border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                             ) {
@@ -294,7 +294,8 @@ fun PaymentPage(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 20.dp, vertical = 15.dp),
+                                        // U-118：原 vertical 15dp 不在 §3 间距允许集 → 16dp
+                                        .padding(horizontal = 20.dp, vertical = 16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     // §3.2 公共 IconBox（待办/优惠语义 → 橙）

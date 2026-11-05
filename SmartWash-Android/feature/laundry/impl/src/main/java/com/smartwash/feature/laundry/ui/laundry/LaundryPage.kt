@@ -371,7 +371,8 @@ private fun LaundryTypeItem(
                 Box(
                     modifier = Modifier
                         .size(20.dp)
-                        .border(1.5.dp, indicatorRingColor, CircleShape),
+                        // U-119：描边统一 1px（规范 §3），原 1.5dp 不在允许集
+                        .border(1.dp, indicatorRingColor, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）

@@ -64,7 +64,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
@@ -371,7 +370,8 @@ fun WorkbenchPage(
                         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                         Text(
                             text = stringResource(R.string.workbench_all_tools),
-                            style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                            // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
+                            style = AppTextStyles.SectionTitle,
                             color = AppColors.colorScheme.textPrimary,
                             modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
                         )
@@ -424,10 +424,12 @@ fun WorkbenchPage(
 
             item(key = "wb_footer") {
                 // 页脚弱提示
+                // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（§10 正文红线 ≥4.5）；
+                // 改 textSecondary #6B6E73（实测 4.72:1）
                 Text(
                     text = stringResource(R.string.workbench_footer),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -510,12 +512,13 @@ private fun WorkbenchSearchField(
     )
 }
 
-/** 区块标题（服务端 section_title 分组边界；字距与「全部工具」同款） */
+/** 区块标题（服务端 section_title 分组边界） */
 @Composable
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+        // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
+        style = AppTextStyles.SectionTitle,
         color = AppColors.colorScheme.textPrimary,
         modifier = Modifier
             .fillMaxWidth()
@@ -541,7 +544,8 @@ private fun RecentSection(
     ) {
         Text(
             text = stringResource(R.string.workbench_recent_title),
-            style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+            // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
+            style = AppTextStyles.SectionTitle,
             color = AppColors.colorScheme.textPrimary,
             modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
         )
@@ -822,10 +826,12 @@ private fun WorkbenchRowLine(
             modifier = Modifier.weight(1f)
         )
         tool.badge?.let { badge ->
+            // U-104：原 #2D9B6A on #F0FBF4 仅 3.30:1；#1E8C5C on #F0FBF4 为 3.99:1 仍 <4.5，
+            // 且 §10 绿色文字仅限 ≥16sp/600（本角标 12sp/500），故改 textPrimary #1C1C1E（16.05:1）
             Text(
                 text = badge,
                 style = MaterialTheme.typography.labelSmall,
-                color = scheme.primary,
+                color = scheme.textPrimary,
                 modifier = Modifier
                     .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
                     .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
@@ -949,9 +955,9 @@ private fun DivinationEntryCard(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.workbench_divination_name),
+                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
                 style = AppTextStyles.SectionTitle.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.sp
+                    fontWeight = FontWeight.SemiBold
                 ),
                 color = DivTextPrimaryDark
             )
@@ -1107,12 +1113,14 @@ private fun ToolTile(
                     }
                 }
             }
-            // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字（caption 档）
+            // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底（caption 档）
+            // U-104：文字改 textPrimary #1C1C1E（原 #2D9B6A on #F0FBF4 3.30:1；绿字红线要求
+            // ≥16sp/600，本角标 12sp/500 不适用 green.700）
             if (!tool.badge.isNullOrBlank()) {
                 Text(
                     text = tool.badge,
                     style = MaterialTheme.typography.labelSmall,
-                    color = scheme.primary,
+                    color = scheme.textPrimary,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(top = AppDimens.spaceSm, end = AppDimens.spaceSm)

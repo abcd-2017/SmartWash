@@ -22,8 +22,8 @@ import com.smartwash.common.utils.pressable
 /**
  * 认证页（玻璃卡）主 CTA 按钮 — 玻璃页特有形态，自绘实现无 state layer（规范 §7）：
  * 主题 primary 底 / onPrimary 文字（浅色 #2D9B6A·白 / 深色 #5BC894·墨绿，对齐设计稿登录/注册画板
- * 浅深两板 CTA 取值），48dp 高 / radiusFull 胶囊 / 文字 15sp·600·ls 1sp（规范 §3.3 主按钮；
- * 原 18sp titleMedium 与 §3.3 冲突，v0.4 覆写「全应用统一」优先）。
+ * 浅深两板 CTA 取值），48dp 高 / radiusFull 胶囊 / 文字 15sp·600（规范 §3.3 主按钮；
+ * 原 18sp titleMedium 与 §3.3 冲突，v0.4 覆写「全应用统一」优先；U-116：v0.4 已废字距，原 ls 1sp 已删除）。
  * 防抖由调用方经 rememberDebouncedClick 注入（认证页动作用 800ms 档），本组件不叠加。
  * enabled=false 时整体降为 38% 透明度（规范 §3.1 禁用态：内容 38%，占位不塌陷）。
  */
@@ -62,11 +62,11 @@ fun AuthCtaButton(
             } else {
                 Text(
                     text = text,
-                    // §3.3 主按钮文字 15sp/600/ls 1sp（v0.4 覆写全应用统一口径）
+                    // §3.3 主按钮文字 15sp/600（v0.4 覆写全应用统一口径）；
+                    // U-116：v0.4 字阶已废字距，删除 letterSpacing = 1.sp
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 1.sp,
                     ),
                     color = MaterialTheme.colorScheme.onPrimary,
                 )

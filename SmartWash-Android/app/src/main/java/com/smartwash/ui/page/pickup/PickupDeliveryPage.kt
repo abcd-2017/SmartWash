@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
@@ -314,11 +313,12 @@ fun PickupDeliveryPage(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(20.dp))
-                                // 画板实测「寄件码」标题 18/600/字距 0.3，号码 DataLarge 在卡内；
+                                // 画板实测「寄件码」标题 18/600，号码 DataLarge 在卡内；
                                 // 确认动作由底部操作栏承担（画板二维码卡内无按钮），不在此重复
+                                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
                                 Text(
                                     text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
-                                    style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                                    style = AppTextStyles.SectionTitle,
                                     color = AppColors.colorScheme.textPrimary
                                 )
                                 Text(
