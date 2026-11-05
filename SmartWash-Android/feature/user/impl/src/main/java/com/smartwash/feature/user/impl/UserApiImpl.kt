@@ -78,6 +78,9 @@ class UserApiImpl @Inject constructor(
 
     override fun isLogin(): Boolean = sessionManager.currentToken().isNotEmpty()
 
+    // 挂起读 token（缓存未命中读 DataStore 回填）：覆盖 SessionInitTask 预热完成前的窗口
+    override suspend fun hasSession(): Boolean = sessionManager.getToken().isNotBlank()
+
     override suspend fun getUserInfo(): UserInfo? {
         // 命中缓存直接返回（登录后首次拉取走网络）
         cachedUserInfo?.let { return it }
@@ -124,6 +127,11 @@ class UserApiImpl @Inject constructor(
      * 被 getUserInfo() 的 catch 吃掉后恒返回 null——登录/重启时的学校信息强制检查、
      * 首页绑定引导等全部失效。空值统一落安全默认值：studentId 空、schoolId 落 -1
      * （对齐 getUserSchoolId 接口的空值语义）。
+     *
+     * couponCount/orderCount 补映射（P-201，2026-11-05）：此前映射遗漏这两个字段，
+     * UserInfo 落 data class 默认值 0——后端补齐统计字段后首页/用户中心也无法显示。
+     * 当前后端响应仍缺这两个键（见 UserInfoVo 注释），缺键时落 0；后端修复后本映射
+     * 即可透出真实统计，无需再改。
      */
     private fun UserInfoVo.toUserInfo(): UserInfo = UserInfo(
         phoneNumber = phoneNumber ?: "",
@@ -137,6 +145,8 @@ class UserApiImpl @Inject constructor(
             location = schoolVo.location ?: "",
             lockerCount = schoolVo.lockerCount ?: 0,
         ),
+        couponCount = couponCount ?: 0,
+        orderCount = orderCount ?: 0,
     )
 
     private companion object {

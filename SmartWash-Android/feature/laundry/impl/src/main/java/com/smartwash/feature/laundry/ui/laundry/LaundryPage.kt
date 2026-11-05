@@ -120,6 +120,13 @@ fun LaundryPage(
         }
     }
 
+    // P-601：预约成功导航到支付页后必须立即 reset reservationState。此前 Success 残留在
+    // ViewModel（其存活于本页返回栈条目），从支付页返回时本页重新组合，本 effect 以相同
+    // key（Success）重启并重放导航体 → 瞬间又被弹回支付页，且支付页 LaunchedEffect(Unit)
+    // 重新拉单（logcat 可见 GET /orders/{id} 重发），用户被卡在支付页。
+    // reset 置回 Idle 后下一帧本 effect 以 Idle 键重启仅走 else 分支，返回时不再重放导航。
+    // 顺序对齐 PickupDeliveryPage / RechargePage 既有模式：先导航后 reset（reset 放导航前
+    // 会把状态打回 Idle 使 effect 被取消，导航可能不执行）。
     LaunchedEffect(reservationState) {
         when (reservationState) {
             is RequestState.Success -> {
@@ -128,6 +135,7 @@ fun LaundryPage(
                     launchSingleTop = true
                     restoreState = true
                 }
+                laundryViewModel.resetReservationState()
             }
             is RequestState.Error -> {
                 Toast.makeText(context, (reservationState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
@@ -363,7 +371,8 @@ private fun LaundryTypeItem(
                 Box(
                     modifier = Modifier
                         .size(20.dp)
-                        .border(1.5.dp, indicatorRingColor, CircleShape),
+                        // U-119：描边统一 1px（规范 §3），原 1.5dp 不在允许集
+                        .border(1.dp, indicatorRingColor, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     // 勾：选中时自圆心弹簧长出（尺寸恒定，仅内容显现/隐去）

@@ -11,6 +11,8 @@
     <string name="other">其他</string>
     <string name="clear">清除</string>
     <string name="feature_in_development">功能开发中，敬请期待</string>
+    <!-- 收货地址功能四端均未立项（后端无地址表/接口），走查 P-501：先以 Toast 兜底，待立项后接入 -->
+    <string name="shipping_address_unavailable">收货地址功能暂未开放</string>
     <string name="currency_format">¥%s</string>
 
     <!-- 登录 -->

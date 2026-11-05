@@ -86,12 +86,15 @@ fun FluidPage(
     val isDark = isSystemInDarkTheme()
     val baseColor = remember(scheme, isDark) { colorOf(baseColorOf(isDark, scheme)) }
 
-    val renderer = remember { FluidRenderer() }
-    val renderState by renderer.state.collectAsState()
+    // 渲染器唯一实例：经构造注入 GL 视图，页面收集 state / 注入调色板都用同一对象。
+    // 若另建实例再在 apply 里写 renderer.palette，本地变量会遮蔽 view.renderer 成员，
+    // 注入落到未挂载实例（GL 始终默认黑底白染料、failed 兜底永不触发）。
+    val fluidRenderer = remember { FluidRenderer() }
+    val renderState by fluidRenderer.state.collectAsState()
     val glView = remember {
-        FluidGLSurfaceView(context).apply {
-            renderer.palette = palette
-            renderer.baseColor = baseColor
+        FluidGLSurfaceView(context, fluidRenderer).apply {
+            this.renderer.palette = palette
+            this.renderer.baseColor = baseColor
             onTouchDown = { view.performHaptic(HapticEffect.LIGHT) }
         }
     }
@@ -114,8 +117,8 @@ fun FluidPage(
     }
 
     // 预设 / 主题变化 → 渲染层取最新调色板与底色
-    LaunchedEffect(palette) { renderer.palette = palette }
-    LaunchedEffect(baseColor) { renderer.baseColor = baseColor }
+    LaunchedEffect(palette) { fluidRenderer.palette = palette }
+    LaunchedEffect(baseColor) { fluidRenderer.baseColor = baseColor }
     // 播放意图 → 连续渲染 / 按需渲染（静帧只画一帧）
     LaunchedEffect(effectivePlaying) { glView.setPlaying(effectivePlaying) }
     // 重置信号 → 重铺静态种子（静帧态也会立即刷新一帧）

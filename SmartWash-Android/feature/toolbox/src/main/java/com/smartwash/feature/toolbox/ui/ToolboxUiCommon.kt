@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
@@ -173,7 +175,27 @@ fun ToolboxDatePickerDialog(
         tonalElevation = 0.dp,
         colors = datePickerColors,
     ) {
-        DatePicker(state = pickerState, colors = datePickerColors)
+        DatePicker(
+            state = pickerState,
+            colors = datePickerColors,
+            // P-1801：M3 默认 headline 在未选中日期时显示占位「选定的日期」，易被误读为
+            // 已选中；显式接管 headline——有选中显示所选日期（与封装内 UTC 取整日口径一致，
+            // 经 localDateFromPickerMillis 互逆转换），未选中显示引导占位。
+            // 创建页与详情页续期两处复用本封装，一处修复两处生效
+            headline = {
+                val selectedDate = pickerState.selectedDateMillis
+                    ?.let(ShortCodeRules::localDateFromPickerMillis)
+                Text(
+                    text = selectedDate?.let(ShortCodeRules::formatDate)
+                        ?: stringResource(R.string.toolbox_date_headline_placeholder),
+                    // 对齐 M3 vertical 布局默认 headline 视觉：headlineMedium 大字、占满行宽居中
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+        )
     }
 }
 

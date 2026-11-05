@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -144,7 +145,10 @@ fun BubbleWrapPage(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                // edge-to-edge 下泡泡排布区避让系统手势区：底行泡泡与「再铺一张」
+                // 都落在 inset 之上，避免点中心落在手势区内
+                .navigationBarsPadding(),
         ) {
             val (cols, rows) = colsRows ?: (0 to 0)
             BubbleSheet(

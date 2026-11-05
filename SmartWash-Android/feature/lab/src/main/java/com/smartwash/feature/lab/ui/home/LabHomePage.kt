@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BubbleChart
 import androidx.compose.material.icons.rounded.Brush
@@ -76,7 +79,12 @@ fun LabHomePage(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppDimens.pagePadding),
+                // 10 张卡总高超出首屏：整列可滚，末卡「掌上星图」才可达
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = AppDimens.pagePadding)
+                .padding(bottom = AppDimens.sectionSpacing)
+                // edge-to-edge 下列表底部避让系统手势区（对齐同模块页脚处理）
+                .navigationBarsPadding(),
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(AppDimens.cardSpacing),
         ) {
             toys.forEach { toy ->

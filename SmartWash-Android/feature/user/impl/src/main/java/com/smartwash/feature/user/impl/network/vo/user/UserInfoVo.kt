@@ -9,6 +9,11 @@ import androidx.annotation.Keep
  * [School] —— JSON 键与字段名不变（schoolId/schoolName/location/lockerCount），
  * 反序列化行为完全一致；学校域（SchoolRepository 等）T7.1 才迁 laundry，
  * 两处形态独立演进，互不拖拽。
+ *
+ * couponCount/orderCount 声明为可空（P-201，2026-11-05）：后端 vo/users/UserInfoVo.java
+ * 现无这两个字段，响应 JSON 缺键；可空声明才是响应的真实形态（对齐 School 字段的
+ * 空值处理），映射到 user-api UserInfo 时由 UserApiImpl 统一落 0。
+ * 待后端 getUserInfo 补齐统计字段后（四端联动），此处无需再改。
  */
 @Keep
 data class UserInfoVo(
@@ -18,8 +23,8 @@ data class UserInfoVo(
     val balance: Float,
     val avatar: String? = null,
     val schoolVo: School,
-    val couponCount: Int = 0,
-    val orderCount: Int = 0,
+    val couponCount: Int? = null,
+    val orderCount: Int? = null,
 ) {
     /**
      * 用户所属学校（JSON 键 schoolVo，形态对齐 school 域 SchoolVo）。

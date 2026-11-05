@@ -88,6 +88,30 @@ class DeepLinkHandler @Inject constructor(
         }
     }
 
+    /**
+     * 深链登录守卫判定（P-2001）：动作是否指向公开页面（未登录可放行）。
+     *
+     * 公开范围（逐 host 核对页面入口的数据消费后圈定）：
+     * - [DeepLinkAction.WebViewUrl]：内置浏览器分支（http/https 与 smartwash://web），
+     *   WebView 页自身不消费应用鉴权接口；
+     * - [DeepLinkAction.Unknown]：仅 Toast「暂不支持」，无导航，无拦截意义；
+     * - NativeRoute 中 host ∈ [PUBLIC_DEEP_LINK_HOSTS]：login / register（认证页自身，
+     *   拦截即循环跳登录）与 lab（解压实验舱，纯本地玩具零网络请求）。
+     *
+     * 其余 host（pickup / ai-work / order / coupon / laundry / recharge / recharge-record /
+     * divination / divination-history / game-center / mood / review / subscription /
+     * toolbox-short-code / t / delivery / setting）对应页面入口均消费 /web/auth 鉴权接口
+     * 或依赖会话语义，未登录不放行，由壳层落登录页。
+     *
+     * @param uri 原始深链串（NativeRoute 的 host 自此处提取；host 不可提取时按受保护兜底）
+     */
+    fun isPublicAction(action: DeepLinkAction, uri: String): Boolean = when (action) {
+        is DeepLinkAction.WebViewUrl -> true
+        is DeepLinkAction.Unknown -> true
+        is DeepLinkAction.NativeRoute ->
+            DeepLinkParser.hostOf(uri)?.let { it in PUBLIC_DEEP_LINK_HOSTS } ?: false
+    }
+
     private fun navigateSafely(navController: NavHostController, route: SmartWashRoute) {
         try {
             navController.navigate(route)
@@ -108,5 +132,8 @@ class DeepLinkHandler @Inject constructor(
 
     companion object {
         private const val TAG = "DeepLinkHandler"
+
+        /** 公开深链 host 白名单（未登录可放行；其余 host 未登录由壳层拦截落登录页，P-2001） */
+        private val PUBLIC_DEEP_LINK_HOSTS = setOf("web", "login", "register", "lab")
     }
 }

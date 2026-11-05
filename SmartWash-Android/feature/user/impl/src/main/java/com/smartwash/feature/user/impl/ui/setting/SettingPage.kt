@@ -1,8 +1,11 @@
 package com.smartwash.feature.user.impl.ui.setting
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -99,7 +102,7 @@ fun SettingPage(
     val context = LocalContext.current
     val view = currentView()
     // 消息通知行真实授权态（2026-11-01 缺陷 5b）：组合期查一次 + ON_RESUME 重查
-    // （用户从权限页/系统设置返回后刷新；申请动作统一收口在权限管理页）
+    // （用户从系统通知设置返回后刷新；P-1501 起行点击直达系统通知设置，不再进权限管理页）
     var notificationGranted by remember {
         mutableStateOf(
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
@@ -157,7 +160,8 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(8.dp))
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 消息通知（真实授权态，2026-11-01 缺陷 5b）：行尾显示系统实际授予情况，
-                // 点击进权限管理页（申请 / 跳系统设置都在那里收口）
+                // 点击直达系统应用通知设置（P-1501：对齐触感反馈行的行内切换语义——
+                // 授权 / 去关闭都在系统页完成，返回后由 ON_RESUME 重查刷新，不再进权限管理页）
                 SettingRow(
                     icon = Icons.Default.Notifications,
                     containerColor = AppColors.colorScheme.iconContainerOrange,
@@ -166,7 +170,7 @@ fun SettingPage(
                     trailing = {
                         Text(
                             text = stringResource(
-                                if (notificationGranted) R.string.enabled else R.string.permission_denied
+                                if (notificationGranted) R.string.enabled else R.string.disabled
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
@@ -174,7 +178,7 @@ fun SettingPage(
                         Spacer(modifier = Modifier.width(4.dp))
                         IconChevron()
                     },
-                    onClick = { navController.navigate(UserRoute.PermissionManagement) }
+                    onClick = { openSystemNotificationSettings(context) }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 // 触感反馈（真实开关，2026-11-01 缺陷 5b）：内存态即时生效 + DataStore 异步落盘
@@ -397,5 +401,20 @@ private fun IconChevron() {
         contentDescription = null,
         modifier = Modifier.size(20.dp),
         tint = AppColors.colorScheme.textTertiary
+    )
+}
+
+/**
+ * 跳系统应用通知设置页（P-1501）：未授权时引导去系统授权、已授权时可在系统关闭，
+ * 返回后由设置页 ON_RESUME 重查刷新行内状态（本行状态完全由系统权限驱动，端上无
+ * app 内开关存储，故统一跳系统设置）。
+ * minSdk 30 高于 ACTION_APP_NOTIFICATION_SETTINGS 的 API 26，无需应用详情页兜底。
+ */
+private fun openSystemNotificationSettings(context: Context) {
+    context.startActivity(
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     )
 }

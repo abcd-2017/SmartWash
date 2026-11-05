@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -127,7 +126,8 @@ fun PermissionManagementPage(navController: NavController) {
             Spacer(modifier = Modifier.height(AppDimens.spaceXl))
             Text(
                 text = stringResource(R.string.general),
-                style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
+                style = AppTextStyles.SectionTitle,
                 color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(horizontal = AppDimens.pagePadding)
             )

@@ -23,6 +23,15 @@ interface UserApi {
     fun isLogin(): Boolean
 
     /**
+     * 当前是否已有本地会话（挂起读）。
+     *
+     * 语义同 [isLogin]（token 非空），差异：内存缓存未命中时挂起读 DataStore 并回填，
+     * 无预热竞态——SessionInitTask 完成前 [isLogin] 的同步读可能误报未登录，
+     * 冷启动早期（如深链登录守卫）应消费本方法（LoginViewModel.hasSavedToken 同款口径）。
+     */
+    suspend fun hasSession(): Boolean
+
+    /**
      * 获取当前用户信息；未登录或获取失败返回 null。
      *
      * 实现方（T5.2）加内存缓存：登录后首次拉取走网络，之后进程内直接命中，

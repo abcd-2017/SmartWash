@@ -81,8 +81,11 @@ class LaundryViewModel @Inject constructor(
                 if (orderId != -1L) {
                     // 低频关键动作成功：预约下单成功留痕（金额非敏感，可审计）
                     AppLogger.info(TAG, "reservationLaundry: 预约下单成功, orderId=$orderId, itemId=$selectItemId, totalPrice=$totalPrice")
-                    _reservationState.value = RequestState.Success
+                    // 先落 orderId 再置 Success：页面 LaunchedEffect(reservationState) 收到
+                    // Success 即刻导航支付页，须保证此刻 orderId 已是新单号（若先置 Success，
+                    // 导航瞬间 orderId 快照可能仍为旧值 -1，支付页将按 -1 拉单失败）
                     _orderId.value = orderId
+                    _reservationState.value = RequestState.Success
                 } else {
                     // 业务拒绝：后端未受理（data 为 null），与网络异常区分开留痕
                     AppLogger.warn(TAG, "reservationLaundry: 预约未受理（后端未返回订单）, itemId=$selectItemId, totalPrice=$totalPrice")

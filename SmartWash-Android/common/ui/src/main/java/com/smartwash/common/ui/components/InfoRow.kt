@@ -17,13 +17,16 @@ import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 
 /**
- * 卡片内「标签 — 值」信息行 — DESIGN-SPEC v0.4 §3.4 信息行规格。
+ * 卡片内「标签 — 值」信息行 — DESIGN-SPEC v0.4 §5 列表项规格（行高 ≥48）。
  *
- * 行高 56dp（规范 §3.4 卡片内信息行高），标签与值分列两端。
- * 值侧 [value] 用弹性占位把值推到行尾，标签过长时值不会被挤出可视区
+ * 行高默认 56dp（实现自定默认值；规范仅要求 ≥48，信息密度高的页面可传参收紧）。
+ * 标签与值分列两端；值侧 [value] 用弹性占位把值推到行尾，标签过长时值不会被挤出可视区
  * （旧实现固定 Spacer(24dp) 在长标签下会与值重叠）。
  *
- * @param rowHeight 行高，默认 56dp（§3.4）
+ * 注：旧注释曾引用「§3.4 卡片内信息行高 56dp」，经核对 DESIGN-SPEC v0.4 无 §3.4 条款，
+ * 该引用不成立，已于 2026-11-05 修正。
+ *
+ * @param rowHeight 行高，默认 56dp（规范下限 ≥48，见 §5）
  */
 @Composable
 fun InfoRow(

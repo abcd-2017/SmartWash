@@ -108,6 +108,9 @@
     <string name="delivery_code">寄件码</string>
     <string name="confirm_picked_up">确认已取件</string>
     <string name="confirm_delivered">确认已寄件</string>
+    <!-- 确认取件/寄件成功 Toast（P-1004，取件/寄件共用同一 Success 分支，文案随页面模式区分） -->
+    <string name="pickup_success">取件成功</string>
+    <string name="delivery_success">寄件成功</string>
     <string name="locker_info_section">寄存柜信息</string>
     <string name="locker_number_label">寄存柜柜号</string>
     <string name="operation_guide">操作指引</string>

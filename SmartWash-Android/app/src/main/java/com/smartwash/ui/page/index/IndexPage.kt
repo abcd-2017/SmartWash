@@ -27,10 +27,13 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalMall
 import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,12 +47,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
@@ -78,6 +83,7 @@ import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
 import androidx.compose.ui.text.style.TextAlign
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IndexPage(
     isActive: Boolean,
@@ -88,10 +94,33 @@ fun IndexPage(
     val userInfoStatus by indexViewModel.userInfoStatus.collectAsState()
     val userInfo by indexViewModel.userInfo.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
+    val isRefreshing by indexViewModel.refreshing.collectAsState()
 
     // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
     LaunchedEffect(isActive) {
         if (isActive) indexViewModel.getInfoData()
+    }
+
+    // ON_RESUME 静默强刷（P-603/P-701）：App 从后台回前台时服务端余额/订单状态可能
+    // 已变化（他人代寄、管理员流转），getUserInfo 内存缓存不会自行失效，此处强制走
+    // 网络对齐 SettingPage/PermissionManagementPage 的既有 DisposableEffect 模式。
+    // 首次 ON_RESUME 跳过：LifecycleRegistry 对新注册 observer 会重放 ON_RESUME，
+    // 与上方 LaunchedEffect(isActive) 的首载重复。应用内导航返回（支付/充值页回首页）
+    // 不经过 Activity 生命周期，由 LaunchedEffect(isActive) 重跑 + 写链路刷新缓存覆盖。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by remember { mutableStateOf(true) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    indexViewModel.refreshData()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val errorContext = LocalContext.current
@@ -123,6 +152,15 @@ fun IndexPage(
             if (skeleton) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else {
+                // 下拉刷新（P-603）：走 refreshData 强刷用户信息与进行中订单（refreshUserInfo
+                // 强制走网络，不读 UserApiImpl 缓存——下拉语义就是「拿服务端最新值」）；
+                // 指示器进度由 VM 独立 refreshing 状态承载（Loading 语义已被骨架屏占用）；
+                // 骨架态不包裹（首载无内容可拉，对齐 WorkbenchPage 的 isRefreshing 口径）
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { indexViewModel.refreshData() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -252,6 +290,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 }
                 }
+                }
             }
         }
     }
@@ -310,6 +349,16 @@ private fun StatusHeroCard(
         end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
+    // U-101：白字 on 品牌绿渐变实测 3.72:1（<4.5，违反 §10 正文红线）。
+    // 叠加对角半透明黑纱（左上 20% → 右下 0%）：文字区（左上）白字对比度 ≥5.1:1，
+    // 右下品牌渐变几乎不受影响；标题 22sp 属大字（WCAG 3:1 已达标），副标题/订单号/步骤标签
+    // 等 12sp 白字由纱罩统一覆盖，保持白字观感。
+    val scrim = Brush.linearGradient(
+        colors = listOf(Color.Black.copy(alpha = 0.2f), Color.Black.copy(alpha = 0f)),
+        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+        end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -322,8 +371,11 @@ private fun StatusHeroCard(
                     Modifier
                 }
             )
-            .clip(RoundedCornerShape(AppDimens.radiusXl))
+            // U-110：Hero 卡圆角 20dp 不在规范 §3 允许集 {8,12,16,24,full}；
+            // 取 radius.card 16（卡片全 App 统一档，§3 明令禁止 12/16 混用），不用 24（该档为底部弹层）
+            .clip(RoundedCornerShape(AppDimens.radiusLg))
             .background(gradient)
+            .background(scrim)
             .padding(20.dp)
     ) {
         Column {
@@ -429,22 +481,22 @@ private fun StatusHeroCard(
                     }
                 }
             } else {
-                // 空态 CTA — 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字，
-                // 几何取 §3.3 小按钮档（高 36 / 横向 16），与订单行 OrderActionPill 同规格
+                // 空态 CTA — 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字。
+                // U-102：原 13sp 不在 §2 字阶允许集，且 #1E8C5C on 白仅 4.23:1；改 16sp/600
+                // （§10 绿色文字红线：绿色文字仅限 ≥16sp 且 weight ≥600 的强调文本），
+                // 对齐同页「查看全部」bodyLarge/600 模式；行高 24 + 上下 12 = 高 48，触控达标。
                 Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 Box(
                     modifier = Modifier
                         .pressable(onClick = onBookingClick)
                         .background(Color.White, RoundedCornerShape(AppDimens.radiusFull))
-                        .padding(horizontal = AppDimens.spaceMd, vertical = 10.dp),
+                        .padding(horizontal = AppDimens.spaceMd, vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = stringResource(R.string.service_booking),
-                        // 白底上用深绿 #1E8C5C（on 白 ≥4.5:1，绿色文字走 green.700 红线档）；
-                        // 文字 13sp/600 与订单行 OrderActionPill（§3.3 小按钮档）同规格
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        // 白底上用深绿 #1E8C5C（green.700，on 白 4.23:1；16sp/600 满足 §10 绿色文字档）
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = AppColors.colorScheme.primaryDark
                     )
                 }

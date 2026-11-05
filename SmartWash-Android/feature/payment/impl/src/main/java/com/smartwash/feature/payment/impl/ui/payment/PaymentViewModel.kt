@@ -10,6 +10,7 @@ import com.smartwash.feature.payment.impl.repository.PaymentRepository
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.order.api.OrderApi
 import com.smartwash.feature.order.api.model.OrderInfo
+import com.smartwash.feature.user.api.UserApi
 import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ class PaymentViewModel @Inject constructor(
     private val orderApi: OrderApi,
     private val paymentRepository: PaymentRepository,
     private val couponApi: CouponApi,
+    private val userApi: UserApi,
 ) : ViewModel() {
     private val _initState = MutableStateFlow<RequestState>(RequestState.Idle)
     val initState = _initState.asStateFlow()
@@ -99,6 +101,15 @@ class PaymentViewModel @Inject constructor(
                     "paymentOrder: 订单支付成功 orderId=$orderId paymentType=$paymentState " +
                         "userCouponId=$userCouponId payPrice=${_orderInfo.value?.payPrice}"
                 )
+                // 支付成功即强刷用户信息（P-701）：支付会扣减余额/核销优惠券，而后端支付接口
+                // 不回传新余额；UserApiImpl 的内存缓存不刷新的话，返回首页/「我的」页读到的
+                // 仍是支付前的旧缓存（充值链路 2026-11-01 缺陷 8d 的同型问题，修复模式对齐
+                // RechargeViewModel.userRecharge 的 refreshUserInfo 调用）。刷新失败不阻塞
+                // 成功反馈——返回首页时 LaunchedEffect(isActive) 重跑 getInfoData() 兜底重试。
+                runCatching { userApi.refreshUserInfo() }
+                    .onFailure {
+                        AppLogger.warn(TAG, "paymentOrder: 支付后用户信息刷新失败，余额可能停留旧值", it)
+                    }
                 _paymentState.value = RequestState.Success
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "PaymentViewModel.paymentOrder: ${e.message}", e)

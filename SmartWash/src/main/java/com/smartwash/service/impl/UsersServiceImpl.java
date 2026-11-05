@@ -13,9 +13,12 @@ import com.smartwash.entity.Users;
 import com.smartwash.config.MinioConfig;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.from.users.*;
+import com.smartwash.mapper.OrdersMapper;
+import com.smartwash.mapper.UserCouponMapper;
 import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.ISchoolsService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.vo.order.OrderStatusCountVo;
 import com.smartwash.vo.schools.SchoolsVo;
 import com.smartwash.vo.users.UserInfoVo;
 import com.smartwash.vo.users.TransactionVo;
@@ -42,6 +45,8 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     private final ISchoolsService schoolsService;
     private final MinioConfig minioConfig;
+    private final OrdersMapper ordersMapper;
+    private final UserCouponMapper userCouponMapper;
 
     /**
      * 头像存量值可能是绝对 URL（历史实现把端点拼进了 DB），统一还原对象键后拼当前端点。
@@ -225,6 +230,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
             BeanUtils.copyProperties(school, schoolsVo);
         }
         userInfoVo.setSchoolVo(schoolsVo);
+        // 订单总数：复用 OrdersMapper.countGroupByStatus 的 GROUP BY status 聚合（单条 SQL），各状态求和
+        // 与订单页「全部」tab 的 allTotal 同口径，替代逐状态多次 count（P-201 走查，两端用户中心统计恒 0）
+        long orderTotal = ordersMapper.countGroupByStatus(userId).stream()
+                .mapToLong(OrderStatusCountVo::getCount)
+                .sum();
+        userInfoVo.setOrderCount(Math.toIntExact(orderTotal));
+        // 可用优惠券张数：未使用且未过期（口径同优惠券页「可用」tab），单条 count 聚合避免拉整页 Vo 列表
+        userInfoVo.setCouponCount(userCouponMapper.countUsableByUserId(userId));
         return userInfoVo;
     }
 

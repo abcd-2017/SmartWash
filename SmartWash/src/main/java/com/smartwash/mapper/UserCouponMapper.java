@@ -31,6 +31,17 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
     List<UserCouponVo> getAllUserCoupons(Long userId);
 
     /**
+     * 统计用户可用优惠券张数（单条 count 聚合，无 join）。
+     * 口径与用户优惠券页「可用」tab（searchUserCouponByStatus 的可用分支）、
+     * 下单可选券（getCanUseCoupon）保持一致：未使用 is_used = 0 且未过期 expired_at &gt; now()。
+     * 供用户信息装配（getUserInfo 的 couponCount）使用，避免为取数量拉取整页 Vo 列表。
+     *
+     * @param userId 用户 ID
+     * @return 可用优惠券张数，无可用券时为 0
+     */
+    int countUsableByUserId(@Param("userId") Long userId);
+
+    /**
      * 核销优惠券（条件更新，防并发重复核销）。
      * 仅当该券属于指定用户且处于未使用状态时才更新，返回影响行数；
      * 调用方必须以影响行数 == 1 判定核销成功，== 0 表示券已核销/不存在/不属于该用户。

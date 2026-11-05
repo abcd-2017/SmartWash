@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
@@ -145,6 +144,18 @@ fun PickupDeliveryPage(
             is RequestState.Success -> {
                 showDialog = false
                 view.performHaptic(HapticEffect.SUCCESS)
+                // P-1004：寄件/取件成功此前无任何用户反馈。顺序按 触觉 → Toast → navigateUp →
+                // reset，Toast 必须在导航离页前用 context 弹出；同一 Success 分支服务取件/
+                // 寄件两种模式，文案随页面 type 区分
+                Toast.makeText(
+                    context,
+                    if (type == PickupDeliveryType.PICKUP.type) {
+                        context.getString(R.string.pickup_success)
+                    } else {
+                        context.getString(R.string.delivery_success)
+                    },
+                    Toast.LENGTH_SHORT
+                ).show()
                 navController.navigateUp()
                 pickupDeliveryViewModel.resetNextStatusState()
             }
@@ -302,11 +313,12 @@ fun PickupDeliveryPage(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(20.dp))
-                                // 画板实测「寄件码」标题 18/600/字距 0.3，号码 DataLarge 在卡内；
+                                // 画板实测「寄件码」标题 18/600，号码 DataLarge 在卡内；
                                 // 确认动作由底部操作栏承担（画板二维码卡内无按钮），不在此重复
+                                // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
                                 Text(
                                     text = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.pickup_code) else stringResource(R.string.delivery_code),
-                                    style = AppTextStyles.SectionTitle.copy(letterSpacing = 0.3.sp),
+                                    style = AppTextStyles.SectionTitle,
                                     color = AppColors.colorScheme.textPrimary
                                 )
                                 Text(
@@ -316,60 +328,65 @@ fun PickupDeliveryPage(
                                 )
                             }
                         }
-                    }
-                }
 
+                        // P-1001：原实现此处两个 `}` 把 when 提前闭合，寄存柜信息卡/操作指引卡
+                        // 泄漏到 AnimatedContent lambda 顶层（when 之外）——不受状态分支控制、
+                        // 不随内容列滚动，且作为内部 Box 的后发兄弟节点按叠放规则盖住了先绘制的
+                        // 二维码卡（寄件模式实测只见操作指引卡）。现把全部卡片收回 CONTENT 内容列，
+                        // 二维码卡（寄件码）与柜信息卡恢复设计意图的可见排布
                         Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
                         // 寄存柜信息（板实测仅 3 行：学校名称/地址/寄存柜柜号；行距节奏 34+14=48，
                         // 与订单详情页同款；寄件码已在上方大字展示，不再重复成行）
                         InfoSection(title = stringResource(R.string.locker_info_section), icon = Icons.Rounded.School) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        InfoRow(stringResource(R.string.school_name_label), orderInfo?.schoolsVo?.schoolName ?: "")
-                        InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
-                        // 柜号是编号类数字，开 tnum（规范 §2.2）
-                        InfoRow(
-                            stringResource(R.string.locker_number_label),
-                            "$lockerNumber",
-                            valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
-
-                // 操作指引（板实测：卡内无图标、标题 14/500 textPrimary（titleSmall 覆盖默认 18/600）；
-                // 步骤号盒 20 r8 iconContainerGreen、序号 12/400 浅 onPrimaryContainer/深 primary、
-                // 文本 12/400 textPrimary、盒-文 8、行距 24 = 盒 20 + 行间 4）
-                InfoSection(
-                    title = stringResource(R.string.operation_guide),
-                    icon = null,
-                    titleStyle = MaterialTheme.typography.titleSmall
-                ) {
-                    val steps = if (type == PickupDeliveryType.PICKUP.type) {
-                        listOf(
-                            stringResource(R.string.find_locker_format, "$lockerNumber"),
-                            stringResource(R.string.click_pickup_button),
-                            stringResource(R.string.input_pickup_code_format, pickupCode),
-                            stringResource(R.string.wait_and_take_clothes)
-                        )
-                    } else {
-                        listOf(
-                            stringResource(R.string.find_locker_format, "$lockerNumber"),
-                            stringResource(R.string.click_delivery_button),
-                            stringResource(R.string.input_delivery_code_format, pickupCode),
-                            stringResource(R.string.wait_and_put_clothes)
-                        )
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        steps.forEachIndexed { index, text ->
-                            StepRow("${index + 1}", text)
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                InfoRow(stringResource(R.string.school_name_label), orderInfo?.schoolsVo?.schoolName ?: "")
+                                InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                                // 柜号是编号类数字，开 tnum（规范 §2.2）
+                                InfoRow(
+                                    stringResource(R.string.locker_number_label),
+                                    "$lockerNumber",
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
+                                )
+                            }
                         }
+
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+
+                        // 操作指引（板实测：卡内无图标、标题 14/500 textPrimary（titleSmall 覆盖默认 18/600）；
+                        // 步骤号盒 20 r8 iconContainerGreen、序号 12/400 浅 onPrimaryContainer/深 primary、
+                        // 文本 12/400 textPrimary、盒-文 8、行距 24 = 盒 20 + 行间 4）
+                        InfoSection(
+                            title = stringResource(R.string.operation_guide),
+                            icon = null,
+                            titleStyle = MaterialTheme.typography.titleSmall
+                        ) {
+                            val steps = if (type == PickupDeliveryType.PICKUP.type) {
+                                listOf(
+                                    stringResource(R.string.find_locker_format, "$lockerNumber"),
+                                    stringResource(R.string.click_pickup_button),
+                                    stringResource(R.string.input_pickup_code_format, pickupCode),
+                                    stringResource(R.string.wait_and_take_clothes)
+                                )
+                            } else {
+                                listOf(
+                                    stringResource(R.string.find_locker_format, "$lockerNumber"),
+                                    stringResource(R.string.click_delivery_button),
+                                    stringResource(R.string.input_delivery_code_format, pickupCode),
+                                    stringResource(R.string.wait_and_put_clothes)
+                                )
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                steps.forEachIndexed { index, text ->
+                                    StepRow("${index + 1}", text)
+                                }
+                            }
+                        }
+
+                        // 板实测 末卡底 → 底部操作条顶 12
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
                     }
                 }
-
-                // 板实测 末卡底 → 底部操作条顶 12
-                Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
             }
 
             // 底部操作栏（模板 E 变体）— 板实测：无 surface 底/顶线，双 48dp 胶囊按钮落在页面底上，

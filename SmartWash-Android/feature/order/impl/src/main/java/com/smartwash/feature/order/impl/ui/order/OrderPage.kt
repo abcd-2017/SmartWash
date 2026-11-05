@@ -287,12 +287,12 @@ fun OrderPage(
                                         } else {
                                             item.monthKey
                                         }
-                                        // 月份标题（设计稿实测）：12sp labelSmall / Medium / textSecondary / 字距 +0.3sp，
+                                        // 月份标题（设计稿实测）：12sp labelSmall / Medium / textSecondary，
                                         // 与上下卡片的间距由 LazyColumn spacedBy(12) 统一提供
+                                        // U-116：v0.4 字阶已废字距，删除 letterSpacing = 0.3.sp
                                         Text(
                                             text = label,
                                             style = MaterialTheme.typography.labelSmall,
-                                            letterSpacing = 0.3.sp,
                                             color = AppColors.colorScheme.textSecondary
                                         )
                                     }
@@ -457,10 +457,13 @@ private fun OrderRow(
                 OrderStatus.PENDING_SHIPMENT.status, OrderStatus.WASHING.status ->
                     AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
                 OrderStatus.COMPLETED.status ->
-                    AppColors.colorScheme.primaryLight to AppColors.colorScheme.primaryDark
+                    // U-108：原 #1E8C5C on #F0FBF4 3.99:1（<4.5，且 12sp/500 不适用 §10 绿字红线）
+                    // → onPrimaryContainer #17322B on primaryContainer #F0FBF4 = 12.97:1
+                    AppColors.colorScheme.primaryLight to MaterialTheme.colorScheme.onPrimaryContainer
                 OrderStatus.CANCELED.status ->
                     MaterialTheme.colorScheme.errorContainer to AppColors.colorScheme.error
-                else -> AppColors.colorScheme.warningContainer to AppColors.colorScheme.warning
+                // U-108：原 #D98A26 on #FDF3E7 2.52:1 → warning 语义深色 #92400E（6.47:1），底 #FDF3E7 不变
+                else -> AppColors.colorScheme.warningContainer to AppColors.colorScheme.onWarningContainer
             }
             Box(
                 modifier = Modifier
@@ -518,7 +521,11 @@ private fun OrderRow(
             // 操作按钮（功能保留，逻辑与路由不动）
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // U-109：危险操作按 §4 用 error 色并独立分组——「取消订单」与「去支付」
+                    // 换行分离，中间拉开 12dp 间距（参考设置页退出登录的独立胶囊先例）
+                    Column(horizontalAlignment = Alignment.End) {
+                        OrderActionPill(label = stringResource(R.string.go_pay), onClick = paymentClick)
+                        Spacer(Modifier.height(AppDimens.spaceSm))
                         // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）；
                         // 热区 44dp（触控最低档，原 40dp 不达标）
                         Box(
@@ -528,10 +535,12 @@ private fun OrderRow(
                                 .padding(horizontal = 4.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(stringResource(R.string.cancel_order), color = AppColors.colorScheme.textSecondary, fontSize = 12.sp)
+                            Text(
+                                stringResource(R.string.cancel_order),
+                                color = AppColors.colorScheme.error,
+                                fontSize = 12.sp
+                            )
                         }
-                        Spacer(Modifier.width(AppDimens.spaceXs))
-                        OrderActionPill(label = stringResource(R.string.go_pay), onClick = paymentClick)
                     }
                 }
                 ShowOrderStatus.PENDING_SHIPMENT.status -> {
