@@ -179,48 +179,33 @@ fun OrderDetailPage(
                             iconContainerColor = AppColors.colorScheme.iconContainerBlue,
                             iconTint = AppColors.colorScheme.iconForegroundBlue
                         ) {
-                            // 行距节奏：6 行连排收紧（规范 §3 允许值 8；公共 InfoRow 默认行高 56 不变，
-                            // 本页按信息密度传参 48——落在 §3 允许值集内且满足 48dp 触控下限）；
+                            // 行距节奏：行高 56dp（规范 §3.4 卡片内信息行高，公共 InfoRow 默认值）+
+                            // 行距 12dp（规范 §3 允许值集·列表项间距档），均按规范取值不做收紧；
                             // 值列 12/500 = labelMedium，订单号启用 tnum
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 InfoRow(
                                     stringResource(R.string.order_number),
                                     orderInfo?.orderNo ?: "",
-                                    valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-                                    rowHeight = 48.dp
+                                    valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
                                 )
-                                InfoRow(
-                                    stringResource(R.string.package_type),
-                                    orderInfo?.laundryPackageVo?.itemName ?: "",
-                                    rowHeight = 48.dp
-                                )
+                                InfoRow(stringResource(R.string.package_type), orderInfo?.laundryPackageVo?.itemName ?: "")
                                 // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
                                 InfoRow(
                                     stringResource(R.string.price),
                                     // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
                                     stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f)),
                                     // 金额行开 tnum（规范 §2.2 硬规则，与实付款行成对）
-                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                                    rowHeight = 48.dp
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
                                 )
                                 // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
                                 InfoRow(
                                     stringResource(R.string.actual_payment),
                                     stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueColor = AppColors.colorScheme.primaryDark,
-                                    valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold),
-                                    rowHeight = 48.dp
+                                    valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
                                 )
-                                InfoRow(
-                                    stringResource(R.string.school_name),
-                                    orderInfo?.schoolsVo?.schoolName ?: "",
-                                    rowHeight = 48.dp
-                                )
-                                InfoRow(
-                                    stringResource(R.string.address),
-                                    orderInfo?.schoolsVo?.location ?: "",
-                                    rowHeight = 48.dp
-                                )
+                                InfoRow(stringResource(R.string.school_name), orderInfo?.schoolsVo?.schoolName ?: "")
+                                InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
                             }
                         }
 
