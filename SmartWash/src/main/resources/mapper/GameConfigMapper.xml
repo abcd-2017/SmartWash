@@ -2,8 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.smartwash.game.mapper.GameConfigMapper">
 
-    <!-- 用户端下发查询：仅启用中的游戏，按 sort 升序、id 升序（与端上渲染顺序一致）；
-         显式列清单，不下发 enabled/remark/entry_path/object_key 等管理字段 -->
+    <!-- 用户端下发查询：仅启用中的游戏，按 sort 升序、id 升序（与端上渲染顺序一致）。
+         显式列清单：cover_url/object_key/entry_path/source_type 仅由服务端 buildVo 拼装直链使用
+         （GameVo 无这些字段，不会序列化到端上），enabled/remark 等管理字段仍排除。
+         缺列会导致 playable URL 回退到 legacy url、coverUrl 恒 null（见 GameConfigServiceImpl#playUrlOf/coverUrlOf）。 -->
     <select id="selectEnabledList" resultType="com.smartwash.game.entity.GameConfig">
         SELECT id,
                game_key,
@@ -14,6 +16,10 @@
                category,
                badge,
                url,
+               cover_url,
+               object_key,
+               entry_path,
+               source_type,
                sort
         FROM game_config
         WHERE enabled = 1
