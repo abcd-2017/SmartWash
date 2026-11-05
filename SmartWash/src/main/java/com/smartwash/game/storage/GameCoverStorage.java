@@ -33,10 +33,11 @@ public class GameCoverStorage {
     private final MinioConfig minioConfig;
 
     /**
-     * 写入一张游戏封面，返回公网直链（管理端回填 coverUrl 字段用）。
+     * 写入一张游戏封面，返回对象键（管理端回填 coverUrl 字段用；直链由服务层读时拼装）。
      *
      * @param content     图片字节（调用方已完成大小与类型校验）
      * @param contentType image/png / image/jpeg / image/webp
+     * @return 对象键（如 game-covers/20261105/xxxx.png）
      */
     public String putImage(byte[] content, String contentType) {
         String ext = switch (contentType) {
@@ -59,6 +60,6 @@ public class GameCoverStorage {
             log.error("游戏封面写入失败, objectKey: {}", objectKey, e);
             throw new CustomExceptions("图片存储服务暂不可用，请稍后重试");
         }
-        return minioConfig.urlOf(objectKey);
+        return objectKey;
     }
 }

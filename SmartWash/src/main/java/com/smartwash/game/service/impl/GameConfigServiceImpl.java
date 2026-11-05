@@ -203,7 +203,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 .setObjectKey(OBJECT_ROOT + gameKey + "/")
                 .setFileSize(fileSize)
                 .setBadge(StrUtil.isBlank(from.getBadge()) ? null : from.getBadge())
-                .setCoverUrl(StrUtil.isBlank(from.getCoverUrl()) ? null : from.getCoverUrl())
+                .setCoverUrl(normalizeCover(from.getCoverUrl()))
                 // 新增游戏默认不下发，是否上架由开关接口显式选择（覆盖上传保留原值，见 upload）
                 .setEnabled(0)
                 .setSort(from.getSort() == null ? 100 : from.getSort())
@@ -225,6 +225,22 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             return StrUtil.nullToEmpty(config.getUrl());
         }
         return minioConfig.urlOf(objectKey + StrUtil.nullToEmpty(config.getEntryPath()));
+    }
+
+    /**
+     * 封面归一化为对象键：兼容管理端回填的完整直链（换域名历史数据）与手工填的键。
+     * 存键不存全 URL，换 MinIO 端点不必刷库。
+     */
+    private String normalizeCover(String value) {
+        if (StrUtil.isBlank(value)) {
+            return null;
+        }
+        return minioConfig.toObjectKey(value);
+    }
+
+    /** 封面对象键 → 公共读直链（下发/管理视图用） */
+    private String coverUrlOf(GameConfig config) {
+        return StrUtil.isBlank(config.getCoverUrl()) ? null : minioConfig.urlOf(config.getCoverUrl());
     }
 
     // ==================== 管理端：分页 / 编辑 / 开关 / 删除 ====================
@@ -273,7 +289,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             config.setBadge(from.getBadge().isEmpty() ? null : from.getBadge());
         }
         if (from.getCoverUrl() != null) {
-            config.setCoverUrl(from.getCoverUrl().isEmpty() ? null : from.getCoverUrl());
+            config.setCoverUrl(from.getCoverUrl().isEmpty() ? null : normalizeCover(from.getCoverUrl()));
         }
         if (from.getSort() != null) {
             config.setSort(from.getSort());
@@ -373,6 +389,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         AdminGameVo vo = new AdminGameVo();
         BeanUtils.copyProperties(config, vo);
         vo.setUrl(playUrlOf(config));
+        vo.setCoverUrl(coverUrlOf(config));
         return vo;
     }
 
@@ -380,6 +397,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         GameVo vo = new GameVo();
         BeanUtils.copyProperties(config, vo);
         vo.setUrl(playUrlOf(config));
+        vo.setCoverUrl(coverUrlOf(config));
         return vo;
     }
 }

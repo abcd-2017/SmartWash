@@ -29,11 +29,11 @@ public interface GameConfigService extends IService<GameConfig> {
     AdminGameVo upload(UploadGameFrom from, MultipartFile file);
 
     /**
-     * 上传游戏封面图（png/jpeg/webp，≤5MB），存 MinIO game-covers/ 前缀并返回公网直链。
-     * 直链由管理端回填 coverUrl 字段（上传/编辑接口共用）。
+     * 上传游戏封面图（png/jpeg/webp，≤5MB），存 MinIO game-covers/ 前缀并返回对象键。
+     * 对象键由管理端回填 coverUrl 字段（上传/编辑接口共用）；下发时由服务层拼公共读直链。
      *
      * @param file 封面图片
-     * @return 公网直链
+     * @return 对象键（如 game-covers/20261105/xxxx.png）
      */
     String uploadCover(MultipartFile file);
 
