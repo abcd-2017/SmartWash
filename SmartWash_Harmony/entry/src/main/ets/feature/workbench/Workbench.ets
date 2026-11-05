@@ -110,8 +110,8 @@ export struct Workbench {
 
   /**
    * 工具是否已落地（问题15）：后端 workbench_entry 对全部端统一下发，其中
-   * mood/lab/review/subscription/delivery/ai-work 在鸿蒙端未实现，深链注册表把它们
-   * 指向 ComingSoon 占位页。这里在渲染前过滤掉，避免用户点进去看到「正在实现中」。
+   * lab/delivery/ai-work 在鸿蒙端未实现，深链注册表把它们指向 ComingSoon 占位页。
+   * 这里在渲染前过滤掉，避免用户点进去看到「正在实现中」。
    * target 为空的公告条不算未实现（纯文案，不可点）。
    */
   private isImplementedTarget(target: string): boolean {

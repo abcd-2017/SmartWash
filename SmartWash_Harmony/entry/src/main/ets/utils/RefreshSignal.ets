@@ -50,9 +50,20 @@ export function bumpReviewRefresh(): void {
   AppStorage.setOrCreate(REVIEW_TICK_KEY, current + 1)
 }
 
+/**
+ * 订阅逃生舱数据（列表/详情/提醒红点）需要刷新。
+ * 新建/编辑/删除/状态流转/打卡/撤销/标记已读成功后 bump，
+ * 列表页与详情页经 @StorageLink + @Watch 消费重拉（对齐安卓 SubscriptionRoute.CHANGED_KEY）。
+ */
+export function bumpSubscriptionRefresh(): void {
+  const current = AppStorage.get<number>(SUBSCRIPTION_TICK_KEY) ?? 0
+  AppStorage.setOrCreate(SUBSCRIPTION_TICK_KEY, current + 1)
+}
+
 /** AppStorage key（写读双方共用，避免字符串漂移） */
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
 export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
 export const MOOD_TICK_KEY: string = 'refreshMoodTick'
 export const REVIEW_TICK_KEY: string = 'refreshReviewTick'
+export const SUBSCRIPTION_TICK_KEY: string = 'refreshSubscriptionTick'

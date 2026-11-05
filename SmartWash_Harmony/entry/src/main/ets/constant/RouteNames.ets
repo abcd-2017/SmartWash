@@ -50,6 +50,11 @@ export class RouteNames {
   static readonly REVIEW_QUEUE: string = "ReviewQueue"
   static readonly REVIEW_STUDY: string = "ReviewStudy"
   static readonly REVIEW_MATERIAL_LIST: string = "ReviewMaterials"
+  // 订阅逃生舱域路由名（对齐安卓 SubscriptionRoute.List/Edit/Detail/Reminders）
+  static readonly SUBSCRIPTION_LIST: string = "SubscriptionList"
+  static readonly SUBSCRIPTION_EDIT: string = "SubscriptionEdit"
+  static readonly SUBSCRIPTION_DETAIL: string = "SubscriptionDetail"
+  static readonly SUBSCRIPTION_REMINDERS: string = "SubscriptionReminders"
   // 建设中占位页（深链兜底：安卓新增域 lab/mood/review/subscription/delivery/ai-work
   // 在鸿蒙端未实现，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"
