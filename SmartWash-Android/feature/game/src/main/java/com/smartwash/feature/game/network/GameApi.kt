@@ -40,6 +40,8 @@ data class GameVo(
     val category: String? = null,
     /** 角标文案（新/热），空不显示 */
     val badge: String? = null,
+    /** 封面直链（管理端上传 MinIO），空则端上用本地兜底封面 */
+    val coverUrl: String? = null,
     /** 最终可玩地址（上传包走后端转发 https，外链为外部 https；端上零拼装） */
     val url: String = "",
 )
