@@ -94,8 +94,10 @@ export struct ToolboxDatePickerDialog {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
           .onClick(() => {
-            this.onConfirm(formatDate(this.selected))
+            // 先关窗再执行回调：回调内可能导航，导航后弹窗内容实例已销毁、
+            // this.controller 变 undefined，后关会抛 jscrash（DivAskPage:669 同款）
             this.controller.close()
+            this.onConfirm(formatDate(this.selected))
           })
       }
       .width('100%')

@@ -896,8 +896,10 @@ export struct AppConfirmDialog {
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
             .onClick(() => {
-              this.onConfirm()
+              // 先关窗再执行回调：回调内常有导航（push/pop），导航后弹窗内容实例已销毁、
+              // this.controller 变 undefined，后关会抛 jscrash（DivAskPage:669 同款）
               this.controller.close()
+              this.onConfirm()
             })
         }
         .width("100%")

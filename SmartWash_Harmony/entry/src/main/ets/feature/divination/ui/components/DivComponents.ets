@@ -10,7 +10,7 @@
 
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
-import { DesignElevation, DesignColor } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignColor } from '../../../../constant/DesignSystem'
 
 // ========== 文案（对齐安卓 res/values/strings.xml 的 div_* 键；纯中文 demo 暂用字面量） ==========
 
@@ -240,7 +240,6 @@ export struct DivSerifText {
   @Param textAlign: TextAlign = TextAlign.Start
   @Param maxLines: number = 0
   @Param overflow: TextOverflow = TextOverflow.Ellipsis
-
   build() {
     if (this.maxLines > 0) {
       Text(this.text)
@@ -524,7 +523,7 @@ export struct DivPageHeader {
         }
         .width(this.alignStart ? '100%' : 'auto')
         .justifyContent(this.alignStart ? FlexAlign.Start : FlexAlign.Center)
-        .padding(this.alignStart ? { left: 20 } : {})
+        .padding(this.alignStart ? { left: DesignDimens.PAGE_PADDING } : {})
         .align(Alignment.Center)
         .alignItems(VerticalAlign.Center)
         .hitTestBehavior(HitTestMode.None)
@@ -544,7 +543,7 @@ export struct DivPageHeader {
           }
           .width('100%')
           .justifyContent(FlexAlign.End)
-          .padding({ right: 20 })
+          .padding({ right: DesignDimens.PAGE_PADDING })
           .align(Alignment.Center)
           .hitTestBehavior(HitTestMode.None)
         }
@@ -556,7 +555,7 @@ export struct DivPageHeader {
           }
           .width('100%')
           .justifyContent(FlexAlign.End)
-          .padding({ right: 20 })
+          .padding({ right: DesignDimens.PAGE_PADDING })
           .align(Alignment.Center)
           .hitTestBehavior(HitTestMode.None)
         }
@@ -575,7 +574,6 @@ export struct DivPageHeader {
           color: DivPalette.textSecondary,
           textAlign: TextAlign.Center
         })
-          .width('100%')
       }
     }
     .width('100%')
@@ -624,7 +622,12 @@ export struct DivSectionTitle {
       }
     }
     .width('100%')
-    .padding({ left: 20, right: 20, top: 8, bottom: 8 })
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
+      top: DesignDimens.SPACE_XS,
+      bottom: DesignDimens.SPACE_XS
+    })
     .alignItems(VerticalAlign.Center)
   }
 }
@@ -863,8 +866,12 @@ export struct DivFooterNote {
       color: DivPalette.textTertiary,
       textAlign: TextAlign.Center
     })
-      .width('100%')
-      .padding({ left: 20, right: 20, top: 8, bottom: 8 })
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: DesignDimens.SPACE_XS,
+        bottom: DesignDimens.SPACE_XS
+      })
   }
 }
 

@@ -485,7 +485,6 @@ struct DivCastPage {
                 color: DivPalette.textSecondary,
                 textAlign: TextAlign.Center
               })
-                .width('100%')
                 // 标题顶距统一 8（8pt 网格档位，替代 magic number 10）
                 .margin({ top: DesignDimens.SPACE_XS })
 
@@ -497,7 +496,6 @@ struct DivCastPage {
                 color: DivPalette.goldText,
                 textAlign: TextAlign.Center
               })
-                .width('100%')
                 .opacity(0.75)
                 // 进度区上下间距收敛到 8 的倍数（8 / 16）
                 .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_MD })
@@ -548,8 +546,8 @@ struct DivCastPage {
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
-              // 节点区下留白（画板 800 基准取 24）
-              Column().height(24)
+              // 节点区下留白（画板 800 基准取 SPACE_XL 24）
+              Column().height(DesignDimens.SPACE_XL)
             }
             .width('100%')
           }

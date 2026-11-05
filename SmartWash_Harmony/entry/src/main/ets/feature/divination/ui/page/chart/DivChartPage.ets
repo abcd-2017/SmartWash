@@ -253,7 +253,6 @@ struct DivChartPage {
         color: DivPalette.textTertiary,
         textAlign: TextAlign.Center
       })
-        .width('100%')
         .padding({ top: 80 })
     }
     .width('100%')
@@ -341,7 +340,12 @@ struct DivChartPage {
             .margin({ top: 4 })
         }
         .width('100%')
-        .padding({ left: 14, right: 14, top: 12, bottom: 12 })
+        .padding({
+          left: DesignDimens.CARD_PADDING,
+          right: DesignDimens.CARD_PADDING,
+          top: DesignDimens.SPACE_SM,
+          bottom: DesignDimens.SPACE_SM
+        })
       .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       }
     }
@@ -401,9 +405,8 @@ struct DivChartPage {
         color: DivPalette.textTertiary,
         textAlign: TextAlign.Center
       })
-        .width('100%')
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-        .margin({ top: 8 })
+        .margin({ top: DesignDimens.SPACE_XS })
     }
   }
 
@@ -510,13 +513,12 @@ struct DivChartPage {
             color: DivPalette.goldText,
             textAlign: TextAlign.Center
           })
-            .width('100%')
             .opacity(0.75)
             .padding({
               left: DesignDimens.PAGE_PADDING,
               right: DesignDimens.PAGE_PADDING,
-              top: 4,
-              bottom: 4
+              top: DesignDimens.SPACE_XXS,
+              bottom: DesignDimens.SPACE_XXS
             })
 
           // 奇门口径徽标（文字取语义金 goldText，对齐安卓 c.goldText）
@@ -529,28 +531,27 @@ struct DivChartPage {
               color: DivPalette.goldText,
               textAlign: TextAlign.Center
             })
-              .width('100%')
-              .padding({ top: 8, bottom: 8 })
+              .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
           }
 
-          Column().height(8)
+          Column().height(DesignDimens.SPACE_XS)
 
           // 四套盘面
           if (this.liuYao !== null) {
             LiuYaoPan({ chart: this.liuYao, facts: this.liuYaoFacts, animateEntry: this.animateEntry })
               .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            // 画板：末行到事实卡间距 24
-            Column().height(24)
+            // 画板：末行到事实卡间距 SPACE_XL（24）
+            Column().height(DesignDimens.SPACE_XL)
             this.LiuYaoCards()
           } else if (this.meiHua !== null) {
             MeiHuaTripleCards({ chart: this.meiHua })
               .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            Column().height(12)
+            Column().height(DesignDimens.SPACE_SM)
             this.MeiHuaTiyongCard()
           } else if (this.qimen !== null) {
             QimenGrid({ chart: this.qimen })
               .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            Column().height(12)
+            Column().height(DesignDimens.SPACE_SM)
             this.QimenCards()
           } else if (this.liuren !== null) {
             Column() {
@@ -558,13 +559,13 @@ struct DivChartPage {
             }
             .width('100%')
             .alignItems(HorizontalAlign.Center)
-            Column().height(12)
+            Column().height(DesignDimens.SPACE_SM)
             LiurenCourses({ chart: this.liuren })
               .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             this.LiurenFooter()
           }
 
-          Column().height(16)
+          Column().height(DesignDimens.SPACE_MD)
 
           // 底部双按钮（36 高小胶囊 + 12 号字 + 间距 12 + 左右 PAGE_PADDING 对称留白）
           Row({ space: 12 }) {

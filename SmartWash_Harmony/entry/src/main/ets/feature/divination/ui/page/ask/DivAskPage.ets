@@ -238,38 +238,45 @@ struct DivAskPage {
     pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
-  // ========== 弹窗（每次新建控制器，保证入参为最新） ==========
+  // ========== 弹窗控制器 ==========
+  //
+  // 控制器必须由结构体字段持有（与 Setting.ets / DivCastPage.ets 同款）：
+  // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，
+  // 弹窗内 this.controller 为 undefined，点击「装卦 / 确定」即抛
+  // 「Cannot read property close of undefined」jscrash（11-04 DivAskPage.ets:669）。
+  // 两个弹窗入参都是稳定闭包（不随打开时机变化），故字段持有一次即可。
+  private linesDialogController: CustomDialogController = new CustomDialogController({
+    builder: ManualLinesDialog({
+      onConfirm: (lines: number[]) => {
+        this.castManualLines(lines)
+      },
+      onDismiss: () => {
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  private numbersDialogController: CustomDialogController = new CustomDialogController({
+    builder: NumbersDialog({
+      onConfirm: (a: number, b: number) => {
+        this.castMeiHuaNumbers(a, b)
+      },
+      onDismiss: () => {
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
 
   private openLinesDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ManualLinesDialog({
-        onConfirm: (lines: number[]) => {
-          this.castManualLines(lines)
-        },
-        onDismiss: () => {
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.linesDialogController.open()
   }
 
   private openNumbersDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: NumbersDialog({
-        onConfirm: (a: number, b: number) => {
-          this.castMeiHuaNumbers(a, b)
-        },
-        onDismiss: () => {
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.numbersDialogController.open()
   }
 
   // ========== 辅助 ==========
@@ -322,7 +329,7 @@ struct DivAskPage {
 
       DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 26 })
 
-      Column().height(20)
+      Column().height(DesignDimens.SPACE_LG)
 
       DivSerifText({
         text: DivText.safetyTitle,
@@ -343,7 +350,7 @@ struct DivAskPage {
         color: DivPalette.textSecondary,
         textAlign: TextAlign.Center
       })
-        .padding({ left: 12, right: 12 })
+        .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
 
       Column().height(28)
 
@@ -370,7 +377,7 @@ struct DivAskPage {
         .backgroundColor(DivPalette.hair)
     }
     .width('100%')
-    .padding({ left: 16, right: 16 })
+    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
   }
 
   build() {
@@ -661,7 +668,7 @@ struct ManualLinesDialog {
         .alignItems(VerticalAlign.Center)
       }, (index: number) => index.toString())
 
-      Column().height(16)
+      Column().height(DesignDimens.SPACE_MD)
 
         DivGoldButton({
           text: DivText.manualConfirm,
@@ -674,7 +681,7 @@ struct ManualLinesDialog {
         })
       }
       .width('100%')
-      .padding(20)
+      .padding(DesignDimens.CARD_PADDING)
       .borderRadius(16)
       .backgroundColor(DivPalette.surface2)
       .border({ width: 1, color: DivPalette.goldLine, radius: 16 })
@@ -813,7 +820,7 @@ struct NumbersDialog {
         }
         .width('100%')
 
-        Column().height(16)
+        Column().height(DesignDimens.SPACE_MD)
 
         DivGoldButton({
           text: DivText.manualConfirm,

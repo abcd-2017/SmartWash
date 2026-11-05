@@ -88,8 +88,8 @@ function buildMockReading(form: DivInterpretForm): DivReadingVo {
   const sections: Array<DivReadingSection> = []
   sections.push({
     title: '直接判断',
-    content: `${methodName}本卦成象，问事之体与用已分。就${categoryName}而言，盘面呈现的是事情当前的状态与推力，' +
-      '而非定局——变爻所在之处即转机所在。`
+    content: `${methodName}本卦成象，问事之体与用已分。就${categoryName}而言，盘面呈现的是事情当前的状态与推力，` +
+      '而非定局——变爻所在之处即转机所在。'
   })
   sections.push({
     title: form.method === 'liuyao' ? '用神与旺衰' : (form.method === 'meihua' ? '体用生克' : '格局要点'),

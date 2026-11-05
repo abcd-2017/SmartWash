@@ -22,7 +22,7 @@ import {
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { RouteNames } from '../../../../../constant/RouteNames'
-import { DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignColor } from '../../../../../constant/DesignSystem'
 import { getNumberParam, pathStack } from '../../../../../utils/PathStackUtil'
 import { logger } from '../../../../../utils/Logger'
 
@@ -60,7 +60,12 @@ struct ChatBubbleView {
           })
         }
         .constraintSize({ maxWidth: 220 })
-        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .padding({
+          left: DesignDimens.SPACE_MD,
+          right: DesignDimens.SPACE_MD,
+          top: DesignDimens.SPACE_SM,
+          bottom: DesignDimens.SPACE_SM
+        })
         .borderRadius(16)
         // 实金底（goldGradient 首色）+ 墨字 + r16 无描边；实色块免投影
         .backgroundColor(DivPalette.goldGradientStart)
@@ -80,7 +85,12 @@ struct ChatBubbleView {
           })
         }
         .constraintSize({ maxWidth: 240 })
-        .padding({ left: 16, right: 16, top: 12, bottom: 12 })
+        .padding({
+          left: DesignDimens.SPACE_MD,
+          right: DesignDimens.SPACE_MD,
+          top: DesignDimens.SPACE_SM,
+          bottom: DesignDimens.SPACE_SM
+        })
         .borderRadius(16)
         .backgroundColor(DivPalette.surface)
         // 回复气泡 = 卡面：1px 发丝描边 + level1 轻阴影（宣纸侧）
@@ -211,7 +221,7 @@ struct DivFollowUpPage {
           .backgroundColor(DivPalette.surface2)
           .borderRadius(12)
           .border({ width: 1, color: DivPalette.line })
-          .padding({ left: 16, right: 16 })
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
           .fontSize(14)
           .fontColor(DivPalette.textPrimary)
           .caretColor(DivPalette.gold)
@@ -240,7 +250,12 @@ struct DivFollowUpPage {
         })
       }
       .width('100%')
-      .padding({ left: 20, right: 20, top: 16, bottom: 16 })
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: DesignDimens.SPACE_MD,
+        bottom: DesignDimens.SPACE_MD
+      })
       .alignItems(VerticalAlign.Center)
     }
     .width('100%')
@@ -268,7 +283,6 @@ struct DivFollowUpPage {
               color: DivPalette.textTertiary,
               textAlign: TextAlign.Center
             })
-              .width('100%')
               .padding({ top: 120 })
           } else if (this.record === null) {
             DivSerifText({
@@ -279,23 +293,26 @@ struct DivFollowUpPage {
               color: DivPalette.textTertiary,
               textAlign: TextAlign.Center
             })
-              .width('100%')
               .padding({ top: 80 })
           } else {
             // 聊天流（画板：项距 16）
-            List({ scroller: this.scroller, space: 16 }) {
+            List({ scroller: this.scroller, space: DesignDimens.CARD_SPACING }) {
               if (this.history.length === 0) {
                 ListItem() {
-                  DivSerifText({
-                    text: DivText.followupEmpty,
-                    textSize: 12,
-                    weight: 400,
-                    spacing: 0,
-                    color: DivPalette.textTertiary,
-                    textAlign: TextAlign.Center
-                  })
-                    .width('100%')
-                    .padding({ top: 40 })
+                  // ListItem 默认 Start 对齐，需外层通栏 Row 居中（对齐画板水平居中）
+                  Row() {
+                    DivSerifText({
+                      text: DivText.followupEmpty,
+                      textSize: 12,
+                      weight: 400,
+                      spacing: 0,
+                      color: DivPalette.textTertiary,
+                      textAlign: TextAlign.Center
+                    })
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .padding({ top: 40 })
                 }
               }
 
@@ -326,20 +343,29 @@ struct DivFollowUpPage {
 
               // 流尾常驻脚注（画板：—— 继续追问将沿用本卦盘推演 ——）
               ListItem() {
-                DivSerifText({
-                  text: DivText.followupFooter,
-                  textSize: 12,
-                  weight: 400,
-                  spacing: 0,
-                  color: DivPalette.textSecondary,
-                  textAlign: TextAlign.Center
-                })
-                  .width('100%')
+                // 同上：通栏 Row 承载居中，避免 ListItem Start 对齐把脚注顶到左缘
+                Row() {
+                  DivSerifText({
+                    text: DivText.followupFooter,
+                    textSize: 12,
+                    weight: 400,
+                    spacing: 0,
+                    color: DivPalette.textSecondary,
+                    textAlign: TextAlign.Center
+                  })
+                }
+                .width('100%')
+                .justifyContent(FlexAlign.Center)
               }
             }
             .layoutWeight(1)
             .width('100%')
-            .padding({ left: 20, right: 20, top: 8, bottom: 8 })
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: DesignDimens.SPACE_XS,
+              bottom: DesignDimens.SPACE_XS
+            })
             .scrollBar(BarState.Off)
 
             // 底部输入栏
