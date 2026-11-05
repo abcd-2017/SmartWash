@@ -274,7 +274,11 @@ fun LaundryPage(
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                 AppButton(
                     text = if (selectItemId == -1L) stringResource(R.string.confirm_booking)
-                    else stringResource(R.string.confirm_booking_format, String.format("%.2f", totalPrice)),
+                    else stringResource(
+                        R.string.confirm_booking_format,
+                        // 金额统一走 currency_format（¥%s），原直拼 %.2f 导致按钮只显示「\prod预约 · 29.90」无 ¥
+                        stringResource(R.string.currency_format, String.format("%.2f", totalPrice))
+                    ),
                     onClick = {
                         if (selectItemId == -1L) showDialog = true
                         else laundryViewModel.reservationLaundry(selectItemId, totalPrice)

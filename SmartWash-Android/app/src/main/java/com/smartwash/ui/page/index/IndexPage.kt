@@ -195,7 +195,8 @@ fun IndexPage(
                             color = AppColors.colorScheme.textPrimary
                         )
                         // 行内「查看全部」— 16sp SemiBold primaryDark（green.700，规范 §10 绿色文字红线），
-                        // 无 ripple，48dp 热区（D-I7）；文字右缘对齐页面 24 边距（设计稿实测 y=444 右缘 336）
+                        // 无 ripple，48dp 热区（D-I7）；文字右缘对齐页面 24 边距（设计稿实测 y=444 右缘 336）；
+                        // 默认进「全部订单」tab（itemId=0，原 WASHING 与「查看全部」语义不符）
                         Text(
                             text = stringResource(R.string.view_all),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
@@ -203,7 +204,7 @@ fun IndexPage(
                             modifier = Modifier
                                 .pressable(
                                     onClick = rememberDebouncedClick {
-                                        navController.navigate(OrderRoute.Order(OrderStatus.WASHING.status.toInt()))
+                                        navController.navigate(OrderRoute.Order(0))
                                     },
                                     debounce = false,
                                 )

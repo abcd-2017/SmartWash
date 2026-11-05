@@ -179,8 +179,9 @@ fun OrderDetailPage(
                             iconContainerColor = AppColors.colorScheme.iconContainerBlue,
                             iconTint = AppColors.colorScheme.iconForegroundBlue
                         ) {
-                            // 行距节奏：屏 6 实测 48（行高 34 + 行间距 14）；值列 12/500 = labelMedium，订单号启用 tnum
-                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            // 行距节奏：规范 §3 间距允许值收敛为 12（原 14 不在 4dp 基网格允许值集）；
+                            // 值列 12/500 = labelMedium，订单号启用 tnum
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 InfoRow(
                                     stringResource(R.string.order_number),
                                     orderInfo?.orderNo ?: "",
@@ -368,8 +369,16 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
         OrderStatus.COMPLETED,
     )
 
-    // 确定当前节点索引
-    val currentIndex = nodes.indexOfFirst { it == currentStatus }.coerceAtLeast(0)
+    // 确定当前节点索引：中间态（已收取/已烘干/配送中）映射到所在阶段节点。
+    // 原实现 indexOfFirst 找不到中间态会归 0，进度线卡在「待支付」不随订单状态刷新。
+    val currentIndex = when (currentStatus) {
+        OrderStatus.PENDING_PAYMENT -> 0
+        OrderStatus.PENDING_SHIPMENT -> 1
+        OrderStatus.RECEIVED, OrderStatus.WASHING -> 2
+        OrderStatus.DRIED, OrderStatus.IN_DELIVERY, OrderStatus.READY_FOR_PICKUP -> 3
+        OrderStatus.COMPLETED -> 4
+        else -> 0
+    }
     val isDark = isSystemInDarkTheme()
 
     Column {
@@ -493,11 +502,21 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         OrderStatus.PENDING_PAYMENT -> OrderStatusInfo(
             R.string.pending_payment, AppColors.colorScheme.warning, R.string.please_pay_soon
         )
+        OrderStatus.PENDING_SHIPMENT -> OrderStatusInfo(
+            R.string.pending_shipment, AppColors.colorScheme.primary, R.string.please_ship_soon
+        )
+        // 中间态（原缺失会落 else 显示「-」）：已收取/已烘干/配送中归入清洗→取件阶段
+        OrderStatus.RECEIVED -> OrderStatusInfo(
+            OrderStatus.RECEIVED.descriptionRes, AppColors.colorScheme.primary, R.string.received_hint
+        )
         OrderStatus.WASHING -> OrderStatusInfo(
             OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, R.string.washing_in_progress_hint
         )
-        OrderStatus.PENDING_SHIPMENT -> OrderStatusInfo(
-            R.string.pending_shipment, AppColors.colorScheme.primary, R.string.please_ship_soon
+        OrderStatus.DRIED -> OrderStatusInfo(
+            OrderStatus.DRIED.descriptionRes, AppColors.colorScheme.primary, R.string.dried_hint
+        )
+        OrderStatus.IN_DELIVERY -> OrderStatusInfo(
+            OrderStatus.IN_DELIVERY.descriptionRes, AppColors.colorScheme.primary, R.string.in_delivery_hint
         )
         OrderStatus.READY_FOR_PICKUP -> OrderStatusInfo(
             R.string.pending_pickup, AppColors.colorScheme.primary, R.string.clothes_in_locker
@@ -508,6 +527,9 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         // CANCELED 语义色 error → danger（对齐 D-O5 同款语义）
         OrderStatus.CANCELED -> OrderStatusInfo(
             R.string.cancelled, AppColors.colorScheme.danger, R.string.cancelled
+        )
+        OrderStatus.REFUNDED -> OrderStatusInfo(
+            OrderStatus.REFUNDED.descriptionRes, AppColors.colorScheme.danger, R.string.refunded_hint
         )
         else -> OrderStatusInfo(R.string.dash, MaterialTheme.colorScheme.onBackground, R.string.dash)
     }

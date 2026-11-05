@@ -198,7 +198,7 @@ class WorkbenchViewModel @Inject constructor(
     private fun WorkbenchEntryVo.toTool(index: Int): WorkbenchTool = WorkbenchTool(
         entryKey = entryKey.takeIf { it.isNotBlank() } ?: "entry_$index",
         title = title,
-        description = description,
+        description = description.orEmpty(),
         icon = workbenchIconFromKey(icon),
         tint = WorkbenchTint.fromKey(color),
         target = target.orEmpty(),

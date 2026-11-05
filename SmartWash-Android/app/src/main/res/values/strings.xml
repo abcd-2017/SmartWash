@@ -83,6 +83,11 @@
     <string name="clothes_in_locker">衣物已到寄存柜</string>
     <string name="cancelled">已取消</string>
     <string name="dash">-</string>
+    <!-- 中间态/退款副行提示（订单详情状态区；原 when 缺这些状态会落到 dash 分支显示「-」） -->
+    <string name="received_hint">衣物已收取，即将清洗</string>
+    <string name="dried_hint">衣物已烘干，即将配送</string>
+    <string name="in_delivery_hint">衣物配送中，请留意取件通知</string>
+    <string name="refunded_hint">订单已退款</string>
     <string name="school_name_label">学校名称</string>
 
     <!-- ==================== 洗衣服务（文案已随 :feature:laundry:impl 迁出 T7.1；
