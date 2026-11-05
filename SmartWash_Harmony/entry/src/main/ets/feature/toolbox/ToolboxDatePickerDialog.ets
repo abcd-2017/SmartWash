@@ -59,6 +59,9 @@ export struct ToolboxDatePickerDialog {
         .onDateChange((value: Date) => {
           this.selected = value
         })
+        // 必须显式给宽：Column 内未设宽度的 DatePicker 在部分设备/窗口下会塌成细条，
+        // 弹窗只剩标题 + 按钮（真机实测 T6）
+        .width('100%')
         .height(200)
 
       Row() {

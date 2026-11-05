@@ -59,8 +59,11 @@ struct ToolboxShortCodeCreate {
         title: ToolboxText.toolbox_expiry_custom_pick,
         onConfirm: (date: string): void => {
           this.customDate = date
+          // 弹窗只回调不自行 close（创建方持引用关闭，见 ToolboxDatePickerDialog 注释）
+          controller.close()
         },
         onDismiss: (): void => {
+          controller.close()
         }
       }),
       autoCancel: true,

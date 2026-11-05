@@ -47,6 +47,7 @@ import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
 import BuildProfile from 'entry/BuildProfile'
+import { createQrPixelMap } from './QrFallback'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeDetail'
@@ -172,8 +173,16 @@ struct ToolboxShortCodeDetail {
           height: 512
         })
         this.qrPixelMap = fallbackMap
-      } catch (retryErr) {
-        this.qrFailed = true
+      } catch (scanKitErr) {
+        // ScanKit 在模拟器等环境直接抛 "Emulator is not supported"（两段降级全失败）；
+        // 用纯 ArkTS 兜底编码器出图，保证任何环境都有二维码可扫（见 QrFallback 注释）
+        try {
+          this.qrPixelMap = await createQrPixelMap(url)
+          logger.debug(TAG, 'ScanKit 不可用，纯 ArkTS 兜底二维码已生成')
+        } catch (fallbackErr) {
+          this.qrFailed = true
+          logger.error(TAG, '二维码兜底生成失败', fallbackErr instanceof Error ? fallbackErr.message : '')
+        }
       }
       logger.error(TAG, '二维码生成异常', err instanceof Error ? err.message : '')
     } finally {
