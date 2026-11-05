@@ -38,6 +38,10 @@ public class UpdateGameFrom {
     @Size(max = 16, message = "角标文案过长（上限16字符）")
     private String badge;
 
+    /** 封面直链（由 /admin/game/cover 上传后回填；传空字符串表示清空） */
+    @Size(max = 512, message = "封面地址过长（上限512字符）")
+    private String coverUrl;
+
     /** 排序，越小越靠前 */
     @Min(value = 0, message = "排序不能为负数")
     private Integer sort;

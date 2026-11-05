@@ -29,6 +29,15 @@ public interface GameConfigService extends IService<GameConfig> {
     AdminGameVo upload(UploadGameFrom from, MultipartFile file);
 
     /**
+     * 上传游戏封面图（png/jpeg/webp，≤5MB），存 MinIO game-covers/ 前缀并返回公网直链。
+     * 直链由管理端回填 coverUrl 字段（上传/编辑接口共用）。
+     *
+     * @param file 封面图片
+     * @return 公网直链
+     */
+    String uploadCover(MultipartFile file);
+
+    /**
      * 管理端分页查询：keyword 模糊（title/gameKey）+ category/enabled 精确，含未启用项，按 sort/id 升序。
      */
     Page<AdminGameVo> adminPage(SearchGameFrom from);

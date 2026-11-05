@@ -60,6 +60,12 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     /** MinIO 游戏对象根前缀 */
     private static final String OBJECT_ROOT = "game/";
 
+    /** 封面上传大小上限（与工作台配图一致） */
+    private static final long COVER_MAX_BYTES = 5L * 1024 * 1024;
+    /** 允许的封面 MIME 类型 */
+    private static final java.util.Set<String> COVER_CONTENT_TYPES =
+            java.util.Set.of("image/png", "image/jpeg", "image/webp");
+
     /** 自注入：@Cacheable 方法须经代理调用才生效，同类内部直调会绕过 AOP */
     @Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -68,6 +74,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     private final GamePackageValidator packageValidator;
     private final GameObjectStorage objectStorage;
     private final MinioConfig minioConfig;
+    private final com.smartwash.game.storage.GameCoverStorage gameCoverStorage;
 
     // ==================== 管理端：上传 ====================
 
@@ -105,6 +112,29 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         log.info("上传游戏, gameKey: {}, title: {}, 覆盖更新: {}, 包字节: {}",
                 gameKey, from.getTitle(), existing != null, config.getFileSize());
         return buildAdminVo(this.getById(config.getId()));
+    }
+
+    @Override
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
+    public String uploadCover(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new GameServiceException(GameServiceException.BAD_REQUEST, "请选择要上传的封面图");
+        }
+        if (file.getSize() > COVER_MAX_BYTES) {
+            throw new GameServiceException(GameServiceException.PAYLOAD_TOO_LARGE, "封面大小不能超过5MB");
+        }
+        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase(java.util.Locale.ROOT);
+        if (!COVER_CONTENT_TYPES.contains(contentType)) {
+            throw new GameServiceException(GameServiceException.BAD_REQUEST, "仅支持 png / jpeg / webp 图片");
+        }
+        try {
+            return gameCoverStorage.putImage(file.getBytes(), contentType);
+        } catch (GameServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("游戏封面上传失败", e);
+            throw new GameServiceException(GameServiceException.INTERNAL_ERROR, "封面上传失败，请稍后重试");
+        }
     }
 
     /** 单 html：固定落为 {gameKey}/index.html，入口即 index.html；内容读取成功后才清旧前缀，防半途失败丢旧包 */
@@ -173,6 +203,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 .setObjectKey(OBJECT_ROOT + gameKey + "/")
                 .setFileSize(fileSize)
                 .setBadge(StrUtil.isBlank(from.getBadge()) ? null : from.getBadge())
+                .setCoverUrl(StrUtil.isBlank(from.getCoverUrl()) ? null : from.getCoverUrl())
                 // 新增游戏默认不下发，是否上架由开关接口显式选择（覆盖上传保留原值，见 upload）
                 .setEnabled(0)
                 .setSort(from.getSort() == null ? 100 : from.getSort())
@@ -240,6 +271,9 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         }
         if (from.getBadge() != null) {
             config.setBadge(from.getBadge().isEmpty() ? null : from.getBadge());
+        }
+        if (from.getCoverUrl() != null) {
+            config.setCoverUrl(from.getCoverUrl().isEmpty() ? null : from.getCoverUrl());
         }
         if (from.getSort() != null) {
             config.setSort(from.getSort());
