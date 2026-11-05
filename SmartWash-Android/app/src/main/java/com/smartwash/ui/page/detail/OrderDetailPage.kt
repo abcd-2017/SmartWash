@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -42,10 +43,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
+import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.DialogAction
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.components.softCardShadow
@@ -518,7 +522,19 @@ private fun OrderStatusHeader(status: OrderStatus?) {
             .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        DrumIllustration()
+        // 状态头插画：本地自绘位图按状态映射（PS 绘制，透明底 1:1）；
+        // 未知状态/资产缺失时回退内置滚筒 Canvas 插画
+        val statusCover = status?.let { LocalCoverArt.orderStatusCover(it.name) }
+        if (statusCover != null) {
+            Image(
+                painter = painterResource(statusCover),
+                contentDescription = null,
+                modifier = Modifier.size(120.dp),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            DrumIllustration()
+        }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(info.statusTextRes),

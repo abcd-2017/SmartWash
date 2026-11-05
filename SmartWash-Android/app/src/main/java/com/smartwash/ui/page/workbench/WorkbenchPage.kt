@@ -57,7 +57,9 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -73,6 +75,7 @@ import com.smartwash.R
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
@@ -679,14 +682,12 @@ private fun WideCard(
         border = BorderStroke(1.dp, scheme.outline)
     ) {
         Column {
-            tool.imageUrl?.let { url ->
-                WorkbenchImage(
-                    url = url,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f)
-                )
-            }
+            WorkbenchCoverImage(
+                tool = tool,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+            )
             Row(
                 modifier = Modifier.padding(AppDimens.cardPadding),
                 verticalAlignment = Alignment.CenterVertically,
@@ -898,6 +899,32 @@ private fun WorkbenchImage(
     )
 }
 
+/**
+ * 工作台配图统一槽：服务端 imageUrl 优先（Coil），未下发时按 entryKey 用本地自绘封面兜底，
+ * 两者皆无则不渲染（调用方据此回退 IconBox 布局）。
+ */
+@Composable
+private fun WorkbenchCoverImage(
+    tool: WorkbenchTool,
+    modifier: Modifier = Modifier,
+): Boolean {
+    val local = LocalCoverArt.workbenchCover(tool.entryKey)
+    if (tool.imageUrl != null) {
+        WorkbenchImage(url = tool.imageUrl!!, modifier = modifier)
+        return true
+    }
+    if (local != null) {
+        Image(
+            painter = painterResource(local),
+            contentDescription = null,
+            modifier = modifier.background(AppColors.colorScheme.surfaceVariant),
+            contentScale = ContentScale.Crop
+        )
+        return true
+    }
+    return false
+}
+
 /** 六色浅底语义色组（icon/color 白名单映射产物，卡片组件共用） */
 @Composable
 private fun workbenchTintColors(tool: WorkbenchTool): Pair<Color, Color> {
@@ -1064,6 +1091,7 @@ private fun ToolTile(
     modifier: Modifier = Modifier,
 ) {
     val scheme = AppColors.colorScheme
+    val hasCover = tool.imageUrl != null || LocalCoverArt.workbenchCover(tool.entryKey) != null
     val (containerColor, iconTint) = workbenchTintColors(tool)
     Surface(
         modifier = modifier.pressable(onClick = onClick).softCardShadow(),
@@ -1074,16 +1102,14 @@ private fun ToolTile(
     ) {
         Box {
             Column {
-                tool.imageUrl?.let { url ->
-                    WorkbenchImage(
-                        url = url,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(96.dp)
-                    )
-                }
+                WorkbenchCoverImage(
+                    tool = tool,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(96.dp)
+                )
                 Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                    if (tool.imageUrl == null) {
+                    if (!hasCover) {
                         IconBox(
                             icon = tool.icon,
                             containerColor = containerColor,
