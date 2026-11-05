@@ -7,8 +7,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,10 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -53,6 +57,7 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
@@ -375,6 +380,15 @@ private fun DetailContent(
         // ---------- 续费信息卡 ----------
         item(key = "info") {
             GroupCard {
+                // 卡顶泛订阅概念头图（本地自绘；服务端头图字段落地前先展示本地资产）
+                Image(
+                    painter = painterResource(LocalCoverArt.subscriptionDetailHeader),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f),
+                    contentScale = ContentScale.Crop
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBox(
                         icon = Icons.Rounded.Autorenew,

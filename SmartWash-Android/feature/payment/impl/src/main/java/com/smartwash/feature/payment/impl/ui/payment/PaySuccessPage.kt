@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,7 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,6 +47,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.InfoRow
@@ -159,6 +163,14 @@ fun PaySuccessPage(
                             color = AppColors.colorScheme.surface,
                             border = BorderStroke(1.dp, AppColors.colorScheme.outline)
                         ) {
+                            Box {
+                                // 庆祝背景装饰层：同心涟漪+水花（PS 自绘透明 PNG），铺满卡底、内容置顶
+                                Image(
+                                    painter = painterResource(LocalCoverArt.paySuccessCelebrationBg),
+                                    contentDescription = null,
+                                    modifier = Modifier.matchParentSize(),
+                                    contentScale = ContentScale.FillBounds
+                                )
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -191,6 +203,7 @@ fun PaySuccessPage(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = AppColors.colorScheme.textSecondary
                                 )
+                            }
                             }
                         }
 
