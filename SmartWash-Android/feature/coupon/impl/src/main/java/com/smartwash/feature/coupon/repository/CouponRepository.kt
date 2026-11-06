@@ -5,7 +5,6 @@ import com.smartwash.common.database.AppDatabase
 import com.smartwash.common.database.dao.CouponVoDao
 import com.smartwash.feature.coupon.network.api.CouponServiceApi
 import com.smartwash.common.network.exception.NetworkException
-import com.smartwash.feature.coupon.network.vo.coupon.AllCouponsVo
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.feature.coupon.R
@@ -13,6 +12,40 @@ import com.smartwash.common.utils.AppLogger
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * 单组券数据的来源（回归 2026-11-06 A5）：降级不再伪装成空态。
+ * NETWORK = 本次网络返回；CACHE = 网络失败回退的 Room 缓存（离线兜底）；FAILED = 失败且无缓存。
+ */
+enum class CouponSource { NETWORK, CACHE, FAILED }
+
+/** 单组券数据：列表 + 来源标记 */
+data class CouponSection<T>(
+    val items: List<T>,
+    val source: CouponSource,
+)
+
+/** 优惠券页三组聚合结果（可领取 / 已领取 / 历史），各组来源独立标记 */
+data class CouponPageData(
+    val available: CouponSection<CouponVo>,
+    val claimed: CouponSection<UserCouponVo>,
+    val historical: CouponSection<UserCouponVo>,
+)
+
+/**
+ * 缓存降级归并（A5 锚点单测）：网络失败时三组「有啥显啥」——
+ * 有缓存的组回退缓存（CACHE），无缓存的组标 FAILED（由 UI 显示错误/重试小态，而非「暂无」空态）。
+ * internal 供 JVM 单测。
+ */
+internal fun buildDegradedCouponPageData(cachedAvailable: List<CouponVo>): CouponPageData = CouponPageData(
+    available = if (cachedAvailable.isNotEmpty()) {
+        CouponSection(cachedAvailable, CouponSource.CACHE)
+    } else {
+        CouponSection(emptyList(), CouponSource.FAILED)
+    },
+    claimed = CouponSection(emptyList(), CouponSource.FAILED),
+    historical = CouponSection(emptyList(), CouponSource.FAILED),
+)
 
 @Singleton
 class CouponRepository @Inject constructor(
@@ -59,10 +92,12 @@ class CouponRepository @Inject constructor(
 
     /**
      * 优惠券页聚合数据（可领取 / 已领取 / 历史三类，一次请求）。
-     * Cache-first 策略：网络失败时可用券降级为 Room 缓存（已领/历史无本地缓存表，置空）；
-     * 无任何缓存时抛异常，由上层转 Error 态。
+     *
+     * Cache-first 策略（回归 2026-11-06 A5 重构）：网络失败时**三组数据统一按缓存降级**
+     * ——有缓存的组回退缓存（[CouponSource.CACHE]），无缓存的组标 [CouponSource.FAILED]，
+     * 不再把降级伪装成空列表；仅当三组全部拿不到数据（缓存也空）时抛异常，由上层转整页 Error 态。
      */
-    suspend fun getAllCoupons(): AllCouponsVo {
+    suspend fun getAllCoupons(): CouponPageData {
         val cachedAvailable = couponVoDao.getAll().map { it.toVo() }
 
         return try {
@@ -78,25 +113,26 @@ class CouponRepository @Inject constructor(
                 couponVoDao.deleteAll()
                 couponVoDao.insertAll(networkData.available.map { it.toEntity() })
             }
-            networkData
+            CouponPageData(
+                available = CouponSection(networkData.available, CouponSource.NETWORK),
+                claimed = CouponSection(networkData.claimed, CouponSource.NETWORK),
+                historical = CouponSection(networkData.historical, CouponSource.NETWORK),
+            )
         } catch (e: CancellationException) {
             // 取消不作为网络错误，直接上抛
             throw e
         } catch (e: Exception) {
             if (cachedAvailable.isNotEmpty()) {
-                // 降级：异常被吞、上层无感知，必须在此留痕（可用券回退 Room 缓存，已领/历史无缓存置空）
+                // 降级：异常被吞、上层无感知，必须在此留痕（有啥显啥：可用券回退 Room 缓存，
+                // 已领/历史无本地缓存表标 FAILED 由 UI 出错误小态）
                 AppLogger.warn(
                     TAG,
-                    "getAllCoupons 网络失败，可用券降级为 Room 缓存（${cachedAvailable.size} 条，已领/历史置空）",
+                    "getAllCoupons 网络失败，可用券降级为 Room 缓存（${cachedAvailable.size} 条），已领/历史标 FAILED",
                     e,
                 )
-                AllCouponsVo(
-                    available = cachedAvailable,
-                    claimed = emptyList(),
-                    historical = emptyList(),
-                )
+                buildDegradedCouponPageData(cachedAvailable)
             } else {
-                // 无缓存上抛：上层 catch 会记 error，此处不重复记录
+                // 无任何缓存上抛：上层 catch 会记 error，此处不重复记录
                 throw e
             }
         }

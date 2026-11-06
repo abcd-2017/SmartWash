@@ -81,4 +81,8 @@
     <!-- 充值记录页 -->
     <string name="no_recharge_records">暂无充值记录</string>
     <string name="recharge_record_amount_format">+¥%s</string>
+    <!-- 断网/失败降级（回归 2026-11-06 A6）：首刷错误卡兜底文案 + 分页尾错误行 -->
+    <string name="record_load_failed">充值记录加载失败，请检查网络后重试</string>
+    <string name="record_action_retry">重试</string>
+    <string name="record_append_failed">加载更多失败，点击重试</string>
 </resources>
