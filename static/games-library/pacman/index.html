@@ -141,10 +141,10 @@ var MODES=[[5,"scatter"],[18,"chase"]];
 var pac={x:0,y:0,dir:4,want:4,mouth:0,alive:true};//方向 0上1右2下3左 4停
 var DX=[0,1,0,-1],DY=[-1,0,1,0];
 var GHOSTS=[
-  {name:"blinky",color:"#E05A4E",corner:[11,1]},
-  {name:"pinky",color:"#EE7E9C",corner:[1,1]},
-  {name:"inky",color:"#4FC3D9",corner:[11,13]},
-  {name:"clyde",color:"#F0A05A",corner:[1,13]}
+  {name:"blinky",color:"#E05A4E",corner:[11,1]},//幽灵素材(D2)
+  {name:"pinky",color:"#EE7E9C",corner:[1,1]},//幽灵素材(D2)
+  {name:"inky",color:"#4FC3D9",corner:[11,13]},//幽灵素材(D2)
+  {name:"clyde",color:"#F0A05A",corner:[1,13]}//幽灵素材(D2)
 ];
 var fx=[];//飘字
 function $(id){return document.getElementById(id)}
@@ -408,15 +408,15 @@ function drawPac(ts){
   var r=L.cell*0.46,a=pac.mouth,open=(Math.sin(a)*0.5+0.5)*0.55+0.05;
   var ang=[-Math.PI/2,0,Math.PI/2,Math.PI][pac.dir]||0;
   ctx.save();ctx.translate(pac.x,pac.y);ctx.rotate(ang);
-  ctx.fillStyle="#FFD44A";ctx.beginPath();
+  ctx.fillStyle="#FFD44A";ctx.beginPath();//吃豆人黄 素材(D2)
   ctx.moveTo(0,0);ctx.arc(0,0,r,open*Math.PI,(2-open)*Math.PI);ctx.closePath();ctx.fill();
-  ctx.fillStyle="#1C1C1E";ctx.beginPath();ctx.arc(r*0.15,-r*0.45,Math.max(1.5,r*0.12),0,7);ctx.fill();
+  ctx.fillStyle="#1C1C1E";ctx.beginPath();ctx.arc(r*0.15,-r*0.45,Math.max(1.5,r*0.12),0,7);ctx.fill();//眼睛 恒暗
   ctx.restore();
 }
 function drawPacDie(){
   var k=Math.min(1,dieT/0.9),r=L.cell*0.46*(1-k);
   if(r<=0.5)return;
-  ctx.fillStyle="#FFD44A";ctx.globalAlpha=1-k*0.5;
+  ctx.fillStyle="#FFD44A";ctx.globalAlpha=1-k*0.5;//吃豆人黄 素材(D2)
   ctx.beginPath();ctx.moveTo(pac.x,pac.y);
   ctx.arc(pac.x,pac.y,r,(0.9+k)*Math.PI,(2.1-k)*Math.PI);ctx.closePath();ctx.fill();
   ctx.globalAlpha=1;
@@ -441,7 +441,7 @@ function drawGhost(g,ts){
   ctx.fillStyle="#FFFFFF";
   ctx.beginPath();ctx.arc(-r*0.34+ex,-r*0.2+ey,r*0.26,0,7);ctx.arc(r*0.34+ex,-r*0.2+ey,r*0.26,0,7);ctx.fill();
   if(!g.eye){
-    ctx.fillStyle=frightOn&&blink?"#E05A4E":"#2B3444";
+    ctx.fillStyle=frightOn&&blink?"#E05A4E":"#2B3444";//惊惧态 素材(D2)
     ctx.beginPath();ctx.arc(-r*0.34+ex*1.4,-r*0.2+ey*1.4,r*0.13,0,7);ctx.arc(r*0.34+ex*1.4,-r*0.2+ey*1.4,r*0.13,0,7);ctx.fill();
   }
   ctx.restore();

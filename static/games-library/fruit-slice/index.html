@@ -116,12 +116,12 @@ function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
 var L={W:0,H:0};
 var FRUITS=[//水果素材色（玩法素材，保留字面）
-  {c:"#E0533D",f:"#F8D7CE",sx:1,sy:1},//苹果
-  {c:"#F2A03D",f:"#FBE3B8",sx:1,sy:1},//橙子
-  {c:"#F5D23E",f:"#FBF0B0",sx:1.15,sy:0.9},//柠檬
-  {c:"#8BC34A",f:"#E2F2C8",sx:1,sy:1},//青苹果
-  {c:"#4A9FD4",f:"#C8E4F5",sx:0.85,sy:0.85},//蓝莓
-  {c:"#B45BC0",f:"#E8C8F0",sx:0.95,sy:1.05}//葡萄
+  {c:"#E0533D",f:"#F8D7CE",sx:1,sy:1},//苹果 素材(D2)
+  {c:"#F2A03D",f:"#FBE3B8",sx:1,sy:1},//橙子 素材(D2)
+  {c:"#F5D23E",f:"#FBF0B0",sx:1.15,sy:0.9},//柠檬 素材(D2)
+  {c:"#8BC34A",f:"#E2F2C8",sx:1,sy:1},//青苹果 素材(D2)
+  {c:"#4A9FD4",f:"#C8E4F5",sx:0.85,sy:0.85},//蓝莓 素材(D2)
+  {c:"#B45BC0",f:"#E8C8F0",sx:0.95,sy:1.05}//葡萄 素材(D2)
 ];
 var sv=loadSave(),best=sv.best,maxComboBest=sv.combo;
 var score=0,lives=3,combo=0,maxCombo=0,elapsed=0,level=1,spawnT=0;
@@ -284,17 +284,17 @@ function text(s,x,y,size,c){
 function drawFruit(f,ts){
   ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot);
   if(f.type<0){//炸弹：黑圆 + 引信 + 火花，明显区别于水果
-    ctx.fillStyle="#2B2B2B";
+    ctx.fillStyle="#2B2B2B";//炸弹体素材(D2 恒暗)
     ctx.beginPath();ctx.arc(0,0,f.r,0,7);ctx.fill();
     ctx.strokeStyle="rgba(255,255,255,.28)";ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(0,0,f.r-1,0,7);ctx.stroke();
     ctx.fillStyle="rgba(255,255,255,.20)";
     ctx.beginPath();ctx.arc(-f.r*0.35,-f.r*0.35,f.r*0.22,0,7);ctx.fill();
-    ctx.strokeStyle="#8A5A2B";ctx.lineWidth=2.5;
+    ctx.strokeStyle="#8A5A2B";//引信素材(D2)ctx.lineWidth=2.5;
     ctx.beginPath();ctx.moveTo(0,-f.r*0.9);
     ctx.quadraticCurveTo(f.r*0.25,-f.r*1.25,f.r*0.1,-f.r*1.4);ctx.stroke();
     var sp=0.6+0.4*Math.sin(ts/60);
-    ctx.fillStyle="#FFD44A";
+    ctx.fillStyle="#FFD44A";//火花素材(D2)
     ctx.beginPath();ctx.arc(f.r*0.1,-f.r*1.4,2.5+2*sp,0,7);ctx.fill();
   }else{//水果：彩色圆 + 果柄 + 叶 + 高光
     var t=FRUITS[f.type];
@@ -302,9 +302,9 @@ function drawFruit(f,ts){
     ctx.beginPath();ctx.ellipse(0,0,f.r*t.sx,f.r*t.sy,0,0,7);ctx.fill();
     ctx.fillStyle="rgba(255,255,255,.28)";
     ctx.beginPath();ctx.ellipse(-f.r*0.3,-f.r*0.32,f.r*0.2,f.r*0.14,0,0,7);ctx.fill();
-    ctx.strokeStyle="#7A5230";ctx.lineWidth=2;
+    ctx.strokeStyle="#7A5230";//果柄素材(D2)ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(0,-f.r*t.sy*0.95);ctx.lineTo(0,-f.r*t.sy*1.2);ctx.stroke();
-    ctx.fillStyle="#4E8F3A";
+    ctx.fillStyle="#4E8F3A";//叶片素材(D2)
     ctx.beginPath();ctx.ellipse(f.r*0.2,-f.r*t.sy*1.14,f.r*0.18,f.r*0.09,0.6,0,7);ctx.fill();
   }
   ctx.restore();
