@@ -28,6 +28,15 @@ class UserInfoViewModel @Inject constructor(
     val userInfoStatus = _userInfoStatus.asStateFlow()
     private val _userInfo = MutableStateFlow<UserInfoVo?>(null)
     val userInfo = _userInfo.asStateFlow()
+
+    /**
+     * 最近一次 getUserInfo 的失败载荷（回归 2026-11-06 A2）：
+     * userInfoStatus 会被 resetState 回 Idle，页面无法据此区分「未加载/加载中」与「失败态」；
+     * 本状态独立承载失败语义（null=无失败，非 null=携带具体文案的 Error）——无数据时驱动
+     * 错误卡（替代归零假数据卡），有数据时驱动离线提示条，直到下一次成功拉取清除。
+     */
+    private val _lastError = MutableStateFlow<RequestState.Error?>(null)
+    val lastError = _lastError.asStateFlow()
     private val _bindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
     val bindCampusState = _bindCampusState.asStateFlow()
     private val _unBindCampusState = MutableStateFlow<RequestState>(RequestState.Idle)
@@ -40,10 +49,13 @@ class UserInfoViewModel @Inject constructor(
             _userInfoStatus.value = RequestState.Loading
             try {
                 _userInfo.value = userRepository.getUserInfo()
+                _lastError.value = null
                 _userInfoStatus.value = RequestState.Success
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "UserInfoViewModel.getUserInfo: ${e.message}", e)
-                _userInfoStatus.value = RequestState.Error(e.resId, e.message)
+                val error = RequestState.Error(e.resId, e.message)
+                _lastError.value = error
+                _userInfoStatus.value = error
             }
         }
     }

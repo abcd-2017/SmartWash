@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -65,6 +67,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.DrumMark
@@ -72,6 +76,7 @@ import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.AppPillTabRow
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -149,13 +154,15 @@ fun OrderPage(
         }
     }
 
-    // 从订单详情/支付/寄件页返回时刷新列表（ON_RESUME）；首次进入跳过（VM init 已加载，避免重复请求）
+    // 从订单详情/支付/寄件页返回时刷新列表（ON_RESUME）；首次进入跳过（VM init 已加载，避免重复请求）。
+    // N-05-02：走 refreshLoadedOrders 按已加载页数重拉，不再静默丢弃第 2+ 页（原 loadAllOrders
+    // 只回 summary 首屏，返回后列表被钳制替换、滚动跳动）
     val lifecycleOwner = LocalLifecycleOwner.current
     var isFirstResume by rememberSaveable { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                if (isFirstResume) isFirstResume = false else orderViewModel.loadAllOrders()
+                if (isFirstResume) isFirstResume = false else orderViewModel.refreshLoadedOrders()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -207,10 +214,11 @@ fun OrderPage(
             } else {
                 exitTween<Float>(DURATION_MICRO_MS)
             }
-            // 下拉刷新（规范 §3.6）：全项目列表页统一 PullToRefreshBox，刷新走 loadAllOrders 整表重载
+            // 下拉刷新（规范 §3.6）：全项目列表页统一 PullToRefreshBox；
+            // N-05-02：走 refreshLoadedOrders 按已加载页数重拉（整表 loadAllOrders 会丢已翻页）
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
-                onRefresh = { orderViewModel.loadAllOrders() },
+                onRefresh = { orderViewModel.refreshLoadedOrders() },
                 modifier = Modifier.fillMaxSize()
             ) {
                 AnimatedContent(
@@ -223,6 +231,31 @@ fun OrderPage(
                 ) { contentKey ->
                     if (contentKey.skeleton) {
                         LoadingState(modifier = Modifier.fillMaxSize())
+                    } else if (loadState is RequestState.Error && orderList.isEmpty()) {
+                        // 错误态（N-05-03）：断网降级不得伪装成「暂无订单」空态——
+                        // 具体文案 + 重试；verticalScroll 让 PullToRefreshBox 的嵌套滚动可达，
+                        // 失败状态下拉同样能重新发起请求
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            EmptyState(
+                                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
+                                icon = Icons.Default.LocalLaundryService,
+                                message = (loadState as RequestState.Error).getMessage(context),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 96.dp),
+                                action = {
+                                    AppButton(
+                                        text = stringResource(R.string.order_action_retry),
+                                        onClick = { orderViewModel.loadAllOrders() },
+                                        variant = AppButtonVariant.SECONDARY,
+                                    )
+                                }
+                            )
+                        }
                     } else if (orderList.isNotEmpty()) {
                         // 按月分组构建混合列表项（D-O9：每月订单合并为一张卡，不再逐单成卡；分页逻辑保留）
                         val listItems = remember(orderList) {
@@ -347,11 +380,17 @@ fun OrderPage(
                             }
                         }
                     } else {
-                        // 空态（P09 设计稿板尾样张）：白卡容器内滚筒母题 + 主标题 + 副标题 +
-                        // 「去下单」primary 胶囊 CTA（规范 §3.6「一句引导文案 + 一个行动按钮」）
-                        OrderEmptyState(
-                            onGoOrder = { navController.navigate(LaundryRoute.Laundry()) }
-                        )
+                        // 空态（P09 设计稿板尾样张 + N-05-03）：白卡设计 + verticalScroll 包装，
+                        // 保证 PullToRefreshBox 的下拉手势在空态可达（原空态为非滚动组件拉不动）
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            OrderEmptyState(
+                                onGoOrder = { navController.navigate(LaundryRoute.Laundry()) }
+                            )
+                        }
                     }
                 }
             }

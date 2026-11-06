@@ -7,9 +7,11 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
@@ -45,6 +47,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.smartwash.R
+import com.smartwash.common.ui.components.ButtonSpinner
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppDimens
@@ -331,11 +334,16 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
     // 同步：64dp 高 / 32dp 图标盒 12dp 圆角 / 行自身零水平 padding。
     // 设计稿为两行行（标题 + 当前版本副标题）：副标题 12sp textSecondary
     // （规范 v0.4「设置页等两行卡片实测 64dp」）；版本号文案复用既有 version_short（v%s）。
+    //
+    // 检查中反馈（回归 2026-11-06 N-08-02）：手动检查需 2-4s，原版无任何视觉反馈且可连点。
+    // Checking 期间副标题原位换公共 ButtonSpinner（§7.8：reduced motion 退化为静态 270° 圆环），
+    // 同时忽略点击——VM 的 isChecking 防重入兜底，UI 层不发起无效调用。
+    val isChecking = manualCheckState is UpdateState.Checking
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .pressable(onClick = { updateViewModel.checkForUpdate(silent = false) }),
+            .pressable(onClick = { if (!isChecking) updateViewModel.checkForUpdate(silent = false) }),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconBox(
@@ -353,12 +361,27 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = AppColors.colorScheme.textPrimary
             )
-            Text(
-                text = stringResource(R.string.version_short, updateViewModel.getCurrentVersionName()),
-                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textSecondary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+            // 检查中：版本号副标题原位换 spinner（合并设计对齐两行布局与 N-08-02 检查反馈）
+            Crossfade(
+                targetState = isChecking,
+                label = "checkUpdateVersion",
+            ) { checking ->
+                if (checking) {
+                    ButtonSpinner(
+                        size = 16.dp,
+                        strokeWidth = 2.dp,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.version_short, updateViewModel.getCurrentVersionName()),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
         }
         Icon(
             Icons.Default.ChevronRight,

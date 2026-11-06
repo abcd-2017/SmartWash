@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
+import com.smartwash.feature.coupon.repository.CouponSource
+import com.smartwash.feature.coupon.ui.coupon.CouponOfflineHint
+import com.smartwash.feature.coupon.ui.coupon.CouponSectionError
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
@@ -78,6 +81,8 @@ fun AvailableCouponsTab(
     couponList: List<CouponVo>,
     claimingId: Long?,
     itemClick: (Long) -> Unit,
+    source: CouponSource = CouponSource.NETWORK,
+    onRetry: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -85,21 +90,35 @@ fun AvailableCouponsTab(
         contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
     ) {
-        if (couponList.isEmpty()) {
-            item {
-                EmptyState(
-                    icon = Icons.Default.Info,
-                    message = stringResource(R.string.no_coupons_available)
-                )
+        when {
+            // 失败且无缓存可降级：错误小态 + 重试（与「暂无」空态严格区分，A5）
+            source == CouponSource.FAILED && couponList.isEmpty() -> {
+                item(key = "available_section_error") {
+                    CouponSectionError(onRetry = onRetry)
+                }
             }
-        } else {
-            items(couponList, key = { it.couponId }) { coupon ->
-                CouponCard(
-                    coupon = coupon,
-                    isAvailable = true,
-                    isClaiming = coupon.couponId == claimingId,
-                    onClaimClick = { itemClick(coupon.couponId) }
-                )
+            couponList.isEmpty() -> {
+                item {
+                    EmptyState(
+                        icon = Icons.Default.Info,
+                        message = stringResource(R.string.no_coupons_available)
+                    )
+                }
+            }
+            else -> {
+                if (source == CouponSource.CACHE) {
+                    item(key = "available_offline_hint") {
+                        CouponOfflineHint()
+                    }
+                }
+                items(couponList, key = { it.couponId }) { coupon ->
+                    CouponCard(
+                        coupon = coupon,
+                        isAvailable = true,
+                        isClaiming = coupon.couponId == claimingId,
+                        onClaimClick = { itemClick(coupon.couponId) }
+                    )
+                }
             }
         }
     }

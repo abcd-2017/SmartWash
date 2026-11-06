@@ -43,6 +43,7 @@
     <string name="toolbox_error_invalid_target">目标链接须以 http:// 或 https:// 开头</string>
     <string name="toolbox_error_invalid_custom_code">短码须为 4-16 位字母数字或 -_</string>
     <string name="toolbox_error_custom_date_required">请先选择过期日期</string>
+    <string name="toolbox_error_expiry_in_past">有效期不能早于当前时间</string>
     <string name="toolbox_error_submit">提交失败，请重试</string>
 
     <!-- ==================== 详情页 ==================== -->
@@ -87,6 +88,8 @@
     <string name="toolbox_delivery_duration_120m">2 小时</string>
     <string name="toolbox_delivery_password_label">进入密码（可选）</string>
     <string name="toolbox_delivery_password_hint">4-64 位</string>
+    <string name="toolbox_delivery_password_show">显示密码</string>
+    <string name="toolbox_delivery_password_hide">隐藏密码</string>
     <string name="toolbox_delivery_password_helper">电脑端进入时需输入，留空则无需密码</string>
     <string name="toolbox_delivery_privacy_notice">内容经服务器中转，服务器可见明文；条目取走即焚毁，会话到期自动回收</string>
     <string name="toolbox_delivery_submit_create">创建投递</string>

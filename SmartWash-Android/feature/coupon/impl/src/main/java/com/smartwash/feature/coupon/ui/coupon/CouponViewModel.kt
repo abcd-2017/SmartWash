@@ -7,6 +7,7 @@ import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
+import com.smartwash.feature.coupon.repository.CouponPageData
 import com.smartwash.feature.coupon.repository.CouponRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,15 +35,20 @@ class CouponViewModel @Inject constructor(
     private val _receiveCouponState = MutableStateFlow<RequestState>(RequestState.Idle)
     val receiveCouponState = _receiveCouponState.asStateFlow()
 
+    /** 三组数据的降级来源标记（A5）：UI 据此区分正常/离线缓存/失败小态，不再把降级伪装成空态 */
+    private val _loadSources = MutableStateFlow<CouponPageData?>(null)
+    val loadSources = _loadSources.asStateFlow()
+
     fun loadAllCoupons() {
         viewModelScope.launch {
             _loadState.value = RequestState.Loading
             try {
                 // 经 Repository 访问数据（含缓存降级链路），VM 不直接持有 API
                 val data = couponRepository.getAllCoupons()
-                _availableCoupons.value = data.available
-                _claimedCoupons.value = data.claimed
-                _historicalCoupons.value = data.historical
+                _availableCoupons.value = data.available.items
+                _claimedCoupons.value = data.claimed.items
+                _historicalCoupons.value = data.historical.items
+                _loadSources.value = data
                 _loadState.value = RequestState.Success
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "CouponViewModel.loadAllCoupons: ${e.message}", e)

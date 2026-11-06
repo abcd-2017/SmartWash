@@ -20,6 +20,20 @@ private const val MAX_PEEK_BYTES = 1024L * 1024L
 /** Gson 实例线程安全，全局复用单例 */
 private val GSON = Gson()
 
+/**
+ * 业务错误（code≠200）的用户可见文案取值策略：
+ *
+ * 后端业务失败时信封 message 恒为「失败」，具体语义（如「系统异常，请稍后再试」）
+ * 放在 data 字符串里——仅用 message 会把所有业务失败展示成裸「失败」。
+ * 取值顺序 = 有具体语义的 data 字符串优先、message 兜底；data 只在**非空字符串**时
+ * 采用（业务失败时 data 也可能是对象/空串/布尔，直接 toString 会产出「{...}」「null」
+ * 这类垃圾文案，必须丢弃）。
+ *
+ * internal 供 JVM 单测锚点（Regression 2026-11-06 A1）。
+ */
+internal fun resolveBusinessErrorMessage(message: String?, data: Any?): String =
+    (data as? String)?.takeIf { it.isNotBlank() } ?: message.orEmpty()
+
 class ResponseInterceptor @Inject constructor(
     private val tokenProvider: TokenProvider,
     private val sessionEventNotifier: SessionEventNotifier,
@@ -56,7 +70,10 @@ class ResponseInterceptor @Inject constructor(
                         }
                         HttpStatusCode.Fail.code -> {
                             AppLogger.warn(TAG, "Response: ${request.method} $url — 业务错误: ${responseData.message}")
-                            throw NetworkException(responseData.message, R.string.error_network_fail)
+                            throw NetworkException(
+                                resolveBusinessErrorMessage(responseData.message, responseData.data),
+                                R.string.error_network_fail,
+                            )
                         }
                     }
                 }
