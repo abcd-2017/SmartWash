@@ -21,11 +21,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -211,10 +214,16 @@ fun RegisterPage(
             .background(
                 Brush.verticalGradient(0f to GradientTop, 0.5f to AuthGradientMid, 1f to GradientBottom)
             )
+            // IME 遮挡 CTA 修复：键盘弹出时内容区整体上收（imePadding 只在键盘弹出时生效，
+            // 收起后不产生多余留白；置于 background 之后使品牌渐变保持满屏）。注册页字段
+            // 比登录页多，内容高超过键盘弹出后的可用高度，故内层 Column 补 verticalScroll，
+            // 使 CTA 可滚动到视口内、不再被键盘压住（与 SubscriptionEditPage 同模式）
+            .imePadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -334,6 +343,9 @@ fun RegisterPage(
                     phone = phone,
                     isPhoneError = isPhoneError,
                     contentColor = Color.White,
+                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                    // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
+                    label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
                 ) {
                     if (it.length <= 11) phone = it
                     // 只在输入完成（11位）或清空时验证
@@ -360,6 +372,8 @@ fun RegisterPage(
                     isVerificationCodeError = isVerificationCodeError,
                     countDown = countDown,
                     captchaState = captchaState,
+                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                    label = stringResource(R.string.verification_code_hint),
                     focusRequester = verificationCodeFocusRequester,
                     onValueChange = { newValue ->
                         // 只允许输入数字，过滤非数字字符
@@ -407,8 +421,10 @@ fun RegisterPage(
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
                     contentColor = Color.White,
-                    // 设计稿注册画板密码占位为「设置密码」（登录为「密码」）
+                    // 设计稿注册画板密码字段为「设置密码」（登录为「密码」）
+                    // [P02] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
                     hint = stringResource(R.string.password_hint_register),
+                    label = stringResource(R.string.password_hint_register),
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）
@@ -469,11 +485,11 @@ fun RegisterPage(
 
 @Composable
 private fun GlassDivider() {
-    // 注册画板「分隔线1/2」：卡内左右缩进 24、1dp 高、白 12%
+    // [P01/P02] 2026-11-05 画板复裁：分隔线距卡边 16px（卡 padding 水平 16 自带缩进，
+    // 不再额外内缩），1dp 高、白 12%
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
             .height(1.dp)
             .background(Color.White.copy(alpha = 0.12f))
     )
@@ -485,13 +501,24 @@ private fun VerificationCodeRow(
     isVerificationCodeError: Boolean,
     countDown: Int,
     captchaState: RequestState,
+    // [P02] 2026-11-05 画板复裁：输入行上方独立字段标签行（白 12sp），同 PhoneNumberInput/PasswordInput
+    label: String? = null,
     focusRequester: FocusRequester = FocusRequester(),
     onValueChange: (String) -> Unit,
     onSendCaptcha: () -> Unit,
     contentColor: Color = Color.White
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 2026-11-01 用户拍板还原：设计稿 .gi 只有 placeholder（占位即字段名「验证码」），无独立可见 label
+        // 字段标签行（设计稿注册画板：label 白 12sp 小字位于输入行上方，间距小）
+        if (label != null) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = contentColor,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
         // 紧凑输入行：内容高 20dp（设计稿输入行=图标 20px，登录/注册画板 412→432 同款，D-R4）
         // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
@@ -525,7 +552,8 @@ private fun VerificationCodeRow(
                 cursorBrush = SolidColor(if (isVerificationCodeError) ErrorLight else contentColor),
                 decorationBox = { innerTextField ->
                     Box {
-                        if (verificationCode.isEmpty()) {
+                        // 有 label 时隐藏占位符（占位=字段名，与 label 文案重复）
+                        if (verificationCode.isEmpty() && label == null) {
                             // §3.7：占位符字号与正文一致
                             Text(
                                 text = stringResource(R.string.verification_code_hint),

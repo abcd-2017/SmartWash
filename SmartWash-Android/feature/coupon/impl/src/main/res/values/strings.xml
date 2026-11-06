@@ -17,7 +17,6 @@
     <string name="no_coupons_available">暂无优惠券</string>
     <string name="no_claimed_coupons">暂无优惠券</string>
     <string name="no_historical_coupons">暂无使用优惠券</string>
-    <string name="discount_amount_format">%s元</string>
     <string name="coupon_min_amount_format">满%s元可用</string>
     <string name="no_threshold">无门槛</string>
     <string name="valid_until">有效期至：%s</string>

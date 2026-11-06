@@ -1,6 +1,7 @@
 package com.smartwash.common.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -58,11 +60,20 @@ fun AppPillTabRow(
             val selected = selectedIndex == index
             // 设计稿「优惠券」画板实测：选中 = primary 实底 + 白字，未选中 = surface 白底
             // + 1px outline 描边 + textSecondary（与订单列表筛选胶囊同语言）
+            // P09 深色板裁定：选中胶囊深色 = primary 深绿 #2D9B6A 底 + 白字（规范 §6.5
+            // 「primary 深色 #2D9B6A 选中底/描边不变」；DarkPrimary #5BC894 是主 CTA 按钮深色底，
+            // 与选中态需保持层次差）。仅本组件内固定取值，不改全局 DarkPrimary 令牌（消费点过多）
+            val isDark = isSystemInDarkTheme()
             val containerColor = selectedColor(
-                if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.surface
+                when {
+                    !selected -> AppColors.colorScheme.surface
+                    isDark -> Color(0xFF2D9B6A)
+                    else -> AppColors.colorScheme.primary
+                }
             )
             val labelColor = selectedColor(
-                if (selected) MaterialTheme.colorScheme.onPrimary
+                if (selected && isDark) Color.White
+                else if (selected) MaterialTheme.colorScheme.onPrimary
                 else AppColors.colorScheme.textSecondary
             )
             Box(

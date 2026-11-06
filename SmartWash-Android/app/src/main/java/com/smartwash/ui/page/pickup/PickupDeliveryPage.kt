@@ -323,8 +323,9 @@ fun PickupDeliveryPage(
                                 )
                                 Text(
                                     text = pickupCode,
+                                    // 强调绿随画板取 primary（P10 条目裁定，浅 #2D9B6A / 深提亮 #5BC894）
                                     style = AppTextStyles.DataLarge,
-                                    color = AppColors.colorScheme.primaryDark
+                                    color = AppColors.colorScheme.primary
                                 )
                             }
                         }
@@ -336,17 +337,26 @@ fun PickupDeliveryPage(
                         // 二维码卡（寄件码）与柜信息卡恢复设计意图的可见排布
                         Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
 
-                        // 寄存柜信息（板实测仅 3 行：学校名称/地址/寄存柜柜号；行距节奏 34+14=48，
-                        // 与订单详情页同款；寄件码已在上方大字展示，不再重复成行）
+                        // 寄存柜信息（板实测仅 3 行：学校名称/地址/寄存柜柜号；行距节奏 48dp
+                        // （InfoRow 行高 48 + 行间 0），与订单详情页同款；寄件码已在上方大字展示，不再重复成行）
                         InfoSection(title = stringResource(R.string.locker_info_section), icon = Icons.Rounded.School) {
-                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                                InfoRow(stringResource(R.string.school_name_label), orderInfo?.schoolsVo?.schoolName ?: "")
-                                InfoRow(stringResource(R.string.address), orderInfo?.schoolsVo?.location ?: "")
+                            Column {
+                                InfoRow(
+                                    stringResource(R.string.school_name_label),
+                                    orderInfo?.schoolsVo?.schoolName ?: "",
+                                    rowHeight = 48.dp
+                                )
+                                InfoRow(
+                                    stringResource(R.string.address),
+                                    orderInfo?.schoolsVo?.location ?: "",
+                                    rowHeight = 48.dp
+                                )
                                 // 柜号是编号类数字，开 tnum（规范 §2.2）
                                 InfoRow(
                                     stringResource(R.string.locker_number_label),
                                     "$lockerNumber",
-                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                                    rowHeight = 48.dp
                                 )
                             }
                         }
@@ -390,7 +400,7 @@ fun PickupDeliveryPage(
             }
 
             // 底部操作栏（模板 E 变体）— 板实测：无 surface 底/顶线，双 48dp 胶囊按钮落在页面底上，
-            // 间距 12、底部留白 16；次按钮透明底 + 1dp outline 描边 + primaryDark 字，
+            // 间距 12、底部留白 16；次按钮透明底 + 1dp outline 描边 + 文字绿字，
             // 主按钮纯色 primary + onPrimary 双主题字，文字 font.title 18/600
             PickupDeliveryActionBar(
                 primaryText = if (type == PickupDeliveryType.PICKUP.type) stringResource(R.string.confirm_picked_up) else stringResource(R.string.confirm_delivered),
@@ -420,7 +430,7 @@ fun PickupDeliveryPage(
 /**
  * 底部操作栏（模板 E 变体）— 寄件板实测：无 surface 底/顶线，按钮直接落在页面底上；
  * 高 48 / radiusFull 胶囊 / 按钮间距 12 / 底部留白 16 / 文字 font.title 18/600（板实测字距 0）；
- * 主按钮纯色 primary + onPrimary 双主题字；次按钮透明底 + 1dp outline 描边 + primaryDark 字
+ * 主按钮纯色 primary + onPrimary 双主题字；次按钮透明底 + 1dp outline 描边 + 文字绿字（2026-11-06 评审 R17 改 textGreen）
  */
 @Composable
 private fun PickupDeliveryActionBar(
@@ -436,19 +446,21 @@ private fun PickupDeliveryActionBar(
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceMd),
         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
     ) {
-        // 次按钮 — 联系客服：透明底 + 1dp outline 描边（板实测无填充）
+        // 次按钮（P10 裁定，与订单详情/取件页同改法）— 联系客服：surface 实底（深色板深灰底）
+        // + 1dp outline 描边 + 中性字（textPrimary 双主题成对），48dp 胶囊
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
                 .pressable(onClick = onContactServiceClick, debounce = false)
+                .background(AppColors.colorScheme.surface, RoundedCornerShape(AppDimens.radiusFull))
                 .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.radiusFull)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = stringResource(R.string.contact_service),
                 style = MaterialTheme.typography.titleMedium,
-                color = AppColors.colorScheme.primaryDark
+                color = AppColors.colorScheme.textPrimary
             )
         }
         // 主按钮 — 纯色 primary 胶囊，onPrimary 双主题成对；请求在途转菊花并不再响应点击

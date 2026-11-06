@@ -237,7 +237,7 @@ fun LaundryPage(
                                 text = stringResource(R.string.change),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primaryDark,
+                                color = AppColors.colorScheme.textGreen,
                                 modifier = Modifier
                                     .pressable(onClick = { showChangeSchoolDialog = true })
                                     .padding(horizontal = 12.dp, vertical = 12.dp)
@@ -409,7 +409,7 @@ private fun LaundryTypeItem(
             Row(modifier = Modifier, horizontalArrangement = Arrangement.End) {
                 Text(
                     text = price,
-                    // 价格色对齐服务页画板实测：green.700（浅 #1E8C5C / 深 #5BC894）
+                    // 价格色 primaryDark（18sp 金额档，≥18sp 绿字豁免，2026-11-06 评审 R17 保留）
                     style = AppTextStyles.AmountMedium,
                     color = AppColors.colorScheme.primaryDark,
                     maxLines = 1

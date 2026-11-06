@@ -92,7 +92,7 @@ fun UpdateAvailableDialog(
                     ),
                     // 版本号 + 文件大小含数字 → tnum（§2.2 硬规则）
                     style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -398,7 +398,7 @@ fun DownloadCompleteDialog(
                     )
                     DialogAction(
                         text = stringResource(R.string.install_now),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onInstallNow,
                         modifier = Modifier.weight(1f),
                     )
@@ -467,7 +467,7 @@ fun DownloadErrorDialog(
                     )
                     DialogAction(
                         text = stringResource(R.string.retry),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onRetry,
                         modifier = Modifier.weight(1f),
                     )

@@ -406,7 +406,8 @@ fun UserInfoPage(
                                 Text(
                                     text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
                                     style = AppTextStyles.DataLarge,
-                                    color = AppColors.colorScheme.primaryDark,
+                                    // 设计稿余额大字取品牌绿 primary（深色模式 primary 即提亮绿，§6.5）
+                                    color = AppColors.colorScheme.primary,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }

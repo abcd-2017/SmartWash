@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -186,21 +187,29 @@ fun AiWorkPage(
                             color = AppColors.colorScheme.textSecondary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        // 设计稿「开始提问」：radiusButton 14（画板实测非胶囊）、高 48、
-                        // primaryContainer 底 + onPrimaryContainer 字（12/500）
+                        // 设计稿「开始提问」：radiusButton 14（画板实测非胶囊）
+                        // [P08] 2026-11-05 画板复裁：按钮 84×52（原高 48 差 4）——显式 52dp 高、内容居中
                         Surface(
                             shape = RoundedCornerShape(AppDimens.buttonRadius),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.pressable(onClick = { focusRequester.requestFocus() }, debounce = false)
+                            modifier = Modifier
+                                .height(52.dp)
+                                .pressable(onClick = { focusRequester.requestFocus() }, debounce = false)
                         ) {
-                            Text(
-                                text = stringResource(R.string.ai_start_asking),
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 18.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.ai_start_asking),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                 }

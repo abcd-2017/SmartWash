@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -157,7 +158,8 @@ fun PaymentPage(
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = AppDimens.pagePadding),
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
+                        // P13 裁定：画板区块间距 24（应付金额卡→「支付方式」标题），原 32 偏松
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
                     ) {
                         // 应付金额卡片（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline
                         // 描边 + level1(1dp) 阴影 ≈ CSS 0 2px 12px rgba(20,40,30,.05)；内边距 20）
@@ -235,9 +237,10 @@ fun PaymentPage(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     // §3.2 公共 IconBox（36dp 容器 / 12dp 圆角 / 20dp 图标）；
-                                    // 选中卡上的容器底色：浅色=白 surface、深色=surfaceVariant（画板实测）
+                                    // 选中卡上的容器底色：浅色=白 surface、深色=surfaceVariant（画板实测）；
+                                    // P13 裁定：行首标签图标随画板换线性变体 local_offer（Icons.Outlined，内置）
                                     IconBox(
-                                        icon = Icons.Default.LocalOffer,
+                                        icon = Icons.Outlined.LocalOffer,
                                         size = 36.dp,
                                         iconSize = 20.dp,
                                         containerColor = if (selectedPaymentMethod == "balance") {
@@ -279,8 +282,8 @@ fun PaymentPage(
                                 }
                             }
 
-                            // 卡间距 16dp（规范 §2.3）
-                            Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                            // P13 裁定：余额支付卡→优惠券卡画板间距 12（原 16 偏松）
+                            Spacer(modifier = Modifier.height(AppDimens.spaceSm))
 
                             // 优惠券卡：surface 白底 + 1px outline 描边 + level1(1dp) 阴影（§3.1）
                             Surface(
@@ -440,7 +443,7 @@ fun PaymentPage(
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.primary)
+                            Text(stringResource(R.string.go_claim), color = AppColors.colorScheme.textGreen)
                             Spacer(Modifier.width(4.dp))
                             Icon(
                                 Icons.Default.ChevronRight,

@@ -62,10 +62,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.smartwash.feature.user.impl.R
@@ -327,11 +325,12 @@ fun UpdateUserInfoPage(
                         shape = RoundedCornerShape(AppDimens.inputRadius),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppColors.colorScheme.primary,
-                            unfocusedBorderColor = AppColors.colorScheme.outline,
+                            // 设计稿输入框为无边框浅灰填充：非聚焦/禁用态描边透明（保留聚焦 primary 与 error 描边）
+                            unfocusedBorderColor = Color.Transparent,
                             errorBorderColor = AppColors.colorScheme.error,
                             focusedContainerColor = AppColors.colorScheme.surfaceVariant,
                             unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                            disabledBorderColor = AppColors.colorScheme.outline,
+                            disabledBorderColor = Color.Transparent,
                             disabledContainerColor = AppColors.colorScheme.surfaceVariant
                         )
                     )
@@ -440,11 +439,12 @@ fun SearchSchoolInput(
             interactionSource = interactionSource,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AppColors.colorScheme.primary,
-                unfocusedBorderColor = AppColors.colorScheme.outline,
+                // 设计稿输入框为无边框浅灰填充：非聚焦/禁用态描边透明（保留聚焦 primary 与 error 描边）
+                unfocusedBorderColor = Color.Transparent,
                 errorBorderColor = AppColors.colorScheme.error,
                 focusedContainerColor = AppColors.colorScheme.surfaceVariant,
                 unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
-                disabledBorderColor = AppColors.colorScheme.outline,
+                disabledBorderColor = Color.Transparent,
                 disabledContainerColor = AppColors.colorScheme.surfaceVariant
             )
         )
@@ -485,7 +485,7 @@ fun SchoolItem(
                     if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                 )
                 val rowTextColor = selectedColor(
-                    if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary
+                    if (isSelected) AppColors.colorScheme.textGreenOnTint else AppColors.colorScheme.textPrimary
                 )
                 Row(
                     modifier = Modifier
@@ -496,10 +496,11 @@ fun SchoolItem(
                         .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 字重固定为 Normal：选中只靠背景+文字色区分，避免字重跳变导致行内重排
+                    // 列表行主文案按规范 §3.4 取 14sp/500（titleSmall 档，原 12sp 低于规范）；
+                    // 字重固定，选中只靠背景+文字色区分，避免字重跳变导致行内重排
                     Text(
                         text = school.schoolName,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.titleSmall,
                         color = rowTextColor,
                         modifier = Modifier.weight(1f)
                     )

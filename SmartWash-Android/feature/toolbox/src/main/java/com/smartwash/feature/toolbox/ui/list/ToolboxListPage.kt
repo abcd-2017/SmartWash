@@ -109,7 +109,7 @@ fun ToolboxListPage(
                 title = stringResource(R.string.toolbox_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    // 文字按钮 — 画板实测：font.title 18/24/600、色 primaryDark（浅 #1E8C5C/深 #5BC894），
+                    // 文字按钮 — font.title 18/24/600、色 primaryDark（≥18sp 绿字豁免，2026-11-06 评审 R17 保留），
                     // 热区 48 高（画板「热区-新建」56×48）
                     Box(
                         modifier = Modifier
@@ -316,7 +316,9 @@ private fun ShortCodeCard(
                             containerColor = AppColors.colorScheme.surfaceVariant,
                             contentColor = AppColors.colorScheme.textSecondary,
                         )
-                        // 画板实测：公开 = primaryContainer/onPrimaryContainer、私密 = warningContainer/warning
+                        // 画板实测：公开 = primaryContainer/onPrimaryContainer；
+                        // 私密 = warningContainer 底 + 深棕字（画板 #8F5B0C 为 v0.4 已合并的旧
+                        // ongoingInk，端上按条目备选档取其配对字色 onWarningContainer，浅 #92400E/深 #ECB36A）
                         ToolboxTagChip(
                             text = stringResource(
                                 if (isPublic) R.string.toolbox_visibility_public_value
@@ -330,7 +332,7 @@ private fun ShortCodeCard(
                             contentColor = if (isPublic) {
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             } else {
-                                AppColors.colorScheme.warning
+                                AppColors.colorScheme.onWarningContainer
                             },
                         )
                     }
@@ -407,8 +409,8 @@ private fun CopyPillButton(onClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.toolbox_action_copy),
                 style = MaterialTheme.typography.labelSmall,
-                // 画板实测 #1E8C5C = primaryDark（非 primary #2D9B6A）
-                color = AppColors.colorScheme.primaryDark,
+                // 文字绿 textGreen（12sp，2026-11-06 评审 R18 由 primaryDark 改）
+                color = AppColors.colorScheme.textGreen,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             )
         }

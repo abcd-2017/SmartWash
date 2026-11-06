@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -155,13 +156,12 @@ fun DivReadingPage(
                                 // 「总结与行动」卡（画板三卡同款：surface 底 + 12% 金发丝线）
                                 ActionCard(reading.action)
 
-                                // 主行动（画板 .actions .btn.gold：flex:1 / 高 44 / 字号 13 / 字距 4；
-                                // 画板另有「分 享」次位按钮，端上暂无分享实现，故只落「继续追问」）
+                                // 主行动（2026-11-05 解读画板：「继 续 追 问」320×52 r14，宣纸实底金 #8F7233 +
+                                // 墨字 / 玄墨 14% 金底金字 —— soft 主题感知口径；取 DivGoldButton 默认
+                                // （52/r14/15sp）不再单侧覆写。画板另有「分 享」次位按钮，端上暂无分享实现）
                                 DivGoldButton(
                                     text = stringResource(R.string.div_reading_followup),
                                     soft = true,
-                                    height = 44.dp,
-                                    fontSize = 13.sp,
                                     modifier = Modifier
                                         .padding(top = 20.dp)
                                         .fillMaxWidth(),
@@ -180,31 +180,30 @@ fun DivReadingPage(
     }
 }
 
-/** 页头右侧卦印文字（画板「革」口径）：卦名首字，非六爻取法类首字 */
+/** 页头右侧卦印文字（2026-11-05 卦盘/解读画板口径：取本卦名末字，泽火革→「革」、水雷屯→「屯」；与卦盘 [divSealText] 同规则） */
 @Composable
 private fun readingSealText(record: com.smartwash.feature.divination.database.DivRecordEntity): String {
     val method = DivMethod.fromId(record.method)
-    val chartName = remember(record.chartJson) {
+    val hexagramName = remember(record.chartJson) {
         com.smartwash.feature.divination.data.DivChartCodec.decode(record.chartJson)?.let { bundle ->
             when {
                 bundle.liuyao != null -> bundle.liuyao.name
                 bundle.meihua != null -> bundle.meihua.benName
-                bundle.qimen != null -> "奇门遁甲"
-                bundle.liuren != null -> "大六壬"
                 else -> null
             }
         }
-    } ?: methodLabel(method)
+    }
     return when (method) {
-        DivMethod.LIU_YAO -> chartName.take(1)
-        DivMethod.MEI_HUA -> "梅"
+        DivMethod.LIU_YAO -> hexagramName?.takeLast(1) ?: "六"
+        DivMethod.MEI_HUA -> hexagramName?.takeLast(1) ?: "梅"
         DivMethod.QI_MEN -> "奇"
         DivMethod.LIU_REN -> "壬"
     }
 }
 
-/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8）；
- *  首屏逐项淡入（无位移），reduced motion 退化为纯淡入 */
+/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8；
+ *  卡高画板 152/152/120 —— 设计文件两卡正文同两行而卡高不一致，按条目定档 minHeight 120，
+ *  内容不足时留白沉底、超出自适应）；首屏逐项淡入（无位移），reduced motion 退化为纯淡入 */
 @Composable
 private fun ReadingSectionCard(
     section: com.smartwash.feature.divination.data.DivReadingSection,
@@ -226,7 +225,8 @@ private fun ReadingSectionCard(
     DivCard(
         Modifier
             .padding(vertical = 6.dp)
-            .graphicsLayer { this.alpha = alpha.value },
+            .graphicsLayer { this.alpha = alpha.value }
+            .defaultMinSize(minHeight = 120.dp),
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
             Text(
@@ -266,11 +266,4 @@ private fun ActionCard(action: String) {
             )
         }
     }
-}
-
-private fun methodLabel(method: DivMethod): String = when (method) {
-    DivMethod.LIU_YAO -> "六爻"
-    DivMethod.MEI_HUA -> "梅花"
-    DivMethod.QI_MEN -> "奇门"
-    DivMethod.LIU_REN -> "六壬"
 }

@@ -84,7 +84,6 @@ import com.smartwash.common.ui.theme.DivBgBottomDark
 import com.smartwash.common.ui.theme.DivBgMidDark
 import com.smartwash.common.ui.theme.DivBgTopDark
 import com.smartwash.common.ui.theme.DivColors
-import com.smartwash.common.ui.theme.DivGoldDark
 import com.smartwash.common.ui.theme.DivTextPrimaryDark
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
@@ -359,10 +358,12 @@ fun WorkbenchPage(
 
                 item(key = "wb_divination") {
                     // 观象台特色卡 — 玄墨渐变窗（端上固定品牌位，不随服务端下发）
+                    // 顶距：无「最近使用」时取 12dp（设计稿 P07 搜索框底→观象台卡顶 = 12，
+                    // 2026-11-06 复验原 0 导致卡片与搜索框紧贴）；有「最近使用」时仍按区块 32
                     DivinationEntryCard(
                         modifier = Modifier
                             .padding(horizontal = AppDimens.pagePadding)
-                            .padding(top = if (recentTools.isEmpty()) 0.dp else AppDimens.sectionSpacing),
+                            .padding(top = if (recentTools.isEmpty()) AppDimens.spaceSm else AppDimens.sectionSpacing),
                         onClick = { navController.navigate(DivRoute.Home) }
                     )
                 }
@@ -972,8 +973,9 @@ private fun DivinationEntryCard(
                 ),
                 shape = shape
             )
-            // 卡描边两板均为鎏金 #C9A961 32%（不随清氧主题换色，玄墨皮肤固定金线）
-            .border(1.dp, DivGoldDark.copy(alpha = 0.32f), shape)
+            // [P07] 2026-11-05 画板复裁：卡描边 1px 实线为主题 outline（浅 #E3E7E2 / 深 #2C312D，
+            // 不透明、随主题换色）；原固定鎏金 32% 与当前画板不符
+            .border(1.dp, AppColors.colorScheme.outline, shape)
             .padding(AppDimens.cardPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)

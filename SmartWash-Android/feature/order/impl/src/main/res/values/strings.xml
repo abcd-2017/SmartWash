@@ -14,6 +14,10 @@
     <string name="order_time_yesterday_prefix">昨天 %s</string>
     <string name="order_time_date">%1$d月%2$d日</string>
     <string name="no_orders">暂无订单</string>
+    <!-- 订单空态（P09 设计稿板尾样张：主标题 + 副标题 + 「去下单」CTA） -->
+    <string name="order_empty_title">还没有订单</string>
+    <string name="order_empty_subtitle">去下一单，衣物焕然一新</string>
+    <string name="go_order">去下单</string>
     <string name="confirm_cancel_order">确定要取消订单？</string>
     <string name="cancel_order">取消订单</string>
     <string name="go_pay">去支付</string>

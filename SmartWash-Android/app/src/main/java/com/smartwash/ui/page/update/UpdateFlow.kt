@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.SystemUpdate
@@ -326,8 +328,9 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
     // 行样式对齐 SettingPage 私有 SettingRow 口径（2026-11-01 缺陷 5a）：此前用 common:ui 的
     // SettingRow（56dp 高 + 自带 20dp 水平 padding），放进设置页「自带 20dp 内边距」的分组卡后
     // 内容缩进 40dp、行高 56 与相邻 64 行错位。此处改为同口径行——与 SettingPage 私有行保持
-    // 同步：64dp 高 / 32dp 图标盒 12dp 圆角 / bodyMedium 标题 / 行自身零水平 padding；
-    // 版本号收进行尾（对齐「关于」行尾注形态，双行副标题与 64dp 行高压不下）。
+    // 同步：64dp 高 / 32dp 图标盒 12dp 圆角 / 行自身零水平 padding。
+    // 设计稿为两行行（标题 + 当前版本副标题）：副标题 12sp textSecondary
+    // （规范 v0.4「设置页等两行卡片实测 64dp」）；版本号文案复用既有 version_short（v%s）。
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -344,18 +347,19 @@ internal fun CheckUpdateSettingRow(updateViewModel: UpdateViewModel) {
             iconTint = AppColors.colorScheme.iconForegroundTeal
         )
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = stringResource(R.string.check_update),
-            style = MaterialTheme.typography.bodyMedium,
-            color = AppColors.colorScheme.textPrimary,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = stringResource(R.string.version_short, updateViewModel.getCurrentVersionName()),
-            style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-            color = AppColors.colorScheme.textSecondary
-        )
-        Spacer(modifier = Modifier.width(4.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.check_update),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.colorScheme.textPrimary
+            )
+            Text(
+                text = stringResource(R.string.version_short, updateViewModel.getCurrentVersionName()),
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                color = AppColors.colorScheme.textSecondary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
         Icon(
             Icons.Default.ChevronRight,
             contentDescription = null,

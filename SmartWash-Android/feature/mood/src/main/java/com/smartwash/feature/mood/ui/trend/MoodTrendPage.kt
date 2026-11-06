@@ -116,7 +116,8 @@ private fun MoodTrendContent(
                         text = stringResource(R.string.mood_trend_empty_action),
                         onClick = onGoRecord,
                         containerColor = AppColors.colorScheme.primaryLight,
-                        contentColor = AppColors.colorScheme.primary,
+                        // 12sp 文字压在 primaryLight tinted 底 → textGreenOnTint（2026-11-06 评审 R17/R18）
+                        contentColor = AppColors.colorScheme.textGreenOnTint,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),

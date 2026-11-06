@@ -239,7 +239,9 @@
                 <div class="upload-empty-tip">png / jpeg / webp，≤5MB；留空则端上用本地兜底封面</div>
               </div>
             </el-upload>
-            <div class="form-tip">目录自动填表时若含 cover.png 会自动识别为封面</div>
+            <div class="form-tip">
+              目录自动填表时若含封面图（cover.png / 游戏名.png）会自动识别为封面
+            </div>
           </el-form-item>
 
           <el-divider content-position="left">基本信息</el-divider>
@@ -482,7 +484,9 @@
               <div class="upload-empty-tip">png / jpeg / webp，≤5MB；留空则端上用本地兜底封面</div>
             </div>
           </el-upload>
-          <div class="form-tip">目录自动填表时若含 cover.png 会自动识别为封面</div>
+          <div class="form-tip">
+            目录自动填表时若含封面图（cover.png / 游戏名.png）会自动识别为封面
+          </div>
         </el-form-item>
 
         <el-form-item label="标题" prop="title">
@@ -855,8 +859,8 @@ const parseGameReadme = (text, dirName) => {
   };
 };
 
-// 选择目录：仅接受根目录 index.html（+ 可选 README.md），忽略隐藏文件；
-// index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空）
+// 选择目录：仅接受根目录 index.html（+ 可选 README.md / 封面图），忽略隐藏文件；
+// index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空），封面图自动识别
 const handleDirImport = (event) => {
   const files = Array.from(event.target.files || []);
   event.target.value = ''; // 允许重复选择同一目录
@@ -865,18 +869,22 @@ const handleDirImport = (event) => {
   const relSegs = (file) => (file.webkitRelativePath || file.name).split('/');
   const dirName = relSegs(files[0])[0] || 'game';
   const visible = files.filter((file) => relSegs(file).every((seg) => !seg.startsWith('.')));
-  // 结构：根目录只允许 index.html（必须）+ README.md（可选）；子目录或额外文件一律拒绝（多文件请打包 zip）
+  // 结构：根目录只允许 index.html（必须）+ README.md（可选）+ 封面图（可选，png/jpg/jpeg/webp）；子目录或额外文件一律拒绝（多文件请打包 zip）
   const rootFiles = visible.filter((file) => relSegs(file).length === 2);
-  const COVER_NAMES = ['cover.png', 'cover.jpg', 'cover.jpeg', 'cover.webp'];
+  // 封面命名兼容 cover.png 与 games-library 规范 <game-key>.png（限图片扩展名，避免把任意文件当封面）
+  const COVER_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+  const isCoverFile = (file) => COVER_EXTS.some((ext) => file.name.toLowerCase().endsWith(ext));
   const hasExtra =
     visible.some((file) => relSegs(file).length > 2) ||
     rootFiles.some((file) => {
       const name = file.name.toLowerCase();
-      return !['index.html', 'readme.md', ...COVER_NAMES].includes(name);
+      return !['index.html', 'readme.md'].includes(name) && !isCoverFile(file);
     });
   if (hasExtra) {
     logger.debug('游戏目录导入预检未通过：目录含不被支持的文件');
-    ElMessage.error('目录仅支持「index.html（+ 可选 README.md / cover.png）」，含其他文件请打包 .zip 手动上传');
+    ElMessage.error(
+      '目录仅支持「index.html（+ 可选 README.md / 封面图）」，含其他文件请打包 .zip 手动上传'
+    );
     return;
   }
   const htmlFile = rootFiles.find((file) => file.name === 'index.html');
@@ -896,8 +904,8 @@ const handleDirImport = (event) => {
   selectedFile.value = htmlFile;
   uploadFormRef.value?.validateField('file').catch(() => {});
 
-  // 目录内封面自动识别:cover.png / cover.jpg / cover.jpeg / cover.webp(取首个)
-  const coverPicked = rootFiles.find((file) => COVER_NAMES.includes(file.name.toLowerCase()));
+  // 目录内封面自动识别:cover.png / <game-key>.png 等图片(取首个)
+  const coverPicked = rootFiles.find((file) => isCoverFile(file));
   if (coverPicked) {
     handleCoverChange({ raw: coverPicked });
     ElMessage.success('已识别目录中的封面图');
