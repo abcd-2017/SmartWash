@@ -55,6 +55,13 @@ object ShortCodeRules {
         return millis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
     }
 
+    /**
+     * 自定义过期时刻（所选日 23:59:59）是否早于 now——日期选择器已限今日起选，
+     * 提交前再拦一次（防深链/状态残留把过去日期带进提交，产生「生来已过期」短码）。
+     */
+    fun isCustomExpiryInPast(customDate: LocalDate, now: LocalDateTime): Boolean =
+        customDate.atTime(23, 59, 59).isBefore(now)
+
     /** 过期时刻展示态：永久（null/不可解析防御为永久）/ 有效中 / 已过期 */
     sealed interface ExpiryState {
         data object Permanent : ExpiryState

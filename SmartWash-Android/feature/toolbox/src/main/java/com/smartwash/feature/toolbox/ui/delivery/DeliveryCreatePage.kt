@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -167,9 +168,13 @@ private fun DeliveryCreateForm(
     GroupCard {
         // ---------- 有效期 ----------
         FormLabel(stringResource(R.string.toolbox_delivery_duration_label))
-        Row {
-            DeliveryCreateViewModel.DURATION_PRESETS.forEachIndexed { index, minutes ->
-                if (index > 0) Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+        // 横向可滚动：窄屏（≈360dp）下 chips 超宽时不挤压末位 chip——固定 Row 会把
+        // 「2 小时」压到文字竖排折行；配合 chip 文本 maxLines=1 任何宽度都单行完整显示
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
+        ) {
+            DeliveryCreateViewModel.DURATION_PRESETS.forEach { minutes ->
                 ToolboxSelectableChip(
                     text = durationChipText(minutes),
                     selected = form.durationMinutes == minutes,
@@ -214,9 +219,16 @@ private fun DeliveryCreateForm(
                         animationSpec = tween(CROSSFADE_ALT_MS),
                         label = "deliveryPasswordVisibility",
                     ) { visible ->
+                        // 无障碍：图标动作必须有语义描述，随可见态切换（§3.7 尾缀图标化）
                         Icon(
                             imageVector = if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                            contentDescription = null,
+                            contentDescription = stringResource(
+                                if (visible) {
+                                    R.string.toolbox_delivery_password_hide
+                                } else {
+                                    R.string.toolbox_delivery_password_show
+                                }
+                            ),
                             modifier = Modifier.size(20.dp),
                             tint = AppColors.colorScheme.textSecondary,
                         )

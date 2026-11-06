@@ -502,7 +502,7 @@ class FluidRenderer : GLSurfaceView.Renderer {
         GLES30.glUniform1f(splatProgram.uniform("aspectRatio"), aspectRatio)
         GLES30.glUniform2f(splatProgram.uniform("point"), x, y)
         GLES30.glUniform3f(splatProgram.uniform("color"), dx, dy, 0f)
-        GLES30.glUniform1f(splatProgram.uniform("radius"), correctRadius(radius))
+        GLES30.glUniform1f(splatProgram.uniform("radius"), correctRadius(radius / SPLAT_RADIUS_SCALE))
         blit(velocity.write)
         velocity.swap()
 
@@ -862,11 +862,33 @@ void main() {
         /** 涡量约束强度（手感灵魂：越大旋涡越猛） */
         private const val CURL = 30f
 
-        /** 注入半径（占画布比例） */
+        /** 注入半径（nominal 占画布比例，进 shader 前按 [SPLAT_RADIUS_SCALE] 换算） */
         private const val SPLAT_RADIUS = 0.25f
 
-        /** 静态种子注入半径（比交互注入略小，构图更聚拢） */
-        private const val SEED_SPLAT_RADIUS = 0.12f
+        /**
+         * 静态种子注入半径（nominal，与 [SPLAT_RADIUS] 同除 [SPLAT_RADIUS_SCALE]）。
+         *
+         * C3 把 [SPLAT_RADIUS_SCALE] 从 100 提到 300 后，若沿用 0.12 种子有效半径会同步
+         * 缩到 1/3，入口静态画面染料覆盖从 9.6% 掉到 3.1%（过稀）。现值 0.36 使有效半径
+         * 0.36/300 = 0.0012 与调参前（0.12/100）完全一致——入口构图保持原样，
+         * 仅交互注入的色斑按 C3 目标收敛（种子不参与连续注入，无饱和风险）。
+         */
+        private const val SEED_SPLAT_RADIUS = 0.36f
+
+        /**
+         * 半径换算除数：splat shader 的 radius 是高斯指数 exp(-dot(p,p)/radius) 的分母
+         * （平方尺度），参考实现以 nominal/100 作为有效半径。
+         *
+         * 取值演进（C3 回归 2026-11-06，实测调参）：
+         * - 原值 100（radius=0.0025）：单次点按色斑（点按后 0.3s 截图，相对静置底图差分）
+         *   实测半高宽 ≈ 画布宽 16%、20% 轮廓 ≈ 24%，比「手指大小」（≈48dp ≈ 画布宽 13%）明显偏大。
+         * - 现值 300（radius≈0.00083）：多次实测半高宽 8.5-10.7%、20% 轮廓 13.1-14.8%、
+         *   10% 轮廓 14.6-14.8%，三档轮廓均落在「手指大小 8-15%」目标区间内。
+         *
+         * 注：radius 同时决定每次注入的染料总量（质量 ∝ radius），缩小半径本身
+         * 也降低了连续注入的饱和度，与 [DENSITY_DISSIPATION] 的上调叠加。
+         */
+        private const val SPLAT_RADIUS_SCALE = 300f
 
         /** 触摸注入力（与参考实现同量级；划得越快速度增量越大） */
         private const val SPLAT_FORCE = 6000f
@@ -874,11 +896,28 @@ void main() {
         /** 速度耗散（平流衰减系数） */
         private const val VELOCITY_DISSIPATION = 0.2f
 
-        /** 染料耗散（平流衰减系数，越大消散越快） */
-        private const val DENSITY_DISSIPATION = 1.0f
+        /**
+         * 染料耗散（平流衰减系数）。advection 公式 decay = 1 + dissipation·dt（dt 秒），
+         * 染料按 e^(-dissipation·t) 消退：1.0 → 半衰期 0.69s（染料几乎瞬时消散）；
+         * 0.15 → 半衰期 ≈4.6s（旧值，连续注入实测会整盘饱和，见下）；
+         * 0.30 → 半衰期 ≈2.3s（现值，连续注入 60s 不整盘饱和的实测取值）。
+         *
+         * 取值演进（C3 回归 2026-11-06）：旧值 0.15 下 60s 连续注入 4 点取色亮度
+         * 241-255（整盘饱和白）。上调至 0.30 后同样注入强度不再饱和：
+         * 60s 连续注入（设备侧满速往复滑动）多次实测画布亮度均值 98-107、
+         * 4 点亮度最低两点 35-47（底色）、最高一点 232-242（积色区），近白像素 3.5-6%，
+         * 色彩层次保留、无整盘饱和。清空（reset）仍即时可用。
+         * 注意：若按「逐帧乘法衰减」口径（result×=d）换算的 0.98~0.995 档在本公式下
+         * 与 1.0 几乎等价，故取除法公式下的 0.2~0.4 档。
+         */
+        private const val DENSITY_DISSIPATION = 0.30f
 
-        /** 染料亮度系数（调色板色乘算后注入） */
-        private const val DYE_INTENSITY = 0.25f
+        /**
+         * 染料亮度系数（调色板色乘算后注入）。
+         * 旧值 0.25 配合旧耗散会饱和；现值 0.20 与 [DENSITY_DISSIPATION]=0.30、
+         * [SPLAT_RADIUS_SCALE]=300 配套，单次色斑可见但不淤积（C3 实测）。
+         */
+        private const val DYE_INTENSITY = 0.20f
 
         /** 静态种子注入次数 */
         private const val SEED_SPLATS = 8
@@ -935,8 +974,21 @@ class FluidGLSurfaceView(
         requestRender()
     }
 
+    /**
+     * 投递 GL 资源释放到 GL 线程（主线程调用，须在 [onPause] **之前**）。
+     *
+     * 顺序不能反：[onPause] 会停掉 GL 线程，之后 `queueEvent` 投递的事件永远停在队列里
+     * 不被执行——原实现在页面 onDispose 先 [onPause]、再于 onDetachedFromWindow 投递
+     * [FluidRenderer.dispose]，导致纹理 / FBO / Program / VAO 每次进出流体页都漏一份
+     * （连续进出多次后 GPU 资源持续累积）。先投递再暂停，线程会在暂停前把释放事件跑完。
+     */
+    fun disposeResources() {
+        queueEvent { renderer.dispose() }
+    }
+
     override fun onDetachedFromWindow() {
-        // 在 GL 线程仍运行时释放资源，避免泄漏
+        // 兜底：异常路径未走 disposeResources() 时补一次；renderer.dispose() 幂等
+        // （initialized 标志），与 disposeResources() 重复调用安全
         queueEvent { renderer.dispose() }
         super.onDetachedFromWindow()
     }

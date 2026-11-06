@@ -73,6 +73,13 @@ class ShortCodeDetailViewModel @Inject constructor(
             _updateState.value = RequestState.Error(R.string.toolbox_error_custom_date_required)
             return
         }
+        // 日期选择器已限今日起选，续期提交前同样再拦一次（错误经页面 Toast 展示）
+        if (preset == ShortCodeRules.ExpiryPreset.CUSTOM && customDate != null &&
+            ShortCodeRules.isCustomExpiryInPast(customDate, now)
+        ) {
+            _updateState.value = RequestState.Error(R.string.toolbox_error_expiry_in_past)
+            return
+        }
         viewModelScope.launch {
             _updateState.value = RequestState.Loading
             try {

@@ -39,16 +39,21 @@ class RechargeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 发起充值。[amount] 语义为「到账金额」（= 支付金额 + 预设档赠送，见
+     * [RechargeAmountValidator.creditAmount]），与后端 `userRecharge` 的入账口径一致——
+     * 2026-11-05 修复①：此前页面传支付金额，赠送从未入账。日志里的 amount 亦记到账金额。
+     */
     fun userRecharge(amount: Float, rechargeType: String) {
         _rechargeState.value = RequestState.Loading
         viewModelScope.launch {
             try {
                 // 发起充值以 debug 留业务键：后端业务拒绝（金额超限/校验不过等）经
                 // ResponseInterceptor 统一 warn 留痕但不带金额，凭本行在 debug 构建对齐
-                AppLogger.debug(TAG, "userRecharge: 发起充值 amount=$amount rechargeType=$rechargeType")
+                AppLogger.debug(TAG, "userRecharge: 发起充值 到账金额=$amount rechargeType=$rechargeType")
                 rechargeRepository.userRecharge(UserRecharge(amount, rechargeType))
                 // 低频关键动作成功：充值到账（资金链路核心留痕）
-                AppLogger.info(TAG, "userRecharge: 充值成功 amount=$amount rechargeType=$rechargeType")
+                AppLogger.info(TAG, "userRecharge: 充值成功 到账金额=$amount rechargeType=$rechargeType")
                 // 充值成功即强刷用户信息（2026-11-01 缺陷 8d）：后端充值接口不回传新余额，
                 // 且 UserApiImpl 内存缓存需显式刷新——否则本页与首页/用户中心的余额
                 // 全部停留在旧值，直到重新登录。刷新失败不阻塞成功反馈（下次进页面重试）

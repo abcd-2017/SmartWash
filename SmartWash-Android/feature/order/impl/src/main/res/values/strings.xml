@@ -33,4 +33,6 @@
     <!-- 共享文案（app 侧同名保留） -->
     <string name="currency_format">¥%s</string>
     <string name="error_network_fail">请求失败</string>
+    <!-- 断网降级（回归 2026-11-06 N-05-03）：列表错误卡重试按钮 -->
+    <string name="order_action_retry">重试</string>
 </resources>

@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,6 +128,25 @@ fun ShortCodeDetailPage(
     var showRenewDatePicker by remember { mutableStateOf(false) }
     var renewPreset by remember { mutableStateOf(ShortCodeRules.ExpiryPreset.DAYS_7) }
     var renewDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    // 访问明细加载会话门控（2026-11-06 闪空态回归，同款防御）：本页 statsTrigger 恒空、
+    // 无刷新/重建路径，故会话退化为「首轮加载」——仍加 everLoaded 门控，
+    // 保证「NotLoading + 0 项」只有在真的完成过加载后才判空态，首帧不闪空态。
+    var statsLoadStarted by rememberSaveable { mutableStateOf(false) }
+    var statsEverLoaded by rememberSaveable { mutableStateOf(false) }
+    val statsRefreshState = statsItems.loadState.refresh
+    LaunchedEffect(statsRefreshState) {
+        when (statsRefreshState) {
+            is LoadState.Loading -> {
+                statsLoadStarted = true
+                statsEverLoaded = true
+            }
+            is LoadState.NotLoading -> {
+                if (statsItems.itemCount > 0 || statsLoadStarted) statsLoadStarted = false
+            }
+            is LoadState.Error -> statsLoadStarted = false
+        }
+    }
 
     val isPublic = ShortCodeRules.isPublicVisibility(vo.isPublic)
 
@@ -341,14 +361,11 @@ fun ShortCodeDetailPage(
                 )
             }
             item(key = "stats") {
-                val statsRefresh = statsItems.loadState.refresh
                 GroupCard {
                     when {
-                        statsItems.itemCount == 0 && statsRefresh is LoadState.Loading -> {
-                            SkeletonList(rows = 3)
-                        }
-                        // 首刷失败：说明 + 重试（规范 §3.6 错误态）
-                        statsItems.itemCount == 0 && statsRefresh is LoadState.Error -> {
+                        // 首刷失败：说明 + 重试（规范 §3.6 错误态）。
+                        // 错误分支前置：门控不得掩盖真实错误（否则失败时先闪一帧骨架）
+                        statsItems.itemCount == 0 && statsRefreshState is LoadState.Error -> {
                             Text(
                                 text = stringResource(R.string.toolbox_stats_error_load),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -370,7 +387,15 @@ fun ShortCodeDetailPage(
                                     .padding(vertical = AppDimens.spaceXs),
                             )
                         }
-                        statsItems.itemCount == 0 && statsRefresh is LoadState.NotLoading -> {
+                        // 首刷 / 从未完成过加载：骨架而非空态（见会话门控注释）
+                        statsItems.itemCount == 0 &&
+                            (statsRefreshState is LoadState.Loading || !statsEverLoaded) -> {
+                            SkeletonList(rows = 3)
+                        }
+                        // 走到这里必为 everLoaded=true（会话门控保证），语义=真实空结果
+                        statsItems.itemCount == 0 &&
+                            statsRefreshState is LoadState.NotLoading &&
+                            statsEverLoaded -> {
                             Text(
                                 text = stringResource(R.string.toolbox_stats_empty),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -400,7 +425,7 @@ fun ShortCodeDetailPage(
                                         .height(14.dp)
                                 )
                             }
-                            if (statsRefresh is LoadState.Error && statsItems.itemCount > 0) {
+                            if (statsRefreshState is LoadState.Error && statsItems.itemCount > 0) {
                                 Text(
                                     text = stringResource(R.string.toolbox_stats_error_load),
                                     style = MaterialTheme.typography.labelSmall,
