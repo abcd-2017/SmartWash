@@ -23,7 +23,6 @@ import {
   saveMoodToday
 } from '../api'
 import {
-  MoodErrorState,
   MoodLevelRow,
   MoodSmallAction,
   MoodWordChip,
@@ -205,7 +204,6 @@ struct MoodTodayPage {
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 4 })
 
           Blank()
 
@@ -233,18 +231,37 @@ struct MoodTodayPage {
           SkeletonList({ rows: 3 })
             .width('100%')
             .layoutWeight(1)
-        } else if (this.isError) {
-          MoodErrorState({
-            message: MoodText.mood_error_load,
-            onRetry: () => {
-              this.load()
-            }
-          })
-            .width('100%')
-            .layoutWeight(1)
         } else {
+          // 月历查询失败不阻塞心情记录（对齐安卓 17c32c15）：内容照常渲染，
+          // 选择器/词 chips/一句话全部可用（保存链路独立报错），月历回填失败单独给错误条 + 重试
           Scroll() {
             Column() {
+              // ---------- 月历回填错误条（独立于保存链路） ----------
+              if (this.isError) {
+                Column() {
+                  AppCard() {
+                    Row() {
+                      Text(MoodText.mood_error_load)
+                        .fontSize(DesignFontSize.BODY_SMALL)
+                        .fontColor(DesignColor.ERROR)
+                        .layoutWeight(1)
+
+                      MoodSmallAction({
+                        text: MoodText.mood_action_retry,
+                        contentColor: DesignColor.PRIMARY,
+                        onAction: (): void => {
+                          this.load()
+                        }
+                      })
+                    }
+                    .width('100%')
+                    .alignItems(VerticalAlign.Center)
+                  }
+                }
+                .width('100%')
+                .margin({ bottom: DesignDimens.SPACE_MD })
+              }
+
               // ---------- 日期 + 问句 ----------
               Column() {
                 Text(MoodText.mood_today_question)

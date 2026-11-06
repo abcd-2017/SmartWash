@@ -2,7 +2,7 @@ import { IndexPage } from "../view/IndexPage"
 import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
 import { Workbench } from "../feature/workbench/Workbench"
-import { BottomNavItem } from "../view/BottomNavBar"
+import { BottomNav, BottomNavTab } from "../view/BottomNavBar"
 import { DesignColor } from "../constant/DesignSystem"
 import { safeBottomVp } from "../utils/SafeArea"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
@@ -94,72 +94,89 @@ struct Home {
     handleDeepLink(uri)
   }
 
+  // 内置底栏隐藏（barHeight 0）后的空 tabBar 占位；底栏由下方自定义 BottomNav 承载
   @Builder
-  tabBuilder(title: string, targetIndex: number, selectedImg: Resource, normalImg: Resource) {
-    BottomNavItem({
-      label: title,
-      selectedIcon: selectedImg,
-      normalIcon: normalImg,
-      isSelected: this.currentIndex === targetIndex,
-      onItemClick: () => {
-        if (this.currentIndex !== targetIndex) {
-          this.controller.changeIndex(targetIndex)
-        }
-      }
-    })
+  emptyTabBar() {
+    Column()
   }
+
+  // 底栏 tab 定义（对齐安卓 homeTabItems：线性/实心图标对 + 文案）
+  private tabs: BottomNavTab[] = [
+    { key: 'home', label: '首页', selectedIcon: $r('sys.symbol.house_fill'), normalIcon: $r('sys.symbol.house') },
+    {
+      key: 'service', label: '服务', selectedIcon: $r('sys.symbol.list_bullet_square_fill_1'),
+      normalIcon: $r('sys.symbol.list_bullet_square')
+    },
+    {
+      // 过渡图标：安卓自绘「三方块 + 一圆」，SDK 5.0.5 无 square_grid_2x2_fill，
+      // 选中态由文字色/品牌色实心图标区分
+      key: 'workbench', label: '工作台', selectedIcon: $r('sys.symbol.square_grid_2x2'),
+      normalIcon: $r('sys.symbol.square_grid_2x2')
+    },
+    { key: 'mine', label: '我的', selectedIcon: $r('sys.symbol.person_fill'), normalIcon: $r('sys.symbol.person') }
+  ]
 
   build() {
     NavDestination() {
-      Tabs({ barPosition: BarPosition.End, controller: this.controller, index: this.currentIndex }) {
-        TabContent() {
-          Column() {
-            IndexPage({
-              isActive: this.currentIndex === 0,
-              refreshTick: this.refreshTick
-            })
-          }.height("100%")
-          .width("100%")
-        }.tabBar(this.tabBuilder("首页", 0, $r('sys.symbol.house_fill'), $r('sys.symbol.house')))
+      Column() {
+        Tabs({ barPosition: BarPosition.End, controller: this.controller, index: this.currentIndex }) {
+          TabContent() {
+            Column() {
+              IndexPage({
+                isActive: this.currentIndex === 0,
+                refreshTick: this.refreshTick
+              })
+            }.height("100%")
+            .width("100%")
+          }.tabBar(this.emptyTabBar)
 
-        TabContent() {
-          Service()
-        }.tabBar(this.tabBuilder("服务", 1, $r('sys.symbol.list_bullet_square_fill_1'),
-          $r('sys.symbol.list_bullet_square')))
+          TabContent() {
+            Service()
+          }.tabBar(this.emptyTabBar)
 
-        TabContent() {
-          Workbench()
-        }.tabBar(this.tabBuilder("工作台", 2, $r('sys.symbol.square_grid_2x2'),
-          // 过渡图标：安卓自绘「三方块 + 一圆」，SDK 5.0.5 无 square_grid_2x2_fill，
-          // 选中态由文字色/品牌色实心图标区分
-          $r('sys.symbol.square_grid_2x2')))
+          TabContent() {
+            Workbench()
+          }.tabBar(this.emptyTabBar)
 
-        TabContent() {
-          UserInfo()
-        }.tabBar(this.tabBuilder("我的", 3, $r('sys.symbol.person_fill'), $r('sys.symbol.person')))
+          TabContent() {
+            UserInfo()
+          }.tabBar(this.emptyTabBar)
+        }
+        .onChange(i => {
+          this.currentIndex = i
+          // 同步当前 tab 下标供 Index.onBackPress 判定（系统返回键回首页 tab）
+          AppStorage.setOrCreate(HOME_TAB_INDEX_KEY, i)
+          // 滑动切 tab 落定触感（对齐安卓 LaunchedEffect(settledPage) → performHaptic(SELECTION)）
+          try {
+            vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
+          } catch (err) {
+            // 忽略不支持触感的设备
+          }
+          if (i === 3) {
+            bumpUserInfoRefresh()
+            bumpOrderRefresh()
+          }
+        })
+        // 底栏由下方自定义 BottomNav 承载，隐藏内置 bar（barHeight 0）
+        .barOverlap(false)
+        .barHeight(0)
+        .backgroundColor(DesignColor.BACKGROUND)
+        .layoutWeight(1)
+
+        // 底栏规范 §4.5：68vp 高、纯白底、0.5vp outline 顶部分隔线（对齐安卓 BottomBar）
+        BottomNav({
+          tabs: this.tabs,
+          currentIndex: this.currentIndex,
+          onItemClick: (index: number) => {
+            if (this.currentIndex !== index) {
+              this.controller.changeIndex(index)
+            }
+          }
+        })
       }
-      .onChange(i => {
-        this.currentIndex = i
-        // 同步当前 tab 下标供 Index.onBackPress 判定（系统返回键回首页 tab）
-        AppStorage.setOrCreate(HOME_TAB_INDEX_KEY, i)
-        // 滑动切 tab 落定触感（对齐安卓 LaunchedEffect(settledPage) → performHaptic(SELECTION)）
-        try {
-          vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
-        } catch (err) {
-          // 忽略不支持触感的设备
-        }
-        if (i === 3) {
-          bumpUserInfoRefresh()
-          bumpOrderRefresh()
-        }
-      })
-      // 底栏规范 §4.5：68dp 高、纯白底、0.5dp outline 顶部分隔线（对齐安卓 BottomBar）
-      .barOverlap(false)
-      .barHeight(68)
-      .backgroundColor(DesignColor.BACKGROUND)
-      .barBackgroundColor(DesignColor.SURFACE)
-      .divider({ strokeWidth: 0.5, color: DesignColor.OUTLINE })
-      .layoutWeight(1)
+      .width("100%")
+      .height("100%")
+      .backgroundColor(DesignColor.SURFACE)
     }
     .width("100%")
     .height("100%")

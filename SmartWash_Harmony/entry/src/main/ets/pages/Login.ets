@@ -212,6 +212,8 @@ struct Login {
               .backgroundColor(Color.Transparent)
               .layoutWeight(1)
               .margin({ left: 12 })
+              // 无障碍：placeholder 不进 a11y 树，补语义标签（读屏可播报输入框用途）
+              .accessibilityText('手机号')
               .key("loginPhoneInput")
               .onChange((it: string) => {
                 this.phoneNumber = it
@@ -258,6 +260,8 @@ struct Login {
               .backgroundColor(Color.Transparent)
               .layoutWeight(1)
               .margin({ left: 12 })
+              // 无障碍：placeholder 不进 a11y 树，补语义标签
+              .accessibilityText('密码')
               .key("loginPasswordInput")
               .showPasswordIcon(false)
               .onChange((it: string) => this.password = it)
@@ -270,6 +274,8 @@ struct Login {
             }
             .width(48)
             .height(48)
+            // 无障碍：密码可见性切换补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
+            .accessibilityDescription(this.showPassword ? '隐藏密码' : '显示密码')
             .onClick(() => {
               this.showPassword = !this.showPassword
             })

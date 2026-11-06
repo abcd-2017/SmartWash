@@ -33,6 +33,9 @@ export struct PageHeader {
         .height(DesignDimens.BACK_HIT_AREA)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
+        // 无障碍：返回箭头补语义（原仅图形，读屏无标签）
+        // 注：accessibilityRole 需 SDK 18+，本项目目标 API 17，仅用 description
+        .accessibilityDescription('返回')
         .onClick(() => {
           this.backClick()
         })
@@ -70,6 +73,9 @@ export struct IconBox {
   @Param containerColor: number = DesignColor.PRIMARY_LIGHT
   @Param iconColor: number = DesignColor.PRIMARY
   @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
+  // 无障碍语义（图标按钮调用点传入，如「设置」「充值记录」；纯展示场景留空）
+  // 命名避开基类内置 accessibilityText 属性方法（同 sizeValue 约定）
+  @Param accessibilityLabel: string = ''
 
   build() {
     Column() {
@@ -83,6 +89,7 @@ export struct IconBox {
     .backgroundColor(this.containerColor)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .accessibilityDescription(this.accessibilityLabel)
   }
 }
 
@@ -160,12 +167,14 @@ export enum AppButtonVariant {
 
 /**
  * 统一按钮（DESIGN.md §3.3）— 自绘实现，业务层一律经本组件消费，禁止裸写可点击按钮：
- * 主 = 48vp 高 / 胶囊（radiusFull）/ 135° primary→primaryDark 渐变底 / onPrimary 文字 15sp·600·ls1sp·tnum；
+ * 主 = 48vp 高 / 胶囊（radiusFull）/ 135° primary→primaryDark 渐变底 / onPrimary 文字 15sp·600·tnum；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色（「退出登录」等经 contentColor 换语义色，容器不变）；
  * 文字 = 主色 13sp·600 无底无框，最小触控 44。
  *
  * 2026-11-03 对齐 DESIGN.md：旧 52dp + 14dp 圆角作废，改 48dp 高胶囊；
- * 按钮文字由 18sp 改 15sp/600/ls1sp，并开 tnum（内嵌金额文案数字不跳）。
+ * 按钮文字由 18sp 改 15sp/600，并开 tnum（内嵌金额文案数字不跳）。
+ * U-116：v0.4 字阶已废字距，删除 1sp 字距（对齐安卓 AppButton）。
+ * solid=true：主按钮改用纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）。
  * disabled/loading：整钮降透明度 0.5 + 禁点（对齐安卓禁用降透明，替代旧灰底 TEXT_TERTIARY）；
  * spinner 色随文字色，浅底次按钮上不再出现不可见的白圈。
  */
@@ -176,6 +185,8 @@ export struct AppButton {
   @Param isEnabled: boolean = true
   @Param loading: boolean = false
   @Param variant: AppButtonVariant = AppButtonVariant.PRIMARY
+  /** 主按钮纯色底（对齐安卓 AuthCtaButton）：默认 false 走 135° 品牌渐变 */
+  @Param solid: boolean = false
   /** 次按钮文字语义色覆盖（如退出登录 dangerInk）；仅 SECONDARY 生效，容器形态不变 */
   @Param contentColor: number | null = null
   @Event click: () => void = () => {
@@ -242,7 +253,7 @@ export struct AppButton {
           Text(this.text)
             .fontSize(DesignFontSize.BUTTON)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .letterSpacing(DesignFontSize.BUTTON_LETTER_SPACING)
+            // U-116：v0.4 字阶已废字距，删除 letterSpacing 1sp（对齐安卓 AppButton）
             .fontFeature(DesignFontFeature.TNUM)
             .fontColor(this.contentTint())
         }
@@ -251,11 +262,14 @@ export struct AppButton {
       .width('100%')
       .height(48)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）
-      .backgroundColor(this.variant === AppButtonVariant.SECONDARY ? DesignColor.SURFACE_VARIANT : Color.Transparent)
+      // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）；
+      // solid = 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）
+      .backgroundColor(this.variant === AppButtonVariant.SECONDARY
+        ? DesignColor.SURFACE_VARIANT
+        : (this.solid ? DesignColor.PRIMARY : Color.Transparent))
       .linearGradient({
         angle: 135,
-        colors: this.variant === AppButtonVariant.PRIMARY
+        colors: this.variant === AppButtonVariant.PRIMARY && !this.solid
           ? [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
           : [[Color.Transparent, 0], [Color.Transparent, 1]]
       })
@@ -449,9 +463,9 @@ export struct AppPillTabRow {
               .fontColor(this.selectedIndex === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
           }
           .justifyContent(FlexAlign.Center)
-          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变——
-          // padding 在 background/border 之后只扩热区，不改视觉）
-          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+          // 垂直 9 → 14 → 16 把触控热区从 43.7vp 抬到 48vp（规范 §2.3；
+          // padding 在 background/border 之后只扩热区，不改胶囊视觉高 34）
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 16, bottom: 16 })
           .borderRadius(DesignDimens.RADIUS_FULL)
           .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
           .border({
@@ -460,6 +474,8 @@ export struct AppPillTabRow {
           })
           .margin({ right: DesignDimens.SPACE_XS })
           .animation(MotionTiming.ENTER)
+          // 选中态播报（无障碍）：读屏时播报「已选中」状态
+          .accessibilitySelected(this.selectedIndex === index)
           .onClick(() => {
             try {
               vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })
@@ -759,13 +775,12 @@ export struct EmptyState {
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）。
-      // 插槽外层统一给左右页边距：AppButton 非文字变体是 width('100%')，
-      // 不套容器会铺满屏幕（问题14：空态按钮左右无 padding）
+      // 安卓 EmptyState 的行动按钮通栏无水平 padding（问题14 修复回退，以安卓为准）：
+      // AppButton 非文字变体 width('100%')，外层不再套 PAGE_PADDING
       Column() {
         this.action()
       }
       .width('100%')
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
     .width('100%')
     .padding({ top: 32, bottom: 32 })

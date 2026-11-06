@@ -240,8 +240,8 @@ export struct Service {
       Column() {
         Scroll(this.scroller) {
           Column() {
-            // 页头（V1/T1：对齐安卓 ServicePage.kt:101-113 —— 洗护分类 SectionTitle 18/600，无副标题）
-            Text("洗护分类")
+            // 页头（对齐安卓 ServicePage.kt:101-113 —— 洗衣服务 SectionTitle 18/600，无副标题）
+            Text("洗衣服务")
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)

@@ -239,6 +239,12 @@ export class DesignColor {
   // 字符串类型：shadow.color 接受 ResourceColor，rgba() 直译设计稿 CSS 值
   static readonly SHADOW_COLOR_CARD: string = 'rgba(20, 40, 30, 0.05)'   // 卡片档
   static readonly SHADOW_COLOR_FLOAT: string = 'rgba(20, 40, 30, 0.10)'  // 浮层/弹窗档
+
+  // ========== Hero 卡对角黑纱（对齐安卓 StatusHeroCard scrim：左上黑 20% → 右下透明） ==========
+  // 白字 on 品牌绿渐变实测 3.72:1（<4.5），叠纱后文字区对比度 ≥5.1:1；
+  // 纱为纯黑透明层，深浅色同值（未定义 DARK_ 变体）。
+  // 透明端在渐变 stop 上用 Color.Transparent（数值 0x00000000 会被当作不透明黑）。
+  static readonly SCRIM_BLACK_20: number = 0x33000000  // 黑 20%
 }
 
 
@@ -322,11 +328,11 @@ export class DesignDimens {
   static readonly CARD_PADDING: number = 20
   static readonly CARD_SPACING: number = 16
   static readonly SECTION_SPACING: number = 32
-  // 圆角 token（规范 §2.3 五档：16 卡 / 20 hero / 14 按钮·输入 / 12 图标容器 / 10 小容器）
+  // 圆角 token（规范 §2.3 五档：16 卡 / 20 大容器 / 14 按钮·输入 / 12 图标容器 / 10 小容器）
   static readonly RADIUS_SMALL: number = 10 // 小图标容器、徽标
   static readonly RADIUS_MD: number = 12    // 图标容器、内嵌套块
-  static readonly CARD_RADIUS: number = 16  // 卡片（唯一值，= Android radiusLg）
-  static readonly RADIUS_XL: number = 20    // hero、大容器（= Android radiusXl）
+  static readonly CARD_RADIUS: number = 16  // 卡片（唯一值，= Android radiusLg；Hero 卡同档，见 U-110）
+  static readonly RADIUS_XL: number = 20    // 大容器（= Android radiusXl；Hero 卡不用此档，收敛到 CARD_RADIUS 16）
   static readonly RADIUS_FULL: number = 999 // 头像、胶囊
   // 按钮 / 输入
   static readonly BUTTON_RADIUS: number = 14
@@ -419,8 +425,7 @@ export class DesignFontSize {
   static readonly BUTTON: number = 15
   /** button-text — 文字按钮（DESIGN.md §3.3：13sp/600） */
   static readonly BUTTON_TEXT: number = 13
-  /** button — 按钮文字字距（DESIGN.md §3.3：1sp） */
-  static readonly BUTTON_LETTER_SPACING: number = 1
+  // 按钮文字字距已废（U-116：DESIGN-SPEC v0.4 字阶不再设字距，对齐安卓 AppButton）
 }
 
 // ========== 字体粗细常量 ==========

@@ -240,6 +240,8 @@ export struct DivSerifText {
   @Param textAlign: TextAlign = TextAlign.Start
   @Param maxLines: number = 0
   @Param overflow: TextOverflow = TextOverflow.Ellipsis
+  // 行盒高度（vp）：0 = 不限制（字号自适应，默认）；>0 时要显式对齐安卓默认行高差（如六爻行 24）
+  @Param lineHeight: number = 0
   build() {
     if (this.maxLines > 0) {
       Text(this.text)
@@ -251,6 +253,7 @@ export struct DivSerifText {
         .textAlign(this.textAlign)
         .maxLines(this.maxLines)
         .textOverflow({ overflow: this.overflow })
+        .lineHeight(this.lineHeight)
     } else {
       Text(this.text)
         .fontSize(this.textSize)
@@ -259,6 +262,7 @@ export struct DivSerifText {
         .letterSpacing(this.spacing)
         .fontFamily('serif')
         .textAlign(this.textAlign)
+        .lineHeight(this.lineHeight)
     }
   }
 }
@@ -608,6 +612,8 @@ export struct DivSectionTitle {
           color: this.tailClickable ? DivPalette.textTertiary : DivPalette.textSecondary,
           textAlign: TextAlign.End
         })
+        // 尾注热区 31×16vp → 补 padding 到 ≥48vp（文字行盒 16 + 上下 16，左右各 12）
+        .padding({ left: 12, right: 12, top: 16, bottom: 16 })
         .onClick(() => {
           if (this.tailClickable) {
             const now = Date.now()

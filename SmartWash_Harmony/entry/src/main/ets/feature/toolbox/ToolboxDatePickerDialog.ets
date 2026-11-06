@@ -10,6 +10,13 @@
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { ToolboxText } from './api'
 import { formatDate } from './ShortCodeRules'
+import { showToastSafety } from '../../utils/ToastUtil'
+
+/** 可选下限：今日 00:00（本地时区）。短链过期日不允许选过去日期（对齐安卓 selectableDates 语义）。 */
+function minSelectableDate(): Date {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}
 
 @CustomDialog
 export struct ToolboxDatePickerDialog {
@@ -35,11 +42,16 @@ export struct ToolboxDatePickerDialog {
   }
 
   aboutToAppear(): void {
+    const minDate = minSelectableDate()
     if (this.initialDate.length >= 10) {
       const year = Number(this.initialDate.substring(0, 4))
       const month = Number(this.initialDate.substring(5, 7))
       const day = Number(this.initialDate.substring(8, 10))
-      this.selected = new Date(year, month - 1, day)
+      const parsed = new Date(year, month - 1, day)
+      // 已存在的过期日（如续期场景回填）落在下限之前时收敛到今日，避免选中态越界
+      this.selected = parsed.getTime() < minDate.getTime() ? minDate : parsed
+    } else {
+      this.selected = minDate
     }
   }
 
@@ -55,7 +67,8 @@ export struct ToolboxDatePickerDialog {
         .margin({ bottom: 12 })
 
       // 年/月/日三列选择（showTime 语义由组件默认 DATE 模式保证，不选时分秒）
-      DatePicker({ selected: this.selected })
+      // start = 今日：限制不可选过去日期（对齐安卓 selectableDates 等价语义）
+      DatePicker({ selected: this.selected, start: minSelectableDate() })
         .onDateChange((value: Date) => {
           this.selected = value
         })
@@ -94,6 +107,11 @@ export struct ToolboxDatePickerDialog {
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
           .onClick(() => {
+            // 提交前兜底拦截（双保险）：选择器已限选今日起，这里再挡一次越界日期
+            if (this.selected.getTime() < minSelectableDate().getTime()) {
+              showToastSafety("过期日期不能早于今天")
+              return
+            }
             // 先关窗再执行回调：回调内可能导航，导航后弹窗内容实例已销毁、
             // this.controller 变 undefined，后关会抛 jscrash（DivAskPage:669 同款）
             this.controller.close()

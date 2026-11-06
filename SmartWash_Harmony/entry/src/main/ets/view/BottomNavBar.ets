@@ -1,6 +1,62 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
 import vibrator from '@ohos.vibrator'
 
+/** 底栏 tab 定义（对齐安卓 homeTabItems：图标对 + 文案） */
+export interface BottomNavTab {
+  key: string
+  label: string
+  selectedIcon: Resource
+  normalIcon: Resource
+}
+
+/**
+ * 底部导航栏 —— 对齐安卓 HomePage.kt:145-194 `BottomBar`（规范 §4.5）。
+ *
+ * 结构：0.5vp outline 顶部分隔线 + 68vp surface 白底 Row；
+ * 4 个 tab 项 wrap-content（图标 24 + 横 padding 16），Row 用 SpaceAround 均分剩余空间
+ * （安卓 `Arrangement.SpaceAround`，见 HomePage.kt:168）——非等分槽位。
+ * 安全区由宿主 NavDestination 的 bottom padding 承载，本组件只画 68vp 内容。
+ */
+@ComponentV2
+export struct BottomNav {
+  @Param tabs: BottomNavTab[] = []
+  @Param currentIndex: number = 0
+  @Event onItemClick: (index: number) => void = (_: number) => {
+  }
+
+  build() {
+    Column() {
+      // 顶部分隔线 — 设计 nav3 border-top .5px line（对齐安卓 BottomBar）
+      Divider()
+        .width('100%')
+        .strokeWidth(0.5)
+        .color(DesignColor.OUTLINE)
+
+      Row() {
+        ForEach(this.tabs, (tab: BottomNavTab, index: number) => {
+          BottomNavItem({
+            label: tab.label,
+            selectedIcon: tab.selectedIcon,
+            normalIcon: tab.normalIcon,
+            isSelected: this.currentIndex === index,
+            onItemClick: () => {
+              this.onItemClick(index)
+            }
+          })
+        }, (tab: BottomNavTab) => tab.key)
+      }
+      .width('100%')
+      .height(68)
+      .backgroundColor(DesignColor.SURFACE)
+      // SpaceAround：4 项未铺满宽度时均分剩余空间（对齐安卓 Arrangement.SpaceAround）
+      .justifyContent(FlexAlign.SpaceAround)
+      .alignItems(VerticalAlign.Center)
+    }
+    .width('100%')
+    .backgroundColor(DesignColor.SURFACE)
+  }
+}
+
 /**
  * 底栏 tab 项 —— 对齐安卓 HomePage.kt:196-245 `BottomNavItem` + `AnimatedBottomNavIcon`（规范 §4.5）。
  *
@@ -93,7 +149,8 @@ export struct BottomNavItem {
         .fontColor(this.labelColor)
         .margin({ top: DesignDimens.SPACE_XXS })
     }
-    .width('100%')
+    // wrap-content（对齐安卓 BottomNavItem：Column 无宽度修饰，内容宽 = 图标/文字 + 横 padding 16）；
+    // 不再 .width('100%') 撑满等分槽位，热区回归内容宽（约 56–68vp）
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 4, bottom: 4 })
     .justifyContent(FlexAlign.Center)
     .onClick(() => {
