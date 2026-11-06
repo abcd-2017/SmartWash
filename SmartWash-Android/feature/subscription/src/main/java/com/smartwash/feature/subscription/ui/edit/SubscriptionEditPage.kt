@@ -271,7 +271,7 @@ fun SubscriptionEditPage(
                                         text = stringResource(R.string.subscription_form_trial_clear),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = AppColors.colorScheme.primary,
+                                        color = AppColors.colorScheme.textGreen,
                                     )
                                 }
                             }
@@ -492,7 +492,7 @@ private fun InlineTextAction(text: String, onClick: () -> Unit) {
             text = text,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color = AppColors.colorScheme.primary,
+            color = AppColors.colorScheme.textGreen,
         )
     }
 }

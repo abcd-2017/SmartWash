@@ -281,15 +281,16 @@ fun DivSectionTitle(
     }
 }
 
-/** 鎏金渐变主按钮：金渐变胶囊（48 高、无描边）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
- *  soft=解读画板口径：14% 金底 + 金/墨字（玄墨金字/宣纸墨字，双板一致），用于次级仪式主行动 */
+/** 鎏金渐变主按钮：金渐变圆角矩形（52 高 / r14，2026-11-05 问卦/摇卦/解读画板统一口径，
+ *  与 [AppDimens.buttonRadius] 对齐）+ 墨字 + 衬线 + 按压缩放 0.97（§1.5 金按钮）；
+ *  soft=主题感知次级主行动（解读画板口径）：宣纸实底金 #8F7233 + 墨字，玄墨维持 14% 金底 + 金字 */
 @Composable
 fun DivGoldButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    height: androidx.compose.ui.unit.Dp = 48.dp,
+    height: androidx.compose.ui.unit.Dp = 52.dp,
     fontSize: TextUnit = 15.sp,
     soft: Boolean = false,
 ) {
@@ -300,12 +301,15 @@ fun DivGoldButton(
     Box(
         modifier = modifier
             .height(height)
-            // 画板 .btn 实测：height 48px + border-radius 24px（48 高下的胶囊），文字 15px/600
-            .clip(RoundedCornerShape(AppDimens.radiusFull))
+            // 画板 .btn 实测：height 52px + border-radius 14px（圆角矩形，非胶囊），文字 15px/600
+            .clip(RoundedCornerShape(AppDimens.buttonRadius))
             .background(
                 when {
-                    // 禁用态退回 14% 金底（画板「已保存」口径，无描边）；解读画板主按钮同为 14% 金底
-                    !enabled || soft -> SolidColor(c.gold14)
+                    // 禁用态退回 14% 金底（画板「已保存」口径，无描边）
+                    !enabled -> SolidColor(c.gold14)
+                    // soft（解读「继续追问」画板口径）：宣纸实底金 / 玄墨 14% 金底，双板不同底
+                    soft && !c.isDark -> SolidColor(c.gold)
+                    soft -> SolidColor(c.gold14)
                     else -> Brush.horizontalGradient(c.goldGradient)
                 },
             )
@@ -375,8 +379,9 @@ fun DivCard(
     )
 }
 
-/** 问事领域 chip：48 触控胶囊；选中金底 + 金环（玄墨实金线/宣纸 30% 线，画板双板口径）+ 金强调字；
- *  水平内边距默认 12（问卦领域 chip 宽 48），卦历筛选 chip 画板宽 52 传 14；底色/描边/字色与勾均过渡，不硬切 */
+/** 问事领域 chip：48 触控胶囊；选中底画板双板不同（宣纸 = #8F7233 实底金 + 墨字，玄墨 = 14% 金底 + 金字）；
+ *  未选中 = 纸/卡底 + 32% 金描边 + 次级字；水平内边距默认 12（问卦领域 chip 宽 48），
+ *  卦历筛选 chip 画板宽 52 传 14；底色/描边/字色与勾均过渡，不硬切 */
 @Composable
 fun DivCategoryChip(
     text: String,
@@ -387,11 +392,15 @@ fun DivCategoryChip(
 ) {
     val c = DivColors.current
     val view = currentView()
-    val selectedBorder = if (c.isDark) c.gold else c.goldLine
+    // 选中态（2026-11-05 问卦/卦历画板）：宣纸实底金（gold = #8F7233）/ 玄墨 14% 金底；
+    // 选中描边随底色取实金，宣纸侧与实底融为一体
+    val selectedBackground = if (c.isDark) c.gold14 else c.gold
+    val selectedBorder = c.gold
     val shape = RoundedCornerShape(999.dp)
     // 颜色过渡（200ms 档，reduced motion 经 motionSpec 自动降 180ms）
-    val background = selectedColor(if (selected) c.gold14 else c.surface)
+    val background = selectedColor(if (selected) selectedBackground else c.surface)
     val border = selectedColor(if (selected) selectedBorder else c.goldLine)
+    // 选中字色：宣纸墨字 / 玄墨金字（主题感知 goldText，画板双板口径）
     val textColor = selectedColor(if (selected) c.goldText else c.textSecondary)
     // 勾：弹簧缩放盖上/退下（无位移，reduced motion 降级为 180ms）
     val checkScale by animateFloatAsState(

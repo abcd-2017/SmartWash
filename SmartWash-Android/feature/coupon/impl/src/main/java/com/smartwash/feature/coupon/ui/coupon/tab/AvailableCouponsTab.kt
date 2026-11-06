@@ -64,7 +64,6 @@ import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
 import com.smartwash.common.utils.spinInfinite
 import com.smartwash.common.ui.theme.AppElevation
-import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.feature.coupon.CouponStatus
 import com.smartwash.feature.coupon.ui.coupon.TicketShape
 
@@ -150,35 +149,35 @@ fun CouponCard(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
         ) {
-            // 左侧金额区 — 票券 face：brand-soft 纯色底 + 面额 + 单位字（纵向贯通两行）
+            // 左侧金额区 — 票券 face：画板面额区无填充（随卡身透明）+ 面额 + 单位字（纵向贯通两行）
             Box(
                 modifier = Modifier
                     .width(88.dp)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stringResource(R.string.discount_amount_format, "${coupon.discount}"),
-                        style = AppTextStyles.AmountMedium,
+                        text = stringResource(R.string.currency_format, String.format("%.0f", coupon.discount)),
+                        // 画板面额 22/600（= v0.4 titleLarge 档）；金额开 tnum（规范 §2.2 硬规则）
+                        style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                         color = AppColors.colorScheme.primaryDark
                     )
                     Text(
                         text = stringResource(R.string.coupon),
                         style = MaterialTheme.typography.labelMedium,
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
 
             // 右侧两行结构（2026-11-01 实机修正：88dp 单行塞不下「内容+按钮」，按钮独立成行）：
-            // 上 = 标题/日期/门槛三行；下 = 领取按钮右对齐
+            // 上 = 标题/日期/门槛三行；下 = 领取按钮右对齐；文本缩进 24 与画板（face 88 后）一致
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+                    .padding(start = 24.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
             ) {
                 Text(
                     text = coupon.title,

@@ -262,10 +262,13 @@ private fun HeroCard(
                 )
             }
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
-            // 白胶囊 CTA（hero 上反相：白底 + 品牌深绿字），48dp 高
+            // 白胶囊 CTA（hero 上反相：白底 + 品牌深绿字），48dp 高；
+            // 2026-11-06 复验：原满幅（内容区全宽 272dp）视觉过重，改为标准宽度胶囊
+            // （内容区左右各留 24dp 边距 → 224dp，居中），与 hero 标题/预设行对齐节奏
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = AppDimens.spaceXl)
                     .height(48.dp)
                     .clip(RoundedCornerShape(AppDimens.radiusFull))
                     .background(scheme.onPrimary)

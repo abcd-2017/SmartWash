@@ -161,7 +161,7 @@ private fun HistoryCard(
             Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DivSeal(methodSeal(record.method), size = 32.dp, fontSize = 14.sp, cornerRadius = 8.dp)
+            DivSeal(stringResource(methodSealRes(record.method)), size = 32.dp, fontSize = 14.sp, cornerRadius = 8.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -204,9 +204,10 @@ private fun methodLabel(method: DivMethod): String = when (method) {
     DivMethod.LIU_REN -> "六壬"
 }
 
-private fun methodSeal(methodId: String): String = when (DivMethod.fromId(methodId)) {
-    DivMethod.LIU_YAO -> "卦"
-    DivMethod.MEI_HUA -> "梅"
-    DivMethod.QI_MEN -> "奇"
-    DivMethod.LIU_REN -> "壬"
+/** 术数印章字资源（画板：六爻印「六」、梅花「梅」、奇门「奇」、六壬「壬」；2026-11-05 卦历画板六爻印取「六」） */
+private fun methodSealRes(methodId: String): Int = when (DivMethod.fromId(methodId)) {
+    DivMethod.LIU_YAO -> R.string.div_seal_liuyao
+    DivMethod.MEI_HUA -> R.string.div_seal_meihua
+    DivMethod.QI_MEN -> R.string.div_seal_qimen
+    DivMethod.LIU_REN -> R.string.div_seal_liuren
 }

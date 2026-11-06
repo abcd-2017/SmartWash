@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DryCleaning
@@ -30,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -39,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
-import androidx.compose.material3.Icon
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
@@ -239,27 +238,36 @@ private fun ServiceItemRow(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = item.description,
-                // 画板实测 12/16/400 —— caption 档（bodySmall），无 tnum
+                // 画板实测 12/16/400 —— caption 档（bodySmall），无 tnum；
+                // 2026-11-06 复验：用户要求显示完整描述，移除单行截断（深浅两板同逻辑，无主题分支）
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textSecondary
+                color = AppColors.colorScheme.textSecondary,
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
-                // 画板实测价格色 #1E8C5C（浅）/ #5BC894（深）= green.700，双主题均落 primaryDark
+                // 价格色 primaryDark（18sp 金额档，≥18sp 绿字按大字 3:1 豁免，2026-11-06 评审 R17 保留）
                 style = AppTextStyles.AmountMedium,
                 color = AppColors.colorScheme.primaryDark
             )
             Spacer(modifier = Modifier.height(4.dp))
-            // 原 60×24「预约 ›」胶囊已按用户拍板移除（套餐卡回归纯信息展示）；
-            // 整行仍可点（点击携带套餐 id 预选），行尾 chevron 保留可点暗示
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = AppColors.colorScheme.textTertiary
-            )
+            // 「预约 ›」胶囊 — 画板行尾 60×24 r999（primaryContainer/onPrimaryContainer、12/500，
+            // 深板 primaryContainer=#17322B 底亮字同令牌）；2026-11-01 拍板移除的胶囊按裁决 2
+            // 以当前画板为准恢复，整行仍可点（点击携带套餐 id 预选），胶囊不单独拦截点击
+            Box(
+                modifier = Modifier
+                    .size(width = 60.dp, height = 24.dp)
+                    .clip(RoundedCornerShape(AppDimens.radiusFull))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.service_row_reserve),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     }
 }

@@ -255,7 +255,7 @@ fun ShortCodeDetailPage(
                         label = stringResource(R.string.toolbox_label_clicks),
                         value = stringResource(R.string.toolbox_clicks_format, vo.clickCount),
                         valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        valueColor = AppColors.colorScheme.primary,
+                        valueColor = AppColors.colorScheme.textGreen,
                     )
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_created),
@@ -305,7 +305,7 @@ fun ShortCodeDetailPage(
                         Text(
                             text = stringResource(R.string.toolbox_action_renew),
                             style = MaterialTheme.typography.labelMedium,
-                            color = AppColors.colorScheme.primary,
+                            color = AppColors.colorScheme.textGreen,
                         )
                     }
                 }
@@ -362,7 +362,7 @@ fun ShortCodeDetailPage(
                                 text = stringResource(R.string.toolbox_action_retry),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primary,
+                                color = AppColors.colorScheme.textGreen,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -677,7 +677,7 @@ private fun RenewDialog(
                     )
                     DialogAction(
                         text = stringResource(com.smartwash.common.ui.R.string.confirm),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onConfirm,
                         enabled = !loading,
                         modifier = Modifier.weight(1f),

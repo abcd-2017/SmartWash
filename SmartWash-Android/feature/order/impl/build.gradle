@@ -20,6 +20,9 @@ dependencies {
     // 支付域路由常量（PaymentRoute；订单页「去支付」跨域跳转，T6.2 起替换 HostRoutes 过渡字面量）
     implementation project(':feature:payment:api')
 
+    // 洗衣域路由常量（LaundryRoute；订单空态「去下单」跳预约下单页，P09 设计稿空态 CTA）
+    implementation project(':feature:laundry:api')
+
     // 响应信封 ApiResult / HttpStatusCode / RequestState
     implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException

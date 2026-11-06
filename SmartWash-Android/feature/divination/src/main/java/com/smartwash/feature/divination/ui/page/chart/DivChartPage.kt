@@ -272,17 +272,14 @@ fun DivChartPage(
         }
 
         Spacer(Modifier.height(16.dp))
-        // 画板 ChartLiuyao：底部「求 解 读」为 36px 小胶囊（.btn.gold 覆写 height:36px /
-        // font-size:12.5px / padding 0 20px），非通栏大按钮；「已存入卦历」为本地状态位，
-        // 同档收敛保持底行两枚等高（ChartMeihua 画板为通栏 .btn，以 Liuyao 口径统一）
+        // 画板（2026-11-05 卦盘）：底部双按钮各 156×52 r14（x20/x184、卡距 8），
+        // 「解 读」鎏金实底、「已 保 存」14% 金禁用态；取 DivGoldButton 默认（52/r14/15sp）不再单侧覆写
         Row(
-            Modifier.padding(start = 16.dp, end = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             DivGoldButton(
                 text = stringResource(R.string.div_chart_interpret),
-                height = 36.dp,
-                fontSize = 12.sp,
                 modifier = Modifier.weight(1f),
                 onClick = {
                     navController.navigate(DivRoute.Reading(recordId))
@@ -290,8 +287,6 @@ fun DivChartPage(
             )
             DivGoldButton(
                 text = stringResource(R.string.div_chart_saved),
-                height = 36.dp,
-                fontSize = 12.sp,
                 enabled = false,
                 modifier = Modifier.weight(1f),
                 onClick = {},
@@ -312,8 +307,9 @@ private fun cnJuNumber(n: Int): String = when (n) {
     else -> n.toString()
 }
 
+/** 页头卦印字（2026-11-05 卦盘画板口径：取本卦名末字，泽火革→「革」、水雷屯→「屯」；梅花已同口径） */
 private fun divSealText(method: DivMethod, liuYaoName: String?, meiHuaName: String?): String = when (method) {
-    DivMethod.LIU_YAO -> liuYaoName?.take(1) ?: "卦"
+    DivMethod.LIU_YAO -> liuYaoName?.takeLast(1) ?: "六"
     DivMethod.MEI_HUA -> meiHuaName?.takeLast(1) ?: "梅"
     DivMethod.QI_MEN -> "奇"
     DivMethod.LIU_REN -> "壬"

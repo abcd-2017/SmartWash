@@ -301,7 +301,7 @@ private fun CardFace(
                     Text(
                         text = stringResource(R.string.review_study_answer_label),
                         style = MaterialTheme.typography.labelMedium,
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceXs))
                     Text(

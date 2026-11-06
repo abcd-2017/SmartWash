@@ -67,7 +67,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.softCardShadow
-import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.AppPillTabRow
@@ -94,6 +94,7 @@ import com.smartwash.feature.order.api.model.OrderInfo
 import com.smartwash.feature.order.api.model.OrderStatus
 import com.smartwash.feature.order.api.model.ShowOrderStatus
 import com.smartwash.feature.order.impl.R
+import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -346,9 +347,10 @@ fun OrderPage(
                             }
                         }
                     } else {
-                        EmptyState(
-                            icon = Icons.Default.LocalLaundryService,
-                            message = stringResource(R.string.no_orders)
+                        // 空态（P09 设计稿板尾样张）：白卡容器内滚筒母题 + 主标题 + 副标题 +
+                        // 「去下单」primary 胶囊 CTA（规范 §3.6「一句引导文案 + 一个行动按钮」）
+                        OrderEmptyState(
+                            onGoOrder = { navController.navigate(LaundryRoute.Laundry()) }
                         )
                     }
                 }
@@ -503,7 +505,8 @@ private fun OrderRow(
             )
         }
         // 右侧：金额顶部与角标对齐，下距 20 后接操作区 / 状态回显（设计稿实测间距）
-        // 价格用 primaryDark（green.700 浅色 / #5BC894 深色成对）；已取消置灰 textSecondary
+        // 强调绿大字取 primary（P10 条目裁定：浅色板 #2D9B6A / 深色提亮 #5BC894 = primary 令牌双主题成对）；
+        // 已取消置灰 textSecondary
         Column(
             horizontalAlignment = Alignment.End
         ) {
@@ -513,7 +516,7 @@ private fun OrderRow(
                 color = if (order.status == OrderStatus.CANCELED.status) {
                     AppColors.colorScheme.textSecondary
                 } else {
-                    AppColors.colorScheme.primaryDark
+                    AppColors.colorScheme.primary
                 },
                 style = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold)
             )
@@ -521,12 +524,12 @@ private fun OrderRow(
             // 操作按钮（功能保留，逻辑与路由不动）
             when (order.status) {
                 ShowOrderStatus.PENDING_PAYMENT.status -> {
-                    // U-109：危险操作按 §4 用 error 色并独立分组——「取消订单」与「去支付」
-                    // 换行分离，中间拉开 12dp 间距（参考设置页退出登录的独立胶囊先例）
+                    // 「取消订单」与「去支付」换行分离，中间拉开 12dp 间距（参考设置页退出登录的独立胶囊先例）
                     Column(horizontalAlignment = Alignment.End) {
                         OrderActionPill(label = stringResource(R.string.go_pay), onClick = paymentClick)
                         Spacer(Modifier.height(AppDimens.spaceSm))
                         // 取消订单 — 自绘文字动作（规范 §7 禁 M3 交互组件）；
+                        // P09 裁定：字色随画板取中性 textSecondary（不标 error 红）；
                         // 热区 44dp（触控最低档，原 40dp 不达标）
                         Box(
                             modifier = Modifier
@@ -537,7 +540,7 @@ private fun OrderRow(
                         ) {
                             Text(
                                 stringResource(R.string.cancel_order),
-                                color = AppColors.colorScheme.error,
+                                color = AppColors.colorScheme.textSecondary,
                                 fontSize = 12.sp
                             )
                         }
@@ -576,8 +579,9 @@ private fun OrderRow(
 }
 
 /**
- * 行内主按钮（2026-11-01 按钮统一：原 34dp 高配 18sp 字是"矮高+大字"错位组合，全应用唯一）。
- * 统一到规范 §3.3 小按钮档：36dp 高 / 12dp 圆角 / 横 16 / 13sp·600，与优惠券 ClaimAction 一致；
+ * 行内主按钮（P09 裁定：设计稿画板为胶囊形——radiusFull + 高 40，底色/字色两板一致
+ * （浅 primary+白 / 深 #5BC894+墨绿 = primary/onPrimary 令牌成对），
+ * 原 §3.3 小按钮档 36/12 矩形与画板形态冲突，按画板执行；
  * 点击统一走防抖 + 中触感。
  */
 @Composable
@@ -585,12 +589,12 @@ private fun OrderActionPill(label: String, onClick: () -> Unit) {
     val view = currentView()
     Box(
         modifier = Modifier
-            .height(36.dp)
+            .height(40.dp)
             .pressable(onClick = rememberDebouncedClick {
                 view.performHaptic(HapticEffect.MEDIUM)
                 onClick()
             })
-            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusMd))
+            .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull))
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -600,6 +604,67 @@ private fun OrderActionPill(label: String, onClick: () -> Unit) {
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
+    }
+}
+
+/**
+ * 订单列表空态（P09 设计稿板尾样张）：白卡容器内居中滚筒圆母题 + 主标题「还没有订单」
+ * + 副标题「去下一单，衣物焕然一新」+「去下单」primary 胶囊 CTA（规范 §3.6 空态
+ * 「一句引导文案 + 一个行动按钮」）。本页自组（不扩公共 EmptyState 单行结构），
+ * CTA 跳洗衣预约下单页（与首页「预约洗衣」同一目的地）。
+ */
+@Composable
+private fun OrderEmptyState(onGoOrder: () -> Unit) {
+    val view = currentView()
+    Surface(
+        modifier = Modifier.fillMaxWidth().softCardShadow(),
+        shape = RoundedCornerShape(AppDimens.radiusLg),
+        color = AppColors.colorScheme.surface,
+        border = BorderStroke(1.dp, AppColors.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppDimens.cardPadding, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 母题 — 规范 §3.6：滚筒圆静止态 48dp（非灰色 Material 图标）
+            DrumMark(size = 48.dp, tint = AppColors.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.order_empty_title),
+                // 设计稿实测 ≈16/600：bodyLarge 16sp + SemiBold（字阶 §2 允许字重集）
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = AppColors.colorScheme.textPrimary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.order_empty_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+            // 主 CTA — 胶囊、高 40、primary 底（设计稿实测），与行内 OrderActionPill 同语言
+            Box(
+                modifier = Modifier
+                    .height(40.dp)
+                    .pressable(onClick = rememberDebouncedClick {
+                        view.performHaptic(HapticEffect.MEDIUM)
+                        onGoOrder()
+                    })
+                    .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull))
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.go_order),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
     }
 }
 

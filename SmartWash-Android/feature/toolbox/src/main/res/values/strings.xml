@@ -61,7 +61,7 @@
     <string name="toolbox_confirm_delete_message">删除后短链立即失效且不可恢复，确定删除「%1$s」？</string>
     <string name="toolbox_qr_section_title">扫码访问</string>
     <string name="toolbox_private_open_hint">私有短码将经服务器解析后打开（计入一次点击）</string>
-    <string name="toolbox_action_copy">复制短链</string>
+    <string name="toolbox_action_copy">复制</string>
     <string name="toolbox_action_open">打开链接</string>
     <string name="toolbox_copy_success">短链已复制</string>
     <string name="toolbox_open_failed">未找到可打开链接的应用</string>

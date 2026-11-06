@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -169,6 +170,9 @@ fun LoginPage(
             .background(
                 Brush.verticalGradient(0f to GradientTop, 0.5f to AuthGradientMid, 1f to GradientBottom)
             )
+            // IME 遮挡 CTA 修复：键盘弹出时内容整体上移（imePadding 只在键盘弹出时生效，
+            // 收起后不产生多余留白；置于 background 之后使品牌渐变保持满屏）
+            .imePadding()
     ) {
         Column(
             modifier = Modifier
@@ -230,6 +234,9 @@ fun LoginPage(
                     phone = phone,
                     isPhoneError = isPhoneError,
                     contentColor = Color.White,
+                    // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                    // label 文案与占位同为字段名，复用 common:ui 既有 string 资源（nonTransitiveRClass 全限定引用）
+                    label = stringResource(com.smartwash.common.ui.R.string.phone_hint),
                 ) {
                     if (it.length <= 11) phone = it
                     // 实时校验：只在已显示错误后实时更新，避免输入中就报错
@@ -245,7 +252,8 @@ fun LoginPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                        // [P01] 2026-11-05 画板复裁：分隔线距卡边 16px（卡 padding 水平 16 自带缩进，
+                        // 不再额外内缩 8）
                         .height(1.dp)
                         .background(Color.White.copy(alpha = 0.12f))
                 )
@@ -258,6 +266,8 @@ fun LoginPage(
                     showPassword = showPassword,
                     showVisibility = { showPassword = !showPassword },
                     contentColor = Color.White,
+                    // [P01] 2026-11-05 画板复裁：输入行上方补独立字段标签行（白 12sp）
+                    label = stringResource(com.smartwash.common.ui.R.string.password_hint),
                     modifier = Modifier.focusRequester(passwordFocusRequester)
                 ) {
                     // 只限制长度，不实时显示错误（错误只在点击提交按钮时检测）

@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -195,23 +196,30 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    painter = painterResource(
-                        when (record.rechargeType) {
-                            "1" -> R.drawable.ic_wechat
-                            "2" -> R.drawable.ic_alipay
-                            else -> R.drawable.ic_wechat // 余额充值历史数据无品牌语义，占位同微信
-                        }
-                    ),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = when (record.rechargeType) {
+                // P16 裁定：非微信/支付宝记录（余额充值）随画板换钱包图标
+                // account_balance_wallet（Material 内置线性变体），tint primary，弃 ic_wechat 占位
+                if (record.rechargeType == "1" || record.rechargeType == "2") {
+                    Icon(
+                        painter = painterResource(
+                            when (record.rechargeType) {
+                                "1" -> R.drawable.ic_wechat
+                                else -> R.drawable.ic_alipay
+                            }
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
                         // 官方品牌色（2026-11-01 缺陷 8a，红线豁免：品牌色不得换）
-                        "1" -> WeChatBrandGreen
-                        "2" -> AlipayBrandBlue
-                        else -> AppColors.colorScheme.primary
-                    }
-                )
+                        tint = if (record.rechargeType == "1") WeChatBrandGreen else AlipayBrandBlue
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.AccountBalanceWallet,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        // 画板取值 #2D9B6A = primary（浅）/提亮档（深）
+                        tint = AppColors.colorScheme.primary
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -236,13 +244,13 @@ private fun RechargeRecordCard(record: RechargeRecordVo) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            // 金额（2026-11-01 用户反馈：原 titleLarge 22sp 与左侧 14sp 类型字差 8sp，观感失衡）
-            // → 金额中字档 18sp（v0.4 AmountMedium，列表内价格的标准档），与类型字 14sp 保持 4sp 级差
+            // 金额（P16 裁决 2：以画板为准 22/600 = titleLarge 档；此前 2026-11-01 降档 18 的
+            // 用户反馈已被 2026-11-06 裁决记录推翻）
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.recharge_record_amount_format, String.format("%.2f", record.amount)),
-                // AppTextStyles.AmountMedium 自带 tnum（等宽防数字抖动）
-                style = AppTextStyles.AmountMedium,
+                // titleLarge 22/28/600；金额开 tnum 等宽防数字抖动（规范 §2.2 硬规则）
+                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                 color = AppColors.colorScheme.primaryDark,
                 // 2026-11-01：金额绝不换行——Row 内非 weight 子项按整行宽约束测量，
                 // 正常金额远小于可用宽；此处再显式限单行，作为极端字号下的兜底（宁截断不折行）

@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -344,6 +345,9 @@ fun Modifier.dialogEnterMotion(): Modifier = composed {
  * [contentColor] 仅用于**同形态换语义色**的少数场景（如「退出登录」次按钮配 dangerInk，
  * §2.1 例外条款）：非 null 时替换文字与 spinner 色，容器形态与尺寸一律不变。
  * 默认 null 保持三态既有配色不变。
+ *
+ * [small] = 行内小按钮档（§3.3：36dp 高 / 12dp 圆角 / 横向 16dp / 文字 13sp·600），
+ * 用于卡内控件位（如滚筒节拍机播放键）；默认 false 保持 48dp 胶囊 CTA 口径不变。
  */
 @Composable
 fun AppButton(
@@ -354,12 +358,17 @@ fun AppButton(
     loading: Boolean = false,
     variant: AppButtonVariant = AppButtonVariant.PRIMARY,
     contentColor: Color? = null,
+    small: Boolean = false,
 ) {
     // 内置连击防抖：loading 禁用依赖重组存在一帧间隙，防抖补住同帧/极短连点的双提交
     val debouncedOnClick = rememberDebouncedClick { onClick() }
     val active = enabled && !loading
-    // 胶囊（r999）：设计稿 CTA 实测口径，与 48dp 高配套
-    val shape = RoundedCornerShape(AppDimens.radiusFull)
+    // 胶囊（r999）：设计稿 CTA 实测口径，与 48dp 高配套；small 取 §3.3 小按钮档 r12
+    val shape = if (small) {
+        RoundedCornerShape(AppDimens.radiusMd)
+    } else {
+        RoundedCornerShape(AppDimens.radiusFull)
+    }
 
     if (variant == AppButtonVariant.TEXT) {
         // 文字色 0ms 硬切 → 弹簧过渡；reduced motion 自动降级 180ms（规范 7.8）
@@ -450,9 +459,11 @@ fun AppButton(
     }
     Box(
         modifier = modifier
-            .fillMaxWidth()
+            // small 档为行内控件：按内容宽度（横向 16dp），不做满幅 CTA
+            .then(if (small) Modifier.wrapContentWidth() else Modifier.fillMaxWidth())
             .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
-            .height(48.dp)
+            .height(if (small) 36.dp else 48.dp)
+            .then(if (small) Modifier.padding(horizontal = AppDimens.spaceMd) else Modifier)
             .then(containerModifier),
         contentAlignment = Alignment.Center,
     ) {
@@ -464,8 +475,8 @@ fun AppButton(
         ) { isLoading ->
             if (isLoading) {
                 ButtonSpinner(
-                    size = 22.dp,
-                    strokeWidth = 2.dp,
+                    size = if (small) 18.dp else 22.dp,
+                    strokeWidth = if (small) 1.5.dp else 2.dp,
                     color = animatedContentColor,
                 )
             } else {
@@ -473,10 +484,11 @@ fun AppButton(
                     text = text,
                     // §3.3 按钮文字 15sp/600（v0.4 字阶无 15sp 档，但 §3.3 按钮行为
                     // 组件级规格、未被 v0.4 覆写表列入作废，故按 §3.3 取值）；
+                    // small 档取 13sp/600（与 OrderActionPill 等同规格小按钮一致）；
                     // U-116：v0.4 字阶已废字距，删除 letterSpacing = 1.sp；
                     // 按钮文案可内嵌金额（确认支付/立即充值），同句开 tnum（规范 §2.2 金额硬规则）
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 15.sp,
+                        fontSize = if (small) 13.sp else 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         fontFeatureSettings = "tnum",
                     ),
@@ -869,7 +881,7 @@ fun AppConfirmDialog(
                         // 危险确认 — 规范 §2.1：危险语义一律 dangerInk（浅 #A8435A / 暗 #E795A5），
                         // 不复用 error 角色色（error 留给表单校验红）
                         text = confirmText,
-                        color = if (isDanger) AppColors.colorScheme.dangerInk else AppColors.colorScheme.primary,
+                        color = if (isDanger) AppColors.colorScheme.dangerInk else AppColors.colorScheme.textGreen,
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
                     )
@@ -920,7 +932,7 @@ fun AppInfoDialog(
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.divider)
                 DialogAction(
                     text = buttonText,
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -1012,7 +1024,7 @@ fun AppInputDialog(
                     )
                     DialogAction(
                         text = stringResource(R.string.confirm),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
                     )
