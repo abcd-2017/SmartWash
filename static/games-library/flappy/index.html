@@ -7,11 +7,11 @@
 <title>指尖小鸟</title>
 <style>
 /*token:GAME-THEME.md*/
-:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-scrim:#F5F6F3E6;--g-sky1:#BFE7FB;--g-sky2:#EAF8FF;--g-cld:rgba(255,255,255,.85);--g-gnd:#E8D9A6;--g-gnd2:#D9C683;--g-gnl:#7CB85C;--g-pipe:#63C26A;--g-pipecap:#4DB057;--g-pipeln:#3F9D4F;--g-bird1:#FFE27A;--g-bird2:#F5B73D;--g-birdln:#D99B26;--g-wing:#FFF3C4;--g-beak:#FF8F3C;color-scheme:light}
-:root[data-theme=dark]{--g-bg:#141614;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-scrim:#141614E6;--g-sky1:#232B31;--g-sky2:#181D21;--g-cld:rgba(255,255,255,.25);--g-gnd:#4A4433;--g-gnd2:#3E3929;--g-gnl:#5E7A48;color-scheme:dark}
+:root{--g-bg:#F5F6F3;--g-surface:#FFF;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-border:#E6E9E6;--g-scrim:rgba(245,246,243,.9);--g-sky1:#BFE7FB;--g-sky2:#EAF8FF;--g-cld:rgba(255,255,255,.85);--g-gnd:#E8D9A6;--g-gnd2:#D9C683;--g-gnl:#7CB85C;--g-pipe:#63C26A;--g-pipecap:#4DB057;--g-pipeln:#3F9D4F;--g-bird1:#FFE27A;--g-bird2:#F5B73D;--g-birdln:#D99B26;--g-wing:#FFF3C4;--g-beak:#FF8F3C;color-scheme:light}
+:root[data-theme=dark]{--g-bg:#141614;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-border:#2C312D;--g-scrim:rgba(20,22,20,.9);--g-sky1:#232B31;--g-sky2:#181D21;--g-cld:rgba(255,255,255,.25);--g-gnd:#4A4433;--g-gnd2:#3E3929;--g-gnl:#5E7A48;color-scheme:dark}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:none}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--g-bg);color:var(--g-text);display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overscroll-behavior:none}
 header{width:100%;max-width:430px;padding:10px 14px 16px;text-align:center}
 header p{font-size:12px;color:var(--g-muted);margin-top:2px}
 #stage{position:relative;width:100%;max-width:430px;flex:1;min-height:0;touch-action:none;overflow:hidden}

@@ -73,6 +73,13 @@ JS 里零颜色字面量（白色高光/瞳孔等恒白小元素除外，见各�
 | gomoku | `--g-bd1/--g-bd2` `#F6DCAB→#ECCF92`、`--g-line` `#7A5B34`、`--g-star` `#5A4325`、`--g-shadow`=浮层档 `0 10px 24px rgba(20,40,30,.10)`；棋子黑白保留字面 | bd `#4A3D26→#3A2F1D`、line `#9A845C`、star `#B49C6E`、shadow `rgba(0,0,0,.45)`；末手标记 `--g-danger` |
 | reversi | `--g-felt/--g-felt2` `#2D9B6A→#1E8C5C`（品牌绿毛毡）、`--g-line` `#157A50`；棋子用 `--g-surface`/`--g-text`（恒白/恒暗） | felt `#1E4D3A→#173D2D`、line `#0B241A`；末手标记 `--g-danger` |
 | minesweeper | 纯 DOM；数字 n1–n8 保留原值（浅色），深色逐个提亮（见该文件 CSS）；旗/雷 SVG 色改 `var(--g-danger)` / `var(--g-text)` 系 | 面板底 `--g-surface2`、翻开格 `--g-bg`、盖格渐变用 surface 系 |
+| billiards | `--g-felt/--g-felt2` `#2F8A66/#379871`、`--g-rail` `#C9B691`、`--g-pocket` `#1A221D`；`BALL_COLORS` 8 色保留字面（球号辨识素材，2026-11-06 补登） | felt `#27604A/#2E6E55`、rail `#4E4636`、pocket `#0B0E0C`；BALL_COLORS 不变（中高明度） |
+| snow-trail | `--g-st-sky1/--g-st-sky2`（天空渐变）、`--g-st-snow1/--g-st-snow2`（雪面）、`--g-st-peak/--g-st-peak2`（山脊）（2026-11-06 补登，前缀 `st-`） | 深色为同色相压暗变体，见该文件 CSS |
+| moon-lander | `--g-sky1/--g-sky2`（天空）、`--g-moon/--g-moon2`（月面）（2026-11-06 补登） | sky `#1B242E→#141614`、moon `#3B3E36/#2F322B` |
+
+**canvas 内少量功能性 rgba 字面（D2 例外补登，2026-11-06）**：breakout 砖块损伤
+`rgba(50,40,60,…)` 与砖块描边 `rgba(0,0,0,.14)`（损伤随 hp 递增、描边恒暗）；
+gomoku 白子描边 `rgba(90,80,60,.55)`（恒亮小元素描边，与恒白高光同类）。
 
 ## 4. 深浅色三层机制实现决策（D3）
 
