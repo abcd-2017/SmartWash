@@ -33,7 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -95,12 +98,21 @@ fun SubscriptionListPage(
     val pagingItems = viewModel.pagingFlow.collectAsLazyPagingItems()
     val selectedFilter by viewModel.statusFilter.collectAsState()
 
+    // 刷新会话门控（2026-11-06 闪空态回归）：下拉刷新 / 变更重建 / 切换筛选都会先把列表清空为 0 项，
+    // 在「清空后、新加载尚未开始」的帧里 refresh=NotLoading && itemCount=0 会命中空态分支闪一帧。
+    // 会话期间一律走骨架；只有会话结束（有数据，或本轮加载已完成）才允许真实空态。
+    // 用 rememberSaveable：旋转/进程重建后 everLoaded 不丢，避免已加载完的 0 项页卡在骨架。
+    var refreshSession by rememberSaveable { mutableStateOf(false) }
+    var loadStarted by rememberSaveable { mutableStateOf(false) }
+    var everLoaded by rememberSaveable { mutableStateOf(false) }
+
     // 新建/编辑/删除/状态流转/标记已读成功回列表的刷新信号（发起页经 savedStateHandle 置位）
     val changedState = navController.currentBackStackEntry?.savedStateHandle
         ?.getStateFlow(SubscriptionRoute.CHANGED_KEY, false)
         ?.collectAsState()
     LaunchedEffect(changedState?.value) {
         if (changedState?.value == true) {
+            refreshSession = true
             viewModel.refresh()
             navController.currentBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, false)
         }
@@ -109,6 +121,23 @@ fun SubscriptionListPage(
     // 首刷/下拉刷新失败提示（append 失败由 footer 重试入口承载）
     val refreshState = pagingItems.loadState.refresh
     LaunchedEffect(refreshState) {
+        when (refreshState) {
+            is LoadState.Loading -> {
+                loadStarted = true
+                everLoaded = true
+            }
+            is LoadState.NotLoading -> {
+                // 会话结束：有数据，或本轮加载已完成（空结果也放行空态）
+                if (pagingItems.itemCount > 0 || loadStarted) {
+                    refreshSession = false
+                    loadStarted = false
+                }
+            }
+            is LoadState.Error -> {
+                refreshSession = false
+                loadStarted = false
+            }
+        }
         if (refreshState is LoadState.Error) {
             Toast.makeText(context, context.getString(R.string.subscription_error_load), Toast.LENGTH_SHORT).show()
         }
@@ -153,21 +182,26 @@ fun SubscriptionListPage(
             // 状态筛选 chips（全部/进行中/已暂停/已取消/已结束）
             StatusFilterRow(
                 selected = selectedFilter,
-                onSelect = viewModel::setStatus,
+                // 切换筛选会重建 Pager（同属刷新清空窗口），同样进入会话门控
+                onSelect = {
+                    if (selectedFilter != it) refreshSession = true
+                    viewModel.setStatus(it)
+                },
                 modifier = Modifier.padding(bottom = AppDimens.spaceXs),
             )
 
             PullToRefreshBox(
-                isRefreshing = refreshState is LoadState.Loading && pagingItems.itemCount > 0,
-                onRefresh = { pagingItems.refresh() },
+                // 会话期间保持指示器；错误/数据到达即停（见会话门控注释）
+                isRefreshing = refreshSession || (refreshState is LoadState.Loading && pagingItems.itemCount > 0),
+                onRefresh = {
+                    refreshSession = true
+                    pagingItems.refresh()
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when {
-                    // 首刷加载：骨架屏占位（禁止转圈）
-                    pagingItems.itemCount == 0 && refreshState is LoadState.Loading -> {
-                        SkeletonList(modifier = Modifier.fillMaxSize(), rows = 5)
-                    }
-                    // 首刷失败：说明 + 重试按钮（规范 §3.6 错误态）
+                    // 首刷失败：说明 + 重试按钮（规范 §3.6 错误态）。
+                    // 错误分支前置：会话门控不得掩盖真实错误（否则刷新失败时先闪一帧骨架）
                     pagingItems.itemCount == 0 && refreshState is LoadState.Error -> {
                         EmptyState(
                             icon = Icons.Rounded.Autorenew,
@@ -181,7 +215,13 @@ fun SubscriptionListPage(
                             },
                         )
                     }
-                    // 空态：滚筒圆母题 + 引导 + 行动按钮
+                    // 首刷加载 / 刷新会话清空帧 / 从未完成过加载：骨架屏占位（禁止转圈）
+                    pagingItems.itemCount == 0 &&
+                        (refreshState is LoadState.Loading || refreshSession || !everLoaded) -> {
+                        SkeletonList(modifier = Modifier.fillMaxSize(), rows = 5)
+                    }
+                    // 空态：滚筒圆母题 + 引导 + 行动按钮。
+                    // 走到这里必为 session=false && everLoaded=true（会话门控保证），语义=真实空结果
                     pagingItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
                         EmptyState(
                             icon = Icons.Rounded.Autorenew,

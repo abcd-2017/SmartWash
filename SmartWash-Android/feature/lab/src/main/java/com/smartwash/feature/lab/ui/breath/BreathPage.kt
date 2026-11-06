@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -239,19 +240,28 @@ private fun GuideStage(
             color = AppColors.colorScheme.textSecondary,
         )
         Spacer(modifier = Modifier.weight(1f))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // 主控「暂停/继续」占满内容宽（weight 内填充），低频「停止」保留紧凑独立热区：
+        // 次按钮变体内置 fillMaxWidth，不加重会把 TEXT 变体「停止」挤出屏（文字不可见、热区被覆盖）；
+        // 停止用 48dp 最小热区（TEXT 变体默认 min 44dp，此处抬到触控热区下限，视觉尺寸不变）。
+        // 行内补页面左右边距，与 ModeSelector 的开始按钮同口径（原实现整行出血贴边）。
+        Row(
+            modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             AppButton(
                 text = stringResource(
                     if (state.paused) R.string.lab_breath_resume else R.string.lab_breath_pause
                 ),
                 onClick = onPauseResume,
                 variant = AppButtonVariant.SECONDARY,
+                modifier = Modifier.weight(1f),
             )
             Spacer(modifier = Modifier.size(AppDimens.spaceMd))
             AppButton(
                 text = stringResource(R.string.lab_breath_stop),
                 onClick = onStop,
                 variant = AppButtonVariant.TEXT,
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
             )
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceXl))

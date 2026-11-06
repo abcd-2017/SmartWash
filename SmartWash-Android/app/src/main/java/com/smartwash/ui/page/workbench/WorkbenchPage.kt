@@ -46,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -851,6 +852,12 @@ private fun WorkbenchRowLine(
 /**
  * 逐项错峰入场：淡入 + 轻位移（规范 §7 列表逐项入场节奏）；
  * reduced motion（规范 §8）：取消错峰延迟与位移，纯 180ms 淡入。
+ *
+ * shown 用 rememberSaveable（2026-11-05 修复④根因之二）：工作台是 HomePage HorizontalPager
+ * 的一页（同一 nav destination），进二级页返回时整页组合销毁重建——原 remember 使 shown 归零、
+ * AnimatedVisibility 全部收起，列表项高度塌陷至近零，内容总高小于视口把恢复的滚动位置
+ * 钳制回顶部（与 VM 流重置叠加造成「返回必回顶」）。saveable 后返回即恢复 shown=true，
+ * 不塌陷、不重放入场动画（首次进入仍按规范错峰入场）。
  */
 @Composable
 private fun StaggerIn(
@@ -859,7 +866,7 @@ private fun StaggerIn(
     content: @Composable () -> Unit,
 ) {
     val reduceMotion = LocalReduceMotion.current
-    var shown by remember { mutableStateOf(false) }
+    var shown by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (reduceMotion) {
             shown = true

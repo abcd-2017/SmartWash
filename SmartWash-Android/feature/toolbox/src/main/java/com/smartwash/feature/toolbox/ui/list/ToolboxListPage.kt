@@ -31,7 +31,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -80,12 +83,21 @@ fun ToolboxListPage(
     val context = LocalContext.current
     val pagingItems = viewModel.pagingFlow.collectAsLazyPagingItems()
 
+    // 刷新会话门控（2026-11-06 闪空态回归）：下拉刷新 / 变更重建都会先把列表清空为 0 项，
+    // 在「清空后、新加载尚未开始」的帧里 refresh=NotLoading && itemCount=0 会命中空态分支闪一帧。
+    // 会话期间一律走骨架；只有会话结束（有数据，或本轮加载已完成）才允许真实空态。
+    // 用 rememberSaveable：旋转/进程重建后 everLoaded 不丢，避免已加载完的 0 项页卡在骨架。
+    var refreshSession by rememberSaveable { mutableStateOf(false) }
+    var loadStarted by rememberSaveable { mutableStateOf(false) }
+    var everLoaded by rememberSaveable { mutableStateOf(false) }
+
     // 创建/续期/删除成功回列表的刷新信号（发起页经 savedStateHandle 置位）
     val changedState = navController.currentBackStackEntry?.savedStateHandle
         ?.getStateFlow(ToolboxRoute.CHANGED_KEY, false)
         ?.collectAsState()
     LaunchedEffect(changedState?.value) {
         if (changedState?.value == true) {
+            refreshSession = true
             viewModel.refresh()
             navController.currentBackStackEntry?.savedStateHandle?.set(ToolboxRoute.CHANGED_KEY, false)
         }
@@ -94,6 +106,23 @@ fun ToolboxListPage(
     // 首刷/下拉刷新失败提示（append 失败由 footer 重试入口承载，见列表尾）
     val refreshState = pagingItems.loadState.refresh
     LaunchedEffect(refreshState) {
+        when (refreshState) {
+            is LoadState.Loading -> {
+                loadStarted = true
+                everLoaded = true
+            }
+            is LoadState.NotLoading -> {
+                // 会话结束：有数据，或本轮加载已完成（空结果也放行空态）
+                if (pagingItems.itemCount > 0 || loadStarted) {
+                    refreshSession = false
+                    loadStarted = false
+                }
+            }
+            is LoadState.Error -> {
+                refreshSession = false
+                loadStarted = false
+            }
+        }
         if (refreshState is LoadState.Error) {
             Toast.makeText(context, context.getString(R.string.toolbox_error_load), Toast.LENGTH_SHORT).show()
         }
@@ -126,16 +155,17 @@ fun ToolboxListPage(
             )
 
             PullToRefreshBox(
-                isRefreshing = refreshState is LoadState.Loading && pagingItems.itemCount > 0,
-                onRefresh = { pagingItems.refresh() },
+                // 会话期间保持指示器；错误/数据到达即停（见会话门控注释）
+                isRefreshing = refreshSession || (refreshState is LoadState.Loading && pagingItems.itemCount > 0),
+                onRefresh = {
+                    refreshSession = true
+                    pagingItems.refresh()
+                },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when {
-                    // 首刷加载：骨架屏占位（禁止转圈）
-                    pagingItems.itemCount == 0 && refreshState is LoadState.Loading -> {
-                        SkeletonList(modifier = Modifier.fillMaxSize(), rows = 5)
-                    }
-                    // 首刷失败：说明 + 重试按钮（规范 §3.6 错误态）
+                    // 首刷失败：说明 + 重试按钮（规范 §3.6 错误态）。
+                    // 错误分支前置：会话门控不得掩盖真实错误（否则刷新失败时先闪一帧骨架）
                     pagingItems.itemCount == 0 && refreshState is LoadState.Error -> {
                         EmptyState(
                             icon = Icons.Rounded.Link,
@@ -149,7 +179,13 @@ fun ToolboxListPage(
                             },
                         )
                     }
-                    // 空态：滚筒圆母题 + 引导 + 行动按钮
+                    // 首刷加载 / 刷新会话清空帧 / 从未完成过加载：骨架屏占位（禁止转圈）
+                    pagingItems.itemCount == 0 &&
+                        (refreshState is LoadState.Loading || refreshSession || !everLoaded) -> {
+                        SkeletonList(modifier = Modifier.fillMaxSize(), rows = 5)
+                    }
+                    // 空态：滚筒圆母题 + 引导 + 行动按钮。
+                    // 走到这里必为 session=false && everLoaded=true（会话门控保证），语义=真实空结果
                     pagingItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
                         EmptyState(
                             icon = Icons.Rounded.Link,
@@ -245,8 +281,11 @@ private fun AppendLoadingRow() {
 /**
  * 短链条目卡（画板「短链管理」312×122 · r16 · surface 底 + 1px outline 描边 +
  * 阴影 AppElevation.level1（规范 §2.4 卡片档，替代原「无阴影」写法））：
- * 图标盒 36（蓝·链接语义，icon 24）+ 短码（title 18/600 + tnum）+ 类型/可见性 chip +
- * 右列（点击数/有效期 caption 12/400 + 复制描边按钮），次行为目标链接预览（caption，单行省略）。
+ * 顶行 = 图标盒 36（蓝·链接语义，icon 20）+ 短码（title 18/600 + tnum）+ 类型/可见性 chip +
+ * 右列（点击数 + 复制描边按钮）；有效期独占一行置于顶行下方、与短码列左对齐
+ * （2026-11-05 修复⑦：原右列塞「点击数/有效期/复制」三件，有效期文本无宽度约束，
+ * 窄屏（≈360dp）把中间 weight 列挤没、「公开」chip 被顶成竖排）；次行为目标链接预览
+ * （caption，单行省略）。
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -345,38 +384,42 @@ private fun ShortCodeCard(
                         color = AppColors.colorScheme.textSecondary,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    // 画板实测：常态 caption 12/400（textSecondary），过期态 captionStrong 12/500（error）
-                    val (expiryText, expiryColor, expiryStyle) = when (expiryState) {
-                        is ShortCodeRules.ExpiryState.Permanent ->
-                            Triple(
-                                stringResource(R.string.toolbox_expiry_permanent),
-                                AppColors.colorScheme.textSecondary,
-                                MaterialTheme.typography.bodySmall,
-                            )
-                        is ShortCodeRules.ExpiryState.Expired ->
-                            Triple(
-                                stringResource(R.string.toolbox_expiry_expired),
-                                AppColors.colorScheme.dangerInk,
-                                MaterialTheme.typography.labelSmall,
-                            )
-                        is ShortCodeRules.ExpiryState.Active ->
-                            Triple(
-                                stringResource(
-                                    R.string.toolbox_expiry_until_format,
-                                    ShortCodeRules.formatDisplayDateTime(vo.expireAt),
-                                ),
-                                AppColors.colorScheme.textSecondary,
-                                MaterialTheme.typography.bodySmall,
-                            )
-                    }
-                    Text(
-                        text = expiryText,
-                        style = expiryStyle,
-                        color = expiryColor,
-                    )
                     CopyPillButton(onClick = onCopy)
                 }
             }
+            // 有效期独占整行（修复⑦）：与短码列左对齐——短码列 x = 卡内边距 20 + 图标盒 36 +
+            // 间距 12 = 68dp（自卡片边缘），本行已在外层 20dp 内边距 Column 内，故补 48dp。
+            // 独占整行不再与 chips 竞争宽度，任何屏宽都完整可读。
+            // 画板实测：常态 caption 12/400（textSecondary），过期态 captionStrong 12/500（error）
+            val (expiryText, expiryColor, expiryStyle) = when (expiryState) {
+                is ShortCodeRules.ExpiryState.Permanent ->
+                    Triple(
+                        stringResource(R.string.toolbox_expiry_permanent),
+                        AppColors.colorScheme.textSecondary,
+                        MaterialTheme.typography.bodySmall,
+                    )
+                is ShortCodeRules.ExpiryState.Expired ->
+                    Triple(
+                        stringResource(R.string.toolbox_expiry_expired),
+                        AppColors.colorScheme.dangerInk,
+                        MaterialTheme.typography.labelSmall,
+                    )
+                is ShortCodeRules.ExpiryState.Active ->
+                    Triple(
+                        stringResource(
+                            R.string.toolbox_expiry_until_format,
+                            ShortCodeRules.formatDisplayDateTime(vo.expireAt),
+                        ),
+                        AppColors.colorScheme.textSecondary,
+                        MaterialTheme.typography.bodySmall,
+                    )
+            }
+            Text(
+                text = expiryText,
+                style = expiryStyle,
+                color = expiryColor,
+                modifier = Modifier.padding(start = 48.dp),
+            )
             if (!vo.target.isNullOrBlank()) {
                 Text(
                     text = vo.target,

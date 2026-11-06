@@ -112,6 +112,9 @@ fun FluidPage(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            // 先把 GL 资源释放投递给仍在运行的 GL 线程，再暂停线程（顺序不能反，
+            // 否则释放事件永远停在队列里 → GPU 资源泄漏，见 FluidGLSurfaceView.disposeResources）
+            glView.disposeResources()
             glView.onPause()
         }
     }

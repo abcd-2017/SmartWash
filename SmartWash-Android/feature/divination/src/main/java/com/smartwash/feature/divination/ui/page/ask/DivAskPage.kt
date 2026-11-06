@@ -217,7 +217,14 @@ fun DivAskPage(
             onClick = {
                 when (state.method) {
                     DivMethod.LIU_YAO -> when (state.liuYaoMode) {
-                        LiuYaoCastMode.SHAKE -> navController.navigate(DivRoute.Cast())
+                        // 摇卦与手动爻值同源传参：问词 + 领域随路由带入，
+                        // 成卦案卷问词、卦盘用神口径、解读上下文才完整（缺省会存空问词/恒「其他」）
+                        LiuYaoCastMode.SHAKE -> navController.navigate(
+                            DivRoute.Cast(
+                                question = state.question.trim(),
+                                category = state.category.id,
+                            )
+                        )
                         LiuYaoCastMode.LINES -> showLinesDialog = true
                         LiuYaoCastMode.MANUAL -> showLinesDialog = true
                     }

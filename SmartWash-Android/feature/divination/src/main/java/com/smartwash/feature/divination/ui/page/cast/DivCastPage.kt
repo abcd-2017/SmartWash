@@ -183,7 +183,9 @@ fun DivCastPage(
                             val yaoCode = committed ?: (if (isPending) pendingYao?.code else null)
                             MeridianNode(
                                 positionLabel = posLabel,
-                                yangLine = yaoCode?.let { it == 1 || it == 3 },
+                                // 修复⑥：爻线改由 MeridianNode 内部图形绘制（48dp 等宽条/双段），
+                                // 不再经文本字形（"▅▅▅▅▅▅"/"▅▅  ▅▅"）——空格宽≠块宽致阴爻不对称
+                                yaoCode = yaoCode,
                                 nameLabel = yaoCode?.let {
                                     when (it) {
                                         1 -> "少阳"
@@ -193,6 +195,7 @@ fun DivCastPage(
                                     }
                                 },
                                 isMoving = yaoCode != null && yaoCode > 2,
+                                done = yaoCode != null,
                             )
                         }
                     }
@@ -209,7 +212,7 @@ fun DivCastPage(
                 } else {
                     stringResource(R.string.div_cast_toss)
                 },
-                // 画板（2026-11-05 摇卦）.btn.gold：52 高 + r14 + 文字 15/600（取组件默认，不再单侧覆盖）
+                // 画板 .btn.gold：48 高 + 胶囊 + 文字 15/600（取组件默认，不再单侧覆盖）
                 enabled = !state.tossing && !state.saving && pendingYao == null,
                 modifier = Modifier
                     .padding(horizontal = 76.dp, vertical = 14.dp)

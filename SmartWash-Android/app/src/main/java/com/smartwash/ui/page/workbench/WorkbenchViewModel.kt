@@ -67,7 +67,15 @@ class WorkbenchViewModel @Inject constructor(
     /** 已关闭公告 entryKey 集合（关闭即永久过滤，下拉刷新/重装恢复） */
     private val _dismissedNotices = MutableStateFlow<Set<String>>(emptySet())
 
-    /** 展示列表 = 下发列表 − 已关闭公告 − 搜索过滤（搜索态下页面退化为平铺网格） */
+    /**
+     * 展示列表 = 下发列表 − 已关闭公告 − 搜索过滤（搜索态下页面退化为平铺网格）。
+     *
+     * SharingStarted.Lazily（2026-11-05 修复④）：原 WhileSubscribed(5_000) 在离开页面
+     * 超 5 秒后把 StateFlow 重置回 initialValue=空列表，返回时首帧以空内容渲染，
+     * LazyColumn 把 rememberSaveable 恢复的滚动位置钳制回顶部（点二级页返回即回顶）。
+     * Lazily 首次订阅后常驻缓存（VM 生命周期内不重置），返回时内容无缝、滚动位置保持。
+     * 本页数据为服务端下发配置（低频变化），常驻缓存无一致性风险。
+     */
     val visibleTools: StateFlow<List<WorkbenchTool>> =
         combine(_tools, _searchQuery, _dismissedNotices) { tools, query, dismissed ->
             val base = tools.filterNot { it.layout == WorkbenchLayout.NOTICE && it.entryKey in dismissed }
@@ -79,13 +87,13 @@ class WorkbenchViewModel @Inject constructor(
                         it.description.contains(query, ignoreCase = true)
                 }
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    /** 最近使用 = 本地记忆 key 按序映射回当次下发列表（已下线的入口自动消失） */
+    /** 最近使用 = 本地记忆 key 按序映射回当次下发列表（已下线的入口自动消失）；Lazily 同上（修复④） */
     val recentTools: StateFlow<List<WorkbenchTool>> =
         combine(_recentKeys, _tools) { keys, tools ->
             keys.mapNotNull { key -> tools.firstOrNull { it.entryKey == key } }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     /** 深链解析结果一次性回流（点击 → resolve → 页面 navigate），extraBuffer 兜连点 */
     private val _navigateAction = MutableSharedFlow<DeepLinkAction>(extraBufferCapacity = 4)
