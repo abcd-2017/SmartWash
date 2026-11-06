@@ -268,7 +268,7 @@ fun MoodErrorState(
             Text(
                 text = stringResource(R.string.mood_action_retry),
                 style = MaterialTheme.typography.labelMedium,
-                color = AppColors.colorScheme.primary,
+                color = AppColors.colorScheme.textGreen,
                 // 同 MoodSmallAction：固定 36dp 后 wrapContentHeight 保持文字垂直居中
                 modifier = Modifier
                     .wrapContentHeight(Alignment.CenterVertically)

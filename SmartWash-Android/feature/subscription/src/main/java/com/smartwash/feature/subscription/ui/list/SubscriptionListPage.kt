@@ -124,7 +124,7 @@ fun SubscriptionListPage(
                 title = stringResource(R.string.subscription_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    // 页头文字动作 — 画板实测：font.title 18/24/600，热区 48 高（同 ToolboxListPage）
+                    // 页头文字动作 — font.title 18/24/600（≥18sp 绿字豁免保留 primaryDark），热区 48 高（同 ToolboxListPage）
                     Box(
                         modifier = Modifier
                             .pressable(onClick = { navController.navigateToSubscriptionReminders() })

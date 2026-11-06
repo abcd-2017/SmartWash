@@ -232,13 +232,13 @@ fun IndexPage(
                             style = AppTextStyles.SectionTitle,
                             color = AppColors.colorScheme.textPrimary
                         )
-                        // 行内「查看全部」— 16sp SemiBold primaryDark（green.700，规范 §10 绿色文字红线），
+                        // 行内「查看全部」— 16sp SemiBold textGreen（2026-11-06 评审 R17：原 primaryDark on 白 4.23:1 不足 AA），
                         // 无 ripple，48dp 热区（D-I7）；文字右缘对齐页面 24 边距（设计稿实测 y=444 右缘 336）；
                         // 默认进「全部订单」tab（itemId=0，原 WASHING 与「查看全部」语义不符）
                         Text(
                             text = stringResource(R.string.view_all),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = AppColors.colorScheme.primaryDark,
+                            color = AppColors.colorScheme.textGreen,
                             modifier = Modifier
                                 .pressable(
                                     onClick = rememberDebouncedClick {
@@ -371,9 +371,9 @@ private fun StatusHeroCard(
                     Modifier
                 }
             )
-            // U-110：Hero 卡圆角 20dp 不在规范 §3 允许集 {8,12,16,24,full}；
-            // 取 radius.card 16（卡片全 App 统一档，§3 明令禁止 12/16 混用），不用 24（该档为底部弹层）
-            .clip(RoundedCornerShape(AppDimens.radiusLg))
+            // [P06] 2026-11-05 画板复裁：hero 状态卡圆角 20（画板实测 r20 = 规范 §2.3 v0.4
+            // radiusHero「hero、大容器」档，AppDimens.radiusXl 即该档；U-110 旧注释误读规范）
+            .clip(RoundedCornerShape(AppDimens.radiusXl))
             .background(gradient)
             .background(scrim)
             .padding(20.dp)
@@ -495,9 +495,9 @@ private fun StatusHeroCard(
                 ) {
                     Text(
                         text = stringResource(R.string.service_booking),
-                        // 白底上用深绿 #1E8C5C（green.700，on 白 4.23:1；16sp/600 满足 §10 绿色文字档）
+                        // 白底上用文字绿 textGreen #177A4C（2026-11-06 评审 R17：原 #1E8C5C on 白 4.23:1 不足 AA → 5.1:1）
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = AppColors.colorScheme.primaryDark
+                        color = AppColors.colorScheme.textGreen
                     )
                 }
             }
@@ -735,8 +735,10 @@ private fun OrderListItem(
         modifier = Modifier
             .fillMaxWidth()
             .pressable(onClick = onClick)
-            // §3.4 列表行高 56dp：图标容器 36 + 上下各 10dp（原 16dp 会得 68dp）
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            // [P06] 2026-11-05 画板复裁：行高 74（画板订单卡两行行距 74px、1px 分隔线居中；
+            // 图标盒 36 / 文本块 40 垂直居中）——显式 height，内容由 CenterVertically 居中
+            .height(74.dp)
+            .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 图标容器色按状态语义（设计稿首页画板实测）：清洗中→water 水蓝（icon.md 20），其余→橙（进行中待办语义）

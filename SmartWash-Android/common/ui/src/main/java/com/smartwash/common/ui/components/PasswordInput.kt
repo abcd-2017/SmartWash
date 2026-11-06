@@ -55,12 +55,24 @@ fun PasswordInput(
     showVisibility: () -> Unit,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier,
-    // 占位文案（2026-11-01 还原设计稿：登录「密码」/ 注册「设置密码」；默认 password_hint）
+    // 占位文案（登录「密码」/ 注册「设置密码」；默认 password_hint）
     hint: String? = null,
+    // [P01/P02] 2026-11-05 画板复裁：玻璃卡输入行上方恢复独立字段标签行（白色 12sp 小字，
+    // label 与输入行间距 4dp）；label 与占位同文案会重复 → 有 label 时隐藏占位符
+    label: String? = null,
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 2026-11-01 用户拍板还原：设计稿 .gi 只有 placeholder（占位即字段名），无独立可见 label
+        // 字段标签行（设计稿登录/注册画板：label 白 12sp 小字位于输入行上方，间距小）
+        if (label != null) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = contentColor,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
         // 输入行：高 48dp（§3.7 行高 48–50dp），文字与图标垂直居中
         Row(
             modifier = Modifier
@@ -96,7 +108,8 @@ fun PasswordInput(
                 visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 decorationBox = { innerTextField ->
                     Box {
-                        if (password.isEmpty()) {
+                        // 有 label 时隐藏占位符（占位=字段名，与 label 文案重复）
+                        if (password.isEmpty() && label == null) {
                             // §3.7：占位符字号与正文一致
                             Text(
                                 text = hint ?: stringResource(R.string.password_hint),

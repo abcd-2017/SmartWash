@@ -92,7 +92,9 @@ fun RechargePage(
     // 默认选中第一档（2026-11-01 缺陷 8c：原初始全空导致页面无任何高亮项）
     var selectedAmount by remember { mutableStateOf<Float?>(10f) }
     var customAmount by remember { mutableStateOf("") }
-    var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(null) }
+    // 默认选中微信支付（设计稿 P15：微信支付行有选中勾；原 null 导致进入页面无选中项，
+    // 且未选就提交会触发「请选择支付方式」报错）
+    var selectedPaymentMethod by remember { mutableStateOf<PaymentMethod?>(PaymentMethod.WECHAT) }
     var isCustomAmountSelected by remember { mutableStateOf(false) }
     var showPayError by remember { mutableStateOf(false) }
     // 金额校验失败原因（null 为通过）：文案随原因细分，见 RechargeAmountError
@@ -170,7 +172,7 @@ fun RechargePage(
                 // 画板实测区块间距 24（余额→充值金额标题、输入框→支付方式）
                 verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXl)
             ) {
-                // 账户余额（画板实测：直出页面底，无卡片；12/400 + DataLarge primaryDark）
+                // 账户余额（画板实测：直出页面底，无卡片；12/400 + DataLarge primaryDark，≥18sp 绿字豁免）
                 item(key = "balance") {
                     Column {
                         Text(
@@ -187,7 +189,7 @@ fun RechargePage(
                 }
 
                 // 充值金额（设计稿 .amount3：3 列网格 6 格 = 5 档 + 自定义；赠额随档入格，
-                // 选中态 = 1.5dp primary 描边 + primarySoft 底 + primaryDark 字）
+                // 格 = surfaceVariant 填充无边框、选中 primarySoft 实底，见 AmountGridCell）
                 item(key = "amount") {
                     Column {
                         Text(
@@ -411,9 +413,10 @@ fun RechargePage(
 }
 
 /**
- * 金额档位格（设计稿 .amount3 单元格）：72dp 高 / r14 / 1dp outline 描边 / surface 底；
- * 选中态 1.5dp primary 描边 + primarySoft 底 + primaryDark 字。赠额随档常驻（<em> 口径：
- * 11sp/500/ongoingInk），不只在选中时出现——让用户未选中也能看到各档赠额。
+ * 金额档位格（P15 裁定，设计稿 .amount3 单元格）：白卡上的 surfaceVariant 填充块
+ * 无边框 / r14 / 格高 64；选中态 = primarySoft 浅绿实底、无描边（深色 = DarkPrimarySoft
+ * 深绿实底 + 提亮字，令牌成对）。赠额随档常驻（<em> 口径：12sp/500/ongoingInk），
+ * 不只在选中时出现——让用户未选中也能看到各档赠额。
  */
 @Composable
 private fun AmountGridCell(
@@ -424,21 +427,17 @@ private fun AmountGridCell(
     modifier: Modifier = Modifier,
 ) {
     val bgColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surface
+        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant
     )
     val textColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textPrimary
-    )
-    val borderColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+        if (isSelected) AppColors.colorScheme.textGreenOnTint else AppColors.colorScheme.textPrimary
     )
     Surface(
         modifier = modifier
-            .height(72.dp)
+            .height(64.dp)
             .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
-        color = bgColor,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
+        color = bgColor
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -466,7 +465,8 @@ private fun AmountGridCell(
 }
 
 /**
- * 「自定义」格（设计稿 .amount3 第 6 格）：与档位格同尺寸同选中态语言，文案 12sp/500。
+ * 「自定义」格（设计稿 .amount3 第 6 格）：与档位格同尺寸同选中态语言（surfaceVariant
+ * 填充无边框 / 选中 primarySoft 实底 / 格高 64），文案 12sp/500。
  */
 @Composable
 private fun CustomAmountCell(
@@ -475,21 +475,17 @@ private fun CustomAmountCell(
     modifier: Modifier = Modifier,
 ) {
     val bgColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surface
+        if (isSelected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant
     )
     val textColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primaryDark else AppColors.colorScheme.textSecondary
-    )
-    val borderColor = selectedColor(
-        if (isSelected) AppColors.colorScheme.primary else AppColors.colorScheme.outline
+        if (isSelected) AppColors.colorScheme.textGreenOnTint else AppColors.colorScheme.textSecondary
     )
     Surface(
         modifier = modifier
-            .height(72.dp)
+            .height(64.dp)
             .pressable(onClick = onClick, debounce = false),
         shape = RoundedCornerShape(AppDimens.buttonRadius),
-        color = bgColor,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
+        color = bgColor
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
@@ -504,7 +500,7 @@ private fun CustomAmountCell(
 
 /**
  * 动态到账说明（设计稿 .amount3 下方 .s13 行）：按当前选中档展示
- * 「充值 ¥50.00 · 到账 ¥52.00（含赠送 ¥2.00）」，到账金额加粗 + primaryDark。
+ * 「充值 ¥50.00 · 到账 ¥52.00（含赠送 ¥2.00）」，到账金额加粗 + textGreen（2026-11-06 评审 R17）。
  * 替代原静态「充值多少送多少」提示行——静态罗列三档赠额既干扰视觉又无法回应当前选择。
  */
 @Composable
@@ -519,7 +515,7 @@ private fun RechargeSummaryLine(selectedAmount: Float?, isCustom: Boolean) {
                 stringResource(R.string.recharge_summary_prefix, String.format("%.2f", amount))
             )
             withStyle(
-                SpanStyle(fontWeight = FontWeight.Bold, color = AppColors.colorScheme.primaryDark)
+                SpanStyle(fontWeight = FontWeight.Bold, color = AppColors.colorScheme.textGreen)
             ) {
                 append(stringResource(R.string.currency_format, String.format("%.2f", total)))
             }
@@ -595,13 +591,14 @@ private fun CustomAmountInput(
 private fun PaymentMethodCard(
     method: PaymentMethod, isSelected: Boolean, onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .pressable(onClick = onClick, debounce = false)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pressable(onClick = onClick, debounce = false)
+                // P15 裁定：画板支付行上下内边距 12（行高 60，图标盒 36 居中），原 15 偏松
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         // 官方品牌图标（2026-11-01 缺陷 8a）：原微信=Message/支付宝=Payment 通用 Material 图标
         // 违反规范 §4.4「第三方品牌图标不得换成通用组件」红线，替换为官方矢量（Simple Icons，CC0）；
         // 着色用官方品牌色（红线豁免：品牌色不得换）。品牌件是 VectorDrawable 而本仓库 compose 版本

@@ -65,8 +65,14 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** 四元组辅助类（替代 Triple，支持 4 个参数） */
-private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+/** 玉牌条目辅助类（method + 名称 + 定位 + 适用场景 + 推荐 tag 资源 id） */
+private data class JadeEntry(
+    val method: DivMethod,
+    val nameRes: Int,
+    val descRes: Int,
+    val useForRes: Int,
+    val tagRes: Int?,
+)
 
 /**
  * 观象台首页（原型 DivHome）：干支天象头 + 缓转罗盘 + 四术玉牌（竖排名）+ 今日一签 + 案卷。
@@ -127,24 +133,25 @@ fun DivHomePage(
         // 12sp 定位文案（约 108dp）必然折成 3–4 行溢出 128dp 定高 → 文字互相叠压，观感很脏。
         // 现回归原型 2×2：单牌 ~154dp、内容宽 ~122dp，文案两行刚好放下，四牌同构同行高一致。
         val jadeEntries = listOf(
-            Quad(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_tag),
-            Quad(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, null),
-            Quad(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, null),
-            Quad(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, null),
+            JadeEntry(DivMethod.LIU_YAO, R.string.div_method_liuyao_name, R.string.div_method_liuyao_desc, R.string.div_method_liuyao_use_for, R.string.div_method_liuyao_tag),
+            JadeEntry(DivMethod.MEI_HUA, R.string.div_method_meihua_name, R.string.div_method_meihua_desc, R.string.div_method_meihua_use_for, null),
+            JadeEntry(DivMethod.QI_MEN, R.string.div_method_qimen_name, R.string.div_method_qimen_desc, R.string.div_method_qimen_use_for, null),
+            JadeEntry(DivMethod.LIU_REN, R.string.div_method_liuren_name, R.string.div_method_liuren_desc, R.string.div_method_liuren_use_for, null),
         )
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             jadeEntries.chunked(2).forEach { rowEntries ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    rowEntries.forEach { (method, nameRes, descRes, tagRes) ->
+                    rowEntries.forEach { entry ->
                         JadeEntryTile(
-                            method = method,
-                            name = stringResource(nameRes),
-                            desc = stringResource(descRes),
-                            tag = tagRes?.let { stringResource(it) },
-                            featured = tagRes != null,
+                            method = entry.method,
+                            name = stringResource(entry.nameRes),
+                            desc = stringResource(entry.descRes),
+                            useFor = stringResource(entry.useForRes),
+                            tag = entry.tagRes?.let { stringResource(it) },
+                            featured = entry.tagRes != null,
                             onClick = {
                                 view.performHaptic(HapticEffect.LIGHT)
-                                navController.navigate(DivRoute.Ask(method.id))
+                                navController.navigate(DivRoute.Ask(entry.method.id))
                             },
                             modifier = Modifier.weight(1f),
                         )
@@ -270,7 +277,8 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
 
 /**
  * 四术玉牌（原型 .jade / .jade-grid）：2×2 等分网格中的单牌 ——
- * 定制线描 glyph（左上）+ 竖排术名（右上）+ 一句话定位（两行）+ 推荐 tag（紧随定位，仅六爻）。
+ * 定制线描 glyph（左上）+ 竖排术名（右上）+ 一句话定位（两行）+ 适用场景（第三行灰字，画板 12/15）
+ * + 推荐 tag（紧随适用场景之下，仅六爻）。
  *
  * 层级：六爻为首选术，用「鎏金渐变描边 + 推荐 tag + glyph 40dp」加大；
  * 其余三牌用 12% 金发丝描边 + glyph 34dp，同一网格内主次分明而不靠尺寸割裂。
@@ -283,6 +291,7 @@ private fun JadeEntryTile(
     method: DivMethod,
     name: String,
     desc: String,
+    useFor: String,
     tag: String?,
     featured: Boolean,
     onClick: () -> Unit,
@@ -327,6 +336,15 @@ private fun JadeEntryTile(
         Spacer(Modifier.height(8.dp))
         Text(
             text = desc,
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = c.textSecondary,
+        )
+        Spacer(Modifier.height(4.dp))
+        // 适用场景第三行 — 画板 use_for 行 12/15 次要灰（desc 之下、tag 之上）；
+        // 弱化色取 textSecondary（宣纸 textTertiary 为全墨，作灰字反而更重）
+        Text(
+            text = useFor,
             fontSize = 12.sp,
             lineHeight = 16.sp,
             color = c.textSecondary,

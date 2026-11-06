@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -156,7 +157,7 @@ fun PaySuccessPage(
                         // 庆祝卡（DESIGN-SPEC v0.4 §3.1 唯一卡片画法：surface 白底 + 1px outline 描边 +
                         // softCardShadow = CSS 0 2px 12px rgba(20,40,30,.05)；上 40 / 下 44 内边距；
                         // 成功圆 44 = primaryLight 容器 + 勾 28 = primary；结果大标题 28/700，绿字取
-                        // primaryDark（浅 #1E8C5C / 深 #5BC894，画板实测）
+                        // primaryDark（28sp 结果大标题，≥18sp 绿字豁免，2026-11-06 评审 R17 保留）
                         Surface(
                             modifier = Modifier.fillMaxWidth().softCardShadow(),
                             shape = RoundedCornerShape(AppDimens.radiusLg),
@@ -277,8 +278,8 @@ fun PaySuccessPage(
                                     start = AppDimens.cardPadding,
                                     end = AppDimens.cardPadding,
                                     top = AppDimens.spaceXl,
-                                    // 画板实测 14 不在 4dp 网格，收敛为 16
-                                    bottom = 16.dp
+                                    // P14 裁定：卡底距随画板改 24（原 16 系旧版画板读数）
+                                    bottom = AppDimens.spaceXl
                                 ),
                                 verticalAlignment = Alignment.Top
                             ) {
@@ -289,15 +290,13 @@ fun PaySuccessPage(
                                 )
                                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                                 // 下沉 8 使首行与 36 图标盒中心对齐（画板实测图标盒中心 = 首行中心）；
-                                // 行文字画板实测 14/400（bodyMedium 档），非 16sp
+                                // 行文字画板实测 14/400（bodyMedium 档），非 16sp；
+                                // P14 裁定：删除卡内首行「寄存柜信息」（与卡外区块标题完全重复，
+                                // 画板卡内仅 3 行）
                                 Column(
                                     modifier = Modifier.padding(top = 8.dp),
                                     verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)
                                 ) {
-                                    Text(
-                                        stringResource(R.string.locker_info_title),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
                                     Text(
                                         stringResource(R.string.locker_deposited_format, orderInfo?.lockersVo?.lockerNumber?.toString() ?: "-"),
                                         // 柜号是编号类数字，开 tnum（规范 §2.2）
@@ -320,43 +319,51 @@ fun PaySuccessPage(
                         Spacer(modifier = Modifier.height(AppDimens.sectionSpacing))
                     }
 
-                    // 底部操作区（画板实测：主按钮 48 高 / 胶囊 / 纯色 primary / 字 18·600 onPrimary；
+                    // 底部操作区（P14 裁定补底条：surface 令牌底 + 顶部 0.5dp outline 分隔线，
+                    // 与支付/充值页底部操作条同画法；主按钮 48 高 / 胶囊 / 纯色 primary / 字 18·600 onPrimary；
                     // 下附「返回首页」文字链 12/400 textSecondary）
-                    Column(modifier = Modifier.navigationBarsPadding()) {
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = AppDimens.pagePadding)
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .pressable(onClick = {
-                                    navController.navigate(
-                                        OrderRoute.PickupDelivery(orderInfo?.orderId ?: -1, OrderRoute.PICKUP_TYPE_DELIVERY)
-                                    ) {
-                                        popUpTo<PaymentRoute.PaySuccess> { inclusive = true }
-                                    }
-                                })
-                                .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.go_ship_now),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                        // 触控 ≥48dp 红线：文字链垂直内边距 16（画板视觉间距 8）
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .pressable(onClick = { navController.popBackStack<ShellRoute.Home>(inclusive = false) })
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.back_home),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textSecondary
-                            )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(AppColors.colorScheme.surface)
+                    ) {
+                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
+                        Column(modifier = Modifier.navigationBarsPadding()) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = AppDimens.pagePadding)
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .pressable(onClick = {
+                                        navController.navigate(
+                                            OrderRoute.PickupDelivery(orderInfo?.orderId ?: -1, OrderRoute.PICKUP_TYPE_DELIVERY)
+                                        ) {
+                                            popUpTo<PaymentRoute.PaySuccess> { inclusive = true }
+                                        }
+                                    })
+                                    .background(AppColors.colorScheme.primary, RoundedCornerShape(AppDimens.radiusFull)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.go_ship_now),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                            // 触控 ≥48dp 红线：文字链垂直内边距 16（画板视觉间距 8）
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .pressable(onClick = { navController.popBackStack<ShellRoute.Home>(inclusive = false) })
+                                    .padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.back_home),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = AppColors.colorScheme.textSecondary
+                                )
+                            }
                         }
                     }
                 }

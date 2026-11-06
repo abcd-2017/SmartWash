@@ -151,7 +151,7 @@ fun MaterialListPage(
                             text = stringResource(R.string.review_material_action_new),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = AppColors.colorScheme.primary,
+                            color = AppColors.colorScheme.textGreen,
                         )
                     }
                 },
@@ -432,7 +432,7 @@ private fun MaterialCard(
                     ),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Medium,
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                 )
             }
             if (!material.rawText.isNullOrBlank()) {
@@ -474,7 +474,7 @@ private fun MaterialCard(
                                 text = stringResource(R.string.review_material_add_card),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primary,
+                                color = AppColors.colorScheme.textGreen,
                             )
                         }
                     }
@@ -536,7 +536,7 @@ private fun ExpandedCardsContent(
                         text = stringResource(R.string.review_action_retry),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                     )
                 }
             }
@@ -570,7 +570,7 @@ private fun ExpandedCardsContent(
                             text = stringResource(R.string.review_material_load_more),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = AppColors.colorScheme.primary,
+                            color = AppColors.colorScheme.textGreen,
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -626,7 +626,7 @@ private fun LoadMoreRow(loading: Boolean, onClick: () -> Unit) {
                 text = stringResource(R.string.review_material_load_more),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = AppColors.colorScheme.primary,
+                color = AppColors.colorScheme.textGreen,
             )
         }
     }

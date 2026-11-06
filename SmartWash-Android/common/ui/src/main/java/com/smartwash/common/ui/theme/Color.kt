@@ -76,6 +76,14 @@ val TextPrimary = Color(0xFF1C1C1E)
 val TextSecondary = Color(0xFF6B6E73)   // 次文本（对比度更高）
 val TextTertiary = Color(0xFFA9AEA9)    // 弱文本（规范 §1.4 收敛 #9A9DA3→#A9AEA9）
 
+// 文字绿深档（2026-11-06 设计规范评审 R17/R18/R22：#2D9B6A on 白仅 3.5:1、#1E8C5C on 白 4.23:1，
+// 均不足 AA 4.5:1）——仅用于「文字」语义（Text / 按钮文字），图标与图形着色仍走 primary/primaryDark：
+//   textGreen       —— 白/surface 浅底上的小号绿字（#177A4C on #FFFFFF ≈5.1:1，达 AA）
+//   textGreenOnTint —— tinted 浅底（surfaceVariant/primaryContainer/warningContainer 等）上的小号绿字
+// 深色两档同为 #5BC894（深色 primary 提亮档，on 深色底达标）。≥18sp 绿字按大字 3:1 豁免，不改用本档。
+val TextGreen = Color(0xFF177A4C)
+val TextGreenOnTint = Color(0xFF146841)
+
 // 分隔线
 val Divider = Color(0xFFEFF1EE)
 
@@ -162,6 +170,10 @@ val DarkTextPrimary = Color(0xFFE6E9E6)
 val DarkTextSecondary = Color(0xFFA9AEA9)
 val DarkTextTertiary = Color(0xFF7E837D)
 
+// 文字绿深档（深色版）——与浅色 textGreen/textGreenOnTint 同值，深色底上均达 AA
+val DarkTextGreen = Color(0xFF5BC894)
+val DarkTextGreenOnTint = Color(0xFF5BC894)
+
 // 分隔线
 val DarkDivider = Color(0xFF262A27)
 
@@ -211,8 +223,9 @@ val GlassTextActive = Color.White.copy(alpha = 0.8f)     // 激活文字
 // ========== 错误色变体 ==========
 val ErrorLight = Color(0xFFFFB4AB)   // 输入框错误态
 
-// ========== 认证页 CTA（玻璃卡白色按钮的品牌深绿文字，两页共用） ==========
-val AuthCtaText = Color(0xFF1E8C5C)
+// ========== 认证页 CTA（玻璃卡白色按钮的文字绿，两页共用） ==========
+// 2026-11-06 评审 R17/R22：原 #1E8C5C on 白 4.23:1 不足 AA → 改文字绿深档 #177A4C（≈5.1:1）
+val AuthCtaText = Color(0xFF177A4C)
 
 // ========== 第三方品牌色 ==========
 val WeChatGreen = Color(0xFF07C160)
@@ -258,7 +271,7 @@ val DivBgBottomLight = Color(0xFFEBE3D1)
 val DivSurfaceLight = Color(0xFFF8F3E7)      // 卡面与宣纸背景顶端同色，仅靠 12% 金发丝线区隔（画板）
 val DivSurface2Light = Color(0xFFF1ECDD)
 val DivTextPrimaryLight = Color(0xFF1C1C1E)  // 墨（画板宣纸侧主文本）
-val DivTextSecondaryLight = Color(0xFF6B6E73) // 次要说明（画板宣纸侧弱化色）
+val DivTextSecondaryLight = Color(0xFF5A5E5A) // 次要说明（画板宣纸侧弱化色；2026-11-06 评审 R21：#6B6E73 on 宣纸 ≈4.0–4.39:1 不足 AA → 改 #5A5E5A）
 val DivTextTertiaryLight = Color(0xFF1C1C1E)  // 元信息（日期/尾链/脚注，画板宣纸侧保持全墨保证对比 §10）
 val DivGoldLight = Color(0xFF8F7233)         // 图形级金（gold.700，画板宣纸侧线/点用）
 val DivGoldHiLight = Color(0xFF6E5626)

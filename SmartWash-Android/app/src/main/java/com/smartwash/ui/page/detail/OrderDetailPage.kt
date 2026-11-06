@@ -7,7 +7,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,12 +42,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -62,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.R
-import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.DialogAction
 import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.components.softCardShadow
@@ -182,11 +178,9 @@ fun OrderDetailPage(
                             iconContainerColor = AppColors.colorScheme.iconContainerBlue,
                             iconTint = AppColors.colorScheme.iconForegroundBlue
                         ) {
-                            // 行距节奏：规范仅要求行高 ≥48（§5 列表项），56 无规范出处（InfoRow 旧注释
-                            // 引用的「§3.4」在 DESIGN-SPEC 中不存在，已修正）；本页 6 行连排按信息密度
-                            // 收紧为 48dp 行高 + 8dp 行距（均在 §3 允许值集内），公共 InfoRow 默认值不动；
-                            // 值列 12/500 = labelMedium，订单号启用 tnum
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // 行距节奏（P10 裁定）：设计稿 label/value 行间隔 48（48dp 行高即 48 间隔，
+                            // 行间不加距）；值列 12/500 = labelMedium，订单号启用 tnum
+                            Column {
                                 InfoRow(
                                     stringResource(R.string.order_number),
                                     orderInfo?.orderNo ?: "",
@@ -207,11 +201,12 @@ fun OrderDetailPage(
                                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                                     rowHeight = 48.dp
                                 )
-                                // 实付款：AmountMedium 18/24/700 + primaryDark（屏 6 实测 18/700，#1E8C5C·浅 / #5BC894·深）
+                                // 实付款：AmountMedium 18/24/700（屏 6 实测 18/700）；强调绿随画板
+                                // 取 primary（P10 裁定，浅 #2D9B6A / 深提亮 #5BC894）
                                 InfoRow(
                                     stringResource(R.string.actual_payment),
                                     stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
-                                    valueColor = AppColors.colorScheme.primaryDark,
+                                    valueColor = AppColors.colorScheme.textGreen,
                                     valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold),
                                     rowHeight = 48.dp
                                 )
@@ -347,7 +342,7 @@ private fun PickupCodeDialog(
                     )
                     DialogAction(
                         text = stringResource(R.string.copy_pickup_code),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = {
                             if (pickupCode.isNotEmpty()) {
                                 clipboardManager.setText(AnnotatedString(pickupCode))
@@ -482,12 +477,9 @@ fun ProgressTimeline(currentStatus: OrderStatus?, firstNodeTime: String? = null)
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                             color = when {
-                                // 当前节点：#17322B·浅（onPrimaryContainer）/ #5BC894·深（primary）
-                                isCurrent -> if (isDark) {
-                                    AppColors.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                }
+                                // 当前节点标签随画板取 water 蓝（与当前蓝点同色系；深色用 DarkWater
+                                // 提亮档 = water 令牌成对，P10 裁定）
+                                isCurrent -> AppColors.colorScheme.water
                                 isDone -> AppColors.colorScheme.textPrimary
                                 // U-107：未来节点是信息文本而非禁用态，原 textTertiary #A9AEA9
                                 // on 白仅 2.25:1（§10 正文红线 ≥4.5）→ 改 textSecondary #6B6E73（5.12:1）；
@@ -526,33 +518,33 @@ private fun OrderStatusHeader(status: OrderStatus?) {
         @androidx.annotation.StringRes val estimatedTimeRes: Int,
     )
 
-    // U-106：状态大字绿色一律取 green.700 #1E8C5C（primaryDark）——原 in-progress/completed
-    // 分支用 #2D9B6A（on 白 3.50:1，违反 §10 绿字红线）；terminal 态保留 warning/danger 语义色
+    // P10 裁定：状态大字强调绿随画板取 primary #2D9B6A（浅色板）/ #5BC894（深色板，提亮档
+    // = primary 令牌双主题成对）；terminal 态保留 warning/danger 语义色
     val info: OrderStatusInfo = when (status) {
         OrderStatus.PENDING_PAYMENT -> OrderStatusInfo(
             R.string.pending_payment, AppColors.colorScheme.warning, R.string.please_pay_soon
         )
         OrderStatus.PENDING_SHIPMENT -> OrderStatusInfo(
-            R.string.pending_shipment, AppColors.colorScheme.primaryDark, R.string.please_ship_soon
+            R.string.pending_shipment, AppColors.colorScheme.primary, R.string.please_ship_soon
         )
         // 中间态（原缺失会落 else 显示「-」）：已收取/已烘干/配送中归入清洗→取件阶段
         OrderStatus.RECEIVED -> OrderStatusInfo(
-            OrderStatus.RECEIVED.descriptionRes, AppColors.colorScheme.primaryDark, R.string.received_hint
+            OrderStatus.RECEIVED.descriptionRes, AppColors.colorScheme.primary, R.string.received_hint
         )
         OrderStatus.WASHING -> OrderStatusInfo(
-            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primaryDark, R.string.washing_in_progress_hint
+            OrderStatus.WASHING.descriptionRes, AppColors.colorScheme.primary, R.string.washing_in_progress_hint
         )
         OrderStatus.DRIED -> OrderStatusInfo(
-            OrderStatus.DRIED.descriptionRes, AppColors.colorScheme.primaryDark, R.string.dried_hint
+            OrderStatus.DRIED.descriptionRes, AppColors.colorScheme.primary, R.string.dried_hint
         )
         OrderStatus.IN_DELIVERY -> OrderStatusInfo(
-            OrderStatus.IN_DELIVERY.descriptionRes, AppColors.colorScheme.primaryDark, R.string.in_delivery_hint
+            OrderStatus.IN_DELIVERY.descriptionRes, AppColors.colorScheme.primary, R.string.in_delivery_hint
         )
         OrderStatus.READY_FOR_PICKUP -> OrderStatusInfo(
-            R.string.pending_pickup, AppColors.colorScheme.primaryDark, R.string.clothes_in_locker
+            R.string.pending_pickup, AppColors.colorScheme.primary, R.string.clothes_in_locker
         )
         OrderStatus.COMPLETED -> OrderStatusInfo(
-            R.string.completed, AppColors.colorScheme.primaryDark, R.string.completion_time
+            R.string.completed, AppColors.colorScheme.primary, R.string.completion_time
         )
         // CANCELED 语义色 error → danger（对齐 D-O5 同款语义）
         OrderStatus.CANCELED -> OrderStatusInfo(
@@ -570,24 +562,15 @@ private fun OrderStatusHeader(status: OrderStatus?) {
             .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 状态头插画：本地自绘位图按状态映射（PS 绘制，透明底 1:1）；
-        // 未知状态/资产缺失时回退内置滚筒 Canvas 插画
-        val statusCover = status?.let { LocalCoverArt.orderStatusCover(it.name) }
-        if (statusCover != null) {
-            Image(
-                painter = painterResource(statusCover),
-                contentDescription = null,
-                modifier = Modifier.size(120.dp),
-                contentScale = ContentScale.Fit
-            )
-        } else {
-            DrumIllustration()
-        }
+        // 状态头插画（P10 裁定）：设计稿为 120px 单体洗衣机线稿，走逐属性复刻画板的
+        // DrumIllustration Canvas 路径（浅/深两套配色 remap 内置）；原 PS 位图
+        // 「洗衣机+蓝消毒瓶」双物体组合与画板造型不符，不再覆盖
+        DrumIllustration()
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(info.statusTextRes),
-            // 状态大字 = DataLarge 36/44/700（屏 6 实测 36/700/44，色 #1E8C5C·浅 / #5BC894·深 = primaryDark）
-            // U-106：绿色态统一由 info.statusColor = primaryDark 承担（原 WASHING 特判分支已冗余，移除）
+            // 状态大字 = DataLarge 36/44/700（屏 6 实测 36/700/44）；强调绿随画板取 primary
+            // （P10 裁定，浅 #2D9B6A / 深提亮 #5BC894，terminal 态语义色由 info.statusColor 承担）
             style = AppTextStyles.DataLarge,
             color = info.statusColor
         )
@@ -674,7 +657,7 @@ private fun DrumIllustration() {
  * 底部固定操作条 — 设计稿屏 6 实测：1dp 顶线（outline）+ surface 底 + padding 16/24 + 按钮间距 12（D-OD5/6/7）
  * 按钮规格（实测）：高 48 / radiusFull 胶囊 / 文字 font.title 18/600；
  * 主按钮纯色 primary + onPrimary 白/墨绿字（U-116：v0.4 已废字距，原 ls 1 已删除）；
- * 次按钮透明底 + 1dp outline 描边 + primaryDark 字（§5 次级按钮描边样式，§10 绿字红线 green.700）
+ * 次按钮透明底 + 1dp outline 描边 + 文字绿字（§5 次级按钮描边样式；2026-11-06 评审 R17 改 textGreen）
  * 主按钮显隐由 [showPickupCode] 控制（P-901：取件码语义仅待寄件/待取件，隐藏后次按钮 weight(1f) 占满整行）；
  * 点击行为由页面回调承接（D-OD1/D-OD12）
  */
@@ -703,12 +686,14 @@ private fun OrderDetailActionBar(
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 次按钮 — 透明底 + 1dp outline 描边（屏 6 实测无填充，规范 §5 次级按钮描边样式）
+                // 次按钮（P10 裁定，与取件/寄件页同改法）— surface 实底（深色板深灰底）+ 1dp outline
+                // 描边 + 中性字（浅 textPrimary / 深 #E6E9E6 = textPrimary 令牌成对），48dp 胶囊
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
                         .pressable(onClick = onContactServiceClick, debounce = false)
+                        .background(AppColors.colorScheme.surface, RoundedCornerShape(AppDimens.radiusFull))
                         .border(
                             1.dp,
                             AppColors.colorScheme.outline,
@@ -719,7 +704,7 @@ private fun OrderDetailActionBar(
                     Text(
                         text = stringResource(R.string.contact_service),
                         style = MaterialTheme.typography.titleMedium,
-                        color = AppColors.colorScheme.primaryDark
+                        color = AppColors.colorScheme.textPrimary
                     )
                 }
                 // 主按钮 — 纯色 primary 胶囊（屏 6 实测无渐变），onPrimary 双主题成对；

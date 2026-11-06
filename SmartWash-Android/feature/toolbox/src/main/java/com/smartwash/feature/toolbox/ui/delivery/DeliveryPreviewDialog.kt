@@ -291,7 +291,7 @@ private fun PreviewActionRow(
                 if (state.text == null) {
                     PreviewDialogAction(
                         text = stringResource(R.string.toolbox_delivery_action_close),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                     )
@@ -305,7 +305,7 @@ private fun PreviewActionRow(
                     ActionDivider()
                     PreviewDialogAction(
                         text = stringResource(R.string.toolbox_delivery_action_copy_take),
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         onClick = onCopyText,
                         loading = actionLoading,
                         enabled = !actionLoading,
@@ -324,7 +324,7 @@ private fun PreviewActionRow(
                 ActionDivider()
                 PreviewDialogAction(
                     text = stringResource(R.string.toolbox_delivery_action_take_image),
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                     onClick = onConfirmTakeImage,
                     loading = actionLoading,
                     enabled = !actionLoading,
@@ -342,7 +342,7 @@ private fun PreviewActionRow(
                 ActionDivider()
                 PreviewDialogAction(
                     text = stringResource(R.string.toolbox_delivery_action_take_file),
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                     onClick = onConfirmTakeFile,
                     loading = actionLoading,
                     enabled = !actionLoading,
@@ -360,7 +360,7 @@ private fun PreviewActionRow(
                 ActionDivider()
                 PreviewDialogAction(
                     text = stringResource(R.string.toolbox_delivery_action_save_gallery),
-                    color = AppColors.colorScheme.primary,
+                    color = AppColors.colorScheme.textGreen,
                     onClick = onSaveImage,
                     loading = actionLoading,
                     enabled = !actionLoading,

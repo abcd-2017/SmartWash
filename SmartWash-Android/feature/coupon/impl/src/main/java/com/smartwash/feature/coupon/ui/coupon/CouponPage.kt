@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -64,7 +66,6 @@ import com.smartwash.feature.coupon.ui.coupon.tab.HistoricalCouponsTab
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
-import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.enterTween
@@ -220,12 +221,12 @@ fun CouponPage(
 }
 
 /**
- * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 状态文字（对齐设计稿屏 12，2026-11-01 逐项对质）。
+ * 票券卡 — 左金额区 + 垂直虚线分隔 + 右内容区 + 右上角状态徽标（对齐 2026-11-05 优惠券画板）。
  *
- * 设计稿 .ticket3：卡 88 高、r16、描边 1px outline、**左右缘中点打孔 φ14**（face 与内容区
- * 以 x=88 垂直虚线分隔，虚线上下留 12）；面额 num 20px→v0.4 AmountMedium 18sp + tnum、
- * 单位 12/500 brand 绿；内容区 padding 16/20 且垂直居中；状态为无底纯文字右缘垂直居中
- * （可用 brand / 过期 text-3）；过期态整卡 opacity .55 + face-exp 灰底（surface-2）。
+ * 画板 .ticket3：卡 88 高、r16、描边 1px outline、**面额区右缘虚线两端上下凹口 φ12**；
+ * 面额区无填充随卡身（仅已使用态变灰 surface-2 + 整卡 opacity .38）；面额 22/600「¥10」
+ * （= v0.4 titleLarge 档 + tnum）；状态为右上角 60×24 r999 胶囊徽标，与标题同行
+ * （可使用 = primaryContainer/onPrimaryContainer；已使用/已过期 = surfaceVariant/onSurfaceVariant）。
  */
 @Composable
 fun UserCouponCard(
@@ -244,10 +245,10 @@ fun UserCouponCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            // 原型过期态整卡 opacity .55（换灰 + 半透明双层弱化，此前只做换灰属对齐偏差）
-            .then(if (isHistorical) Modifier.alpha(0.55f) else Modifier)
+            // 画板已使用态整卡 opacity .38（换灰 + 半透明双层弱化）
+            .then(if (isHistorical) Modifier.alpha(0.38f) else Modifier)
             .drawBehind {
-                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下 margin 12
+                // 中间虚线 — 设计稿：1dp 竖线、段 6 / 隔 4，上下 margin 12（虚线 x=88 与打孔同轴）
                 val dashWidth = 6.dp.toPx()
                 val dashGap = 4.dp.toPx()
                 val x = 88.dp.toPx()
@@ -275,28 +276,28 @@ fun UserCouponCard(
                 .height(88.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧金额区 — 原型 ticket-face brand-soft 纯色（浅 #E8F6EF/深 #1D3229 = primaryContainer），
-            // 过期 ticket-face-exp = surface-2（卡内次级块档）；底色溢出打孔区域由 Surface outline 裁剪
+            // 左侧金额区 — 画板可用/已领取券面额区无填充（随卡身透明），仅历史态 ticket-face-exp
+            // 变灰 surface-2（surfaceVariant）；底色溢出凹口区域由 Surface outline 裁剪
             Box(
                 modifier = Modifier
                     .width(88.dp)
                     .fillMaxHeight()
                     .background(
                         if (isHistorical) AppColors.colorScheme.surfaceVariant
-                        else MaterialTheme.colorScheme.primaryContainer
+                        else Color.Transparent
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = stringResource(R.string.currency_format, String.format("%.0f", couponVo.couponVo.discount)),
-                        // 面额 = 金额中字档（v0.4 AmountMedium 18sp + tnum，语义即「券面额」；原 titleLarge 22 超档）
-                        style = AppTextStyles.AmountMedium,
+                        // 画板面额 22/600（= v0.4 titleLarge 档）；金额开 tnum（规范 §2.2 硬规则）
+                        style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
                         color = amountColor
                     )
                     Text(
                         text = stringResource(com.smartwash.feature.coupon.R.string.coupon),
-                        // 原型单位 11px/500 brand（过期 text-3）→ captionStrong 12/500
+                        // 单位 captionStrong 12/500
                         style = MaterialTheme.typography.labelMedium,
                         color = unitColor,
                         modifier = Modifier.padding(top = 4.dp)
@@ -304,19 +305,44 @@ fun UserCouponCard(
                 }
             }
 
-            // 右侧内容区 — 原型 padding 16/20 且 justify-content:center（垂直居中，此前顶对齐属偏差）
+            // 右侧内容区 — 画板文本自 face 88 后缩进 24 起；状态徽标与标题同行（右上角）
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp, end = 12.dp)
+                    .padding(start = 24.dp, end = 16.dp)
             ) {
-                Text(
-                    text = couponVo.couponVo.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = titleColor,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = couponVo.couponVo.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = titleColor,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    // 状态徽标 — 画板右上角 60×24 r999 胶囊：可使用 = primaryContainer/
+                    // onPrimaryContainer（浅 #F0FBF4/#17322B、深 #17322B/#F0FBF4）；
+                    // 已使用/已过期 = surfaceVariant/onSurfaceVariant
+                    Box(
+                        modifier = Modifier
+                            .width(60.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(AppDimens.radiusFull))
+                            .background(
+                                if (isHistorical) AppColors.colorScheme.surfaceVariant
+                                else MaterialTheme.colorScheme.primaryContainer
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isHistorical) statusText else stringResource(R.string.available),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isHistorical) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = if (couponVo.couponVo.threshold == 0f)
@@ -334,22 +360,14 @@ fun UserCouponCard(
                     color = AppColors.colorScheme.textSecondary
                 )
             }
-
-            // 状态 — 原型为无底纯文字右缘垂直居中（11px/600 brand / 过期 text-3）→ 12/600，非胶囊
-            Text(
-                text = if (isHistorical) statusText else stringResource(R.string.available),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
-                color = if (isHistorical) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primary,
-                modifier = Modifier.padding(end = 16.dp)
-            )
         }
     }
 }
 
 /**
- * 票券形状 — r16 圆角矩形 + **左右缘中点打孔 φ14**（2026-11-01 对齐设计稿：
- * `.ticket3::before/::after` 14×14 圆、top 50% 居中、孔心落在卡左右边缘线上；
- * 此前误画为面额区右缘与卡顶/底交点的上下凹口，属结构性偏差）
+ * 票券形状 — r16 圆角矩形 + **面额区右缘虚线两端上下凹口 φ12**（2026-11-06 按裁决 2 对齐当前画板：
+ * φ12 圆、孔心落在 x=88 虚线与卡顶/底边交点上，页面底色自凹口透出，构成「面额区右缘虚线
+ * 两端上下凹口」造型；2026-11-01 曾按当时拍板改画左右缘中点打孔 φ14，与当前画板正相反）
  */
 internal val TicketShape = object : Shape {
     override fun createOutline(
@@ -358,37 +376,37 @@ internal val TicketShape = object : Shape {
         density: Density
     ): Outline {
         val cardRadius = with(density) { 16.dp.toPx() }
-        val notchRadius = with(density) { 7.dp.toPx() }
+        val notchRadius = with(density) { 6.dp.toPx() }
+        val notchX = with(density) { 88.dp.toPx() }
         val w = size.width
         val h = size.height
-        val midY = h / 2f
 
         val path = Path().apply {
-            // 顶边 → 右上圆角
+            // 顶边 → 上凹口（圆心 (notchX, 0)，下半圆内凹）→ 右上圆角
             moveTo(cardRadius, 0f)
+            lineTo(notchX - notchRadius, 0f)
+            arcTo(
+                rect = Rect(notchX - notchRadius, -notchRadius, notchX + notchRadius, notchRadius),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = -180f,
+                forceMoveTo = false
+            )
             lineTo(w - cardRadius, 0f)
             arcTo(Rect(w - 2 * cardRadius, 0f, w, 2 * cardRadius), 270f, 90f, false)
-            // 右缘：向下到右孔上缘 → 右孔凹口（圆心 (w, midY)，经卡内侧半圆）→ 下半段
-            lineTo(w, midY - notchRadius)
-            arcTo(
-                rect = Rect(w - notchRadius, midY - notchRadius, w + notchRadius, midY + notchRadius),
-                startAngleDegrees = -90f,
-                sweepAngleDegrees = -180f,
-                forceMoveTo = false
-            )
+            // 右缘 → 右下圆角 → 底边
             lineTo(w, h - cardRadius)
             arcTo(Rect(w - 2 * cardRadius, h - 2 * cardRadius, w, h), 0f, 90f, false)
-            // 底边 → 左下圆角
-            lineTo(cardRadius, h)
-            arcTo(Rect(0f, h - 2 * cardRadius, 2 * cardRadius, h), 90f, 90f, false)
-            // 左缘：向上到左孔下缘 → 左孔凹口（圆心 (0, midY)，经卡内侧半圆）→ 上半段 → 左上圆角闭合
-            lineTo(0f, midY + notchRadius)
+            // 底边 → 下凹口（圆心 (notchX, h)，上半圆内凹）→ 左下圆角
+            lineTo(notchX + notchRadius, h)
             arcTo(
-                rect = Rect(-notchRadius, midY - notchRadius, notchRadius, midY + notchRadius),
-                startAngleDegrees = 90f,
+                rect = Rect(notchX - notchRadius, h - notchRadius, notchX + notchRadius, h + notchRadius),
+                startAngleDegrees = 0f,
                 sweepAngleDegrees = -180f,
                 forceMoveTo = false
             )
+            lineTo(cardRadius, h)
+            arcTo(Rect(0f, h - 2 * cardRadius, 2 * cardRadius, h), 90f, 90f, false)
+            // 左缘 → 左上圆角闭合
             lineTo(0f, cardRadius)
             arcTo(Rect(0f, 0f, 2 * cardRadius, 2 * cardRadius), 180f, 90f, false)
             close()

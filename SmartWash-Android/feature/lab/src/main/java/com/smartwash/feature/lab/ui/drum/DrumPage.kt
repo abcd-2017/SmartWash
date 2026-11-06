@@ -197,6 +197,9 @@ private fun ControlCard(
                     } else {
                         AppButtonVariant.PRIMARY
                     },
+                    // 行内播放控件（非页面 CTA）：§3.3 小按钮档 36dp/r12，
+                    // 2026-11-06 复验原 48dp 与左侧 BPM 数字比例失衡
+                    small = true,
                 )
             }
             Spacer(modifier = Modifier.height(AppDimens.spaceSm))

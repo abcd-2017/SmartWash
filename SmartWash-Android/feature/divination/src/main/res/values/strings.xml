@@ -7,6 +7,16 @@
     <string name="div_disclaimer_footer">内容基于玄学体系生成，仅供文化参考 · 不构成决策建议</string>
     <string name="div_disclaimer_reading">本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。</string>
 
+    <!-- 摇卦铜钱面标示（画板：孔下单字「字/背」） -->
+    <string name="div_coin_zi">字</string>
+    <string name="div_coin_bei">背</string>
+
+    <!-- 卦历记录卡术数印章字（画板：六爻「六」/ 梅花「梅」/ 奇门「奇」/ 六壬「壬」） -->
+    <string name="div_seal_liuyao">六</string>
+    <string name="div_seal_meihua">梅</string>
+    <string name="div_seal_qimen">奇</string>
+    <string name="div_seal_liuren">壬</string>
+
     <!-- 四术玉牌 -->
     <string name="div_method_liuyao_name">六爻</string>
     <string name="div_method_liuyao_desc">摇铜钱问一事\n装卦最全 · 应期可推</string>
@@ -86,8 +96,8 @@
     <string name="div_chart_title">卦盘</string>
     <string name="div_chart_loading">正在起盘…</string>
     <string name="div_chart_missing">未找到卦盘记录</string>
-    <string name="div_chart_interpret">求 解 读</string>
-    <string name="div_chart_saved">已存入卦历</string>
+    <string name="div_chart_interpret">解 读</string>
+    <string name="div_chart_saved">已 保 存</string>
     <string name="div_liuyao_yongshen">用神</string>
     <string name="div_liuyao_facts">规则事实</string>
     <string name="div_meihua_tiyong">体用生克（规则层）</string>

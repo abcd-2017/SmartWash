@@ -214,7 +214,7 @@ private fun DialogTextAction(
             text = text,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = AppColors.colorScheme.primary,
+            color = AppColors.colorScheme.textGreen,
         )
     }
 }

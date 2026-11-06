@@ -269,7 +269,7 @@ private fun PermissionRow(
                     if (granted) R.string.permission_granted else R.string.permission_action_request
                 ),
                 style = MaterialTheme.typography.bodySmall,
-                color = if (granted) AppColors.colorScheme.success else AppColors.colorScheme.primary
+                color = if (granted) AppColors.colorScheme.success else AppColors.colorScheme.textGreen
             )
             Spacer(modifier = Modifier.width(4.dp))
             Icon(

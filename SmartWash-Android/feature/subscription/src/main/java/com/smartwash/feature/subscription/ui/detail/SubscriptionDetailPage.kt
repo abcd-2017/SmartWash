@@ -417,7 +417,7 @@ private fun DetailContent(
                     label = stringResource(R.string.subscription_detail_amount),
                     value = stringResource(R.string.subscription_amount_per_period, SubscriptionRules.formatAmount(vo.amount)),
                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    valueColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primaryDark,
+                    valueColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textGreen,
                 )
                 InfoRow(
                     label = stringResource(R.string.subscription_detail_cycle),
@@ -537,7 +537,7 @@ private fun DetailContent(
                                 text = stringResource(R.string.subscription_action_retry),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
-                                color = AppColors.colorScheme.primary,
+                                color = AppColors.colorScheme.textGreen,
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -547,7 +547,7 @@ private fun DetailContent(
                             label = stringResource(R.string.subscription_stats_usage_format, statsItem?.usageCount90d ?: 0),
                             value = stringResource(R.string.subscription_stats_monthly_format, SubscriptionRules.formatAmount(statsItem?.monthlyNormalized ?: 0.0)),
                             valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                            valueColor = AppColors.colorScheme.primaryDark,
+                            valueColor = AppColors.colorScheme.textGreen,
                         )
                         val perUse = statsItem?.perUseCost
                         Text(
@@ -636,7 +636,7 @@ private fun UsageListBlock(
                         text = stringResource(R.string.subscription_action_retry),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = AppColors.colorScheme.primary,
+                        color = AppColors.colorScheme.textGreen,
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -706,7 +706,7 @@ private fun UsageRow(
             text = log.usageDate.orEmpty(),
             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
             fontWeight = if (isToday) FontWeight.SemiBold else FontWeight.Medium,
-            color = if (isToday) AppColors.colorScheme.primary else AppColors.colorScheme.textPrimary,
+            color = if (isToday) AppColors.colorScheme.textGreen else AppColors.colorScheme.textPrimary,
         )
         if (isToday) {
             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
@@ -819,7 +819,7 @@ private fun CancelPathCard(
                                     text = stringResource(R.string.subscription_action_open_browser),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = AppColors.colorScheme.primary,
+                                    color = AppColors.colorScheme.textGreen,
                                 )
                             }
                             Spacer(modifier = Modifier.width(AppDimens.spaceMd))
@@ -835,7 +835,7 @@ private fun CancelPathCard(
                                     text = stringResource(R.string.subscription_action_copy),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = AppColors.colorScheme.primary,
+                                    color = AppColors.colorScheme.textGreen,
                                 )
                             }
                         }

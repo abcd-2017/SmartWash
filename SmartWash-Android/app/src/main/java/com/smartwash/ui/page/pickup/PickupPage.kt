@@ -140,10 +140,11 @@ fun PickupPage(
                             IconBox(
                                 icon = Icons.Default.School,
                                 size = 32.dp,
-                                // v0.4 图标容器小档 = 32 容器 / 12 圆角 / 20 图标
+                                // v0.4 图标容器小档 = 32 容器 / 12 圆角 / 20 图标；
+                                // P11 裁定：学校行图标盒随画板取紫色浅底容器档（原蓝与画板不符）
                                 iconSize = 20.dp,
-                                containerColor = AppColors.colorScheme.iconContainerBlue,
-                                iconTint = AppColors.colorScheme.iconForegroundBlue
+                                containerColor = AppColors.colorScheme.iconContainerPurple,
+                                iconTint = AppColors.colorScheme.iconForegroundPurple
                             )
                             // 画板实测：图标盒→校名 8；校名 14/20（titleSmall），非 18sp
                             Spacer(modifier = Modifier.width(8.dp))
@@ -227,10 +228,11 @@ private fun PickupOrderCard(
                     )
                 }
                 Text(
-                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致
+                    // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页「¥29.90」不一致；
+                    // 强调绿随画板取 primary（P10 条目裁定，浅 #2D9B6A / 深提亮 #5BC894 成对）
                     text = stringResource(R.string.currency_format, String.format("%.2f", order.totalPrice)),
                     style = AppTextStyles.AmountMedium,
-                    color = AppColors.colorScheme.primaryDark
+                    color = AppColors.colorScheme.primary
                 )
             }
 
@@ -253,9 +255,9 @@ private fun PickupOrderCard(
                 Text(
                     text = pickupCode,
                     // 取件码大字走 display 令牌（36/44/700 + tnum）——手写 bodySmall.copy(36sp)
-                    // 行高仍留 16 会挤压字形，也违反「禁止自创令牌值」
+                    // 行高仍留 16 会挤压字形，也违反「禁止自创令牌值」；强调绿随画板取 primary（P10）
                     style = AppTextStyles.DataLarge,
-                    color = AppColors.colorScheme.primaryDark,
+                    color = AppColors.colorScheme.primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -309,19 +311,21 @@ private fun PickupActionBar(
             .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceMd),
         horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)
     ) {
-        // 次按钮 — 透明底 + 1dp outline 描边（画板实测无填充）
+        // 次按钮（P10 裁定，与订单详情/寄件页同改法）— surface 实底（深色板深灰底）+ 1dp outline
+        // 描边 + 中性字（textPrimary 双主题成对），48dp 胶囊
         Box(
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
                 .pressable(onClick = onContactServiceClick, debounce = false)
+                .background(AppColors.colorScheme.surface, RoundedCornerShape(AppDimens.radiusFull))
                 .border(1.dp, AppColors.colorScheme.outline, RoundedCornerShape(AppDimens.radiusFull)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = stringResource(R.string.contact_service),
                 style = MaterialTheme.typography.titleMedium,
-                color = AppColors.colorScheme.primaryDark
+                color = AppColors.colorScheme.textPrimary
             )
         }
         // 主按钮 — 纯色 primary 胶囊，onPrimary 双主题成对
