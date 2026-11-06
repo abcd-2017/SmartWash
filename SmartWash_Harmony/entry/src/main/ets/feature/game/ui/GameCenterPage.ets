@@ -42,8 +42,8 @@ const GRID_COLUMNS: number = 2
 /** 网格卡片间距（对齐安卓 GRID_SPACING = spaceXs 8） */
 const GRID_SPACING: number = DesignDimens.SPACE_XS
 
-/** 骨架卡高度（vp）：与真实卡构成对齐（20 + 44 + 12 + 20 + 4 + 32 + 20） */
-const SKELETON_CARD_HEIGHT: number = 152
+/** 骨架卡高度（vp）：与真实卡构成对齐（16:9 封面 ~94 + 描述区 ~64） */
+const SKELETON_CARD_HEIGHT: number = 158
 
 /** 页面文案（对齐安卓 feature/game/values/strings.xml） */
 class GameText {
@@ -82,6 +82,10 @@ export struct GameCenterPage {
   @Local isLoading: boolean = true
   @Local isError: boolean = false
   @Local selectedCategory: GameCategory | null = null
+  // 服务端封面加载失败的 gameKey 集（onError 不可变追加，触发卡片回退本地封面）
+  @Local serverCoverFailed: string[] = []
+  // 本地兜底封面也失败的 gameKey 集（随包内置 30 款，正常为空；新上架未随包游戏会走到这）
+  @Local localCoverFailed: string[] = []
 
   aboutToAppear(): void {
     logger.debug('gameCenterPage', '游戏中心挂载，拉取游戏列表')
@@ -120,6 +124,20 @@ export struct GameCenterPage {
       return this.games
     }
     return this.games.filter((game: GameItem): boolean => game.category === this.selectedCategory)
+  }
+
+  /** 服务端封面加载失败 → 该 gameKey 回退本地 rawfile 封面（不可变追加触发刷新） */
+  private markServerCoverFailed(gameKey: string): void {
+    if (this.serverCoverFailed.indexOf(gameKey) < 0) {
+      this.serverCoverFailed = [...this.serverCoverFailed, gameKey]
+    }
+  }
+
+  /** 本地兜底封面也失败（随包未内置的新游戏）→ 回退图标卡 */
+  private markLocalCoverFailed(gameKey: string): void {
+    if (this.localCoverFailed.indexOf(gameKey) < 0) {
+      this.localCoverFailed = [...this.localCoverFailed, gameKey]
+    }
   }
 
   /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
@@ -302,30 +320,73 @@ export struct GameCenterPage {
   }
 
   /**
-   * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + level1 阴影 + 圆角 16；
-   * 44vp 图标色块（六色浅底 + 对应前景色，圆角 16）+ 标题（14/400，1 行截断）
-   * + 描述（12/400，2 行截断）+ badge 文字角标（主色浅底胶囊）。
+   * 游戏卡（对齐安卓 main 封面主导 GameCard）：16:9 封面 + 底部渐变遮罩 + 白字标题 +
+   * 白胶囊 badge，描述区置于封面下方。封面三级兜底：服务端 coverUrl → 本地 rawfile
+   * （随包 30 款）→ 图标色块；任意一级 onError 降下一级，兜底链路与安卓一致。
    */
   @Builder
   GameCard(game: GameItem) {
     Stack({ alignContent: Alignment.TopEnd }) {
       Column() {
-        IconBox({
-          icon: game.icon,
-          sizeValue: 44,
-          iconSize: 24,
-          containerColor: this.containerColor(game.tint),
-          iconColor: this.iconColor(game.tint),
-          radius: DesignDimens.CARD_RADIUS
-        })
+        Stack({ alignContent: Alignment.BottomStart }) {
+          if (game.coverUrl.length > 0 && this.serverCoverFailed.indexOf(game.gameKey) < 0) {
+            Image(game.coverUrl)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.markServerCoverFailed(game.gameKey)
+              })
+          } else if (this.localCoverFailed.indexOf(game.gameKey) < 0) {
+            Image(game.localCover)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.markLocalCoverFailed(game.gameKey)
+              })
+          } else {
+            // 双兜底皆失败（随包未内置且服务端无封面）：图标色块占位
+            Row() {
+              IconBox({
+                icon: game.icon,
+                sizeValue: 44,
+                iconSize: 24,
+                containerColor: this.containerColor(game.tint),
+                iconColor: this.iconColor(game.tint),
+                radius: DesignDimens.RADIUS_MD
+              })
+            }
+            .width('100%')
+            .aspectRatio(1.78)
+            .justifyContent(FlexAlign.Center)
+            .backgroundColor(DesignColor.SURFACE_VARIANT)
+          }
 
-        Text(game.title)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .margin({ top: DesignDimens.SPACE_SM })
+          // 底部渐变遮罩 + 白字标题（封面上直接读，省一排行高；对齐安卓卡片样式）
+          if (this.localCoverFailed.indexOf(game.gameKey) < 0) {
+            Stack({ alignContent: Alignment.BottomStart }) {
+              Column()
+                .width('100%')
+                .height(44)
+                .linearGradient({
+                  angle: 180,
+                  colors: [['rgba(0, 0, 0, 0)', 0], ['rgba(0, 0, 0, 0.55)', 1]]
+                })
+              Text(game.title)
+                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.ON_PRIMARY)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .width('100%')
+                .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
+            }
+            .width('100%')
+          }
+        }
+        .width('100%')
+        .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
 
         Text(game.description)
           .fontSize(DesignFontSize.CAPTION)
@@ -333,14 +394,19 @@ export struct GameCenterPage {
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
-          .margin({ top: DesignDimens.SPACE_XXS })
+          .padding({
+            left: DesignDimens.CARD_PADDING,
+            right: DesignDimens.CARD_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.CARD_PADDING
+          })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
-      .padding(DesignDimens.CARD_PADDING)
       .borderRadius(DesignDimens.CARD_RADIUS)
       .border({ width: 1, color: DesignColor.OUTLINE })
       .backgroundColor(DesignColor.SURFACE)
+      .clip(true)
       .shadow({
         radius: DesignElevation.LEVEL_1,
         color: DesignColor.SHADOW_COLOR_CARD,
@@ -348,15 +414,21 @@ export struct GameCenterPage {
         offsetY: 2
       })
 
-      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字
+      // badge 角标：白色胶囊（压在封面上，对齐安卓白胶囊样式）
       if (game.badge.length > 0) {
         Text(game.badge)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
           .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: 1
+          })
       }
     }
     .width('100%')
@@ -365,7 +437,7 @@ export struct GameCenterPage {
     })
   }
 
-  build() {
+    build() {
     NavDestination() {
       Column() {
         PageHeader({ title: GameText.title })

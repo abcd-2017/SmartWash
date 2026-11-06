@@ -25,6 +25,7 @@ import { getObjectParam, pathStack } from '../utils/PathStackUtil'
 import { logger } from '../utils/Logger'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
 import BuildProfile from 'entry/BuildProfile'
+import { ServerConfig } from '../config/ServerConfig'
 
 /** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title/chrome 三个 query 参数） */
 export class WebPageParam {
@@ -57,8 +58,16 @@ const CHROME_MODES: Array<string> = [CHROME_FULL, CHROME_IMMERSIVE, CHROME_NONE]
 
 // JS 桥注入对象名（H5 侧 window.SmartWashGameBridge，协议与安卓一致）
 const GAME_BRIDGE_NAME: string = 'SmartWashGameBridge'
-// 主题推送脚本（H5 未定义钩子时为空操作；App 固定亮色 → 恒推 light）
-const GAME_THEME_PUSH_SCRIPT: string = "window.__applySmartWashTheme&&__applySmartWashTheme('light')"
+/**
+ * 主题推送脚本（H5 未定义钩子时为空操作）。
+ * App 深浅色跟随系统（AppStorage 'darkMode'），推送携带当前解析值，
+ * 对齐安卓 onPageFinished 推 resolveBridgeThemeMode(uiMode) 的语义。
+ */
+function gameThemePushScript(): string {
+  const dark: boolean = AppStorage.get<boolean>('darkMode') === true
+  const mode: string = dark ? 'dark' : 'light'
+  return `window.__applySmartWashTheme&&__applySmartWashTheme('${mode}')`
+}
 
 /** chrome 归一化：非法/空值回落 full（fail-safe，对齐安卓 GameChrome.normalize） */
 function normalizeChrome(mode: string): string {
@@ -100,12 +109,20 @@ function hostOf(url: string): string | null {
   return trimmed.length > 0 ? trimmed : null
 }
 
-/** 桥白名单 host 集（服务端同源判定；对齐安卓 whitelistHostsOf(BASE_URL, minio)，本端仅 BASE_URL） */
+/**
+ * 桥白名单 host 集（服务端同源判定；对齐安卓 whitelistHostsOf(BASE_URL, minioEndpoint)）。
+ * MinIO host 来自运行期 /web/config 预热（ServerConfig），游戏直链与封面域名变更无需发版；
+ * 配置未就绪时仅含 API host，属可接受降级（游戏页由用户操作打开，此时配置早已就绪）。
+ */
 function bridgeWhitelist(): Set<string> {
   const hosts: Set<string> = new Set()
   const base = hostOf(BuildProfile.BASE_URL)
   if (base !== null) {
     hosts.add(base)
+  }
+  const minio = hostOf(ServerConfig.minioEndpoint)
+  if (minio !== null) {
+    hosts.add(minio)
   }
   return hosts
 }
@@ -145,7 +162,8 @@ class SmartWashGameBridge {
     if (!this.isAllowedHost()) {
       return ''
     }
-    return 'light'
+    const dark: boolean = AppStorage.get<boolean>('darkMode') === true
+    return dark ? 'dark' : 'light'
   }
 
   setChrome(mode: string): void {
@@ -344,7 +362,7 @@ struct WebPage {
                 }
                 // 主题主动推送（双保险之一，对齐安卓 onPageFinished pushGameTheme；白名单校验在脚本消费侧）
                 try {
-                  this.controller.runJavaScript(GAME_THEME_PUSH_SCRIPT).catch(() => {
+                  this.controller.runJavaScript(gameThemePushScript()).catch(() => {
                   })
                 } catch (err) {
                   // controller 未附加（快速返回）时静默

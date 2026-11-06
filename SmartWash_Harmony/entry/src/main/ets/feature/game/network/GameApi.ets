@@ -3,7 +3,8 @@
  *
  * 后端契约：SmartWash/src/main/java/com/smartwash/game/
  * - GET /web/auth/game/list  需 ROLE_USER，仅 enabled=1，按 sort 升序、id 升序，不分页（规模 <100）；
- * - 下发 GameVo 字段：gameKey/title/description/icon/color/category/badge/url（无 cover，卡片以 icon + color 色组表达）。
+ * - 下发 GameVo 字段：gameKey/title/description/icon/color/category/badge/coverUrl/url
+ *   （coverUrl 服务端缺列或未上传时为空，卡片三级兜底：服务端封面 → 本地 rawfile 封面 → 图标卡）。
  *
  * 严格模式：VO 用 interface + 可选字段（Jackson 可能省略 null 字段），消费侧经转换函数兜底，
  * 不依赖 class 直连 JSON。
@@ -28,6 +29,8 @@ export interface GameVo {
   category?: string | null
   /** 角标文案（如 新/热），空不显示 */
   badge?: string | null
+  /** 封面直链（管理端上传 MinIO game-covers/ 前缀），空则端上用本地兜底封面 */
+  coverUrl?: string | null
   /** 最终可玩地址（MinIO 对象直链或外部 https），端上零拼装 */
   url?: string
 }
@@ -145,8 +148,21 @@ export interface GameItem {
   category: GameCategory
   /** 角标文案（如 新/热），空串不显示 */
   badge: string
+  /** 封面直链（服务端下发；空串走本地兜底封面） */
+  coverUrl: string
+  /** 本地兜底封面（resources/rawfile/covers/<gameKey>.png，随包内置 30 款） */
+  localCover: Resource
   /** 最终可玩地址（后端下发即用，端上零拼装；空串不响应点击） */
   url: string
+}
+
+/**
+ * 本地兜底封面资源（resources/rawfile/covers/<gameKey>.png，与仓库
+ * static/games-library/<gameKey>/<gameKey>.png 同图随包内置）。
+ * $rawfile 接受动态串，新增游戏无需改端上代码；本地无此游戏时由页面 onError 走图标兜底。
+ */
+export function localCoverRes(gameKey: string): Resource {
+  return $rawfile(`covers/${gameKey}.png`)
 }
 
 /**
@@ -163,6 +179,8 @@ export function gameVoToItem(vo: GameVo, index: number): GameItem {
     tint: gameTintFromKey(vo.color),
     category: gameCategoryFromKey(vo.category),
     badge: vo.badge ?? '',
+    coverUrl: vo.coverUrl ?? '',
+    localCover: localCoverRes(gameKey.length > 0 ? gameKey : `game_${index}`),
     url: vo.url ?? ''
   }
 }
@@ -187,6 +205,8 @@ export function withUniqueKeys(games: Array<GameItem>): Array<GameItem> {
       tint: game.tint,
       category: game.category,
       badge: game.badge,
+      coverUrl: game.coverUrl,
+      localCover: game.localCover,
       url: game.url
     }
   })
