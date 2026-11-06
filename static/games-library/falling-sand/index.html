@@ -76,11 +76,11 @@ paint(B||"light");
     <button class="btn" id="pauseBtn" type="button">暂停</button>
   </div>
   <div class="stage" id="stage">
-    <canvas id="cv" aria-label="元素落沙实验区"></canvas>
+    <canvas id="cv" aria-label="元素落沙实验区" role="img"></canvas>
     <span class="badge" id="badge" hidden>已暂停</span>
   </div>
   <div class="bar" id="elemBar"></div>
-  <p class="foot"><b id="reactCount">0/9</b> 反应已发现 · <span id="toast">拖拽画布倾倒元素，试着发现全部反应</span></p>
+  <p class="foot"><b id="reactCount">0/9</b> 反应已发现 · <span id="toast" role="status" aria-live="polite">拖拽画布倾倒元素，试着发现全部反应</span></p>
 </div>
 <script>
 "use strict";

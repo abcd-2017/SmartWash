@@ -80,8 +80,8 @@ paint(B||"light");
     <div class="stat"><span class="label">最高分</span><span class="val" id="stBest">0</span></div>
     <div class="stat"><span class="label">生命</span><span class="val" id="stLives">×3</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="吃豆人迷宫"></canvas></div>
-  <p class="msg" id="msg">第 1 关 · 能量豆可短暂反击幽灵</p>
+  <div class="stage"><canvas id="cv" aria-label="吃豆人迷宫" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">第 1 关 · 能量豆可短暂反击幽灵</p>
   <div class="tools"><button class="btn ghost" id="btnPause">暂停</button></div>
   <p class="foot">吃豆 +10 · 能量豆 +50 · 连吃幽灵分数翻倍 · 键盘方向键同样可玩</p>
 </div>
@@ -151,7 +151,7 @@ function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 几何 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.cell=Math.floor((w-4)/COLS);
   L.W=L.cell*COLS+4;L.H=L.cell*ROWS+4;
   cv.style.height=L.H+"px";

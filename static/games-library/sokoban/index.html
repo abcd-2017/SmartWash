@@ -94,8 +94,8 @@ paint(B||"light");
     <div class="stat"><span class="label">步数</span><span class="val" id="stMoves">0</span></div>
     <div class="stat"><span class="label">推动</span><span class="val" id="stPush">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="推箱子棋盘"></canvas></div>
-  <p class="msg" id="msg">滑动或按方向键移动，箱子只能推不能拉</p>
+  <div class="stage"><canvas id="cv" aria-label="推箱子棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">滑动或按方向键移动，箱子只能推不能拉</p>
   <div class="tools">
     <button class="btn" id="btnUndo">撤销</button>
     <button class="btn" id="btnReset">重开</button>
@@ -235,7 +235,7 @@ function checkWin(){
 }
 /* ---------- 绘制 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.cell=Math.floor((w-4)/cols);
   L.W=L.cell*cols;L.H=L.cell*rows;
   cv.style.height=L.H+"px";

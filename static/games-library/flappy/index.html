@@ -42,7 +42,7 @@ paint(B||"light");
   <p>点按屏幕让小鸟向上飞，穿过管道缝隙得分</p>
 </header>
 <div id="stage">
-  <canvas id="cv"></canvas>
+  <canvas id="cv" role="img" aria-label="游戏画面">
   <div id="ovStart" class="overlay">
     <h2>准备起飞</h2>
     <div class="big">最高分 <span id="bestStart">0</span></div>
@@ -51,7 +51,7 @@ paint(B||"light");
   </div>
   <div id="ovOver" class="overlay hide">
     <h2>游戏结束</h2>
-    <div class="big">本局得分 <span id="scoreOver">0</span></div>
+    <div class="big">本局得分 <span id="scoreOver" role="status" aria-live="assertive">0</span></div>
     <div class="small" id="bestOver">最高分 0</div>
     <button id="btnRetry" class="btn">再来一局</button>
   </div>

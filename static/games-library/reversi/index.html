@@ -80,8 +80,8 @@ paint(B||"light");
     <div class="stat"><span class="label">白棋（电脑）</span><span class="val" id="stWhite">2</span></div>
     <div class="stat"><span class="label">战绩</span><span class="val" id="stRec">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="黑白棋棋盘"></canvas></div>
-  <p class="msg" id="msg">轮到你落子（黑棋先行），高亮点是可行位置。</p>
+  <div class="stage"><canvas id="cv" aria-label="黑白棋棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">轮到你落子（黑棋先行），高亮点是可行位置。</p>
   <div class="tools">
     <button class="btn ghost" id="btnDiff">难度：困难</button>
     <button class="btn" id="btnNew">重新开始</button>

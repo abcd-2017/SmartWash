@@ -81,8 +81,8 @@ paint(B||"light");
     <div class="stat"><span class="label">连击</span><span class="val" id="stCombo">0</span></div>
     <div class="stat"><span class="label">生命</span><span class="val" id="stLives">×3</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="切水果战场"></canvas></div>
-  <p class="msg" id="msg">按住滑动切水果 · 避开黑色炸弹</p>
+  <div class="stage"><canvas id="cv" aria-label="切水果战场" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">按住滑动切水果 · 避开黑色炸弹</p>
   <div class="tools"><button class="btn ghost" id="btnPause">暂停</button></div>
   <p class="foot">每果 +10 · 连击每多 1 果 +5 · 切到炸弹 -1 命 · 错过落地不扣命</p>
 </div>
@@ -133,7 +133,7 @@ function say(t){$("msg").textContent=t}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({best:best,combo:maxComboBest}))}catch(e){}}
 /* ---------- 几何 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.W=w;L.H=Math.round(w*1.1);
   cv.style.height=L.H+"px";
   cv.width=Math.round(w*dpr);cv.height=Math.round(L.H*dpr);

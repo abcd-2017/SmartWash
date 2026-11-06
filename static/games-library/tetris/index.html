@@ -87,8 +87,8 @@ paint(B||"light");
     <div class="stat"><span class="label">最高分</span><span class="val" id="stBest">0</span></div>
     <div class="stat"><span class="label">等级</span><span class="val" id="stLevel">1 · 0行</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="俄罗斯方块场地"></canvas></div>
-  <p class="msg" id="msg">方向键或下方按键操作 · 加速消除拿更高分</p>
+  <div class="stage"><canvas id="cv" aria-label="俄罗斯方块场地" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">方向键或下方按键操作 · 加速消除拿更高分</p>
   <div class="tools">
     <button class="ctl" id="cLeft">←</button>
     <button class="ctl" id="cRot">↻</button>
@@ -257,7 +257,7 @@ function showOverlay(){$("overlay").classList.add("show")}
 function hideOverlay(){$("overlay").classList.remove("show")}
 /* ---------- 几何与绘制 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   var availH=Math.max(260,(window.innerHeight||700)-330);
   L.cell=Math.max(14,Math.min(Math.floor((w-2*L.pad)/W),Math.floor(availH/H)));
   L.boardW=L.cell*W;L.boardH=L.cell*H;

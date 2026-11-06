@@ -142,13 +142,13 @@
     </button>
   </div>
   <div class="stage" id="stage">
-    <canvas id="cv" aria-label="森林快跑游戏画布"></canvas>
+    <canvas id="cv" aria-label="森林快跑游戏画布" role="img"></canvas>
     <div class="overlay show" id="ovReady">
       <h2 class="ov-title">森林快跑</h2>
       <p class="ov-sub">点按 / 上滑 = 跳跃 · 下滑 = 铲滑<br>原木与岩石要跳，低枝要铲<br>松果每颗 +15，速度会越跑越快</p>
       <button class="btn" id="btnStart" type="button">开跑</button>
     </div>
-    <div class="overlay" id="ovPause">
+    <div class="overlay" id="ovPause" aria-live="assertive">
       <h2 class="ov-title">暂停中</h2>
       <p class="ov-sub">树林里的风也停了</p>
       <div class="btn-row">
@@ -217,8 +217,17 @@ function rgba(c,a){
   if(m){var p=m[1].split(",");var oa=p.length>3?parseFloat(p[3]):1;return"rgba("+p[0]+","+p[1]+","+p[2]+","+(oa*a).toFixed(3)+")"}
   return s;
 }
-window.__gOnTheme=function(){palLoad()};
+window.__gOnTheme=function(){palLoad();gradCache.gy=null;};
 palLoad();
+/* 渐变缓存：几何(gy)或主题变更时失效重建，消除每帧 createLinearGradient */
+var gradCache={gy:null,sky:null,gd:null};
+function buildGrads(gy){
+  gradCache.sky=ctx.createLinearGradient(0,0,0,gy);
+  gradCache.sky.addColorStop(0,PAL.sky1);gradCache.sky.addColorStop(1,PAL.sky2);
+  gradCache.gd=ctx.createLinearGradient(0,gy,0,H);
+  gradCache.gd.addColorStop(0,PAL.ground);gradCache.gd.addColorStop(1,PAL.ground2);
+  gradCache.gy=gy;
+}
 
 var W=360,H=450,dpr=1;
 function resize(){
@@ -427,9 +436,8 @@ function draw(){
   ctx.save();
   if(shakeT>0)ctx.translate(rand(-1,1)*shakeT*13,rand(-1,1)*shakeT*13);
   var gy=gyY();
-  var sky=ctx.createLinearGradient(0,0,0,gy);
-  sky.addColorStop(0,PAL.sky1);sky.addColorStop(1,PAL.sky2);
-  ctx.fillStyle=sky;ctx.fillRect(0,-8,W,gy+8);
+  if(gradCache.gy!==gy)buildGrads(gy);
+  ctx.fillStyle=gradCache.sky;ctx.fillRect(0,-8,W,gy+8);
   /*太阳*/
   ctx.fillStyle=rgba(PAL.warning,0.85);
   ctx.beginPath();ctx.arc(W*0.8,H*0.1,Math.max(15,W*0.05),0,6.3);ctx.fill();
@@ -441,9 +449,7 @@ function draw(){
   /*中景树*/
   midTrees(gy);
   /*地面*/
-  var gd=ctx.createLinearGradient(0,gy,0,H);
-  gd.addColorStop(0,PAL.ground);gd.addColorStop(1,PAL.ground2);
-  ctx.fillStyle=gd;ctx.fillRect(0,gy,W,H-gy);
+  ctx.fillStyle=gradCache.gd;ctx.fillRect(0,gy,W,H-gy);
   ctx.strokeStyle=rgba(PAL.text,0.25);ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();
   ctx.fillStyle=rgba(PAL.text,0.12);

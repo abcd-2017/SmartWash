@@ -94,9 +94,9 @@ paint(B||"light");
     <button class="btn" id="mainBtn">开始游戏</button>
   </div>
   <div class="stage" id="stage">
-    <canvas id="cv"></canvas>
+    <canvas id="cv" role="img" aria-label="游戏画面">
     <div class="overlay" id="overlay">
-      <p class="ov-title" id="ovTitle">准备开始</p>
+      <p class="ov-title" id="ovTitle" role="status" aria-live="assertive">准备开始</p>
       <p class="ov-sub" id="ovSub">滑动屏幕或按方向键控制方向</p>
       <button class="btn" id="ovBtn">开始游戏</button>
     </div>

@@ -80,10 +80,11 @@ paint(B||"light");
   <header>
     <button class="btn ghost" id="menuBtn" type="button">选曲</button>
     <button class="btn" id="pauseBtn" type="button" disabled>暂停</button>
+    <button class="btn ghost" id="muteBtn" type="button" aria-pressed="false">静音</button>
   </header>
   <div class="stage" id="stage">
-    <canvas id="cv" aria-label="节拍游戏区"></canvas>
-    <div class="overlay" id="overlay">
+    <canvas id="cv" aria-label="节拍游戏区" role="img"></canvas>
+    <div class="overlay" id="overlay" aria-live="assertive">
       <div class="panel" id="vMenu">
         <p class="rt">选择曲目</p>
         <p class="rs">音乐由 WebAudio 现场合成 · 建议佩戴耳机</p>
@@ -230,7 +231,7 @@ paint(B||"light");
       try{
         const AC = window.AudioContext || window.webkitAudioContext;
         actx = new AC();
-        master = actx.createGain(); master.gain.value = 0.9;
+        master.gain.value = muted?0:0.9;
         const comp = actx.createDynamicsCompressor();
         master.connect(comp); comp.connect(actx.destination);
         const len = actx.sampleRate | 0;
@@ -605,7 +606,18 @@ paint(B||"light");
       else if(state === "paused") resumeGame();
     }else if(e.code === "Escape" && state !== "menu"){ toMenu(); }
   });
-  menuBtn.addEventListener("click", toMenu);
+/* 静音:偏好独立存档键 sw.beattap.audio.v1(新键按现行规范),master 建立后也生效 */
+  const MKEY = "sw.beattap.audio.v1";
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem(MKEY)).muted === true; } catch(e) {}
+  function applyMute() {
+    if (master) master.gain.value = muted ? 0 : 0.9;
+    muteBtn.textContent = muted ? "已静音" : "静音";
+    muteBtn.setAttribute("aria-pressed", String(muted));
+  }
+  function saveMute() { try { localStorage.setItem(MKEY, JSON.stringify({ muted })); } catch(e) {} }
+  muteBtn.addEventListener("click", () => { muted = !muted; saveMute(); applyMute(); });
+  applyMute();
   pauseBtn.addEventListener("click", () => { if(state === "playing") pauseGame(); else if(state === "paused") resumeGame(); });
   btnResume.addEventListener("click", resumeGame);
   btnMenu2.addEventListener("click", toMenu);

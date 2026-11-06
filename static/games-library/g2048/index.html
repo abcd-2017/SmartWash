@@ -78,15 +78,18 @@
   .f3 { font-size: clamp(15px, 5.4vw, 23px); }
   .c2 { background: #eee4da; color: #776e65; }
   .c4 { background: #ede0c8; color: #776e65; }
-  .c8 { background: #f2b179; color: #f9f6f2; }
-  .c16 { background: #f59563; color: #f9f6f2; }
-  .c32 { background: #f67c5f; color: #f9f6f2; }
-  .c64 { background: #f65e3b; color: #f9f6f2; }
-  .c128 { background: #edcf72; color: #f9f6f2; }
-  .c256 { background: #edcc61; color: #f9f6f2; }
-  .c512 { background: #edc850; color: #f9f6f2; }
-  .c1024 { background: #edc53f; color: #f9f6f2; }
-  .c2048 { background: #edc22e; color: #f9f6f2; box-shadow: 0 0 14px rgba(243, 215, 116, .65); }
+  /* 素材色(D2 修订 2026-11-07)：c8–c64 暖段改深棕字（对比 ≥4.5）；
+     c128+ 由黄阶改蓝阶——蓝橙为色盲安全对、阶内亮度递减可区分，
+     修复绿色盲下 128–2048 ΔE≈0.8 不可分辨与白字 1.4~1.6 对比失效 */
+  .c8 { background: #f2b179; color: #5c3a1e; }
+  .c16 { background: #f59563; color: #4d2a0e; }
+  .c32 { background: #f67c5f; color: #4a1b0c; }
+  .c64 { background: #f65e3b; color: #330d06; }
+  .c128 { background: #3e7cb8; color: #f9f6f2; }
+  .c256 { background: #35699e; color: #f9f6f2; }
+  .c512 { background: #2c5685; color: #f9f6f2; }
+  .c1024 { background: #24446c; color: #f9f6f2; }
+  .c2048 { background: #1c3556; color: #f9f6f2; box-shadow: 0 0 14px rgba(76, 129, 184, .65); }
   .csuper { background: var(--g-tilesuper); color: #f9f6f2; }
   .pop { animation: pop .18s ease-out; }
   @keyframes pop {
@@ -134,7 +137,7 @@ paint(B||"light");
   <div class="board-wrap">
     <div class="grid" id="grid"></div>
     <div class="overlay" id="overlay">
-      <p class="ov-title" id="ovTitle"></p>
+      <p class="ov-title" id="ovTitle" role="status" aria-live="assertive"></p>
       <p class="ov-sub" id="ovSub"></p>
       <button class="btn" id="ovMain">重新开始</button>
       <button class="btn ghost" id="ovMore">继续挑战</button>

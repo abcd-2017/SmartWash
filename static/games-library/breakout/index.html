@@ -49,7 +49,7 @@ paint(B||"light");
   <button id="btnPause" class="pbtn">暂停</button>
 </header>
 <div id="stage">
-  <canvas id="cv"></canvas>
+  <canvas id="cv" role="img" aria-label="游戏画面">
   <div id="ovStart" class="overlay">
     <h2>打砖块</h2>
     <div class="big">最高分 <span id="sBest">0</span></div>
@@ -57,7 +57,7 @@ paint(B||"light");
     <button id="btnStart" class="btn">开始游戏</button>
     <div class="small">左右拖动控制挡板，点按屏幕发球</div>
   </div>
-  <div id="ovPause" class="overlay hide">
+  <div id="ovPause" class="overlay hide" aria-live="assertive">
     <h2>已暂停</h2>
     <button id="btnResume" class="btn">继续游戏</button>
     <div class="small">切到后台会自动暂停</div>

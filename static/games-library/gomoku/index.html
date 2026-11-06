@@ -38,10 +38,10 @@ paint(B||"light");
 <body>
 <header>
   <div id="record">战绩 胜 0 / 负 0 / 和 0</div>
-  <div id="status">你执黑先行，点击棋盘落子</div>
+  <div id="status" role="status" aria-live="polite">你执黑先行，点击棋盘落子</div>
 </header>
 <div id="stage">
-  <canvas id="cv"></canvas>
+  <canvas id="cv" role="img" aria-label="游戏画面">
 </div>
 <footer>
   <button id="btnUndo" class="btn">悔棋</button>
