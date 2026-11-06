@@ -14,7 +14,8 @@ const CANONICAL = readFileSync(join(DIR, "block-drop/index.html"), "utf8");
 // ── 新游戏清单（出生即按现行 §6 规范实现）──
 const STRICT = new Set([
   "tetris", "sudoku", "idiom", "pacman", "invaders", "lights-out",
-  "sokoban", "connect-four", "solitaire", "fruit-slice", "air-hockey", "reversi"
+  "sokoban", "connect-four", "solitaire", "fruit-slice", "air-hockey", "reversi",
+  "magic-tower"
 ]);
 
 // §2 基础 token + §3 已登记素材 token 前缀
@@ -23,7 +24,7 @@ const BASE_TOKENS = new Set([
   "--g-text", "--g-muted", "--g-faint", "--g-border", "--g-hairline", "--g-danger", "--g-warning", "--g-success",
   "--g-water", "--g-scrim", "--g-shadow", "--g-radius", "--g-radius-btn", "--g-radius-inner", "--g-gap", "--g-on-primary"
 ]);
-const MATERIAL_PREFIX = /^--g-(bp|bshade|field|grid|snake|food|sky|sky1|sky2|cloud|cld|gnd|gnl|pipe|pipecap|pipeln|bird1|bird2|birdln|wing|beak|bd|line|star|ball|ballln|maze|card|cell|cellhi|celllo|open|openln|n[1-8]|fs-|felt|felt2|rail|pocket|fr-|ss-|moon|moon2|board|tilesuper|st-)/;
+const MATERIAL_PREFIX = /^--g-(bp|bshade|field|grid|snake|food|sky|sky1|sky2|cloud|cld|gnd|gnl|pipe|pipecap|pipeln|bird1|bird2|birdln|wing|beak|bd|line|star|ball|ballln|maze|card|cell|cellhi|celllo|open|openln|n[1-8]|fs-|felt|felt2|rail|pocket|fr-|ss-|moon|moon2|board|tilesuper|st-|mt-)/;
 const FONT_TIER = new Set([36, 28, 22, 18, 16, 14, 12]);
 const SHELL_RADIUS = new Set([16, 14, 12, 10]);
 
