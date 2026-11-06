@@ -89,12 +89,13 @@ struct MoodCalendarPage {
       } else {
         logger.warn(TAG, `月历加载失败 ym=${ym} code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isError = true
-        showToastSafety(res.message, MoodText.mood_error_load)
+        // 文案对齐安卓基线「月历加载失败」（勿用 mood_error_load 的「心情记录加载失败」）
+        showToastSafety(res.message, '月历加载失败')
       }
     } catch (err) {
       logger.error(TAG, '月历加载异常', err instanceof Error ? err.message : '')
       this.isError = true
-      showToastSafety('', MoodText.mood_error_load)
+      showToastSafety('', '月历加载失败')
     } finally {
       this.isLoading = false
     }
@@ -203,7 +204,7 @@ struct MoodCalendarPage {
             .layoutWeight(1)
         } else if (this.isError) {
           MoodErrorState({
-            message: MoodText.mood_error_load,
+            message: '月历加载失败',
             onRetry: (): void => {
               this.load(this.ym)
             }

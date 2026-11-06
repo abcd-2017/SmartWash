@@ -380,11 +380,18 @@ export struct BreathPage {
       Column() {
         PageHeader({ title: BreathText.title })
 
-        if (!this.running) {
-          this.ModeSelector()
-        } else {
-          this.GuideStage()
+        // 内容区显式吃满剩余高度：原 ModeSelector/GuideStage 自带 height('100%')，
+        // 与 PageHeader 兄弟排列时按整屏高布局，整体下溢一个页头高（56vp），
+        // 底部按钮被挤进手势条安全区（真机实测按钮下缘 2848 > 安全区 2750）。
+        Column() {
+          if (!this.running) {
+            this.ModeSelector()
+          } else {
+            this.GuideStage()
+          }
         }
+        .width('100%')
+        .layoutWeight(1)
       }
       .width('100%')
       .height('100%')

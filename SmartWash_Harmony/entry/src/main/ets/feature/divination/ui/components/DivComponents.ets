@@ -612,6 +612,8 @@ export struct DivSectionTitle {
           color: this.tailClickable ? DivPalette.textTertiary : DivPalette.textSecondary,
           textAlign: TextAlign.End
         })
+        // 尾注热区 31×16vp → 补 padding 到 ≥48vp（文字行盒 16 + 上下 16，左右各 12）
+        .padding({ left: 12, right: 12, top: 16, bottom: 16 })
         .onClick(() => {
           if (this.tailClickable) {
             const now = Date.now()

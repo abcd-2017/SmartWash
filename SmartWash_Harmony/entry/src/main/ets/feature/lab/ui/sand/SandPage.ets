@@ -16,7 +16,7 @@ import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 /** 页面文案 */
 class SandText {
   static readonly title: string = '落沙实验室'
-  static readonly hint: string = '倒水撒沙，看元素互相反应'
+  static readonly hint: string = '拖动手指涂抹，看元素互相反应'
   static readonly currentFormat: string = '当前：%s'
   static readonly clear: string = '清除'
   static readonly play: string = '播放'
@@ -287,18 +287,14 @@ export struct SandPage {
   }
 
   /** 小按钮（文字胶囊） */
-  @Builder
-  SandTextButton(text: string, click: () => void) {
-    Text(text)
-      .fontSize(DesignFontSize.BODY_SMALL)
-      .fontColor(DesignColor.TEXT_PRIMARY)
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
-        top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
-      .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(DesignColor.SURFACE_VARIANT)
-      .onClick(() => {
-        click()
-      })
+  private onTogglePlay(): void {
+    this.playing = !this.playing
+    if (this.playing) {
+      this.startLoop()
+    } else {
+      this.clearLoop()
+    }
+    LabHaptic.selection()
   }
 
   build() {
@@ -346,21 +342,23 @@ export struct SandPage {
             .fontColor(DesignColor.TEXT_SECONDARY)
             .layoutWeight(1)
 
-          this.SandTextButton(SandText.clear, () => {
-            this.sim.clear()
-            this.drawSand()
-            LabHaptic.medium()
+          SandTextButton({
+            text: SandText.clear,
+            click: (): void => {
+              this.sim.clear()
+              this.drawSand()
+              LabHaptic.medium()
+            }
           })
 
           Column() {
-            this.SandTextButton(this.playing ? SandText.pause : SandText.play, () => {
-              this.playing = !this.playing
-              if (this.playing) {
-                this.startLoop()
-              } else {
-                this.clearLoop()
+            SandTextButton({
+              // 文案读 this.playing（@Param 响应式）：原 @Builder 按值传参在暂停/播放后
+              // 定格，按钮文字不随状态切换
+              text: this.playing ? SandText.pause : SandText.play,
+              click: (): void => {
+                this.onTogglePlay()
               }
-              LabHaptic.selection()
             })
           }
           .margin({ left: DesignDimens.SPACE_SM })
@@ -376,5 +374,29 @@ export struct SandPage {
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)
+  }
+}
+
+/**
+ * 文字胶囊小按钮 —— @ComponentV2 + @Param 承载文案（已知坑：@Builder 按值传参在
+ * this.playing 变更后不重建，暂停/播放按钮文案定格）。点击经 @Event 上抛。
+ */
+@ComponentV2
+struct SandTextButton {
+  @Param text: string = ''
+  @Event click: () => void = () => {
+  }
+
+  build() {
+    Text(this.text)
+      .fontSize(DesignFontSize.BODY_SMALL)
+      .fontColor(DesignColor.TEXT_PRIMARY)
+      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
+        top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+      .borderRadius(DesignDimens.RADIUS_MD)
+      .backgroundColor(DesignColor.SURFACE_VARIANT)
+      .onClick(() => {
+        this.click()
+      })
   }
 }

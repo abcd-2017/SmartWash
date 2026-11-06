@@ -34,6 +34,8 @@ export struct UserInfo {
   @StorageLink(USER_INFO_TICK_KEY) @Watch("onUserInfoChange") userInfoTick: number = 0
   @State avatarUrl: string | null = null
   @State isUploading: boolean = false
+  // 下拉刷新进行中标记（对齐安卓 PullToRefreshBox；与首载骨架/错误重试互补）
+  @State refreshing: boolean = false
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
@@ -63,6 +65,13 @@ export struct UserInfo {
       // 网络异常/401 拒绝时 promise 会 throw：置失败态由 UI 出重试，不再让骨架常驻
       this.loadFailed = true
     }
+  }
+
+  /** 下拉刷新（对齐安卓 PullToRefreshBox）：复用 refreshUserInfo，结束后复位 refreshing */
+  private async onRefresh(): Promise<void> {
+    this.refreshing = true
+    await this.refreshUserInfo()
+    this.refreshing = false
   }
 
   // 选择图片并上传头像
@@ -219,6 +228,8 @@ export struct UserInfo {
   }
 
   build() {
+    // 下拉刷新（对齐安卓 PullToRefreshBox）：包裹滚动区，下拉触发 onRefresh 重拉用户信息
+    Refresh({ refreshing: $$this.refreshing }) {
     Scroll(this.scroller) {
       Column() {
         if (this.userInfo === null) {
@@ -263,6 +274,8 @@ export struct UserInfo {
             .backgroundColor(DesignColor.ICON_CONTAINER_TEAL)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
+            // 无障碍：设置齿轮补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
+            .accessibilityDescription('设置')
             .onClick(() => {
               pathStack.pushPathByName(RouteNames.SETTING, null)
             })
@@ -348,7 +361,9 @@ export struct UserInfo {
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
+              .height(48)
               .alignItems(HorizontalAlign.Center)
+              .justifyContent(FlexAlign.Center)
               .onClick(() => {
                 pathStack.pushPathByName(RouteNames.COUPON, null)
               })
@@ -373,7 +388,9 @@ export struct UserInfo {
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
+              .height(48)
               .alignItems(HorizontalAlign.Center)
+              .justifyContent(FlexAlign.Center)
             }
             .width("100%")
             .margin({ top: 8 })
@@ -423,7 +440,8 @@ export struct UserInfo {
               DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
               "", DesignColor.TEXT_SECONDARY,
               () => {
-                promptAction.showToast({ message: "功能开发中，敬请期待" })
+                // 文案对齐安卓 shipping_address_unavailable
+                promptAction.showToast({ message: "收货地址功能暂未开放" })
               })
           }
           .width("100%")
@@ -482,8 +500,14 @@ export struct UserInfo {
     .width("100%")
     .height("100%")
     .align(Alignment.TopStart)
-    .backgroundColor(DesignColor.BACKGROUND)
     // 沉浸式：内容避让状态栏（背景延伸）
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
+    }
+    .onRefreshing(() => {
+      this.onRefresh()
+    })
+    .width("100%")
+    .height("100%")
+    .backgroundColor(DesignColor.BACKGROUND)
   }
 }

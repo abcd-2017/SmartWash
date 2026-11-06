@@ -123,8 +123,8 @@ struct PermissionManagement {
                   containerColor: DesignColor.ICON_CONTAINER_ORANGE,
                   iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
                   title: "通知权限",
-                  // 文案对齐安卓 permission_notification_desc（D14）
-                  description: "APK 下载进度与更新提醒（Android 13+ 需授权）",
+                  // 鸿蒙语义文案（去掉安卓专属的 APK 下载 / Android 13+ 表述）
+                  description: "接收订单进度、投递与系统通知提醒",
                   granted: this.notificationGranted,
                   showAction: true,
                   onRowClick: () => {

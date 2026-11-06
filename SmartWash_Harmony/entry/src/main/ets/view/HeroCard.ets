@@ -92,6 +92,12 @@ struct HeroDrum {
     Canvas(this.ctx)
       .width(this.sizeValue)
       .height(this.sizeValue)
+      // onReady 兜底重绘（对齐 AppComponents.DrumMark 同款修复）：
+      // aboutToAppear 时 Canvas 渲染表面尚未挂载，首帧绘制被丢弃会导致空态滚筒永久空白；
+      // onReady 时 ctx 保证可绘，drawMark 以 clearRect 起步幂等，重复触发无叠加副作用。
+      .onReady(() => {
+        this.drawMark()
+      })
   }
 }
 

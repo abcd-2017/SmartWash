@@ -288,6 +288,8 @@ struct Setting {
                 iconColor: DesignColor.ICON_FOREGROUND_TEAL,
                 title: "检查更新",
                 trailingValue: `v${getAppVersionName()}`,
+                // 检查中显示行尾 spinner（checkingUpdate 同时拦截连点，见 checkUpdate 首行）
+                loading: this.checkingUpdate,
                 onRowClick: () => {
                   this.checkUpdate()
                 }
@@ -373,6 +375,8 @@ struct SettingRow {
   @Prop iconColor: number = DesignColor.PRIMARY
   @Prop title: string = ""
   @Prop trailingValue: string = ""
+  // 行尾加载态（检查更新等）：为 true 时以 spinner 替代行尾文案（对齐安卓）
+  @Prop loading: boolean = false
   onRowClick: () => void = () => {
   }
   @State pressed: boolean = false
@@ -399,7 +403,13 @@ struct SettingRow {
         .layoutWeight(1)
         .margin({ left: 12 })
 
-      if (this.trailingValue !== "") {
+      if (this.loading) {
+        // 行尾加载态：spinner 替代版本号（对齐安卓检查更新反馈）
+        LoadingProgress()
+          .width(16)
+          .height(16)
+          .color(DesignColor.TEXT_SECONDARY)
+      } else if (this.trailingValue !== "") {
         Text(this.trailingValue)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)

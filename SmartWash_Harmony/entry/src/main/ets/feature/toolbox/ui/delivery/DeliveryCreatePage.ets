@@ -62,8 +62,6 @@ struct DeliveryCreatePage {
   @State session: DeliverySessionVo | null = null
   @State closing: boolean = false
   @State remainSeconds: number | null = null
-  // 预设 chip 按压态（对齐安卓 pressable scale 0.97）
-  @State pressedChipId: number = -1
   private tickTimerId: number = -1
 
   // 关闭会话确认弹窗（控制器由结构体字段持有：本地变量会在按钮回调抛 jscrash，见 17c263c）
@@ -231,30 +229,8 @@ struct DeliveryCreatePage {
   }
 
   /** 可选预设 chip（选中 = 品牌底白字，未选中 = 白底描边；对齐安卓 ToolboxSelectableChip） */
-  @Builder
-  SelectableChip(text: string, selected: boolean, chipId: number) {
-    Text(text)
-      .fontSize(DesignFontSize.CAPTION)
-      // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
-      .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-      .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .borderWidth(1)
-      .borderColor(selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .scale({ x: this.pressedChipId === chipId ? 0.97 : 1, y: this.pressedChipId === chipId ? 0.97 : 1 })
-      .onTouch((event: TouchEvent) => {
-        if (event.type === TouchType.Down) {
-          this.pressedChipId = chipId
-        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-          this.pressedChipId = -1
-        }
-      })
-      .onClick(() => {
-        this.durationMinutes = chipId
-      })
-      .animation({ duration: 200, curve: Curve.EaseInOut })
+  private onChipSelect(chipId: number): void {
+    this.durationMinutes = chipId
   }
 
   /** 是否已过期（剩余秒数归零） */
@@ -412,7 +388,14 @@ struct DeliveryCreatePage {
               Scroll() {
                 Row({ space: DesignDimens.SPACE_XS }) {
                   ForEach(DELIVERY_DURATION_PRESETS, (minutes: number, index: number) => {
-                    this.SelectableChip(durationChipText(minutes), this.durationMinutes === minutes, minutes)
+                    DeliveryDurationChip({
+                      text: durationChipText(minutes),
+                      selected: this.durationMinutes === minutes,
+                      chipId: minutes,
+                      onSelect: (chipId: number): void => {
+                        this.onChipSelect(chipId)
+                      }
+                    })
                   }, (minutes: number) => `${minutes}`)
                 }
               }
@@ -465,6 +448,8 @@ struct DeliveryCreatePage {
                 }
                 .width(DesignDimens.BACK_HIT_AREA)
                 .height(DesignDimens.BACK_HIT_AREA)
+                // 无障碍：密码可见性切换补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
+                .accessibilityDescription(this.showPassword ? '隐藏密码' : '显示密码')
                 .onClick(() => {
                   this.showPassword = !this.showPassword
                 })
@@ -559,6 +544,46 @@ struct DeliveryCreatePage {
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)
+  }
+}
+
+/**
+ * 有效期预设 chip —— @ComponentV2 + @Param 承载选中态（已知坑：@Builder 按值传参在
+ * durationMinutes 变更后不重建，选中高亮定格）。按压反馈内聚为 @Local。
+ * 垂直内边距 6 → 16：把触控热区从 27.7vp 抬到 ≥48vp（文字行盒 16 + 上下 16）。
+ */
+@ComponentV2
+struct DeliveryDurationChip {
+  @Param text: string = ''
+  @Param selected: boolean = false
+  @Param chipId: number = 0
+  @Event onSelect: (chipId: number) => void = (_: number) => {
+  }
+  @Local pressed: boolean = false
+
+  build() {
+    Text(this.text)
+      .fontSize(DesignFontSize.CAPTION)
+      // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
+      .fontWeight(DesignFontWeight.SEMI_BOLD)
+      .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+      .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+      .borderWidth(1)
+      .borderColor(this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
+      .onClick(() => {
+        this.onSelect(this.chipId)
+      })
+      .animation({ duration: 200, curve: Curve.EaseInOut })
   }
 }
 

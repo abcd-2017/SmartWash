@@ -33,6 +33,9 @@ export struct PageHeader {
         .height(DesignDimens.BACK_HIT_AREA)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
+        // 无障碍：返回箭头补语义（原仅图形，读屏无标签）
+        // 注：accessibilityRole 需 SDK 18+，本项目目标 API 17，仅用 description
+        .accessibilityDescription('返回')
         .onClick(() => {
           this.backClick()
         })
@@ -70,6 +73,9 @@ export struct IconBox {
   @Param containerColor: number = DesignColor.PRIMARY_LIGHT
   @Param iconColor: number = DesignColor.PRIMARY
   @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
+  // 无障碍语义（图标按钮调用点传入，如「设置」「充值记录」；纯展示场景留空）
+  // 命名避开基类内置 accessibilityText 属性方法（同 sizeValue 约定）
+  @Param accessibilityLabel: string = ''
 
   build() {
     Column() {
@@ -83,6 +89,7 @@ export struct IconBox {
     .backgroundColor(this.containerColor)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+    .accessibilityDescription(this.accessibilityLabel)
   }
 }
 
@@ -456,9 +463,9 @@ export struct AppPillTabRow {
               .fontColor(this.selectedIndex === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
           }
           .justifyContent(FlexAlign.Center)
-          // 垂直 9 → 14 把触控热区抬到 44dp（规范 §2.3；胶囊视觉高 34 不变——
-          // padding 在 background/border 之后只扩热区，不改视觉）
-          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+          // 垂直 9 → 14 → 16 把触控热区从 43.7vp 抬到 48vp（规范 §2.3；
+          // padding 在 background/border 之后只扩热区，不改胶囊视觉高 34）
+          .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 16, bottom: 16 })
           .borderRadius(DesignDimens.RADIUS_FULL)
           .backgroundColor(this.selectedIndex === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
           .border({
@@ -467,6 +474,8 @@ export struct AppPillTabRow {
           })
           .margin({ right: DesignDimens.SPACE_XS })
           .animation(MotionTiming.ENTER)
+          // 选中态播报（无障碍）：读屏时播报「已选中」状态
+          .accessibilitySelected(this.selectedIndex === index)
           .onClick(() => {
             try {
               vibrator.startVibration({ type: 'time', duration: 10 }, { id: 0, usage: 'unknown' })

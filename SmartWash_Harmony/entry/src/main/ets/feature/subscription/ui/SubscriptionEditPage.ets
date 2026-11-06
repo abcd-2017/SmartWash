@@ -703,19 +703,23 @@ struct SubscriptionEditPage {
               left: DesignDimens.PAGE_PADDING,
               right: DesignDimens.PAGE_PADDING,
               top: DesignDimens.SPACE_SM,
-              bottom: DesignDimens.SPACE_LG + safeBottomVp()
+              // 底部安全区由页面根容器统一避让（原写在这里的 safeBottomVp 会与根避让叠加，
+              // 且 Scroll 未约束高度时按钮被推到手势条下方）
+              bottom: DesignDimens.SPACE_LG
             })
             .alignItems(HorizontalAlign.Start)
           }
           .width('100%')
           .align(Alignment.TopStart)
           .scrollBar(BarState.Off)
+          // 约束滚动视口高度（原缺失：Scroll 高度=内容高度，按钮被挤出屏幕且无法滚动）
+          .layoutWeight(1)
         }
       }
       .width('100%')
       .height('100%')
-      // 沉浸式：内容避让状态栏（背景延伸）
-      .padding({ top: safeTopVp() })
+      // 沉浸式：内容避让状态栏与底部手势条（背景延伸），保证提交按钮完整落在安全区内
+      .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
     }
     .hideTitleBar(true)
