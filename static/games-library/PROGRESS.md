@@ -15,22 +15,25 @@
 
 ## 修订记录
 
-- **2026-11-06（四批）新增 reversi 黑白棋（游戏库 28 → 29 款）**：
-  第三批候选（reversi / crossword / magic-tower）首款落地。board 类别第 6 款，
-  「翻转」机制与库内既有 5 款 board（五子棋 / 四子棋 / 台球 / 二十一点 / 接龙）均不同。
-  按 §6 清单接入：无 `<h1>`、桥唯一控制、卡片式 `full` chrome（不调 setChrome）、
-  存档键 `sw.reversi.v1`、触屏热区 ≥44px、素材 token `--g-felt/--g-felt2/--g-line`
-  登记进 §3。AI 为 negamax + α-β（走子按位置权重排序），困难深度 3。
+- **2026-11-07（五批）第三批收官 + 无障碍性能 MVP（游戏库 29 → 30 款）**：
+  magic-tower（魔塔）落地，第三批三款（reversi/crossword/magic-tower）完成两款，
+  crossword 因 2 字词网格几何约束转手工槽位设计（结论记档调研附录，工具存
+  `docs/crossword-tools/cw-build.mjs`）。同批质量项：
+  1. **dpr 封顶 2**（7 款）、**g2048 色盲修复**（128+ 蓝阶 + 全档对比 ≥4.5）、
+     **ARIA 全库覆盖**（canvas role=img + 28 款 aria-live 状态区）、
+     **beat-tap 静音**（sw.beattap.audio.v1）、**渐变缓存**（forest-run/snow-trail/slingshot）。
+  2. **audit-gates 加固**：存档键全量提取（27 款 32 键零漏零误）、布局类型判定
+     （全屏改查 T14）、热区选择器扩展、§4 裁撤残留、theme-color 同步、token 基线值、
+     JS 颜色字面量、canvas 字号灰区、MATERIAL_PREFIX 补 st-/mt-。
+  3. **存量 17 款硬差距收口**：tap-highlight×3、420px→480px×6、scrim 基线统一×8、§3 补登。
+  4. **封面三件套**：游戏目录改为 index.html/README/`<gameKey>.png`（800×450），
+     reversi（绿毯棋盘）与 magic-tower（靛蓝石塔）封面按库内扁平风格 PS 绘制。
 
   | 游戏 | 渲染 | 存档键 | 体积 | 三关 | 375px 实开 | 专项校验 |
   |---|---|---|---|---|---|---|
-  | reversi | canvas·rAF | `sw.reversi.v1` | 17177B | ✅✅✅ | ✅ 首步翻面 + AI 应手 + 自动对局到终局 + 重开 | 规则断言（首步 4/1）+ AI 50:14 胜 + 深浅色 / 非法值 / 零异常 |
+  | magic-tower | canvas·格子 | `sw.magictower.v1` | 19808B | ✅✅✅ | ✅ 寻路战斗/上楼存档/刷新恢复/重开清档 | 离线贪略求解 8 层可通（余 HP=1602） |
 
-  Playwright 375px 全套：初开浅色 / 首步规则断言 / AI 应答 / 自动对局 29 步到终局 /
-  重开复位 2/2 / 深色推送（meta theme-color 同步 `#141614`）/ 非法值拒绝 /
-  无横向溢出 / 无 `<h1>` / 零 JS 异常：全部通过。
-  开发中修复：AI 初版无走子排序，中局分支增大后搜索耗时飙升导致页面卡死；
-  改为按位置权重排序 + 跳手不耗深度后，整局 29 步顺畅完成。
+  全库终态：30 款严格+存量双模式 0 违规；theme-gates 30/30。
 
 - **2026-11-04（三批）规范对齐与工具沉淀**：
   1. **布局对齐 §6**：snake（420px→480px、padding 16/12/28→16/8/30）、
