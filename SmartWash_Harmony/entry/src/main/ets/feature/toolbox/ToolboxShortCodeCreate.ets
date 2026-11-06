@@ -48,29 +48,32 @@ struct ToolboxShortCodeCreate {
   @State pressedChipId: number = -1
 
   /**
-   * 打开自定义日期弹窗（对齐安卓 ToolboxDatePickerDialog）。
-   * 每次打开新建控制器：CustomDialogController 的 builder 捕获的是创建时的入参，
-   * 复用同一控制器会让 initialDate 停留在首次创建时的值。
+   * 自定义日期弹窗控制器 —— 必须由结构体字段持有（对齐 DivAskPage.ets:244 / SubscriptionDetailPage.ets:313）：
+   * 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，弹窗内 this.controller
+   * 为 undefined，点击「确定」即抛「Cannot read property close of undefined」jscrash。
+   * builder 为闭包，initialDate 在 open() 时读取（保证内容最新），字段持有一次即可。
    */
+  private datePickerController: CustomDialogController = new CustomDialogController({
+    builder: ToolboxDatePickerDialog({
+      initialDate: this.customDate ?? "",
+      title: ToolboxText.toolbox_expiry_custom_pick,
+      onConfirm: (date: string): void => {
+        this.customDate = date
+        // 弹窗只回调不自行 close（创建方持引用关闭，见 ToolboxDatePickerDialog 注释）
+        this.datePickerController.close()
+      },
+      onDismiss: (): void => {
+        this.datePickerController.close()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  /** 打开自定义日期弹窗（对齐安卓 ToolboxDatePickerDialog） */
   private openDatePicker(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ToolboxDatePickerDialog({
-        initialDate: this.customDate ?? "",
-        title: ToolboxText.toolbox_expiry_custom_pick,
-        onConfirm: (date: string): void => {
-          this.customDate = date
-          // 弹窗只回调不自行 close（创建方持引用关闭，见 ToolboxDatePickerDialog 注释）
-          controller.close()
-        },
-        onDismiss: (): void => {
-          controller.close()
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.datePickerController.open()
   }
 
   /**
@@ -139,7 +142,12 @@ struct ToolboxShortCodeCreate {
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
-  /** 可选预设 chip（选中 = 品牌底白字，未选中 = 白底描边；对齐安卓 ToolboxSelectableChip） */
+  /**
+   * 可选预设 chip（选中 = 品牌底白字，未选中 = 白底描边；对齐安卓 ToolboxSelectableChip）。
+   * 垂直内边距 6 → 17：可点区即 Text，原热区仅 27.7vp（58×27.7），抬到 ≥48vp
+   * （文字行盒约 15.5vp + 上下 17vp ≈ 49.5vp，实测 174px/3.52 密度）；
+   * 写法与投递页 DeliveryDurationChip 一致（padding 扩热区，不动高度/视觉比例）。
+   */
   @Builder
   SelectableChip(text: string, selected: boolean, chipId: number) {
     Text(text)
@@ -147,7 +155,7 @@ struct ToolboxShortCodeCreate {
       // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
       .fontWeight(DesignFontWeight.SEMI_BOLD)
       .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+      .padding({ left: 16, right: 16, top: 17, bottom: 17 })
       .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
       .borderWidth(1)
       .borderColor(selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)

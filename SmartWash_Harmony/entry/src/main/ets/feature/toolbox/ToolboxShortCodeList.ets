@@ -298,6 +298,17 @@ struct ToolboxShortCodeList {
             }
           }
           .margin({ top: DesignDimens.SPACE_XS })
+
+          // 有效期独占一行（对齐安卓重设计）：长文本「有效期至 yyyy-MM-dd HH:mm」不再与
+          // chips 同行竞争宽度——原布局中该文本在右列，窄屏会把「公开/私有」chip 挤压换行；
+          // maxLines(1)+ellipsis 兜底极端窄屏，完整到期时间在详情页可见
+          Text(this.expiryTextOf(vo))
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(this.expiryColorOf(vo))
+            .fontWeight(this.expiryWeightOf(vo))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .margin({ top: DesignDimens.SPACE_XS })
         }
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
@@ -308,18 +319,13 @@ struct ToolboxShortCodeList {
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.TEXT_SECONDARY)
             .fontFeature(DesignFontFeature.TNUM)
-          Text(this.expiryTextOf(vo))
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(this.expiryColorOf(vo))
-            .fontWeight(this.expiryWeightOf(vo))
-            .margin({ top: 2 })
           this.CopyPillButton(ToolboxText.toolbox_action_copy, vo)
         }
         .alignItems(HorizontalAlign.End)
         .margin({ left: DesignDimens.SPACE_SM })
       }
       .width('100%')
-      // 右列（点击数/有效期/复制钮）顶对齐：安卓 Row 默认 Top，原 Center 会让右列整体居中
+      // 右列（点击数/复制钮）顶对齐：安卓 Row 默认 Top，原 Center 会让右列整体居中
       .alignItems(VerticalAlign.Top)
 
       if ((vo.target ?? "").length > 0) {

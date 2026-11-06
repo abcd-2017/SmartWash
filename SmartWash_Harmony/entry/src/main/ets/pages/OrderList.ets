@@ -156,6 +156,16 @@ struct OrderList {
   }
 
   /**
+   * List 真实项数（供 PagingController 判定触底）：每个月份段渲染「月头 + 月卡」2 个 ListItem，
+   * 末尾另有 1 个 LoadingFooter。
+   * 不能用 orderListLength()（订单条数）当 listLength——onScrollIndex 的 endIndex 是 ListItem
+   * 下标，恒小于订单数（如 20 条订单只对应 3~5 个 ListItem），page2 永不触发。
+   */
+  private listItemCount(): number {
+    return this.sections.length * 2 + 1
+  }
+
+  /**
    * 追加订单并重建月份分组（D2 决策：数据源维持单状态分页拉取，
    * 列表结构对齐安卓——按 createdAt 降序、按 yyyy-MM 分组，组间倒序排列）。
    * @param replace true 时仅用本页数据重建（第 1 页语义），false 时与现有列表合并（触底加载）
@@ -440,7 +450,8 @@ struct OrderList {
                 }
               }
               .onScrollIndex((start: number, end: number) => {
-                this.paging.onScrollIndex(end, this.orderListLength())
+                // listLength 必须是 ListItem 真实数量（月头 + 月卡 + footer），不是订单条数
+                this.paging.onScrollIndex(end, this.listItemCount())
               })
               .onScrollFrameBegin((offset: number, state: ScrollState) => {
                 this.paging.onScrollFrameBegin(offset)

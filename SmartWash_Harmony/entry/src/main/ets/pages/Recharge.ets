@@ -1,4 +1,5 @@
 import { BusinessError } from '@kit.BasicServicesKit'
+import { KeyboardAvoidMode } from '@kit.ArkUI'
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
@@ -58,6 +59,14 @@ struct Recharge {
 
   async aboutToAppear(): Promise<void> {
     logger.debug('recharge', '充值页挂载，拉取账户余额')
+    // 键盘避让强制 RESIZE（对齐安卓 adjustResize / imePadding）：工作台搜索页会把窗口级避让
+    // 设为 NONE 且作为 tab 常驻不恢复，若继承 NONE，键盘弹出时窗口不压缩，底部 CTA 会被
+    // 键盘整条遮住。这里在页面挂载时复位 RESIZE，保证 CTA 始终可见可点。
+    try {
+      this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE)
+    } catch (err) {
+      logger.warn('recharge', '设置键盘避让模式失败')
+    }
     try {
       let res = await getUserInfo()
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
@@ -395,10 +404,13 @@ struct Recharge {
   }
 
   check() {
+    // 文案必须先于条件赋值（对齐 AmountErrorLine 的 validateAmount 先写 checkPayNumberMsg 再置
+    // checkPayNumber）：If 分支体读取的 @State 文案与条件同帧变更时，框架按赋值顺序注册依赖，
+    // 条件先置会让 If 以空文案重建分支，后续文案变更不再触发该分支重渲染（真机实测错误行不出现）。
+    this.checkPayTypeMsg = this.payType === null ? "请选择充值方式" : ""
+    this.checkPayType = this.payType === null
     // 金额精确校验（评审 #19）：不合法时 checkPayNumberMsg 已写入具体原因
     this.checkPayNumber = !this.validateAmount()
-    this.checkPayType = this.payType === null
-    this.checkPayTypeMsg = this.checkPayType ? "请选择充值方式" : ""
   }
 
   /**
@@ -438,8 +450,9 @@ struct Recharge {
   }
 
   /**
-   * 提交充值（对齐安卓 RechargePage.kt:365-385：确认弹窗 onConfirm 内先校验，
-   * 未选支付方式 / 金额非法则提示且不提交）。
+   * 提交充值。金额/支付方式校验已前移到按钮点击（见 build 内 AppButton click，
+   * 校验通过才弹确认框）；此处 check() 保留为防御性复验——弹窗打开期间页面不可交互，
+   * 正常必过，万一未过则置行内错误态且不提交（保留对齐安卓 onConfirm 内先校验语义）。
    */
   async doRecharge() {
     this.check()
@@ -456,21 +469,28 @@ struct Recharge {
     }
     this.isRecharging = true
     try {
-      // 仅记金额与渠道摘要，不打完整请求体（敏感红线）
-      logger.debug('recharge', `发起充值 amount=${this.payNum.toFixed(2)} rechargeType=${this.payType === PaymentMethod.WECHAT ? RechargeType.WECHAT : RechargeType.ALIPAY}`)
+      // 到账金额 = 支付金额 + 赠送，仅预设档加赠（自定义档赠送恒为 0，对齐安卓提交语义）。
+      // 后端「到账 = 传入 amount」：原直接传支付金额，选 100 送 8 实际只到账 100。
+      // isCustomSelected 互斥判断避免自定义输入 50 被误加预设档赠额（与 summaryBonus 同一语义）。
+      const bonus: number = this.isCustomSelected ? 0 : this.bonusOf(this.payNum)
+      const creditedAmount: number = this.payNum + bonus
+      // 仅记金额与渠道摘要，不打完整请求体（敏感红线）；amount 记到账口径并注明构成
+      logger.debug('recharge', `发起充值 amount=${creditedAmount.toFixed(2)} ` +
+        `(到账=支付${this.payNum.toFixed(2)}+赠送${bonus.toFixed(2)}) ` +
+        `rechargeType=${this.payType === PaymentMethod.WECHAT ? RechargeType.WECHAT : RechargeType.ALIPAY}`)
       let res = await userRecharge({
-        amount: this.payNum,
+        amount: creditedAmount,
         // 充值渠道类型码用具名常量，替代魔法值（评审 #30）：1=微信 2=支付宝
         rechargeType: this.payType === PaymentMethod.WECHAT ?
           RechargeType.WECHAT : RechargeType.ALIPAY
       })
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功：充值完成留 info
-        logger.info('recharge', `充值成功 amount=${this.payNum.toFixed(2)}`)
+        logger.info('recharge', `充值成功 amount=${creditedAmount.toFixed(2)}(到账)`)
         pathStack.pop()
         showToastSafety("充值成功")
       } else {
-        logger.warn('recharge', `充值被拒绝 amount=${this.payNum.toFixed(2)} ` +
+        logger.warn('recharge', `充值被拒绝 amount=${creditedAmount.toFixed(2)}(到账) ` +
           `code=${res.code} message=${res.message ?? ""}`)
         showToastSafety(res.message, "充值失败")
       }
@@ -512,7 +532,8 @@ struct Recharge {
               sizeValue: 36,
               iconSize: 20,
               containerColor: DesignColor.ICON_CONTAINER_TEAL,
-              iconColor: DesignColor.ICON_FOREGROUND_TEAL
+              iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+              accessibilityLabel: '充值记录'
             })
           }
           .width(DesignDimens.BACK_HIT_AREA)
@@ -660,6 +681,14 @@ struct Recharge {
             text: this.submitText(),
             loading: this.isRecharging,
             click: () => {
+              // 先校验再弹确认框（对齐安卓修复语义）：未选支付方式/金额非法时行内错误行
+              // + Toast 双通道反馈——错误行可能已被滚出视口，Toast 保证反馈可见；
+              // 校验通过才弹确认框，避免「确认后才报错、看起来没反应」
+              this.check()
+              if (this.checkPayType || this.checkPayNumber) {
+                showToastSafety(this.checkPayType ? this.checkPayTypeMsg : this.checkPayNumberMsg)
+                return
+              }
               this.confirmDialogController.open()
             }
           })

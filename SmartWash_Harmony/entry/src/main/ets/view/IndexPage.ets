@@ -184,13 +184,45 @@ export struct IndexPage {
 
         // 券 / 累计订单半格，中间 1×40 发丝竖线
         // stat Row 无水平内缩（对齐安卓 AccountDataCard：行铺满卡宽，半格中心落在 25%/75%；D6）
+        // 统计值必须内联渲染：@Builder 按值传参在 @ComponentV2 下首帧定格，userInfo 更新后
+        // Text 不重绘（原 AccountStatCell 导致统计恒显示首帧 "0"，与「我的」页同款坑，见 UserInfo.ets 注释）
         Row() {
-          this.AccountStatCell(`${this.userInfo?.couponCount ?? 0}`, "可用优惠券")
+          Column() {
+            Text(`${this.userInfo?.couponCount ?? 0}`)
+              .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontFeature(DesignFontFeature.TNUM)
+              .maxLines(1)
+
+            Text("可用优惠券")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .maxLines(1)
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Center)
+
           Row()
             .width(1)
             .height(40)
             .backgroundColor(DesignColor.HAIRLINE)
-          this.AccountStatCell(`${this.userInfo?.orderCount ?? 0}`, "累计订单")
+
+          Column() {
+            Text(`${this.userInfo?.orderCount ?? 0}`)
+              .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontFeature(DesignFontFeature.TNUM)
+              .maxLines(1)
+
+            Text("累计订单")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .maxLines(1)
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Center)
         }
         .width('100%')
         .margin({ top: DesignDimens.SPACE_XS })
@@ -212,26 +244,6 @@ export struct IndexPage {
     }
     .width('100%')
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_MD })
-  }
-
-  /** 账户卡底部半格：数值 18/600 tnum + 标签 12/400，水平居中 */
-  @Builder
-  AccountStatCell(value: string, label: string) {
-    Column() {
-      Text(value)
-        .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .fontFeature(DesignFontFeature.TNUM)
-        .maxLines(1)
-
-      Text(label)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .maxLines(1)
-    }
-    .layoutWeight(1)
-    .alignItems(HorizontalAlign.Center)
   }
 
   /**
@@ -420,14 +432,16 @@ export struct IndexPage {
 
           Blank()
 
-          // 「查看全部 ›」16/600 primaryDark + 48dp 热区（对齐安卓 IndexPage.kt:197-211）
+          // 「查看全部 ›」16/600 primaryDark + 48dp 热区
+          // 落点必须是「全部订单」tab 0（对齐安卓 IndexPage.kt:285-294 OrderRoute.Order(0)，
+          // 原传 3 落「清洗中」tab，与「查看全部」语义不符）
           Text("查看全部 ›")
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.PRIMARY_DARK)
             .padding({ left: DesignDimens.SPACE_SM, top: 16, bottom: 16 })
             .onClick(() => {
-              pathStack.pushPathByName(RouteNames.ORDER_LIST, 3)
+              pathStack.pushPathByName(RouteNames.ORDER_LIST, 0)
             })
         }
         .width('100%')

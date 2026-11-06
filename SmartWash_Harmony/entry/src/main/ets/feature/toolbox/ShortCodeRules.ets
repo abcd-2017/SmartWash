@@ -15,8 +15,15 @@ export const CUSTOM_CODE_REGEX: RegExp = /^[0-9a-zA-Z-_]{4,16}$/
 /** 目标链接：必须 http/https 且非空白（防开放重定向的端上前置校验，后端仍终审） */
 const TARGET_REGEX: RegExp = /^https?:\/\/\S+$/i
 
-/** 请求/展示格式常量（对齐安卓 REQUEST_FORMAT / DISPLAY_FORMAT / DATE_FORMAT） */
-const REQUEST_FORMAT: string = "yyyy-MM-dd'T'HH:mm:ss"
+/**
+ * 请求/展示格式常量（对齐安卓 REQUEST_FORMAT / DISPLAY_FORMAT / DATE_FORMAT）。
+ *
+ * 注意：本模块的 formatWithPattern 是占位符替换实现，**不支持** DateTimeFormatter 的引号转义
+ * （`'T'` 会被原样输出为字面单引号）。若写 "yyyy-MM-dd'T'HH:mm:ss"，实际发出
+ * `2026-11-13'T'13:51:53`，后端 LocalDateTime 反序列化失败（code=201），
+ * 导致非永久短码创建/续期全部失败。故直接写字面 T（语义等价于安卓的 'T' 转义）。
+ */
+const REQUEST_FORMAT: string = "yyyy-MM-ddTHH:mm:ss"
 const DISPLAY_FORMAT: string = "yyyy-MM-dd HH:mm"
 const DATE_FORMAT: string = "yyyy-MM-dd"
 
