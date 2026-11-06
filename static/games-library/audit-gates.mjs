@@ -8,10 +8,11 @@ import { fileURLToPath } from "url";
 const DIR = fileURLToPath(new URL(".", import.meta.url));
 const CANONICAL = readFileSync(join(DIR, "block-drop/index.html"), "utf8");
 
-// ── 新游戏清单（两批共 11 款，出生即按现行 §6 规范实现）──
+// ── 新游戏清单（出生即按现行 §6 规范实现）──
 const STRICT = new Set([
   "tetris", "sudoku", "idiom", "pacman", "invaders", "lights-out",
-  "sokoban", "connect-four", "solitaire", "fruit-slice", "air-hockey"
+  "sokoban", "connect-four", "solitaire", "fruit-slice", "air-hockey",
+  "reversi"
 ]);
 
 // §2 基础 token + §3 已记录的各游戏素材 token 前缀

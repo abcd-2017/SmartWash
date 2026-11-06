@@ -71,6 +71,7 @@ JS 里零颜色字面量（白色高光/瞳孔等恒白小元素除外，见各�
 | breakout | `--g-sky1/--g-sky2` `#F5F6F3→#EFF1EE`（bg/surface2 直用）、砖块 `PALETTE` 8 色保留字面、`--g-ball` `#FFF`、`--g-ballln`、拍面读 `--g-primary`/`--g-primary-deep` | sky `#1D201E→#141614`；拍面品牌渐变随 deep（深色端提亮）；砖块不变（中高明度，暗底可见） |
 | flappy | `--g-sky1/--g-sky2` `#BFE7FB→#EAF8FF`、`--g-cloud` `rgba(255,255,255,.85)`、`--g-gnd`/`--g-gnd2` `#E8D9A6/#D9C683`、`--g-gnd-line` `#7CB85C`；管道/小鸟保留字面 | sky `#232B31→#181D21`、cloud `rgba(255,255,255,.25)`、gnd `#4A4433/#3E3929`、gnd-line `#5E7A48`；管道绿/小鸟黄不变（暗底可见） |
 | gomoku | `--g-bd1/--g-bd2` `#F6DCAB→#ECCF92`、`--g-line` `#7A5B34`、`--g-star` `#5A4325`、`--g-shadow`=浮层档 `0 10px 24px rgba(20,40,30,.10)`；棋子黑白保留字面 | bd `#4A3D26→#3A2F1D`、line `#9A845C`、star `#B49C6E`、shadow `rgba(0,0,0,.45)`；末手标记 `--g-danger` |
+| reversi | `--g-felt/--g-felt2` `#2D9B6A→#1E8C5C`（品牌绿毛毡）、`--g-line` `#157A50`；棋子用 `--g-surface`/`--g-text`（恒白/恒暗） | felt `#1E4D3A→#173D2D`、line `#0B241A`；末手标记 `--g-danger` |
 | minesweeper | 纯 DOM；数字 n1–n8 保留原值（浅色），深色逐个提亮（见该文件 CSS）；旗/雷 SVG 色改 `var(--g-danger)` / `var(--g-text)` 系 | 面板底 `--g-surface2`、翻开格 `--g-bg`、盖格渐变用 surface 系 |
 
 ## 4. 深浅色三层机制实现决策（D3）
