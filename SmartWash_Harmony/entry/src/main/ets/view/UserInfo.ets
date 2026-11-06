@@ -194,7 +194,7 @@ export struct UserInfo {
 
       Text(title)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontWeight(DesignFontWeight.NORMAL)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .layoutWeight(1)
         .margin({ left: 12 })
@@ -311,16 +311,19 @@ export struct UserInfo {
           Column() {
             // 余额通栏在上（点击去充值）
             Column() {
+              // 显式行盒对齐安卓 Type.kt（D4）：bodySmall 12/16
               Text("钱包余额")
                 .fontSize(DesignFontSize.CAPTION)
+                .lineHeight(DesignFontSize.CAPTION + 4)
                 .fontColor(DesignColor.TEXT_SECONDARY)
+              // 显式行盒对齐安卓 DataLarge 36/44；字重保持 BOLD（font.display 档，规范允许 700）
               Text(`¥${this.formatBalance()}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
+                .lineHeight(DesignFontSize.DATA_LARGE + 8)
                 .fontWeight(DesignFontWeight.BOLD)
                 .fontFeature(DesignFontFeature.TNUM)
                 .fontColor(DesignColor.PRIMARY_DARK)
                 .margin({ top: 4 })
-                // 字重保持 BOLD：DATA_LARGE（36）属 font.display 档，规范允许 700
             }
             .alignItems(HorizontalAlign.Start)
             .width("100%")
@@ -331,13 +334,16 @@ export struct UserInfo {
             // 下方券/单两半格各居中，中间 1×40 发丝线
             Row() {
               Column() {
+                // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
                 Text(`${this.userInfo?.couponCount ?? 0}`)
                   .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                  .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
                   .fontColor(DesignColor.TEXT_PRIMARY)
                 Text("优惠券")
                   .fontSize(DesignFontSize.CAPTION)
+                  .lineHeight(DesignFontSize.CAPTION + 4)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .margin({ top: 4 })
               }
@@ -353,13 +359,16 @@ export struct UserInfo {
                 .backgroundColor(DesignColor.HAIRLINE)
 
               Column() {
+                // 行盒对齐安卓 Type.kt（D4）：AmountMedium 18/24、bodySmall 12/16
                 Text(`${this.userInfo?.orderCount ?? 0}`)
                   .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+                  .lineHeight(DesignFontSize.AMOUNT_MEDIUM + 6)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontFeature(DesignFontFeature.TNUM)
                   .fontColor(DesignColor.TEXT_PRIMARY)
                 Text("累计订单")
                   .fontSize(DesignFontSize.CAPTION)
+                  .lineHeight(DesignFontSize.CAPTION + 4)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .margin({ top: 4 })
               }
@@ -388,7 +397,8 @@ export struct UserInfo {
             if (this.isCampusCardBound()) {
               this.settingRow($r('sys.symbol.creditcard'), "校园卡",
                 DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
-                "已绑定", DesignColor.PRIMARY,
+                // U-103：「已绑定」绿字 on 白仅 3.50:1（绿字红线禁小号文字）→ 统一 textSecondary
+                "已绑定", DesignColor.TEXT_SECONDARY,
                 () => {
                   pathStack.pushPathByName(RouteNames.BING_CAMPUS_CARD_ALERT, this.userInfo, popInfo => {
                     this.refreshUserInfo()

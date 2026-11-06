@@ -19,10 +19,21 @@ const RECEIVE_THROTTLE_MS: number = 800
 /**
  * 券面额格式化（对齐安卓 String.format("%.0f") + 非整数保留 2 位）：
  * 整数不显示小数，非整数保留 2 位；¥ 前缀由调用方统一拼接。
+ * 用于已领取/历史卡（安卓 UserCouponCard 走 currency_format "¥%s"）。
  */
 function formatCouponAmount(value: number | null | undefined): string {
   const v = value ?? 0
   return Number.isInteger(v) ? v.toString() : v.toFixed(2)
+}
+
+/**
+ * 浮点展示格式化（对齐安卓 `"${value}"` 模板 → Kotlin Float.toString 口径）：
+ * 整数保留 1 位小数（10 → "10.0"），非整数取最短表示（0.01 → "0.01"）。
+ * 用于可用卡面额（安卓 AvailableCouponsTab "%s元"）与门槛（"满%s元可用"）。
+ */
+function formatFloatShort(value: number | null | undefined): string {
+  const v = value ?? 0
+  return Number.isInteger(v) ? v.toFixed(1) : String(v)
 }
 
 @Builder
@@ -232,6 +243,7 @@ struct Coupon {
         PageHeader({ title: "优惠券" })
 
         // ========== 胶囊分段标签栏（公共 AppPillTabRow，对齐安卓 AppPillTabRow） ==========
+        // 顶部间距对齐安卓：AppPillTabRow 自带 padding(top=12, bottom=4) + 其后 Spacer(8)
         AppPillTabRow({
           tabs: this.tabTitles.map((_: string, index: number): string => this.tabLabel(index)),
           selectedIndex: this.selectedIndex,
@@ -239,6 +251,10 @@ struct Coupon {
             this.onTabChange(index)
           }
         })
+          .padding({ top: DesignDimens.SPACE_SM, bottom: 4 })
+
+        Column()
+          .height(DesignDimens.SPACE_XS)
 
         // ========== 内容区域（骨架 / 失败重试 / Swiper 三页） ==========
         if (this.isLoading && this.isAllEmpty()) {
@@ -308,20 +324,25 @@ struct AvailableCouponCard {
 
   // 面额区宽度（与安卓票券面额区 88dp 同源）
   private amountWidth: number = 88
-  // 卡高固定 144：安卓为 wrap-content，ArkUI 无自定义 Shape / onAreaChange 反算，
-  // 取固定值承载右区「三行文本 + 独立按钮行」（见 refix-07 报告裁决 #3）
-  private cardHeight: number = 144
+  // 卡高 wrap-content（对齐安卓 CouponCard 的 IntrinsicSize.Min）：由右列内容撑起，
+  // onAreaChange 捕获实高供虚线撕裂线（= 卡高 - 24）与打孔定位使用
+  @Local cardHeight: number = 0
 
   private isReceived(): boolean {
     // CouponStatus 已对齐安卓 string 契约（"0"/"1"/"2"），直接与后端 status 比较
     return (this.coupon?.status ?? CouponStatus.ACTIVE) === CouponStatus.RECEIVE
   }
 
+  // 面额文案（对齐安卓 AvailableCouponsTab：discount_amount_format "%s元" + "${discount}"）
+  private discountText(): string {
+    return `${formatFloatShort(this.coupon?.discount)}元`
+  }
+
   // 门槛文案（对齐安卓 no_threshold / coupon_min_amount_format「满%s元可用」）
   private thresholdText(): string {
     return (this.coupon?.threshold ?? 0) === 0 ?
       "无门槛" :
-      `满${this.coupon?.threshold?.toFixed(2)}元可用`
+      `满${formatFloatShort(this.coupon?.threshold)}元可用`
   }
 
   private dateText(): string {
@@ -396,19 +417,21 @@ struct AvailableCouponCard {
       Row() {
         // 左侧金额区（票券 face：brand-soft 纯色底 + 面额 + 单位字）
         Column() {
-          Text(`¥${formatCouponAmount(this.coupon?.discount)}`)
+          Text(this.discountText())
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
             .fontColor(DesignColor.PRIMARY_DARK)
-          Text("券")
+          Text("优惠券")
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.PRIMARY)
             .margin({ top: 4 })
         }
         .width(this.amountWidth)
-        .height(this.cardHeight)
+        // wrap-content 行高由右列撑起，面额区用 alignSelf(Stretch) 拉伸到行高
+        // （对齐安卓 IntrinsicSize.Min；percentage 高度在 wrap-content 父级内会取约束上限，不可用）
+        .alignSelf(ItemAlign.Stretch)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
         .backgroundColor(DesignColor.PRIMARY_CONTAINER)
@@ -445,7 +468,6 @@ struct AvailableCouponCard {
         .padding({ left: 16, right: 16, top: 12, bottom: 12 })
       }
       .width("100%")
-      .height(this.cardHeight)
       .alignItems(VerticalAlign.Center)
       .backgroundColor(DesignColor.SURFACE)
       .borderRadius(DesignDimens.CARD_RADIUS)
@@ -460,14 +482,25 @@ struct AvailableCouponCard {
       .clip(true)
 
       // 中间虚线撕裂线（段 6 / 隔 4 / 上下留 12，对齐安卓 CouponPage.kt:250-266）
-      TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: DesignColor.OUTLINE })
-        .position({ x: this.amountWidth - 0.5, y: 12 })
+      // 卡高为 wrap-content，实高由 onAreaChange 捕获后再渲染（首帧 cardHeight=0 不绘制）
+      if (this.cardHeight > 0) {
+        TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: DesignColor.OUTLINE })
+          .position({ x: this.amountWidth - 0.5, y: 12 })
+      }
 
-      // 左右缘中点打孔（φ14，对齐安卓 TicketShape）
-      TicketNotch()
+      // 左右缘中点打孔（φ14，对齐安卓 TicketShape）；与虚线同为实高依赖，
+      // 待 onAreaChange 捕获卡高后再渲染（避免 '100%' 在 wrap-content Stack 内撑满视口）
+      if (this.cardHeight > 0) {
+        TicketNotch({ heightValue: this.cardHeight })
+      }
     }
     .width("100%")
-    .height(this.cardHeight)
+    .onAreaChange((_oldValue: Area, newValue: Area) => {
+      const height: number = typeof newValue.height === 'number' ? newValue.height : 0
+      if (height > 0 && Math.abs(height - this.cardHeight) > 0.5) {
+        this.cardHeight = height
+      }
+    })
   }
 }
 
@@ -506,7 +539,7 @@ struct CouponTicketCard {
   private thresholdText(): string {
     return (this.userCoupon?.couponVo?.threshold ?? 0) === 0 ?
       "无门槛" :
-      `满${this.userCoupon?.couponVo?.threshold?.toFixed(2)}元可用`
+      `满${formatFloatShort(this.userCoupon?.couponVo?.threshold)}元可用`
   }
 
   build() {
@@ -519,7 +552,8 @@ struct CouponTicketCard {
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
             .fontColor(this.amountColor())
-          Text("券")
+          // 单位对齐安卓 UserCouponCard 的 R.string.coupon「优惠券」
+          Text("优惠券")
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(this.unitColor())
@@ -546,7 +580,8 @@ struct CouponTicketCard {
             .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })
 
-          Text(`有效期至 ${this.userCoupon?.expiredAt ?? ""}`)
+          // 有效期文案对齐安卓 valid_until「有效期至：%s」（含全角冒号）
+          Text(`有效期至：${this.userCoupon?.expiredAt ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(DesignColor.TEXT_SECONDARY)
             .margin({ top: 4 })

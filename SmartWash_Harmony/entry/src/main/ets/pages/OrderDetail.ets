@@ -125,6 +125,15 @@ struct OrderDetail {
     return this.orderInfo?.pickupCode?.split(":")[2] ?? ""
   }
 
+  /**
+   * 是否展示「查看取件码」主按钮（对齐安卓 OrderDetailPage.kt:241-242：
+   * showPickupCode = 待寄件/待取件；其余状态仅保留联系客服）。
+   */
+  private showPickupCode(): boolean {
+    const status = this.orderInfo?.status
+    return status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.READY_FOR_PICKUP
+  }
+
   // 订单状态 → 展示元数据映射（原写在 @Builder 内的 switch 不满足 ArkTS 语法）
   private statusMeta(): StatusMeta {
     const meta: StatusMeta = new StatusMeta()
@@ -136,22 +145,39 @@ struct OrderDetail {
         break
       case OrderStatusEnum.PENDING_SHIPMENT:
         meta.text = "待寄件"
-        meta.color = DesignColor.PRIMARY
+        meta.color = DesignColor.PRIMARY_DARK
         meta.description = "请尽快去寄件"
+        break
+      // 中间态（对齐安卓 OrderDetailPage.kt:539-550）：已收取/已烘干/配送中归入清洗→取件阶段，
+      // 安卓均有提示语；鸿蒙原落 default 显示「-」
+      case OrderStatusEnum.RECEIVED:
+        meta.text = "已收取"
+        meta.color = DesignColor.PRIMARY_DARK
+        meta.description = "衣物已收取，即将清洗"
         break
       case OrderStatusEnum.WASHING:
         meta.text = "清洗中"
         meta.color = DesignColor.PRIMARY_DARK
         meta.description = "衣物正在清洗，完成后将通知您取件"
         break
+      case OrderStatusEnum.DRIED:
+        meta.text = "已烘干"
+        meta.color = DesignColor.PRIMARY_DARK
+        meta.description = "衣物已烘干，即将配送"
+        break
+      case OrderStatusEnum.IN_DELIVERY:
+        meta.text = "配送中"
+        meta.color = DesignColor.PRIMARY_DARK
+        meta.description = "衣物配送中，请留意取件通知"
+        break
       case OrderStatusEnum.READY_FOR_PICKUP:
         meta.text = "待取件"
-        meta.color = DesignColor.PRIMARY
+        meta.color = DesignColor.PRIMARY_DARK
         meta.description = "衣物已到寄存柜"
         break
       case OrderStatusEnum.COMPLETED:
         meta.text = "已完成"
-        meta.color = DesignColor.SUCCESS
+        meta.color = DesignColor.PRIMARY_DARK
         // 安卓此处为 completion_time「完成时间」（疑似占位文案），保留语义化文案
         meta.description = "订单已完成"
         break
@@ -159,6 +185,11 @@ struct OrderDetail {
         meta.text = "已取消"
         meta.color = DesignColor.DANGER
         meta.description = "已取消"
+        break
+      case OrderStatusEnum.REFUNDED:
+        meta.text = "已退款"
+        meta.color = DesignColor.DANGER
+        meta.description = "订单已退款"
         break
       default:
         meta.text = getOrderStatusDescription(this.orderInfo?.status)
@@ -230,7 +261,7 @@ struct OrderDetail {
 
       if (this.statusMeta().description !== "") {
         Text(this.statusMeta().description)
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: 6 })
       }
@@ -315,7 +346,7 @@ struct OrderDetail {
               // 副行仅首节点（已接单）显示真实下单时间 HH:mm
               if (index === 0 && this.firstNodeTime() !== "") {
                 Text(this.firstNodeTime())
-                  .fontSize(DesignFontSize.BODY_SMALL)
+                  .fontSize(DesignFontSize.CAPTION)
                   .fontColor(DesignColor.TEXT_SECONDARY)
                   .fontFeature(DesignFontFeature.TNUM)
                   .textAlign(TextAlign.Center)
@@ -331,6 +362,8 @@ struct OrderDetail {
       .width("100%")
     }
     .width("100%")
+    // 标题左对齐（对齐安卓 ProgressTimelineCard：ArkUI Column 默认 Center 会居中标题）
+    .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
     .backgroundColor(DesignColor.SURFACE)
@@ -345,7 +378,7 @@ struct OrderDetail {
   }
 
   /**
-   * 订单信息卡（对齐安卓 InfoSection 单卡 6 行）：标题 IconBox 36/20 蓝 + 行高 56 + 行距 14。
+   * 订单信息卡（对齐安卓 InfoSection 单卡 6 行）：标题 IconBox 36/20 蓝 + 行高 48 + 行距 8。
    * 安卓 InfoSection 将订单编号/套餐/价格/实付款/学校/地址合并在一张「订单信息」卡内，
    * 寄存柜信息仅经取件码弹窗承载，故此处不再拆 4 卡。
    */
@@ -370,11 +403,12 @@ struct OrderDetail {
       .width("100%")
       .margin({ bottom: 4 })
 
-      Column({ space: 14 }) {
+      // 行距 8（对齐安卓 OrderDetailPage.kt:189 Arrangement.spacedBy(8.dp)）
+      Column({ space: DesignDimens.SPACE_XS }) {
         InfoRow({
           label: "订单编号",
           value: `${this.orderInfo?.orderNo ?? ""}`,
-          valueSize: DesignFontSize.BODY_SMALL,
+          valueSize: DesignFontSize.CAPTION,
           valueWeight: DesignFontWeight.MEDIUM,
           valueTnum: true
         })
@@ -389,8 +423,8 @@ struct OrderDetail {
           value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`,
           valueColor: DesignColor.PRIMARY_DARK,
           valueSize: DesignFontSize.AMOUNT_MEDIUM,
-          // AMOUNT_MEDIUM（18）属 font.title 档，规范 weight=600；原 BOLD(700) 属滥用，收敛
-          valueWeight: DesignFontWeight.SEMI_BOLD,
+          // 对齐安卓 OrderDetailPage.kt:215：AmountMedium.copy(fontWeight = Bold)
+          valueWeight: DesignFontWeight.BOLD,
           valueTnum: true
         })
         InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
@@ -443,45 +477,46 @@ struct OrderDetail {
           showToastSafety("客服暂未开通，请稍后再试")
         })
 
-        // 查看取件码（主按钮）：待寄件/待取件且取件码非空弹窗，否则提示
-        Column() {
-          Text("查看取件码")
-            .fontSize(DesignFontSize.AMOUNT_MEDIUM)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.ON_PRIMARY)
-            .letterSpacing(1)
+        // 查看取件码（主按钮）：仅在待寄件/待取件态渲染（对齐安卓 P-901：取件码语义只存在于
+        // 这两态，已取消/已完成/待支付/清洗中等隐藏该键，仅保留联系客服）
+        if (this.showPickupCode()) {
+          Column() {
+            Text("查看取件码")
+              .fontSize(DesignFontSize.AMOUNT_MEDIUM)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.ON_PRIMARY)
+              .letterSpacing(1)
+          }
+          .layoutWeight(1)
+          .height(48)
+          .justifyContent(FlexAlign.Center)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(DesignColor.PRIMARY)
+          .margin({ left: 12 })
+          .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
+          .animation({ duration: 100, curve: Curve.EaseOut })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pickupPressed = true
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pickupPressed = false
+            }
+          })
+          .onClick(() => {
+            const code = this.parsePickupCode()
+            if (code !== "") {
+              // 取件码值不入日志（敏感红线），仅记 orderId 与柜号
+              logger.debug('orderDetail', `打开取件码弹窗 orderId=${this.orderId} ` +
+                `柜号=${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`)
+              this.pickupCodeText = code
+              this.lockerNumberText = this.orderInfo?.lockersVo?.lockerNumber ?? 0
+              this.pickupCodeDialogController.open()
+            } else {
+              logger.debug('orderDetail', `取件码暂不可用 orderId=${this.orderId}`)
+              showToastSafety("暂无取件码，请稍后再试")
+            }
+          })
         }
-        .layoutWeight(1)
-        .height(48)
-        .justifyContent(FlexAlign.Center)
-        .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(DesignColor.PRIMARY)
-        .margin({ left: 12 })
-        .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
-        .animation({ duration: 100, curve: Curve.EaseOut })
-        .onTouch((event: TouchEvent) => {
-          if (event.type === TouchType.Down) {
-            this.pickupPressed = true
-          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-            this.pickupPressed = false
-          }
-        })
-        .onClick(() => {
-          const status = this.orderInfo?.status
-          const code = this.parsePickupCode()
-          if ((status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.READY_FOR_PICKUP) &&
-            code !== "") {
-            // 取件码值不入日志（敏感红线），仅记 orderId 与柜号
-            logger.debug('orderDetail', `打开取件码弹窗 orderId=${this.orderId} ` +
-              `柜号=${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`)
-            this.pickupCodeText = code
-            this.lockerNumberText = this.orderInfo?.lockersVo?.lockerNumber ?? 0
-            this.pickupCodeDialogController.open()
-          } else {
-            logger.debug('orderDetail', `取件码暂不可用 orderId=${this.orderId} status=${status ?? ""}`)
-            showToastSafety("暂无取件码，请稍后再试")
-          }
-        })
       }
       .width("100%")
       .padding({
@@ -613,22 +648,22 @@ struct OrderDetail {
 }
 
 /**
- * 卡片内「标签 — 值」信息行（对齐安卓 InfoRow）：行高 56，标签与值分列两端。
- * 值侧样式由调用方给定（默认 bodySmall 14/400；订单号 14/500、实付款 18/700）。
+ * 卡片内「标签 — 值」信息行（对齐安卓 InfoRow）：行高 48，标签与值分列两端。
+ * 值侧样式由调用方给定（默认 bodySmall 12/400；订单号 12/500、实付款 18/700）。
  */
 @ComponentV2
 struct InfoRow {
   @Param label: string = ""
   @Param value: string = ""
   @Param valueColor: number = DesignColor.TEXT_PRIMARY
-  @Param valueSize: number = DesignFontSize.BODY_SMALL
+  @Param valueSize: number = DesignFontSize.CAPTION
   @Param valueWeight: number = DesignFontWeight.NORMAL
   @Param valueTnum: boolean = false
 
   build() {
     Row() {
       Text(this.label)
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       if (this.valueTnum) {
@@ -654,7 +689,8 @@ struct InfoRow {
       }
     }
     .width("100%")
-    .height(56)
+    // 行高 48（对齐安卓 OrderDetailPage.kt:194 rowHeight = 48.dp）
+    .height(48)
     .justifyContent(FlexAlign.SpaceBetween)
     .alignItems(VerticalAlign.Center)
   }

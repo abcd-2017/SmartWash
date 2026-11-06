@@ -319,7 +319,8 @@ struct ToolboxShortCodeList {
         .margin({ left: DesignDimens.SPACE_SM })
       }
       .width('100%')
-      .alignItems(VerticalAlign.Center)
+      // 右列（点击数/有效期/复制钮）顶对齐：安卓 Row 默认 Top，原 Center 会让右列整体居中
+      .alignItems(VerticalAlign.Top)
 
       if ((vo.target ?? "").length > 0) {
         Text(vo.target ?? "")
@@ -384,7 +385,6 @@ struct ToolboxShortCodeList {
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 4 })
 
           Blank()
 
@@ -414,7 +414,8 @@ struct ToolboxShortCodeList {
           this.Placeholder(ToolboxText.toolbox_empty_message, ToolboxText.toolbox_empty_action, false)
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
-            List() {
+            // 卡片间距对齐安卓 LazyColumn spacedBy(cardSpacing)（原 List 无 space，卡紧贴）
+            List({ space: DesignDimens.CARD_SPACING }) {
               ForEach(this.list, (vo: ShortCodeVo) => {
                 ListItem() {
                   this.ShortCodeCard(vo)

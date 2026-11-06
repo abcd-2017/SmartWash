@@ -243,7 +243,6 @@ export struct ReviewPageHeader {
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ left: 4 })
 
       Blank()
 
@@ -291,7 +290,9 @@ export struct ReviewErrorState {
       }
     }
     .width('100%')
-    .layoutWeight(1)
+    // 高度撑满调用方 layoutWeight 分配的空间（对齐 MoodErrorState 的可用写法）：
+    // 原 layoutWeight(1) 在 if/else 包裹层内不生效，容器不拉伸导致 EmptyState 落于顶部
+    .height('100%')
     .justifyContent(FlexAlign.Center)
   }
 }

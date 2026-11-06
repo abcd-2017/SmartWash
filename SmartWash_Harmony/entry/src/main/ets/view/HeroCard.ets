@@ -178,86 +178,106 @@ export struct HeroCard {
 
   build() {
     Column() {
-      Column() {
-        // 滚筒圆 + 状态/订单号
-        Row() {
-          HeroDrum({ progress: this.heroProgress })
-            .margin({ right: DesignDimens.SPACE_MD })
-
-          Column() {
-            Text(this.statusText)
-              .fontSize(DesignFontSize.STATUS_LARGE)
-              .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(Color.White)
-              .maxLines(1)
-
-            Text(this.hasOrder ? `订单号 ${this.orderNo}` : '从下方快捷服务开始预约')
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(Color.White)
-              .fontFeature(DesignFontFeature.TNUM)
-              .maxLines(1)
-              .margin({ top: 4 })
-          }
-          .alignItems(HorizontalAlign.Start)
-          .layoutWeight(1)
-        }
-        .width('100%')
-        .alignItems(VerticalAlign.Center)
-
-        if (this.hasOrder) {
-          // 步骤点行 —— 激活白 / 未激活 outline（绿渐变底上 primary 不可见）
+      Stack() {
+        // 内容（滚筒圆 + 状态/订单号 + 步骤/CTA）
+        // 对角黑纱作为内容列背景叠在 Stack 品牌渐变底上（对齐安卓 StatusHeroCard scrim：
+        // 白字 on 品牌绿渐变仅 3.72:1，叠纱后 ≥5.1:1）。用内容列背景而非独立覆盖层，
+        // 避免 wrap-content Stack 内百分比高度解析不稳的问题。
+        Column() {
+          // 滚筒圆 + 状态/订单号
           Row() {
-            ForEach(HERO_STEPS, (_label: string, index: number) => {
-              Circle()
-                .width(8)
-                .height(8)
-                .backgroundColor(index <= this.currentStep ? Color.White : DesignColor.OUTLINE)
-                .animation(MotionTiming.ENTER)
+            HeroDrum({ progress: this.heroProgress })
+              .margin({ right: DesignDimens.SPACE_MD })
 
-              if (index < HERO_STEPS.length - 1) {
-                Row()
-                  .layoutWeight(1)
-                  .height(2)
-                  .backgroundColor(index < this.currentStep ? Color.White : DesignColor.OUTLINE)
-                  .animation(MotionTiming.ENTER)
-              }
-            }, (label: string) => label)
+            Column() {
+              Text(this.statusText)
+                .fontSize(DesignFontSize.STATUS_LARGE)
+                .fontWeight(DesignFontWeight.SEMI_BOLD)
+                .fontColor(Color.White)
+                .maxLines(1)
+
+              Text(this.hasOrder ? `订单号 ${this.orderNo}` : '从下方快捷服务开始预约')
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(Color.White)
+                .fontFeature(DesignFontFeature.TNUM)
+                .maxLines(1)
+                .margin({ top: 4 })
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
           }
           .width('100%')
           .alignItems(VerticalAlign.Center)
-          .margin({ top: DesignDimens.SPACE_XL })
 
-          // 步骤标签行 —— 首尾贴边、中间居中
-          Row() {
-            ForEach(HERO_STEPS, (label: string, index: number) => {
-              Text(label)
-                .fontSize(DesignFontSize.CAPTION)
-                .fontColor(Color.White)
-                .layoutWeight(1)
-                .textAlign(index === 0 ? TextAlign.Start : (index === HERO_STEPS.length - 1 ? TextAlign.End : TextAlign.Center))
-            }, (label: string) => label)
+          if (this.hasOrder) {
+            // 步骤点行 —— 激活白 / 未激活 outline（绿渐变底上 primary 不可见）
+            Row() {
+              ForEach(HERO_STEPS, (_label: string, index: number) => {
+                Circle()
+                  .width(8)
+                  .height(8)
+                  .backgroundColor(index <= this.currentStep ? Color.White : DesignColor.OUTLINE)
+                  .animation(MotionTiming.ENTER)
+
+                if (index < HERO_STEPS.length - 1) {
+                  Row()
+                    .layoutWeight(1)
+                    .height(2)
+                    .backgroundColor(index < this.currentStep ? Color.White : DesignColor.OUTLINE)
+                    .animation(MotionTiming.ENTER)
+                }
+              }, (label: string) => label)
+            }
+            .width('100%')
+            .alignItems(VerticalAlign.Center)
+            .margin({ top: DesignDimens.SPACE_XL })
+
+            // 步骤标签行 —— 首尾贴边、中间居中
+            Row() {
+              ForEach(HERO_STEPS, (label: string, index: number) => {
+                Text(label)
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(Color.White)
+                  .layoutWeight(1)
+                  .textAlign(index === 0 ? TextAlign.Start : (index === HERO_STEPS.length - 1 ? TextAlign.End : TextAlign.Center))
+              }, (label: string) => label)
+            }
+            .width('100%')
+            .margin({ top: DesignDimens.SPACE_XS })
+          } else {
+            // 空态 CTA —— 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字。
+            // 对齐安卓 U-102：16sp/600（§10 绿色文字红线：绿色文字仅限 ≥16sp 且 weight ≥600），
+            // 上下 padding 12 → 行高 24 + 24 = 48 高（≥44 触控）；左对齐（安卓 Column 默认 Start）。
+            Text('预约洗衣')
+              .fontSize(DesignFontSize.BODY)
+              // 行盒对齐安卓 bodyLarge 16/24：上下 padding 12 + 行高 24 = 48 高（对齐安卓 U-102）
+              .lineHeight(DesignFontSize.BODY + 8)
+              .fontWeight(DesignFontWeight.SEMI_BOLD)
+              .fontColor(DesignColor.PRIMARY_DARK)
+              .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
+              .borderRadius(DesignDimens.RADIUS_FULL)
+              .backgroundColor(Color.White)
+              .margin({ top: DesignDimens.SPACE_MD })
+              .onClick(() => {
+                this.onBookingClick()
+              })
           }
-          .width('100%')
-          .margin({ top: DesignDimens.SPACE_XS })
-        } else {
-          // 空态 CTA —— 规范 §3.1 Hero 卡变体「白色 CTA 胶囊」：白底 + 品牌深绿字
-          Text('预约洗衣')
-            .fontSize(DesignFontSize.BUTTON_TEXT)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY_DARK)
-            .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 10, bottom: 10 })
-            .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(Color.White)
-            .margin({ top: DesignDimens.SPACE_MD })
-            .onClick(() => {
-              this.onBookingClick()
-            })
         }
+        .width('100%')
+        .padding(DesignDimens.CARD_PADDING)
+        // CTA 左对齐：内容列显式 Start（ArkUI Column 默认 Center 会居中 CTA）
+        .alignItems(HorizontalAlign.Start)
+        // 对角黑纱（左上黑 20% → 右下透明），作为内容列背景叠在品牌渐变底上。
+        // 透明端必须用 Color.Transparent：数值 0x00000000 在渐变 stop 上会被当作不透明黑。
+        .linearGradient({
+          angle: 135,
+          colors: [[DesignColor.SCRIM_BLACK_20, 0], [Color.Transparent, 1]]
+        })
       }
       .width('100%')
-      .padding(DesignDimens.CARD_PADDING)
       // 品牌渐变 135°（规范 §1.3 gradient.hero）：浅 #2D9B6A → #1E8C5C
-      .borderRadius(DesignDimens.RADIUS_XL)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .clip(true)
       .linearGradient({
         angle: 135,
         colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]

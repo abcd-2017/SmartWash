@@ -5,9 +5,14 @@ import { getValue, setValue } from "../utils/StorageUtil"
 import { pathStack } from "../utils/PathStackUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
-import { getAppVersionName } from "../utils/AppInfoUtil"
+import { getAppVersionCode, getAppVersionName } from "../utils/AppInfoUtil"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
+import { common } from "@kit.AbilityKit"
+import { promptAction } from "@kit.ArkUI"
+import { HttpStatusCode } from "@ohos/axios"
+import { getAppVersion } from "../network/api/AppVersionApi"
+import { showToastSafety } from "../utils/ToastUtil"
 import vibrator from "@ohos.vibrator"
 
 // 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义）
@@ -38,6 +43,10 @@ struct Setting {
   @State notificationGranted: boolean = false
   // 触感反馈开关（内存态即时生效 + preferences 异步落盘，对齐安卓 SettingViewModel）
   @State hapticEnabled: boolean = true
+  // 检查更新进行中标记：拦截连点，避免重复拉取版本接口
+  @State checkingUpdate: boolean = false
+  // 「发现新版本」弹窗内容（open 前赋值，弹窗以当次值初始化）
+  @State updateDialogMessage: string = ""
 
   // 退出登录弹窗（对齐安卓 AppConfirmDialog isDanger，统一使用 #23 产出的通用组件）
   private logoutDialogController: CustomDialogController = new CustomDialogController({
@@ -88,6 +97,17 @@ struct Setting {
     customStyle: true
   })
 
+  // 「发现新版本」弹窗（对齐安卓手动检查更新的版本提示；内容由检查结果动态注入）
+  private updateDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppInfoDialog({
+      title: "发现新版本",
+      message: this.updateDialogMessage
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
   async aboutToAppear() {
     this.refreshNotification()
     // 触感反馈启动补读：覆盖冷启动后未预热就进设置页的窗口（对齐安卓 SettingViewModel.init）
@@ -125,6 +145,62 @@ struct Setting {
     }
   }
 
+  /**
+   * 打开系统应用通知设置（对齐安卓 SettingPage.kt openSystemNotificationSettings，P-1501）：
+   * 授权 / 去关闭都在系统页完成，返回后由 onShown 重查刷新行内状态，不再进权限管理页。
+   */
+  private openNotificationSettings(): void {
+    const context = getContext(this) as common.UIAbilityContext
+    notificationManager.openNotificationSettings(context).then(() => {
+      // 系统设置半模态关闭回调：重查通知授权态（半模态不触发 NavDestination onShown）
+      logger.debug('setting', '系统通知设置已关闭，重查授权态')
+      this.refreshNotification()
+    }).catch(() => {
+      // 外部调用失败留痕：toast 已兜底，此处仅补摘要（不序列化 error）
+      logger.warn('setting', '打开系统通知设置失败，已 toast 兜底')
+      promptAction.showToast({ message: "无法打开系统设置" })
+    })
+  }
+
+  /**
+   * 检查更新（对齐安卓 UpdateViewModel.checkForUpdate + UpdateFlow 手动检查）：
+   * 拉取服务端最新版本，与本地 versionCode 比较——远程更高则弹窗告知新版本，否则 toast 已是最新。
+   * 鸿蒙无 APK 热更新链路，发现新版本仅告知版本信息，不触发下载。
+   */
+  private async checkUpdate(): Promise<void> {
+    if (this.checkingUpdate) {
+      return
+    }
+    this.checkingUpdate = true
+    try {
+      const res = await getAppVersion()
+      if (res.code === HttpStatusCode.Ok && res.data !== null) {
+        const remote = res.data
+        const remoteCode = remote.versionCode ?? 0
+        if (remoteCode > getAppVersionCode()) {
+          const versionText = remote.versionName ?? ""
+          const changelog = remote.changelog ?? ""
+          this.updateDialogMessage = `最新版本：v${versionText}\n${changelog}`
+          // 低频关键动作：检查到新版本留 info（仅记版本号，不含敏感信息）
+          logger.info('setting', `检查更新发现新版本 versionName=${versionText}`)
+          this.updateDialogController.open()
+        } else {
+          showToastSafety("当前已是最新版本")
+        }
+      } else {
+        // 业务拒绝留痕：版本信息缺失/读取失败（仅记 code/message 摘要）
+        logger.warn('setting', `检查更新失败 code=${res.code} message=${res.message ?? ""}`)
+        showToastSafety(res.message, "检查更新失败")
+      }
+    } catch (err) {
+      // 外部调用失败（网络异常）：error 留痕，只记 message 摘要，不序列化完整 error
+      logger.error('setting', '检查更新请求异常', err instanceof Error ? err.message : "")
+      showToastSafety("网络异常，请稍后重试")
+    } finally {
+      this.checkingUpdate = false
+    }
+  }
+
   build() {
     NavDestination() {
       Column() {
@@ -143,7 +219,9 @@ struct Setting {
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
             SettingGroupCard() {
-              // 消息通知（真实授权态，行尾显示系统实际授予情况，点击进权限管理页）
+              // 消息通知（真实授权态，行尾显示系统实际授予情况）
+              // 点击直达系统应用通知设置（对齐安卓 P-1501：授权 / 去关闭都在系统页完成，
+              // 返回后由 onShown 重查刷新行内状态，不再进权限管理页）
               SettingRow({
                 icon: $r('sys.symbol.bell'),
                 containerColor: DesignColor.ICON_CONTAINER_ORANGE,
@@ -151,7 +229,7 @@ struct Setting {
                 title: "消息通知",
                 trailingValue: this.notificationGranted ? "已开启" : "未授权",
                 onRowClick: () => {
-                  pathStack.pushPathByName(RouteNames.PERMISSION_MANAGEMENT, null)
+                  this.openNotificationSettings()
                 }
               })
 
@@ -202,9 +280,27 @@ struct Setting {
               .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
 
             SettingGroupCard() {
-              // 权限管理入口（申请 / 跳系统设置都在权限页收口）
+              // 检查更新（对齐安卓「其他」组 CheckUpdateSettingRow，64dp 行 + 行尾当前版本号）
+              // 图标对齐安卓 Icons.Default.SystemUpdate（下载/更新语义）取 sys.symbol.download
               SettingRow({
-                icon: $r('sys.symbol.gearshape'),
+                icon: $r('sys.symbol.download'),
+                containerColor: DesignColor.ICON_CONTAINER_TEAL,
+                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+                title: "检查更新",
+                trailingValue: `v${getAppVersionName()}`,
+                onRowClick: () => {
+                  this.checkUpdate()
+                }
+              })
+
+              Divider()
+                .color(DesignColor.HAIRLINE)
+                .strokeWidth(0.5)
+
+              // 权限管理入口（申请 / 跳系统设置都在权限页收口）
+              // 图标对齐安卓 SettingPage 的 AdminPanelSettings（盾牌 + 用户徽标）取 sys.symbol.person_shield
+              SettingRow({
+                icon: $r('sys.symbol.person_shield'),
                 containerColor: DesignColor.ICON_CONTAINER_TEAL,
                 iconColor: DesignColor.ICON_FOREGROUND_TEAL,
                 title: "权限管理",
@@ -266,7 +362,7 @@ struct Setting {
 }
 
 /**
- * 设置行（对齐安卓 SettingRow：64dp 高 / ib32 / 14sp/500 标题 / 行尾值 / 0.5 hairline）。
+ * 设置行（对齐安卓 SettingRow：64dp 高 / ib32 / 14sp/400 标题 / 行尾值 / 0.5 hairline）。
  * 水平缩进由分组卡内边距统一承载，行自身不叠 horizontal padding。
  * 按压反馈自绘状态层（按下铺 surfaceVariant），不使用 Material ripple/state layer。
  */
@@ -298,7 +394,7 @@ struct SettingRow {
 
       Text(this.title)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontWeight(DesignFontWeight.NORMAL)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .layoutWeight(1)
         .margin({ left: 12 })

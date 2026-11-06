@@ -7,7 +7,7 @@
 // 待后端提供对话接口后，按四端联动规则补 network/api/AiApi.ets 与真实消息流。
 
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../constant/DesignSystem'
-import { AppButton, AppButtonVariant, DrumMark, PageHeader } from '../view/common/AppComponents'
+import { DrumMark, PageHeader } from '../view/common/AppComponents'
 import { logger } from '../utils/Logger'
 import { pathStack } from '../utils/PathStackUtil'
 import { showToastSafety } from '../utils/ToastUtil'
@@ -138,22 +138,8 @@ struct AiWorkPage {
           }
         })
 
-        // 能力未接入提示条（明确提示，避免用户误以为已可用）
-        Row() {
-          SymbolGlyph($r('sys.symbol.info_circle'))
-            .fontSize(16)
-            .fontColor([DesignColor.TEXT_TERTIARY])
-          Text(AI_PENDING_TIP)
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
-            .margin({ left: DesignDimens.SPACE_XS })
-            .layoutWeight(1)
-        }
-        .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
-        .alignItems(VerticalAlign.Center)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
-
+        // 安卓 AiWorkPage 无「能力接入中」提示条（结构差异，已按口径移除；
+        // 提示文案仍由快捷任务/发送的 toast 承载）
         Scroll() {
           Column() {
             // ---------- 快捷任务 ----------
@@ -200,14 +186,22 @@ struct AiWorkPage {
                     .fontSize(DesignFontSize.CAPTION)
                     .fontColor(DesignColor.TEXT_SECONDARY)
                     .margin({ top: DesignDimens.SPACE_MD })
-                  AppButton({
-                    text: '开始提问',
-                    variant: AppButtonVariant.SECONDARY,
-                    click: () => {
+                  // 「开始提问」对齐安卓 AiWorkPage 的 Surface：wrap-content（约 84dp 宽，
+                  // 原 AppButton 通栏 314.9vp）、radiusButton 14、高 48、
+                  // primaryContainer 底 + onPrimaryContainer 字（bodySmall 12/500）
+                  Button('开始提问')
+                    .type(ButtonType.Normal)
+                    .height(48)
+                    .borderRadius(DesignDimens.BUTTON_RADIUS)
+                    .backgroundColor(DesignColor.PRIMARY_CONTAINER)
+                    .fontColor(DesignColor.ON_PRIMARY_CONTAINER)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontWeight(DesignFontWeight.MEDIUM)
+                    .padding({ left: 18, right: 18, top: 16, bottom: 16 })
+                    .onClick(() => {
                       showToastSafety(AI_PENDING_TIP)
-                    }
-                  })
-                  .margin({ top: DesignDimens.SPACE_MD })
+                    })
+                    .margin({ top: DesignDimens.SPACE_MD })
                 }
                 .width('100%')
                 .padding({ top: 32, bottom: 16 })

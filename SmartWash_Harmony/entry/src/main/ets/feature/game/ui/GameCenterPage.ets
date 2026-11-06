@@ -227,7 +227,8 @@ export struct GameCenterPage {
           .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
       }
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 9, bottom: 9 })
+      // 垂直内边距 9 → 14：视觉高对齐安卓 AppPillTabRow 的 44dp（文字行盒 16 + 上下 14）
+      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
       .borderRadius(DesignDimens.RADIUS_FULL)
       .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
       .border({ width: 1, color: selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
@@ -327,8 +328,10 @@ export struct GameCenterPage {
           .width('100%')
           .margin({ top: DesignDimens.SPACE_SM })
 
+        // 描述字重对齐安卓 labelSmall 12/500（原 400）
         Text(game.description)
           .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })

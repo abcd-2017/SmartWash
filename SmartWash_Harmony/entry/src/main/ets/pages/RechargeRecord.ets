@@ -21,7 +21,6 @@ export function RechargeRecordBuilder() {
 @Component
 struct RechargeRecord {
   @State recordList: Array<RechargeRecordVo> = []
-  @State isRefreshing: boolean = false
   @State isLoadingMore: boolean = false
   // 首屏加载态：数据返回前展示占位，避免页面空白（对齐安卓 RechargeRecordPage.kt:111-120）
   @State isLoadingFirst: boolean = true
@@ -100,12 +99,6 @@ struct RechargeRecord {
       showToastSafety("网络异常，请稍后重试")
       return false
     }
-  }
-
-  refreshRecords() {
-    this.isRefreshing = false
-    this.paging.reset()
-    this.fetchRecordPage(1)
   }
 
   @Builder
@@ -194,30 +187,26 @@ struct RechargeRecord {
           .transition(TransitionEffect.OPACITY)
           .animation({ duration: 200, curve: Curve.EaseOut })
         } else if (this.recordList.length > 0) {
-          Refresh({ refreshing: $$this.isRefreshing }) {
-            List({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(this.recordList, (record: RechargeRecordVo) => {
-                ListItem() {
-                  this.RecordCard(record)
-                }
-              }, (record: RechargeRecordVo, index: number) => `${record.recordId ?? index}`)
+          // 安卓 RechargeRecordPage 的 LazyColumn 无下拉刷新入口，此处同步移除 Refresh 包裹
+          List({ space: DesignDimens.CARD_SPACING }) {
+            ForEach(this.recordList, (record: RechargeRecordVo) => {
               ListItem() {
-                LoadingFooter({ isLoading: !!this.isLoadingMore })
+                this.RecordCard(record)
               }
+            }, (record: RechargeRecordVo, index: number) => `${record.recordId ?? index}`)
+            ListItem() {
+              LoadingFooter({ isLoading: !!this.isLoadingMore })
             }
-            .width("100%")
-            .height("100%")
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: safeBottomVp() })
-            .onScrollIndex((start: number, end: number) => {
-              this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
-            })
-            .onScrollFrameBegin((offset: number, state: ScrollState) => {
-              this.paging.onScrollFrameBegin(offset)
-              return { offsetRemain: offset }
-            })
           }
-          .onRefreshing(() => {
-            this.refreshRecords()
+          .width("100%")
+          .height("100%")
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: safeBottomVp() })
+          .onScrollIndex((start: number, end: number) => {
+            this.paging.onScrollIndex(end, this.recordList?.length ?? 0)
+          })
+          .onScrollFrameBegin((offset: number, state: ScrollState) => {
+            this.paging.onScrollFrameBegin(offset)
+            return { offsetRemain: offset }
           })
           .transition(TransitionEffect.OPACITY)
           .animation({ duration: 200, curve: Curve.EaseOut })

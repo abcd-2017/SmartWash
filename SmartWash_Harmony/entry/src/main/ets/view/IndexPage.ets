@@ -158,6 +158,8 @@ export struct IndexPage {
 
           Text(`¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
             .fontSize(this.balanceFontSize)
+            // 数据大字恒为 Bold（对齐安卓 AppTextStyles.DataLarge = 36/700；D5）
+            .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.PRIMARY_DARK)
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
@@ -181,6 +183,7 @@ export struct IndexPage {
         })
 
         // 券 / 累计订单半格，中间 1×40 发丝竖线
+        // stat Row 无水平内缩（对齐安卓 AccountDataCard：行铺满卡宽，半格中心落在 25%/75%；D6）
         Row() {
           this.AccountStatCell(`${this.userInfo?.couponCount ?? 0}`, "可用优惠券")
           Row()
@@ -190,7 +193,6 @@ export struct IndexPage {
           this.AccountStatCell(`${this.userInfo?.orderCount ?? 0}`, "累计订单")
         }
         .width('100%')
-        .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         .margin({ top: DesignDimens.SPACE_XS })
 
         // 卡片底部呼吸位（对齐安卓 Spacer 16）
@@ -340,7 +342,7 @@ export struct IndexPage {
       Column() {
         Text(getOrderStatusDescription(order.status))
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontWeight(DesignFontWeight.NORMAL)
           .fontColor(DesignColor.TEXT_PRIMARY)
           .maxLines(1)
 

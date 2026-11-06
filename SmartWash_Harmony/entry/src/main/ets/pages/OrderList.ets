@@ -290,7 +290,9 @@ struct OrderList {
    * 状态筛选胶囊条（对齐安卓 AppPillTabRow）：
    * 选中 = primary 实底 + 白字；未选中 = surface 白底 + 1px outline 描边 + textSecondary；
    * 双层结构对齐安卓「clip→background 在 padding 之前，只扩热区不改视觉」的语义：
-   * 外层热区 Column 44 高（无背景），内层视觉胶囊 34（文字行盒 16 + 上下 9）；可横滚。
+   * 外层热区 Column 48 高（无背景），内层视觉胶囊 45（文字行盒 + 上下 15）；可横滚。
+   * 鸿蒙屏宽（364.6vp）窄于安卓（426.7dp），5 颗安卓尺寸胶囊会溢出，故横向 padding 由 16 收到 8
+   * 使 5 颗全可见（字号保持 12fp 与安卓 labelMedium 一致）。
    */
   @Builder
   TabBar() {
@@ -305,8 +307,9 @@ struct OrderList {
                 .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
             }
             .justifyContent(FlexAlign.Center)
-            // 视觉胶囊 34（对齐安卓画板 .seg3：labelMedium 行盒 16 + 上下 9）
-            .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 9, bottom: 9 })
+            // 视觉胶囊 45（对齐安卓 AppPillTabRow：padding 在 background 之前，
+            // 背景覆盖纵向 padding → 视觉高 = 行盒 + 上下 15 ≈ 45，与安卓 45.3dp 一致）
+            .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 15, bottom: 15 })
             .borderRadius(DesignDimens.RADIUS_FULL)
             .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
             .border({
@@ -314,8 +317,8 @@ struct OrderList {
               color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
             })
           }
-          // 触控热区 44（规范 §2.3）；背景画在内层胶囊上，热区透明不影响视觉
-          .height(44)
+          // 触控热区 48（对齐安卓 clickable 最小热区）；背景画在内层胶囊上，热区透明不影响视觉
+          .height(48)
           .justifyContent(FlexAlign.Center)
           .margin({ right: DesignDimens.SPACE_XS })
           .onClick(() => {

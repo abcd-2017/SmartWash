@@ -28,6 +28,10 @@ const DASH_SEGMENT_GAP: number = 4
 export struct TicketNotch {
   @Param notchRadius: number = 7
   @Param notchColor: number = DesignColor.BACKGROUND
+  // 覆盖层高度（vp）：0 = 撑满父容器（'100%'）。
+  // wrap-content 卡片（可用券）必须传实高——'100%' 在 wrap-content Stack 内会解析到
+  // 父约束上限（列表视口高），把卡撑成整屏高。
+  @Param heightValue: number = 0
 
   build() {
     Row() {
@@ -53,7 +57,7 @@ export struct TicketNotch {
         .hitTestBehavior(HitTestMode.None)
     }
     .width('100%')
-    .height('100%')
+    .height(this.heightValue > 0 ? this.heightValue : '100%')
     .alignItems(VerticalAlign.Center)
     .hitTestBehavior(HitTestMode.None)
   }

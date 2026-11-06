@@ -516,9 +516,10 @@ struct ToolboxShortCodeDetail {
 
       Row() {
         Blank()
+        // 字重对齐安卓 labelMedium 12/500（原 600）
         Text(ToolboxText.toolbox_action_renew)
           .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.PRIMARY)
           .padding({ top: 4, bottom: 4 })
           .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
@@ -611,8 +612,10 @@ struct ToolboxShortCodeDetail {
         })
       }
 
+      // 字重对齐安卓 labelSmall 12/500（原 400）
       Text(this.getShortUrl())
         .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor(DesignColor.TEXT_SECONDARY)
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
@@ -743,7 +746,6 @@ struct ToolboxShortCodeDetail {
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 4 })
 
           Blank()
 
@@ -811,8 +813,9 @@ struct ToolboxShortCodeDetail {
                     this.fetchStats(1)
                   })
               } else if (this.statsList.length === 0) {
+                // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）
                 Text(ToolboxText.toolbox_stats_empty)
-                  .fontSize(DesignFontSize.BODY)
+                  .fontSize(DesignFontSize.BODY_SMALL)
                   .fontColor(DesignColor.TEXT_TERTIARY)
                   .width('100%')
                   .textAlign(TextAlign.Center)

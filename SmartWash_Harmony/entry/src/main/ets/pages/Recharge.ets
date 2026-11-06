@@ -242,6 +242,8 @@ struct Recharge {
         }
       }
       .fontFeature(DesignFontFeature.TNUM)
+      // 行盒对齐安卓 bodySmall 12/16（默认行盒偏小会拉低金额卡高度）
+      .lineHeight(16)
       .margin({ top: 12 })
     }
   }
@@ -282,7 +284,8 @@ struct Recharge {
     }
     .width("100%")
     .height(48)
-    .padding({ left: 12, right: 12 })
+    // 文字内边距对齐安卓 M3 TextField 默认内容 padding 16dp
+    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
     .justifyContent(FlexAlign.Center)
     .backgroundColor(this.isCustomSelected ? DesignColor.PRIMARY_SOFT : DesignColor.SURFACE_VARIANT)
     .borderRadius(DesignDimens.INPUT_RADIUS)
@@ -576,11 +579,16 @@ struct Recharge {
                 Text("自定义金额")
                   .fontSize(DesignFontSize.CAPTION)
                   .fontColor(DesignColor.TEXT_SECONDARY)
+                  // 行盒对齐安卓 bodySmall 12/16
+                  .lineHeight(16)
                   .margin({ top: 8 })
 
                 this.CustomAmountInput()
               }
               .width("100%")
+              // 显式 Start：ArkUI Column 默认 Center 会把「到账说明」「自定义金额」居中，
+              // 安卓 Column 默认 TopStart（左对齐），此处补齐对齐属性
+              .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
               .backgroundColor(DesignColor.SURFACE)
               .borderRadius(DesignDimens.CARD_RADIUS)
@@ -605,11 +613,6 @@ struct Recharge {
                 .fontColor(DesignColor.TEXT_PRIMARY)
                 .margin({ bottom: 12 })
 
-              // 未选支付方式错误行：置于卡片之前（真机实测 T4：本页区块内"卡片之后"的
-              // 条件节点依赖注册失效、键盘 resize 整树重渲染前永不出现；卡片之前可正常 live 渲染。
-              // 安卓基准为卡下方，此处为可靠渲染作位置取舍，见报告 04-wallet-coupon）
-              this.PayTypeErrorLine()
-
               Column() {
                 this.PayTypeCard(PaymentMethod.WECHAT, "微信支付", $r('app.media.wechat'), 0)
 
@@ -631,6 +634,10 @@ struct Recharge {
                 offsetX: 0,
                 offsetY: 2
               })
+
+              // 未选支付方式错误行：位置对齐安卓（卡下方）。仍走 @Builder 条件渲染
+              // （分支体读取 checkPayTypeMsg @State，其变更事件驱动 If 重渲染，真机可 live 更新）
+              this.PayTypeErrorLine()
             }
             .width("100%")
             .alignItems(HorizontalAlign.Start)

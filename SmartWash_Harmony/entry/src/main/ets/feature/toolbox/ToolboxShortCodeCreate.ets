@@ -207,7 +207,6 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)
-              .margin({ left: 4 })
           }
           .width('100%')
           .height(56)
@@ -222,7 +221,8 @@ struct ToolboxShortCodeCreate {
               .height(48)
               .fontSize(DesignFontSize.BODY)
               .backgroundColor(DesignColor.SURFACE_VARIANT)
-              .borderRadius(DesignDimens.INPUT_RADIUS)
+              // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
+              .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
               .borderColor(this.targetFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
               .placeholderColor(DesignColor.TEXT_TERTIARY)
@@ -251,7 +251,8 @@ struct ToolboxShortCodeCreate {
               .height(48)
               .fontSize(DesignFontSize.BODY)
               .backgroundColor(DesignColor.SURFACE_VARIANT)
-              .borderRadius(DesignDimens.INPUT_RADIUS)
+              // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
+              .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
               .borderColor(this.customCodeFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
               .placeholderColor(DesignColor.TEXT_TERTIARY)

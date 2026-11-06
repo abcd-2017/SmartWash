@@ -145,14 +145,15 @@ struct LiuYaoRow {
   build() {
     if (this.line !== null) {
       Row() {
-        // 六神（画板：无色点，弱化灰 12）
+        // 六神（画板：无色点，弱化灰 12）；行盒 24 对齐安卓 12sp 衬线默认行高（原 14 会把行距压到 43）
         DivSerifText({
           text: this.line.liuShen,
           textSize: 12,
           weight: 400,
           spacing: 0,
           color: DivPalette.textSecondary,
-          maxLines: 1
+          maxLines: 1,
+          lineHeight: 24
         })
           .width(44)
 
@@ -174,7 +175,8 @@ struct LiuYaoRow {
             weight: 400,
             spacing: 0,
             color: DivPalette.textPrimary,
-            maxLines: 1
+            maxLines: 1,
+            lineHeight: 24
           })
           if (this.line.yao.isMoving && this.markVisible) {
             DivSerifText({
@@ -190,14 +192,15 @@ struct LiuYaoRow {
         .layoutWeight(1.2)
         .alignItems(VerticalAlign.Center)
 
-        // 世应徽标（画板：12/600 主题金）
+        // 世应徽标（画板：12/600 主题金）；行盒 24 对齐安卓默认行高
         DivSerifText({
           text: this.line.shiYing ?? '',
           textSize: 12,
           weight: 600,
           spacing: 0,
           color: DivPalette.goldText,
-          textAlign: TextAlign.End
+          textAlign: TextAlign.End,
+          lineHeight: 24
         })
           .width(24)
       }

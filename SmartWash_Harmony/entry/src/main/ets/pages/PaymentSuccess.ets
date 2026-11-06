@@ -16,7 +16,8 @@ export function PaymentSuccessBuilder() {
 }
 
 /**
- * 卡内「标签 — 值」信息行（对齐 Android InfoLine：bodySmall 12 + tnum、纵向 padding 4）。
+ * 卡内「标签 — 值」信息行（对齐安卓 PaySuccessPage.kt:236-254 的 InfoRow：
+ * bodySmall 12/16 + tnum、rowHeight 16dp、无纵向 padding；行距由外层 spacedBy(16) 给出）。
  * 必须是组件而非 @Builder：支付页 loading 是覆盖层、内容树在 orderInfo 为 null 时就已构建，
  * @Builder 按值传参只在首帧求值，数据到达后不会刷新——订单号会永远定格在「—」（问题6）。
  */
@@ -27,13 +28,16 @@ struct PayInfoLine {
 
   build() {
     Row() {
+      // 行盒 16 = 行高 16（对齐安卓 rowHeight = 16.dp），行距由外层 Column space 16 给出 → 行距 32
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
+        .lineHeight(16)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
+        .lineHeight(16)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
@@ -42,7 +46,6 @@ struct PayInfoLine {
         .textAlign(TextAlign.End)
     }
     .width("100%")
-    .padding({ top: 4, bottom: 4 })
     .justifyContent(FlexAlign.SpaceBetween)
     .alignItems(VerticalAlign.Center)
   }
@@ -149,10 +152,11 @@ struct PaymentSuccess {
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ left: 4 })
     }
     .width("100%")
     .height(56)
+    // 行首让位 12：48dp 热区盒居中后图形左缘落在 24，标题紧贴热区右缘（对齐安卓 PageHeader）
+    .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
   }
 
@@ -164,10 +168,13 @@ struct PaymentSuccess {
   build() {
     NavDestination() {
       Stack() {
-        // 修复（问题10）：原 Column 固定 100% 高，矮屏内容溢出且无法滚动；改 Scroll 承载
-        Scroll() {
-          Column() {
-            this.PageHeader()
+        Column() {
+          // 页头全宽（对齐安卓 PageHeader：不被页面 24dp 内边距内缩）
+          this.PageHeader()
+
+          // 修复（问题10）：原 Column 固定 100% 高，矮屏内容溢出且无法滚动；改 Scroll 承载
+          Scroll() {
+            Column() {
 
           // 庆祝卡（recap §4-V1/V2/V3）：CircleIconBox 44 primaryLight + 勾 24 primary；
           // 标题 headlineLarge 28/700 primaryDark；内边距上 40 / 下 44
@@ -206,7 +213,8 @@ struct PaymentSuccess {
             offsetX: 0,
             offsetY: 2
           })
-          .margin({ top: DesignDimens.SECTION_SPACING })
+          // 庆祝卡紧跟页头（对齐安卓 PaySuccessPage.kt:147-160：卡前无 Spacer，
+          // 32dp 间距由卡后「订单信息」标题的 margin top 承载）
           .alignItems(HorizontalAlign.Center)
 
           // 订单信息卡（recap §4-V4：bodySmall 12 + tnum、行高 16、行距 16）
@@ -297,48 +305,63 @@ struct PaymentSuccess {
           })
           .alignItems(VerticalAlign.Top)
 
-          // 底部操作区（recap §4-F2：主按钮 + 48dp 热区「返回首页」文字链）
-          Column() {
-            AppButton({
-              text: "立即寄件",
-              click: () => {
-                this.goShipNow()
-              }
-            })
-
-            Text("返回首页")
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
-              .width("100%")
-              .textAlign(TextAlign.Center)
-              .padding({ top: 16, bottom: 16 })
-              // 按压反馈（G3）：scale 0.97 + onTouch，对齐安卓 pressable
-              .scale({ x: this.pressedKey === 'back' ? 0.97 : 1, y: this.pressedKey === 'back' ? 0.97 : 1 })
-              .onTouch((event: TouchEvent) => {
-                if (event.type === TouchType.Down) {
-                  this.pressedKey = 'back'
-                } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-                  this.pressedKey = null
-                }
-              })
-              .onClick(() => {
-                this.backToHome()
-              })
-          }
-          .width("100%")
-          .padding({ top: DesignDimens.SPACE_MD, bottom: safeBottomVp() })
-          .alignItems(HorizontalAlign.Center)
         }
         .width("100%")
         // 沉浸式：内容避让状态栏 + 底部安全区（背景延伸）
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: safeTopVp() })
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          // 末卡底 → 固定底栏顶 32（对齐安卓 PaySuccessPage.kt:320 Spacer(sectionSpacing)）
+          bottom: DesignDimens.SECTION_SPACING
+        })
         .alignItems(HorizontalAlign.Start)
       }
+      .layoutWeight(1)
       .width("100%")
-      .height("100%")
       .align(Alignment.Top)
       .scrollBar(BarState.Off)
       .backgroundColor(DesignColor.BACKGROUND)
+
+      // 固定底栏（对齐安卓 PaySuccessPage.kt:325-361）：移出 Scroll 后首屏即可见「返回首页」，
+      // 不再被滚动内容裁切；主按钮 + 48dp 热区「返回首页」文字链
+      Column() {
+        AppButton({
+          text: "立即寄件",
+          click: () => {
+            this.goShipNow()
+          }
+        })
+
+        Text("返回首页")
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .width("100%")
+          .textAlign(TextAlign.Center)
+          .padding({ top: 16, bottom: 16 })
+          // 按压反馈（G3）：scale 0.97 + onTouch，对齐安卓 pressable
+          .scale({ x: this.pressedKey === 'back' ? 0.97 : 1, y: this.pressedKey === 'back' ? 0.97 : 1 })
+          .onTouch((event: TouchEvent) => {
+            if (event.type === TouchType.Down) {
+              this.pressedKey = 'back'
+            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+              this.pressedKey = null
+            }
+          })
+          .onClick(() => {
+            this.backToHome()
+          })
+      }
+      .width("100%")
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        bottom: safeBottomVp()
+      })
+      .alignItems(HorizontalAlign.Center)
+        }
+        .width("100%")
+        .height("100%")
+        .padding({ top: safeTopVp() })
 
         // 加载态
         if (this.isLoading) {

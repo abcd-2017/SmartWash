@@ -394,22 +394,32 @@ struct DeliveryCreatePage {
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_PRIMARY)
-              .margin({ left: 4 })
           }
           .width('100%')
           .height(56)
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
           .alignItems(VerticalAlign.Center)
 
-          if (this.session === null) {
-            // ---------- 表单态 ----------
+          // 内容区与页头分离：页头自带 12/24 横向留白（对齐安卓 PageHeader），
+          // 内容区统一 24 页留白 + 上 8（原页头位于 padded Column 内又被加 12，返回钮落到 36vp）
+          Column() {
+            if (this.session === null) {
+              // ---------- 表单态 ----------
             Column() {
               this.FormLabel(DeliveryText.toolbox_delivery_duration_label)
-              Row({ space: DesignDimens.SPACE_XS }) {
-                ForEach(DELIVERY_DURATION_PRESETS, (minutes: number, index: number) => {
-                  this.SelectableChip(durationChipText(minutes), this.durationMinutes === minutes, minutes)
-                }, (minutes: number) => `${minutes}`)
+              // 4 枚 chip 在窄屏（364.6vp）总宽超出卡内容宽（274.9vp）：改横向 Scroll，
+              // 保持安卓 chip 规格（12/600 + 16 横内边距）不被压缩，末枚可横滑查看
+              Scroll() {
+                Row({ space: DesignDimens.SPACE_XS }) {
+                  ForEach(DELIVERY_DURATION_PRESETS, (minutes: number, index: number) => {
+                    this.SelectableChip(durationChipText(minutes), this.durationMinutes === minutes, minutes)
+                  }, (minutes: number) => `${minutes}`)
+                }
               }
+              .scrollable(ScrollDirection.Horizontal)
+              .scrollBar(BarState.Off)
+              .align(Alignment.Start)
+              .width('100%')
               Text(DeliveryText.toolbox_delivery_duration_desc)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
@@ -533,9 +543,12 @@ struct DeliveryCreatePage {
               offsetY: 2
             })
           }
+          }
+          .width('100%')
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: 24 + safeBottomVp() })
+          .alignItems(HorizontalAlign.Start)
         }
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 24 + safeBottomVp() })
         .alignItems(HorizontalAlign.Start)
       }
       .scrollBar(BarState.Off)

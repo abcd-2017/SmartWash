@@ -609,7 +609,6 @@ struct DeliverySessionPage {
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 4 })
 
           Blank()
 

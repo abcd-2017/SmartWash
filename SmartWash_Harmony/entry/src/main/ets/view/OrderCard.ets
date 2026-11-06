@@ -145,18 +145,18 @@ export struct OrderMonthCard {
         .backgroundColor(this.badgeColors(order.status)[0])
         .justifyContent(FlexAlign.Center)
 
-        // 单号 · 套餐（bodySmall 14 + tnum；角标底→单号行 8）
+        // 单号 · 套餐（bodySmall 12 + tnum；角标底→单号行 8）
         Text(`${order.orderNo ?? ""} · ${order.laundryPackageVo?.itemName ?? ""}`)
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .maxLines(1)
 
-        // 相对时间（bodySmall 14 + tnum；单号→时间 8）
+        // 相对时间（bodySmall 12 + tnum；单号→时间 8）
         Text(formatOrderTime(order.createdAt))
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
@@ -179,17 +179,23 @@ export struct OrderMonthCard {
 
         Column() {
           if (order.status === OrderStatusEnum.PENDING_PAYMENT) {
-            Row() {
+            // 待支付操作区（对齐安卓 OrderPage.kt:526-544）：去支付在上、取消订单在下，
+            // 右对齐竖排，中间拉开 12；取消订单用 error 语义色（危险操作）
+            Column() {
+              this.ActionButton("去支付", `${order.orderId}:pay`, () => {
+                this.paymentClick(order)
+              })
+
               // 取消订单 — 自绘文字动作，热区 44（安卓 OrderPage.kt:486-494，原 40 不达标）
               Row() {
                 Text("取消订单")
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(DesignColor.ERROR)
               }
               .constraintSize({ minHeight: 44 })
               .padding({ left: 4, right: 4 })
-              // 与「去支付」胶囊间距 8（对齐安卓 Spacer(width = spaceXs)）
-              .margin({ right: DesignDimens.SPACE_XS })
+              // 与「去支付」胶囊间距 12（对齐安卓 Spacer(height = spaceSm)）
+              .margin({ top: DesignDimens.SPACE_SM })
               .justifyContent(FlexAlign.Center)
               .scale({
                 x: this.pressedActionKey === `${order.orderId}:cancel` ? 0.97 : 1,
@@ -207,19 +213,15 @@ export struct OrderMonthCard {
                 this.haptic(20)
                 this.cancelClick(order)
               })
-
-              this.ActionButton("去支付", `${order.orderId}:pay`, () => {
-                this.paymentClick(order)
-              })
             }
-            .alignItems(VerticalAlign.Center)
+            .alignItems(HorizontalAlign.End)
           } else if (order.status === OrderStatusEnum.PENDING_SHIPMENT) {
             this.ActionButton("去寄件", `${order.orderId}:ship`, () => {
               this.shipmentClick(order)
             })
           } else if (order.status === OrderStatusEnum.WASHING) {
             Text("清洗中")
-              .fontSize(DesignFontSize.BODY_SMALL)
+              .fontSize(DesignFontSize.CAPTION)
               .fontColor(DesignColor.TEXT_SECONDARY)
           } else if (order.status === OrderStatusEnum.READY_FOR_PICKUP) {
             this.ActionButton("去取件", `${order.orderId}:pickup`, () => {
@@ -227,7 +229,7 @@ export struct OrderMonthCard {
             })
           } else {
             Text(getOrderStatusDescription(order.status))
-              .fontSize(DesignFontSize.BODY_SMALL)
+              .fontSize(DesignFontSize.CAPTION)
               .fontColor(DesignColor.TEXT_SECONDARY)
           }
         }

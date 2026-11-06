@@ -542,6 +542,10 @@ struct DivCastPage {
                   .width('100%')
                 }
                 .width('100%')
+                // 节点区定高 300（6 节点 × 50）：中线 Column 的 height('100%') 在 wrap-content
+                // Stack 内会被拉伸到剩余视口高，把节点顶到屏幕下缘（多出 ~185vp 空白）；
+                // 显式定高后节点区紧随铜钱下方 48vp，对齐安卓 Box(wrap-content)
+                .height(300)
               }
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
@@ -564,10 +568,10 @@ struct DivCastPage {
               this.onMainButtonClick()
             }
           })
-            // 按钮横向留白统一 PAGE_PADDING（替代 magic number 76）
+            // 按钮横向留白对齐安卓 DivCastPage 的 padding(horizontal = 76.dp)
             .padding({
-              left: DesignDimens.PAGE_PADDING,
-              right: DesignDimens.PAGE_PADDING,
+              left: 76,
+              right: 76,
               top: 14,
               bottom: 14
             })

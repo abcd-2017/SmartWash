@@ -321,33 +321,37 @@ struct DivChartPage {
   @Builder
   MeiHuaTiyongCard() {
     if (this.hasMeiHua()) {
-      DivCard({ lineColor: DivPalette.goldHair }) {
-        Column() {
-          DivSerifText({
-            text: DivText.meihuaTiyong,
-            textSize: 12,
-            weight: 400,
-            spacing: 2,
-            color: DivPalette.textSecondary
+      // 卡左右内缩：margin 必须挂在卡外容器（原误挂卡内层 Column，卡面贴屏幕左右边）
+      Column() {
+        DivCard({ lineColor: DivPalette.goldHair }) {
+          Column() {
+            DivSerifText({
+              text: DivText.meihuaTiyong,
+              textSize: 12,
+              weight: 400,
+              spacing: 2,
+              color: DivPalette.textSecondary
+            })
+            DivSerifText({
+              text: this.meiHuaTiyongText(),
+              textSize: 12,
+              weight: 400,
+              spacing: 0,
+              color: DivPalette.textPrimary
+            })
+              .margin({ top: 4 })
+          }
+          .width('100%')
+          .padding({
+            left: DesignDimens.CARD_PADDING,
+            right: DesignDimens.CARD_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.SPACE_SM
           })
-          DivSerifText({
-            text: this.meiHuaTiyongText(),
-            textSize: 12,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textPrimary
-          })
-            .margin({ top: 4 })
         }
-        .width('100%')
-        .padding({
-          left: DesignDimens.CARD_PADDING,
-          right: DesignDimens.CARD_PADDING,
-          top: DesignDimens.SPACE_SM,
-          bottom: DesignDimens.SPACE_SM
-        })
-      .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       }
+      .width('100%')
+      .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
     }
   }
 
@@ -538,8 +542,9 @@ struct DivChartPage {
 
           // 四套盘面
           if (this.liuYao !== null) {
+            // 六爻盘不再加页留白：盘体自带轨道内缩（左 28 / 右 20），与安卓无 modifier 一致
+            // （原多套一层 PAGE_PADDING，内容左内缩 52vp vs 安卓 28dp）
             LiuYaoPan({ chart: this.liuYao, facts: this.liuYaoFacts, animateEntry: this.animateEntry })
-              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
             // 画板：末行到事实卡间距 SPACE_XL（24）
             Column().height(DesignDimens.SPACE_XL)
             this.LiuYaoCards()
