@@ -179,7 +179,8 @@ public class DivModelConfigService {
             String plainKey = cipher.decrypt(config.getApiKeyCipher());
             int priority = config.getPriority() != null ? config.getPriority() : 100;
             return new OpenAiCompatProvider(config.getName(), config.getBaseUrl(), plainKey,
-                    config.getModelId(), priority, true, "platform", config.getId());
+                    config.getModelId(), priority, true, "platform", config.getId(),
+                    "platform:" + config.getId());
         } catch (Exception e) {
             // 解密失败（主密钥不匹配/密文损坏）：跳过该配置，默认模型落备用/兜底
             log.warn("平台模型密钥解密失败，跳过该配置, modelId: {}, 原因: {}", modelId, e.getMessage());

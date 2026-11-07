@@ -85,6 +85,7 @@ public class OpenAiCompatClient {
      * @param deltaConsumer 增量文本消费者（回退时仅回调一次，入参为整段文本）
      * @return 调用结果（完整文本 + usage 计量）
      * @throws LlmCallException 流式与回退均失败时抛出（message 已脱敏）
+     * @throws ClientGoneException 客户端断连（emitter 已完成）时原样穿透，不回退不包装
      */
     public LlmChatResult chatWithFallback(OpenAiCompatProvider provider, String systemPrompt,
                                           String userPrompt, Consumer<String> deltaConsumer) {
@@ -95,6 +96,9 @@ public class OpenAiCompatClient {
         };
         try {
             return doStreamCall(provider, systemPrompt, userPrompt, wrapped);
+        } catch (ClientGoneException e) {
+            // 客户端断连：原样穿透（不回退、不包装）——断连不是供应商失败，回退调用毫无意义
+            throw e;
         } catch (LlmCallException e) {
             // 回退条件：尚未推出任何增量（避免内容重复），且失败为网络/超时/5xx/非 SSE（4xx 重试无意义）
             boolean fallbackEligible = !anyDelta.get() && !e.isClientError();
@@ -218,6 +222,9 @@ public class OpenAiCompatClient {
                     .bodyValue(body)
                     .exchangeToMono(response -> consumeStreamResponse(response, deltaConsumer, content, usage))
                     .block(STREAM_TOTAL_TIMEOUT);
+        } catch (ClientGoneException e) {
+            // deltaConsumer 推流时客户端已断开（SseBridge 转抛）：穿透，不包装成供应商失败
+            throw e;
         } catch (Exception e) {
             throw translate(e);
         }

@@ -5,6 +5,7 @@ import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivPlatformSetting;
 import com.smartwash.divination.entity.DivRecord;
+import com.smartwash.divination.llm.ClientGoneException;
 import com.smartwash.divination.llm.LlmCallException;
 import com.smartwash.divination.llm.LlmChatResult;
 import com.smartwash.divination.llm.LlmErrorMapping;
@@ -41,7 +42,7 @@ import java.util.concurrent.Executors;
  * 全链路时序：
  *   1. 安全分流（敏感问题拦截）
  *   2. Redis 限流 INCR → 超限 429
- *   3. 查解读缓存（Redis）→ 命中回放
+ *   3. 查解读缓存（Redis）→ 命中回放（预留，未实现；当前每次均真实调用 LLM）
  *   4. 组装 prompt packet（激活 prompt 版本 + server_chart + 领域方法；追问时拼接历史解读上下文）
  *   5. 三层密钥解析 → LlmGateway 路由
  *   6. OpenAiCompatClient 流式调用 → SseBridge 逐 chunk 推流并累积（失败一次非流式回退）
@@ -107,10 +108,12 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 2. 安全分流
-        String refusal = safetyService.check(question);
+        // 2. 安全分流：question 为空（首次解读空 body）时回退卦例自身问题，与 buildPacket 的
+        //    effectiveQuestion 同口径——防止空 body 请求绕过关键词拦截
+        String effectiveQuestion = question != null ? question : record.getQuestion();
+        String refusal = safetyService.check(effectiveQuestion);
         if (refusal != null) {
-            safetyService.recordBlocked(userId, question, record.getMethod(), "keyword");
+            safetyService.recordBlocked(userId, effectiveQuestion, record.getMethod(), "keyword");
             sseBridge.sendError(emitter, 403, refusal);
             return;
         }
@@ -135,8 +138,8 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 4. 限额：按 keySource 取对应日限额（BYOK→byok_daily_limit，平台 key→platform_daily_limit）
-        int dailyLimit = resolveDailyLimit(setting, resolved.getKeySource());
+        // 4. 限额：按密钥来源三分流取对应日限额（BYOK / 平台 key / yml bootstrap）
+        int dailyLimit = resolveDailyLimit(setting, resolved);
         if (!usageService.tryConsumeUserLimit(userId, dailyLimit)) {
             sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
             return;
@@ -162,14 +165,17 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
                     chunk -> sseBridge.sendDelta(emitter, chunk));
         } catch (LlmCallException e) {
             callError = e;
-        } catch (IllegalStateException e) {
-            // SSE 推流中客户端已断开（emitter 已完成）——供应商链路此前正常推流，不计供应商失败
+        } catch (ClientGoneException e) {
+            // 客户端断连（emitter 已完成/已提交后仍推送）：非供应商失败——
+            // 不记熔断窗口、不 sendError（sendError 对已完成 emitter 会二次抛 ISE），静默收尾
             clientGone = true;
             log.debug("客户端已断开，解读推流中止, recordId: {}, userId: {}", recordId, userId);
         }
 
-        // 熔断统计：无论成败都记录（客户端主动断开时供应商本身无失败，记成功）
-        llmGateway.recordResult(provider.getName(), callError == null || clientGone);
+        // 熔断统计：仅记录有确定结果的调用；客户端断连时供应商结果未知，不进窗口（避免污染错误率）
+        if (!clientGone) {
+            llmGateway.recordResult(provider, callError == null);
+        }
 
         if (callError != null) {
             // 7. 错误映射：4xx 透传脱敏 message；5xx/网络异常 → 503 固定文案
@@ -213,18 +219,24 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     }
 
     /**
-     * 按密钥来源解析用户每日解读限额。
+     * 按密钥来源解析用户每日解读限额（三分流）：
+     *   1. BYOK 请求（keySource=user）→ {@code div_platform_setting.byok_daily_limit}
+     *   2. 平台 key 请求（keySource=platform 且 provider.source=platform）→ {@code platform_daily_limit}
+     *   3. yml bootstrap 兜底请求（provider.source=bootstrap）→ 不读平台 DB 设置，
+     *      直接用 yml 兜底值（bootstrap 是平台配置全失效时的最后防线，限额不应依赖可能异常的 DB 设置）
      *
-     * <p>BYOK 请求取 {@code div_platform_setting.byok_daily_limit}，
-     * 平台 key 请求取 {@code platform_daily_limit}；
-     * DB 单例尚未初始化对应字段时兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
+     * <p>DB 单例尚未初始化对应字段时统一兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
      *
-     * @param setting   平台设置（单例）
-     * @param keySource 密钥来源（user=BYOK，platform=平台 key/bootstrap）
+     * @param setting  平台设置（单例）
+     * @param resolved 供应商解析结果（含 keySource 与 provider.source）
      * @return 每日限额
      */
-    private int resolveDailyLimit(DivPlatformSetting setting, String keySource) {
-        boolean byokRequest = "user".equals(keySource);
+    private int resolveDailyLimit(DivPlatformSetting setting, LlmGateway.ResolvedProvider resolved) {
+        if ("bootstrap".equals(resolved.getProvider().getSource())) {
+            log.debug("yml bootstrap 兜底供应商请求，日限额直接用 yml 默认值: {}", interpretPerUserDay);
+            return interpretPerUserDay;
+        }
+        boolean byokRequest = "user".equals(resolved.getKeySource());
         Integer limit = byokRequest ? setting.getByokDailyLimit() : setting.getPlatformDailyLimit();
         if (limit == null || limit <= 0) {
             log.debug("平台设置未配置{}日限额，兜底 yml 默认值", byokRequest ? "BYOK" : "平台");

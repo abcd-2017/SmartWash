@@ -166,11 +166,13 @@ public class DivUserApiConfigService {
         }
         try {
             String plainKey = cipher.decrypt(config.getApiKeyCipher());
-            // name 取 custom_model（缺失兜底「用户BYOK」），熔断窗口按 name 聚合
+            // name 取 custom_model（缺失兜底「用户BYOK」）仅作显示；熔断键按用户配置 id 隔离
+            // （不同用户同名 custom_model 互不污染，也不与平台目录同名模型互撞）
             String name = StringUtils.hasText(config.getCustomModel())
                     ? config.getCustomModel() : "用户BYOK";
             return new OpenAiCompatProvider(name, config.getCustomBaseUrl(), plainKey,
-                    config.getCustomModel(), 0, true, "user", config.getId());
+                    config.getCustomModel(), 0, true, "user", config.getId(),
+                    "user:" + config.getId());
         } catch (Exception e) {
             // 解密失败（主密钥不匹配/密文损坏）不阻断解读，落平台默认
             log.warn("用户 BYOK 密钥解密失败，本次解读落平台默认, userId: {}, 原因: {}",

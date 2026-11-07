@@ -78,14 +78,15 @@ public class DivinationWebController {
     @PostMapping("/records/{id}/interpret")
     public SseEmitter interpret(@PathVariable("id") Long id, @RequestBody(required = false) String question) {
         LoginUser user = UserContextHolder.getUser();
-        return interpretationService.interpret(id, question, user.getUserId(), false);
+        return interpretationService.interpret(id, normalizeQuestion(question), user.getUserId(), false);
     }
 
     @Operation(summary = "同卦追问", description = "对同一卦例进行追问（SSE 流式）")
     @PostMapping("/records/{id}/followup")
-    public SseEmitter followup(@PathVariable("id") Long id, @RequestBody String question) {
+    public SseEmitter followup(@PathVariable("id") Long id, @RequestBody(required = false) String question) {
         LoginUser user = UserContextHolder.getUser();
-        return interpretationService.interpret(id, question, user.getUserId(), true);
+        // 空 body / 空白问题按空追问处理（required=false 避免 400；服务端 prompt 组装有空安全路径）
+        return interpretationService.interpret(id, normalizeQuestion(question), user.getUserId(), true);
     }
 
     @Operation(summary = "反馈与应验回填", description = "对解读进行评分（1-5）和应验回填")
@@ -147,16 +148,21 @@ public class DivinationWebController {
         return Result.ok("删除成功");
     }
 
-	@Operation(summary = "连通性测试", description = "不保存，独立限流")
-	@PostMapping("/settings/api/test")
-	public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
-		// 平台关闭 BYOK 时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
-		if (!userApiConfigService.isByokEnabled()) {
-			return Result.ok(false);
-		}
-		boolean ok = modelConfigService.testConnectivity(from.getBaseUrl(), from.getApiKey(), from.getModel());
-		return Result.ok(ok);
-	}
+    @Operation(summary = "连通性测试", description = "不保存，独立限流")
+    @PostMapping("/settings/api/test")
+    public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
+        // 平台关闭 BYOK 时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
+        if (!userApiConfigService.isByokEnabled()) {
+            return Result.ok(false);
+        }
+        boolean ok = modelConfigService.testConnectivity(from.getBaseUrl(), from.getApiKey(), from.getModel());
+        return Result.ok(ok);
+    }
+
+    /** 问题参数规范化：空白（含空 body）统一为 null，安全分流与 prompt 组装按空口径处理 */
+    private String normalizeQuestion(String question) {
+        return (question == null || question.isBlank()) ? null : question;
+    }
 
     private MethodVo createMethod(String code, String name, String desc) {
         MethodVo vo = new MethodVo();

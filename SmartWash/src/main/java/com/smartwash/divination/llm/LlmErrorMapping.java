@@ -20,6 +20,13 @@ public final class LlmErrorMapping {
     /** 疑似 API Key 模式：sk-xxx */
     private static final Pattern API_KEY_PATTERN = Pattern.compile("sk-[A-Za-z0-9_\\-]{6,}");
 
+    /**
+     * GLM/智谱形态密钥：id.secret 点分两段（真实形态约 32 位.16 位字母数字）。
+     * 两段阈值取 16+ 避免误伤普通英文短语（如 connection.terminated、authentication.failed）。
+     */
+    private static final Pattern DOT_SEPARATED_KEY_PATTERN =
+            Pattern.compile("[A-Za-z0-9]{16,}\\.[A-Za-z0-9]{16,}");
+
     /** Bearer token 模式 */
     private static final Pattern BEARER_PATTERN = Pattern.compile("(?i)bearer\\s+[A-Za-z0-9._\\-]{6,}");
 
@@ -67,6 +74,7 @@ public final class LlmErrorMapping {
             return null;
         }
         String cleaned = API_KEY_PATTERN.matcher(raw).replaceAll("sk-***");
+        cleaned = DOT_SEPARATED_KEY_PATTERN.matcher(cleaned).replaceAll("key-***");
         cleaned = BEARER_PATTERN.matcher(cleaned).replaceAll("Bearer ***");
         cleaned = cleaned.replaceAll("[\\r\\n\\t]+", " ").trim();
         if (cleaned.isEmpty()) {
