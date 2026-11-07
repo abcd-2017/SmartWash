@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.from.locker.AddLockerFrom;
 import com.smartwash.from.locker.BatchAddLockerFrom;
 import com.smartwash.from.locker.SearchLockersFrom;
@@ -67,6 +68,7 @@ public class LockersController {
     }
 
     @Operation(summary = "新增柜子", description = "新增寄存柜，同一学校下柜子编号不可重复")
+    @Audited(action = "LOCKER_ADD", targetType = "locker")
     @PostMapping("/add")
     public Result<String> addLocker(@RequestBody @Valid AddLockerFrom addLockerFrom) {
         if (lockersService.getLockerById(addLockerFrom.getSchoolId(), addLockerFrom.getLockerNumber()) != null) {
@@ -79,6 +81,7 @@ public class LockersController {
     }
 
     @Operation(summary = "批量新增柜子", description = "批量新增寄存柜，自动避开已占用编号")
+    @Audited(action = "LOCKER_BATCH_ADD", targetType = "locker", targetIdSpEL = "#from.schoolId")
     @PostMapping("/batchAdd")
     public Result<BatchAddLockerVo> batchAddLocker(@RequestBody @Valid BatchAddLockerFrom from) {
         if (schoolsService.getById(from.getSchoolId()) == null) {
@@ -92,6 +95,7 @@ public class LockersController {
     }
 
     @Operation(summary = "更新柜子", description = "修改寄存柜信息")
+    @Audited(action = "LOCKER_UPDATE", targetType = "locker", targetIdSpEL = "#lockerFrom.lockerId")
     @PostMapping("/update")
     public Result<String> updateLocker(@RequestBody @Valid UpdateLockerFrom lockerFrom) {
         if (lockersService.getById(lockerFrom.getLockerId()) == null) {
@@ -104,6 +108,7 @@ public class LockersController {
     }
 
     @Operation(summary = "批量删除柜子", description = "根据ID批量删除寄存柜，多个ID用逗号分隔")
+    @Audited(action = "LOCKER_DELETE", targetType = "locker", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteLockers(@PathVariable("ids") @Parameter(description = "寄存柜ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除寄存柜, ids: {}", ids);

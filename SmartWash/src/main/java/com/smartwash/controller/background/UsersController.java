@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +45,7 @@ public class UsersController {
     }
 
     @Operation(summary = "新增用户", description = "新增用户，手机号、学号、校园卡不可重复")
+    @Audited(action = "USER_ADD", targetType = "user")
     @PostMapping("/add")
     public Result<String> addUser(@RequestBody @Valid AddUserFrom addUsersFrom) {
         if (StringUtils.hasText(addUsersFrom.getPhoneNumber()) && usersService.getUserByPhone(addUsersFrom.getPhoneNumber()) != null) {
@@ -64,6 +66,7 @@ public class UsersController {
     }
 
     @Operation(summary = "更新用户", description = "修改用户信息")
+    @Audited(action = "USER_UPDATE", targetType = "user", targetIdSpEL = "#usersFrom.userId")
     @PostMapping("/update")
     public Result<String> updateUser(@RequestBody @Valid UpdateUserFrom usersFrom) {
         Users user = usersService.getById(usersFrom.getUserId());
@@ -92,6 +95,7 @@ public class UsersController {
     }
 
     @Operation(summary = "批量删除用户", description = "根据ID批量删除用户，多个ID用逗号分隔")
+    @Audited(action = "USER_DELETE", targetType = "user", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteUsers(@PathVariable("ids") @Parameter(description = "用户ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除用户, ids: {}", ids);
