@@ -22,6 +22,12 @@ export class RouteNames {
   static readonly PICK_UP: string = "PickUp"
   static readonly PAYMENT_SUCCESS: string = "PaymentSuccess"
   static readonly RECHARGE_RECORD: string = "RechargeRecord"
+  // 钱包流水页（充值+消费合并明细，入口：我的页账户卡「钱包流水」行）
+  static readonly WALLET_TRANSACTIONS: string = "WalletTransactions"
+  // 修改密码页（登录态接口，成功后登出回登录页；入口：设置页「其他」组）
+  static readonly CHANGE_PASSWORD: string = "ChangePassword"
+  // 忘记密码-重置密码页（公开接口，凭手机号+验证码重置；入口：登录页密码行下「忘记密码？」）
+  static readonly RESET_PASSWORD: string = "ResetPassword"
   static readonly WORKBENCH: string = "Workbench"
   // 观象台域路由名（#29 落地）：先登记常量，待目标页注册 router_map 后接通跳转
   static readonly DIV_HOME: string = "DivHome"

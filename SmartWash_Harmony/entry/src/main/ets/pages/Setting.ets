@@ -23,6 +23,7 @@ import {
   testDivUserApiConfig
 } from "../feature/divination/network/DivSettingsApi"
 import vibrator from "@ohos.vibrator"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // 触感反馈开关持久化 key（对齐安卓 HapticSettings.STORAGE_KEY 语义）
 const HAPTIC_PREF_KEY: string = "haptic_enabled"
@@ -771,6 +772,10 @@ struct Setting {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区 + 内置连击防抖（对齐安卓 PageHeader）
         PageHeader({ title: "设置" })
@@ -903,6 +908,22 @@ struct Setting {
                 .color(DesignColor.HAIRLINE)
                 .strokeWidth(0.5)
 
+              // 修改密码（验证原密码后改密，成功后登出重登，账号安全域入口）
+              SettingRow({
+                icon: $r('sys.symbol.lock'),
+                containerColor: DesignColor.ICON_CONTAINER_TEAL,
+                iconColor: DesignColor.ICON_FOREGROUND_TEAL,
+                title: "修改密码",
+                trailingValue: "",
+                onRowClick: () => {
+                  pathStack.pushPathByName(RouteNames.CHANGE_PASSWORD, null)
+                }
+              })
+
+              Divider()
+                .color(DesignColor.HAIRLINE)
+                .strokeWidth(0.5)
+
               // 权限管理入口（申请 / 跳系统设置都在权限页收口）
               // 图标对齐安卓 SettingPage 的 AdminPanelSettings（盾牌 + 用户徽标）取 sys.symbol.person_shield
               SettingRow({
@@ -957,6 +978,7 @@ struct Setting {
       .height("100%")
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     // 补齐：隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（问题6）
     .hideTitleBar(true)

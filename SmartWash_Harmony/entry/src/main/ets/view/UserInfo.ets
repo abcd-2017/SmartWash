@@ -443,6 +443,18 @@ export struct UserInfo {
                 // 文案对齐安卓 shipping_address_unavailable
                 promptAction.showToast({ message: "收货地址功能暂未开放" })
               })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            // 钱包流水入口（充值/消费合并明细，对齐安卓 WalletTransactionsPage 语义）
+            this.settingRow($r('sys.symbol.doc_text'), "钱包流水",
+              DesignColor.ICON_CONTAINER_TEAL, DesignColor.ICON_FOREGROUND_TEAL,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                pathStack.pushPathByName(RouteNames.WALLET_TRANSACTIONS, null)
+              })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })

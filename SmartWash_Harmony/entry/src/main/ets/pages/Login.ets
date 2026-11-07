@@ -11,6 +11,7 @@ import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
 // 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
@@ -118,6 +119,8 @@ struct Login {
         }
         // await 确保写入完成后，后续 getUserInfo 等请求才能带上新 token
         await setValue(CommonConstants.USER_TOKEN, token)
+        // 双 token 契约：refreshToken（7 天，一次性）随登录一起落盘，供后续静默续期消费
+        await setValue(CommonConstants.USER_REFRESH_TOKEN, res.data?.refreshToken ?? "")
         // role 存入 AppStorage 备用（普通用户固定 "user"）
         AppStorage.setOrCreate("userRole", res.data?.role ?? "user")
         // 低频关键动作成功：登录成功（不带手机号，敏感红线）
@@ -158,6 +161,10 @@ struct Login {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       // 全屏渐变背景
       Column() {
         // 占位：将内容推到垂直居中位置（对齐 Android Spacer(weight 1f)）
@@ -293,6 +300,23 @@ struct Login {
               .transition(TransitionEffect.OPACITY)
           }
 
+          // 忘记密码入口 — 右对齐文本按钮（13sp·500 + 48dp 热区 + 800ms 节流，对齐注册入口的节流惯例）
+          Row() {
+            Blank()
+            Text("忘记密码？")
+              .fontSize(DesignFontSize.BUTTON_TEXT)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(DesignColor.GLASS_TEXT_ACTIVE)
+              .padding({ left: 4, right: 4, top: 16, bottom: 16 })
+              .onClick(() => {
+                this.navDebouncer.throttle(() => {
+                  pathStack.pushPathByName(RouteNames.RESET_PASSWORD, null)
+                }, NAV_THROTTLE_MS)
+              })
+          }
+          .width("100%")
+          .margin({ top: 4 })
+
           // 登录按钮 — 卡内 primary 实底胶囊（对齐 Android AuthCtaButton：48dp / r999 / 15sp·600·ls1）
           Stack() {
             if (this.loginLoading) {
@@ -326,7 +350,7 @@ struct Login {
           .onClick(() => {
             this.doLogin()
           })
-          .margin({ top: 24 })
+          .margin({ top: 8 })
         }
         .width("100%")
         .borderRadius(DesignDimens.CARD_RADIUS)
@@ -386,6 +410,7 @@ struct Login {
           [DesignColor.AUTH_GRADIENT_BOTTOM, 1]
         ]
       })
+      }
     }
     .hideTitleBar(true)
     .height("100%")

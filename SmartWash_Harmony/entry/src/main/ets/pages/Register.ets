@@ -9,6 +9,7 @@ import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
 // 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
@@ -145,6 +146,10 @@ struct Register {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Stack({ alignContent: Alignment.Top }) {
         // 全屏渐变背景
         Column()
@@ -482,6 +487,7 @@ struct Register {
       }
       .width("100%")
       .height("100%")
+      }
     }
     .hideTitleBar(true)
     .height("100%")
@@ -499,8 +505,19 @@ struct Register {
         // 低频关键动作成功：注册成功
         logger.info('register', '注册成功')
         showToastSafety("注册成功")
-        // 注册接口 data 仍为 token 字符串（仅登录接口改为 {token, role} 对象）
-        await setValue(CommonConstants.USER_TOKEN, res.data ?? "")
+        // 注册即自动登录（双 token 契约升级）：信封 data 为 {token, refreshToken, role} 对象，
+        // 不再是 token 字符串；token 缺失按注册失败降级处理（与登录页同语义）
+        const token = res.data?.token ?? ""
+        if (token === "") {
+          logger.warn('register', '注册响应缺少 token，按注册失败处理')
+          showToastSafety(res.message, "注册失败，请稍后重试")
+          return
+        }
+        // await 确保写入完成后，后续完善信息/首页请求才能带上新 token
+        await setValue(CommonConstants.USER_TOKEN, token)
+        await setValue(CommonConstants.USER_REFRESH_TOKEN, res.data?.refreshToken ?? "")
+        // role 存入 AppStorage 备用（普通用户固定 "user"）
+        AppStorage.setOrCreate("userRole", res.data?.role ?? "user")
         // 注册成功后去向：鸿蒙对应页 AddSchool，等价 Android UpdateUserInfo
         pathStack.replacePathByName(RouteNames.ADD_SCHOOL, null)
       } else {
