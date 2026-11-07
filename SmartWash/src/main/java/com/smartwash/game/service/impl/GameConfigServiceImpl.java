@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -137,10 +138,15 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         }
     }
 
-    /** 单 html：固定落为 {gameKey}/index.html，入口即 index.html；内容读取成功后才清旧前缀，防半途失败丢旧包 */
+    /** 单 html：固定落为 {gameKey}/index.html，入口即 index.html；内容读取成功后才清旧前缀，防半途失败丢旧包。
+     * 上传安全：内容黑名单扫描（命中 403）+ 入口 meta CSP 注入（纵深防御） */
     private GameConfig storeSingleHtml(String gameKey, MultipartFile file, UploadGameFrom from) {
         try {
-            byte[] content = file.getBytes();
+            byte[] raw = file.getBytes();
+            packageValidator.scanHtmlContent(new String(raw, StandardCharsets.UTF_8));
+            byte[] content = packageValidator
+                    .applyCspMarkup(new String(raw, StandardCharsets.UTF_8))
+                    .getBytes(StandardCharsets.UTF_8);
             removeOldPrefix(OBJECT_ROOT + gameKey + "/");
             String objectKey = OBJECT_ROOT + gameKey + "/index.html";
             objectStorage.putObject(objectKey, content, GameContentTypes.TEXT_HTML, GameObjectStorage.CACHE_CONTROL_IMMUTABLE);
@@ -165,6 +171,9 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
                 throw new GameServiceException(GameServiceException.BAD_REQUEST,
                         "压缩包根目录缺少 html 入口文件（index.html）");
             }
+            // 上传安全：全包 html 黑名单扫描（命中 403）+ 入口 meta CSP 注入（纵深防御）
+            packageValidator.scanExtractedPackage(tempDir);
+            packageValidator.injectEntryCsp(tempDir, entryPath);
             removeOldPrefix(OBJECT_ROOT + gameKey + "/");
             uploadDirectory(gameKey, tempDir);
             return buildPackageConfig(gameKey, from, entryPath, result.totalBytes());
