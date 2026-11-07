@@ -3,6 +3,7 @@ package com.smartwash.feature.user.impl.di
 import com.smartwash.common.network.SessionEventNotifier
 import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.common.network.TokenProvider
+import com.smartwash.common.network.TokenRefresher
 import com.smartwash.common.init.InitTask
 import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.UserApiImpl
@@ -12,6 +13,7 @@ import com.smartwash.feature.user.impl.network.api.DivSettingApi
 import com.smartwash.feature.user.impl.network.api.UserAccountApi
 import com.smartwash.feature.user.impl.session.SessionEventBus
 import com.smartwash.feature.user.impl.session.SessionManager
+import com.smartwash.feature.user.impl.session.TokenRefresherImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -23,9 +25,9 @@ import retrofit2.Retrofit
 /**
  * 用户域服务契约绑定（T5.2）：
  * - UserApi → UserApiImpl：跨模块消费方（order/payment/laundry 与 app 壳）经接口访问用户域；
- * - TokenProvider / SessionEventNotifier → SessionManager / SessionEventBus：
- *   common:network 拦截器的跨模块契约绑定，自 app/di 的 SessionNetworkBindingModule 随迁
- *   （实现类已在本模块，绑定跟着实现走）。
+ * - TokenProvider / SessionEventNotifier / TokenRefresher → SessionManager / SessionEventBus /
+ *   TokenRefresherImpl：common:network 拦截器的跨模块契约绑定，自 app/di 的
+ *   SessionNetworkBindingModule 随迁（实现类已在本模块，绑定跟着实现走）。
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -39,6 +41,9 @@ abstract class UserImplModule {
 
     @Binds
     abstract fun bindSessionEventNotifier(impl: SessionEventBus): SessionEventNotifier
+
+    @Binds
+    abstract fun bindTokenRefresher(impl: TokenRefresherImpl): TokenRefresher
 }
 
 /**

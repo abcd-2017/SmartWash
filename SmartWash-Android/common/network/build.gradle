@@ -25,4 +25,10 @@ dependencies {
     implementation project(':common:utils')
     // NetworkException 的 @StringRes 注解
     implementation libs.androidx.annotation
+
+    // JVM 单测（ResponseInterceptor 401 续签恢复链路）：AppLogger 内核走 android.util.Log 需 Robolectric，
+    // 401/信封响应用 MockWebServer 假后端
+    testImplementation libs.junit
+    testImplementation libs.robolectric
+    testImplementation libs.mockwebserver
 }
