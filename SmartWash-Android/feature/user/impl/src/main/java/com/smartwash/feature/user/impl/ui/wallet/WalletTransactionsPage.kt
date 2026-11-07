@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -113,6 +114,36 @@ internal fun formatTransactionTime(raw: String): String {
 }
 
 /**
+ * 流水列表稳定键（内容复合键，替代全局索引键）：契约无唯一 id，
+ * 以 type+transactionTime+amount+description 组合做键，Paging append 加载更多时
+ * 已有项身份不随索引漂移。同秒同额同描述的重复流水按出现序号追加后缀兜底碰撞
+ * （LazyColumn 要求 key 全列表唯一）。[itemAt] 取值函数与 [count] 分离，保持纯函数可单测。
+ *
+ * 前提：分页为 append-only（本页 Paging 只追加不前插），序号按出现顺序计数，
+ * 已有项键不因新页追加而变化；[index] 为 -1 时（Paging 占位过渡帧）退回索引键。
+ */
+internal fun buildTransactionKeys(count: Int, itemAt: (Int) -> TransactionVo?): List<String> {
+    val seen = HashMap<String, Int>(count)
+    return List(count) { index ->
+        val transaction = itemAt(index)
+        val base = if (transaction == null) {
+            // Paging 占位（数据未到达的过渡帧，不渲染卡片）：退回索引键
+            "idx-$index"
+        } else {
+            // description 为用户可见自由文本，转义分隔符防拼接歧义
+            listOf(
+                transaction.type.orEmpty(),
+                transaction.transactionTime.orEmpty(),
+                transaction.amount?.toPlainString().orEmpty(),
+                transaction.description.orEmpty().replace('|', ' '),
+            ).joinToString("|")
+        }
+        val occurrence = seen.merge(base, 1, Int::plus)
+        if (occurrence == 1) "tx-$base" else "tx-$base#$occurrence"
+    }
+}
+
+/**
  * 钱包流水页：充值/消费流水分页列表（入口=我的页账户卡「钱包流水」行）。
  *
  * 金额符号端上重算（对齐鸿蒙端决策）：服务端 payment 已下发负数，展示一律取绝对值，
@@ -148,6 +179,13 @@ fun WalletTransactionsPage(
         refreshSession = !everLoaded,
     )
 
+    // 内容稳定键表：itemCount 变化（分页 append / refresh）时重建；append-only 前提下
+    // 已有项键不随新页追加而漂移（见 [buildTransactionKeys]）。getOrElse 兜底防表与
+    // count 时序错位（占位帧），异常时退回索引键不至于崩溃
+    val itemKeys = remember(transactions.itemCount) {
+        buildTransactionKeys(transactions.itemCount) { transactions[it] }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -175,8 +213,8 @@ fun WalletTransactionsPage(
                     ) {
                         items(
                             count = transactions.itemCount,
-                            // 契约无唯一 id：用全局索引做稳定 key（分页只 append，不产生重复）
-                            key = { index -> "tx-$index" }
+                            // 契约无唯一 id：内容复合键（append 时身份不随索引漂移，见键表构建注释）
+                            key = { index -> itemKeys.getOrElse(index) { "tx-idx-$index" } }
                         ) { index ->
                             val transaction = transactions[index]
                             if (transaction != null) {
@@ -336,34 +374,57 @@ private fun TransactionCard(transaction: TransactionVo) {
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            // 金额：端上按 type 重算符号 + 绝对值展示（防服务端负数与端上前缀双符号）
-            val amount = transaction.amount?.abs()
-            Text(
-                text = if (amount == null) {
-                    // 金额缺失不造 0 元假数据，退化为描述占位
-                    stringResource(if (isRecharge) R.string.recharge else R.string.transaction_payment)
-                } else {
-                    val formatted = String.format("%.2f", amount)
-                    stringResource(
-                        if (isRecharge) R.string.wallet_amount_in_format
-                        else R.string.wallet_amount_out_format,
-                        formatted
+            // 右列：金额 + 状态文案（对齐鸿蒙端 WalletTransactions 行结构）
+            Column(horizontalAlignment = Alignment.End) {
+                // 金额：端上按 type 重算符号 + 绝对值展示（防服务端负数与端上前缀双符号）
+                val amount = transaction.amount?.abs()
+                Text(
+                    text = if (amount == null) {
+                        // 金额缺失不造 0 元假数据，退化为描述占位
+                        stringResource(if (isRecharge) R.string.recharge else R.string.transaction_payment)
+                    } else {
+                        val formatted = String.format("%.2f", amount)
+                        stringResource(
+                            if (isRecharge) R.string.wallet_amount_in_format
+                            else R.string.wallet_amount_out_format,
+                            formatted
+                        )
+                    },
+                    // titleLarge 22/28/600 对齐充值记录页金额档；tnum 等宽防数字抖动（规范 §2.2）
+                    style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+                    color = if (isRecharge) {
+                        AppColors.colorScheme.primaryDark
+                    } else {
+                        AppColors.colorScheme.textPrimary
+                    },
+                    // 金额绝不折行：极端字号下宁截断不折行
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip
+                )
+                // 状态：success 映射资源文案，其余取值原样展示（后端状态词回显，
+                // 同 description 的数据展示语义）；空白不渲染（避免空 Text 撑高行）
+                val statusText = when {
+                    transaction.status.isNullOrBlank() -> null
+                    transaction.status == STATUS_SUCCESS -> stringResource(R.string.transaction_status_success)
+                    else -> transaction.status
+                }
+                statusText?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.textTertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                },
-                // titleLarge 22/28/600 对齐充值记录页金额档；tnum 等宽防数字抖动（规范 §2.2）
-                style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
-                color = if (isRecharge) {
-                    AppColors.colorScheme.primaryDark
-                } else {
-                    AppColors.colorScheme.textPrimary
-                },
-                // 金额绝不折行：极端字号下宁截断不折行
-                maxLines = 1,
-                overflow = TextOverflow.Clip
-            )
+                }
+            }
         }
     }
 }
 
 /** 流水类型常量（后端契约："recharge"/"payment"） */
 private const val TYPE_RECHARGE = "recharge"
+
+/** 流水状态常量（后端契约："success"，对齐鸿蒙端 STATUS_SUCCESS） */
+private const val STATUS_SUCCESS = "success"

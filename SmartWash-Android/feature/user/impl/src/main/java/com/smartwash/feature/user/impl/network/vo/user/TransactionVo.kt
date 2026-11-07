@@ -19,6 +19,6 @@ data class TransactionVo(
     val description: String? = null,
     /** 交易时间（yyyy-MM-dd HH:mm:ss，LocalDateTime 序列化；解析失败原样展示） */
     val transactionTime: String? = null,
-    /** 交易状态（如 "success"；端上暂不展示，仅随契约下发） */
+    /** 交易状态（如 "success"；success 映射「成功」文案展示，其余取值原样回显，对齐鸿蒙端） */
     val status: String? = null,
 )
