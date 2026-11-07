@@ -68,9 +68,12 @@
 
 - **代码标识**：`POST /auth/refresh`、`from/auth/RefreshTokenFrom`、`vo/TokenPairVo`
 - **定义**：公开端点，一次性轮换。校验链「格式/签名 → typ=refresh（否则 401 信封）→ jti 黑名单（命中即 401，视作重放）」→ 以 `sub` 原样重签**新的一对** token → **旧 refreshToken 的 jti 立即拉黑**（TTL=剩余有效期）。请求体 `{"refreshToken": "..."}`；响应 `data` 为 `{token, refreshToken}`（不含 role）。
+- **定义**：公开端点，一次性轮换。校验链「格式/签名 → typ=refresh（否则 401 信封）→ jti 黑名单（命中即 401，视作重放）」→ 以 `sub` 原样重签**新的一对** token → **旧 refreshToken 的 jti 立即拉黑**（TTL=剩余有效期）。请求体 `{"refreshToken": "..."}`；响应 `data` 为 `{token, refreshToken}`（不含 role）。**三端均已接入端上续签**：响应拦截器捕获 401 → 单飞（in-flight 去重）调本端点换新双 token → 落盘后重试原请求一次，仍 401 则清本地登录态跳登录页。
 - **四端对应物**：
   - 后端：`controller/LoginController.java`（`/auth/refresh`）、`JwtUtil.generatorAccessToken / generatorRefreshToken`。
-  - Android / 鸿蒙 / Web：**端上续签接入中**（后端端点已就绪，端上消费为后续票）。
+  - Android：`:common:network` 的 `ResponseInterceptor.kt`（401 时经 `TokenRefresher` 接口单飞续签，实现为 `feature/user/impl` 的 `TokenRefresherImpl.kt`）。
+  - 鸿蒙：`network/Axios.ets` 响应拦截器 401 单飞续签（模块级 in-flight Promise 去重，落盘先于兑现）。
+  - Web：`src/utils/http.js` 的 `refreshTokens()`（模块级 in-flight Promise 单飞续签）。
 - **易混淆点**：refreshToken 是**一次性**凭证——同一 refreshToken 第二次使用必 401（重放拦截），这不是 bug；登出请求体可携带 refreshToken 一并拉黑，不携带仅拉黑 access（向后兼容）；不做 60s 频控与家族撤销（取舍见 ADR-0007 修订节）。
 - → ADR-0007
 
