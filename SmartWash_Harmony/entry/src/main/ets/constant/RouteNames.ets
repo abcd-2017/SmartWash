@@ -66,6 +66,9 @@ export class RouteNames {
   static readonly SUBSCRIPTION_EDIT: string = "SubscriptionEdit"
   static readonly SUBSCRIPTION_DETAIL: string = "SubscriptionDetail"
   static readonly SUBSCRIPTION_REMINDERS: string = "SubscriptionReminders"
+  // 速记手账域路由名（对齐安卓 MemoRoute.Page @SerialName("Memo")；
+  // 入口走深链 smartwash://quick-memo 与后端 workbench_entry 卡片）
+  static readonly MEMO: string = "Memo"
   // 解压实验舱域路由名（对齐安卓 LabRoute：Home + 10 个实验页）
   static readonly LAB_HOME: string = "LabHome"
   static readonly LAB_BREATH: string = "LabBreath"

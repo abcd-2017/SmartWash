@@ -405,6 +405,13 @@
       "buildFunction": "StarMapBuilder",
       "data": {
       }
+    },
+    {
+      "name": "Memo",
+      "pageSourceFile": "src/main/ets/feature/memo/MemoPage.ets",
+      "buildFunction": "MemoBuilder",
+      "data": {
+      }
     }
   ]
 }

@@ -7,7 +7,7 @@
 // host 清单（与安卓各域 DeepLinkModule 注册一致）：
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
-//   t/{code} / game-center / lab / mood / review / subscription / ai-work / web(内建)
+//   t/{code} / game-center / lab / mood / review / subscription / ai-work / quick-memo / web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
 //   后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），未落地域注册到
@@ -77,6 +77,9 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('subscription', { routeName: RouteNames.SUBSCRIPTION_LIST, param: null })
   // ai-work 已落地（对齐安卓壳层 DeepLinkModule：ai-work → PageConstant.AiWork）
   routes.set('ai-work', { routeName: RouteNames.AI_WORK, param: null })
+  // 速记手账域（对齐安卓 MemoDeepLinkModule：quick-memo → MemoRoute.Page；
+  // 后端 app_deeplink_route 种子 platform=3，受保护 host 走登录守卫）
+  routes.set('quick-memo', { routeName: RouteNames.MEMO, param: null })
   return routes
 }
 
