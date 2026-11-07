@@ -90,13 +90,14 @@ const handleLogin = async () => {
     await formRef.value.validate();
     loading.value = true;
 
-    // 后端登录响应 data 已改为对象 { token, role }，role 为该管理员实际角色名
+    // 后端登录响应 data 为 { token, refreshToken, role }，role 为该管理员实际角色名
     const data = await login(loginForm);
     if (!data?.token) {
       throw new Error('登录响应缺少凭证，请稍后重试');
     }
-    // 登录态统一写入 Pinia store（内部持久化到 localStorage），角色以后端返回为准
-    authStore.login(data.token, data.role);
+    // 登录态统一写入 Pinia store（内部持久化到 localStorage），角色以后端返回为准；
+    // refreshToken 供 http 层 401 自动续签使用
+    authStore.login(data.token, data.role, data.refreshToken);
 
     ElMessage.success('登录成功');
     // 低频关键动作留痕：用户名可能是手机号形态，不记用户名明文，仅记后端返回的角色名
