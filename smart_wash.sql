@@ -939,7 +939,7 @@ CREATE UNIQUE INDEX uk_recharge_records_out_trade_no ON recharge_records(out_tra
 CREATE UNIQUE INDEX uk_user_coupon ON user_coupon(user_id, coupon_id);
 
 -- =====================================================================
--- 占卜模块（观象台）—— 11 张业务表
+-- 占卜模块（观象台）—— 12 张业务表
 -- =====================================================================
 
 SET NAMES utf8mb4;
@@ -1106,6 +1106,25 @@ CREATE TABLE `div_usage_daily` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_date_method` (`stat_date`, `method`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日用量';
+
+-- ----------------------------
+-- Table structure for div_feedback_nudge（应验回访提醒）
+-- ----------------------------
+DROP TABLE IF EXISTS `div_feedback_nudge`;
+CREATE TABLE `div_feedback_nudge` (
+  `id`                BIGINT     NOT NULL AUTO_INCREMENT,
+  `user_id`           BIGINT     NOT NULL COMMENT 'users.id',
+  `record_id`         BIGINT     NOT NULL COMMENT 'div_record.id',
+  `interpretation_id` BIGINT     NOT NULL COMMENT 'div_interpretation.id',
+  `nudge_date`        DATE       NOT NULL COMMENT '回访日期=解读完成日+3天',
+  `status`            TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0待回访/1已回访/2已忽略',
+  `is_delete`         TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0正常/1删除',
+  `created_at`        DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`        DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_interpretation` (`interpretation_id`),
+  KEY `idx_user_status` (`user_id`, `status`, `nudge_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应验回访提醒';
 
 -- ----------------------------
 -- Table structure for div_model_config（平台模型目录）

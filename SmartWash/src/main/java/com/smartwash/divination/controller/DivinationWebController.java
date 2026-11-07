@@ -3,6 +3,7 @@ package com.smartwash.divination.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.divination.from.CreateRecordFrom;
+import com.smartwash.divination.from.DivRecordSearchFrom;
 import com.smartwash.divination.from.FeedbackFrom;
 import com.smartwash.divination.from.SaveUserApiFrom;
 import com.smartwash.divination.from.SearchRecordFrom;
@@ -10,6 +11,9 @@ import com.smartwash.divination.service.DivModelConfigService;
 import com.smartwash.divination.service.DivUserApiConfigService;
 import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.divination.service.IDivRecordService;
+import com.smartwash.divination.vo.DivNudgeVo;
+import com.smartwash.divination.vo.DivRecordSearchVo;
+import com.smartwash.divination.vo.DivStatsVo;
 import com.smartwash.divination.vo.MethodVo;
 import com.smartwash.divination.vo.ModelVo;
 import com.smartwash.divination.vo.RecordDetailVo;
@@ -95,6 +99,45 @@ public class DivinationWebController {
         LoginUser user = UserContextHolder.getUser();
         recordService.addFeedback(id, from, user.getUserId());
         return Result.ok("反馈已提交");
+    }
+
+    // ==================== 占卜闭环新增端点（只增不改） ====================
+
+    @Operation(summary = "解读历史检索", description = "keyword 匹配卦例问题或该卦最新解读正文；无 keyword 返回空页")
+    @GetMapping("/records/search")
+    public Result<Page<DivRecordSearchVo>> searchRecordContents(DivRecordSearchFrom from) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(recordService.searchRecordsByKeyword(from, user.getUserId()));
+    }
+
+    @Operation(summary = "待回访提醒分页", description = "当前用户 status=0 的应验回访提醒，按 nudge_date 倒序")
+    @GetMapping("/nudges")
+    public Result<Page<DivNudgeVo>> listNudges(com.smartwash.from.BaseSearchFrom from) {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(recordService.pageNudges(from.getPage(), from.getSize(), user.getUserId()));
+    }
+
+    @Operation(summary = "忽略待回访提醒", description = "归属校验后置为已忽略（status=2）")
+    @PostMapping("/nudges/{id}/ignore")
+    public Result<String> ignoreNudge(@PathVariable("id") Long id) {
+        LoginUser user = UserContextHolder.getUser();
+        return recordService.ignoreNudge(id, user.getUserId())
+                ? Result.ok("已忽略")
+                : Result.failMsg("回访提醒不存在或已处理");
+    }
+
+    @Operation(summary = "待回访提醒数量", description = "当前用户待回访提醒数（端上徽标）")
+    @GetMapping("/nudges/count")
+    public Result<Integer> countNudges() {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(recordService.countPendingNudges(user.getUserId()));
+    }
+
+    @Operation(summary = "盘感统计", description = "卦例维度计数、近12月趋势与反馈应验率（verify = rating ≥ 4）")
+    @GetMapping("/stats")
+    public Result<DivStatsVo> getDivStats() {
+        LoginUser user = UserContextHolder.getUser();
+        return Result.ok(recordService.getDivStats(user.getUserId()));
     }
 
     @Operation(summary = "四术元信息", description = "获取四术元信息与免责声明文案")

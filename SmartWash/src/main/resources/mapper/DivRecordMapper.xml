@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.divination.mapper.DivRecordMapper">
+
+    <!-- 解读历史检索：keyword 匹配卦例问题 或 该卦最新一条解读正文（最新=最大 id，与详情「取最新展示」口径一致）；
+         contentPreview 截取最新解读正文前 120 字（utf8mb4 按字符计）；仅命中的记录返回 -->
+    <select id="searchByKeyword" resultType="com.smartwash.divination.vo.DivRecordSearchVo">
+        select r.id,
+               r.id                     as recordId,
+               r.method,
+               r.category,
+               r.question,
+               r.cast_at                as castAt,
+               left(i.content_md, 120)  as contentPreview
+        from div_record r
+        left join div_interpretation i
+          on i.record_id = r.id
+         and i.id = (select max(i2.id) from div_interpretation i2 where i2.record_id = r.id)
+        where r.user_id = #{userId}
+          and (r.question like concat('%', #{keyword}, '%')
+               or i.content_md like concat('%', #{keyword}, '%'))
+        order by r.created_at desc
+    </select>
+
+    <!-- 盘感统计：按术数方法计数（全量历史，单用户） -->
+    <select id="selectMethodCounts" resultType="com.smartwash.divination.vo.DivNameCountVo">
+        select method as name, count(*) as count
+        from div_record
+        where user_id = #{userId}
+        group by method
+        order by count desc
+    </select>
+
+    <!-- 盘感统计：按问题领域计数（全量历史，单用户） -->
+    <select id="selectCategoryCounts" resultType="com.smartwash.divination.vo.DivNameCountVo">
+        select category as name, count(*) as count
+        from div_record
+        where user_id = #{userId}
+        group by category
+        order by count desc
+    </select>
+
+    <!-- 盘感统计：近 12 个月卦例趋势（start 由服务层按「当前月往前 11 个月的首日」计算，缺失月份服务层补 0） -->
+    <select id="selectMonthTrend" resultType="com.smartwash.divination.vo.DivMonthCountVo">
+        select date_format(created_at, '%Y-%m') as month, count(*) as count
+        from div_record
+        where user_id = #{userId}
+          and created_at &gt;= #{start}
+        group by date_format(created_at, '%Y-%m')
+        order by month asc
+    </select>
+</mapper>

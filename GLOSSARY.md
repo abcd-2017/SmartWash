@@ -405,6 +405,24 @@
 - **易混淆点**：**只覆盖首跳**——接入真实外呼必须 `followRedirect(false)`，否则 https 302 跳内网可绕过全部校验；DNS 重绑定窗口未根治，真实外呼需 pin IP + SNI。
 - → ADR-0006
 
+### 6.5 回访（div_feedback_nudge）
+
+- **代码标识**：`div_feedback_nudge`、`DivFeedbackNudge`、`DivNudgeService`、`DivFeedbackNudgeTask`、`nudge_date`
+- **定义**：应验回访提醒。解读完成 ≥3 天且该解读（`div_interpretation`）无 `div_feedback`、无既有提醒时，由每日定时任务生成 `status=0` 待回访记录，`nudge_date` = 解读完成日 + 3 天；用户提交反馈即视为已回访（`status=1`，由 `DivRecordServiceImpl.addFeedback` 末尾接线关闭）；端上可主动忽略（`status=2`）。`uk_interpretation` 唯一约束保证一个解读最多一条提醒。
+- **四端对应物**：
+  - 后端：`divination/entity/DivFeedbackNudge.java`、`divination/service/DivNudgeService.java`、`divination/task/DivFeedbackNudgeTask.java`；端点 `/web/auth/div/nudges`（分页）、`/web/auth/div/nudges/count`（徽标）、`/web/auth/div/nudges/{id}/ignore`。
+  - Android / 鸿蒙：回访列表与徽标消费端（待接入）。
+  - Web：无对应实现。
+- **易混淆点**：状态翻转一律条件 UPDATE（0→1 / 0→2），先查再改禁止；任务为单机 `@Scheduled`（00:10，晚于 DivUsageAggregator 的 00:05 错峰），多实例部署需外置调度。
+
+### 6.6 盘感统计（div/stats）
+
+- **代码标识**：`DivStatsVo`、`/web/auth/div/stats`、`verifyRate`
+- **定义**：用户维度占卜画像：卦例总数、按 `method`/`category` 计数、近 12 个自然月卦例趋势（缺失月补 0）、反馈总数与应验率。
+- **口径**：**verify = 反馈 `rating ≥ 4`**（5 档评分，≥4 记应验）；`verifyRate = verifyCount / feedbackTotal`（BigDecimal 0-1，4 位小数，无反馈为 0）。
+- **四端对应物**：后端 `DivRecordServiceImpl.getDivStats`（聚合 SQL 在 `DivRecordMapper.xml` / `DivFeedbackMapper.xml`）；端上统计页消费。
+- **易混淆点**：口径只看 `rating`，与 `outcome`（0未回填/1应验/2未验/3难说）字段无关；趋势窗口固定 12 个月，随服务端当前月滚动。
+
 ---
 
 ## 7. 工作台与工具箱

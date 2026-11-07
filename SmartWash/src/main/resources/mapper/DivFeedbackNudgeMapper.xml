@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.divination.mapper.DivFeedbackNudgeMapper">
+
+    <!-- 待回访提醒分页：当前用户 status=0（未处理）且未删除，关联卦例取展示字段，按 nudge_date 倒序 -->
+    <select id="selectNudgePage" resultType="com.smartwash.divination.vo.DivNudgeVo">
+        select n.id,
+               n.record_id,
+               r.method,
+               r.category,
+               r.question,
+               r.cast_at     as castAt,
+               n.nudge_date  as nudgeDate
+        from div_feedback_nudge n
+        left join div_record r on r.id = n.record_id
+        where n.user_id = #{userId}
+          and n.status = 0
+          and n.is_delete = 0
+        order by n.nudge_date desc, n.id desc
+    </select>
+
+    <!-- 回访候选扫描：解读完成时间早于 threshold（=now-3天，即完成 ≥3 天）、
+         该解读无任何反馈、且无既有提醒（uk_interpretation 之外再扫一道，减少无效 insert）。
+         nudge_date 由 SQL 计算为「解读完成日 + 3 天」 -->
+    <select id="selectNudgeCandidates" resultType="com.smartwash.divination.entity.DivFeedbackNudge">
+        select i.id                   as interpretation_id,
+               i.record_id            as record_id,
+               i.user_id              as user_id,
+               date(i.created_at) + interval 3 day as nudge_date
+        from div_interpretation i
+        where i.created_at &lt;= #{threshold}
+          and not exists (select 1 from div_feedback f where f.interpretation_id = i.id)
+          and not exists (select 1 from div_feedback_nudge n where n.interpretation_id = i.id)
+    </select>
+</mapper>

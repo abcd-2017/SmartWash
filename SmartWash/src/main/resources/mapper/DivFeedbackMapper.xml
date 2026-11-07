@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.divination.mapper.DivFeedbackMapper">
+
+    <!-- 盘感统计：单用户反馈聚合（单行）。口径：verify = rating ≥ 4（5 档评分，≥4 记应验） -->
+    <select id="selectUserFeedbackAgg" resultType="com.smartwash.divination.vo.DivFeedbackAggVo">
+        select count(*)                                              as feedbackTotal,
+               coalesce(sum(case when rating &gt;= 4 then 1 else 0 end), 0) as verifyCount
+        from div_feedback
+        where user_id = #{userId}
+    </select>
+</mapper>
