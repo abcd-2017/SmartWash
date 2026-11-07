@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="关键词">
           <el-input
             v-model="listQuery.keyword"
             placeholder="标题 / gameKey 模糊搜索"
             clearable
             style="width: 220px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="分类">
@@ -17,6 +18,7 @@
             placeholder="全部分类"
             clearable
             style="width: 130px"
+            @change="handleSearch"
           >
             <el-option
               v-for="opt in GAME_CATEGORY_OPTIONS"
@@ -29,6 +31,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">上传游戏</el-button>
         </el-form-item>
       </el-form>

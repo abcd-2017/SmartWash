@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="寄存柜ID">
           <el-input
             v-model.number="listQuery.lockerId"
             placeholder="请输入ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -19,6 +20,7 @@
             filterable
             clearable
             style="width: 150px"
+            @change="handleSearch"
           >
             <el-option
               v-for="school in schoolOptions"
@@ -44,6 +46,7 @@
             placeholder="全部状态"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option
               v-for="(desc, code) in statusOptions"
@@ -63,12 +66,15 @@
             end-placeholder="结束时间"
             value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 380px"
+            @change="handleSearch"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增寄存柜</el-button>
           <el-button @click="handleBatchCreate">批量新增</el-button>
         </el-form-item>

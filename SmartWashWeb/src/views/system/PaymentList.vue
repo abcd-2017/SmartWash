@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="支付ID">
           <el-input
             v-model.number="listQuery.paymentId"
             placeholder="输入支付ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,6 +19,7 @@
             placeholder="输入订单号"
             clearable
             style="width: 180px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -28,6 +30,7 @@
             clearable
             style="width: 160px"
             @blur="validatePhone"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -37,6 +40,7 @@
             placeholder="全部方式"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option
               v-for="(desc, type) in payTypeOptions"
@@ -53,6 +57,7 @@
             placeholder="全部状态"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option
               v-for="(desc, status) in payStatusOptions"
@@ -72,6 +77,7 @@
             end-placeholder="结束时间"
             value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 380px"
+            @change="handleSearch"
           />
         </el-form-item>
 

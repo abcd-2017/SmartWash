@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="管理员ID">
           <el-input
             v-model.number="listQuery.adminId"
             placeholder="请输入管理员ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,6 +19,7 @@
             placeholder="请输入用户名"
             clearable
             style="width: 150px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -29,6 +31,7 @@
             filterable
             clearable
             style="width: 150px"
+            @change="handleSearch"
           >
             <el-option
               v-for="role in roleOptions"
@@ -42,6 +45,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增管理员</el-button>
           <el-button
             type="danger"

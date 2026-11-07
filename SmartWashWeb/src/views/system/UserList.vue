@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="用户ID">
           <el-input
             v-model.number="listQuery.userId"
             placeholder="输入用户ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,6 +19,7 @@
             placeholder="输入手机号"
             clearable
             style="width: 160px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -27,6 +29,7 @@
             placeholder="选择学校"
             clearable
             style="width: 200px"
+            @change="handleSearch"
           >
             <el-option
               v-for="school in schoolOptions"
@@ -43,12 +46,15 @@
             placeholder="输入学号"
             clearable
             style="width: 160px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增用户</el-button>
         </el-form-item>
       </el-form>
