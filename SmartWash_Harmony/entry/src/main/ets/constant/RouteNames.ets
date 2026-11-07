@@ -40,6 +40,11 @@ export class RouteNames {
   // 解读 / 追问页路由常量（本批次 DivChart / DivReading / DivFollowUp 三页注册 router_map）
   static readonly DIV_READING: string = "DivReading"
   static readonly DIV_FOLLOW_UP: string = "DivFollowUp"
+  // 占卜闭环三页（卦例搜索 / 待回访 / 盘感，对齐安卓 DivRoute.Search/Nudge/Stats；
+  // 域内入口：卦历页页头下「搜/访/盘」入口行，无深链 host）
+  static readonly DIV_SEARCH: string = "DivSearch"
+  static readonly DIV_NUDGE: string = "DivNudge"
+  static readonly DIV_STATS: string = "DivStats"
   // 工具箱短链域路由名（#28 落地）：列表 / 新建 / 详情
   static readonly TOOLBOX_SHORT_CODE_LIST: string = "ToolboxShortCodeList"
   static readonly TOOLBOX_SHORT_CODE_CREATE: string = "ToolboxShortCodeCreate"

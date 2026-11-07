@@ -11,6 +11,8 @@
 import { DivRecordRow, DivRecordRepository, decodeBundleFromJson } from '../../../data/DivinationStore'
 import { readLiuYaoChart, readMeiHuaChart, readQiMenChart, readLiuRenChart, divMethodName }
   from '../../../data/DivChartReader'
+import { getDivNudgeCount } from '../../../network/DivinationApi'
+import { DivLoopEntry, DivLoopText } from '../../components/DivLoopComponents'
 import {
   DivCard,
   DivCategoryChip,
@@ -40,9 +42,12 @@ export struct DivHistoryPage {
   @Local records: DivRecordRow[] = []
   @Local filter: string = FILTER_ALL
   @Local isLoading: boolean = true
+  // 占卜闭环增量：待回访计数（「访」入口角标，>0 显示；>9 折叠 9+）
+  @Local nudgeCount: number = 0
 
   aboutToAppear(): void {
     this.refresh()
+    this.refreshNudgeCount()
   }
 
   private async refresh(): Promise<void> {
@@ -57,6 +62,17 @@ export struct DivHistoryPage {
       logger.warn('divHistoryPage', `卦历加载失败，按空态呈现, ${err instanceof Error ? err.message : ''}`)
     }
     this.isLoading = false
+  }
+
+  /** 占卜闭环增量：静默拉待回访计数（失败按 0 兜底，徽标不亮不打扰主流程，对齐安卓 DivLoopRepository） */
+  private async refreshNudgeCount(): Promise<void> {
+    try {
+      const resp = await getDivNudgeCount()
+      this.nudgeCount = resp.code === 200 && resp.data !== null ? resp.data : 0
+    } catch (err) {
+      this.nudgeCount = 0
+      logger.warn('divHistoryPage', `待回访计数拉取失败，按 0 兜底, ${err instanceof Error ? err.message : ''}`)
+    }
   }
 
   private filtered(): DivRecordRow[] {
@@ -125,6 +141,40 @@ export struct DivHistoryPage {
       Column() {
         // 无返回页头标题左对齐 x20（alignStart）
         DivPageHeader({ title: DivText.historyTitle, showBack: false, alignStart: true })
+
+        // 占卜闭环入口行（卦例搜索 / 待回访角标 / 盘感）：只增入口，筛选行与列表逻辑零改动
+        Scroll() {
+          Row({ space: 20 }) {
+            DivLoopEntry({
+              seal: '搜',
+              label: DivLoopText.searchTitle,
+              onAction: () => {
+                pathStack.pushPathByName(RouteNames.DIV_SEARCH, null)
+              }
+            })
+            DivLoopEntry({
+              seal: '访',
+              label: DivLoopText.nudgeTitle,
+              badge: this.nudgeCount,
+              onAction: () => {
+                pathStack.pushPathByName(RouteNames.DIV_NUDGE, null)
+              }
+            })
+            DivLoopEntry({
+              seal: '盘',
+              label: DivLoopText.statsTitle,
+              onAction: () => {
+                pathStack.pushPathByName(RouteNames.DIV_STATS, null)
+              }
+            })
+          }
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        }
+        .scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
+        .width('100%')
+        .align(Alignment.TopStart)
+        .margin({ top: 4 })
 
         // 术数筛选（20 缩进 + 横向滚动 + 单行限高，窄屏滚动可见不折行）
         Scroll() {
@@ -242,6 +292,8 @@ export struct DivHistoryPage {
     .onShown(() => {
       // 从卦盘/复盘返回后重拉，保证卦历与最新排盘一致（NavDestination 可见性事件驱动）
       this.refresh()
+      // 从回访簿返回后同步角标（忽略/反馈会改变待回访计数）
+      this.refreshNudgeCount()
     })
   }
 }

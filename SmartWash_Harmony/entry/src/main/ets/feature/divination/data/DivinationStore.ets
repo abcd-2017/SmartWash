@@ -202,6 +202,28 @@ export class DivRecordRepository {
     return row
   }
 
+  /**
+   * 按服务端卦例 id 反查本地行（占卜闭环：搜索结果 / 待回访卡片携带的是服务端 recordId，
+   * 卦盘 / 解读页读本地 chartJson，须先落回本地 id；无关联行返回 null，调用方退回原 id 兜底）。
+   */
+  static async getByServerRecordId(serverRecordId: number): Promise<DivRecordRow | null> {
+    if (serverRecordId <= 0) {
+      return null
+    }
+    const context = getContext() as common.UIAbilityContext
+    const store = await initStore(context)
+    const resultSet = await store.querySql(
+      'SELECT * FROM ' + DIV_TABLE + ' WHERE serverRecordId = ? ORDER BY id DESC LIMIT 1',
+      [serverRecordId.toString()])
+    if (resultSet.rowCount <= 0 || !resultSet.goToFirstRow()) {
+      resultSet.close()
+      return null
+    }
+    const row = rowFromResultSet(resultSet)
+    resultSet.close()
+    return row
+  }
+
   /** 按 id 倒序取最近 limit 条（观象台首页「案卷」与卦历用） */
   static async recent(limit: number): Promise<Array<DivRecordRow>> {
     const context = getContext() as common.UIAbilityContext

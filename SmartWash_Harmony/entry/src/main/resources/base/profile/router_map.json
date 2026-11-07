@@ -218,6 +218,27 @@
       }
     },
     {
+      "name": "DivSearch",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/search/DivSearchPage.ets",
+      "buildFunction": "DivSearchBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivNudge",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/nudge/DivNudgePage.ets",
+      "buildFunction": "DivNudgeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "DivStats",
+      "pageSourceFile": "src/main/ets/feature/divination/ui/page/stats/DivStatsPage.ets",
+      "buildFunction": "DivStatsBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "WebPage",
       "pageSourceFile": "src/main/ets/pages/WebPage.ets",
       "buildFunction": "WebPageBuilder",

@@ -12,6 +12,12 @@
  * - GET    /web/auth/div/methods                 四术元信息与免责声明文案
  * - POST   /web/auth/div/records/{id}/interpret  SSE 流式解读（body 为纯文本 question，可空）
  * - POST   /web/auth/div/records/{id}/followup   同卦追问 SSE（body 为纯文本 question，必填）
+ * 占卜闭环三件套（卦例搜索 / 待回访 / 盘感，与 Android 端闭环同票契约 100% 对齐）：
+ * - GET    /web/auth/div/records/search          卦例关键词搜索（keyword/page/size）→ Page<DivRecordSearchVo>
+ * - GET    /web/auth/div/nudges                  待回访列表（page/size）→ Page<DivNudgeVo>
+ * - GET    /web/auth/div/nudges/count            待回访计数 → Integer
+ * - POST   /web/auth/div/nudges/{id}/ignore      忽略待回访（{id}=recordId）→ String
+ * - GET    /web/auth/div/stats                   盘感统计 → DivStatsVo
  *
  * 通道划分：
  * - JSON 信封接口走既有 httpUtil（Axios 拦截器自动注入 Bearer / 统一 401 处理）；
@@ -142,6 +148,67 @@ export interface DivMethodVo {
   name: string
   description: string
   disclaimer: string
+}
+
+// ========== 占卜闭环三件套 VO（卦例搜索 / 待回访 / 盘感；字段名与后端闭环 VO 逐一勿改） ==========
+
+/** 卦例搜索结果项（对齐后端 DivRecordSearchVo；castAt 为 LocalDateTime 字符串，contentPreview 命中预览前 120 字） */
+export interface DivRecordSearchVo {
+  recordId: number
+  method: string | null
+  category: string | null
+  question: string | null
+  castAt: string | null
+  contentPreview: string | null
+}
+
+/** 卦例搜索分页（对齐后端 Page<DivRecordSearchVo> 的关键分页字段） */
+export interface DivRecordSearchPageVo {
+  records: Array<DivRecordSearchVo>
+  total: number
+  size: number
+  current: number
+}
+
+/** 待回访项（对齐后端 DivNudgeVo；nudgeDate 为建议回访日 LocalDate 字符串） */
+export interface DivNudgeVo {
+  recordId: number
+  method: string | null
+  category: string | null
+  question: string | null
+  castAt: string | null
+  nudgeDate: string | null
+}
+
+/** 待回访分页（对齐后端 Page<DivNudgeVo> 的关键分页字段） */
+export interface DivNudgePageVo {
+  records: Array<DivNudgeVo>
+  total: number
+  size: number
+  current: number
+}
+
+/** 名称-数量统计项（术数分布 / 类别分布共用；name 为后端返回中文名） */
+export interface DivNameCountVo {
+  name: string | null
+  count: number
+}
+
+/** 月度趋势项（month 形如 yyyy-MM，端上格式化为「N月」） */
+export interface DivMonthCountVo {
+  month: string | null
+  count: number
+}
+
+/** 盘感统计（对齐后端 DivStatsVo；verifyRate 为比例 0-1，端上 ×100 取整展示） */
+export interface DivStatsVo {
+  totalRecords: number
+  methodCounts: Array<DivNameCountVo>
+  categoryCounts: Array<DivNameCountVo>
+  monthTrend: Array<DivMonthCountVo>
+  feedbackTotal: number
+  verifyCount: number
+  verifyRate: number
 }
 
 /** 卦历分页查询参数（对齐后端 BaseSearchFrom 的 page/size） */
@@ -288,6 +355,44 @@ export async function submitDivFeedback(recordId: number,
   logger.debug('divinationApi', `反馈提交 recordId=${recordId} interpretationId=${form.interpretationId} ` +
     `rating=${form.rating} outcome=${form.outcome}`)
   return httpUtil.post<string>(`/web/auth/div/records/${recordId}/feedback`, form)
+}
+
+// ========== 占卜闭环三件套接口（卦例搜索 / 待回访 / 盘感；对齐安卓 DivLoopRepository 同票契约） ==========
+
+/** 搜索分页查询参数（对齐后端 DivRecordSearchFrom 的 keyword/page/size） */
+interface DivRecordSearchQuery {
+  keyword: string
+  page: number
+  size: number
+}
+
+/** 卦例关键词搜索（问题/解读全文匹配，分页；page/size 对齐安卓默认 1/20，搜索结果不做滚动分页） */
+export async function searchDivRecords(keyword: string, page: number,
+  size: number): Promise<BaseResponse<DivRecordSearchPageVo>> {
+  const query: DivRecordSearchQuery = { keyword: keyword, page: page, size: size }
+  return httpUtil.get<DivRecordSearchPageVo>('/web/auth/div/records/search', query)
+}
+
+/** 待回访列表（status=0 待回访卦例，按 nudge_date 倒序分页） */
+export async function getDivNudges(page: number, size: number): Promise<BaseResponse<DivNudgePageVo>> {
+  const query: DivRecordPageQuery = { page: page, size: size }
+  return httpUtil.get<DivNudgePageVo>('/web/auth/div/nudges', query)
+}
+
+/** 待回访计数（卦历页入口徽标；>0 显示角标，失败由调用方按 0 兜底） */
+export async function getDivNudgeCount(): Promise<BaseResponse<number>> {
+  return httpUtil.get<number>('/web/auth/div/nudges/count')
+}
+
+/** 忽略待回访（{id} = 待回访卦例 recordId；成功后该条不再进入回访簿） */
+export async function ignoreDivNudge(recordId: number): Promise<BaseResponse<string>> {
+  logger.debug('divinationApi', `忽略待回访 recordId=${recordId}`)
+  return httpUtil.post<string>(`/web/auth/div/nudges/${recordId}/ignore`)
+}
+
+/** 盘感统计（总卦数/术数分布/类别分布/月度趋势/反馈与应验率） */
+export async function getDivStats(): Promise<BaseResponse<DivStatsVo>> {
+  return httpUtil.get<DivStatsVo>('/web/auth/div/stats')
 }
 
 // ========== SSE 流式接口（走 DivSseClient：流式优先 + 攒流兜底） ==========
