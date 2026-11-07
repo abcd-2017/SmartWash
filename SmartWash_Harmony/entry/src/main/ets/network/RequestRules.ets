@@ -9,7 +9,9 @@
  * - 公开路径（后端 SecurityConfig permitAll，清单见 PublicPaths）：不注入 token，
  *   也不因本地无 token 而拦截；
  * - 其余 `/web` 前缀接口：必须携带 Bearer token，本地无 token 时拒绝并触发登录跳转；
- * - 业务码 401（HTTP 200 信封内 code=401）与 HTTP 401 同语义：清 token → 跳登录。
+ * - 业务码 401（HTTP 200 信封内 code=401）与 HTTP 401 同语义：具备续签资格时
+ *   静默续签并用新 token 重发原请求一次；不可续签时清 token → 跳登录；
+ * - /auth/** 认证端点自身（登录/注册/验证码/刷新/登出）的 401 不触发续签。
  */
 
 import { PublicPaths } from './PublicPaths'
@@ -19,6 +21,33 @@ export const UNAUTHORIZED_CODE: number = 401
 
 /** 业务信封成功码（与 HttpUtil.BizCode.SUCCESS 同值；独立定义避免 Axios→HttpUtil 循环 import） */
 export const BUSINESS_SUCCESS_CODE: number = 200
+
+/** 认证端点前缀（后端 LoginController @RequestMapping("/auth")：登录/注册/验证码/刷新/登出） */
+const AUTH_ENDPOINT_PREFIX: string = "/auth/"
+
+/**
+ * 续签重发标记头：请求经「静默续签 + 原请求重发」通道发出时携带。
+ * 该请求若再次 401，视为新 token 仍被拒，不再续签，直接走登出收尾（防刷新循环）。
+ * 该头会随重发请求上送后端（服务端忽略未知头），仅用于端上通道内判定。
+ */
+export const RETRY_MARKER_HEADER: string = "X-SmartWash-Retried"
+
+/** 续签重发标记头取值 */
+export const RETRY_MARKER_VALUE: string = "1"
+
+/**
+ * 请求是否属于 /auth/** 认证端点。
+ * 这些端点自身的 401（密码错误、refreshToken 失效等）不得触发静默续签。
+ * @param url Axios 请求 URL（相对路径，可能带 query，可能为 undefined）
+ */
+export function isAuthEndpoint(url: string | undefined): boolean {
+  if (url === undefined || url === "") {
+    return false
+  }
+  const queryIndex = url.indexOf("?")
+  const path = queryIndex >= 0 ? url.substring(0, queryIndex) : url
+  return path.startsWith(AUTH_ENDPOINT_PREFIX)
+}
 
 /**
  * 是否命中公开路径白名单。
