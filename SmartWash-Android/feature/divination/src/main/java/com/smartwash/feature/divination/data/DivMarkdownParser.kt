@@ -9,8 +9,9 @@ package com.smartwash.feature.divination.data
  * 切分规则：
  * - `## ` 行开新段（标题取行内余文），其余行归当前段正文；
  * - `> ` 引用行归入免责条（多行以换行拼接）；
- * - 标题含「一句话断语」→ summary；含「结论与建议」（或「总结与行动」）→ action；
- *   其余段 → 章节卡列表（标题→卡题、正文→卡体）；
+ * - 标题以「一句话断语」开头 → summary；以「结论与建议」（或「总结与行动」）开头 →
+ *   action（前缀匹配，兼容服务端标题带尾注装饰的变体；带前置装饰的标题不命中槽位，
+ *   与旧全等口径一致落入章节卡，行为不回退）；其余段 → 章节卡列表（标题→卡题、正文→卡体）；
  * - 全文无任何 `## ` 标题 → 整文单卡兜底（卡题空串，UI 用兜底标题渲染）。
  *
  * 流式口径 [parseStreaming]：同一切分规则，最后一段若仍在生成（其后再无新标题）作为
@@ -140,7 +141,13 @@ object DivMarkdownParser {
         )
     }
 
-    private fun isSummary(title: String): Boolean = title == SUMMARY_TITLE
+    /**
+     * 标题槽位匹配（前缀口径，与文件头 KDoc 一致）：startsWith 天然覆盖全等命中，
+     * 原全等可匹配的标题行为不变；带前置装饰（如 `**一句话断语**`）的标题不命中，
+     * 落入章节卡与旧口径一致。
+     */
+    private fun isSummary(title: String): Boolean = title.startsWith(SUMMARY_TITLE)
 
-    private fun isAction(title: String): Boolean = title == ACTION_TITLE || title == ACTION_TITLE_ALT
+    private fun isAction(title: String): Boolean =
+        title.startsWith(ACTION_TITLE) || title.startsWith(ACTION_TITLE_ALT)
 }

@@ -95,6 +95,9 @@ class SettingViewModel @Inject constructor(
                 // 降级：读取失败保持默认值（开启）
                 .onFailure { AppLogger.warn(TAG, "触感反馈开关初值读取失败，使用默认值", it) }
         }
+        // 首进即拉 BYOK 配置（2026-11-07 双轴审查 B1）：原先仅在弹层打开/保存/删除后刷新，
+        // 已配置用户首进看不到掩码回显、byokEnabled=0 的行内置灰也不生效
+        refreshApiConfig()
     }
 
     /**

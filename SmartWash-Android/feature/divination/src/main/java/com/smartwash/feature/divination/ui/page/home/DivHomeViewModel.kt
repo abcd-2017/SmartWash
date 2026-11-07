@@ -3,13 +3,11 @@ package com.smartwash.feature.divination.ui.page.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nlf.calendar.Solar
-import com.smartwash.common.utils.AppLogger
 import com.smartwash.feature.divination.core.DivCategory
 import com.smartwash.feature.divination.core.GanZhi
 import com.smartwash.feature.divination.core.meihua.MeiHuaChart
 import com.smartwash.feature.divination.database.DivRecordEntity
 import com.smartwash.feature.divination.data.DivRecordRepository
-import com.smartwash.feature.divination.network.DivinationApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Date
 import javax.inject.Inject
@@ -35,14 +33,14 @@ data class DivHomeUiState(
  * 卜问首页 VM：干支天象头（当日四柱）、今日一签（梅花时间卦按当天日期确定性计算）、案卷近三条。
  *
  * 今日一签（issue #78）：签面仍由本地确定性时间卦呈现（同日同签，与服务端算法同源）；
- * 点击入库时先本地幂等建档，再调 GET /today（服务端同日幂等）取服务端卦例 id 回写关联
- * （serverRecordId，服务端优先）——后续求解读直接复用服务端卦例，避免重复建档；
- * 服务端不可达时静默回退纯本地（解读时再由 DivLlmRepository.ensureServerRecord 兜底建档）。
+ * 点击入库时先本地幂等建档，再经 [DivRecordRepository.linkTodaySign] 调 GET /today
+ * （服务端同日幂等）取服务端卦例 id 回写关联（serverRecordId，服务端优先）——后续求解读
+ * 直接复用服务端卦例，避免重复建档；服务端不可达时静默回退纯本地（解读时再由
+ * DivLlmRepository.ensureServerRecord 兜底建档）。
  */
 @HiltViewModel
 class DivHomeViewModel @Inject constructor(
     private val repository: DivRecordRepository,
-    private val api: DivinationApi,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DivHomeUiState())
@@ -83,27 +81,8 @@ class DivHomeViewModel @Inject constructor(
                 question = "今日一签",
                 category = DivCategory.OTHER.id,
             )
-            linkTodayServerRecord(id)
+            repository.linkTodaySign(id)
             onSaved(id)
         }
-    }
-
-    /** 服务端今日一签幂等建档 → 回写本地记录 serverRecordId（失败静默，跳转不受阻） */
-    private suspend fun linkTodayServerRecord(localId: Long) {
-        runCatching { api.getTodayRecord() }
-            .onSuccess { result ->
-                val serverId = result.data?.id ?: 0L
-                if (result.code == 200 && serverId > 0) {
-                    repository.markServerLinked(localId, serverId)
-                    AppLogger.info(TAG, "今日一签关联服务端卦例 localId=$localId serverRecordId=$serverId")
-                }
-            }
-            .onFailure {
-                AppLogger.warn(TAG, "今日一签服务端关联失败（回退本地，解读时再兜底建档）: ${it.message}")
-            }
-    }
-
-    private companion object {
-        const val TAG = "DivHomeViewModel"
     }
 }

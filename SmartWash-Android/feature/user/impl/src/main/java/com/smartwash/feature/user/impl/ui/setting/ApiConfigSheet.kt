@@ -118,6 +118,12 @@ fun ApiConfigSheet(
         settingViewModel.refreshApiConfig()
         settingViewModel.loadPlatformModels()
     }
+    // 平台级开关关闭（byokEnabled=0）兜底拦截（2026-11-07 双轴审查 B2）：设置页行内置灰
+    // 依赖已加载的 apiConfig，首拉失败/未返回时行仍可点进弹层——弹层内拉到 byokEnabled=0
+    // 即收口关闭，不再展示编辑表单
+    LaunchedEffect(config) {
+        if (config?.byokEnabled == 0) closeSheet()
+    }
 
     // 编辑态预填：GET 返回后回填 baseUrl/model；apiKey 始终留空（占位「重新输入 API Key」）
     LaunchedEffect(config, configState) {

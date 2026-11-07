@@ -41,12 +41,12 @@ class NetworkModule {
             // 日志脱敏（2026-11-07 BYOK，issue #79）：BODY 级日志会把 PUT/POST 请求体原样
             // 打进 logcat，解读模型 BYOK 的 apiKey 明文因此泄露。仅经构造函数注入 Logger
             // 包装输出通道做字段级正则脱敏（见 [maskApiKeyForLog]），BODY 级别、拦截链
-            // （鉴权/401/信封解析）与输出目标（Android logcat INFO 级 "OKHttp" tag，
+            // （鉴权/401/信封解析）与输出目标（Android logcat INFO 级 "OkHttp" tag，
             // 等价默认 logger 行为）零改动。4.12.0 的 logger 为 private final，无 setter。
             val loggingInterceptor = HttpLoggingInterceptor(
                 HttpLoggingInterceptor.Logger { message ->
                     android.util.Log.println(
-                        android.util.Log.INFO, "OKHttp", maskApiKeyForLog(message)
+                        android.util.Log.INFO, "OkHttp", maskApiKeyForLog(message)
                     )
                 }
             )

@@ -13,6 +13,7 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -98,11 +99,14 @@ class SseClient @Inject constructor(
         }
 
         return suspendCancellableCoroutine { continuation ->
-            var sourceRef: EventSource? = null
+            // holder 用 AtomicReference 消取消竞态：invokeOnCancellation 注册可能先于
+            // source 赋值（协程在 EventSource 创建前被取消，普通 var 读到 null 漏断流），
+            // volatile 读保证取消 handler 不丢引用
+            val sourceRef = AtomicReference<EventSource?>()
             // 协程取消（解读页返回/追问页退出）→ 断流中止服务端推流
-            continuation.invokeOnCancellation { sourceRef?.cancel() }
+            continuation.invokeOnCancellation { sourceRef.get()?.cancel() }
 
-            sourceRef = EventSources.createFactory(client).newEventSource(
+            val source = EventSources.createFactory(client).newEventSource(
                 requestBuilder.build(),
                 object : EventSourceListener() {
                     override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
@@ -135,6 +139,9 @@ class SseClient @Inject constructor(
                     }
                 },
             )
+            sourceRef.set(source)
+            // 兜底「先取消、后创建完成」的时序：赋值后再查一次取消态，已取消则立即断流
+            if (continuation.isCancelled) source.cancel()
         }
     }
 

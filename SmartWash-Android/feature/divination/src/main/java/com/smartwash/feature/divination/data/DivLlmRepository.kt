@@ -14,6 +14,8 @@ import com.smartwash.feature.divination.network.DivFeedbackRequest
 import com.smartwash.feature.divination.network.DivinationApi
 import kotlinx.coroutines.delay
 import java.util.TimeZone
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -173,8 +175,13 @@ class DivLlmRepository @Inject constructor(
     // ---- SSE 流（真连） ----
 
     private suspend fun stream(path: String, body: String, localId: Long, onEvent: (DivStreamEvent) -> Unit) {
-        var doneReceived = false
-        var failureSent = false
+        // SSE 回调运行在 OkHttp 线程（非协程上下文），禁止在回调内调 suspend DAO——
+        // K2 编译产物会传 null Continuation，运行时 Room withContext 必抛 NPE 且被
+        // runCatching 吞掉（interpretationId 永不落库）。回调只记线程安全标记（pendingDone），
+        // sseClient.post 流终态返回后统一挂起回写并补发 Done。
+        val doneReceived = AtomicBoolean(false)
+        val failureSent = AtomicBoolean(false)
+        val pendingDone = AtomicReference<DivStreamEvent.Done?>(null)
         val outcome = sseClient.post(path, body, sseContentType) { name, data ->
             when (name) {
                 EVENT_DELTA -> {
@@ -183,28 +190,35 @@ class DivLlmRepository @Inject constructor(
                 }
                 EVENT_DONE -> {
                     val frame = runCatching { gson.fromJson(data, DoneFrame::class.java) }.getOrNull()
-                    val interpretationId = frame?.interpretationId ?: 0L
-                    if (interpretationId > 0) {
-                        // done 落库供追问（服务端拼历史）与反馈
-                        runCatching { dao.updateInterpretationId(localId, interpretationId) }
-                            .onFailure { AppLogger.warn(TAG, "interpretationId 回写失败 localId=$localId: ${it.message}") }
-                    }
-                    doneReceived = true
-                    onEvent(DivStreamEvent.Done(interpretationId, frame?.cached ?: false))
+                    pendingDone.set(
+                        DivStreamEvent.Done(frame?.interpretationId ?: 0L, frame?.cached ?: false),
+                    )
+                    doneReceived.set(true)
+                    // Done 延迟到流终态回写完成后补发（见上方注释）
                 }
                 EVENT_ERROR -> {
                     val frame = runCatching { gson.fromJson(data, ErrorFrame::class.java) }.getOrNull()
                     val code = frame?.code ?: 500
                     // error 帧后服务端 emitter.complete() 是正常关闭——置位防终态重复补发，
                     // 避免 403/429/503 语义被终态兜底文案覆盖
-                    failureSent = true
+                    failureSent.set(true)
                     onEvent(DivStreamEvent.Failure(reasonOf(code), frame?.message, resOf(code)))
                 }
             }
         }
+        // done 帧 → 先挂起回写 interpretationId（供追问拼历史与反馈），再补发 Done：
+        // Done 上屏前 Room 已落库，解读页 Done 分支重读的 record 快照必含反馈依赖
+        // （FeedbackRow 链路自通）；回写失败不阻断解读展示，仅记日志
+        pendingDone.get()?.let { done ->
+            if (done.interpretationId > 0) {
+                runCatching { dao.updateInterpretationId(localId, done.interpretationId) }
+                    .onFailure { AppLogger.warn(TAG, "interpretationId 回写失败 localId=$localId: ${it.message}") }
+            }
+            onEvent(done)
+        }
         // 流终态兜底：正常 complete 若未收到 done 帧按网络失败处理；401 已由 SseClient 通知跳登录
         when (outcome) {
-            is SseClient.Outcome.Completed -> if (!doneReceived && !failureSent) {
+            is SseClient.Outcome.Completed -> if (!doneReceived.get() && !failureSent.get()) {
                 AppLogger.warn(TAG, "SSE 流关闭但未收到 done 帧 path=$path")
                 onEvent(
                     DivStreamEvent.Failure(
@@ -214,10 +228,10 @@ class DivLlmRepository @Inject constructor(
                     ),
                 )
             }
-            is SseClient.Outcome.Unauthorized -> if (!failureSent) {
+            is SseClient.Outcome.Unauthorized -> if (!failureSent.get()) {
                 onEvent(DivStreamEvent.Failure(DivStreamEvent.Failure.Reason.UNAUTHORIZED, null, R.string.div_error_unauthorized))
             }
-            is SseClient.Outcome.HttpError -> if (!failureSent) {
+            is SseClient.Outcome.HttpError -> if (!failureSent.get()) {
                 onEvent(
                     DivStreamEvent.Failure(
                         reasonOf(outcome.code),
@@ -226,7 +240,7 @@ class DivLlmRepository @Inject constructor(
                     ),
                 )
             }
-            is SseClient.Outcome.NetworkError -> if (!failureSent) {
+            is SseClient.Outcome.NetworkError -> if (!failureSent.get()) {
                 onEvent(
                     DivStreamEvent.Failure(
                         DivStreamEvent.Failure.Reason.NETWORK,

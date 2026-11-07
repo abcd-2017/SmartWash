@@ -72,11 +72,15 @@ class DivFollowUpViewModel @Inject constructor(
         val q = question.trim()
         if (q.isEmpty() || _uiState.value.followUpState is RequestState.Loading) return
         viewModelScope.launch {
-            val record = _uiState.value.record ?: return@launch
+            // send 前重读最新记录（不用 load() 时的快照）：首轮追问 done 后 Room 已回写
+            // serverRecordId/interpretationId，旧快照带 serverRecordId==0 会让 Repository
+            // 重复 POST /records 建档——新卦例名下无解读记录，服务端拼历史为空
+            val record = recordRepository.getById(recordId) ?: _uiState.value.record ?: return@launch
 
             val userTurn = DivFollowUpTurn(role = "user", content = q)
             val newHistory = _uiState.value.history + userTurn
             _uiState.value = _uiState.value.copy(
+                record = record,
                 history = newHistory,
                 streamingReply = "",
                 followUpState = RequestState.Loading,
