@@ -3,7 +3,12 @@ package com.smartwash.divination.service.impl;
 import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivRecord;
+import com.smartwash.divination.llm.LlmCallException;
+import com.smartwash.divination.llm.LlmChatResult;
+import com.smartwash.divination.llm.LlmErrorMapping;
 import com.smartwash.divination.llm.LlmGateway;
+import com.smartwash.divination.llm.OpenAiCompatClient;
+import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.llm.SseBridge;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
@@ -31,14 +36,19 @@ import java.util.concurrent.Executors;
  *   3. 查解读缓存（Redis）→ 命中回放
  *   4. 组装 prompt packet（server_chart + 规则事实 + prompt 版本 + RAG）
  *   5. 三层密钥解析 → LlmGateway 路由
- *   6. WebClient 流式调用 → SseBridge 逐 chunk 推流并累积
- *   7. 落库 div_interpretation
+ *   6. OpenAiCompatClient 流式调用 → SseBridge 逐 chunk 推流并累积（失败一次非流式回退）
+ *   7. 落库 div_interpretation（含 usage 计量）
  *   8. 异步事实审计（B3 实现）
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DivInterpretationServiceImpl implements IDivInterpretationService {
+
+    /** 解读系统提示词（本票简化版；完整 prompt 工程由 PromptAssembler 票实现） */
+    private static final String INTERPRET_SYSTEM_PROMPT = "你是「观象台」术数解读助手。基于给定的术数方法、问题与盘面，"
+            + "用简体中文 Markdown 输出结构化解读，结论谨慎、就事论事；"
+            + "禁止医疗/法律/投资建议；结尾附免责声明：本解读仅供娱乐参考，不构成任何建议。";
 
     private final DivRecordMapper recordMapper;
     private final DivInterpretationMapper interpretationMapper;
@@ -47,6 +57,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final SseBridge sseBridge;
     private final DivSafetyService safetyService;
     private final DivUsageService usageService;
+    private final OpenAiCompatClient llmClient;
 
     /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
     private final MdcTaskDecorator mdcTaskDecorator;
@@ -116,75 +127,75 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 6. 流式调用 LLM 并推流（简化实现：模拟流式输出）
-        StringBuilder contentBuilder = new StringBuilder();
+        // 6. 流式调用 LLM 并推流（真实调用，失败且未推出增量时由客户端做一次非流式回退）
+        OpenAiCompatProvider provider = resolved.getProvider();
         long startTime = System.currentTimeMillis();
-
-        // TODO: 接入真实 WebClient 流式调用（B2 后续迭代完善）
-        // 当前为占位实现：返回提示文本
-        String placeholder = generatePlaceholderInterpretation(record, question);
-        for (String chunk : placeholder.split("(?<=\\n)")) {
-            sseBridge.sendDelta(emitter, chunk);
-            contentBuilder.append(chunk);
-            try {
-                Thread.sleep(50); // 模拟流式延迟
-            } catch (InterruptedException e) {
-                // 线程关闭信号，恢复中断标志（原行为保持不变，仅补 debug 留痕）
-                log.debug("解读流式推送延迟被中断，线程恢复中断标志, recordId: {}", recordId);
-                Thread.currentThread().interrupt();
-            }
+        LlmChatResult llmResult = null;
+        LlmCallException callError = null;
+        boolean clientGone = false;
+        try {
+            llmResult = llmClient.chatWithFallback(provider, INTERPRET_SYSTEM_PROMPT, prompt,
+                    chunk -> sseBridge.sendDelta(emitter, chunk));
+        } catch (LlmCallException e) {
+            callError = e;
+        } catch (IllegalStateException e) {
+            // SSE 推流中客户端已断开（emitter 已完成）——供应商链路此前正常推流，不计供应商失败
+            clientGone = true;
+            log.debug("客户端已断开，解读推流中止, recordId: {}, userId: {}", recordId, userId);
         }
 
-        // 7. 落库
-        long latency = (int) (System.currentTimeMillis() - startTime);
+        // 熔断统计：无论成败都记录（客户端主动断开时供应商本身无失败，记成功）
+        llmGateway.recordResult(provider.getName(), callError == null || clientGone);
+
+        if (callError != null) {
+            // 7. 错误映射：4xx 透传脱敏 message；5xx/网络异常 → 503 固定文案
+            int sseCode = LlmErrorMapping.mapToSseCode(callError);
+            String sseMsg = LlmErrorMapping.mapToSseMessage(callError);
+            log.warn("LLM 调用失败, recordId: {}, provider: {}, httpStatus: {}, sseCode: {}",
+                    recordId, provider.getName(), callError.getHttpStatus(), sseCode);
+            sseBridge.sendError(emitter, sseCode, sseMsg);
+            return;
+        }
+        if (clientGone) {
+            return;
+        }
+
+        // 8. 落库（usage 计量：供应商未返回 usage 时计 0，不阻塞主流程）
+        long latency = System.currentTimeMillis() - startTime;
         DivInterpretation interpretation = new DivInterpretation();
         interpretation.setRecordId(recordId);
         interpretation.setUserId(userId);
         interpretation.setPromptVersionId(0L); // TODO: 从缓存取激活版本
         interpretation.setKind(isFollowup ? "followup" : "first");
         interpretation.setQuestion(isFollowup ? question : null);
-        interpretation.setProvider(resolved.getProvider().getName());
-        interpretation.setModel(resolved.getProvider().getModel());
+        interpretation.setProvider(provider.getName());
+        interpretation.setModel(provider.getModel());
         interpretation.setKeySource(resolved.getKeySource());
         interpretation.setConfigId(resolved.getConfigId());
-        interpretation.setContentMd(contentBuilder.toString());
-        interpretation.setTokensIn(0);
-        interpretation.setTokensOut(0);
+        interpretation.setContentMd(llmResult.getContent());
+        interpretation.setTokensIn(llmResult.getTokensIn());
+        interpretation.setTokensOut(llmResult.getTokensOut());
         interpretation.setLatencyMs((int) latency);
         interpretation.setCacheHit(0);
         interpretation.setAuditStatus(0);
         interpretationMapper.insert(interpretation);
 
-        log.info("解读完成, recordId: {}, interpretationId: {}, latency: {}ms",
-                recordId, interpretation.getId(), latency);
+        log.info("解读完成, recordId: {}, interpretationId: {}, provider: {}, tokensIn: {}, tokensOut: {}, latency: {}ms",
+                recordId, interpretation.getId(), provider.getName(),
+                llmResult.getTokensIn(), llmResult.getTokensOut(), latency);
 
-        // 8. 推送完成帧
+        // 9. 推送完成帧
         sseBridge.sendDone(emitter, interpretation.getId(), false);
     }
 
     /**
-     * 组装 prompt packet（简化版）。
+     * 组装 prompt packet（简化版，本票保留；完整实现由 prompt 票完成）。
      * 完整实现应包含：server_chart + 规则事实 + prompt 版本 + RAG top-k 引用。
      */
     private String buildPrompt(DivRecord record, String question) {
         return String.format(
                 "术数方法：%s\n问题：%s\n盘面：%s",
                 record.getMethod(), question, record.getServerChart()
-        );
-    }
-
-    /**
-     * 生成占位解读文本（真实实现由 WebClient 流式调用 LLM 替代）。
-     */
-    private String generatePlaceholderInterpretation(DivRecord record, String question) {
-        return String.format(
-                "【观象台 · %s解读（占位）】\n\n" +
-                        "您的问题：%s\n\n" +
-                        "服务端已重算权威盘面并完成校验（chart_verified=%s）。\n" +
-                        "LLM 解读功能正在接入中，敬请期待。\n\n" +
-                        "免责声明：本解读仅供娱乐参考，不构成任何建议。",
-                record.getMethod(), question,
-                record.getChartVerified() != null && record.getChartVerified() == 1 ? "一致" : "待校验"
         );
     }
 }

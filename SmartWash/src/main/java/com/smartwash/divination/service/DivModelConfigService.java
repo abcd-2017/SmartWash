@@ -2,6 +2,7 @@ package com.smartwash.divination.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartwash.divination.entity.DivModelConfig;
+import com.smartwash.divination.llm.OpenAiCompatClient;
 import com.smartwash.divination.mapper.DivModelConfigMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class DivModelConfigService {
 
     private final DivModelConfigMapper modelConfigMapper;
     private final AesGcmCipher cipher;
+    private final OpenAiCompatClient llmClient;
 
     /**
      * 查询启用的模型目录（列表仅掩码，无明文/密文）。
@@ -68,8 +70,8 @@ public class DivModelConfigService {
     }
 
     /**
-     * 连通性测试（不保存）。用该 key 向 base_url 发一次试呼。
-     * 简化实现：校验格式 + 返回模拟结果（真实实现需 WebClient 试呼）。
+     * 连通性测试（不保存）。真实 1-token 试呼：max_tokens=1、stream=false、10s 超时。
+     * 同时服务管理端 POST /admin/div/models/{id}/test 与用户端 POST /web/auth/div/settings/api/test。
      */
     public boolean testConnectivity(String baseUrl, String apiKey, String modelId) {
         if (!StringUtils.hasText(baseUrl) || !StringUtils.hasText(apiKey)) {
@@ -84,9 +86,37 @@ public class DivModelConfigService {
             log.warn("连通性测试拒绝内网地址: {}", baseUrl);
             return false;
         }
-        // TODO: 真实实现需 WebClient 1-token chat 试呼
-        log.info("连通性测试通过（简化实现）, baseUrl: {}, model: {}", baseUrl, modelId);
-        return true;
+        // 真实 1-token chat 试呼（WebClient，超时收紧）
+        return llmClient.probeConnectivity(baseUrl, apiKey, modelId);
+    }
+
+    /**
+     * 按平台模型目录 ID 试呼：解密密钥 → 真实 1-token 试呼 → 回填测试留痕。
+     * 供管理端 POST /admin/div/models/{id}/test 使用（接口签名不变）。
+     */
+    public boolean testConnectivityById(Long id) {
+        DivModelConfig config = modelConfigMapper.selectById(id);
+        if (config == null || !StringUtils.hasText(config.getBaseUrl())
+                || !StringUtils.hasText(config.getApiKeyCipher())) {
+            return false;
+        }
+        boolean ok;
+        try {
+            String plainKey = cipher.decrypt(config.getApiKeyCipher());
+            ok = testConnectivity(config.getBaseUrl(), plainKey, config.getModelId());
+        } catch (Exception e) {
+            // 解密失败（主密钥不匹配/密文损坏）按试呼失败处理，不向管理端抛异常
+            log.warn("平台模型密钥解密失败, id: {}, 原因: {}", id, e.getMessage());
+            ok = false;
+        }
+        // 回填测试留痕（last_test_at / last_test_ok）
+        DivModelConfig patch = new DivModelConfig();
+        patch.setId(id);
+        patch.setLastTestOk(ok ? 1 : 0);
+        patch.setLastTestAt(LocalDateTime.now());
+        modelConfigMapper.updateById(patch);
+        log.info("平台模型连通性测试, id: {}, name: {}, 结果: {}", id, config.getName(), ok);
+        return ok;
     }
 
     /** 判断是否为内网地址（SSRF 防护） */
