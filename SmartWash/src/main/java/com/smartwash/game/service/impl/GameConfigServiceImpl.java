@@ -261,6 +261,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         wrapper.and(hasKeyword, w -> w.like(GameConfig::getTitle, from.getKeyword())
                 .or().like(GameConfig::getGameKey, from.getKeyword()));
         wrapper.eq(StringUtils.hasText(from.getCategory()), GameConfig::getCategory, from.getCategory());
+        wrapper.eq(from.getSourceType() != null, GameConfig::getSourceType, from.getSourceType());
         wrapper.eq(from.getEnabled() != null, GameConfig::getEnabled, from.getEnabled());
         // 与用户端渲染顺序一致（sort 升序、id 升序），后台所见即端上所得
         wrapper.orderByAsc(GameConfig::getSort).orderByAsc(GameConfig::getId);

@@ -59,7 +59,7 @@ public class GameAdminController {
         return Result.ok(gameConfigService.uploadCover(file));
     }
 
-    @Operation(summary = "分页查询游戏列表", description = "管理视角含未启用项；keyword 模糊匹配 title/gameKey + category/enabled 精确筛选，按 sort/id 升序")
+    @Operation(summary = "分页查询游戏列表", description = "管理视角含未启用项；keyword 模糊匹配 title/gameKey + category/sourceType/enabled 精确筛选，按 sort/id 升序")
     @GetMapping("/list")
     public Result<Page<AdminGameVo>> list(SearchGameFrom from) {
         return Result.ok(gameConfigService.adminPage(from));
