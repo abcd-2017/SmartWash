@@ -6,6 +6,7 @@
 //
 // host 清单（与安卓各域 DeepLinkModule 注册一致）：
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
+//   order-detail/{orderId}（鸿蒙端内：桌面洗衣卡片点击直达详情，安卓无此入口） /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
 //   t/{code} / game-center / lab / mood / review / subscription / ai-work / web(内建)
 //
@@ -94,6 +95,9 @@ export const lookup: DeepLinkRouteLookup = (host: string, pathSegments: string[]
     const tab = resolveOrderTab(query)
     return { routeName: RouteNames.ORDER_LIST, param: tab }
   }
+  if (host === 'order-detail') {
+    return resolveOrderDetail(pathSegments)
+  }
   if (host === 't') {
     return resolveShortCodeDetail(pathSegments)
   }
@@ -112,6 +116,25 @@ function resolveOrderTab(query: Map<string, string>): number {
     tab = 0
   }
   return Math.min(Math.max(Math.trunc(tab), 0), ORDER_TAB_MAX)
+}
+
+/**
+ * order-detail/{orderId}：订单详情（桌面洗衣卡片「有进行中订单」的点击落点；
+ * 引导态走 order?tab=0 列表页）。路由入参为 number —— 与 OrderList 页
+ * pushPathByName(RouteNames.ORDER_DETAIL, order.orderId) 同构，
+ * OrderDetail.aboutToAppear 经 getNumberParam(RouteNames.ORDER_DETAIL) 消费（Number()
+ * 显式转换，number/数字字符串均可），不做裸强转。
+ * 参数校验：仅接受单段正整数 path，非法返回 null（深链统一降级「暂不支持该链接」）。
+ */
+function resolveOrderDetail(pathSegments: string[]): DeepLinkRouteTarget | null {
+  if (pathSegments.length !== 1) {
+    return null
+  }
+  const orderId = Number(pathSegments[0])
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return null
+  }
+  return { routeName: RouteNames.ORDER_DETAIL, param: orderId }
 }
 
 /**
