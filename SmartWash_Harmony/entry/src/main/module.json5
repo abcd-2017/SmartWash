@@ -72,6 +72,11 @@
       {
         "name": "ohos.permission.INTERNET",
         "reason": "$string:internet_reason"
+      },
+      {
+        // 实验舱掌上星图：加速度计读取设备姿态（system_grant 普通权限，免弹窗）
+        "name": "ohos.permission.ACCELEROMETER",
+        "reason": "$string:accelerometer_reason"
       }
     ]
   }

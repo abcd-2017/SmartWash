@@ -48,8 +48,7 @@ export class LabEntry {
 
 /**
  * 入口卡列表（编译期固定；文案对齐安卓 feature/lab/values/strings.xml）。
- * 后 5 项（流体 / 绘画 / 声景 / 宠物 / 星图）本批次为占位页，路由已注册，
- * 待对应批次补齐实现。
+ * 全部 10 项均已实现（声景 / 星图于 2026-11 批次补齐）。
  */
 export function labEntries(): LabEntry[] {
   return [
