@@ -1068,13 +1068,18 @@ const submitUpload = async () => {
   }
 };
 
-// 成功态 → 再传一个：回到表单态保留已填字段；
-// title 未变时 watch 不会触发，gameKey 需手动重生成
+// 成功态 → 再传一个：清空身份字段（标题/描述/游戏包/封面），避免残留上一个游戏的信息——
+// 标题残留会让 gameKey 重新生成出与刚上传游戏相同的 key，选新文件直接提交即按同 key 覆盖更新；
+// 保留批量复用的元数据（分类/图标/色组/角标/排序/备注）。
+// title 置空会触发 watch 重生成 gameKey；title 原本就为空时 watch 不触发，需手动重生成
 const handleReupload = () => {
   uploadResult.value = null;
   selectedFile.value = null;
+  handleCoverRemove();
   uploadPercent.value = 0;
   keyEdited.value = false;
+  tempGame.title = '';
+  tempGame.description = '';
   uploadKeySeed.value = Date.now().toString(36);
   tempGame.gameKey = slugFromTitle(tempGame.title);
 };
