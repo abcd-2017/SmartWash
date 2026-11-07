@@ -7,7 +7,7 @@
 // host 清单（与安卓各域 DeepLinkModule 注册一致）：
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
-//   t/{code} / game-center / lab / mood / review / subscription / ai-work / web(内建)
+//   t/{code} / game-center / lab / mood / review / subscription / read-later / ai-work / web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
 //   后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），未落地域注册到
@@ -75,6 +75,9 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   routes.set('review', { routeName: RouteNames.REVIEW_QUEUE, param: null })
   // subscription 已落地（对齐安卓 SubscriptionDeepLinkModule：subscription → SubscriptionRoute.List）
   routes.set('subscription', { routeName: RouteNames.SUBSCRIPTION_LIST, param: null })
+  // 稍后读域已落地（对齐安卓 ReadLaterDeepLinkModule：read-later → ReadLaterRoute.Page；
+  // 本页消费 /web/auth 鉴权接口，属受保护深链，未登录由 401 统一兜底落登录页）
+  routes.set('read-later', { routeName: RouteNames.READ_LATER, param: null })
   // ai-work 已落地（对齐安卓壳层 DeepLinkModule：ai-work → PageConstant.AiWork）
   routes.set('ai-work', { routeName: RouteNames.AI_WORK, param: null })
   return routes

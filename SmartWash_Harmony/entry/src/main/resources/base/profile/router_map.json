@@ -281,6 +281,13 @@
       }
     },
     {
+      "name": "ReadLater",
+      "pageSourceFile": "src/main/ets/feature/readlater/ReadLaterPage.ets",
+      "buildFunction": "ReadLaterBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "SubscriptionList",
       "pageSourceFile": "src/main/ets/feature/subscription/ui/SubscriptionListPage.ets",
       "buildFunction": "SubscriptionListBuilder",

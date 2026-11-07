@@ -61,6 +61,8 @@ export class RouteNames {
   static readonly REVIEW_QUEUE: string = "ReviewQueue"
   static readonly REVIEW_STUDY: string = "ReviewStudy"
   static readonly REVIEW_MATERIAL_LIST: string = "ReviewMaterials"
+  // 稍后读域路由名（对齐安卓 ReadLaterRoute.Page；入口为深链 smartwash://read-later 与后端 workbench_entry 卡片）
+  static readonly READ_LATER: string = "ReadLater"
   // 订阅逃生舱域路由名（对齐安卓 SubscriptionRoute.List/Edit/Detail/Reminders）
   static readonly SUBSCRIPTION_LIST: string = "SubscriptionList"
   static readonly SUBSCRIPTION_EDIT: string = "SubscriptionEdit"
