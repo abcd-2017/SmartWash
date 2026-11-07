@@ -47,6 +47,38 @@
       </div>
     </div>
 
+    <!-- 趋势分析（收入折线 + 订单量柱图，7/30/90 天切换） -->
+    <div class="trend-card" v-loading="trendLoading">
+      <div class="trend-card__header">
+        <h3 class="trend-card__title">趋势分析</h3>
+        <el-radio-group v-model="trendDays" size="small">
+          <el-radio-button v-for="days in TREND_DAYS_OPTIONS" :key="days" :value="days">
+            近 {{ days }} 天
+          </el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="trend-card__grid">
+        <div class="trend-card__panel">
+          <span class="trend-card__panel-title">收入趋势</span>
+          <TrendChart
+            :data="incomeTrend"
+            type="line"
+            color="var(--color-primary)"
+            :value-formatter="formatIncomeValue"
+          />
+        </div>
+        <div class="trend-card__panel">
+          <span class="trend-card__panel-title">订单量趋势</span>
+          <TrendChart
+            :data="orderTrend"
+            type="bar"
+            color="var(--color-info)"
+            :value-formatter="formatOrderValue"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- 快捷操作区 -->
     <div class="quick-actions">
       <h3 class="quick-actions__title">快捷操作</h3>
@@ -73,10 +105,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
 import { School, UserFilled, Document, Coin, Ticket } from '@element-plus/icons-vue';
-import { getDashboardStats } from '@/api/dashboard';
+import { getDashboardStats, getDashboardTrend } from '@/api/dashboard';
 import { useAnimatedNumber } from '@/composables/useAnimatedNumber';
+import TrendChart from '@/components/TrendChart.vue';
+import { formatAmount, formatThousands } from '@/utils/format';
 import logger from '@/utils/logger';
 
 const stats = ref({
@@ -107,6 +142,49 @@ onMounted(async () => {
     logger.error('工作台统计数据加载失败:', error);
   }
 });
+
+// ---------- 趋势分析 ----------
+// 近 N 天逐日趋势：一次请求同时产出收入与订单量两条序列（后端已补零成连续日期）
+const TREND_DAYS_OPTIONS = [7, 30, 90];
+const trendDays = ref(30);
+const trendData = ref([]);
+const trendLoading = ref(false);
+
+// 竞态守卫：快速切换 7/30/90 天时旧响应后到会覆盖新窗数据，序号不一致即丢弃（对齐 useTableList）
+let trendFetchSeq = 0;
+
+const fetchTrend = async () => {
+  const mySeq = ++trendFetchSeq;
+  trendLoading.value = true;
+  try {
+    const data = (await getDashboardTrend(trendDays.value)) || [];
+    if (mySeq !== trendFetchSeq) return;
+    trendData.value = data;
+  } catch (error) {
+    if (mySeq !== trendFetchSeq) return;
+    logger.error('趋势数据加载失败:', error);
+    ElMessage.error(error.message || '获取趋势数据失败');
+  } finally {
+    if (mySeq === trendFetchSeq) {
+      trendLoading.value = false;
+    }
+  }
+};
+
+// 切换时间窗回到第一手数据（后端按 days 重算并补零）
+watch(trendDays, fetchTrend);
+
+// 接口行 → 图表点映射；金额 tooltip 千分位两位小数，订单量千分位整数
+const incomeTrend = computed(() =>
+  trendData.value.map((row) => ({ date: row.date, value: Number(row.income) || 0 }))
+);
+const orderTrend = computed(() =>
+  trendData.value.map((row) => ({ date: row.date, value: Number(row.orderCount) || 0 }))
+);
+const formatIncomeValue = (value) => `￥${formatAmount(value)}`;
+const formatOrderValue = (value) => `${formatThousands(value)} 单`;
+
+onMounted(fetchTrend);
 </script>
 
 <style scoped>
@@ -183,6 +261,54 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+/* 趋势分析卡：与统计卡同级白卡语言（12px 圆角 + 着地阴影），靛蓝/信息蓝只出现在图表主体 */
+.trend-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  box-shadow: var(--shadow-ground);
+  margin-bottom: 24px;
+}
+
+.trend-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.trend-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.trend-card__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .trend-card__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* min-width: 0 防止图表画布在 grid 单元格内溢出 */
+.trend-card__panel {
+  min-width: 0;
+}
+
+.trend-card__panel-title {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 /* 快捷操作区 */

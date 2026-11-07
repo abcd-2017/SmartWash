@@ -162,6 +162,13 @@ http.interceptors.response.use(
   (response) => {
     const res = response.data;
 
+    // 二进制响应（responseType: 'blob'，如报表导出）：无统一信封，跳过解包与业务码检查，
+    // 放行完整 response 交调用方按 Content-Type 自行识别 JSON 错误信封
+    //（与 delivery.js 的 downloadDeliveryFile 同模式，导出类接口均需 Bearer 故复用主实例）
+    if (response.config?.responseType === 'blob' || res instanceof Blob) {
+      return response;
+    }
+
     // 业务码 401 与 HTTP 401 走同一份续签/登出逻辑
     if (res.code === 401) {
       // 刷新请求自身的业务 401（refreshToken 失效）：仅向单飞等待方传递失败信号，

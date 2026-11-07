@@ -20,6 +20,33 @@ export function formatTime(time, fmt = DEFAULT_TIME_FORMAT) {
 }
 
 /**
+ * 千分位整数格式化（笔数/数量等计数场景），空值或非法值返回 '0'
+ * @param {Number|String|null} value 数值
+ * @returns {String}
+ */
+export function formatThousands(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0';
+  }
+  return num.toLocaleString('en-US');
+}
+
+/**
+ * 金额格式化：千分位 + 固定两位小数，空值或非法值返回 '0.00'
+ * 与页面既有 ￥ 前缀配合使用（￥{{ formatAmount(x) }}）
+ * @param {Number|String|null} value 金额
+ * @returns {String}
+ */
+export function formatAmount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return '0.00';
+  }
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
  * 文件大小人性化展示（字节 → B/KB/MB），用于游戏包体积列
  * 空值（null/undefined）返回占位符 "-"（外链等无体积场景）
  * @param {Number|null} bytes 字节数
