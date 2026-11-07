@@ -1,25 +1,31 @@
 package com.smartwash.subscription.service.impl;
 
+import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.smartwash.entity.Users;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.mapper.UsersMapper;
 import com.smartwash.subscription.constant.SubscriptionStatus;
 import com.smartwash.subscription.entity.SubscriptionReminderLog;
 import com.smartwash.subscription.entity.UserSubscription;
 import com.smartwash.subscription.entity.UserSubscriptionUsageLog;
 import com.smartwash.subscription.from.AddSubscriptionFrom;
+import com.smartwash.subscription.from.AdminSearchSubscriptionFrom;
 import com.smartwash.subscription.from.SearchSubscriptionFrom;
 import com.smartwash.subscription.from.UpdateSubscriptionFrom;
 import com.smartwash.subscription.mapper.SubscriptionReminderLogMapper;
 import com.smartwash.subscription.mapper.UserSubscriptionMapper;
 import com.smartwash.subscription.mapper.UserSubscriptionUsageLogMapper;
 import com.smartwash.subscription.service.UserSubscriptionService;
+import com.smartwash.subscription.vo.AdminSubscriptionVo;
 import com.smartwash.subscription.vo.SubscriptionGroupCountVo;
 import com.smartwash.subscription.vo.SubscriptionStatsVo;
+import com.smartwash.subscription.vo.SubscriptionSummaryVo;
 import com.smartwash.subscription.vo.UserSubscriptionVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +57,7 @@ public class UserSubscriptionServiceImpl extends ServiceImpl<UserSubscriptionMap
 
     private final UserSubscriptionUsageLogMapper userSubscriptionUsageLogMapper;
     private final SubscriptionReminderLogMapper subscriptionReminderLogMapper;
+    private final UsersMapper usersMapper;
 
     // ==================== CRUD ====================
 
@@ -264,6 +271,85 @@ public class UserSubscriptionServiceImpl extends ServiceImpl<UserSubscriptionMap
                 ? BigDecimal.valueOf(12L * interval)
                 : BigDecimal.valueOf(interval);
         return safeAmount.divide(divisor, 2, RoundingMode.HALF_UP);
+    }
+
+    // ==================== 管理端（/admin/subscription，全平台只读） ====================
+
+    @Override
+    public SubscriptionSummaryVo adminSummary() {
+        LocalDate today = LocalDate.now();
+        String active = SubscriptionStatus.ACTIVE.getStatus();
+        long activeCount = this.count(new LambdaQueryWrapper<UserSubscription>()
+                .eq(UserSubscription::getStatus, active));
+        // 本域无独立 expired 状态：已过期 = 仍为 active 但下次续费日已过（逾期未推进）
+        long expiredCount = this.count(new LambdaQueryWrapper<UserSubscription>()
+                .eq(UserSubscription::getStatus, active)
+                .lt(UserSubscription::getNextRenewDate, today));
+        long expiringIn7Days = this.count(new LambdaQueryWrapper<UserSubscription>()
+                .eq(UserSubscription::getStatus, active)
+                .ge(UserSubscription::getNextRenewDate, today)
+                .le(UserSubscription::getNextRenewDate, today.plusDays(7)));
+        return new SubscriptionSummaryVo()
+                .setActiveCount(activeCount)
+                .setExpiredCount(expiredCount)
+                .setExpiringIn7Days(expiringIn7Days);
+    }
+
+    @Override
+    public IPage<AdminSubscriptionVo> adminPage(AdminSearchSubscriptionFrom from) {
+        if (from.getStatus() != null && !SubscriptionStatus.isValid(from.getStatus())) {
+            throw new CustomExceptions("状态筛选参数非法");
+        }
+        if (from.getDateFrom() != null && from.getDateTo() != null && from.getDateFrom().isAfter(from.getDateTo())) {
+            throw new CustomExceptions("dateFrom 不能晚于 dateTo");
+        }
+        LambdaQueryWrapper<UserSubscription> wrapper = new LambdaQueryWrapper<>();
+        if (from.getStatus() != null) {
+            wrapper.eq(UserSubscription::getStatus, from.getStatus());
+        }
+        // 日期区间按下次续费日（到期时间）筛选
+        if (from.getDateFrom() != null) {
+            wrapper.ge(UserSubscription::getNextRenewDate, from.getDateFrom());
+        }
+        if (from.getDateTo() != null) {
+            wrapper.le(UserSubscription::getNextRenewDate, from.getDateTo());
+        }
+        wrapper.orderByAsc(UserSubscription::getNextRenewDate)
+                .orderByDesc(UserSubscription::getSubscriptionId);
+        Page<UserSubscription> result = this.page(new Page<>(from.getPage(), from.getSize()), wrapper);
+        // 批量取用户手机号并脱敏（遵循仓库既有做法 DesensitizedUtil.mobilePhone）
+        Set<Long> userIds = result.getRecords().stream()
+                .map(UserSubscription::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, String> phoneMap = userIds.isEmpty() ? Map.of()
+                : usersMapper.selectBatchIds(userIds).stream()
+                .filter(user -> StrUtil.isNotBlank(user.getPhoneNumber()))
+                .collect(Collectors.toMap(Users::getUserId,
+                        user -> DesensitizedUtil.mobilePhone(user.getPhoneNumber()), (a, b) -> a));
+        Page<AdminSubscriptionVo> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(record -> buildAdminVo(record, phoneMap.get(record.getUserId())))
+                .collect(Collectors.toList()));
+        return voPage;
+    }
+
+    /** 管理端 VO 组装：不下发取消网址/步骤备忘/备注等用户私有文本 */
+    private AdminSubscriptionVo buildAdminVo(UserSubscription record, String maskedPhone) {
+        return new AdminSubscriptionVo()
+                .setSubscriptionId(record.getSubscriptionId())
+                .setUserId(record.getUserId())
+                .setUserPhone(maskedPhone)
+                .setName(record.getName())
+                .setAmount(record.getAmount())
+                .setCycleType(record.getCycleType())
+                .setCycleInterval(record.getCycleInterval())
+                .setNextRenewDate(record.getNextRenewDate())
+                .setTrialEndDate(record.getTrialEndDate())
+                .setAutoRenew(record.getAutoRenew())
+                .setStatus(record.getStatus())
+                .setCreatedAt(record.getCreatedAt())
+                .setUpdatedAt(record.getUpdatedAt());
     }
 
     // ==================== 内部方法 ====================

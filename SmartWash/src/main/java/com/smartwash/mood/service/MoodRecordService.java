@@ -6,7 +6,9 @@ import com.smartwash.mood.from.SaveMoodFrom;
 import com.smartwash.mood.vo.MoodCalendarDayVo;
 import com.smartwash.mood.vo.MoodStatsVo;
 import com.smartwash.mood.vo.MoodRecordVo;
+import com.smartwash.mood.vo.MoodSummaryVo;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -24,4 +26,7 @@ public interface MoodRecordService extends IService<MoodRecord> {
 
     /** 月度趋势统计：各等级计数 + 记录天数 + 月均值（等级均值保留2位） */
     MoodStatsVo monthStats(String ym, Long userId);
+
+    /** 管理端聚合报表（全平台只读）：区间可空=近30天，byDate 逐日补零连续 */
+    MoodSummaryVo adminSummary(LocalDate dateFrom, LocalDate dateTo);
 }
