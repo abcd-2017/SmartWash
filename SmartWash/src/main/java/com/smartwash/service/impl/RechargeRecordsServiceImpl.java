@@ -16,6 +16,7 @@ import com.smartwash.mapper.UsersMapper;
 import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.service.PaymentGatewayService;
 import com.smartwash.vo.recharge_records.RechargeRecordsVo;
+import com.smartwash.vo.recharge_records.RechargeSummaryVo;
 import com.smartwash.vo.users.UserVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +96,20 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         }).toList());
 
         return rechargeRecordsVoPage;
+    }
+
+    @Override
+    public RechargeSummaryVo getRechargeSummary(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        RechargeSummaryVo vo = this.baseMapper.selectRechargeSummary(dateFrom, dateTo);
+        if (vo == null) {
+            // COUNT(*) 聚合恒返回一行，此分支为防御性兜底
+            vo = new RechargeSummaryVo();
+        }
+        if (vo.getTotalCount() == null) vo.setTotalCount(0L);
+        if (vo.getSuccessCount() == null) vo.setSuccessCount(0L);
+        if (vo.getTotalAmount() == null) vo.setTotalAmount(BigDecimal.ZERO);
+        if (vo.getSuccessAmount() == null) vo.setSuccessAmount(BigDecimal.ZERO);
+        return vo;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -201,6 +216,10 @@ public class RechargeRecordsServiceImpl extends ServiceImpl<RechargeRecordsMappe
         queryWrapper.and(rechargeRecordsFrom.getStartTime() != null, b -> b.ge(RechargeRecords::getRechargeTime, rechargeRecordsFrom.getStartTime()));
         queryWrapper.and(rechargeRecordsFrom.getEndTime() != null, b -> b.le(RechargeRecords::getRechargeTime, rechargeRecordsFrom.getEndTime()));
         queryWrapper.and(rechargeRecordsFrom.getRechargeType() != null, b -> b.eq(RechargeRecords::getRechargeType, rechargeRecordsFrom.getRechargeType()));
+
+        // 稳定排序（主键倒序=最新在前，与订单导出 ORDER BY created_at DESC 同向）：
+        // 无 ORDER BY 的分页查询在批量翻页（导出）时行序不保证一致，可能漏行/重行
+        queryWrapper.orderByDesc(RechargeRecords::getRecordId);
 
         return queryWrapper;
     }

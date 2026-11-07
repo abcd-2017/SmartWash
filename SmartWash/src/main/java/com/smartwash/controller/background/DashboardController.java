@@ -3,13 +3,18 @@ package com.smartwash.controller.background;
 import com.smartwash.common.Result;
 import com.smartwash.service.IDashboardService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.smartwash.vo.dashboard.DashboardTrendVo;
 import com.smartwash.vo.dashboard.DashboardVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 工作台统计控制器
@@ -27,5 +32,13 @@ public class DashboardController {
     @GetMapping("/stats")
     public Result<DashboardVo> getStats() {
         return Result.ok(dashboardService.getDashboardStats());
+    }
+
+    @Operation(summary = "获取收入与订单趋势", description = "最近 N 天的逐日收入（支付成功流水合计，口径与今日收入一致）与订单创建数，无数据日补零保证折线连续")
+    @GetMapping("/trend")
+    public Result<List<DashboardTrendVo>> getTrend(
+            @RequestParam(required = false)
+            @Parameter(description = "统计天数，默认 30，上限 90", example = "30") Integer days) {
+        return Result.ok(dashboardService.getDashboardTrend(days));
     }
 }

@@ -71,6 +71,12 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.35</version>
         </dependency>
+        <!-- POI：xlsx 导出（SXSSF 流式写出），订单/充值记录后台导出依赖 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.5</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>

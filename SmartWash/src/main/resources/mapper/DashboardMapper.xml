@@ -21,4 +21,25 @@
         WHERE status = '1' AND paid_at >= #{todayStart} AND is_delete = 0
     </select>
 
+    <!-- 逐日收入（趋势图）：口径与 sumTodayIncome 完全一致（status='1' 且未删除），按支付完成日聚合 -->
+    <select id="selectIncomeTrendByDay" resultType="com.smartwash.vo.dashboard.DashboardTrendVo">
+        SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') AS date,
+               IFNULL(SUM(amount), 0) AS income
+        FROM payments
+        WHERE status = '1' AND is_delete = 0
+          AND paid_at >= #{startDate} AND paid_at &lt; #{endDate}
+        GROUP BY DATE_FORMAT(paid_at, '%Y-%m-%d')
+        ORDER BY date
+    </select>
+
+    <!-- 逐日订单创建数（趋势图）：orders 为物理删除，按创建日聚合 -->
+    <select id="selectOrderTrendByDay" resultType="com.smartwash.vo.dashboard.DashboardTrendVo">
+        SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS date,
+               COUNT(*) AS orderCount
+        FROM orders
+        WHERE created_at >= #{startDate} AND created_at &lt; #{endDate}
+        GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+        ORDER BY date
+    </select>
+
 </mapper>

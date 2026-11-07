@@ -1,12 +1,21 @@
 package com.smartwash.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.smartwash.common.PaymentStatus;
+import com.smartwash.common.RechargeType;
 import com.smartwash.from.order.SearchOrderFrom;
+import com.smartwash.from.recharge_records.SearchRechargeRecordsFrom;
 import com.smartwash.service.ExportService;
 import com.smartwash.service.IOrdersService;
+import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.order.OrdersVo;
+import com.smartwash.vo.recharge_records.RechargeRecordsVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
@@ -22,10 +31,11 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * 订单 CSV 导出（评审报告后端 #32 加固）：
- * 1. 分批（每批 {@link #BATCH_SIZE} 条）循环查询 + 流式写出，替代原"单次 1 万条进内存"的实现，
- *    且不再有 1 万条截断——满批即继续翻页，直到末批，全量导出；
- * 2. 单元格统一转义（逗号/双引号/换行）并做公式注入防护（见 {@link #escapeCsvCell}）。
+ * 数据导出实现：
+ * 1. 订单 CSV 导出（评审报告后端 #32 加固）：分批（每批 {@link #BATCH_SIZE} 条）循环查询 + 流式写出，
+ *    替代原"单次 1 万条进内存"的实现，且不再有 1 万条截断——满批即继续翻页，直到末批，全量导出；
+ *    单元格统一转义（逗号/双引号/换行）并做公式注入防护（见 {@link #escapeCsvCell}）。
+ * 2. 充值记录 xlsx 导出：同样分批循环查询，SXSSF 流式写出（内存仅保留滑动窗口，其余落临时文件）。
  */
 @Slf4j
 @Service
@@ -40,10 +50,15 @@ public class ExportServiceImpl implements ExportService {
     private static final byte[] UTF_8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
     /** CSV 标准行分隔符（RFC 4180） */
     private static final String LINE_SEPARATOR = "\r\n";
-    /** 下单时间输出格式（原实现为 LocalDateTime 原生 toString，统一为 CSV 常见可读格式） */
-    private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    /** 时间输出格式（原实现为 LocalDateTime 原生 toString，统一为常见可读格式） */
+    private static final DateTimeFormatter EXPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    /** 充值记录 xlsx 表头（列顺序与 {@link #writeRechargeRow} 写出顺序一致） */
+    private static final String[] RECHARGE_EXCEL_HEADER = {"ID", "用户", "金额", "渠道", "状态", "时间"};
+    /** SXSSF 内存窗口行数：窗口外行自动落盘临时文件，导出不随数据量膨胀内存 */
+    private static final int SXSSF_WINDOW_SIZE = 100;
 
     private final IOrdersService ordersService;
+    private final IRechargeRecordsService rechargeRecordsService;
 
     @Override
     public void exportOrdersCsv(SearchOrderFrom searchFrom, OutputStream out) throws IOException {
@@ -72,6 +87,81 @@ public class ExportServiceImpl implements ExportService {
         }
     }
 
+    @Override
+    public void exportRechargeRecordsExcel(LocalDateTime dateFrom, LocalDateTime dateTo, OutputStream out) throws IOException {
+        SearchRechargeRecordsFrom searchFrom = new SearchRechargeRecordsFrom();
+        searchFrom.setStartTime(dateFrom);
+        searchFrom.setEndTime(dateTo);
+
+        // SXSSF：仅滑动窗口驻留内存，close 时随 workbook 一并清理临时文件
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(SXSSF_WINDOW_SIZE)) {
+            Sheet sheet = workbook.createSheet("充值记录");
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < RECHARGE_EXCEL_HEADER.length; i++) {
+                header.createCell(i).setCellValue(RECHARGE_EXCEL_HEADER[i]);
+            }
+
+            long exportedCount = 0;
+            int page = 1;
+            int rowIdx = 1;
+            List<RechargeRecordsVo> batch;
+            do {
+                // 与订单导出同模式：满批继续翻页直到末批，全量导出无条数截断
+                searchFrom.setPage(page);
+                searchFrom.setSize(BATCH_SIZE);
+                batch = rechargeRecordsService.getAllRecords(searchFrom).getRecords();
+                for (RechargeRecordsVo record : batch) {
+                    writeRechargeRow(sheet.createRow(rowIdx++), record);
+                }
+                exportedCount += batch.size();
+                page++;
+            } while (batch.size() == BATCH_SIZE);
+
+            workbook.write(out);
+            log.info("导出充值记录 xlsx 完成, 共 {} 条记录, 批次数 {}", exportedCount, page - 1);
+        }
+    }
+
+    /** 写出一行充值记录（列顺序与 RECHARGE_EXCEL_HEADER 一致） */
+    private void writeRechargeRow(Row row, RechargeRecordsVo record) {
+        if (record.getRecordId() != null) {
+            row.createCell(0).setCellValue(record.getRecordId());
+        }
+        row.createCell(1).setCellValue(record.getUsers() != null && record.getUsers().getPhoneNumber() != null
+                ? record.getUsers().getPhoneNumber() : "");
+        // 金额写数值单元格，Excel 内可直接求和筛选
+        row.createCell(2).setCellValue(record.getAmount() != null ? record.getAmount().doubleValue() : 0d);
+        row.createCell(3).setCellValue(rechargeTypeText(record.getRechargeType()));
+        row.createCell(4).setCellValue(paymentStatusText(record.getStatus()));
+        row.createCell(5).setCellValue(record.getRechargeTime() == null ? "" : EXPORT_TIME_FORMATTER.format(record.getRechargeTime()));
+    }
+
+    /** 充值渠道文本：1-微信支付 2-支付宝支付（未知码原样输出，不丢信息） */
+    static String rechargeTypeText(String type) {
+        if (type == null) {
+            return "";
+        }
+        for (RechargeType rechargeType : RechargeType.values()) {
+            if (rechargeType.getType().equals(type)) {
+                return rechargeType.getMessage();
+            }
+        }
+        return type;
+    }
+
+    /** 充值状态文本：复用 PaymentStatus 语义（0-待支付 1-充值成功 2-充值失败 3-处理中），未知码原样输出 */
+    static String paymentStatusText(String status) {
+        if (status == null) {
+            return "";
+        }
+        for (PaymentStatus paymentStatus : PaymentStatus.values()) {
+            if (paymentStatus.getStatus().equals(status)) {
+                return paymentStatus.getDescription();
+            }
+        }
+        return status;
+    }
+
     /** 写出一行订单数据（列顺序与表头一致） */
     private void writeOrderRow(BufferedWriter writer, OrdersVo order) throws IOException {
         writer.write(String.join(",",
@@ -80,7 +170,7 @@ public class ExportServiceImpl implements ExportService {
                 formatAmount(order.getTotalPrice()),
                 formatAmount(order.getPayPrice()),
                 escapeCsvCell(order.getStatus()),
-                escapeCsvCell(order.getCreatedAt() == null ? null : CREATED_AT_FORMATTER.format(order.getCreatedAt()))));
+                escapeCsvCell(order.getCreatedAt() == null ? null : EXPORT_TIME_FORMATTER.format(order.getCreatedAt()))));
         writer.write(LINE_SEPARATOR);
     }
 

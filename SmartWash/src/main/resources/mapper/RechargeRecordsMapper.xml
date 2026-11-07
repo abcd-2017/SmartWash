@@ -11,4 +11,21 @@
           and status = '3'
     </update>
 
+    <!-- 充值汇总统计：条件聚合一次返回；成功口径 = status '1'（PaymentStatus.SUCCESS）；
+         手写 SQL 必须手动追加 is_delete = 0，排除已逻辑删除流水（与 payments 收入口径一致） -->
+    <select id="selectRechargeSummary" resultType="com.smartwash.vo.recharge_records.RechargeSummaryVo">
+        SELECT COUNT(*) AS totalCount,
+               IFNULL(SUM(CASE WHEN status = '1' THEN 1 ELSE 0 END), 0) AS successCount,
+               IFNULL(SUM(amount), 0) AS totalAmount,
+               IFNULL(SUM(CASE WHEN status = '1' THEN amount ELSE 0 END), 0) AS successAmount
+        FROM recharge_records
+        WHERE is_delete = 0
+        <if test="dateFrom != null">
+          AND recharge_time &gt;= #{dateFrom}
+        </if>
+        <if test="dateTo != null">
+          AND recharge_time &lt;= #{dateTo}
+        </if>
+    </select>
+
 </mapper>
