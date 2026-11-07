@@ -10,6 +10,7 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { BoidsSimulator } from '../../core/BoidsSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
@@ -36,8 +37,11 @@ const DOUBLE_TAP_SLOP: number = 40
 /** 长按取消移动阈值（vp） */
 const LONG_PRESS_SLOP: number = 20
 
-/** 鱼色组（primary / water / primaryDark 令牌系） */
-const FISH_COLORS: number[] = [DesignColor.PRIMARY, DesignColor.WATER, DesignColor.PRIMARY_DARK]
+/** 鱼色组（primary / water / primaryDark 令牌系）：使用点即时求值——
+ * 模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色 */
+function fishColorPalette(): number[] {
+  return [DesignColor.PRIMARY, DesignColor.WATER, DesignColor.PRIMARY_DARK]
+}
 
 @Builder
 export function FishBuilder() {
@@ -205,12 +209,15 @@ export struct FishPage {
     ctx.clearRect(0, 0, width, height)
     ctx.fillStyle = DesignColor.WATER_SOFT
     ctx.fillRect(0, 0, width, height)
+    // 鱼色每帧求值一次（非逐鱼，避免高频路径重复分配数组）：
+    // 深浅色切换（ThemeRefreshV2 重建子树）后下一帧即取新令牌
+    const fishColors: number[] = fishColorPalette()
     for (const boid of this.sim.boidsList) {
       const size: number = 4 + boid.sizeFactor * 4
       ctx.save()
       ctx.translate(boid.x, boid.y)
       ctx.rotate(Math.atan2(boid.vy, boid.vx))
-      ctx.fillStyle = FISH_COLORS[boid.colorIndex % FISH_COLORS.length]
+      ctx.fillStyle = fishColors[boid.colorIndex % fishColors.length]
       ctx.beginPath()
       ctx.moveTo(1.2 * size, 0)
       ctx.lineTo(-1.2 * size, -0.6 * size)
@@ -248,6 +255,10 @@ export struct FishPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: FishText.title })
 
@@ -304,6 +315,7 @@ export struct FishPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }
