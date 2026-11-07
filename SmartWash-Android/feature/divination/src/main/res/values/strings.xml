@@ -140,4 +140,35 @@
     <string name="div_followup_empty">还没有追问，输入你的问题吧</string>
     <string name="div_followup_thinking">正在推演…</string>
     <string name="div_followup_footer">—— 继续追问将沿用本卦盘推演 ——</string>
+
+    <!-- 占卜闭环三件套（卦例搜索 / 待回访 / 盘感） -->
+    <string name="div_loop_search_title">卦例搜索</string>
+    <string name="div_loop_search_hint">检 问题 · 解读 · 卦例</string>
+    <string name="div_loop_search_idle">输入关键词，翻检案卷与解读</string>
+    <string name="div_loop_search_loading">正在翻检…</string>
+    <string name="div_loop_search_empty">未检得相关卦例</string>
+    <string name="div_loop_search_note">搜索覆盖问题与解读全文 · 点击结果复盘原盘</string>
+
+    <string name="div_loop_nudge_title">待回访</string>
+    <string name="div_loop_nudge_loading">正在整理回访簿…</string>
+    <string name="div_loop_nudge_empty">暂无待回访卦例</string>
+    <string name="div_loop_nudge_cast_prefix">占于 %1$s</string>
+    <string name="div_loop_nudge_date">应回访 %1$s</string>
+    <string name="div_loop_go_feedback">去反馈</string>
+    <string name="div_loop_ignore">忽 略</string>
+    <string name="div_loop_ignoring">…</string>
+    <string name="div_loop_nudge_note">回访应验情况 · 让每一次起卦都有回响</string>
+
+    <string name="div_loop_stats_title">盘感</string>
+    <string name="div_loop_stats_loading">正在推演盘感…</string>
+    <string name="div_loop_stats_empty">暂无卦例可统计</string>
+    <string name="div_loop_stats_retry">重 试</string>
+    <string name="div_loop_stats_total">总卦数</string>
+    <string name="div_loop_stats_feedback">已反馈</string>
+    <string name="div_loop_stats_verify">应验率</string>
+    <string name="div_loop_stats_method_title">术 数 分 布</string>
+    <string name="div_loop_stats_month_title">月 度 趋 势</string>
+    <string name="div_loop_stats_category_title">所 问 领 域</string>
+    <string name="div_loop_stats_empty_chart">暂无数据</string>
+    <string name="div_loop_stats_note">盘感由卦例统计生成 · 仅供复盘参考</string>
 </resources>

@@ -57,4 +57,19 @@ sealed interface DivRoute : SmartWashRoute {
     @Serializable
     @SerialName("DivHistory")
     data object History : DivRoute
+
+    /** 卦例搜索（占卜闭环：关键词翻检案卷与解读） */
+    @Serializable
+    @SerialName("DivSearch")
+    data object Search : DivRoute
+
+    /** 待回访（占卜闭环：status=0 待回访卦例回访簿） */
+    @Serializable
+    @SerialName("DivNudge")
+    data object Nudge : DivRoute
+
+    /** 盘感（占卜闭环：卦例统计复盘） */
+    @Serializable
+    @SerialName("DivStats")
+    data object Stats : DivRoute
 }

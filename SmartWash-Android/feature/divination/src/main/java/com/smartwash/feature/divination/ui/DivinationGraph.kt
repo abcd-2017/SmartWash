@@ -11,7 +11,10 @@ import com.smartwash.feature.divination.ui.page.chart.DivChartPage
 import com.smartwash.feature.divination.ui.page.followup.DivFollowUpPage
 import com.smartwash.feature.divination.ui.page.history.DivHistoryPage
 import com.smartwash.feature.divination.ui.page.home.DivHomePage
+import com.smartwash.feature.divination.ui.page.nudge.DivNudgePage
 import com.smartwash.feature.divination.ui.page.reading.DivReadingPage
+import com.smartwash.feature.divination.ui.page.search.DivSearchPage
+import com.smartwash.feature.divination.ui.page.stats.DivStatsPage
 
 /**
  * 观象台路由聚合（T8.1）：7 页面的 composable 注册自 app 壳 MainActivity
@@ -56,5 +59,15 @@ fun NavGraphBuilder.divinationGraph(navController: NavHostController) {
             navController,
             recordId = entry.toRoute<DivRoute.FollowUp>().recordId,
         )
+    }
+    // ---------------- 占卜闭环三件套（域内入口，深链不需要） ----------------
+    composable<DivRoute.Search> {
+        DivSearchPage(navController)
+    }
+    composable<DivRoute.Nudge> {
+        DivNudgePage(navController)
+    }
+    composable<DivRoute.Stats> {
+        DivStatsPage(navController)
     }
 }

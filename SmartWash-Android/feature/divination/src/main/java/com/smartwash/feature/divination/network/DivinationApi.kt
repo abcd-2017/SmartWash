@@ -63,6 +63,40 @@ interface DivinationApi {
     @GET("web/auth/div/models")
     @RequireAuthorization
     suspend fun getModels(): ApiResult<List<DivModelVo>>
+
+    /** ---------------- 占卜闭环三件套（卦例搜索 / 待回访 / 盘感） ---------------- */
+
+    /** 卦例关键词搜索（问题/解读全文匹配，分页） */
+    @GET("web/auth/div/records/search")
+    @RequireAuthorization
+    suspend fun searchRecordsByKeyword(
+        @Query("keyword") keyword: String,
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20,
+    ): ApiResult<PageData<DivRecordSearchVo>>
+
+    /** 待回访列表（status=0 待回访卦例，分页） */
+    @GET("web/auth/div/nudges")
+    @RequireAuthorization
+    suspend fun getNudges(
+        @Query("page") page: Int = 1,
+        @Query("size") size: Int = 20,
+    ): ApiResult<PageData<DivNudgeVo>>
+
+    /** 待回访计数（卦历页入口徽标，>0 显示角标） */
+    @GET("web/auth/div/nudges/count")
+    @RequireAuthorization
+    suspend fun getNudgeCount(): ApiResult<Int>
+
+    /** 忽略待回访（{id} = 待回访卦例 recordId；成功后该条不再进入回访簿） */
+    @POST("web/auth/div/nudges/{id}/ignore")
+    @RequireAuthorization
+    suspend fun ignoreNudge(@Path("id") id: Long): ApiResult<String>
+
+    /** 盘感统计（总卦数/术数分布/类别分布/月度趋势/反馈与应验率） */
+    @GET("web/auth/div/stats")
+    @RequireAuthorization
+    suspend fun getStats(): ApiResult<DivStatsVo>
 }
 
 /** ---------------- 请求体 ---------------- */
@@ -170,4 +204,54 @@ data class DivModelVo(
     val modelId: String? = null,
     val priority: Int? = null,
     val active: Boolean? = null,
+)
+
+/** ---------------- 占卜闭环三件套 VO（字段对齐后端闭环 Controller 返回） ---------------- */
+
+/** 卦例搜索结果项（后端 DivRecordSearchVo；castAt ISO 字符串透传，contentPreview 两行截断） */
+@Keep
+data class DivRecordSearchVo(
+    val recordId: Long,
+    val method: String? = null,
+    val category: String? = null,
+    val question: String? = null,
+    val castAt: String? = null,
+    val contentPreview: String? = null,
+)
+
+/** 待回访项（后端 DivNudgeVo；nudgeDate 为建议回访日，ISO 日期字符串透传） */
+@Keep
+data class DivNudgeVo(
+    val recordId: Long,
+    val method: String? = null,
+    val category: String? = null,
+    val question: String? = null,
+    val castAt: String? = null,
+    val nudgeDate: String? = null,
+)
+
+/** 名称-数量统计项（术数分布 / 类别分布共用；name 为后端返回的中文名） */
+@Keep
+data class DivNameCountVo(
+    val name: String? = null,
+    val count: Int = 0,
+)
+
+/** 月度趋势项（month 形如 "2026-11"，端上格式化为「11月」） */
+@Keep
+data class DivMonthCountVo(
+    val month: String? = null,
+    val count: Int = 0,
+)
+
+/** 盘感统计（后端 DivStatsVo；verifyRate 语义为比例 0-1，端上 ×100 取整展示） */
+@Keep
+data class DivStatsVo(
+    val totalRecords: Int = 0,
+    val methodCounts: List<DivNameCountVo> = emptyList(),
+    val categoryCounts: List<DivNameCountVo> = emptyList(),
+    val monthTrend: List<DivMonthCountVo> = emptyList(),
+    val feedbackTotal: Int = 0,
+    val verifyCount: Int = 0,
+    val verifyRate: Double = 0.0,
 )

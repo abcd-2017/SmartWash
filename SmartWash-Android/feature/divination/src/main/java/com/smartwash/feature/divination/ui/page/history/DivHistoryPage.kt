@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,9 +45,13 @@ import com.smartwash.feature.divination.ui.components.DivSeal
 import com.smartwash.feature.divination.DivRoute
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
+import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,12 +66,39 @@ fun DivHistoryPage(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.records.collectAsState()
+    val nudgeCount by viewModel.nudgeCount.collectAsState()
 
     DivinationScreen(scrollable = false) {
         // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让空态文案在浅色系统下不可见）
         val c = DivColors.current
         // 画板（玄墨/宣纸双板一致）：无返回页头标题左对齐 x20，标题下 10 进筛选行
         DivPageHeader(title = stringResource(R.string.div_history_title), alignStart = true)
+
+        // 占卜闭环入口行（卦例搜索 / 待回访角标 / 盘感）：只增入口，筛选行与列表逻辑零改动
+        Row(
+            Modifier
+                .padding(horizontal = 20.dp)
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(20.dp),
+        ) {
+            DivToolEntry(
+                seal = "搜",
+                label = stringResource(R.string.div_loop_search_title),
+                onClick = { navController.navigate(DivRoute.Search) },
+            )
+            DivToolEntry(
+                seal = "访",
+                label = stringResource(R.string.div_loop_nudge_title),
+                badge = nudgeCount,
+                onClick = { navController.navigate(DivRoute.Nudge) },
+            )
+            DivToolEntry(
+                seal = "盘",
+                label = stringResource(R.string.div_loop_stats_title),
+                onClick = { navController.navigate(DivRoute.Stats) },
+            )
+        }
 
         // 术数筛选（2026-11-01 缺陷 7d：五枚 chip 总宽 302dp+，360dp 屏 34dp 缩进下末枚
         // 「六壬」被剩余约束压窄换行——回归 a1c845c；改回 20 缩进 + 横向滚动 + 单行限高，
@@ -196,6 +229,57 @@ private fun com.smartwash.feature.divination.database.DivRecordEntity.summaryLin
             else -> ""
         }
     } ?: ""
+
+/** 闭环入口（印章 + 标签）：pressable 统一按压反馈与连击防抖；badge>0 显示朱砂角标（>9 折叠 9+） */
+@Composable
+private fun DivToolEntry(
+    seal: String,
+    label: String,
+    onClick: () -> Unit,
+    badge: Int = 0,
+) {
+    val c = DivColors.current
+    val view = currentView()
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.pressable(
+            onClick = {
+                view.performHaptic(HapticEffect.LIGHT)
+                onClick()
+            },
+        ),
+    ) {
+        Box {
+            DivSeal(seal, size = 36.dp, fontSize = 16.sp, flat = true)
+            if (badge > 0) {
+                // 朱砂角标：卦历画板印章同款深朱底 + 宣纸白字（双板一致）
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 5.dp, y = (-3).dp)
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(c.sealDeep),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (badge > 9) "9+" else badge.toString(),
+                        fontSize = 9.sp,
+                        color = Color(0xFFEFE9DA),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = c.textSecondary,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
 
 private fun methodLabel(method: DivMethod): String = when (method) {
     DivMethod.LIU_YAO -> "六爻"
