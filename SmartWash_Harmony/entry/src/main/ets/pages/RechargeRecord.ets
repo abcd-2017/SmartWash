@@ -9,6 +9,7 @@ import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { PagingController } from "../utils/PagingUtil"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -175,6 +176,10 @@ struct RechargeRecord {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         // 页头（公共 PageHeader：22/600 标题 + 48dp 返回热区，对齐安卓 PageHeader / recap G4）
         PageHeader({ title: "充值记录" })
@@ -221,6 +226,7 @@ struct RechargeRecord {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
+      }
     }
     .width("100%")
     .height("100%")

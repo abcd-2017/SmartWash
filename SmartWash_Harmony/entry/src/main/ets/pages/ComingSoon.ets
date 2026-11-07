@@ -9,6 +9,7 @@
 import { DesignColor } from '../constant/DesignSystem'
 import { EmptyState, PageHeader } from '../view/common/AppComponents'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 @Builder
 export function ComingSoonBuilder() {
@@ -19,6 +20,10 @@ export function ComingSoonBuilder() {
 struct ComingSoon {
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         PageHeader({ title: "功能建设中" })
 
@@ -34,6 +39,7 @@ struct ComingSoon {
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

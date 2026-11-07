@@ -44,6 +44,7 @@ import { pathStack, getNumberParam } from '../../../utils/PathStackUtil'
 import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
+import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
 /** 输入框描边样式（width + color） */
 interface SubscriptionBorderStyle {
@@ -362,6 +363,10 @@ struct SubscriptionEditPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
           title: this.isEditMode()
@@ -721,6 +726,7 @@ struct SubscriptionEditPage {
       // 沉浸式：内容避让状态栏与底部手势条（背景延伸），保证提交按钮完整落在安全区内
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

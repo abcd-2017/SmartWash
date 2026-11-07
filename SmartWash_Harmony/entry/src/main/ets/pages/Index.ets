@@ -6,6 +6,7 @@ import { pathStack } from '../utils/PathStackUtil';
 import { getValue } from '../utils/StorageUtil';
 import { bumpHomeTabBack, bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
 import { DesignColor } from '../constant/DesignSystem';
+import { ThemeRefresh } from '../view/common/ThemeRefresh';
 import { handleDeepLink, isPublicDeepLink } from '../utils/deeplink/DeepLinkHandler';
 import { AddSchoolBuilder } from './AddSchool';
 import { HomeBuilder, HOME_TAB_INDEX_KEY } from './Home';
@@ -172,6 +173,10 @@ struct Index {
   build() {
     Column() {
       Navigation(pathStack) {
+        // 深浅色实时跟随（深色模式审计）：根内容（Login/AddSchool/Home）包主题重建宿主，
+        // 色模式翻转时 if 双分支重建子树重读 DesignColor 令牌（栈内 NavDestination 页面
+        // 各自的 ThemeRefresh 覆盖，本层只管 Navigation 默认内容）
+        ThemeRefresh() {
         if (this.isLoading) {
           // 启动加载态：读取 token 期间不直接渲染登录页，避免"闪登录页"（评审 #7）
           Column() {
@@ -189,6 +194,7 @@ struct Index {
           AddSchoolBuilder()
         } else {
           HomeBuilder()
+        }
         }
       }.backgroundColor(this.darkMode ? DesignColor.DARK_BACKGROUND : DesignColor.BACKGROUND)
       .hideTitleBar(true)

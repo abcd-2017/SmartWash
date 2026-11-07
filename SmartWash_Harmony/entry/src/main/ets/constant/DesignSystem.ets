@@ -2,8 +2,12 @@
 // 基准：Android common/ui/theme/Color.kt + AppDesign.kt + Type.kt（DESIGN-SPEC v0.4，2026-10-24 定稿）
 // 2026-10-29 全量对齐安卓 v0.4：字阶收敛 8 档、background/surfaceVariant 互换、
 // outline/textTertiary/error/danger/success 取值、图标容器绿色系改 #F0FBF4。
-// 决策 D1：鸿蒙当前固定亮色模式（EntryAbility setColorMode COLOR_MODE_LIGHT），
-// 暗色主题整套 Dark* 令牌待后续专项补齐后再开放跟随系统。
+// 决策 D1（已更新）：应用深浅色跟随系统（EntryAbility 不再强制 COLOR_MODE_LIGHT，
+// syncDarkMode 写 AppStorage('darkMode') + applyDesignTheme 回写全部可变令牌；
+// 栈内页面的刷新经 view/common/ThemeRefresh 主题重建宿主感知 darkMode）。
+// 例外：认证页品牌渐变在 Android 端为「D1 品牌渐变页深浅色同款」实现（LoginPage.kt:89-94），
+// 鸿蒙端此处已备 Dark 变体（语义对应清氧·夜绿系），接入 applyDesignTheme 后
+// 两端在暗色下的认证页背景将不一致——是否回退同款待两端设计确认（见深色模式审计报告）。
 
 import { curves } from '@kit.ArkUI'
 
@@ -202,7 +206,18 @@ export class DesignColor {
   static AUTH_GRADIENT_MID: number = 0xFF0D7A4A
   static AUTH_GRADIENT_BOTTOM: number = 0xFF0B5C3A
 
+  // 认证页渐变暗色变体（清氧·夜语义）：白字压底可读性优先，整体下沉到暗色绿系——
+  // 顶段取 DARK_PRIMARY_SOFT 邻域（暗色绿阶最亮点），底段贴近 DARK_BACKGROUND 的绿调收尾；
+  // 三段绿相保持 155 附近与亮色渐变一致，仅降亮度（暗色大面积高饱和绿刺眼）。
+  // ⚠️ 跨端记录：Android 端认证页为 D1「深浅色同款」决策（LoginPage.kt:88-94），未实现暗色渐变；
+  //    鸿蒙端接入后暗色下两端认证页背景不一致，是否回退同款待两端设计确认。
+  static readonly DARK_AUTH_GRADIENT_TOP: number = 0xFF1D3229
+  static readonly DARK_AUTH_GRADIENT_MID: number = 0xFF182A22
+  static readonly DARK_AUTH_GRADIENT_BOTTOM: number = 0xFF12211B
+
   // ========== 毛玻璃效果色 ==========
+  // 暗色变体（面/边/输入三类）：玻璃面压在暗色底上白透明度需提约一档才能维持「卡与底」的分层可见性
+  // （白 10% 在亮绿渐变上清晰可辨，在深绿渐变上几乎隐形）；文字类白透明在暗底上对比天然更高，同值即可，不设 DARK 变体。
   static GLASS_BG_SUBTLE: number = 0x1AFFFFFF // 极淡底色（白 10%）
   static GLASS_BG: number = 0x26FFFFFF // 标准底色（白 15%）
   static GLASS_BORDER_SUBTLE: number = 0x2EFFFFFF // 淡边框（白 18%）
@@ -212,6 +227,12 @@ export class DesignColor {
   static GLASS_TEXT_HINT: number = 0x99FFFFFF // 提示文字（白 60%）
   static GLASS_TEXT_DISABLED: number = 0xB3FFFFFF // 禁用文字（白 70%）
   static GLASS_TEXT_ACTIVE: number = 0xCCFFFFFF // 激活文字（白 80%）
+
+  static readonly DARK_GLASS_BG_SUBTLE: number = 0x2EFFFFFF // 白 18%
+  static readonly DARK_GLASS_BG: number = 0x40FFFFFF // 白 25%
+  static readonly DARK_GLASS_BORDER_SUBTLE: number = 0x47FFFFFF // 白 28%
+  static readonly DARK_GLASS_BORDER: number = 0x52FFFFFF // 白 32%
+  static readonly DARK_GLASS_INPUT: number = 0x66FFFFFF // 白 40%
 
   // ========== 第三方品牌色 ==========
   static WECHAT_GREEN: number = 0xFF07C160
@@ -245,13 +266,21 @@ export class DesignColor {
   // 纱为纯黑透明层，深浅色同值（未定义 DARK_ 变体）。
   // 透明端在渐变 stop 上用 Color.Transparent（数值 0x00000000 会被当作不透明黑）。
   static readonly SCRIM_BLACK_20: number = 0x33000000  // 黑 20%
+  // 弹窗/对话框点击遮罩（NavDestination DIALOG 模式整页蒙层）：黑 50%，深浅色同值（遮罩语义不随主题）
+  static readonly SCRIM_BLACK_50: number = 0x80000000
+  // 图片上沉浸层（封面底部压暗渐变，对齐安卓 ImageScrim 深浅共用语义）：黑 55% 深端 + 全透明端
+  // 透明端用 rgba 字符串（0x00000000 会被当作不透明黑，同 SCRIM_BLACK_20 注释）
+  static readonly IMAGE_SCRIM: number = 0x8C000000       // 黑 55%
+  static readonly IMAGE_SCRIM_FADE: string = 'rgba(0, 0, 0, 0)' // 全透明端
 }
 
 
 /**
  * 应用深浅色主题（问题17）：EntryAbility 在冷启动与系统色模式变更时调用。
  * 令牌字段为可变静态值，调用后页面 rebuild 读取即得新色值；
- * 未定义 DARK_ 变体的令牌（渐变/毛玻璃/品牌色等）深浅色同值，不在此列出。
+ * 未定义 DARK_ 变体的令牌（GLASS 文字类/品牌色/服务类型色/阴影色等）深浅色同值，不在此列出。
+ * 注意：静态字段变更本身不驱动 UI 刷新——栈内页面经 view/common/ThemeRefresh
+ * 订阅 darkMode 触发子树重建后，重读本函数回写的新值。
  */
 export function applyDesignTheme(dark: boolean): void {
   DesignColor.PRIMARY = dark ? DesignColor.DARK_PRIMARY : 0xFF2D9B6A
@@ -314,6 +343,16 @@ export function applyDesignTheme(dark: boolean): void {
   DesignColor.ICON_FOREGROUND_PINK = dark ? DesignColor.DARK_ICON_FOREGROUND_PINK : 0xFFC9526B
   DesignColor.ICON_FOREGROUND_TEAL = dark ? DesignColor.DARK_ICON_FOREGROUND_TEAL : 0xFF3F9D78
   DesignColor.ICON_FOREGROUND_PURPLE = dark ? DesignColor.DARK_ICON_FOREGROUND_PURPLE : 0xFF7C3AED
+  // 认证页渐变暗色变体（⚠️ Android 端 D1 为深浅同款，此处启用暗色后两端暗色下不一致，见字段注释）
+  DesignColor.AUTH_GRADIENT_TOP = dark ? DesignColor.DARK_AUTH_GRADIENT_TOP : 0xFF1A9E6E
+  DesignColor.AUTH_GRADIENT_MID = dark ? DesignColor.DARK_AUTH_GRADIENT_MID : 0xFF0D7A4A
+  DesignColor.AUTH_GRADIENT_BOTTOM = dark ? DesignColor.DARK_AUTH_GRADIENT_BOTTOM : 0xFF0B5C3A
+  // 毛玻璃面/边/输入三类（文字类白透明暗底对比天然更高，保持同值不回写）
+  DesignColor.GLASS_BG_SUBTLE = dark ? DesignColor.DARK_GLASS_BG_SUBTLE : 0x1AFFFFFF
+  DesignColor.GLASS_BG = dark ? DesignColor.DARK_GLASS_BG : 0x26FFFFFF
+  DesignColor.GLASS_BORDER_SUBTLE = dark ? DesignColor.DARK_GLASS_BORDER_SUBTLE : 0x2EFFFFFF
+  DesignColor.GLASS_BORDER = dark ? DesignColor.DARK_GLASS_BORDER : 0x33FFFFFF
+  DesignColor.GLASS_INPUT = dark ? DesignColor.DARK_GLASS_INPUT : 0x4DFFFFFF
 }
 // ========== 设计 Token ==========
 

@@ -8,6 +8,7 @@ import { getObjectParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 @Builder
 export function BingCampusCardAlertBuilder() {
@@ -102,6 +103,10 @@ struct BingCampusCardAlert {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Stack({ alignContent: Alignment.Center }) {
         Column() {
           // 标题（对齐安卓 AppComponents.kt:961-965 headlineMedium 22/600）
@@ -212,11 +217,13 @@ struct BingCampusCardAlert {
       }
       .height("100%")
       .width("100%")
+      }
     }
     .onClick(() => {
       pathStack.pop()
     })
-    .backgroundColor('rgba(0,0,0,0.5)')
+    // 点击遮罩（DIALOG 蒙层）：令牌化（深浅色同值，遮罩语义不随主题）
+    .backgroundColor(DesignColor.SCRIM_BLACK_50)
     .hideTitleBar(true)
     .mode(NavDestinationMode.DIALOG)
   }

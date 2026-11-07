@@ -1,7 +1,7 @@
 // 清氧设计系统 — 通用 UI 组件
 // 参考 Android 端 AppComponents.kt
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming, toColorString } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
 
@@ -562,7 +562,8 @@ export struct SkeletonBlock {
         .height('100%')
         .linearGradient({
           angle: 90,
-          colors: [['rgba(255,255,255,0)', 0], [DesignColor.SURFACE, 0.5], ['rgba(255,255,255,0)', 1]]
+          // 高光端点透明色色相跟随 SURFACE（& 0x00FFFFFF 清 alpha 位）：暗色下高光带不再泛白边
+          colors: [[toColorString(DesignColor.SURFACE & 0x00FFFFFF), 0], [DesignColor.SURFACE, 0.5], [toColorString(DesignColor.SURFACE & 0x00FFFFFF), 1]]
         })
         .opacity(this.glow ? 1 : 0.3)
         .animation({

@@ -21,6 +21,7 @@ import { logger } from '../../utils/Logger'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
 import { safeTopVp } from '../../utils/SafeArea'
+import { ThemeRefresh } from '../../view/common/ThemeRefresh'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeCreate'
@@ -194,6 +195,10 @@ struct ToolboxShortCodeCreate {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Scroll() {
         Column() {
           // 页面标题（对齐安卓 PageHeader：标题 22/600 + 48 热区返回）
@@ -367,6 +372,7 @@ struct ToolboxShortCodeCreate {
       .backgroundColor(DesignColor.BACKGROUND)
       // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；
       // 原 expandSafeArea(KEYBOARD, BOTTOM) 是反向语义（把内容伸进键盘区），已移除
+      }
     }
     .hideTitleBar(true)
   }

@@ -13,6 +13,7 @@ import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { AppButton, AppConfirmDialog, IconBox, SelectionDot } from "../view/common/AppComponents"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
 const MAX_RECHARGE_AMOUNT: number = 10000
@@ -501,6 +502,10 @@ struct Recharge {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         // 页头（自绘：公共 PageHeader 无 actions 插槽，历史入口需自定义；
         // 规格对齐安卓 PageHeader——22/600 标题 + 两侧 48dp 热区）
@@ -701,6 +706,7 @@ struct Recharge {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
+      }
     }
     .width("100%")
     .height("100%")

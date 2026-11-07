@@ -56,6 +56,7 @@ import { getNumberParam, pathStack } from '../../../utils/PathStackUtil'
 import { SUBSCRIPTION_TICK_KEY, bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
+import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionDetailPage'
@@ -455,6 +456,10 @@ struct SubscriptionDetailPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         SubscriptionPageHeader({
           title: SubscriptionText.subscription_detail_title,
@@ -907,6 +912,7 @@ struct SubscriptionDetailPage {
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }
