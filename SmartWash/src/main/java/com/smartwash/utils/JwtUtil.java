@@ -21,7 +21,17 @@ import java.util.UUID;
 @Component
 public class JwtUtil {
 
-    public static final Long JWT_TTL = 7 * 24 * 60 * 60 * 1000L; // 7天
+    /** 令牌分型 claim 名：access=访问令牌（访问受保护端点），refresh=刷新令牌（仅用于 /auth/refresh 换发） */
+    public static final String CLAIM_TYP = "typ";
+    /** 令牌分型取值：访问令牌 */
+    public static final String TOKEN_TYPE_ACCESS = "access";
+    /** 令牌分型取值：刷新令牌 */
+    public static final String TOKEN_TYPE_REFRESH = "refresh";
+
+    /** 访问令牌有效期：2 小时 */
+    public static final Long ACCESS_TOKEN_TTL = 2 * 60 * 60 * 1000L;
+    /** 刷新令牌有效期：7 天 */
+    public static final Long REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000L; // 7天
     private static final String ISSUER = "SmartWash";
     /** JWT 密钥解码后的最小字节数（HmacSHA256 建议 32 字节以上），不足则拒绝启动 */
     private static final int JWT_SECRET_MIN_BYTES = 32;
@@ -54,17 +64,21 @@ public class JwtUtil {
     /**
      * 初始化负载内数据
      *
-     * @param username 用户名
+     * @param username  用户名
+     * @param tokenType 令牌分型（access / refresh）
+     * @param ttlMillis 有效期（毫秒）
      * @return 负载集合
      */
-    private Map<String, Object> initClaims(String username) {
+    private Map<String, Object> initClaims(String username, String tokenType, Long ttlMillis) {
         Map<String, Object> claims = new HashMap<>();
         //"iss" (Issuer): 代表 JWT 的签发者。在这个字段中填入一个字符串，表示该 JWT 是由谁签发的。例如，可以填入你的应用程序的名称或标识符。
         claims.put("iss", ISSUER);
         //"sub" (Subject): 代表 JWT 的主题，即该 JWT 所面向的用户。可以是用户的唯一标识符或者其他相关信息。
         claims.put("sub", username);
+        //"typ" (Type): 令牌分型，access=访问令牌 / refresh=刷新令牌；旧格式（无 typ）一律视为 access，兼容存量会话。
+        claims.put(CLAIM_TYP, tokenType);
         //"exp" (Expiration Time): 代表 JWT 的过期时间。通常以 UNIX 时间戳表示，表示在这个时间之后该 JWT 将会过期。建议设定一个未来的时间点以保证 JWT 的有效性，比如一个小时、一天、一个月后的时间。
-        claims.put("exp", generatorExpirationDate());
+        claims.put("exp", generatorExpirationDate(ttlMillis));
         //"aud" (Audience): 代表 JWT 的接收者。这个字段可以填入该 JWT 预期的接收者，可以是单个用户、一组用户、或者某个服务。
 //        claims.put("aud", "internal use");
         //"iat" (Issued At): 代表 JWT 的签发时间。同样使用 UNIX 时间戳表示。
@@ -76,13 +90,40 @@ public class JwtUtil {
     }
 
     /**
-     * 根据负载生成JWT token
+     * 生成访问令牌（typ=access，2 小时有效期），用于访问受保护端点
+     *
+     * @param username 用户名（admin-{用户名} / user-{手机号}）
+     * @return 访问令牌
+     */
+    public String generatorAccessToken(String username) {
+        return buildToken(username, TOKEN_TYPE_ACCESS, ACCESS_TOKEN_TTL);
+    }
+
+    /**
+     * 生成刷新令牌（typ=refresh，7 天有效期），仅用于 /auth/refresh 换发新的双 token，一次性使用
+     *
+     * @param username 用户名（admin-{用户名} / user-{手机号}）
+     * @return 刷新令牌
+     */
+    public String generatorRefreshToken(String username) {
+        return buildToken(username, TOKEN_TYPE_REFRESH, REFRESH_TOKEN_TTL);
+    }
+
+    /**
+     * 根据负载生成JWT token（兼容保留：等价于访问令牌）
      *
      * @return token
      */
     public String generatorToken(String username) {
-        log.debug("生成 JWT, subject: {}", username);
-        Map<String, Object> claims = initClaims(username);
+        return generatorAccessToken(username);
+    }
+
+    /**
+     * 按分型与有效期构建 JWT
+     */
+    private String buildToken(String username, String tokenType, Long ttlMillis) {
+        log.debug("生成 JWT, subject: {}, typ: {}", username, tokenType);
+        Map<String, Object> claims = initClaims(username, tokenType, ttlMillis);
         return Jwts.builder()
                    .claims(claims)
                    .signWith(key)
@@ -124,55 +165,36 @@ public class JwtUtil {
 
 
     /**
-     * 生成失效时间，以秒为单位
+     * 生成失效时间
      *
+     * @param ttlMillis 有效期（毫秒）
      * @return 预计失效时间
      */
-    private Date generatorExpirationDate() {
+    private Date generatorExpirationDate(Long ttlMillis) {
         //预计失效时间为：token生成时间+预设期间
-        return new Date(System.currentTimeMillis() + JWT_TTL);
+        return new Date(System.currentTimeMillis() + ttlMillis);
     }
     /**
-     * 判断token是否有过期
+     * 从负载中读取令牌分型
      *
-     * @param token 需要被验证的token
-     * @return true/false
+     * @param claims JWT 负载
+     * @return typ 取值（access / refresh）；旧格式（无 typ）返回 null，由调用方按 access 兼容处理
      */
-    private boolean isTokenExpired(String token) {
-        //判断预设时间是否在当前时间之前，如果在当前时间之前，就表示过期了，会返回true
-        return getExpiredDateFromToken(token).before(new Date());
-    }
-
-    /**
-     * 从token中获取预设的过期时间
-     *
-     * @param token token
-     * @return 预设的过期时间
-     */
-    private Date getExpiredDateFromToken(String token) {
-        return getPayloadFromToken(token).getExpiration();
+    public String getTokenType(Claims claims) {
+        return claims.get(CLAIM_TYP, String.class);
     }
 
     /**
-     * 判断token是否可以被刷新
+     * 计算 token 剩余有效期（秒），供拉黑 jti 时对齐 TTL（到期自动从 Redis 清除）
      *
-     * @param token 需要被验证的token
-     * @return true/false
+     * @param claims JWT 负载
+     * @return 剩余秒数，已过期或无 exp 时返回 0
      */
-    public boolean canRefresh(String token) {
-        return !isTokenExpired(token);
-    }
-
-    /**
-     * 刷新token
-     *
-     * @param token 需要被刷新的token
-     * @return 刷新后的token
-     */
-    public String refreshToken(String token) {
-        Claims claims = getPayloadFromToken(token);
-        Map<String, Object> initClaims = initClaims(claims.getSubject());
-        initClaims.put("iat", new Date());
-        return generatorToken((String) initClaims.get("sub"));
+    public long getRemainingValiditySeconds(Claims claims) {
+        Date expiration = claims.getExpiration();
+        if (expiration == null) {
+            return 0L;
+        }
+        return Math.max(0, (expiration.getTime() - System.currentTimeMillis()) / 1000);
     }
 }

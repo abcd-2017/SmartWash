@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.Result;
 import com.smartwash.entity.Users;
+import com.smartwash.from.users.ChangePasswordFrom;
 import com.smartwash.from.users.UpdateUserInfo;
 import com.smartwash.service.IUsersService;
 import com.smartwash.service.FileStorageService;
@@ -103,6 +104,20 @@ public class WebUsersController {
             @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页条数，最大 50", example = "10") Integer pageSize) {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(usersService.getTransactionHistory(user.getUserId(), page, pageSize));
+    }
+
+    @Operation(summary = "修改密码", description = "当前登录用户校验原密码后修改为新密码（新密码 6-16 位，与注册/重置口径一致）")
+    @PutMapping("/auth/user/password")
+    public Result<String> changePassword(@RequestBody @Valid ChangePasswordFrom changePasswordFrom) {
+        LoginUser user = UserContextHolder.getUser();
+        if (!Objects.equals(user.getUserType(), DefaultConstant.USER_LOGIN_TYPE) || user.getUserId() == null) {
+            return Result.failMsg("系统异常");
+        }
+        if (!usersService.changePassword(changePasswordFrom, user.getUserId())) {
+            // 业务失败走统一 FAIL 信封（201），不用 401（登录态本身有效，仅原密码校验未通过）
+            return Result.failMsg("原密码不正确");
+        }
+        return Result.ok("密码修改成功");
     }
 
     /** 头像大小上限 5MB（与 spring.servlet.multipart 配置双保险，代码层兜底防配置回退） */

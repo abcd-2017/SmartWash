@@ -280,6 +280,25 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
                 .set(Users::getPassword, encodedPassword));
     }
 
+    @Override
+    public Boolean changePassword(ChangePasswordFrom changePasswordFrom, Long userId) {
+        Users user = getById(userId);
+        if (user == null) {
+            throw new CustomExceptions("用户不存在");
+        }
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        // 先验原密码，不匹配直接拒绝（信封语义由 Controller 层按 FAIL 文案返回）
+        if (!encoder.matches(changePasswordFrom.getOldPassword(), user.getPassword())) {
+            log.warn("用户修改密码被拒绝：原密码不正确, userId: {}", userId);
+            return false;
+        }
+        boolean updated = update(new LambdaUpdateWrapper<Users>()
+                .eq(Users::getUserId, userId)
+                .set(Users::getPassword, encoder.encode(changePasswordFrom.getNewPassword())));
+        log.info("用户修改密码成功, userId: {}", userId);
+        return updated;
+    }
+
     /** 交易流水分页默认每页条数 */
     private static final int TRANSACTION_DEFAULT_PAGE_SIZE = 10;
     /** 交易流水分页每页条数上限：防止超大 pageSize 变相全量拉取（评审报告后端 #24） */
