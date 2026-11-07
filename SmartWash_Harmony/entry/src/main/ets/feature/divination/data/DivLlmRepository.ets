@@ -68,21 +68,37 @@ interface TextAccumulator {
   text: string
 }
 
+/** SSE 会话终态标记（done/error 帧任一已收即置位；置位后传输层 onFail 不再下发） */
+interface SseTerminalFlag {
+  reached: boolean
+}
+
 /** 仓库内部回调适配：把 DivSseCallbacks 原始帧翻译为 DivLlmCallbacks（累积 + 文案映射） */
 function buildSseCallbacks(cb: DivLlmCallbacks, acc: TextAccumulator): DivSseCallbacks {
+  // 终态标记随每次会话新建（对齐安卓 failureSent 守卫）
+  const terminal: SseTerminalFlag = { reached: false }
   return {
     onDelta: (text: string): void => {
       acc.text += text
       cb.onAccumulated(acc.text)
     },
     onDone: (interpretationId: number, cached: boolean): void => {
+      terminal.reached = true
       cb.onDone(interpretationId, cached)
     },
     onSseError: (code: number, message: string): void => {
+      // error 帧后服务端 emitter.complete() 是正常关闭——先置位防终态重复补发，
+      // 避免 403/429/503 已映射文案被传输层中断/兜底文案覆盖（对齐安卓 failureSent）
+      terminal.reached = true
       logger.warn(TAG, `解读 SSE error 帧 code=${code}`)
       cb.onSseError(code, sseErrorText(code, message))
     },
     onFail: (message: string): void => {
+      if (terminal.reached) {
+        // 终态帧（error/done）已收：UI 已呈现映射后的终态文案，传输层失败不再覆盖
+        logger.debug(TAG, '终态帧已收，忽略传输层失败回调')
+        return
+      }
       cb.onFail(message)
     }
   }

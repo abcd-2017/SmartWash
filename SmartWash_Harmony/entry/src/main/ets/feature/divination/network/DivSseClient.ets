@@ -15,7 +15,11 @@
  *
  * 鉴权与 401：手动从 StorageUtil 读取 USER_TOKEN 注入 Bearer（SSE 不走 @ohos/axios 通道，
  * 拦截器不生效）；HTTP 401 与 Axios.ets 同语义——清 token → 清内存登录态 → 切登录根页
- * （复用 clearLoginState，含 1.5s 防抖与已未登录静默，勿在此重写）。
+ * （复用 clearLoginState + tryClaimUnauthorizedDebounce，防抖时间戳与 axios 通道同源共享，
+ * 同刻 401 只弹一次；勿在此重写）。
+ *
+ * 终态兜底：done/error 帧为会话终态；流正常结束但两者皆未收到（后端 SseEmitter 120s 超时
+ * onTimeout 只断流不发终态帧，必现场景）时补发 onFail，避免调用方 UI 永久停留 loading。
  *
  * 地址红线：BASE_URL 经 hvigor BuildProfile 注入（与 Axios.ets 同源），源码零硬编码。
  */
@@ -27,7 +31,7 @@ import { getValue } from '../../../utils/StorageUtil'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { CommonConstants } from '../../../constant/CommonConstants'
 import { logger } from '../../../utils/Logger'
-import { clearLoginState } from '../../../network/Axios'
+import { clearLoginState, tryClaimUnauthorizedDebounce } from '../../../network/Axios'
 
 /** 服务端地址（构建期注入，与 Axios.ets 同一事实源） */
 const BASE_URL: string = BuildProfile.BASE_URL
@@ -36,13 +40,17 @@ const BASE_URL: string = BuildProfile.BASE_URL
 const CONNECT_TIMEOUT_MS: number = 15000
 /** SSE 读超时（毫秒）：对齐后端 SseEmitter 120s 推流上限 */
 const READ_TIMEOUT_MS: number = 120000
-/** 401 防抖时间窗（毫秒）：与 Axios.ets UNAUTHORIZED_DEBOUNCE_MS 一致 */
-const UNAUTHORIZED_DEBOUNCE_MS: number = 1500
 
 const TAG: string = 'divSseClient'
 
-// 上次 401 处理时间戳（模块级防抖：并发 SSE 同时 401 只处理一次）
-let lastUnauthorizedAt: number = 0
+// ========== 传输层失败文案（DivText.* 同风格常量化；network 层不反向依赖 ui 组件，故本地定义） ==========
+
+/** 登录失效（401：handleUnauthorizedLikeAxios 已同步清登录态并 toast） */
+const FAIL_UNAUTHORIZED: string = '登录失效，请重新登录！'
+/** 流已产出内容后中断 / 正常结束但未收到 done/error 终态帧 */
+const FAIL_STREAM_INTERRUPTED: string = '解读推流中断，请重试'
+/** 流式与攒流通道均不可达 */
+const FAIL_SERVICE_UNAVAILABLE: string = '解读服务暂不可用，请稍后再试'
 
 /** SSE 回调集合（onDelta 逐帧；onSseError 为业务 error 帧；onFail 为传输层失败） */
 export interface DivSseCallbacks {
@@ -69,9 +77,11 @@ interface ErrorPayload {
   message?: string
 }
 
-/** 帧产出标记（任一内容帧已回调置 true；攒流降级判定用，跨流式/攒流两次尝试共享） */
+/** 帧产出标记（跨流式/攒流两次尝试共享）：
+ * any=任一内容帧已回调（攒流降级判定用）；terminated=终态帧（done/error）已回调（终态兜底判定用） */
 interface SseProducedFlag {
   any: boolean
+  terminated: boolean
 }
 
 /** 内部传输失败（流式模式抛出，由外层决定是否攒流重试） */
@@ -87,19 +97,18 @@ class SseTransportError extends Error {
 
 /**
  * 401 统一处理：与 Axios.ets handleUnauthorized 完全同语义——
- * 已确认未登录静默返回；1.5s 窗口防抖；toast 文案一致；
+ * 已确认未登录静默返回；1.5s 窗口防抖（tryClaimUnauthorizedDebounce，与 axios 通道共享
+ * 同一时间戳，SSE 与普通请求同刻 401 只弹一次）；toast 文案一致；
  * 复用 clearLoginState（清 token → 清内存登录态 → Index 经 isLoggedIn 切登录根页）。
  */
 function handleUnauthorizedLikeAxios(): void {
   if (AppStorage.get<boolean>("isLoggedIn") === false) {
     return
   }
-  const now = Date.now()
-  if (now - lastUnauthorizedAt < UNAUTHORIZED_DEBOUNCE_MS) {
+  if (!tryClaimUnauthorizedDebounce()) {
     return
   }
-  lastUnauthorizedAt = now
-  showToastSafety("登录失效，请重新登录！")
+  showToastSafety(FAIL_UNAUTHORIZED)
   clearLoginState()
 }
 
@@ -238,6 +247,8 @@ function buildFrameHandler(cb: DivSseCallbacks, produced: SseProducedFlag): (eve
       return
     }
     if (event === 'done') {
+      // done 为会话终态：无论载荷是否可解析都先置位（畸形 done 仍以完成信号兜底回调）
+      produced.terminated = true
       const done = parseDonePayload(data)
       if (done !== null) {
         produced.any = true
@@ -250,6 +261,8 @@ function buildFrameHandler(cb: DivSseCallbacks, produced: SseProducedFlag): (eve
       return
     }
     if (event === 'error') {
+      // error 为会话终态：先置位防传输层兜底文案覆盖已映射的业务错误语义
+      produced.terminated = true
       const err = parseErrorPayload(data)
       if (err !== null) {
         produced.any = true
@@ -350,6 +363,8 @@ async function runStreamed(url: string, body: string, cb: DivSseCallbacks, produ
   try {
     await ended
   } finally {
+    // 流尾残余字节：先 flush 解码器尾部（stream:false 兑现跨块截断的多字节字符）再分发解析器残余帧
+    parser.feed(decoder.decodeTail())
     parser.flush()
     req.off('dataReceive')
     req.off('dataEnd')
@@ -419,38 +434,50 @@ async function runBuffered(url: string, body: string, cb: DivSseCallbacks, produ
  * 切换策略：先流式；流式链路失败且尚未产出任何帧、且非 401 时，
  * 自动降级攒流重试一次；攒流也失败 → onFail。
  * 已产出帧后中断不重试（避免内容重复），直接 onFail。
+ * 终态兜底：尝试正常结束但未收到 done/error 终态帧（后端 SseEmitter 120s 超时 onTimeout
+ * 只断流不发终态帧，必现场景）时补发 onFail，避免调用方 UI 永久停留 loading / 无错误态。
  *
  * @param path 相对路径（如 /web/auth/div/records/1/interpret）
  */
 export async function divSsePost(path: string, question: string, cb: DivSseCallbacks): Promise<void> {
   const url = `${BASE_URL}${path}`
-  // 产出标记：任一内容帧（delta/done/error）已回调则不再攒流重试
-  const produced: SseProducedFlag = { any: false }
+  // 产出标记：any=任一内容帧已回调（不再攒流重试）；terminated=终态帧（done/error）已回调
+  const produced: SseProducedFlag = { any: false, terminated: false }
+  // 流终态兜底：全程结束仍未收到终态帧时补发失败回调（追问页 sending 复位 / 解读页出错误态可重试）
+  const ensureTerminalFrame = (): void => {
+    if (!produced.terminated) {
+      logger.warn(TAG, 'SSE 流结束但未收到 done/error 终态帧，按推流中断兜底')
+      cb.onFail(FAIL_STREAM_INTERRUPTED)
+    }
+  }
   try {
     await runStreamed(url, question, cb, produced)
+    // 流式正常结束即会话收尾（已产出内容不重试，避免重复），终态帧缺失直接兜底
+    ensureTerminalFrame()
     return
   } catch (err) {
     const unauthorized = err instanceof SseTransportError && err.unauthorized
     if (unauthorized) {
-      cb.onFail('登录失效，请重新登录！')
+      cb.onFail(FAIL_UNAUTHORIZED)
       return
     }
     if (produced.any) {
       logger.warn(TAG, `流式接收中断（已产出内容，不重试）: ${err instanceof Error ? err.message : ''}`)
-      cb.onFail('解读推流中断，请重试')
+      cb.onFail(FAIL_STREAM_INTERRUPTED)
       return
     }
     logger.warn(TAG, `流式通道失败，降级攒流重试: ${err instanceof Error ? err.message : ''}`)
   }
   try {
     await runBuffered(url, question, cb, produced)
+    ensureTerminalFrame()
   } catch (err) {
     const unauthorized = err instanceof SseTransportError && err.unauthorized
     if (unauthorized) {
-      cb.onFail('登录失效，请重新登录！')
+      cb.onFail(FAIL_UNAUTHORIZED)
       return
     }
     logger.error(TAG, `攒流通道亦失败: ${err instanceof Error ? err.message : ''}`)
-    cb.onFail('解读服务暂不可用，请稍后再试')
+    cb.onFail(FAIL_SERVICE_UNAVAILABLE)
   }
 }

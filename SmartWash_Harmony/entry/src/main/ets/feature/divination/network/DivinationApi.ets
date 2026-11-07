@@ -22,7 +22,7 @@
  * - 六爻：后端 6/7/8/9（老阴6/少阳7/少阴8/老阳9），端上 1/2/3/4（少阳1/少阴2/老阳3/老阴4）
  *   → 提交前映射 1→7、2→8、3→9、4→6（奇偶阴阳一致，动爻 6/9 对齐）；
  * - 梅花：后端 lines 为 [上卦先天数, 下卦先天数, 动爻]（1..8 与端上 Trigram.number 同源），
- *   端上 chartJson 的 lines 是 6 爻值编码 → 从 chart 的 upper/lower/moving 重构三元组；
+ *   端上 chartJson 的 lines 是 6 爻值编码 → 从 chart 的 upper/lower/movingYao 重构三元组；
  * - 奇门/六壬：无 lines（服务端按 castAt 重算），castMethod 仅为元数据。
  */
 
@@ -53,11 +53,11 @@ export interface DivCreateRecordForm {
   castMethod: string
   /** 起卦时刻（epoch 毫秒） */
   castAt: number
-  /** 时区偏移分钟，东八=480 */
+  /** 时区偏移分钟（东八=480；按 castAt 时刻的设备时区计算，对齐安卓 TimeZone.getOffset） */
   tzOffset: number
   /** 起卦原始输入（六爻爻值数组 / 梅花三元组；奇门六壬不传） */
   lines?: Array<number>
-  /** 端上排盘结果 JSON 字符串（DivChartCodec 序列化产物） */
+  /** 端上排盘结果 JSON 字符串（chartJson 原文 = bundle 全文，对齐安卓 DivChartCodec.encode(bundle)） */
   clientChart: string
 }
 
@@ -165,7 +165,8 @@ interface ChartTrigramView {
 interface ChartMeiHuaView {
   upper?: ChartTrigramView
   lower?: ChartTrigramView
-  moving?: number
+  /** 动爻 1..6（MeiHuaChart 序列化键即 movingYao；勿读 moving——恒 undefined 会丢三元组） */
+  movingYao?: number
 }
 
 /** 端上爻值 → 后端六爻爻值（1少阳→7 / 2少阴→8 / 3老阳→9 / 4老阴→6；其余原样兜底） */
@@ -188,7 +189,7 @@ function toServerYaoCode(localCode: number): number {
 /**
  * 由本地卦盘记录构建服务端建档 lines：
  * - liuyao：chartJson.lines 逐爻转后端码；
- * - meihua：从 upper/lower/moving 重构 [上卦数, 下卦数, 动爻]；
+ * - meihua：从 upper/lower/movingYao 重构 [上卦数, 下卦数, 动爻]；
  * - qimen/liuren：undefined（服务端按 castAt 重算）。
  */
 function buildServerLines(row: DivRecordRow): Array<number> | undefined {
@@ -205,9 +206,9 @@ function buildServerLines(row: DivRecordRow): Array<number> | undefined {
       const chart = JSON.parse(chartJson) as ChartMeiHuaView
       const upper = chart.upper?.number
       const lower = chart.lower?.number
-      const moving = chart.moving
-      if (typeof upper === 'number' && typeof lower === 'number' && typeof moving === 'number') {
-        return [upper, lower, moving]
+      const movingYao = chart.movingYao
+      if (typeof upper === 'number' && typeof lower === 'number' && typeof movingYao === 'number') {
+        return [upper, lower, movingYao]
       }
       return undefined
     }
@@ -230,27 +231,28 @@ function inferCastMethod(method: string): string {
   return 'time'
 }
 
+/** 建档问题防御：trim + 空白兜底「未记所问」（后端 @NotBlank，本地历史脏数据防建档 400，对齐安卓） */
+function normalizeQuestion(question: string): string {
+  const trimmed = question.trim()
+  return trimmed.length > 0 ? trimmed : '未记所问'
+}
+
 /**
  * 由本地卦盘记录（RDB divination_db 行）构建服务端建档表单。
- * clientChart = DivChartCodec 序列化的端上盘面原文（bundle 解包后的裸 chartJson）。
+ * clientChart 传 row.chartJson 原文（bundle 全文，对齐安卓 DivChartCodec.encode(bundle)）：
+ * 解包后的裸 chart 丢 method 信封且 __map 包裹形态与安卓不一致，服务端 chartVerified 比对会误判。
  */
 export function buildCreateRecordForm(row: DivRecordRow): DivCreateRecordForm {
-  let clientChart = ''
-  try {
-    clientChart = decodeBundle(decodeBundleFromJson(row.chartJson))
-  } catch (err) {
-    logger.warn('divinationApi', `clientChart 提取失败 recordId=${row.id}, ` +
-      `${err instanceof Error ? err.message : ''}`)
-  }
   const form: DivCreateRecordForm = {
     method: row.method,
     category: row.category,
-    question: row.question,
+    question: normalizeQuestion(row.question),
     castMethod: inferCastMethod(row.method),
     castAt: row.castAt,
-    tzOffset: 480,
+    // 起卦时刻的设备时区偏移（分钟，东八=480）：按 castAt 计算而非当前时刻，跨时区回填不漂移
+    tzOffset: -new Date(row.castAt).getTimezoneOffset(),
     lines: buildServerLines(row),
-    clientChart: clientChart
+    clientChart: row.chartJson
   }
   return form
 }
@@ -293,12 +295,12 @@ export async function submitDivFeedback(recordId: number,
 /**
  * 解读（SSE）：POST /web/auth/div/records/{id}/interpret。
  * body 为纯文本 question（后端 @RequestBody(required=false) String 直取原始 body；
- * 空串 = 无补充问题，服务端按盘面直出解读）。
+ * 空串 = 无补充问题，服务端按盘面直出解读），trim 对齐安卓。
  */
 export async function streamInterpret(recordId: number, question: string,
   cb: DivSseCallbacks): Promise<void> {
-  logger.debug('divinationApi', `解读 SSE 请求 recordId=${recordId} questionLen=${question.length}`)
-  return divSsePost(`/web/auth/div/records/${recordId}/interpret`, question, cb)
+  logger.debug('divinationApi', `解读 SSE 请求 recordId=${recordId} questionLen=${question.trim().length}`)
+  return divSsePost(`/web/auth/div/records/${recordId}/interpret`, question.trim(), cb)
 }
 
 /**

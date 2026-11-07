@@ -78,6 +78,9 @@ struct Setting {
   @State byokDisabled: boolean = false
   // 编辑态预填源（编辑弹层打开时回填；key 不回填，后端仅回掩码）
   @State configBaseUrl: string = ""
+  // 编辑态预填源：customModel 原文。configModel 行尾摘要缺失时兜底 providerName 显示名，
+  // 直接回填会把「平台预设」等供应方名当模型名提交（对齐安卓编辑态回填 customModel 原文）
+  @State configCustomModel: string = ""
 
   // ===== 解读模型编辑半模态态：表单值只在内存 @State，不落任何本地存储 =====
   @State showModelSheet: boolean = false
@@ -299,9 +302,11 @@ struct Setting {
         const config = res.data
         this.hasApiConfig = config !== null
         this.configBaseUrl = config?.customBaseUrl ?? ""
-        // 行尾摘要（对齐安卓两行 trailing）：模型名缺失兜底平台预设名，掩码独立一行
+        // 行尾摘要（对齐安卓两行 trailing）：模型名缺失兜底平台预设名，掩码独立一行；
+        // 编辑态预填一律用 customModel 原文（providerName 是显示名，非可提交的模型名）
         const model = config?.customModel ?? ""
         const providerName = config?.providerName ?? ""
+        this.configCustomModel = model
         this.configModel = model !== "" ? model : providerName
         this.configMask = config?.apiKeyMask ?? ""
         this.configVerified = config?.verified === 1
@@ -330,7 +335,7 @@ struct Setting {
       return
     }
     this.editBaseUrl = this.hasApiConfig ? this.configBaseUrl : ""
-    this.editModel = this.hasApiConfig ? this.configModel : ""
+    this.editModel = this.hasApiConfig ? this.configCustomModel : ""
     this.editApiKey = ""
     this.showApiKeyPlain = false
     this.testFeedback = ""
