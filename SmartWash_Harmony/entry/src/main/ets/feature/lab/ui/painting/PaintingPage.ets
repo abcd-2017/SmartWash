@@ -19,6 +19,7 @@ import { util } from '@kit.ArkTS'
 import { DesignColor, DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { showToastSafety } from '../../../../utils/ToastUtil'
 import { Bird, Boat, House, InkRole, MistBand, MountainLayer, PaintingGenerator,
   PaintingScene, Pt, Seal, Sun, Tree, TreeStyle, WaterLine, paintingSeedFromDate,
@@ -544,6 +545,10 @@ export struct PaintingPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值，
+      // 画布经重建后的 onAreaChange 以新令牌重绘（机制见 view/common/ThemeRefresh.ets）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: PaintingText.title })
 
@@ -665,6 +670,7 @@ export struct PaintingPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

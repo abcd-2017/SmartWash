@@ -17,6 +17,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFon
   from '../../../../constant/DesignSystem'
 import { pathStack } from '../../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { CelestialKind, ProjectedStar, StarMapEngine } from '../../core/StarMapEngine'
 import { LabHaptic } from '../../core/LabCommon'
 
@@ -121,7 +122,10 @@ export struct StarMapPage {
 
   // ==================== 传感器 ====================
 
-  /** 开始采样；不可用（模拟器 / 无磁力计）时标记降级，不崩溃 */
+  /** 开始采样；不可用（模拟器 / 无磁力计）时标记降级，不崩溃。
+   * 权限说明：加速度计需 module.json5 声明 ohos.permission.ACCELEROMETER（已声明）；
+   * 磁力计 SensorId.MAGNETIC_FIELD 免权限（SDK @ohos.sensor.d.ts 订阅无 @permission
+   * 标注，权限白名单也无此名），勿再为其追加 requestPermissions */
   private startSensors(): void {
     if (this.accSubscribed || this.magSubscribed) {
       return
@@ -336,6 +340,10 @@ export struct StarMapPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐，与其他 38 页包法一致）：本页虽固定用 DARK_*
+      // readonly 令牌（不随主题回写变化），仍统一包主题重建宿主——色模式翻转时 if 双分支
+      // 重建子树，画布重绘与覆盖层直读点保持与其他页同构（机制见 view/common/ThemeRefresh.ets）
+      ThemeRefreshV2() {
       Stack() {
         Canvas(this.ctx)
           .width('100%')
@@ -407,6 +415,7 @@ export struct StarMapPage {
       .height('100%')
       .backgroundColor(DesignColor.DARK_BACKGROUND)
       .alignContent(Alignment.TopStart)
+      }
     }
     .hideTitleBar(true)
     .onShown(() => {

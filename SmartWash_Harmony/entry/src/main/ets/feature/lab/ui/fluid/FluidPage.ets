@@ -16,6 +16,7 @@ import { image } from '@kit.ImageKit'
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { FluidSimulator } from '../../core/FluidSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
@@ -37,8 +38,11 @@ const HINT_STAY_MS: number = 3000
 /** 帧间隔（ms）：约 30fps */
 const FRAME_INTERVAL_MS: number = 33
 
-/** 画布底色：浅色主题取 ON_PRIMARY_SOFT（对齐安卓 baseColorOf 浅色分支；鸿蒙固定亮色模式） */
-const CANVAS_BASE_COLOR: number = DesignColor.ON_PRIMARY_SOFT
+/** 画布底色：取 ON_PRIMARY_SOFT（对齐安卓 baseColorOf）。必须使用点即时求值——
+ * 模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色 */
+function canvasBaseColor(): number {
+  return DesignColor.ON_PRIMARY_SOFT
+}
 
 /** ARGB 令牌色 → [r,g,b] 0..1（渲染层只认 0..1 通道） */
 function rgbOf(color: number): number[] {
@@ -93,7 +97,7 @@ export struct FluidPage {
 
   aboutToAppear(): void {
     this.sim.setPalette(paletteOf(this.presetIndex))
-    this.sim.setBaseColor(rgbOf(CANVAS_BASE_COLOR))
+    this.sim.setBaseColor(rgbOf(canvasBaseColor()))
     if (!this.reduceMotion) {
       this.startLoop()
       this.hintTimerId = setTimeout(() => {
@@ -193,7 +197,11 @@ export struct FluidPage {
     if (this.canvasWidth <= 0 || this.canvasHeight <= 0) {
       return
     }
-    this.ctx.fillStyle = CANVAS_BASE_COLOR
+    // 底色使用点即时求值：深浅色切换后（ThemeRefreshV2 重建 build）下一帧即取新令牌，
+    // 同步回写 sim 内叠色基准，确保染料加法叠色与画布底色一致
+    const base: number = canvasBaseColor()
+    this.sim.setBaseColor(rgbOf(base))
+    this.ctx.fillStyle = base
     this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
     const pm: image.PixelMap | null = this.pixelMap
     if (pm === null || this.pixelMapFailed) {
@@ -287,6 +295,10 @@ export struct FluidPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: FluidText.title })
 
@@ -377,6 +389,7 @@ export struct FluidPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
     .onShown(() => {

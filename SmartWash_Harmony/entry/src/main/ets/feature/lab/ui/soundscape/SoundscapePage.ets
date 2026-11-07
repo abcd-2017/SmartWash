@@ -14,6 +14,7 @@ import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFon
   from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import {
   SOUND_CHANNEL_COUNT,
   SOUNDSCAPE_DEFAULT_VOLUME,
@@ -454,6 +455,11 @@ export struct SoundscapePage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值，
+      // 子树内滑杆等画布经重建后的 onReady/onAreaChange 以新令牌重绘
+      // （机制见 view/common/ThemeRefresh.ets；播放启停保持在宿主之外不受重建影响）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: SoundscapeText.title })
 
@@ -477,6 +483,7 @@ export struct SoundscapePage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
     // 离开可视区（被其他页面覆盖）即停止播放与定时，防音频后台泄漏

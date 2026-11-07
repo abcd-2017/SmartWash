@@ -209,8 +209,10 @@ export class DesignColor {
   // 认证页渐变暗色变体（清氧·夜语义）：白字压底可读性优先，整体下沉到暗色绿系——
   // 顶段取 DARK_PRIMARY_SOFT 邻域（暗色绿阶最亮点），底段贴近 DARK_BACKGROUND 的绿调收尾；
   // 三段绿相保持 155 附近与亮色渐变一致，仅降亮度（暗色大面积高饱和绿刺眼）。
-  // ⚠️ 跨端记录：Android 端认证页为 D1「深浅色同款」决策（LoginPage.kt:88-94），未实现暗色渐变；
-  //    鸿蒙端接入后暗色下两端认证页背景不一致，是否回退同款待两端设计确认。
+  // ⚠️ 跨端记录：Android 端认证页为 D1「品牌渐变页深浅色同款」决策（LoginPage.kt:89 注释明文，
+  //    AuthGradient* 三色在 Color.kt 为固定值无暗色变体）。按「基准 = Android 代码」，
+  //    本组 DARK_ 变体暂不接入 applyDesignTheme（认证渐变深浅同款，两端对齐）；
+  //    常量保留备查，待两端设计确认「认证页是否启用暗色渐变」后再决定接入或删除。
   static readonly DARK_AUTH_GRADIENT_TOP: number = 0xFF1D3229
   static readonly DARK_AUTH_GRADIENT_MID: number = 0xFF182A22
   static readonly DARK_AUTH_GRADIENT_BOTTOM: number = 0xFF12211B
@@ -343,10 +345,9 @@ export function applyDesignTheme(dark: boolean): void {
   DesignColor.ICON_FOREGROUND_PINK = dark ? DesignColor.DARK_ICON_FOREGROUND_PINK : 0xFFC9526B
   DesignColor.ICON_FOREGROUND_TEAL = dark ? DesignColor.DARK_ICON_FOREGROUND_TEAL : 0xFF3F9D78
   DesignColor.ICON_FOREGROUND_PURPLE = dark ? DesignColor.DARK_ICON_FOREGROUND_PURPLE : 0xFF7C3AED
-  // 认证页渐变暗色变体（⚠️ Android 端 D1 为深浅同款，此处启用暗色后两端暗色下不一致，见字段注释）
-  DesignColor.AUTH_GRADIENT_TOP = dark ? DesignColor.DARK_AUTH_GRADIENT_TOP : 0xFF1A9E6E
-  DesignColor.AUTH_GRADIENT_MID = dark ? DesignColor.DARK_AUTH_GRADIENT_MID : 0xFF0D7A4A
-  DesignColor.AUTH_GRADIENT_BOTTOM = dark ? DesignColor.DARK_AUTH_GRADIENT_BOTTOM : 0xFF0B5C3A
+  // 认证页/品牌渐变页三段渐变不在此回写：D1「品牌渐变页深浅色同款」（Android LoginPage.kt:89），
+  // 深浅两模式保持同款亮色渐变，与 Android 对齐；DARK_AUTH_GRADIENT_* 常量保留待两端设计确认
+  // （见字段注释；毛玻璃 DARK_GLASS_* 属分层可见性补偿，非同款语义，正常回写）
   // 毛玻璃面/边/输入三类（文字类白透明暗底对比天然更高，保持同值不回写）
   DesignColor.GLASS_BG_SUBTLE = dark ? DesignColor.DARK_GLASS_BG_SUBTLE : 0x1AFFFFFF
   DesignColor.GLASS_BG = dark ? DesignColor.DARK_GLASS_BG : 0x26FFFFFF
