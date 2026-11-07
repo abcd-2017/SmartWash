@@ -7,14 +7,16 @@ import androidx.room.PrimaryKey
 /**
  * 卦历记录（观象台）。本地单用户，不关联 userId。
  *
- * @param method    术数标识 liuyao/meihua/qimen/liuren（DivMethod.id）
- * @param category  所问领域（DivCategory.id）
- * @param question  心中所问
- * @param lines     爻值 JSON（如 [2,2,1,4,2,1]；非摇卦方法为 []）
- * @param castAt    起卦时刻（epoch millis）——复盘/追问一律沿用原时刻，不重算
- * @param chartJson 排盘结果 JSON（DivChartBundle）
- * @param status    状态：0=正常
- * @param createdAt 入库时间
+ * @param method          术数标识 liuyao/meihua/qimen/liuren（DivMethod.id）
+ * @param category        所问领域（DivCategory.id）
+ * @param question        心中所问
+ * @param lines           爻值 JSON（如 [2,2,1,4,2,1]；非摇卦方法为 []）
+ * @param castAt          起卦时刻（epoch millis）——复盘/追问一律沿用原时刻，不重算
+ * @param chartJson       排盘结果 JSON（DivChartBundle）
+ * @param serverRecordId  服务端卦例 id（POST /web/auth/div/records 建档回写；0=未建档）
+ * @param interpretationId 最近一次解读的服务端 id（解读 done 帧回写；0=未解读，供追问/反馈）
+ * @param status          状态：0=正常
+ * @param createdAt       入库时间
  */
 @Keep
 @Entity(tableName = "div_records")
@@ -26,6 +28,8 @@ data class DivRecordEntity(
     val lines: String,
     val castAt: Long,
     val chartJson: String,
+    val serverRecordId: Long = 0L,
+    val interpretationId: Long = 0L,
     val status: Int = STATUS_NORMAL,
     val createdAt: Long,
 ) {

@@ -18,6 +18,9 @@ dependencies {
     api libs.retrofit
     implementation libs.converter.gson
     implementation libs.okhttp.logging
+    // SSE 流式通道（SseClient，观象台解读真连 issue #78）：okhttp 官方 sse 扩展，
+    // implementation 不外传——业务侧只消费 SseClient 封装，不直接触碰 EventSource 类型
+    implementation libs.okhttp.sse
     // ResponseInterceptor 解析响应信封（ApiResult/HttpStatusCode）
     implementation project(':common:utils')
     // NetworkException 的 @StringRes 注解

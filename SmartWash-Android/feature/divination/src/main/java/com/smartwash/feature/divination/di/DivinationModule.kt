@@ -29,7 +29,11 @@ object DivinationModule {
             context,
             DivinationDatabase::class.java,
             "divination_db",
-        ).build()
+        )
+            // v2 增列（serverRecordId/interpretationId）不写 migration：卦历为可重建缓存，
+            // 与主库 DatabaseModule 惯例一致（demo 口径，见 DivinationDatabase 注释）
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

@@ -31,6 +31,18 @@ class DivRecordRepository @Inject constructor(
 
     suspend fun recent(limit: Int = 3): List<DivRecordEntity> = dao.recent(limit)
 
+    suspend fun findUnlinked(): List<DivRecordEntity> = dao.findUnlinked()
+
+    /** 回写服务端卦例 id（建档 / 今日一签关联） */
+    suspend fun markServerLinked(localId: Long, serverRecordId: Long) {
+        if (serverRecordId > 0) dao.updateServerRecordId(localId, serverRecordId)
+    }
+
+    /** 回写最近一次解读的服务端 id（SSE done 帧） */
+    suspend fun markInterpretation(localId: Long, interpretationId: Long) {
+        if (interpretationId > 0) dao.updateInterpretationId(localId, interpretationId)
+    }
+
     /** 保存排盘记录（摇卦成卦 / 起局 / 今日一签入库），返回记录 id */
     suspend fun save(
         method: DivMethod,

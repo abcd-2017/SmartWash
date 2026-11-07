@@ -36,6 +36,18 @@ interface DivRecordDao {
         dayEndMillis: Long,
     ): DivRecordEntity?
 
+    /** 回写服务端卦例 id（建档/今日一签关联；issue #78） */
+    @Query("UPDATE div_records SET serverRecordId = :serverRecordId WHERE id = :id")
+    suspend fun updateServerRecordId(id: Long, serverRecordId: Long)
+
+    /** 回写最近一次解读的服务端 id（SSE done 帧；供追问/反馈使用） */
+    @Query("UPDATE div_records SET interpretationId = :interpretationId WHERE id = :id")
+    suspend fun updateInterpretationId(id: Long, interpretationId: Long)
+
+    /** 卦历同步：全部未关联服务端的本地记录（按 method/question/castAt 与服务端分页对账） */
+    @Query("SELECT * FROM div_records WHERE serverRecordId = 0 AND status = :status")
+    suspend fun findUnlinked(status: Int = DivRecordEntity.STATUS_NORMAL): List<DivRecordEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(record: DivRecordEntity): Long
 }
