@@ -245,24 +245,22 @@ public class LoginController {
             return refreshUnauthorized();
         }
         String jti = claims.get("jti", String.class);
-        // 第三环：黑名单校验——命中即视为重放（已刷新过或已登出的 refreshToken 不允许再次使用）
-        if (jti != null && jwtBlacklistService.isBlacklisted(jti)) {
-            log.warn("刷新令牌失败：refreshToken 已被使用或已登出（重放拦截）, jti: {}", jti);
-            return refreshUnauthorized();
-        }
         String username = claims.getSubject();
         if (!StringUtils.hasText(username)) {
+            return refreshUnauthorized();
+        }
+        // 第三环：原子「检查+占用」（替代原「查黑名单→重签→拉黑」两段式，封死并发重放双胜出竞态，见 ADR-0007 注记 (a)）——
+        // Lua SET NX 抢占 jwt:blacklist:{jti}，占用即拉黑一步完成；并发重放同一 refreshToken 仅首个请求胜出，
+        // 未抢到 = 已被并发消费或已登出，按重放 401。jti 缺失/已无剩余有效期时无占用对象，沿用原判空语义放行。
+        long ttlSeconds = jwtUtil.getRemainingValiditySeconds(claims);
+        if (!jwtBlacklistService.tryAcquireRefresh(jti, ttlSeconds)) {
+            log.warn("刷新令牌失败：refreshToken 已被使用或已登出（重放拦截）, jti: {}", jti);
             return refreshUnauthorized();
         }
         // 以 sub 原样重签新的一对 token（admin-/user- 前缀不变，角色语义下次登录刷新，端点零 DB 依赖）
         TokenPairVo tokenPair = new TokenPairVo(
                 jwtUtil.generatorAccessToken(username),
                 jwtUtil.generatorRefreshToken(username));
-        // 一次性轮换：旧 refreshToken 立即拉黑，TTL 对齐其剩余有效期（到期自动从 Redis 清除）
-        long ttlSeconds = jwtUtil.getRemainingValiditySeconds(claims);
-        if (jti != null && ttlSeconds > 0) {
-            jwtBlacklistService.blacklist(jti, ttlSeconds);
-        }
         log.info("刷新令牌成功, subject: {}", username);
         return Result.ok(tokenPair);
     }
