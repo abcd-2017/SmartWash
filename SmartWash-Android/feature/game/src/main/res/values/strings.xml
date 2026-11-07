@@ -17,4 +17,6 @@
     <string name="game_empty_category">该分类暂无游戏，看看全部吧</string>
     <string name="game_error_load">游戏加载失败，请检查网络后重试</string>
     <string name="game_action_retry">重试</string>
+    <!-- 点击了可玩地址为空的记录（数据残缺防御，正常配置下不该出现） -->
+    <string name="game_unavailable">游戏暂未开放，请稍后再试</string>
 </resources>

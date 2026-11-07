@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="套餐ID">
           <el-input
             v-model.number="listQuery.itemId"
             placeholder="请输入套餐ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,12 +19,15 @@
             placeholder="请输入套餐名称"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增套餐</el-button>
         </el-form-item>
       </el-form>

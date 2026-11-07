@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
           <el-input
             v-model="listQuery.phoneNumber"
             placeholder="输入手机号"
             clearable
             style="width: 160px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="优惠券">
@@ -18,6 +19,7 @@
             filterable
             clearable
             style="width: 220px"
+            @change="handleSearch"
           >
             <el-option
               v-for="coupon in couponOptions"

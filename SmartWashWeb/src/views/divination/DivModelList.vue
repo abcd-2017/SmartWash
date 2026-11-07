@@ -2,17 +2,24 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="模型名称">
           <el-input
             v-model="listQuery.name"
             placeholder="输入模型名称"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="listQuery.enabled" placeholder="全部" clearable style="width: 120px">
+          <el-select
+            v-model="listQuery.enabled"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+            @change="handleSearch"
+          >
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
@@ -20,6 +27,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增模型</el-button>
         </el-form-item>
       </el-form>

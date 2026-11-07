@@ -60,6 +60,15 @@ export function updateGameEnabled(id, enabled) {
   });
 }
 
+// 批量上下架：逐条 CAS 尽力而为，返回 {id, success, message} 明细
+export function batchUpdateGameEnabled(ids, enabled) {
+  return request({
+    url: '/admin/game/enabled/batch',
+    method: 'post',
+    data: { ids, enabled },
+  });
+}
+
 // 删除游戏：物理删 + 服务器游戏文件（MinIO game/{gameKey}/ 前缀）一并清理
 export function deleteGame(id) {
   return request({

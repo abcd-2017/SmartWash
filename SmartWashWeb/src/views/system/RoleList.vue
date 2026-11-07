@@ -2,19 +2,22 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="角色名称">
           <el-input
             v-model="listQuery.roleName"
             placeholder="请输入角色名称"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增角色</el-button>
         </el-form-item>
       </el-form>

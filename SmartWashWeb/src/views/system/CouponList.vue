@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="优惠券ID">
           <el-input
             v-model.number="listQuery.couponId"
             placeholder="请输入ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,6 +19,7 @@
             placeholder="请输入标题"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -27,6 +29,7 @@
             placeholder="全部状态"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option label="可用" value="ACTIVE" />
             <el-option label="已失效" value="INACTIVE" />
@@ -36,6 +39,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增优惠券</el-button>
           <el-button
             type="danger"

@@ -2,9 +2,15 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="审计状态">
-          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
+          <el-select
+            v-model="listQuery.status"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+            @change="handleSearch"
+          >
             <el-option label="待审" :value="0" />
             <el-option label="通过" :value="1" />
             <el-option label="不一致" :value="2" />

@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="短码">
           <el-input
             v-model="listQuery.code"
             placeholder="请输入短码"
             clearable
             style="width: 180px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="归属人手机号">
@@ -17,6 +18,7 @@
             placeholder="请输入归属人手机号"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="类型">
@@ -25,6 +27,7 @@
             placeholder="全部类型"
             clearable
             style="width: 140px"
+            @change="handleSearch"
           >
             <el-option
               v-for="opt in SHORT_CODE_CONTENT_TYPE_OPTIONS"

@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="学校ID">
           <el-input
             v-model.number="listQuery.schoolId"
             placeholder="请输入学校ID"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -18,6 +19,7 @@
             placeholder="输入学校名称"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -27,6 +29,7 @@
             placeholder="输入学校编码"
             clearable
             style="width: 160px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -36,6 +39,7 @@
             placeholder="输入省份"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -45,6 +49,7 @@
             placeholder="输入城市"
             clearable
             style="width: 120px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -54,6 +59,7 @@
             placeholder="请选择"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option
               v-for="count in lockerCountOptions"
@@ -67,6 +73,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增学校</el-button>
         </el-form-item>
       </el-form>

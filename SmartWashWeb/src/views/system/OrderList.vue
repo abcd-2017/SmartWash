@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="手机号">
           <el-input
             v-model="listQuery.phoneNumber"
             placeholder="请输入手机号"
             clearable
             style="width: 160px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -19,6 +20,7 @@
             filterable
             clearable
             style="width: 180px"
+            @change="handleSearch"
           >
             <el-option
               v-for="school in schoolOptions"
@@ -35,6 +37,7 @@
             placeholder="请输入订单号"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
 
@@ -45,6 +48,7 @@
             filterable
             clearable
             style="width: 180px"
+            @change="handleSearch"
           >
             <el-option
               v-for="item in laundryOptions"
@@ -61,6 +65,7 @@
             placeholder="全部状态"
             clearable
             style="width: 120px"
+            @change="handleSearch"
           >
             <el-option
               v-for="(desc, code) in statusOptions"
@@ -80,6 +85,7 @@
             end-placeholder="结束时间"
             value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 380px"
+            @change="handleSearch"
           />
         </el-form-item>
 

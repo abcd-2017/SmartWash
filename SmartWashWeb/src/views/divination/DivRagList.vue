@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="书名">
           <el-input
             v-model="listQuery.title"
             placeholder="请输入书名"
             clearable
             style="width: 200px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="术数方法">
@@ -17,6 +18,7 @@
             placeholder="全部方法"
             clearable
             style="width: 140px"
+            @change="handleSearch"
           >
             <el-option
               v-for="m in methodOptions"
@@ -27,7 +29,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
+          <el-select
+            v-model="listQuery.status"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+            @change="handleSearch"
+          >
             <el-option label="导入中" :value="0" />
             <el-option label="可用" :value="1" />
           </el-select>
@@ -35,6 +43,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleUpload">上传古籍</el-button>
         </el-form-item>
       </el-form>

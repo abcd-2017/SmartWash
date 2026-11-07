@@ -3,11 +3,13 @@ package com.smartwash.game.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
 import com.smartwash.exception.CustomExceptions;
+import com.smartwash.game.from.BatchEnabledFrom;
 import com.smartwash.game.from.SearchGameFrom;
 import com.smartwash.game.from.UpdateGameFrom;
 import com.smartwash.game.from.UploadGameFrom;
 import com.smartwash.game.service.GameConfigService;
 import com.smartwash.game.vo.AdminGameVo;
+import com.smartwash.game.vo.GameBatchResultVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 游戏库管理端控制器。
@@ -59,7 +63,7 @@ public class GameAdminController {
         return Result.ok(gameConfigService.uploadCover(file));
     }
 
-    @Operation(summary = "分页查询游戏列表", description = "管理视角含未启用项；keyword 模糊匹配 title/gameKey + category/enabled 精确筛选，按 sort/id 升序")
+    @Operation(summary = "分页查询游戏列表", description = "管理视角含未启用项；keyword 模糊匹配 title/gameKey + category/sourceType/enabled 精确筛选，按 sort/id 升序")
     @GetMapping("/list")
     public Result<Page<AdminGameVo>> list(SearchGameFrom from) {
         return Result.ok(gameConfigService.adminPage(from));
@@ -79,6 +83,12 @@ public class GameAdminController {
                                         @PathVariable("enabled") @Parameter(description = "1下发 0不下发", required = true) Integer enabled) {
         gameConfigService.changeEnabled(id, enabled);
         return Result.ok("操作成功");
+    }
+
+    @Operation(summary = "批量上下架", description = "逐条 CAS 尽力而为：单条失败（不存在等）不阻断其余，按入参顺序返回 success/message 明细；幂等命中计成功；写后用户端列表即时生效。仅管理后台消费（Web 管理后台游戏库页），Android/鸿蒙不涉及")
+    @PostMapping("/enabled/batch")
+    public Result<List<GameBatchResultVo>> changeEnabledBatch(@Valid @RequestBody BatchEnabledFrom from) {
+        return Result.ok(gameConfigService.changeEnabledBatch(from.getIds(), from.getEnabled()));
     }
 
     @Operation(summary = "删除游戏", description = "物理删除记录并清理 MinIO game/{gameKey}/ 前缀全部对象；存储清理失败将阻断删除（可重试）")

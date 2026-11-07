@@ -17,6 +17,7 @@ import com.smartwash.game.storage.GameObjectStorage;
 import com.smartwash.game.support.GameContentTypes;
 import com.smartwash.game.support.GamePackageValidator;
 import com.smartwash.game.vo.AdminGameVo;
+import com.smartwash.game.vo.GameBatchResultVo;
 import com.smartwash.game.vo.GameVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -261,6 +262,7 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
         wrapper.and(hasKeyword, w -> w.like(GameConfig::getTitle, from.getKeyword())
                 .or().like(GameConfig::getGameKey, from.getKeyword()));
         wrapper.eq(StringUtils.hasText(from.getCategory()), GameConfig::getCategory, from.getCategory());
+        wrapper.eq(from.getSourceType() != null, GameConfig::getSourceType, from.getSourceType());
         wrapper.eq(from.getEnabled() != null, GameConfig::getEnabled, from.getEnabled());
         // 与用户端渲染顺序一致（sort 升序、id 升序），后台所见即端上所得
         wrapper.orderByAsc(GameConfig::getSort).orderByAsc(GameConfig::getId);
@@ -329,6 +331,24 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
 
     @Override
     @CacheEvict(value = CACHE_NAME, allEntries = true)
+    public List<GameBatchResultVo> changeEnabledBatch(List<Long> ids, Integer enabled) {
+        // 尽力而为语义：逐条独立判定（复用单条 CAS + 幂等口径），不加批量事务——
+        // 单条失败（不存在/数据异常）只记入明细，不阻断其余；缓存统一失效一次
+        return ids.stream().distinct().map(id -> {
+            try {
+                changeEnabled(id, enabled);
+                return new GameBatchResultVo(id, true, null);
+            } catch (GameServiceException e) {
+                return new GameBatchResultVo(id, false, e.getMessage());
+            } catch (Exception e) {
+                log.error("批量开关单条失败, id: {}, enabled: {}", id, enabled, e);
+                return new GameBatchResultVo(id, false, "操作失败，请稍后重试");
+            }
+        }).toList();
+    }
+
+    @Override
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
     public void deleteGame(Long id) {
         GameConfig config = this.getById(id);
         if (config == null) {
@@ -358,7 +378,20 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     @Cacheable(value = CACHE_NAME, key = "'all'")
     public List<GameVo> enabledGamesFromCache() {
         // 排序语义（sort 升序、id 升序）由 XML 的 ORDER BY 保证，此处不二次排序
-        return this.getBaseMapper().selectEnabledList().stream().map(this::buildVo).toList();
+        List<GameVo> all = this.getBaseMapper().selectEnabledList().stream().map(this::buildVo).toList();
+        // 不可玩记录不下发（可玩地址为空 = 数据残缺，游戏包从未上传或记录为占位数据）：
+        // 下发出去端上点击静默无响应，不如不暴露；warn 留痕便于定位残缺数据
+        List<GameVo> playable = all.stream()
+                .filter(vo -> StrUtil.isNotBlank(vo.getUrl()))
+                .toList();
+        if (playable.size() < all.size()) {
+            List<String> skippedKeys = all.stream()
+                    .filter(vo -> StrUtil.isBlank(vo.getUrl()))
+                    .map(GameVo::getGameKey)
+                    .toList();
+            log.warn("下发列表过滤不可玩记录（可玩地址为空，请在管理端重新上传游戏包）: {}", skippedKeys);
+        }
+        return playable;
     }
 
     // ==================== 内部方法 ====================

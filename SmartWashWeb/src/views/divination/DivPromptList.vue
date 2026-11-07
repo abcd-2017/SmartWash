@@ -2,9 +2,15 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="术数方法">
-          <el-select v-model="listQuery.method" placeholder="全部" clearable style="width: 140px">
+          <el-select
+            v-model="listQuery.method"
+            placeholder="全部"
+            clearable
+            style="width: 140px"
+            @change="handleSearch"
+          >
             <el-option
               v-for="m in methodOptions"
               :key="m.value"
@@ -19,10 +25,17 @@
             placeholder="请输入版本号"
             clearable
             style="width: 140px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 120px">
+          <el-select
+            v-model="listQuery.status"
+            placeholder="全部"
+            clearable
+            style="width: 120px"
+            @change="handleSearch"
+          >
             <el-option label="草稿" :value="0" />
             <el-option label="激活" :value="1" />
             <el-option label="退役" :value="2" />
@@ -31,6 +44,8 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">新增 Prompt</el-button>
         </el-form-item>
       </el-form>

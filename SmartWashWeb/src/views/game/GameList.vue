@@ -2,13 +2,14 @@
   <div class="page-container">
     <!-- 搜索区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="listQuery">
+      <el-form :inline="true" :model="listQuery" @keyup.enter="handleSearch">
         <el-form-item label="关键词">
           <el-input
             v-model="listQuery.keyword"
             placeholder="标题 / gameKey 模糊搜索"
             clearable
             style="width: 220px"
+            @clear="handleSearch"
           />
         </el-form-item>
         <el-form-item label="分类">
@@ -17,6 +18,7 @@
             placeholder="全部分类"
             clearable
             style="width: 130px"
+            @change="handleSearch"
           >
             <el-option
               v-for="opt in GAME_CATEGORY_OPTIONS"
@@ -26,17 +28,64 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="来源">
+          <el-select
+            v-model="listQuery.sourceType"
+            placeholder="全部来源"
+            clearable
+            style="width: 110px"
+            @change="handleSearch"
+          >
+            <el-option label="上传" :value="1" />
+            <el-option label="外链" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="下发">
+          <el-select
+            v-model="listQuery.enabled"
+            placeholder="全部"
+            clearable
+            style="width: 100px"
+            @change="handleSearch"
+          >
+            <el-option label="已下发" :value="1" />
+            <el-option label="未下发" :value="0" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="handleCreate">上传游戏</el-button>
+          <el-button
+            :disabled="!selectedRows.length"
+            :loading="batchToggling"
+            @click="handleBatchEnabled(1)"
+          >
+            批量下发
+          </el-button>
+          <el-button
+            :disabled="!selectedRows.length"
+            :loading="batchToggling"
+            @click="handleBatchEnabled(0)"
+          >
+            批量取消下发
+          </el-button>
         </el-form-item>
       </el-form>
     </div>
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="gameList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="gameList"
+        fit
+        highlight-current-row
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="42" />
         <el-table-column label="游戏" min-width="220">
           <template #default="{ row }">
             <div class="title-cell">
@@ -50,7 +99,11 @@
                   loading="lazy"
                 />
                 <!-- 端上按 icon/color key 白名单映射，色块直观展示色组、tag 展示 icon key 便于两端对齐 -->
-                <span v-else class="icon-block" :style="{ backgroundColor: gameColorHex(row.color) }" />
+                <span
+                  v-else
+                  class="icon-block"
+                  :style="{ backgroundColor: gameColorHex(row.color) }"
+                />
                 <span class="title-main">{{ row.title || '-' }}</span>
                 <el-tag v-if="row.badge" size="small" type="warning" effect="plain">
                   {{ row.badge }}
@@ -189,8 +242,13 @@
                  弹的确实是 el-upload__input），目录入口形同失效。移出后两条路径互不干扰。 -->
             <div class="upload-alt">
               <span class="upload-alt-divider">或</span>
-              <el-button size="small" @click="handlePickDirectory">选择游戏目录（自动填表）</el-button>
+              <el-button size="small" @click="handlePickDirectory"
+                >选择游戏目录（自动填表）</el-button
+              >
               <el-button size="small" @click="handlePickReadme">选 README.md 自动填表</el-button>
+              <el-button size="small" @click="handleOpenBatchUpload"
+                >批量导入（选父目录）</el-button
+              >
               <input
                 ref="dirInputRef"
                 class="dir-input"
@@ -236,7 +294,9 @@
               <div v-else class="upload-empty cover-empty">
                 <el-icon class="upload-empty-icon"><Picture /></el-icon>
                 <div class="upload-empty-text">上传封面图（选填）</div>
-                <div class="upload-empty-tip">png / jpeg / webp，≤5MB；留空则端上用本地兜底封面</div>
+                <div class="upload-empty-tip">
+                  png / jpeg / webp，≤5MB；留空则端上用本地兜底封面
+                </div>
               </div>
             </el-upload>
             <div class="form-tip">
@@ -399,6 +459,9 @@
       </template>
     </el-dialog>
 
+    <!-- 批量导入弹窗：选父目录 → 预检 → 串行上传（规范校验/README 解析与单目录导入同源） -->
+    <BatchUploadDialog v-model="batchDialogVisible" @success="fetchData" />
+
     <!-- 编辑弹窗（元数据 + 可选更换游戏包；gameKey/来源不可改，方案 §五） -->
     <el-dialog
       title="编辑游戏"
@@ -448,7 +511,8 @@
             <div v-else class="upload-empty">
               <div class="upload-empty-text">可选：拖拽新游戏包到此处覆盖上传</div>
               <div class="upload-empty-tip">
-                不选文件则仅修改元数据；选文件会以当前 gameKey 覆盖上传（.html / .htm / .zip，≤10MB）
+                不选文件则仅修改元数据；选文件会以当前 gameKey 覆盖上传（.html / .htm /
+                .zip，≤10MB）
               </div>
             </div>
           </el-upload>
@@ -585,11 +649,21 @@
 import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Document, UploadFilled, CircleCheckFilled, Close, Picture } from '@element-plus/icons-vue';
-import { getGameList, uploadGame, updateGame, updateGameEnabled, deleteGame, uploadGameCover } from '@/api/game';
+import {
+  getGameList,
+  uploadGame,
+  updateGame,
+  updateGameEnabled,
+  batchUpdateGameEnabled,
+  deleteGame,
+  uploadGameCover,
+} from '@/api/game';
 import { formatTime, formatFileSize } from '@/utils/format';
 import logger from '@/utils/logger';
 import { useTableList } from '@/composables/useTableList';
 import { useConfirm } from '@/composables/useConfirm';
+import BatchUploadDialog from './BatchUploadDialog.vue';
+import { relSegs, inspectGameDir, parseGameReadme, GAME_KEY_PATTERN } from './gameDirectory';
 import {
   GAME_CATEGORY_OPTIONS,
   GAME_ICON_OPTIONS,
@@ -622,12 +696,17 @@ const {
   baseQuery: {
     keyword: '',
     category: null,
+    sourceType: null,
+    enabled: null,
   },
   buildParams: (q) => ({
     ...q,
-    // 契约 §2.2：keyword 单参数模糊匹配 title 或 gameKey
+    // 契约 §2.2：keyword 单参数模糊匹配 title 或 gameKey；
+    // sourceType/enabled 用 ?? 清洗（enabled=0 未下发是合法筛选值，|| 会误清）
     keyword: q.keyword || undefined,
     category: q.category || undefined,
+    sourceType: q.sourceType ?? undefined,
+    enabled: q.enabled ?? undefined,
   }),
   errorMsg: '获取游戏列表失败',
 });
@@ -647,13 +726,8 @@ const tempGame = reactive({
   remark: '',
 });
 
-// gameKey 规则：小写字母开头、3-64 位小写字母/数字/_/-（与工作台 entryKey 同款正则语言）
-const GAME_KEY_PATTERN = /^[a-z][a-z0-9_-]{2,63}$/;
-
-// 同一规则剥掉 ^/$ 后供「从文本中间提取」使用：GAME_KEY_PATTERN 的锚点是为整串校验设计的，
-// 直接 .source 嵌进 heading 中间会因 ^ 锚定串首而**永远匹配不到**，gameKey 静默回退成目录名
-// （目录名与 gameKey 不一致时填错唯一标识，且 README 元首行作为填表数据源的约定形同失效）
-const GAME_KEY_SOURCE = GAME_KEY_PATTERN.source.replace(/^\^/, '').replace(/\$$/, '');
+// gameKey 规则与 README 解析已收敛到 ./gameDirectory（与批量导入同源），
+// GAME_KEY_PATTERN/GAME_KEY_SOURCE/parseGameReadme 从该模块导入
 
 // 验证规则（上传/编辑两弹窗共用；file 项仅上传弹窗消费）。
 // file 校验走自定义 validator 读 selectedFile 闭包——form model 中无 file 字段，
@@ -836,87 +910,42 @@ const handleReadmePick = (event) => {
     });
 };
 
-// README 首行解析：`# 标题（gameKey：`x`，category 建议：`y`）`；
-// 匹配不到的字段留空（gameKey 除外，回退目录名——规范约定目录名 = gameKey），不让自动化静默填错
-const parseGameReadme = (text, dirName) => {
-  const heading = (text.split(/\r?\n/, 1)[0] || '').replace(/^#+\s*/, '');
-  const title = heading
-    .replace(/（[^）]*）\s*$/, '')
-    .trim()
-    .slice(0, 32);
-  const keyMatch = heading.match(
-    new RegExp(`gameKey[：:]\\s*\`?(${GAME_KEY_SOURCE})\`?`, 'i')
-  );
-  const categoryMatch = heading.match(/category(?:\s*建议)?[：:]\s*`?([a-z]+)`?/i);
-  const category = categoryMatch?.[1];
-  // 玩法行 → 描述（截到 128，与表单 maxlength 对齐）
-  const playMatch = text.match(/^\s*[-*]?\s*\**\s*玩法[：:]\s*(.+)$/m);
-  return {
-    title,
-    gameKey: keyMatch?.[1] || dirName,
-    category: GAME_CATEGORY_OPTIONS.some((opt) => opt.value === category) ? category : '',
-    description: (playMatch?.[1] || '').replace(/\*+/g, '').trim().slice(0, 128),
-  };
-};
-
-// 选择目录：仅接受根目录 index.html（+ 可选 README.md / 封面图），忽略隐藏文件；
+// 选择目录：结构校验收敛到 gameDirectory.inspectGameDir（与批量导入同源规范）；
 // index.html 作为上传文件，README 解析后预填表单（匹配不到的字段留空），封面图自动识别
 const handleDirImport = (event) => {
   const files = Array.from(event.target.files || []);
   event.target.value = ''; // 允许重复选择同一目录
   if (!files.length) return;
 
-  const relSegs = (file) => (file.webkitRelativePath || file.name).split('/');
   const dirName = relSegs(files[0])[0] || 'game';
-  const visible = files.filter((file) => relSegs(file).every((seg) => !seg.startsWith('.')));
-  // 结构：根目录只允许 index.html（必须）+ README.md（可选）+ 封面图（可选，png/jpg/jpeg/webp）；子目录或额外文件一律拒绝（多文件请打包 zip）
-  const rootFiles = visible.filter((file) => relSegs(file).length === 2);
-  // 封面命名兼容 cover.png 与 games-library 规范 <game-key>.png（限图片扩展名，避免把任意文件当封面）
-  const COVER_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
-  const isCoverFile = (file) => COVER_EXTS.some((ext) => file.name.toLowerCase().endsWith(ext));
-  const hasExtra =
-    visible.some((file) => relSegs(file).length > 2) ||
-    rootFiles.some((file) => {
-      const name = file.name.toLowerCase();
-      return !['index.html', 'readme.md'].includes(name) && !isCoverFile(file);
-    });
-  if (hasExtra) {
-    logger.debug('游戏目录导入预检未通过：目录含不被支持的文件');
-    ElMessage.error(
-      '目录仅支持「index.html（+ 可选 README.md / 封面图）」，含其他文件请打包 .zip 手动上传'
-    );
+  const inspect = inspectGameDir(dirName, files, 1);
+  if (!inspect.ok) {
+    logger.debug('游戏目录导入预检未通过：', inspect.reason);
+    ElMessage.error(inspect.reason);
     return;
   }
-  const htmlFile = rootFiles.find((file) => file.name === 'index.html');
-  if (!htmlFile) {
-    logger.debug('游戏目录导入预检未通过：缺少 index.html 入口文件');
-    ElMessage.error('目录缺少 index.html 入口文件');
-    return;
-  }
-  const readmeFile = rootFiles.find((file) => file.name === 'README.md');
-  const fileError = validateFile(htmlFile);
+  const fileError = validateFile(inspect.indexHtml);
   if (fileError) {
     logger.debug('游戏目录导入预检未通过：', fileError);
     ElMessage.error(fileError);
     return;
   }
 
-  selectedFile.value = htmlFile;
+  selectedFile.value = inspect.indexHtml;
   uploadFormRef.value?.validateField('file').catch(() => {});
 
   // 目录内封面自动识别:cover.png / <game-key>.png 等图片(取首个)
-  const coverPicked = rootFiles.find((file) => isCoverFile(file));
-  if (coverPicked) {
-    handleCoverChange({ raw: coverPicked });
+  if (inspect.coverFile) {
+    handleCoverChange({ raw: inspect.coverFile });
     ElMessage.success('已识别目录中的封面图');
   }
 
   // README 可选：无则字段留空（gameKey 仍取目录名），有则解析预填
-  if (!readmeFile) {
+  if (!inspect.readme) {
     applyReadmeFields({ title: '', gameKey: dirName, category: '', description: '' });
     return;
   }
-  readmeFile
+  inspect.readme
     .text()
     .then((text) => {
       applyReadmeFields(parseGameReadme(text, dirName));
@@ -1084,6 +1113,17 @@ const handleFinishUpload = () => {
   uploadDialogVisible.value = false;
 };
 
+// ---------- 批量导入（选父目录，多个游戏目录按规范逐个上传） ----------
+
+const batchDialogVisible = ref(false);
+
+// 从上传弹窗进入批量导入：关掉单上传弹窗避免两层弹窗叠置
+const handleOpenBatchUpload = () => {
+  if (uploading.value) return;
+  uploadDialogVisible.value = false;
+  batchDialogVisible.value = true;
+};
+
 // ---------- 行内下发开关 ----------
 
 const handleToggleEnabled = async (row) => {
@@ -1112,6 +1152,60 @@ const handleToggleEnabled = async (row) => {
     ElMessage.error(error.message || '状态切换失败');
   } finally {
     togglingId.value = null;
+  }
+};
+
+// ---------- 批量下发（表格勾选） ----------
+
+const selectedRows = ref([]);
+const batchToggling = ref(false);
+
+const handleSelectionChange = (rows) => {
+  selectedRows.value = rows;
+};
+
+const handleBatchEnabled = async (enabled) => {
+  const rows = selectedRows.value;
+  const actionText = enabled === 1 ? '下发' : '取消下发';
+  // 已处于目标状态的行提前剔除，避免整批幂等空转
+  const targets = rows.filter((r) => r.enabled !== enabled);
+  if (!targets.length) {
+    ElMessage.info(`勾选的游戏均已是${actionText === '下发' ? '下发' : '未下发'}状态`);
+    return;
+  }
+  const confirmed = await useConfirm(
+    `确定对选中的 ${targets.length} 个游戏执行「${actionText}」？用户端列表将即时生效。`,
+    `批量${actionText}`
+  );
+  if (!confirmed) return;
+
+  batchToggling.value = true;
+  try {
+    const results = await batchUpdateGameEnabled(
+      targets.map((r) => r.id),
+      enabled
+    );
+    const failed = (results || []).filter((r) => !r.success);
+    if (!failed.length) {
+      ElMessage.success(`已批量${actionText} ${targets.length} 个游戏`);
+      logger.info('游戏批量下发成功', `count=${targets.length}`, `enabled=${enabled}`);
+    } else {
+      // 部分失败：明细浮出，成功的保持生效（尽力而为语义）
+      ElMessage.warning(
+        `批量${actionText}完成：成功 ${targets.length - failed.length} 个，失败 ${failed.length} 个`
+      );
+      logger.error(
+        '游戏批量下发部分失败:',
+        failed.map((f) => `id=${f.id} ${f.message || ''}`).join('; ')
+      );
+    }
+    selectedRows.value = [];
+    fetchData();
+  } catch (error) {
+    logger.error(`游戏批量${actionText}失败:`, error);
+    ElMessage.error(error.message || `批量${actionText}失败`);
+  } finally {
+    batchToggling.value = false;
   }
 };
 
