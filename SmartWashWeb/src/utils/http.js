@@ -52,14 +52,8 @@ function getRefreshToken() {
 // 401 统一处理：清登录态 → 跳转登录页（替代旧的 window.location.reload()）
 let redirectingToLogin = false; // 1.5 秒去重窗口，防止并发 401 重复提示/重复跳转
 function handleUnauthorized() {
-  // 无论当前处于哪个页面，先清空登录态（内存 + 持久化一并清理）
-  try {
-    useAuthStore().clearLogin();
-  } catch {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('role');
-  }
+  // 无论当前处于哪个页面，先清空登录态（内存 + 持久化一并清理），统一走 auth store 落盘
+  useAuthStore().clearLogin();
 
   // 登录页自身的 401（如账号密码错误）由调用方展示后端 message，这里不再重复提示/跳转
   if (window.location.pathname === '/login') {
@@ -99,19 +93,15 @@ function refreshTokens() {
   refreshPending = http
     .post('/auth/refresh', { refreshToken: getRefreshToken() }, { __isRefresh: true })
     .then((data) => {
-      // 响应拦截器已解包统一信封，data 即 { token, refreshToken }（无 role）
-      if (!data?.token) {
+      // 响应拦截器已解包统一信封，data 即 { token, refreshToken }（无 role）；
+      // 双字段校验对齐 Android TokenRefresherImpl / 鸿蒙 refreshTokens：refreshToken
+      // 一次性轮换，任一缺失即视为续签失败（走登出收尾），防半新半旧凭证落盘
+      if (!data?.token || !data?.refreshToken) {
         throw new Error('续签响应缺少凭证');
       }
-      try {
-        useAuthStore().setTokens(data.token, data.refreshToken);
-      } catch {
-        // pinia 未激活的极端场景（单测）：直接写持久化层，保证重试请求能取到新 token
-        localStorage.setItem('token', data.token);
-        if (data.refreshToken) {
-          localStorage.setItem('refreshToken', data.refreshToken);
-        }
-      }
+      // 落盘统一走 auth store（禁裸 localStorage）：内存与持久化一并更新，
+      // 保证等待同一单飞的并发请求重试时必然读到新双 token
+      useAuthStore().setTokens(data.token, data.refreshToken);
       return data;
     })
     .finally(() => {
