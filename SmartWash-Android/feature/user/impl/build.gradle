@@ -62,6 +62,19 @@ dependencies {
     // MultipartBody/RequestBody（头像上传；okhttp 虽经 common:network 的 retrofit api 传递，
     // 本模块直接消费 okhttp3 类型，按项目惯例显式声明）
     implementation libs.okhttp
+    // TokenRefresherImpl 解析 /auth/refresh 信封（ApiResult<TokenPairVo>）与请求体序列化
+    implementation libs.gson
     // SessionManager/UserApiImpl 的协程作用域与 Flow
     implementation libs.kotlinx.coroutines.android
+    // PagingSource 实现（TransactionPagingSource/pagingFlow 的 Pager，钱包流水分页）
+    implementation libs.androidx.paging.runtime.ktx
+    // collectAsLazyPagingItems（钱包流水页列表）
+    implementation libs.androidx.paging.compose
+
+    // JVM 单测（TokenRefresherImpl 单飞续签链路）：SessionManager 的 DataStore 依赖 Android 上下文需
+    // Robolectric + androidx.test.core（ApplicationProvider）；/auth/refresh 用 MockWebServer 假后端
+    testImplementation libs.junit
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
+    testImplementation libs.mockwebserver
 }

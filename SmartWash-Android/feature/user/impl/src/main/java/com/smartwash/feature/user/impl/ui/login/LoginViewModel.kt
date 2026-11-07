@@ -41,8 +41,8 @@ class LoginViewModel @Inject constructor(
                     _loginState.value = RequestState.Error(R.string.error_login_failed)
                     return@launch
                 }
-                // 经 SessionManager 保存：token 与 role 的内存缓存和 DataStore 同步更新
-                sessionManager.saveToken(token, loginVo.role)
+                // 经 SessionManager 保存：token/role/refreshToken 的内存缓存和 DataStore 同步更新
+                sessionManager.saveToken(token, loginVo.role, loginVo.refreshToken)
                 // 会话建立广播（UserApiImpl 桥接为 LoginEvent.LoggedIn，并使用户信息缓存失效）
                 sessionEventBus.notifyLoggedIn()
                 // 低频关键动作成功（手机号必须脱敏后才可入日志）

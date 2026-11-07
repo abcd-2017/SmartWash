@@ -27,9 +27,10 @@ class SessionInitTask(
 
     override suspend fun execute() {
         try {
-            // 挂起读 token/role：命中内存缓存即返回，未命中读 DataStore 并回填
+            // 挂起读 token/role/refreshToken：命中内存缓存即返回，未命中读 DataStore 并回填
             sessionManager.getToken()
             sessionManager.getRole()
+            sessionManager.getRefreshToken()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

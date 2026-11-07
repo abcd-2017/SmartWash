@@ -17,6 +17,9 @@ internal object UserImplConstant {
     /** role 的 DataStore 键（沿用 app 时期取值，无数据迁移） */
     const val USER_ROLE = "user_role"
 
+    /** refreshToken 的 DataStore 键（双 token 契约新增；新 key 无历史数据，无迁移问题） */
+    const val REFRESH_TOKEN = "user_refresh_token"
+
     /** 发送验证码的倒计时秒数 */
     const val SEND_CAPTCHA = 60
 }

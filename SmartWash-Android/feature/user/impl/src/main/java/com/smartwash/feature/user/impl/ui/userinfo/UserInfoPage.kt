@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
@@ -589,6 +590,23 @@ fun UserInfoPage(
                             // 待收货地址功能立项后接入（走查 P-501；全工程无地址页面/路由、后端无地址表，
                             // 四端均未立项；对齐 OrderDetailPage D-OD12 约定：先以 Toast 兜底给用户明确反馈）
                             onClick = { Toast.makeText(context, context.getString(R.string.shipping_address_unavailable), Toast.LENGTH_SHORT).show() }
+                        )
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                        // 钱包流水（充值/消费分页列表，GET /web/auth/user/transactions）
+                        SettingRow(
+                            icon = Icons.Default.AccountBalanceWallet,
+                            containerColor = AppColors.colorScheme.iconContainerTeal,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                            label = stringResource(R.string.wallet_transactions),
+                            trailing = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = AppColors.colorScheme.textTertiary
+                                )
+                            },
+                            onClick = { navController.navigate(UserRoute.WalletTransactions) }
                         )
                     }
 

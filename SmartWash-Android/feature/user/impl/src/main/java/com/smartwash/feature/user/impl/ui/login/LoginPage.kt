@@ -69,6 +69,7 @@ import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.isValidPhone
 import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
 
@@ -276,6 +277,23 @@ fun LoginPage(
                     // 截断）即重新校验、立即清除行内错误，不再残留至下次点登录；
                     // 不足 6 位不新增报错（避免输入中就报错，错误仍由点击登录时检测）
                     isPasswordError = if (it.length >= 6) false else isPasswordError
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 忘记密码 — 行尾 12sp 白字（密码框与 CTA 之间）；pressable 自带防抖，
+                // padding 置于 pressable 之后保证热区覆盖文字外扩区域
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.forgot_password),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .pressable(onClick = { navController.navigate(UserRoute.ResetPassword) })
+                            .padding(horizontal = 4.dp, vertical = 12.dp)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

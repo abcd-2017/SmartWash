@@ -195,4 +195,30 @@
 
     <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
     <string name="error_network_fail">请求失败</string>
+
+    <!-- 钱包流水（GET /web/auth/user/transactions；金额符号端上按 type 重算，绝对值展示） -->
+    <string name="wallet_transactions">钱包流水</string>
+    <string name="no_wallet_transactions">暂无钱包流水</string>
+    <string name="wallet_load_failed">流水加载失败</string>
+    <string name="wallet_append_failed">加载更多失败，点击重试</string>
+    <string name="transaction_payment">消费</string>
+    <string name="wallet_amount_in_format" formatted="false">+¥%s</string>
+    <string name="wallet_amount_out_format" formatted="false">-¥%s</string>
+
+    <!-- 忘记密码/重置密码（GET /auth/user/captcha/{phone} 发码 + POST /auth/user/resetPassword） -->
+    <string name="forgot_password">忘记密码？</string>
+    <string name="reset_password">重置密码</string>
+    <string name="reset_new_password">新密码</string>
+    <string name="reset_password_success">密码重置成功，请重新登录</string>
+
+    <!-- 修改密码（PUT /web/auth/user/password；原密码不正确等业务失败透传后端文案） -->
+    <string name="change_password">修改密码</string>
+    <string name="confirm_change_password">确认修改</string>
+    <string name="old_password">原密码</string>
+    <string name="new_password">新密码</string>
+    <string name="confirm_new_password">确认新密码</string>
+    <string name="error_old_password_empty">请输入原密码</string>
+    <string name="error_password_mismatch">两次输入的密码不一致</string>
+    <string name="change_password_success">密码修改成功</string>
+    <string name="change_password_rule_hint">密码长度为 6-16 位，修改成功后需使用新密码重新登录</string>
 </resources>
