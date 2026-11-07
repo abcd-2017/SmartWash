@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 速记手账文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面 ==================== -->
+    <string name="memo_title">速记手账</string>
+    <string name="memo_error_load">记录加载失败</string>
+    <string name="memo_action_retry">重试</string>
+    <string name="memo_empty_message">还没有记录，写下第一条吧</string>
+    <string name="memo_empty_filtered_message">没有匹配的记录</string>
+
+    <!-- ==================== 随手记输入区 ==================== -->
+    <string name="memo_composer_hint">记点想法…</string>
+    <string name="memo_counter_format">%1$d/%2$d</string>
+    <string name="memo_composer_editing">编辑中</string>
+    <string name="memo_action_cancel_edit">取消编辑</string>
+    <string name="memo_action_save">保存</string>
+    <string name="memo_action_update">更新</string>
+    <string name="memo_composer_selected_hint">已选标签，点击移除</string>
+    <string name="memo_composer_tag_hint">添加标签</string>
+    <string name="memo_composer_tag_add">添加</string>
+    <string name="memo_composer_frequent_tags">常用标签</string>
+    <string name="memo_error_empty">内容不能为空</string>
+    <string name="memo_error_save">保存失败，请重试</string>
+    <string name="memo_toast_saved">已保存</string>
+
+    <!-- ==================== 搜索与标签筛选 ==================== -->
+    <string name="memo_search_hint">搜索记录</string>
+    <string name="memo_filter_all">全部</string>
+    <string name="memo_tag_with_count_format">%1$s · %2$d</string>
+
+    <!-- ==================== 记录卡片 ==================== -->
+    <string name="memo_card_pinned">置顶</string>
+    <string name="memo_card_edited">已编辑</string>
+    <string name="memo_action_pin">置顶</string>
+    <string name="memo_action_unpin">取消置顶</string>
+    <string name="memo_action_edit">编辑</string>
+    <string name="memo_action_delete">删除</string>
+    <string name="memo_toast_pinned">已置顶</string>
+    <string name="memo_toast_unpinned">已取消置顶</string>
+    <string name="memo_toast_deleted">已删除</string>
+    <string name="memo_error_action">操作失败，请重试</string>
+</resources>

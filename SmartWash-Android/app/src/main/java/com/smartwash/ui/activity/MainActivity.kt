@@ -51,6 +51,7 @@ import com.smartwash.feature.divination.ui.divinationGraph
 import com.smartwash.feature.game.ui.gameGraph
 import com.smartwash.feature.lab.ui.labGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
+import com.smartwash.feature.memo.ui.memoGraph
 import com.smartwash.feature.mood.ui.moodGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
@@ -291,6 +292,8 @@ class MainActivity : ComponentActivity() {
                             reviewGraph(navController)
                             // 订阅逃生舱（入口走深链 smartwash://subscription 与工作台卡片，无底栏入口）
                             subscriptionGraph(navController)
+                            // 速记手账（入口走深链 smartwash://quick-memo 与工作台卡片，无底栏入口）
+                            memoGraph(navController)
                             // 设备投递（入口走深链 smartwash://delivery 与工作台卡片，无底栏入口）
                             deliveryGraph(navController)
                         }
