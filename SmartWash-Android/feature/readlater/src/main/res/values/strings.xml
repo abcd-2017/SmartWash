@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 稍后读（AI 摘要）文案（模块内经 R.string 引用，nonTransitiveRClass） -->
+<resources>
+    <!-- ==================== 页面 ==================== -->
+    <string name="readlater_title">稍后读</string>
+    <string name="readlater_url_hint">粘贴 https:// 链接</string>
+    <string name="readlater_action_collect">收藏</string>
+    <string name="readlater_tag_hint">添加标签</string>
+    <string name="readlater_tag_action_add">添加</string>
+    <string name="readlater_tab_unread">未读</string>
+    <string name="readlater_tab_read">已读</string>
+    <string name="readlater_search_hint">搜索标题或关键词</string>
+    <string name="readlater_tag_filter_all">全部</string>
+
+    <!-- ==================== 列表状态 ==================== -->
+    <string name="readlater_empty_message">还没有收藏，粘贴链接保存一篇吧</string>
+    <string name="readlater_error_load">加载失败</string>
+    <string name="readlater_action_retry">重试</string>
+
+    <!-- ==================== 卡片 ==================== -->
+    <string name="readlater_digest_entry">生成 AI 摘要</string>
+    <string name="readlater_digest_generating">生成中…</string>
+    <string name="readlater_action_digest">生成摘要</string>
+    <string name="readlater_action_mark_read">标记已读</string>
+    <string name="readlater_action_mark_unread">标记未读</string>
+    <string name="readlater_action_shorten">转短链</string>
+    <string name="readlater_action_delete">删除</string>
+
+    <!-- ==================== 提示 ==================== -->
+    <string name="readlater_toast_invalid_url">请输入合法的 https:// 链接</string>
+    <string name="readlater_toast_add_success">收藏成功</string>
+    <string name="readlater_toast_digest_done">摘要已生成</string>
+    <string name="readlater_toast_copy_done">短链已复制</string>
+    <string name="readlater_toast_delete_done">已删除</string>
+    <string name="readlater_toast_failed">操作失败，请重试</string>
+</resources>

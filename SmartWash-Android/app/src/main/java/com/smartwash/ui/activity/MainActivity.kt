@@ -54,6 +54,7 @@ import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.mood.ui.moodGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
+import com.smartwash.feature.readlater.ui.readLaterGraph
 import com.smartwash.feature.review.ui.reviewGraph
 import com.smartwash.feature.subscription.ui.subscriptionGraph
 import com.smartwash.feature.toolbox.ui.delivery.deliveryGraph
@@ -293,6 +294,8 @@ class MainActivity : ComponentActivity() {
                             subscriptionGraph(navController)
                             // 设备投递（入口走深链 smartwash://delivery 与工作台卡片，无底栏入口）
                             deliveryGraph(navController)
+                            // 稍后读（AI 摘要）（入口走深链 smartwash://read-later 与工作台卡片，无底栏入口）
+                            readLaterGraph(navController)
                         }
                         }
                     }

@@ -214,4 +214,9 @@ dependencies {
     //经 MainActivity NavHost 一行 labGraph 聚合；模块内无网络/无存储，
     //入口走深链 smartwash://lab 与后端 workbench_entry 配置的工作台卡片
     implementation project(":feature:lab")
+
+    //稍后读（AI 摘要）子系统：收藏输入条/未读已读 Tab/搜索/标签筛选/卡片列表（分页），
+    //经 MainActivity NavHost 一行 readLaterGraph 聚合；
+    //入口走深链 smartwash://read-later 与后端 workbench_entry 配置的工作台卡片
+    implementation project(":feature:readlater")
 }
