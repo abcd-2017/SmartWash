@@ -7,6 +7,7 @@ import com.smartwash.game.from.SearchGameFrom;
 import com.smartwash.game.from.UpdateGameFrom;
 import com.smartwash.game.from.UploadGameFrom;
 import com.smartwash.game.vo.AdminGameVo;
+import com.smartwash.game.vo.GameBatchResultVo;
 import com.smartwash.game.vo.GameVo;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -52,6 +53,12 @@ public interface GameConfigService extends IService<GameConfig> {
      * 记录不存在 → 404；已是目标状态 → 幂等成功。
      */
     void changeEnabled(Long id, Integer enabled);
+
+    /**
+     * 批量上下架：逐条 CAS 尽力而为，单条失败不阻断其余（不加批量事务），
+     * 结果按入参顺序返回明细（不存在/异常计入 failure 明细，幂等命中计成功）。
+     */
+    List<GameBatchResultVo> changeEnabledBatch(List<Long> ids, Integer enabled);
 
     /**
      * 物理删除：先清 MinIO 前缀（source_type=1，失败阻断可重试），再删记录。

@@ -17,6 +17,7 @@ import com.smartwash.game.storage.GameObjectStorage;
 import com.smartwash.game.support.GameContentTypes;
 import com.smartwash.game.support.GamePackageValidator;
 import com.smartwash.game.vo.AdminGameVo;
+import com.smartwash.game.vo.GameBatchResultVo;
 import com.smartwash.game.vo.GameVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -326,6 +327,24 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
             }
             log.info("游戏开关幂等命中, id: {}, enabled: {}", id, enabled);
         }
+    }
+
+    @Override
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
+    public List<GameBatchResultVo> changeEnabledBatch(List<Long> ids, Integer enabled) {
+        // 尽力而为语义：逐条独立判定（复用单条 CAS + 幂等口径），不加批量事务——
+        // 单条失败（不存在/数据异常）只记入明细，不阻断其余；缓存统一失效一次
+        return ids.stream().distinct().map(id -> {
+            try {
+                changeEnabled(id, enabled);
+                return new GameBatchResultVo(id, true, null);
+            } catch (GameServiceException e) {
+                return new GameBatchResultVo(id, false, e.getMessage());
+            } catch (Exception e) {
+                log.error("批量开关单条失败, id: {}, enabled: {}", id, enabled, e);
+                return new GameBatchResultVo(id, false, "操作失败，请稍后重试");
+            }
+        }).toList();
     }
 
     @Override
