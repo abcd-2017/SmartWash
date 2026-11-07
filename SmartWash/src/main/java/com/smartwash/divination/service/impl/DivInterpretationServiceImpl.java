@@ -1,5 +1,6 @@
 package com.smartwash.divination.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
 import com.smartwash.divination.entity.DivPlatformSetting;
@@ -13,6 +14,7 @@ import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.llm.SseBridge;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
+import com.smartwash.divination.prompt.PromptAssembler;
 import com.smartwash.divination.service.DivModelConfigService;
 import com.smartwash.divination.service.DivPlatformSettingService;
 import com.smartwash.divination.service.DivSafetyService;
@@ -28,6 +30,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,21 +42,16 @@ import java.util.concurrent.Executors;
  *   1. 安全分流（敏感问题拦截）
  *   2. Redis 限流 INCR → 超限 429
  *   3. 查解读缓存（Redis）→ 命中回放
- *   4. 组装 prompt packet（server_chart + 规则事实 + prompt 版本 + RAG）
+ *   4. 组装 prompt packet（激活 prompt 版本 + server_chart + 领域方法；追问时拼接历史解读上下文）
  *   5. 三层密钥解析 → LlmGateway 路由
  *   6. OpenAiCompatClient 流式调用 → SseBridge 逐 chunk 推流并累积（失败一次非流式回退）
- *   7. 落库 div_interpretation（含 usage 计量）
+ *   7. 落库 div_interpretation（含 usage 计量与 prompt_version_id）
  *   8. 异步事实审计（B3 实现）
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DivInterpretationServiceImpl implements IDivInterpretationService {
-
-    /** 解读系统提示词（本票简化版；完整 prompt 工程由 PromptAssembler 票实现） */
-    private static final String INTERPRET_SYSTEM_PROMPT = "你是「观象台」术数解读助手。基于给定的术数方法、问题与盘面，"
-            + "用简体中文 Markdown 输出结构化解读，结论谨慎、就事论事；"
-            + "禁止医疗/法律/投资建议；结尾附免责声明：本解读仅供娱乐参考，不构成任何建议。";
 
     private final DivRecordMapper recordMapper;
     private final DivInterpretationMapper interpretationMapper;
@@ -65,6 +64,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final DivUserApiConfigService userApiConfigService;
     private final DivPlatformSettingService platformSettingService;
     private final DivModelConfigService modelConfigService;
+    private final PromptAssembler promptAssembler;
 
     /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
     private final MdcTaskDecorator mdcTaskDecorator;
@@ -142,8 +142,14 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 5. 组装 prompt packet（简化版：server_chart + 问题）
-        String prompt = buildPrompt(record, question);
+        // 5. 组装 prompt packet（激活 prompt 版本 + 完整 serverChart + 领域方法；追问时拼接历史解读上下文）
+        Map<String, String> packet = buildPacket(record, question, isFollowup);
+        String systemPrompt = packet.get("system");
+        String userPrompt = packet.get("user");
+        Long promptVersionId = parseVersionId(packet.get("promptVersionId"));
+        // 日志只打长度摘要，不打完整 prompt（含盘面与解读内容，避免刷日志）
+        log.debug("prompt 组装完成, recordId: {}, kind: {}, promptVersionId: {}, userPromptChars: {}",
+                recordId, isFollowup ? "followup" : "first", promptVersionId, userPrompt.length());
 
         // 6. 流式调用 LLM 并推流（真实调用，失败且未推出增量时由客户端做一次非流式回退）
         OpenAiCompatProvider provider = resolved.getProvider();
@@ -152,7 +158,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         LlmCallException callError = null;
         boolean clientGone = false;
         try {
-            llmResult = llmClient.chatWithFallback(provider, INTERPRET_SYSTEM_PROMPT, prompt,
+            llmResult = llmClient.chatWithFallback(provider, systemPrompt, userPrompt,
                     chunk -> sseBridge.sendDelta(emitter, chunk));
         } catch (LlmCallException e) {
             callError = e;
@@ -183,7 +189,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         DivInterpretation interpretation = new DivInterpretation();
         interpretation.setRecordId(recordId);
         interpretation.setUserId(userId);
-        interpretation.setPromptVersionId(0L); // TODO: 从缓存取激活版本
+        interpretation.setPromptVersionId(promptVersionId); // 无激活版本走兜底时落 0
         interpretation.setKind(isFollowup ? "followup" : "first");
         interpretation.setQuestion(isFollowup ? question : null);
         interpretation.setProvider(provider.getName());
@@ -228,13 +234,35 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     }
 
     /**
-     * 组装 prompt packet（简化版，本票保留；完整实现由 prompt 票完成）。
-     * 完整实现应包含：server_chart + 规则事实 + prompt 版本 + RAG top-k 引用。
+     * 组装 prompt packet：首次解读与追问分别委托 {@link PromptAssembler}。
+     *
+     * <p>追问（isFollowup=true）时按 recordId 查 div_interpretation 历史解读
+     * （首轮 + 历次追问，按时间升序）拼进 user prompt；首次解读 question 入参可为 null
+     * （对应落库语义 interpretation.question=null），此时 prompt 使用卦例自身问题。</p>
+     *
+     * @param record     卦例（已校验归属）
+     * @param question   本次问题（首次解读时与卦例问题相同或为 null，追问时为子问题）
+     * @param isFollowup 是否追问
+     * @return prompt packet（system/user/method/promptVersionId，见 PromptAssembler 键约定）
      */
-    private String buildPrompt(DivRecord record, String question) {
-        return String.format(
-                "术数方法：%s\n问题：%s\n盘面：%s",
-                record.getMethod(), question, record.getServerChart()
-        );
+    private Map<String, String> buildPacket(DivRecord record, String question, boolean isFollowup) {
+        if (!isFollowup) {
+            String effectiveQuestion = question != null ? question : record.getQuestion();
+            return promptAssembler.assemble(record.getMethod(), record.getServerChart(), effectiveQuestion);
+        }
+        // 追问：查该卦例此前全部解读记录（含首轮解读与历次追问），按时间升序供拼上下文
+        QueryWrapper<DivInterpretation> wrapper = new QueryWrapper<>();
+        wrapper.eq("record_id", record.getId())
+                .orderByAsc("created_at")
+                .orderByAsc("id");
+        List<DivInterpretation> history = interpretationMapper.selectList(wrapper);
+        return promptAssembler.assembleFollowup(record.getMethod(), record.getServerChart(), question, history);
+    }
+
+    /**
+     * 从 packet 取激活 prompt 版本 id；无激活版本走兜底时 packet 不含该键，落 0（保持现状语义）。
+     */
+    private Long parseVersionId(String versionIdStr) {
+        return versionIdStr != null && !versionIdStr.isEmpty() ? Long.valueOf(versionIdStr) : 0L;
     }
 }
