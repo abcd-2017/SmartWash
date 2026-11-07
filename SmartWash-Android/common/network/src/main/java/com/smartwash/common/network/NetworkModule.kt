@@ -38,7 +38,18 @@ class NetworkModule {
             .addInterceptor(responseInterceptor)
 
         if (BuildConfig.DEBUG) {
-            val loggingInterceptor = HttpLoggingInterceptor()
+            // 日志脱敏（2026-11-07 BYOK，issue #79）：BODY 级日志会把 PUT/POST 请求体原样
+            // 打进 logcat，解读模型 BYOK 的 apiKey 明文因此泄露。仅经构造函数注入 Logger
+            // 包装输出通道做字段级正则脱敏（见 [maskApiKeyForLog]），BODY 级别、拦截链
+            // （鉴权/401/信封解析）与输出目标（Android logcat INFO 级 "OKHttp" tag，
+            // 等价默认 logger 行为）零改动。4.12.0 的 logger 为 private final，无 setter。
+            val loggingInterceptor = HttpLoggingInterceptor(
+                HttpLoggingInterceptor.Logger { message ->
+                    android.util.Log.println(
+                        android.util.Log.INFO, "OKHttp", maskApiKeyForLog(message)
+                    )
+                }
+            )
             loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
             builder.addInterceptor(loggingInterceptor)
         }
@@ -70,3 +81,18 @@ class NetworkModule {
             .build()
     }
 }
+
+/**
+ * 请求/响应日志中 apiKey 字段值脱敏（2026-11-07 BYOK，issue #79）：
+ * 形如 `"apiKey":"…"`（含大小写、空格变体）的 JSON 字段值替换为 `"apiKey":"***"`。
+ *
+ * 仅作用于 debug 日志输出通道（HttpLoggingInterceptor logger 包装），不触碰请求本身；
+ * internal 供 JVM 单测锚点（同 ResponseInterceptor.resolveBusinessErrorMessage 先例）。
+ * 注：OkHttp 超长日志（>4KB）会分段进 logger，跨段字段理论上可能漏匹配——BYOK 请求体
+ * 远小于分段阈值，实际路径可靠；其余接口不涉及密钥字段。
+ */
+internal val API_KEY_LOG_PATTERN: Regex =
+    Regex("\"\\s*api_?key\"\\s*:\\s*\"[^\"]*\"", RegexOption.IGNORE_CASE)
+
+internal fun maskApiKeyForLog(message: String): String =
+    message.replace(API_KEY_LOG_PATTERN, "\"apiKey\":\"***\"")
