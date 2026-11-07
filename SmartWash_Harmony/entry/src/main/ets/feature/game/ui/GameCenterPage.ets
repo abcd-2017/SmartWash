@@ -71,60 +71,53 @@ function categoryChipLabel(category: GameCategory): string {
   }
 }
 
-@Builder
-export function GameCenterBuilder() {
-  GameCenterPage()
+/**
+ * 分类筛选 chip —— 用 @ComponentV2 + @Param 承载选中态（已知坑：@Builder 按值传参在
+ * selectedCategory 变更后不重建，chip 背景定格、列表也不过滤）。点击经 @Event 上抛，
+ * 由页面统一写 selectedCategory。
+ */
+@ComponentV2
+struct GameCategoryChip {
+  @Param label: string = ''
+  @Param selected: boolean = false
+  @Param chipIndex: number = 0
+  @Event onSelect: (chipIndex: number) => void = (_: number) => {
+  }
+
+  build() {
+    Column() {
+      Row() {
+        Text(this.label)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+      }
+      // 垂直内边距 9 → 14：视觉高对齐安卓 AppPillTabRow 的 44dp（文字行盒 16 + 上下 14）
+      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+      .border({ width: 1, color: this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
+      .justifyContent(FlexAlign.Center)
+    }
+    .padding({ top: 5, bottom: 5 })
+    .margin({ right: DesignDimens.SPACE_XS })
+    .onClick(() => {
+      this.onSelect(this.chipIndex)
+    })
+  }
 }
 
+/**
+ * 游戏网格（两列，奇数末行补位；行 key 由行号 + 行内 gameKey 拼接，对齐安卓稳定 key）。
+ * @ComponentV2 + @Param：原 @Builder 按值传参在筛选后不重建，列表定格（已知坑）。
+ */
 @ComponentV2
-export struct GameCenterPage {
-  @Local games: GameItem[] = []
-  @Local isLoading: boolean = true
-  @Local isError: boolean = false
-  @Local selectedCategory: GameCategory | null = null
+struct GameGrid {
+  @Param games: GameItem[] = []
   // 服务端封面加载失败的 gameKey 集（onError 不可变追加，触发卡片回退本地封面）
   @Local serverCoverFailed: string[] = []
   // 本地兜底封面也失败的 gameKey 集（随包内置 30 款，正常为空；新上架未随包游戏会走到这）
   @Local localCoverFailed: string[] = []
-
-  aboutToAppear(): void {
-    logger.debug('gameCenterPage', '游戏中心挂载，拉取游戏列表')
-    this.loadGames()
-  }
-
-  /**
-   * 拉取游戏列表（对齐安卓 GameCenterViewModel.loadGames）：
-   * 失败进 Error 态（页面给重试入口），空列表视为成功空态。
-   */
-  private async loadGames(): Promise<void> {
-    this.isLoading = true
-    this.isError = false
-    try {
-      const res = await getGameList()
-      if (res.code === BizCode.SUCCESS && res.data !== null) {
-        this.games = withUniqueKeys(res.data.map((vo: GameVo, index: number): GameItem =>
-          gameVoToItem(vo, index)))
-      } else {
-        // 业务拒绝留痕：非 200 或数据载荷缺失，进错误态（仅记 code/message 摘要）
-        logger.warn('gameCenterPage', `游戏列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
-        this.isError = true
-      }
-    } catch (err) {
-      // 降级留痕：拉取异常进错误态给重试入口（仅 error.message 摘要，不序列化 error）
-      const e: BusinessError = err as BusinessError
-      logger.warn('gameCenterPage', `游戏列表加载异常，进错误态 err=${e.message}`)
-      this.isError = true
-    }
-    this.isLoading = false
-  }
-
-  /** 分类过滤后的列表（本地过滤，无分页；对齐安卓 filteredGames） */
-  private filteredGames(): GameItem[] {
-    if (this.selectedCategory === null) {
-      return this.games
-    }
-    return this.games.filter((game: GameItem): boolean => game.category === this.selectedCategory)
-  }
 
   /** 服务端封面加载失败 → 该 gameKey 回退本地 rawfile 封面（不可变追加触发刷新） */
   private markServerCoverFailed(gameKey: string): void {
@@ -138,6 +131,103 @@ export struct GameCenterPage {
     if (this.localCoverFailed.indexOf(gameKey) < 0) {
       this.localCoverFailed = [...this.localCoverFailed, gameKey]
     }
+  }
+
+  /** 该游戏当前是否走服务端封面（下发非空且未失败） */
+  private useServerCover(game: GameItem): boolean {
+    return game.coverUrl.length > 0 && this.serverCoverFailed.indexOf(game.gameKey) < 0
+  }
+
+  /** 该游戏当前是否走本地兜底封面（服务端不可用且本地未失败） */
+  private useLocalCover(game: GameItem): boolean {
+    return !this.useServerCover(game) && this.localCoverFailed.indexOf(game.gameKey) < 0
+  }
+
+  /** 两列分行（对齐安卓 games.chunked(2)） */
+  private buildRows(games: GameItem[]): GameItem[][] {
+    const rows: GameItem[][] = []
+    for (let i = 0; i < games.length; i += GRID_COLUMNS) {
+      rows.push(games.slice(i, i + GRID_COLUMNS))
+    }
+    return rows
+  }
+
+  /** 游戏卡点击：进既有 WebPage（url 为空不响应，对齐安卓 navigateToGameWebView 防御） */
+  private openGame(game: GameItem): void {
+    if (game.url.length === 0) {
+      return
+    }
+    // 游戏入场留痕（低频动作按约定记 debug；url 不落日志）
+    logger.debug('gameCenterPage', `入场游戏 gameKey=${game.gameKey}`)
+    const param: WebPageParam = new WebPageParam()
+    param.url = game.url
+    param.title = game.title
+    pathStack.pushPathByName(RouteNames.WEB_PAGE, param)
+  }
+
+  build() {
+    Scroll() {
+      Column() {
+        ForEach(this.buildRows(this.games), (row: GameItem[], index: number) => {
+          Row({ space: GRID_SPACING }) {
+            ForEach(row, (game: GameItem) => {
+              Column() {
+                GameCard({
+                  game: game,
+                  useServerCover: this.useServerCover(game),
+                  useLocalCover: this.useLocalCover(game),
+                  onOpen: (item: GameItem): void => {
+                    this.openGame(item)
+                  },
+                  onServerCoverError: (gameKey: string): void => {
+                    this.markServerCoverFailed(gameKey)
+                  },
+                  onLocalCoverError: (gameKey: string): void => {
+                    this.markLocalCoverFailed(gameKey)
+                  }
+                })
+                  .width('100%')
+              }
+              .layoutWeight(1)
+            }, (game: GameItem) => game.gameKey)
+            // 接口返回奇数个游戏时末行补位，保持两列网格
+            if (row.length === 1) {
+              Column() {
+              }
+              .layoutWeight(1)
+            }
+          }
+          .width('100%')
+          .padding({ bottom: GRID_SPACING })
+        }, (row: GameItem[], index: number) =>
+          `${index}_${row.length}_${row.length > 0 ? row[0].gameKey : ''}`)
+      }
+      .width('100%')
+      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: safeBottomVp() })
+    }
+    .scrollBar(BarState.Off)
+    .width('100%')
+    .layoutWeight(1)
+    .align(Alignment.TopStart)
+  }
+}
+
+/**
+ * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + level1 阴影 + 圆角 16；
+ * 44vp 图标色块（六色浅底 + 对应前景色，圆角 16）+ 标题（14/400，1 行截断）
+ * + 描述（12/400，2 行截断）+ badge 文字角标（主色浅底胶囊）。
+ * @ComponentV2 + @Param：避免 @Builder 按值传参在列表重建时定格。
+ */
+@ComponentV2
+struct GameCard {
+  @Require @Param game: GameItem
+  @Param useServerCover: boolean = false
+  @Param useLocalCover: boolean = false
+  @Event onOpen: (game: GameItem) => void = (_: GameItem) => {
+  }
+  @Event onServerCoverError: (gameKey: string) => void = (_: string) => {
+  }
+  @Event onLocalCoverError: (gameKey: string) => void = (_: string) => {
   }
 
   /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
@@ -180,26 +270,185 @@ export struct GameCenterPage {
     }
   }
 
-  /** 游戏卡点击：进既有 WebPage（url 为空不响应，对齐安卓 navigateToGameWebView 防御） */
-  private openGame(game: GameItem): void {
-    if (game.url.length === 0) {
-      return
+  build() {
+    Stack({ alignContent: Alignment.TopEnd }) {
+      Column() {
+        // 封面三级兜底：服务端 coverUrl → 本地 rawfile（随包 30 款）→ 图标色块；
+        // 两级 onError 经事件上抛页面登记（失败集在页面状态，卡片无状态）
+        Stack({ alignContent: Alignment.BottomStart }) {
+          if (this.useServerCover) {
+            Image(this.game.coverUrl)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.onServerCoverError(this.game.gameKey)
+              })
+          } else if (this.useLocalCover) {
+            Image(this.game.localCover)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.onLocalCoverError(this.game.gameKey)
+              })
+          } else {
+            Row() {
+              IconBox({
+                icon: this.game.icon,
+                sizeValue: 44,
+                iconSize: 24,
+                containerColor: this.containerColor(this.game.tint),
+                iconColor: this.iconColor(this.game.tint),
+                radius: DesignDimens.RADIUS_MD
+              })
+            }
+            .width('100%')
+            .aspectRatio(1.78)
+            .justifyContent(FlexAlign.Center)
+            .backgroundColor(DesignColor.SURFACE_VARIANT)
+          }
+
+          // 底部渐变遮罩 + 白字标题（封面上直接读，省一排行高；对齐安卓卡片样式）
+          if (this.useServerCover || this.useLocalCover) {
+            Stack({ alignContent: Alignment.BottomStart }) {
+              Column()
+                .width('100%')
+                .height(44)
+                .linearGradient({
+                  angle: 180,
+                  colors: [['rgba(0, 0, 0, 0)', 0], ['rgba(0, 0, 0, 0.55)', 1]]
+                })
+              Text(this.game.title)
+                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.ON_PRIMARY)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .width('100%')
+                .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
+            }
+            .width('100%')
+          }
+        }
+        .width('100%')
+        .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
+
+        Text(this.game.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
+          .padding({
+            left: DesignDimens.CARD_PADDING,
+            right: DesignDimens.CARD_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.CARD_PADDING
+          })
+          .margin({ top: DesignDimens.SPACE_SM })
+
+        // 描述字重对齐安卓 labelSmall 12/500（原 400）
+        Text(this.game.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+          .width('100%')
+          .margin({ top: DesignDimens.SPACE_XXS })
+      }
+      .width('100%')
+      .alignItems(HorizontalAlign.Start)
+      .padding(DesignDimens.CARD_PADDING)
+      .borderRadius(DesignDimens.CARD_RADIUS)
+      .border({ width: 1, color: DesignColor.OUTLINE })
+      .backgroundColor(DesignColor.SURFACE)
+      .shadow({
+        radius: DesignElevation.LEVEL_1,
+        color: DesignColor.SHADOW_COLOR_CARD,
+        offsetX: 0,
+        offsetY: 2
+      })
+
+      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字
+      if (this.game.badge.length > 0) {
+        Text(this.game.badge)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .backgroundColor(DesignColor.SURFACE)
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
+          .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: 1
+          })
+      }
     }
-    // 游戏入场留痕（低频动作按约定记 debug；url 不落日志）
-    logger.debug('gameCenterPage', `入场游戏 gameKey=${game.gameKey}`)
-    const param: WebPageParam = new WebPageParam()
-    param.url = game.url
-    param.title = game.title
-    pathStack.pushPathByName(RouteNames.WEB_PAGE, param)
+    .width('100%')
+    .onClick(() => {
+      this.onOpen(this.game)
+    })
+  }
+}
+
+@Builder
+export function GameCenterBuilder() {
+  GameCenterPage()
+}
+
+@ComponentV2
+export struct GameCenterPage {
+  @Local games: GameItem[] = []
+  @Local isLoading: boolean = true
+  @Local isError: boolean = false
+  @Local selectedCategory: GameCategory | null = null
+  // 服务端封面加载失败的 gameKey 集（onError 不可变追加，触发卡片回退本地封面）
+  @Local serverCoverFailed: string[] = []
+  // 本地兜底封面也失败的 gameKey 集（随包内置 30 款，正常为空；新上架未随包游戏会走到这）
+  @Local localCoverFailed: string[] = []
+
+
+  aboutToAppear(): void {
+    logger.debug('gameCenterPage', '游戏中心挂载，拉取游戏列表')
+    this.loadGames()
   }
 
-  /** 两列分行（对齐安卓 games.chunked(2)） */
-  private buildRows(games: GameItem[]): GameItem[][] {
-    const rows: GameItem[][] = []
-    for (let i = 0; i < games.length; i += GRID_COLUMNS) {
-      rows.push(games.slice(i, i + GRID_COLUMNS))
+  /**
+   * 拉取游戏列表（对齐安卓 GameCenterViewModel.loadGames）：
+   * 失败进 Error 态（页面给重试入口），空列表视为成功空态。
+   */
+  private async loadGames(): Promise<void> {
+    this.isLoading = true
+    this.isError = false
+    try {
+      const res = await getGameList()
+      if (res.code === BizCode.SUCCESS && res.data !== null) {
+        this.games = withUniqueKeys(res.data.map((vo: GameVo, index: number): GameItem =>
+          gameVoToItem(vo, index)))
+      } else {
+        // 业务拒绝留痕：非 200 或数据载荷缺失，进错误态（仅记 code/message 摘要）
+        logger.warn('gameCenterPage', `游戏列表未生效，进错误态 code=${res.code} message=${res.message ?? ""}`)
+        this.isError = true
+      }
+    } catch (err) {
+      // 降级留痕：拉取异常进错误态给重试入口（仅 error.message 摘要，不序列化 error）
+      const e: BusinessError = err as BusinessError
+      logger.warn('gameCenterPage', `游戏列表加载异常，进错误态 err=${e.message}`)
+      this.isError = true
     }
-    return rows
+    this.isLoading = false
+  }
+
+  /** 分类过滤后的列表（本地过滤，无分页；对齐安卓 filteredGames） */
+  private filteredGames(): GameItem[] {
+    if (this.selectedCategory === null) {
+      return this.games
+    }
+    return this.games.filter((game: GameItem): boolean => game.category === this.selectedCategory)
   }
 
   /** 骨架行下标（ArkTS 不在 build 内构造数组，收敛为方法） */
@@ -212,13 +461,32 @@ export struct GameCenterPage {
    * 未选中 = surface 白底 + 1px outline 描边 + textSecondary，radiusFull，视觉高 34，
    * 外层上下 5 把触控热区抬到 44）。
    */
+  /** chip 点击分流：chipIndex=0 → 全部（null）；其余按 GAME_CHIP_ORDER 映射回分类 */
+  private onChipSelect(chipIndex: number): void {
+    this.selectedCategory = chipIndex === 0 ? null : GAME_CHIP_ORDER[chipIndex - 1]
+  }
+
   @Builder
   CategoryChipsRow() {
     Scroll() {
       Row() {
-        this.ChipItem(GameText.categoryAll, this.selectedCategory === null, 0)
+        GameCategoryChip({
+          label: GameText.categoryAll,
+          selected: this.selectedCategory === null,
+          chipIndex: 0,
+          onSelect: (chipIndex: number): void => {
+            this.onChipSelect(chipIndex)
+          }
+        })
         ForEach(GAME_CHIP_ORDER, (category: GameCategory, index: number) => {
-          this.ChipItem(categoryChipLabel(category), this.selectedCategory === category, index + 1)
+          GameCategoryChip({
+            label: categoryChipLabel(category),
+            selected: this.selectedCategory === category,
+            chipIndex: index + 1,
+            onSelect: (chipIndex: number): void => {
+              this.onChipSelect(chipIndex)
+            }
+          })
         }, (category: GameCategory) => category)
       }
     }
@@ -233,29 +501,6 @@ export struct GameCenterPage {
       right: DesignDimens.PAGE_PADDING,
       top: DesignDimens.SPACE_XS,
       bottom: DesignDimens.SPACE_SM
-    })
-  }
-
-  @Builder
-  ChipItem(label: string, selected: boolean, chipIndex: number) {
-    Column() {
-      Row() {
-        Text(label)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      }
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 9, bottom: 9 })
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .border({ width: 1, color: selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
-      .justifyContent(FlexAlign.Center)
-    }
-    .padding({ top: 5, bottom: 5 })
-    .margin({ right: DesignDimens.SPACE_XS })
-    .onClick(() => {
-      // chipIndex=0 → 全部（null）；其余按 chips 顺序映射回分类
-      this.selectedCategory = chipIndex === 0 ? null : GAME_CHIP_ORDER[chipIndex - 1]
     })
   }
 
@@ -283,161 +528,7 @@ export struct GameCenterPage {
     .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
   }
 
-  /**
-   * 游戏网格（两列，奇数末行补位；行 key 由行号 + 行内 gameKey 拼接，对齐安卓稳定 key）。
-   */
-  @Builder
-  GameGrid(games: GameItem[]) {
-    Scroll() {
-      Column() {
-        ForEach(this.buildRows(games), (row: GameItem[], index: number) => {
-          Row({ space: GRID_SPACING }) {
-            ForEach(row, (game: GameItem) => {
-              Column() {
-                this.GameCard(game)
-              }
-              .layoutWeight(1)
-            }, (game: GameItem) => game.gameKey)
-            // 接口返回奇数个游戏时末行补位，保持两列网格
-            if (row.length === 1) {
-              Column() {
-              }
-              .layoutWeight(1)
-            }
-          }
-          .width('100%')
-          .padding({ bottom: GRID_SPACING })
-        }, (row: GameItem[], index: number) =>
-          `${index}_${row.length}_${row.length > 0 ? row[0].gameKey : ''}`)
-      }
-      .width('100%')
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: safeBottomVp() })
-    }
-    .scrollBar(BarState.Off)
-    .width('100%')
-    .layoutWeight(1)
-    .align(Alignment.TopStart)
-  }
-
-  /**
-   * 游戏卡（对齐安卓 main 封面主导 GameCard）：16:9 封面 + 底部渐变遮罩 + 白字标题 +
-   * 白胶囊 badge，描述区置于封面下方。封面三级兜底：服务端 coverUrl → 本地 rawfile
-   * （随包 30 款）→ 图标色块；任意一级 onError 降下一级，兜底链路与安卓一致。
-   */
-  @Builder
-  GameCard(game: GameItem) {
-    Stack({ alignContent: Alignment.TopEnd }) {
-      Column() {
-        Stack({ alignContent: Alignment.BottomStart }) {
-          if (game.coverUrl.length > 0 && this.serverCoverFailed.indexOf(game.gameKey) < 0) {
-            Image(game.coverUrl)
-              .width('100%')
-              .aspectRatio(1.78)
-              .objectFit(ImageFit.Cover)
-              .onError(() => {
-                this.markServerCoverFailed(game.gameKey)
-              })
-          } else if (this.localCoverFailed.indexOf(game.gameKey) < 0) {
-            Image(game.localCover)
-              .width('100%')
-              .aspectRatio(1.78)
-              .objectFit(ImageFit.Cover)
-              .onError(() => {
-                this.markLocalCoverFailed(game.gameKey)
-              })
-          } else {
-            // 双兜底皆失败（随包未内置且服务端无封面）：图标色块占位
-            Row() {
-              IconBox({
-                icon: game.icon,
-                sizeValue: 44,
-                iconSize: 24,
-                containerColor: this.containerColor(game.tint),
-                iconColor: this.iconColor(game.tint),
-                radius: DesignDimens.RADIUS_MD
-              })
-            }
-            .width('100%')
-            .aspectRatio(1.78)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(DesignColor.SURFACE_VARIANT)
-          }
-
-          // 底部渐变遮罩 + 白字标题（封面上直接读，省一排行高；对齐安卓卡片样式）
-          if (this.localCoverFailed.indexOf(game.gameKey) < 0) {
-            Stack({ alignContent: Alignment.BottomStart }) {
-              Column()
-                .width('100%')
-                .height(44)
-                .linearGradient({
-                  angle: 180,
-                  colors: [['rgba(0, 0, 0, 0)', 0], ['rgba(0, 0, 0, 0.55)', 1]]
-                })
-              Text(game.title)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.ON_PRIMARY)
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .width('100%')
-                .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
-            }
-            .width('100%')
-          }
-        }
-        .width('100%')
-        .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
-
-        Text(game.description)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .padding({
-            left: DesignDimens.CARD_PADDING,
-            right: DesignDimens.CARD_PADDING,
-            top: DesignDimens.SPACE_SM,
-            bottom: DesignDimens.CARD_PADDING
-          })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: DesignColor.OUTLINE })
-      .backgroundColor(DesignColor.SURFACE)
-      .clip(true)
-      .shadow({
-        radius: DesignElevation.LEVEL_1,
-        color: DesignColor.SHADOW_COLOR_CARD,
-        offsetX: 0,
-        offsetY: 2
-      })
-
-      // badge 角标：白色胶囊（压在封面上，对齐安卓白胶囊样式）
-      if (game.badge.length > 0) {
-        Text(game.badge)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.SURFACE)
-          .borderRadius(DesignDimens.RADIUS_FULL)
-          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
-          .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
-          .shadow({
-            radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
-            offsetX: 0,
-            offsetY: 1
-          })
-      }
-    }
-    .width('100%')
-    .onClick(() => {
-      this.openGame(game)
-    })
-  }
-
-    build() {
+  build() {
     NavDestination() {
       Column() {
         PageHeader({ title: GameText.title })
@@ -475,7 +566,7 @@ export struct GameCenterPage {
           .justifyContent(FlexAlign.Center)
         } else {
           // 游戏网格（两列，行 key 由 gameKey 拼接，服务端 sort 序）
-          this.GameGrid(this.filteredGames())
+          GameGrid({ games: this.filteredGames() })
         }
       }
       .width('100%')

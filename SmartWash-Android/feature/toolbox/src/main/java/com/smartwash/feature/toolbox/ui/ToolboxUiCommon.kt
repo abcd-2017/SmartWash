@@ -4,9 +4,12 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -15,8 +18,11 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -66,7 +72,11 @@ fun ToolboxTagChip(
     }
 }
 
-/** 可选预设 chip —— 选中 = 品牌底白字，未选中 = 白底描边（模式对齐 CouponPage 筛选胶囊） */
+/**
+ * 可选预设 chip —— 选中 = 品牌底白字，未选中 = 白底描边（模式对齐 CouponPage 筛选胶囊）。
+ * 触控热区：外层 Box 扩到 48dp 最小热区（视觉尺寸仍由内部 Surface 决定，不变）；
+ * 文本强制单行——chip 行横向滚动兜底（见投递有效期行），任何宽度下不出现文字竖排折行。
+ */
 @Composable
 fun ToolboxSelectableChip(
     text: String,
@@ -86,13 +96,17 @@ fun ToolboxSelectableChip(
     val borderColor = selectedColor(
         if (selected) Color.Transparent else AppColors.colorScheme.outline
     )
-    Surface(
-        modifier = modifier.pressable(onClick = onClick, debounce = false),
-        shape = RoundedCornerShape(AppDimens.radiusFull),
-        color = containerColor,
-        border = BorderStroke(1.dp, borderColor),
+    Box(
+        modifier = modifier
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .pressable(onClick = onClick, debounce = false),
+        contentAlignment = Alignment.Center,
     ) {
-        Box {
+        Surface(
+            shape = RoundedCornerShape(AppDimens.radiusFull),
+            color = containerColor,
+            border = BorderStroke(1.dp, borderColor),
+        ) {
             Text(
                 text = text,
                 // tnum：chip 内含数字（「10 分钟」「7 天」等），数字变化时槽位不跳动（规范 §2.2）
@@ -100,6 +114,7 @@ fun ToolboxSelectableChip(
                 // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
                 fontWeight = FontWeight.SemiBold,
                 color = contentColor,
+                maxLines = 1,
                 modifier = Modifier.padding(horizontal = AppDimens.spaceMd, vertical = 6.dp),
             )
         }
@@ -125,8 +140,10 @@ fun ToolboxExpiryPresetRow(
         add(ShortCodeRules.ExpiryPreset.DAYS_30 to stringResource(R.string.toolbox_expiry_preset_30d))
         add(ShortCodeRules.ExpiryPreset.CUSTOM to stringResource(R.string.toolbox_expiry_preset_custom))
     }
+    // 横向可滚动兜底：窄屏/字体放大时 chips 超宽不挤压末位 chip（文字竖排折行的根因），
+    // 内容放得下时视觉与固定行完全一致
     androidx.compose.foundation.layout.Row(
-        modifier = modifier,
+        modifier = modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(AppDimens.spaceXs),
     ) {
         options.forEach { (preset, label) ->
@@ -142,6 +159,8 @@ fun ToolboxExpiryPresetRow(
 /**
  * 日期选择弹窗（自定义过期日期）。确定后回调所选 LocalDate；内部按 UTC 取整日，
  * 与 [ShortCodeRules.localDateFromPickerMillis] 互逆。
+ * 只允许今日（含）起选：过去日期会创建「生来已过期」短码（创建页/详情页续期共用本封装，
+ * 一处限制两处生效）；VM 提交前仍经 [ShortCodeRules.isCustomExpiryInPast] 再拦一次。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +173,24 @@ fun ToolboxDatePickerDialog(
         ?.atStartOfDay(java.time.ZoneOffset.UTC)
         ?.toInstant()
         ?.toEpochMilli()
-    val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+    // 「今日 0 点起」：DatePicker 以 UTC 整日为一天，今日的 UTC 整日毫秒与
+    // localDateFromPickerMillis 的取整口径互逆，所选日期 >= 今日
+    val today = remember { LocalDate.now() }
+    val minSelectableMillis = remember(today) {
+        today.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+    }
+    val selectableDates = remember(minSelectableMillis, today) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcMillis: Long): Boolean =
+                utcMillis >= minSelectableMillis
+
+            override fun isSelectableYear(year: Int): Boolean = year >= today.year
+        }
+    }
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = selectableDates,
+    )
     // 对齐清氧规范：弹窗圆角收敛到 radiusLg 16dp（M3 默认 28dp 不在 §2.3 五档内），
     // 容器走 surface 令牌 + tonalElevation 归零（防 M3 默认叠加色偏灰）；
     // 日历本体共用同一 colors，其余角色从 M3 colorScheme 继承（Theme.kt 已按令牌映射）

@@ -31,8 +31,26 @@ internal object RechargeAmountValidator {
     /** 单笔充值金额上限：与后端 `RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT` 一致 */
     const val MAX_RECHARGE_AMOUNT = 10000f
 
+    /**
+     * 预设档赠送映射（设计稿 .amount3 em：¥50 送 ¥2 / ¥100 送 ¥8 / ¥200 送 ¥20）。
+     * 仅预设档有赠送，自定义档赠送 = 0（自定义输入 50 不享受 50 档赠送）。
+     * 从页面私有常量上收（2026-11-05 修复①）：页面提交与摘要行共用同一事实来源。
+     */
+    val PRESET_BONUSES: Map<Float, Float> = mapOf(50f to 2f, 100f to 8f, 200f to 20f)
+
     /** 金额格式：正整数或最多两位小数（与后端 `scale <= 2` 校验一致） */
     private val AMOUNT_PATTERN = Regex("^\\d+(\\.\\d{1,2})?$")
+
+    /**
+     * 到账金额 = 支付金额 + 赠送（仅预设档，自定义档赠送 = 0）。
+     *
+     * 后端 `RechargeRecordsServiceImpl.userRecharge` 的 amount 语义即「入账金额」，
+     * 页面提交时必须传本值而非支付金额（2026-11-05 修复①：此前误传支付金额，
+     * 选 100 送 8 档用户实付 100 只到账 100，摘要行展示的 +8 从未到账）。
+     * 充值按钮文案仍展示支付金额（语义正确：付 ¥100.00、到账 ¥108.00）。
+     */
+    fun creditAmount(payAmount: Float, isCustomAmountSelected: Boolean): Float =
+        payAmount + if (isCustomAmountSelected) 0f else (PRESET_BONUSES[payAmount] ?: 0f)
 
     /**
      * 解析本次提交应使用的充值金额。

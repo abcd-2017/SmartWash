@@ -211,9 +211,177 @@
       }
     },
     {
+      "name": "MoodToday",
+      "pageSourceFile": "src/main/ets/feature/mood/ui/MoodTodayPage.ets",
+      "buildFunction": "MoodTodayBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "MoodCalendar",
+      "pageSourceFile": "src/main/ets/feature/mood/ui/MoodCalendarPage.ets",
+      "buildFunction": "MoodCalendarBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "MoodTrend",
+      "pageSourceFile": "src/main/ets/feature/mood/ui/MoodTrendPage.ets",
+      "buildFunction": "MoodTrendBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "ComingSoon",
       "pageSourceFile": "src/main/ets/pages/ComingSoon.ets",
       "buildFunction": "ComingSoonBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ReviewQueue",
+      "pageSourceFile": "src/main/ets/feature/review/ui/ReviewQueuePage.ets",
+      "buildFunction": "ReviewQueueBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ReviewStudy",
+      "pageSourceFile": "src/main/ets/feature/review/ui/ReviewStudyPage.ets",
+      "buildFunction": "ReviewStudyBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ReviewMaterials",
+      "pageSourceFile": "src/main/ets/feature/review/ui/MaterialListPage.ets",
+      "buildFunction": "MaterialListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "SubscriptionList",
+      "pageSourceFile": "src/main/ets/feature/subscription/ui/SubscriptionListPage.ets",
+      "buildFunction": "SubscriptionListBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "SubscriptionEdit",
+      "pageSourceFile": "src/main/ets/feature/subscription/ui/SubscriptionEditPage.ets",
+      "buildFunction": "SubscriptionEditBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "SubscriptionDetail",
+      "pageSourceFile": "src/main/ets/feature/subscription/ui/SubscriptionDetailPage.ets",
+      "buildFunction": "SubscriptionDetailBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "SubscriptionReminders",
+      "pageSourceFile": "src/main/ets/feature/subscription/ui/SubscriptionReminderPage.ets",
+      "buildFunction": "SubscriptionReminderBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxDelivery",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ui/delivery/DeliveryCreatePage.ets",
+      "buildFunction": "DeliveryCreateBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ToolboxDeliverySession",
+      "pageSourceFile": "src/main/ets/feature/toolbox/ui/delivery/DeliverySessionPage.ets",
+      "buildFunction": "DeliverySessionBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "AiWork",
+      "pageSourceFile": "src/main/ets/pages/AiWorkPage.ets",
+      "buildFunction": "AiWorkBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabHome",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/LabHomePage.ets",
+      "buildFunction": "LabHomeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabBreath",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/breath/BreathPage.ets",
+      "buildFunction": "BreathBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabBubble",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/bubble/BubbleWrapPage.ets",
+      "buildFunction": "BubbleWrapBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabFish",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/fish/FishPage.ets",
+      "buildFunction": "FishBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabDrum",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/drum/DrumPage.ets",
+      "buildFunction": "DrumBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabSand",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/sand/SandPage.ets",
+      "buildFunction": "SandBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabPet",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/pet/PetPage.ets",
+      "buildFunction": "PetBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabPainting",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/painting/PaintingPage.ets",
+      "buildFunction": "PaintingBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabFluid",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/fluid/FluidPage.ets",
+      "buildFunction": "FluidBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabSoundscape",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/soundscape/SoundscapePage.ets",
+      "buildFunction": "SoundscapeBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "LabStarMap",
+      "pageSourceFile": "src/main/ets/feature/lab/ui/starmap/StarMapPage.ets",
+      "buildFunction": "StarMapBuilder",
       "data": {
       }
     }

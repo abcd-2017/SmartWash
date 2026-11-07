@@ -28,6 +28,9 @@
     <!-- 首载失败态（三列表均空）：说明 + 重试，不再只靠 Toast -->
     <string name="coupon_load_failed">优惠券加载失败</string>
     <string name="coupon_action_retry">重试</string>
+    <!-- 单组降级态（回归 2026-11-06 A5）：离线缓存提示条 + 单组失败小态 -->
+    <string name="coupon_offline_hint">网络异常，当前展示缓存数据，可能不是最新</string>
+    <string name="coupon_section_load_failed">该分组加载失败，请检查网络后重试</string>
 
     <!-- 优惠券状态（CouponStatus 枚举显示文本） -->
     <string name="coupon_status_expired">已失效</string>

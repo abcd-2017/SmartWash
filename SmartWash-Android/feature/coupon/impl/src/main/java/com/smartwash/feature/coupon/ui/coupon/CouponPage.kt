@@ -53,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.UserCouponVo
+import com.smartwash.feature.coupon.repository.CouponSource
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppButtonVariant
@@ -92,6 +93,11 @@ fun CouponPage(
     val availableCoupons by couponViewModel.availableCoupons.collectAsState()
     val claimedCoupons by couponViewModel.claimedCoupons.collectAsState()
     val historicalCoupons by couponViewModel.historicalCoupons.collectAsState()
+    // 三组数据降级来源（A5）：null = 尚未有成功加载（走骨架/整页错误态），各 tab 不渲染降级小态
+    val loadSources by couponViewModel.loadSources.collectAsState()
+    val availableSource = loadSources?.available?.source ?: CouponSource.NETWORK
+    val claimedSource = loadSources?.claimed?.source ?: CouponSource.NETWORK
+    val historicalSource = loadSources?.historical?.source ?: CouponSource.NETWORK
     // 领券进行中（页面局部 UI 状态）：按钮原位换圆环并禁点，阻断重复提交
     var claimingId by remember { mutableStateOf<Long?>(null) }
     // D-C1：可用 tab 文案带真实计数
@@ -126,6 +132,8 @@ fun CouponPage(
 
     LaunchedEffect(loadState) {
         if (loadState is RequestState.Error) {
+            // 整页错误（三组全失败）已有内容区错误态承担反馈，Toast 改透出具体原因（A1 联动：
+            // 业务错误 message 现在带 data 语义而非裸「失败」）
             Toast.makeText(context, (loadState as RequestState.Error).getMessage(context), Toast.LENGTH_SHORT).show()
         }
     }
@@ -183,7 +191,9 @@ fun CouponPage(
                         CouponContentState.Error -> EmptyState(
                             // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位（core 图标，不引 icons-extended）
                             icon = Icons.Default.Refresh,
-                            message = stringResource(R.string.coupon_load_failed),
+                            // 具体错误文案（ResponseInterceptor 转译的 data 语义）优先，兜底通用文案
+                            message = (loadState as? RequestState.Error)?.getMessage(context)
+                                ?: stringResource(R.string.coupon_load_failed),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = AppDimens.pagePadding),
@@ -208,9 +218,19 @@ fun CouponPage(
                                         claimingId = couponId
                                         couponViewModel.receiveCoupon(couponId)
                                     },
+                                    source = availableSource,
+                                    onRetry = { couponViewModel.loadAllCoupons() },
                                 )
-                                1 -> ClaimedCouponsTab(claimedCoupons)
-                                else -> HistoricalCouponsTab(historicalCoupons)
+                                1 -> ClaimedCouponsTab(
+                                    claimedCoupons = claimedCoupons,
+                                    source = claimedSource,
+                                    onRetry = { couponViewModel.loadAllCoupons() },
+                                )
+                                else -> HistoricalCouponsTab(
+                                    historicalCoupons = historicalCoupons,
+                                    source = historicalSource,
+                                    onRetry = { couponViewModel.loadAllCoupons() },
+                                )
                             }
                         }
                     }
@@ -362,6 +382,47 @@ fun UserCouponCard(
             }
         }
     }
+}
+
+/**
+ * 离线提示小条（回归 2026-11-06 A5）：该组数据来自缓存降级（离线兜底），轻量提示非实时。
+ * warning 浅底 + onWarningContainer 深字，供三个 tab 复用；reduced motion 无涉及（纯静态）。
+ */
+@Composable
+internal fun CouponOfflineHint(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(AppDimens.radiusMd))
+            .background(AppColors.colorScheme.warningContainer)
+            .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.coupon_offline_hint),
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.colorScheme.onWarningContainer,
+        )
+    }
+}
+
+/**
+ * 单组数据失败小态（A5）：网络失败且该组无缓存可降级时，显示错误说明 + 重试，
+ * 不再伪装成「暂无优惠券」空态。样式对齐工作台断网错误态（EmptyState 滚筒母题 + 次按钮）。
+ */
+@Composable
+internal fun CouponSectionError(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    EmptyState(
+        icon = Icons.Default.Refresh,
+        message = stringResource(R.string.coupon_section_load_failed),
+        modifier = modifier,
+        action = {
+            AppButton(
+                text = stringResource(R.string.coupon_action_retry),
+                onClick = onRetry,
+                variant = AppButtonVariant.SECONDARY,
+            )
+        },
+    )
 }
 
 /**

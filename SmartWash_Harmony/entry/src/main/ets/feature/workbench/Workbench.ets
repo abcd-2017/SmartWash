@@ -357,14 +357,14 @@ export struct Workbench {
     }
   }
 
-  /** 区块标题（服务端 section_title 分组边界；字距与「全部工具」同款） */
+  /** 区块标题（服务端 section_title 分组边界） */
   @Builder
   SectionHeader(title: string) {
+    // U-116：v0.4 字阶已废字距，删除 letterSpacing(0.3)（对齐安卓 SectionHeader）
     Text(title)
       .fontSize(DesignFontSize.SECTION_TITLE)
       .fontWeight(DesignFontWeight.SEMI_BOLD)
       .fontColor(DesignColor.TEXT_PRIMARY)
-      .letterSpacing(0.3)
       .width('100%')
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
@@ -390,9 +390,11 @@ export struct Workbench {
         this.ctx.beginPath()
         this.ctx.arc(cx, cy, 26, 0, Math.PI * 2, false)
         this.ctx.stroke()
-        // 虚线中环（设计 dasharray 3 5，金 26%）
+        // 虚线中环（设计 dasharray 3 5，金 26%）——对齐安卓 PathEffect.dashPathEffect(3, 5)，
+        // 需显式 setLineDash 才会画成虚线（原缺少该调用，中环被画成实线）
         this.ctx.lineWidth = 1.5
         this.ctx.strokeStyle = 0x42C9A961
+        this.ctx.setLineDash([3, 5])
         this.ctx.beginPath()
         this.ctx.arc(cx, cy, 18, 0, Math.PI * 2, false)
         this.ctx.stroke()
@@ -440,11 +442,11 @@ export struct Workbench {
       this.CompassCanvas()
 
       Column() {
+        // U-116：v0.4 字阶已废字距，删除 letterSpacing(0.3)（对齐安卓）
         Text(WorkbenchText.workbench_divination_name)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DivColor.TEXT_PRIMARY_DARK)
-          .letterSpacing(0.3)
         Text(WorkbenchText.workbench_divination_subtitle)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DivColor.TEXT_SECONDARY_DARK)
@@ -469,7 +471,8 @@ export struct Workbench {
     .width('100%')
     .alignItems(VerticalAlign.Center)
     .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.RADIUS_XL)
+    // 圆角对齐安卓 radiusLg 16（卡片唯一档，原 20 不在规范五档内）
+    .borderRadius(DesignDimens.CARD_RADIUS)
     .border({ width: 1, color: DivColor.GOLD_LINE_DARK })
     // 设计稿渐变 140deg #26241F→#1E1D1B 55%→#191713；140deg ≈ 左上→右下（ArkUI RightBottom）
     .linearGradient({
@@ -647,9 +650,12 @@ export struct Workbench {
         .margin({ left: DesignDimens.SPACE_SM })
 
       if (tool.badge.length > 0) {
+        // U-104：原 #2D9B6A on #F0FBF4 仅 3.30:1；角标 12/500 不适用绿字红线（要求 ≥16sp/600），
+        // 对齐安卓 labelSmall 12/500 + textPrimary #1C1C1E（16.05:1）
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.PRIMARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
           .backgroundColor(DesignColor.PRIMARY_LIGHT)
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
@@ -745,11 +751,13 @@ export struct Workbench {
       .borderRadius(DesignDimens.CARD_RADIUS)
       .backgroundColor(DesignColor.SURFACE)
 
-      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字（caption 档）
+      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底（caption 档）
+      // U-104：文字对齐安卓 labelSmall 12/500 + textPrimary #1C1C1E（原 #2D9B6A on #F0FBF4 仅 3.30:1）
       if (tool.badge.length > 0) {
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.PRIMARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
           .backgroundColor(DesignColor.PRIMARY_LIGHT)
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
@@ -850,10 +858,11 @@ export struct Workbench {
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
       }
       .width('100%')
+      // 底部间距对齐安卓：安卓搜索框无底距，其下区块自带 sectionSpacing(32) 顶距；
+      // 原 bottom: SPACE_MD(16) 会让下方内容整体多下移 16vp
       .padding({
         left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
-        bottom: DesignDimens.SPACE_MD
+        right: DesignDimens.PAGE_PADDING
       })
 
       // 3. 骨架 / 错误 / 空态 / 工具区
@@ -881,9 +890,12 @@ export struct Workbench {
       }
 
       // 4. 页脚弱提示（设计稿 margin 26/10 → 24/8）
+      // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（正文红线 ≥4.5）；
+      // 对齐安卓 labelSmall 12/500 + textSecondary #6B6E73（实测 4.72:1）
       Text(WorkbenchText.workbench_footer)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_TERTIARY)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(DesignColor.TEXT_SECONDARY)
         .textAlign(TextAlign.Center)
         .width('100%')
         .padding({
@@ -913,11 +925,11 @@ export struct Workbench {
       // 最近使用（本地记忆与当次下发求交集，非空才显示）
       if (this.recentTools().length > 0) {
         Column() {
+          // U-116：v0.4 字阶已废字距，删除 letterSpacing(0.3)（对齐安卓 RecentSection 标题）
           Text(WorkbenchText.workbench_recent_title)
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .letterSpacing(0.3)
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           Scroll() {
@@ -981,11 +993,11 @@ export struct Workbench {
           }
         }, (block: WorkbenchBlock) => this.blockKey(block))
       } else {
+        // U-116：v0.4 字阶已废字距，删除 letterSpacing(0.3)（对齐安卓「全部工具」标题）
         Text(WorkbenchText.workbench_all_tools)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.TEXT_PRIMARY)
-          .letterSpacing(0.3)
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })

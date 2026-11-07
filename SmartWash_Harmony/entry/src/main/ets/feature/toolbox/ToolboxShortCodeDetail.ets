@@ -94,6 +94,81 @@ struct ToolboxShortCodeDetail {
   // 转场兜底定时器（customTransition 事件未触发时保证信息卡可见）
   private fallbackTimer: number = -1
 
+  // ========== 弹窗控制器 ==========
+  // 控制器必须由结构体字段持有（对齐 DivAskPage.ets:244 / SubscriptionDetailPage.ets:313）：
+  // 在方法内临时 new 的控制器，框架不会把 controller 注入弹窗内容实例，弹窗内 this.controller
+  // 为 undefined，点击「确定/删除」即抛「Cannot read property close of undefined」jscrash。
+  // builder 为闭包，入参（续期预设/日期/短码/loading）在 open() 时读取，保证内容最新。
+  private renewDialogController: CustomDialogController = new CustomDialogController({
+    builder: ToolboxRenewDialog({
+      preset: this.renewPreset,
+      customDate: this.renewDate ?? "",
+      loading: this.renewing,
+      onPresetChange: (preset: ExpiryPreset): void => {
+        this.renewPreset = preset
+      },
+      // 日期选择器由本页持有（@CustomDialog 内不能再挂控制器）：把弹窗的回填回调转交本方法
+      onPickDate: (onPicked: (date: string) => void): void => {
+        this.openRenewDatePicker(onPicked)
+      },
+      // 选定后回写本页（供 doRenew 读取）
+      onDatePicked: (date: string): void => {
+        this.renewDate = date
+      },
+      onConfirm: (): void => {
+        this.doRenew()
+      },
+      onDismiss: (): void => {
+        this.renewDate = null
+        this.renewPreset = ExpiryPreset.DAYS_7
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  // 续期自定义日期弹窗的「选中回填回调」：由续期弹窗经 onPickDate 传入，
+  // 日期弹窗确定时回调续期弹窗更新其内部状态（@CustomDialog 内容不被父状态重建）
+  private renewDatePickedCallback: ((date: string) => void) | null = null
+
+  private renewDatePickerController: CustomDialogController = new CustomDialogController({
+    builder: ToolboxDatePickerDialog({
+      initialDate: this.renewDate ?? "",
+      title: ToolboxText.toolbox_expiry_custom_pick,
+      onConfirm: (date: string): void => {
+        this.renewDate = date
+        const callback = this.renewDatePickedCallback
+        if (callback !== null) {
+          this.renewDatePickedCallback = null
+          callback(date)
+        }
+      },
+      onDismiss: (): void => {
+        this.renewDatePickedCallback = null
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
+  private deleteDialogController: CustomDialogController = new CustomDialogController({
+    builder: AppConfirmDialog({
+      title: ToolboxText.toolbox_confirm_delete_title,
+      message: toolboxConfirmDeleteMessage(this.param?.code ?? ""),
+      // 危险操作确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
+      isDanger: true,
+      confirmText: ToolboxText.toolbox_action_delete,
+      onConfirm: () => {
+        this.doDelete()
+      }
+    }),
+    autoCancel: true,
+    alignment: DialogAlignment.Center,
+    customStyle: true
+  })
+
   async aboutToAppear(): Promise<void> {
     // 基础字段由列表路由携带（红线：禁止经 resolve 拉取详情——resolve 会计点击）
     this.param = getObjectParam<ToolboxShortCodeDetailParam>(RouteNames.TOOLBOX_SHORT_CODE_DETAIL)
@@ -312,55 +387,22 @@ struct ToolboxShortCodeDetail {
     }
   }
 
-  /** 打开续期弹窗（每次新建控制器，保证 preset/日期入参为最新） */
+  /** 打开续期弹窗（字段控制器，builder 闭包在 open() 时读取最新 preset/日期） */
   private openRenewDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ToolboxRenewDialog({
-        preset: this.renewPreset,
-        customDate: this.renewDate ?? "",
-        loading: this.renewing,
-        onPresetChange: (preset: ExpiryPreset): void => {
-          this.renewPreset = preset
-        },
-        onPickDate: (): void => {
-          this.openRenewDatePicker()
-        },
-        onConfirm: (): void => {
-          this.doRenew(controller)
-        },
-        onDismiss: (): void => {
-          this.renewDate = null
-          this.renewPreset = ExpiryPreset.DAYS_7
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.renewDialogController.open()
   }
 
-  /** 续期自定义日期弹窗 */
-  private openRenewDatePicker(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: ToolboxDatePickerDialog({
-        initialDate: this.renewDate ?? "",
-        title: ToolboxText.toolbox_expiry_custom_pick,
-        onConfirm: (date: string): void => {
-          this.renewDate = date
-        },
-        onDismiss: (): void => {
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+  /**
+   * 打开续期自定义日期弹窗（字段控制器）。
+   * @param onPicked 选定后的回填回调（转交续期弹窗更新其内部自定义日期显示）
+   */
+  private openRenewDatePicker(onPicked: (date: string) => void): void {
+    this.renewDatePickedCallback = onPicked
+    this.renewDatePickerController.open()
   }
 
   /** 续期（PUT expireAt；预设 7 天 / 30 天 / 自定义日期；无永久选项） */
-  private async doRenew(controller: CustomDialogController): Promise<void> {
+  private async doRenew(): Promise<void> {
     if (this.renewing) {
       logger.debug(TAG, '续期进行中，忽略重复确认')
       return
@@ -386,7 +428,7 @@ struct ToolboxShortCodeDetail {
         showToastSafety(ToolboxText.toolbox_toast_renew_success)
         // 置变更信号：列表 onShown 据此重拉（对齐安卓 notifyShortCodeChanged）
         markShortCodeChanged()
-        controller.close()
+        this.renewDialogController.close()
         pathStack.pop()
       } else {
         logger.warn(TAG, `续期被拒 code=${res.code ?? 0} msg=${res.message ?? ''}`)
@@ -400,24 +442,9 @@ struct ToolboxShortCodeDetail {
     }
   }
 
-  /** 打开删除确认弹窗（文案含短码，故每次新建控制器） */
+  /** 打开删除确认弹窗（字段控制器，builder 闭包在 open() 时读取最新短码文案） */
   private openDeleteDialog(): void {
-    const controller: CustomDialogController = new CustomDialogController({
-      builder: AppConfirmDialog({
-        title: ToolboxText.toolbox_confirm_delete_title,
-        message: toolboxConfirmDeleteMessage(this.param?.code ?? ""),
-        // 危险操作确认键走 dangerInk（对齐安卓 AppConfirmDialog(isDanger = true)）
-        isDanger: true,
-        confirmText: ToolboxText.toolbox_action_delete,
-        onConfirm: () => {
-          this.doDelete()
-        }
-      }),
-      autoCancel: true,
-      alignment: DialogAlignment.Center,
-      customStyle: true
-    })
-    controller.open()
+    this.deleteDialogController.open()
   }
 
   /** 删除（DELETE；后端 data=null，成功一律以 code===200 判定） */
@@ -516,9 +543,10 @@ struct ToolboxShortCodeDetail {
 
       Row() {
         Blank()
+        // 字重对齐安卓 labelMedium 12/500（原 600）
         Text(ToolboxText.toolbox_action_renew)
           .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.PRIMARY)
           .padding({ top: 4, bottom: 4 })
           .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
@@ -611,8 +639,10 @@ struct ToolboxShortCodeDetail {
         })
       }
 
+      // 字重对齐安卓 labelSmall 12/500（原 400）
       Text(this.getShortUrl())
         .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor(DesignColor.TEXT_SECONDARY)
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
@@ -743,7 +773,6 @@ struct ToolboxShortCodeDetail {
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
-            .margin({ left: 4 })
 
           Blank()
 
@@ -811,8 +840,9 @@ struct ToolboxShortCodeDetail {
                     this.fetchStats(1)
                   })
               } else if (this.statsList.length === 0) {
+                // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）
                 Text(ToolboxText.toolbox_stats_empty)
-                  .fontSize(DesignFontSize.BODY)
+                  .fontSize(DesignFontSize.BODY_SMALL)
                   .fontColor(DesignColor.TEXT_TERTIARY)
                   .width('100%')
                   .textAlign(TextAlign.Center)

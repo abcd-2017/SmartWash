@@ -6,6 +6,7 @@ import { pathStack } from '../utils/PathStackUtil';
 import { getValue } from '../utils/StorageUtil';
 import { bumpHomeTabBack, bumpOrderRefresh, bumpUserInfoRefresh } from '../utils/RefreshSignal';
 import { DesignColor } from '../constant/DesignSystem';
+import { handleDeepLink, isPublicDeepLink } from '../utils/deeplink/DeepLinkHandler';
 import { AddSchoolBuilder } from './AddSchool';
 import { HomeBuilder, HOME_TAB_INDEX_KEY } from './Home';
 import { LoginBuilder } from './Login';
@@ -41,6 +42,9 @@ struct Index {
   // 系统深浅色（问题17）：build 内读取以建立依赖，色模式变更时整页重建、DesignColor 令牌刷新
   @StorageLink('darkMode') darkMode: boolean = false
 
+  // 待消费深链（P-2001）：Home 挂载后由 Home 消费；登出态 Home 未挂载，由本页兜底消费公开 host
+  @StorageLink('pendingDeepLinkUri') @Watch('onPendingDeepLinkChange') pendingDeepLinkUri: string = ''
+
   async aboutToAppear() {
     this.token = await getValue(CommonConstants.USER_TOKEN, "") as string
     if (this.token !== "") {
@@ -61,6 +65,43 @@ struct Index {
     AppStorage.setOrCreate('isLoggedIn', this.showPageType === 2)
     // 分流结果：0=登录页 1=完善学校信息 2=首页
     logger.debug('index', `启动分流完成 showPageType=${this.showPageType}`)
+    // 登出态深链兜底消费（P-2001）：Home 未挂载时公开 host 立即放行，受保护 host 落登录页
+    this.consumeLoggedOutDeepLink()
+  }
+
+  /** @Watch 回调：热启动深链暂存变化（登出态由本页消费，已登录交给 Home） */
+  onPendingDeepLinkChange(): void {
+    this.consumeLoggedOutDeepLink()
+  }
+
+  /**
+   * 登出态深链消费（P-2001，对齐安卓 PUBLIC_DEEP_LINK_HOSTS）：
+   * - 公开 host（web/login/register/lab）：清暂存后立即分发（Home 未挂载也能直达）；
+   * - 受保护 host：保留暂存（pendingDeepLinkUri 不丢），落登录页并清栈，
+   *   待登录后 Home 挂载补消费（深链在登录前不落地的语义不变）。
+   */
+  private consumeLoggedOutDeepLink(): void {
+    if (this.isLoggedIn) {
+      return
+    }
+    const uri = this.pendingDeepLinkUri
+    if (uri.length === 0) {
+      return
+    }
+    if (isPublicDeepLink(uri)) {
+      this.pendingDeepLinkUri = ''
+      handleDeepLink(uri)
+      return
+    }
+    // 受保护：保留 pending，落登录页 + 清栈
+    logger.debug('index', '登出态受保护深链，落登录页并保留待登录后消费')
+    if (this.showPageType !== 0) {
+      this.showPageType = 0
+      this.isLoading = false
+    }
+    if (pathStack.size() > 0) {
+      pathStack.clear()
+    }
   }
 
   /**
@@ -106,6 +147,11 @@ struct Index {
             this.showPageType = 2
             // 会话态置真：后续 401 才能被 Axios 识别为「已登录失效」并切回登录页
             AppStorage.setOrCreate("isLoggedIn", true)
+            // 清栈：登出态公开深链（lab/web 等）可能在登录根页上残留压栈，
+            // 登录切 Home 前清掉，避免旧压栈页覆盖新根内容
+            if (pathStack.size() > 0) {
+              pathStack.clear()
+            }
             bumpUserInfoRefresh()
             bumpOrderRefresh()
             // 低频关键动作成功：登录成功分流进入首页（存量复核：级别正确，保留）

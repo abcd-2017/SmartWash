@@ -374,7 +374,9 @@ export struct MoodSmallAction {
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.SEMI_BOLD)
       .fontColor(this.contentColor)
-      .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+      // 垂直内边距 8 → 16 + 显式 48 高：把触控热区从 30vp 抬到 ≥48vp
+      .padding({ left: 16, right: 16, top: 16, bottom: 16 })
+      .height(48)
       .backgroundColor(this.containerColor)
       .borderRadius(DesignDimens.RADIUS_MD)
       .onClick(() => {

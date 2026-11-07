@@ -1,6 +1,5 @@
 package com.smartwash.ui.page.index
 
-import android.widget.Toast
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -20,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.LocalLaundryService
@@ -58,7 +59,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.R
 import com.smartwash.feature.order.api.model.OrderBrief
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppInfoDialog
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.DrumMark
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -93,6 +97,7 @@ fun IndexPage(
     var showAlertDialog by remember { mutableStateOf(false) }
     val userInfoStatus by indexViewModel.userInfoStatus.collectAsState()
     val userInfo by indexViewModel.userInfo.collectAsState()
+    val lastError by indexViewModel.lastError.collectAsState()
     val orderList by indexViewModel.orderList.collectAsState()
     val isRefreshing by indexViewModel.refreshing.collectAsState()
 
@@ -123,27 +128,23 @@ fun IndexPage(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val errorContext = LocalContext.current
-    LaunchedEffect(userInfoStatus) {
-        if (userInfoStatus is RequestState.Error) {
-            Toast.makeText(
-                errorContext,
-                (userInfoStatus as RequestState.Error).getMessage(errorContext),
-                Toast.LENGTH_SHORT
-            ).show()
-            indexViewModel.resetState()
-        }
-    }
+    // 状态驱动的副作用统一放 LaunchedEffect（组合期禁 Toast）——A3 后失败反馈由页面内
+    // 错误卡/离线提示条常驻承载，原先 2 秒即逝的 Toast 不再使用
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
     ) {
-        // 骨架屏只在「首载且无任何数据」时出现：刷新（VM 置 Loading）时 userInfo 已有值，
-        // 保持已展示内容不被整屏骨架替换；骨架 ↔ 内容交叉淡变（reduced motion 自动 180ms）
+        // 骨架屏只在「首载且无任何数据且未失败」时出现：A3 前失败落定回 Idle 后骨架条件
+        // 重新成立（无数据 + Idle）造成 >30s 死锁；lastError 非 null 时由错误态承接
         val showSkeleton =
-            (userInfoStatus is RequestState.Idle || userInfoStatus is RequestState.Loading) && userInfo == null
+            (userInfoStatus is RequestState.Idle || userInfoStatus is RequestState.Loading) &&
+                userInfo == null && lastError == null
+        // 首屏失败且无任何数据：错误卡 + 重试（样式对齐工作台断网错误态）
+        val showError = !showSkeleton && userInfo == null && lastError != null
+        // 失败但有内存缓存数据（UserApiImpl）：缓存兜底渲染 + 轻量离线提示条
+        val showOfflineHint = userInfo != null && lastError != null
         Crossfade(
             targetState = showSkeleton,
             animationSpec = motionSpec(enterTween(DURATION_CARD_MS)),
@@ -152,18 +153,65 @@ fun IndexPage(
             if (skeleton) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else {
-                // 下拉刷新（P-603）：走 refreshData 强刷用户信息与进行中订单（refreshUserInfo
-                // 强制走网络，不读 UserApiImpl 缓存——下拉语义就是「拿服务端最新值」）；
-                // 指示器进度由 VM 独立 refreshing 状态承载（Loading 语义已被骨架屏占用）；
-                // 骨架态不包裹（首载无内容可拉，对齐 WorkbenchPage 的 isRefreshing 口径）
+                // 下拉刷新（P-603/A3）：走 refreshData——有数据时强刷用户信息与进行中订单
+                // （refreshUserInfo 强制走网络，不读 UserApiImpl 缓存——下拉语义就是「拿服务端
+                // 最新值」），无数据（首刷失败）时转完整加载，失败状态下拉可重新发起请求；
+                // 指示器进度由 VM 独立 refreshing 状态承载（Loading 语义已被骨架屏占用）
                 PullToRefreshBox(
                     isRefreshing = isRefreshing,
                     onRefresh = { indexViewModel.refreshData() },
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    if (showError) {
+                        // 错误态（A3）：verticalScroll 让 PullToRefreshBox 的嵌套滚动可达——
+                        // 失败状态下拉同样能重新发起请求（重试按钮是显式入口）
+                        val errorContext = LocalContext.current
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            EmptyState(
+                                // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 仅占位
+                                icon = Icons.Default.LocalLaundryService,
+                                message = lastError?.getMessage(errorContext)
+                                    ?: stringResource(R.string.index_load_failed),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 96.dp),
+                                action = {
+                                    AppButton(
+                                        text = stringResource(R.string.retry),
+                                        onClick = { indexViewModel.getInfoData() },
+                                        variant = AppButtonVariant.SECONDARY,
+                                    )
+                                }
+                            )
+                        }
+                    } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
+                // A3 离线提示（有内存缓存但上次首刷失败）：缓存兜底渲染 + 轻量常驻条
+                if (showOfflineHint) {
+                    item(key = "index_offline_hint") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppDimens.pagePadding, vertical = 8.dp)
+                                .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                .background(AppColors.colorScheme.warningContainer)
+                                .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.index_offline_hint),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = AppColors.colorScheme.onWarningContainer
+                            )
+                        }
+                    }
+                }
                 item {
                     StatusHeroCard(
                         orderList = orderList,
@@ -290,6 +338,7 @@ fun IndexPage(
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                 }
                 }
+                    }
                 }
             }
         }

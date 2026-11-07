@@ -312,7 +312,7 @@ struct DivHomePage {
         // 1. 干支天象头
         TianXiangHeader({ text: this.tianXiang.length > 0 ? this.tianXiang : '—' })
 
-        // 2. 衬线标题 + 旬空副行
+        // 2. 衬线标题 + 旬空副行（左对齐：安卓 Column 默认 TopStart；ArkUI Column 默认 Center 会居中）
         Column() {
           DivSerifText({
             text: DivText.title,
@@ -333,6 +333,7 @@ struct DivHomePage {
             .margin({ top: 6 })
         }
         .width('100%')
+        .alignItems(HorizontalAlign.Start)
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         // 3. 罗盘（画板 104dp）

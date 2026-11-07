@@ -33,13 +33,16 @@ struct PayInfoLine {
 
   build() {
     Row() {
+      // 行盒 16（对齐安卓 bodySmall 12/16）+ 上下 4 = 行高 24（原 12fp 默认行盒 14 → 22）
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
+        .lineHeight(16)
         .fontColor(DesignColor.TEXT_SECONDARY)
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
+        .lineHeight(16)
         .fontColor(DesignColor.TEXT_PRIMARY)
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
@@ -330,11 +333,11 @@ struct Payment {
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontColor(DesignColor.TEXT_PRIMARY)
-        .margin({ left: 4 })
     }
     .width("100%")
     .height(56)
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    // 行首让位 12：48dp 热区盒居中后图形左缘落在 24，标题紧贴热区右缘（对齐安卓 PageHeader）
+    .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
     .backgroundColor(DesignColor.BACKGROUND)
   }
@@ -588,8 +591,10 @@ struct Payment {
               Column() {
                 Row() {
                   // IconBox 36/r12/20；选中盒变白 surface、未选中浅绿（recap §3-V4）
+                  // 图标语义对齐安卓 PaymentPage.kt:240 Icons.Default.LocalOffer（标签/优惠），
+                  // 与原 creditcard（银行卡）形状不同；券卡亦用同款
                   Column() {
-                    SymbolGlyph($r('sys.symbol.creditcard'))
+                    SymbolGlyph($r('sys.symbol.label'))
                       .fontSize(20)
                       .fontColor([DesignColor.PRIMARY])
                   }
@@ -621,7 +626,15 @@ struct Payment {
                   .layoutWeight(1)
                   .margin({ left: 12 })
 
-                  SelectionDot({ selected: this.selectedPaymentMethod === "balance" })
+                  // 选中圆点顶对齐（对齐安卓 PaymentPage.kt:273-278 CheckMark：
+                  // Modifier.align(Alignment.Top)，28dp 盒内居中 → 圆点中心距文本列顶 14dp）
+                  Column() {
+                    SelectionDot({ selected: this.selectedPaymentMethod === "balance" })
+                  }
+                  .width(28)
+                  .height(28)
+                  .justifyContent(FlexAlign.Center)
+                  .alignSelf(ItemAlign.Start)
                 }
                 .width("100%")
                 .padding({ left: 20, right: 16, top: 20, bottom: 20 })
@@ -682,13 +695,16 @@ struct Payment {
                   // 券变化淡入（recap §3-I2，与金额共用同一淡入态）
                   .opacity(this.amountVisible ? 1 : 0)
 
+                // 箭头 20dp + 前间距 8dp（对齐安卓 PaymentPage.kt:338-344：
+                // Spacer(8.dp) + Icon(ChevronRight, 20.dp)）
                 SymbolGlyph($r('sys.symbol.chevron_right'))
-                  .fontSize(14)
+                  .fontSize(20)
                   .fontColor([DesignColor.TEXT_TERTIARY])
-                  .margin({ left: 4 })
+                  .margin({ left: DesignDimens.SPACE_XS })
               }
               .width("100%")
-              .padding({ left: 20, right: 20, top: 15, bottom: 15 })
+              // 行内边距 16（对齐安卓 U-118：原 15 不在 §3 间距允许集）
+              .padding({ left: 20, right: 20, top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
               .backgroundColor(DesignColor.SURFACE)
               .borderRadius(DesignDimens.CARD_RADIUS)
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影

@@ -112,7 +112,8 @@ struct PermissionManagement {
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(DesignColor.TEXT_SECONDARY)
               .width('100%')
-              .margin({ top: DesignDimens.SECTION_SPACING, bottom: 8 })
+              // 分组标题顶部间距对齐安卓 Spacer(24dp)（D15）
+              .margin({ top: DesignDimens.SPACE_XL, bottom: 8 })
 
             // 分组卡：卡内边距仅水平 20（行铺满，卡高 = 行数 × 72），对齐安卓 PermissionGroupCard
             AppCard({ paddingValue: 0 }) {
@@ -122,7 +123,8 @@ struct PermissionManagement {
                   containerColor: DesignColor.ICON_CONTAINER_ORANGE,
                   iconColor: DesignColor.ICON_FOREGROUND_ORANGE,
                   title: "通知权限",
-                  description: "订单状态、活动提醒等（系统通知开关）",
+                  // 鸿蒙语义文案（去掉安卓专属的 APK 下载 / Android 13+ 表述）
+                  description: "接收订单进度、投递与系统通知提醒",
                   granted: this.notificationGranted,
                   showAction: true,
                   onRowClick: () => {
@@ -215,27 +217,29 @@ struct PermissionRow {
       Column() {
         Text(this.title)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontWeight(DesignFontWeight.NORMAL)
           .fontColor(DesignColor.TEXT_PRIMARY)
 
+        // 标题→描述无额外间距（对齐安卓：靠 bodySmall 行盒，D18）
         Text(this.description)
           .fontSize(DesignFontSize.CAPTION)
           .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: 2 })
       }
       .layoutWeight(1)
       .margin({ left: 12 })
       .alignItems(HorizontalAlign.Start)
 
+      // 非操作行状态文字贴内容右缘 0（对齐安卓，D17）；
+      // 操作行的 4dp 间距由 chevron 左间距承载（对齐安卓 Spacer(4.dp)）
       Text(this.granted ? "已授权" : "去授权")
         .fontSize(DesignFontSize.CAPTION)
         .fontColor(this.granted ? DesignColor.SUCCESS : DesignColor.PRIMARY)
-        .margin({ right: 4 })
 
       if (this.showAction) {
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
           .fontColor([DesignColor.TEXT_TERTIARY])
+          .margin({ left: 4 })
       }
     }
     .width('100%')

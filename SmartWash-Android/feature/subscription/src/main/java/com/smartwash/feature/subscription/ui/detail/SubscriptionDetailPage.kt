@@ -120,8 +120,36 @@ fun SubscriptionDetailPage(
     var pendingUndoId by rememberSaveable { mutableStateOf(-1L) }
     var cancelPathExpanded by rememberSaveable { mutableStateOf(false) }
 
+    // 打卡列表刷新会话门控（2026-11-06 闪空态回归）：refreshUsages 重建 Pager 时先把列表清空，
+    // 「清空后、新加载尚未开始」的帧里 refresh=NotLoading && itemCount=0 会命中空态分支闪一帧。
+    // 会话期间走骨架；只有会话结束（有数据，或本轮加载已完成）才允许真实空态。
+    var usageRefreshSession by rememberSaveable { mutableStateOf(false) }
+    var usageLoadStarted by rememberSaveable { mutableStateOf(false) }
+    var usageEverLoaded by rememberSaveable { mutableStateOf(false) }
+    val usageRefreshState = usageItems.loadState.refresh
+    LaunchedEffect(usageRefreshState) {
+        when (usageRefreshState) {
+            is LoadState.Loading -> {
+                usageLoadStarted = true
+                usageEverLoaded = true
+            }
+            is LoadState.NotLoading -> {
+                // 会话结束：有数据，或本轮加载已完成（空结果也放行空态）
+                if (usageItems.itemCount > 0 || usageLoadStarted) {
+                    usageRefreshSession = false
+                    usageLoadStarted = false
+                }
+            }
+            is LoadState.Error -> {
+                usageRefreshSession = false
+                usageLoadStarted = false
+            }
+        }
+    }
+
     /** 变更成功后的统一刷新：本页重载 + 转发列表刷新信号（返回列表时生效） */
     fun refreshSelfAndForward() {
+        usageRefreshSession = true
         viewModel.refreshAll()
         navController.previousBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, true)
     }
@@ -132,6 +160,7 @@ fun SubscriptionDetailPage(
         ?.collectAsState()
     LaunchedEffect(changedState?.value) {
         if (changedState?.value == true) {
+            usageRefreshSession = true
             viewModel.refreshAll()
             navController.currentBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, false)
             navController.previousBackStackEntry?.savedStateHandle?.set(SubscriptionRoute.CHANGED_KEY, true)
@@ -272,6 +301,8 @@ fun SubscriptionDetailPage(
                         transitionState = transitionState,
                         checkInState = checkInState,
                         usageItems = usageItems,
+                        usageRefreshSession = usageRefreshSession,
+                        usageEverLoaded = usageEverLoaded,
                         cancelPathExpanded = cancelPathExpanded,
                         onCancelPathExpandedChange = { cancelPathExpanded = it },
                         onShowCancelDialog = { showCancelDialog = true },
@@ -357,6 +388,8 @@ private fun DetailContent(
     transitionState: RequestState,
     checkInState: RequestState,
     usageItems: androidx.paging.compose.LazyPagingItems<UsageLogVo>,
+    usageRefreshSession: Boolean,
+    usageEverLoaded: Boolean,
     cancelPathExpanded: Boolean,
     onCancelPathExpandedChange: (Boolean) -> Unit,
     onShowCancelDialog: () -> Unit,
@@ -586,6 +619,8 @@ private fun DetailContent(
                     usageItems = usageItems,
                     terminal = terminal,
                     onUndo = onShowUndoDialog,
+                    refreshSession = usageRefreshSession,
+                    everLoaded = usageEverLoaded,
                 )
             }
         }
@@ -610,12 +645,12 @@ private fun UsageListBlock(
     usageItems: androidx.paging.compose.LazyPagingItems<UsageLogVo>,
     terminal: Boolean,
     onUndo: (Long) -> Unit,
+    refreshSession: Boolean,
+    everLoaded: Boolean,
 ) {
     val refreshState = usageItems.loadState.refresh
     when {
-        usageItems.itemCount == 0 && refreshState is LoadState.Loading -> {
-            SkeletonList(rows = 2)
-        }
+        // 首刷失败：错误分支前置，会话门控不得掩盖真实错误（否则刷新失败时先闪一帧骨架）
         usageItems.itemCount == 0 && refreshState is LoadState.Error -> {
             Column {
                 Text(
@@ -642,6 +677,12 @@ private fun UsageListBlock(
                 }
             }
         }
+        // 首刷 / 刷新会话清空帧 / 从未完成过加载：骨架而非空态
+        usageItems.itemCount == 0 &&
+            (refreshState is LoadState.Loading || refreshSession || !everLoaded) -> {
+            SkeletonList(rows = 2)
+        }
+        // 走到这里必为 session=false && everLoaded=true（会话门控保证），语义=真实空结果
         usageItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
             Text(
                 text = stringResource(R.string.subscription_usage_empty),

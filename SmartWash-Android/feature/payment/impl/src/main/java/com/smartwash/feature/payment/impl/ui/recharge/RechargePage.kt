@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,6 +83,7 @@ import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.pressable
+import kotlinx.coroutines.launch
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
 
@@ -100,6 +103,11 @@ fun RechargePage(
     // 金额校验失败原因（null 为通过）：文案随原因细分，见 RechargeAmountError
     var amountError by remember { mutableStateOf<RechargeAmountError?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+
+    // 列表状态 hoist（2026-11-05 修复②）：校验失败时可编程滚动到出错区块——
+    // 此前错误文案渲染在视口外（支付方式区/金额区），用户点「立即充值」看似无反应
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     // 焦点管理（2026-11-01 修复）：点档位格收起键盘、点「自定义」格聚焦输入框，
     // 消除"两边获取焦点状态竞态"（此前输入框聚焦时点档位，键盘不收、焦点状态互抢）
@@ -167,6 +175,7 @@ fun RechargePage(
             )
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
                 // 画板实测区块间距 24（余额→充值金额标题、输入框→支付方式）
@@ -211,7 +220,7 @@ fun RechargePage(
                                         presetAmounts.take(3).forEach { amount ->
                                             AmountGridCell(
                                                 amount = amount,
-                                                bonus = AmountBonuses[amount] ?: 0f,
+                                                bonus = RechargeAmountValidator.PRESET_BONUSES[amount] ?: 0f,
                                                 isSelected = selectedAmount == amount && !isCustomAmountSelected,
                                                 onClick = {
                                                     selectedAmount = amount
@@ -227,7 +236,7 @@ fun RechargePage(
                                         presetAmounts.drop(3).forEach { amount ->
                                             AmountGridCell(
                                                 amount = amount,
-                                                bonus = AmountBonuses[amount] ?: 0f,
+                                                bonus = RechargeAmountValidator.PRESET_BONUSES[amount] ?: 0f,
                                                 isSelected = selectedAmount == amount && !isCustomAmountSelected,
                                                 onClick = {
                                                     selectedAmount = amount
@@ -313,7 +322,7 @@ fun RechargePage(
                 }
 
                 // 支付方式
-                item {
+                item(key = "payment") {
                     Text(
                         text = stringResource(R.string.payment_method),
                         style = AppTextStyles.SectionTitle,
@@ -370,7 +379,35 @@ fun RechargePage(
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                 AppButton(
                     text = if (selectedAmount != null) stringResource(R.string.recharge_now_format, String.format("%.2f", selectedAmount)) else stringResource(R.string.recharge_now),
-                    onClick = { showDialog = true },
+                    // 校验前置到按钮点击（2026-11-05 修复②）：任一校验不过 → 置错误态并自动滚到
+                    // 出错区块（错误文案原渲染在视口外，用户「点了没反应」）；全部通过才弹确认框
+                    onClick = {
+                        val amountResult = RechargeAmountValidator.resolve(
+                            isCustomAmountSelected = isCustomAmountSelected,
+                            presetAmount = selectedAmount,
+                            customAmountRaw = customAmount
+                        )
+                        val payMethodMissing = selectedPaymentMethod == null
+                        showPayError = payMethodMissing
+                        amountError = amountResult.error
+                        when {
+                            amountResult.error != null -> {
+                                scope.launch { listState.animateScrollToItem(ITEM_INDEX_AMOUNT) }
+                            }
+                            payMethodMissing -> {
+                                scope.launch { listState.animateScrollToItem(ITEM_INDEX_PAYMENT) }
+                            }
+                            else -> showDialog = true
+                        }
+                        if (amountResult.error != null || payMethodMissing) {
+                            // 业务拒绝（客户端校验不过）：留痕拒绝原因与尝试金额，便于对齐「为什么没弹确认框」
+                            AppLogger.warn(
+                                TAG,
+                                "充值提交被客户端校验拒绝: amountError=${amountResult.error} " +
+                                    "支付方式未选=$payMethodMissing 预设金额=$selectedAmount 自定义输入=$customAmount"
+                            )
+                        }
+                    },
                     loading = rechargeState is RequestState.Loading,
                     // 画板实测：左右 24、上 16、下 20（真机叠加手势条避让）；原 padding(16, 24)
                     // 是 Compose 双参重载 = 水平 16 / 垂直 24，与画板正好相反（§3.7 已警示该坑）
@@ -388,24 +425,24 @@ fun RechargePage(
             message = stringResource(R.string.confirm_recharge_question),
             onConfirm = {
                 showDialog = false
-                // 金额与支付方式都在弹窗关闭后校验：任一不通过则不提交，错误文案显示在对应区块
+                // 金额与支付方式已在「立即充值」onClick 校验通过（弹窗只在全部通过后弹出），此处直接提交。
+                // 传「到账金额」= 支付金额 + 赠送（仅预设档，2026-11-05 修复①）：后端 userRecharge 的
+                // amount 即入账金额，此前误传支付金额导致赠送从未到账（选 100 送 8 实际只 +100）
                 val amountResult = RechargeAmountValidator.resolve(
                     isCustomAmountSelected = isCustomAmountSelected,
                     presetAmount = selectedAmount,
                     customAmountRaw = customAmount
                 )
-                showPayError = selectedPaymentMethod == null
-                amountError = amountResult.error
-                if (amountResult.error == null && selectedPaymentMethod != null) {
-                    rechargeViewModel.userRecharge(amountResult.amount!!, selectedPaymentMethod!!.payType)
-                } else {
-                    // 业务拒绝（客户端校验不过）：留痕拒绝原因与尝试金额，便于对齐「为什么没发起充值」
-                    AppLogger.warn(
-                        TAG,
-                        "充值提交被客户端校验拒绝: amountError=${amountResult.error} " +
-                            "支付方式未选=${selectedPaymentMethod == null} 预设金额=$selectedAmount 自定义输入=$customAmount"
-                    )
-                }
+                val creditAmount = RechargeAmountValidator.creditAmount(
+                    amountResult.amount!!,
+                    isCustomAmountSelected
+                )
+                AppLogger.info(
+                    TAG,
+                    "确认充值: 支付金额=${amountResult.amount} 到账金额=$creditAmount（含预设档赠送） " +
+                        "支付方式=${selectedPaymentMethod!!.payType}"
+                )
+                rechargeViewModel.userRecharge(creditAmount, selectedPaymentMethod!!.payType)
             },
             onDismiss = { showDialog = false }
         )
@@ -507,7 +544,7 @@ private fun CustomAmountCell(
 private fun RechargeSummaryLine(selectedAmount: Float?, isCustom: Boolean) {
     val amount = selectedAmount ?: 0f
     if (amount <= 0f) return
-    val bonus = if (isCustom) 0f else AmountBonuses[selectedAmount] ?: 0f
+    val bonus = if (isCustom) 0f else RechargeAmountValidator.PRESET_BONUSES[selectedAmount] ?: 0f
     val total = amount + bonus
     Text(
         text = buildAnnotatedString {
@@ -648,11 +685,12 @@ private fun PaymentMethodCard(
     }
 }
 
-/** 赠额映射（设计稿 .amount3 em：¥50 送 ¥2 / ¥100 送 ¥8 / ¥200 送 ¥20） */
-private val AmountBonuses = mapOf(50f to 2f, 100f to 8f, 200f to 20f)
-
 /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接） */
 private const val TAG = "RechargePage"
+
+// LazyColumn 固定条目序号（余额 0 / 金额 1 / 支付方式 2）：校验失败自动滚动定位用（修复②）
+private const val ITEM_INDEX_AMOUNT = 1
+private const val ITEM_INDEX_PAYMENT = 2
 
 private enum class PaymentMethod(val payType: String, val descriptionRes: Int) {
     WECHAT("1", R.string.weixin_pay), ALIPAY("2", R.string.alipay)

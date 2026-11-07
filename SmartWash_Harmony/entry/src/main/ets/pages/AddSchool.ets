@@ -240,7 +240,8 @@ struct AddSchool {
             // ===== Hero 区（模板 C：品牌渐变卡 + 64dp 圆图标容器 + 标题 + 副标题）=====
             Column() {
               Column() {
-                SymbolGlyph($r('sys.symbol.book_pages'))
+                // Hero 图标对齐安卓 Icons.Rounded.School（D25）
+                SymbolGlyph($r('sys.symbol.graduationcap'))
                   .fontSize(28)
                   .fontColor([DesignColor.ON_PRIMARY])
               }
@@ -258,9 +259,11 @@ struct AddSchool {
                 .fontColor(DesignColor.ON_PRIMARY)
                 .margin({ top: 14 })
 
+              // 标题→副标题间距 14dp（对齐安卓 verticalArrangement.spacedBy(14)；D19）
               Text("请填写您的学校信息")
                 .fontSize(DesignFontSize.BODY)
                 .fontColor(DesignColor.ON_PRIMARY)
+                .margin({ top: 14 })
             }
             .width("100%")
             .padding({ top: 24, bottom: 20 })
@@ -273,164 +276,182 @@ struct AddSchool {
             .margin({ top: DesignDimens.SPACE_XXL })
 
             // ===== 表单卡（可见标签 + 输入行 + 错误文案）=====
-            Column({ space: 16 }) {
+            // 标签→输入框间距 24dp（对齐安卓 spacedBy(16) + 输入框 padding top 8；D20）
+            Column({ space: 24 }) {
               // 学校标签（12/400 textSecondary）
               Text("搜索学校")
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(DesignColor.TEXT_SECONDARY)
 
-              // 学校输入行（48dp / r14 / surfaceVariant 底 / 前缀 16 primary/.5 / 清空 48 热区）
-              Row() {
-                SymbolGlyph($r('sys.symbol.book_pages'))
-                  .fontSize(16)
-                  .fontColor([DesignColor.PRIMARY])
-                  .opacity(0.5)
+              // 学校输入组件（输入行 + 错误文案 + 下拉列表，紧贴输入框）
+              Column() {
+                // 学校输入行（48dp / r14 / surfaceVariant 底 / 前缀 16 primary/.5 / 清空 48 热区）
+                Row() {
+                  // 前缀图标对齐安卓 Icons.Rounded.School（D25）
+                  SymbolGlyph($r('sys.symbol.graduationcap'))
+                    .fontSize(16)
+                    .fontColor([DesignColor.PRIMARY])
+                    .opacity(0.5)
 
-                TextInput({ text: this.schoolName, placeholder: "搜索学校" })
-                  .type(InputType.Normal)
-                  .fontSize(DesignFontSize.BODY)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
-                  .placeholderColor(DesignColor.TEXT_SECONDARY)
-                  .backgroundColor(Color.Transparent)
-                  .layoutWeight(1)
-                  .margin({ left: 12 })
-                  .enabled(!this.isInfoLocked)
-                  .key("schoolNameInput")
-                  .onChange((it: string) => {
-                    this.schoolName = it
-                    this.debounceSearch()
-                  })
-                  .onFocus(() => {
-                    this.showSchoolList = true
-                  })
-                  .onBlur(() => {
-                    // 延迟收起窗口内不立即隐藏，保证选中高亮可见
-                    if (Date.now() - this.lastSelectTime < SELECTION_SETTLE_MS) {
-                      return
-                    }
-                    this.dismissDebouncer.debounce(() => {
-                      this.showSchoolList = false
-                    }, 60)
-                  })
-
-                // 清空钮（48dp 热区，图标 20）
-                Column() {
-                  SymbolGlyph($r('sys.symbol.xmark'))
-                    .fontSize(20)
-                    .fontColor([DesignColor.TEXT_SECONDARY])
-                }
-                .width(48)
-                .height(48)
-                .justifyContent(FlexAlign.Center)
-                .alignItems(HorizontalAlign.Center)
-                .enabled(!this.isInfoLocked)
-                .onClick(() => {
-                  this.clearSchoolName()
-                })
-              }
-              .width("100%")
-              .height(48)
-              .borderRadius(DesignDimens.INPUT_RADIUS)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
-              .border({ width: 1, color: this.checkSchoolId ? DesignColor.ERROR : DesignColor.OUTLINE })
-              .padding({ left: 12, right: 4 })
-              .alignItems(VerticalAlign.Center)
-
-              if (this.checkSchoolId) {
-                Text("请选择学校")
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.ERROR)
-                  .width("100%")
-                  .margin({ top: 4 })
-              }
-
-              // 下拉列表（白卡 + 56dp 行 + 选中 primaryContainer 高亮 + 0.5 hairline）
-              if (this.showSchoolList && this.schoolList !== null && this.schoolList.length > 0) {
-                List({ scroller: this.scroller }) {
-                  ForEach(this.schoolList, (school: SchoolName) => {
-                    ListItem() {
-                      Column() {
-                        Row() {
-                          Text(school.schoolName)
-                            .fontSize(12)
-                            .fontColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_PRIMARY)
-                            .layoutWeight(1)
-                        }
-                        .width("100%")
-                        .height(56)
-                        .padding({ left: 12, right: 12 })
-                        .alignItems(VerticalAlign.Center)
-                        .backgroundColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_CONTAINER : Color.Transparent)
-                        .animation(MotionTiming.ENTER)
-                        .onClick(() => {
-                          this.selectSchool(school)
-                        })
-
-                        Divider()
-                          .color(DesignColor.HAIRLINE)
-                          .strokeWidth(0.5)
-                          .margin({ left: 14, right: 14 })
+                  TextInput({ text: this.schoolName, placeholder: "搜索学校" })
+                    .type(InputType.Normal)
+                    .fontSize(DesignFontSize.BODY)
+                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .placeholderColor(DesignColor.TEXT_SECONDARY)
+                    .backgroundColor(Color.Transparent)
+                    .layoutWeight(1)
+                    .margin({ left: 12 })
+                    .enabled(!this.isInfoLocked)
+                    .key("schoolNameInput")
+                    .onChange((it: string) => {
+                      this.schoolName = it
+                      this.debounceSearch()
+                    })
+                    .onFocus(() => {
+                      this.showSchoolList = true
+                    })
+                    .onBlur(() => {
+                      // 延迟收起窗口内不立即隐藏，保证选中高亮可见
+                      if (Date.now() - this.lastSelectTime < SELECTION_SETTLE_MS) {
+                        return
                       }
-                      .width("100%")
-                    }
-                  }, (school: SchoolName) => `${school.schoolId}`)
+                      this.dismissDebouncer.debounce(() => {
+                        this.showSchoolList = false
+                      }, 60)
+                    })
+
+                  // 清空钮（48dp 热区，图标 20）
+                  Column() {
+                    SymbolGlyph($r('sys.symbol.xmark'))
+                      .fontSize(20)
+                      .fontColor([DesignColor.TEXT_SECONDARY])
+                  }
+                  .width(48)
+                  .height(48)
+                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
+                  .enabled(!this.isInfoLocked)
+                  .onClick(() => {
+                    this.clearSchoolName()
+                  })
                 }
                 .width("100%")
-                .height(Math.min(this.schoolList.length * 57, 200))
-                .backgroundColor(DesignColor.SURFACE)
-                .borderRadius(DesignDimens.CARD_RADIUS)
-                .border({ width: 1, color: DesignColor.OUTLINE })
-                .shadow({
-                  radius: DesignElevation.CARD_SHADOW_RADIUS,
-                  color: DesignColor.SHADOW_COLOR_CARD,
-                  offsetX: 0,
-                  offsetY: DesignElevation.CARD_SHADOW_OFFSET
-                })
-                .margin({ top: 8 })
+                .height(48)
+                .borderRadius(DesignDimens.INPUT_RADIUS)
+                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .border({ width: 1, color: this.checkSchoolId ? DesignColor.ERROR : DesignColor.OUTLINE })
+                .padding({ left: 12, right: 4 })
+                .alignItems(VerticalAlign.Center)
+
+                // 错误提示：独立 Text（对齐安卓 M3 supportingText 的呈现位，紧贴输入框下缘）
+                if (this.checkSchoolId) {
+                  Text("请选择学校")
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor(DesignColor.ERROR)
+                    .width("100%")
+                    .margin({ top: 4 })
+                }
+
+                // 下拉列表（白卡 + 56dp 行 + 选中 primaryContainer 高亮 + 0.5 hairline）
+                if (this.showSchoolList && this.schoolList !== null && this.schoolList.length > 0) {
+                  List({ scroller: this.scroller }) {
+                    ForEach(this.schoolList, (school: SchoolName) => {
+                      ListItem() {
+                        Column() {
+                          Row() {
+                            Text(school.schoolName)
+                              .fontSize(12)
+                              .fontColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_PRIMARY)
+                              .layoutWeight(1)
+                          }
+                          .width("100%")
+                          .height(56)
+                          .padding({ left: 12, right: 12 })
+                          .alignItems(VerticalAlign.Center)
+                          .backgroundColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_CONTAINER : Color.Transparent)
+                          .animation(MotionTiming.ENTER)
+                          .onClick(() => {
+                            this.selectSchool(school)
+                          })
+
+                          Divider()
+                            .color(DesignColor.HAIRLINE)
+                            .strokeWidth(0.5)
+                            .margin({ left: 14, right: 14 })
+                        }
+                        .width("100%")
+                      }
+                    }, (school: SchoolName) => `${school.schoolId}`)
+                  }
+                  .width("100%")
+                  // 行高 56（对齐安卓 56dp 行；原 57 多 1；D24）
+                  .height(Math.min(this.schoolList.length * 56, 200))
+                  .backgroundColor(DesignColor.SURFACE)
+                  .borderRadius(DesignDimens.CARD_RADIUS)
+                  .border({ width: 1, color: DesignColor.OUTLINE })
+                  .shadow({
+                    radius: DesignElevation.CARD_SHADOW_RADIUS,
+                    color: DesignColor.SHADOW_COLOR_CARD,
+                    offsetX: 0,
+                    offsetY: DesignElevation.CARD_SHADOW_OFFSET
+                  })
+                  .margin({ top: 8 })
+                  // 下拉展开/收起过渡（对齐安卓 AnimatedVisibility 弹簧 + 淡入淡出；D26）
+                  .transition(TransitionEffect.OPACITY)
+                }
               }
+              .width("100%")
+              .alignItems(HorizontalAlign.Start)
 
               // 学号标签
               Text("学号")
                 .fontSize(DesignFontSize.CAPTION)
                 .fontColor(DesignColor.TEXT_SECONDARY)
 
-              // 学号输入行（48dp / r14 / 前缀 16 primary/.5）
-              Row() {
-                SymbolGlyph($r('sys.symbol.label'))
-                  .fontSize(16)
-                  .fontColor([DesignColor.PRIMARY])
-                  .opacity(0.5)
+              // 学号输入组件（输入行 + 错误文案）
+              Column() {
+                // 学号输入行（48dp / r14 / 前缀 16 primary/.5）
+                Row() {
+                  // 前缀图标对齐安卓 Icons.Rounded.Badge（D25，ID 卡语义）
+                  SymbolGlyph($r('sys.symbol.person_text_rectangle'))
+                    .fontSize(16)
+                    .fontColor([DesignColor.PRIMARY])
+                    .opacity(0.5)
 
-                TextInput({ text: this.studentId, placeholder: "学号" })
-                  .type(InputType.Number)
-                  .maxLength(16)
-                  .fontSize(DesignFontSize.BODY)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
-                  .placeholderColor(DesignColor.TEXT_SECONDARY)
-                  .backgroundColor(Color.Transparent)
-                  .layoutWeight(1)
-                  .margin({ left: 12 })
-                  .enabled(!this.isInfoLocked)
-                  .key("studentIdInput")
-                  .onChange((it: string) => {
-                    this.studentId = it
-                  })
+                  TextInput({ text: this.studentId, placeholder: "学号" })
+                    .type(InputType.Number)
+                    .maxLength(16)
+                    .fontSize(DesignFontSize.BODY)
+                    .fontColor(DesignColor.TEXT_PRIMARY)
+                    .placeholderColor(DesignColor.TEXT_SECONDARY)
+                    .backgroundColor(Color.Transparent)
+                    .layoutWeight(1)
+                    .margin({ left: 12 })
+                    .enabled(!this.isInfoLocked)
+                    .key("studentIdInput")
+                    .onChange((it: string) => {
+                      this.studentId = it
+                    })
+                }
+                .width("100%")
+                .height(48)
+                .borderRadius(DesignDimens.INPUT_RADIUS)
+                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .border({ width: 1, color: this.checkStudentId ? DesignColor.ERROR : DesignColor.OUTLINE })
+                .padding({ left: 12, right: 12 })
+                .alignItems(VerticalAlign.Center)
+
+                // 错误提示：独立 Text（对齐安卓 M3 supportingText 的呈现位，紧贴输入框下缘）
+                if (this.checkStudentId) {
+                  Text("请输入正确的学号")
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontColor(DesignColor.ERROR)
+                    .width("100%")
+                    .margin({ top: 4 })
+                }
               }
               .width("100%")
-              .height(48)
-              .borderRadius(DesignDimens.INPUT_RADIUS)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
-              .border({ width: 1, color: this.checkStudentId ? DesignColor.ERROR : DesignColor.OUTLINE })
-              .padding({ left: 12, right: 12 })
-              .alignItems(VerticalAlign.Center)
-
-              if (this.checkStudentId) {
-                Text("请输入正确的学号")
-                  .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.ERROR)
-                  .width("100%")
-                  .margin({ top: 4 })
-              }
+              .alignItems(HorizontalAlign.Start)
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
@@ -466,10 +487,12 @@ struct AddSchool {
             .fontColor(DesignColor.TEXT_SECONDARY)
             .width("100%")
 
+          // 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA；D22）
           AppButton({
             text: "确认",
             loading: this.submitting,
             isEnabled: !this.isInfoLocked,
+            solid: true,
             click: () => {
               this.submit()
             }
@@ -477,7 +500,8 @@ struct AddSchool {
             .margin({ top: DesignDimens.SPACE_MD })
         }
         .width("100%")
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 12, bottom: 16 + safeBottomVp() })
+        // CTA 栏顶部内距 0（对齐安卓 CTA Column 无 top padding；D21）
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 0, bottom: 16 + safeBottomVp() })
         .backgroundColor(DesignColor.BACKGROUND)
       }
       .width("100%")

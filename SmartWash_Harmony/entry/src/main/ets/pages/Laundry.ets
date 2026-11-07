@@ -330,12 +330,13 @@ struct Laundry {
                 .margin({ left: 12 })
 
                 // 「更换」动作（V7）：16/600 primaryDark + 12/12 热区，弹「联系客服」提示弹窗
+                // 垂直内边距 12 → 16：把触控热区从 42.9vp 抬到 ≥48vp
                 Column() {
                   Text("更换")
                     .fontSize(DesignFontSize.BODY)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
                     .fontColor(DesignColor.PRIMARY_DARK)
-                    .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+                    .padding({ left: 12, right: 12, top: 16, bottom: 16 })
                 }
                 .scale({ x: this.changePressed ? 0.97 : 1, y: this.changePressed ? 0.97 : 1 })
                 .onTouch((event: TouchEvent) => {
@@ -415,7 +416,8 @@ struct Laundry {
           AppButton({
             text: this.selectItemId === null
               ? "确认预约"
-              : `确认预约 · ${this.totalPrice?.toFixed(2) ?? "0.00"}`,
+              // 金额统一走 ¥ 前缀（对齐安卓 currency_format ¥%s，避免按钮只显示「确认预约 · 29.90」）
+              : `确认预约 · ¥${this.totalPrice?.toFixed(2) ?? "0.00"}`,
             loading: this.reserving,
             click: () => {
               this.submitReservation()

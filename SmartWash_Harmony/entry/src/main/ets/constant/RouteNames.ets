@@ -60,7 +60,19 @@ export class RouteNames {
   static readonly SUBSCRIPTION_EDIT: string = "SubscriptionEdit"
   static readonly SUBSCRIPTION_DETAIL: string = "SubscriptionDetail"
   static readonly SUBSCRIPTION_REMINDERS: string = "SubscriptionReminders"
-  // 建设中占位页（深链兜底：安卓新增域 lab/mood/review/subscription/delivery/ai-work
-  // 在鸿蒙端未实现，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
+  // 解压实验舱域路由名（对齐安卓 LabRoute：Home + 10 个实验页）
+  static readonly LAB_HOME: string = "LabHome"
+  static readonly LAB_BREATH: string = "LabBreath"
+  static readonly LAB_BUBBLE: string = "LabBubble"
+  static readonly LAB_FISH: string = "LabFish"
+  static readonly LAB_DRUM: string = "LabDrum"
+  static readonly LAB_SAND: string = "LabSand"
+  static readonly LAB_PET: string = "LabPet"
+  static readonly LAB_PAINTING: string = "LabPainting"
+  static readonly LAB_FLUID: string = "LabFluid"
+  static readonly LAB_SOUNDSCAPE: string = "LabSoundscape"
+  static readonly LAB_STARMAP: string = "LabStarMap"
+  // 建设中占位页（深链兜底：安卓新增域 mood/review/subscription/delivery/ai-work
+  // 在鸿蒙端未实现时，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"
 }

@@ -20,9 +20,24 @@ const DEFAULT_FAIL_MESSAGE: string = "请求失败"
 const DEFAULT_UNKNOWN_MESSAGE: string = "未知错误"
 
 /**
+ * 业务失败（code≠200）的用户可见文案取值策略（对齐安卓 ResponseInterceptor.resolveBusinessErrorMessage，
+ * 修复 5125729f）：后端业务失败时信封 message 恒为「失败」，具体语义（如「系统异常，请稍后再试」）
+ * 放在 data 字符串里——仅用 message 会把所有业务失败展示成裸「失败」。
+ * 取值顺序 = 有具体语义的 data 字符串优先、message 兜底；data 只在**非空字符串**时采用
+ * （业务失败时 data 也可能是对象/空串/布尔，直接 toString 会产出「{...}」「null」这类垃圾文案）。
+ */
+function resolveBusinessErrorMessage(message: string | null | undefined, data: Object | null): string {
+  if (typeof data === 'string' && data.trim().length > 0) {
+    return data
+  }
+  return message ?? ""
+}
+
+/**
  * 信封解码兜底（差异分析 01 §3.3：code 缺省视为失败，与安卓 ApiResult code/message 非空对齐）：
  * - code 缺省（body 非信封/网关异常页等）：统一按业务失败处理，code=ERROR、data 清空；
- * - 业务失败（201/404/500 等）且 message 缺失：补默认文案，页面 toast 不再弹 "undefined"；
+ * - 业务失败（201/404/500 等）：优先采用 data 中的具体文案，其次 message，均缺失才补默认文案，
+ *   页面 toast 不再弹 "undefined" / 裸「失败」；
  * - 401 已由 Axios 响应拦截器统一处理（清 token → replace 登录页），此处不改写。
  * 统一转译后，页面只需判断 code === 200，失败分支的 message 一定可用。
  *
@@ -38,11 +53,14 @@ export function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
     }
     return unknown
   }
-  if (raw.code !== BizCode.SUCCESS && isBlankMessage(raw.message)) {
+  if (raw.code !== BizCode.SUCCESS) {
+    // as 仅作泛型 → Object 的类型桥接（同 PathStackUtil 对 SDK 返回值的处理），
+    // data 具体类型由下方 typeof 运行时校验，不做盲转
+    const resolved = resolveBusinessErrorMessage(raw.message, raw.data as Object | null)
     const failed: BaseResponse<T> = {
       data: raw.data,
       code: raw.code,
-      message: DEFAULT_FAIL_MESSAGE
+      message: resolved.length > 0 ? resolved : DEFAULT_FAIL_MESSAGE
     }
     return failed
   }

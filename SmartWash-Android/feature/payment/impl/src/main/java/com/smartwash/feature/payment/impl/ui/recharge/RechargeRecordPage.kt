@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +29,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +47,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.impl.network.vo.recharge.RechargeRecordVo
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.LoadingDots
@@ -53,9 +61,56 @@ import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
+import com.smartwash.common.utils.pressable
 
-/** 充值记录页三态：列表 / 空态 / 首载加载 */
-private enum class RecordListState { Content, Empty, Loading }
+/**
+ * 充值记录页四态：列表 / 首载失败 / 空态 / 首载加载（回归 2026-11-06 A6：失败不得停留骨架）。
+ *
+ * [Error] 携带「进入错误态那一刻」捕获的异常（C1 回归 2026-11-06）：
+ * 首刷失败渲染期间 refresh 可能已随 `retry()` 变为 [LoadState.Loading]，而 Crossfade
+ * 淡出期间仍会组合旧的 Error 内容——若渲染分支直接强转 live `loadState.refresh`
+ * 会抛 `ClassCastException: LoadState$Loading cannot be cast to LoadState$Error`
+ * （RechargeRecordPage.kt 原 169 行）。异常随状态对象一起保存后，渲染只读状态对象、
+ * 不再触碰 live loadState，重试后不得再进 Error 渲染分支。
+ */
+internal sealed interface RecordListState {
+    data object Content : RecordListState
+
+    /** [error] 为进入错误态时捕获的异常（不读 live loadState，见类注释 C1 回归） */
+    data class Error(val error: Throwable) : RecordListState
+
+    data object Empty : RecordListState
+    data object Loading : RecordListState
+}
+
+/**
+ * 由分页状态推导页面态（纯函数，JVM 单测 [RechargeRecordListStateTest] 覆盖）：
+ * 1. 有内容 → [RecordListState.Content]（refresh 失败但旧内容仍在，保持可读）
+ * 2. 无内容且 refresh 为 [LoadState.Error] → [RecordListState.Error]（携带异常）
+ * 3. 刷新会话中且无内容 → [RecordListState.Loading]（骨架而非空态，2026-11-06 闪空态回归）
+ * 4. 无内容且 refresh 为 [LoadState.NotLoading] → [RecordListState.Empty]
+ * 5. 其余（[LoadState.Loading]）→ [RecordListState.Loading]
+ *
+ * [refreshSession] 为真表示「列表已被清空、新一轮加载尚未开始」：此时即便 live refresh
+ * 仍是上一轮的 NotLoading，也不得判空态（否则渲染一帧空态）。错误分支前置于会话分支，
+ * 保证刷新失败时错误态不被骨架掩盖。本页无刷新/重建路径（ViewModel 无 refresh、
+ * 无 PullToRefreshBox、无 CHANGED_KEY），传入的是「首轮加载未完成」，属同款防御；
+ * 将来若接入刷新，把会话位置真即可。
+ *
+ * 类型安全：一律 `is` 判断，不做任何强转；调用方（含 Crossfade 淡出中的旧内容）
+ * 只面对状态对象，不会因 live loadState 变化而崩溃。
+ */
+internal fun recordListStateOf(
+    itemCount: Int,
+    refresh: LoadState,
+    refreshSession: Boolean = false,
+): RecordListState = when {
+    itemCount > 0 -> RecordListState.Content
+    refresh is LoadState.Error -> RecordListState.Error(refresh.error)
+    refreshSession -> RecordListState.Loading
+    refresh is LoadState.NotLoading -> RecordListState.Empty
+    else -> RecordListState.Loading
+}
 
 /**
  * 充值时间展示格式化（2026-11-01 缺陷 8e）：
@@ -81,12 +136,33 @@ fun RechargeRecordPage(
 ) {
     val records = viewModel.pagingFlow.collectAsLazyPagingItems()
 
-    // refresh 中（有旧内容）保持列表可读；仅无内容且非空态时走首载骨架
-    val listState = when {
-        records.itemCount > 0 -> RecordListState.Content
-        records.loadState.refresh is LoadState.NotLoading -> RecordListState.Empty
-        else -> RecordListState.Loading
+    // 刷新会话门控（2026-11-06 闪空态回归，同款防御）：本页无刷新/重建路径
+    // （ViewModel 无 refresh、页面无 PullToRefreshBox、无 CHANGED_KEY），
+    // 故会话退化为「首轮加载」——仍加 everLoaded 门控，保证首帧 NotLoading+0 项不闪空态。
+    var loadStarted by rememberSaveable { mutableStateOf(false) }
+    var everLoaded by rememberSaveable { mutableStateOf(false) }
+    val refreshState = records.loadState.refresh
+    LaunchedEffect(refreshState) {
+        when (refreshState) {
+            is LoadState.Loading -> {
+                loadStarted = true
+                everLoaded = true
+            }
+            is LoadState.NotLoading -> {
+                if (records.itemCount > 0 || loadStarted) loadStarted = false
+            }
+            is LoadState.Error -> loadStarted = false
+        }
     }
+
+    // refresh 中（有旧内容）保持列表可读；无内容时区分「失败 → 错误卡+重试」与「空态」，
+    // 其余（NotLoading 空数据 / Loading / Error 之外）才落骨架——断网首刷（LoadResult.Error）
+    // 不能停在无限骨架（回归 2026-11-06 A6）。状态推导抽为纯函数（C1：类型安全 + 可单测）
+    val listState = recordListStateOf(
+        itemCount = records.itemCount,
+        refresh = records.loadState.refresh,
+        refreshSession = !everLoaded,
+    )
 
     Box(
         modifier = Modifier
@@ -124,11 +200,10 @@ fun RechargeRecordPage(
                         }
 
                         records.apply {
-                            // 尾部转圈仅保留给 append；refresh 不追加尾部指示（旧内容保持可读）。
-                            // reduced motion 降级为静态三点灰（§8：取消无限旋转，保留"在忙"可读性，
-                            // 与订单页分页 footer 同规格）
-                            if (loadState.append is LoadState.Loading) {
-                                item(key = "append_loading_footer") {
+                            // 尾部：append 加载中 → 转圈（reduced motion 降级静态三点灰）；append 失败
+                            // → 错误行点击重试（Paging 停在 Error 时必须给出恢复入口，A6）
+                            when (val appendState = loadState.append) {
+                                is LoadState.Loading -> item(key = "append_loading_footer") {
                                     if (LocalReduceMotion.current) {
                                         LoadingDots(
                                             modifier = Modifier
@@ -146,19 +221,76 @@ fun RechargeRecordPage(
                                         )
                                     }
                                 }
+                                is LoadState.Error -> item(key = "append_error_footer") {
+                                    AppendErrorFooter(
+                                        message = appendState.error.message,
+                                        onRetry = { records.retry() }
+                                    )
+                                }
+                                else -> {}
                             }
                         }
+                    }
+
+                    is RecordListState.Error -> {
+                        // 首刷失败：错误说明 + 重试（样式对齐工作台断网错误态，EmptyState 滚筒母题）
+                        // 具体文案优先取 NetworkException.message（ResponseInterceptor 已转译），
+                        // 异常无 message（理论不可能）时兜底通用文案。
+                        // C1：异常来自状态对象（进入 Error 态时捕获），不再强转 live loadState
+                        // ——retry 后 refresh 变 Loading 时 Crossfade 仍在淡出旧 Error 内容，不崩
+                        EmptyState(
+                            icon = Icons.Default.AccountBalanceWallet,
+                            message = state.error.message
+                                ?: stringResource(R.string.record_load_failed),
+                            modifier = Modifier.fillMaxSize(),
+                            action = {
+                                AppButton(
+                                    text = stringResource(R.string.record_action_retry),
+                                    onClick = { records.retry() },
+                                    variant = AppButtonVariant.SECONDARY,
+                                )
+                            }
+                        )
                     }
 
                     RecordListState.Empty -> EmptyState(
                         icon = Icons.Default.AccountBalanceWallet,
                         message = stringResource(R.string.no_recharge_records),
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
 
                     RecordListState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
                 }
             }
+        }
+    }
+}
+
+/**
+ * 分页尾部「加载更多失败」错误行 — 整行可点重试（A6：append Error 不能静默停在原地）。
+ * 规范 §7：自绘 pressable 无 ripple，热区 ≥44dp。
+ */
+@Composable
+private fun AppendErrorFooter(message: String?, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 44.dp)
+            .pressable(onClick = onRetry),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.record_append_failed),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.colorScheme.dangerInk,
+        )
+        if (!message.isNullOrBlank()) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.colorScheme.textSecondary,
+            )
         }
     }
 }

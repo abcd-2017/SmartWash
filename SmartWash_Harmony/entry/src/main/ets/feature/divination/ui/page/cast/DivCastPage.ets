@@ -49,13 +49,22 @@ const KEY_TOSS_ID: string = 'div_cast_toss_id'
 /** 无待落定爻占位码（爻值合法范围 1..4） */
 const NO_PENDING_YAO: number = -1
 
-/** 爻值 → 符号 / 爻名（对齐安卓 DivCastPage.kt:148-163 与 CoinAndMeridian.kt:247-269） */
-const YAO_SYMBOL_YANG: string = '▅▅▅▅▅▅'
-const YAO_SYMBOL_YIN: string = '▅▅  ▅▅'
+/** 爻线图形尺寸（对齐安卓 CoinAndMeridian.kt 修复⑥：48dp 等宽条 / 阴爻双 20dp + 8dp 中缝） */
+const YAO_LINE_WIDTH: number = 48
+const YAO_LINE_HEIGHT: number = 6
+const YAO_YIN_SEGMENT_WIDTH: number = 20
+const YAO_YIN_SEGMENT_GAP: number = 8
+/** 中列宽度（固定，双 weight 侧轨夹持居中） */
+const MERIDIAN_CENTER_WIDTH: number = 120
+/** 爻位名列宽 / 左轨到中列间距 / 右轨到中列间距（画板节奏） */
+const POSITION_LABEL_WIDTH: number = 40
+const LEFT_TRACK_GAP: number = 32
+const RIGHT_TRACK_GAP: number = 10
 
 /** 子午线节点展示数据（UI 语法不允许局部语句，故计算收敛为纯方法返回对象） */
 interface MeridianNodeData {
-  symbol: string
+  /** true = 阳爻（少阳/老阳，实心条）；false = 阴爻（少阴/老阴，双段条） */
+  isYang: boolean
   nameLabel: string
   isMoving: boolean
   done: boolean
@@ -408,32 +417,58 @@ struct DivCastPage {
 
   // ========== 子午线节点 ==========
 
+  /**
+   * 子午线单节点（对齐安卓 CoinAndMeridian.kt MeridianNode，含 2026-11-05 修复⑥）：
+   * 双 weight 侧轨 —— 左轨 weight 右对齐（爻位名 + 32 间距）、中列固定 120、右轨 weight 左对齐
+   * （10 间距 + 爻名）。中列中心 = 左轨宽 + 60 = (行宽 - 120)/2 + 60 = 行宽/2，恒居行中心，
+   * 与子午线（屏中心）及上方铜钱同轴。原「40+32+120+10+weight」结构中列中心偏左约 26vp。
+   * 爻线用等宽图形（非文本字形）：阳爻 48×6 实心条；阴爻两条 20×6 + 8 中缝（合计 48，关于中心对称）。
+   */
   @Builder
   MeridianNode(data: MeridianNodeData, positionLabel: string) {
     Row() {
-      DivSerifText({
-        text: positionLabel,
-        textSize: 12,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textSecondary,
-        textAlign: TextAlign.End
-      })
-        .width(40)
+      // 左轨：爻位名右对齐（内容宽 40 + 32 间距，整体占满 weight 轨道）
+      Row() {
+        DivSerifText({
+          text: positionLabel,
+          textSize: 12,
+          weight: 400,
+          spacing: 0,
+          color: DivPalette.textSecondary,
+          textAlign: TextAlign.End
+        })
+          .width(POSITION_LABEL_WIDTH)
 
-      Column().width(32)
+        Column().width(LEFT_TRACK_GAP)
+      }
+      .layoutWeight(1)
+      .justifyContent(FlexAlign.End)
 
-      // 中列（120）：已掷仅爻符号 14/600；待掷 8dp 25% 金点
+      // 中列（固定 120）：已掷图形爻线；待掷 8dp 25% 金点
       Column() {
-        if (data.done && data.symbol.length > 0) {
-          DivSerifText({
-            text: data.symbol,
-            textSize: 14,
-            weight: 600,
-            spacing: 1,
-            color: data.isMoving ? DivPalette.goldText : DivPalette.textPrimary,
-            textAlign: TextAlign.Center
-          })
+        if (data.done) {
+          if (data.isYang) {
+            // 阳爻：48×6 圆角实心条
+            Column()
+              .width(YAO_LINE_WIDTH)
+              .height(YAO_LINE_HEIGHT)
+              .borderRadius(1)
+              .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+          } else {
+            // 阴爻：两条 20×6 + 8 中缝（合计 48，关于中列中心对称）
+            Row({ space: YAO_YIN_SEGMENT_GAP }) {
+              Column()
+                .width(YAO_YIN_SEGMENT_WIDTH)
+                .height(YAO_LINE_HEIGHT)
+                .borderRadius(1)
+                .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+              Column()
+                .width(YAO_YIN_SEGMENT_WIDTH)
+                .height(YAO_LINE_HEIGHT)
+                .borderRadius(1)
+                .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+            }
+          }
         } else {
           Column()
             .width(8)
@@ -443,25 +478,30 @@ struct DivCastPage {
             .opacity(0.25)
         }
       }
-      .width(120)
+      .width(MERIDIAN_CENTER_WIDTH)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
-      Column().width(10)
+      // 右轨：爻名左对齐（10 间距 + 弹性爻名，整体占满 weight 轨道）
+      Row() {
+        Column().width(RIGHT_TRACK_GAP)
 
-      if (data.done && data.nameLabel.length > 0) {
-        DivSerifText({
-          text: data.nameLabel,
-          textSize: 12,
-          weight: 400,
-          spacing: 0,
-          color: data.isMoving ? DivPalette.goldText : DivPalette.textSecondary,
-          maxLines: 1
-        })
-          .layoutWeight(1)
-      } else {
-        Blank()
+        if (data.done && data.nameLabel.length > 0) {
+          DivSerifText({
+            text: data.nameLabel,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: data.isMoving ? DivPalette.goldText : DivPalette.textSecondary,
+            maxLines: 1
+          })
+            .layoutWeight(1)
+        } else {
+          Blank()
+        }
       }
+      .layoutWeight(1)
+      .justifyContent(FlexAlign.Start)
     }
     .width('100%')
     .height(50)
@@ -532,16 +572,20 @@ struct DivCastPage {
                   .justifyContent(FlexAlign.Center)
 
                   Column() {
-                    ForEach([0, 1, 2, 3, 4, 5], (displayIndex: number) => {
+                    ForEach(this.meridianSlots(), (slot: number) => {
                       Column() {
-                        this.MeridianNode(this.nodeData(displayIndex), POSITION_LABELS[displayIndex])
+                        this.MeridianNode(this.nodeData(slot % 100), POSITION_LABELS[slot % 100])
                       }
                       .width('100%')
-                    }, (index: number) => index.toString())
+                    }, (slot: number) => slot.toString())
                   }
                   .width('100%')
                 }
                 .width('100%')
+                // 节点区定高 300（6 节点 × 50）：中线 Column 的 height('100%') 在 wrap-content
+                // Stack 内会被拉伸到剩余视口高，把节点顶到屏幕下缘（多出 ~185vp 空白）；
+                // 显式定高后节点区紧随铜钱下方 48vp，对齐安卓 Box(wrap-content)
+                .height(300)
               }
               .width('100%')
               .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
@@ -564,10 +608,10 @@ struct DivCastPage {
               this.onMainButtonClick()
             }
           })
-            // 按钮横向留白统一 PAGE_PADDING（替代 magic number 76）
+            // 按钮横向留白对齐安卓 DivCastPage 的 padding(horizontal = 76.dp)
             .padding({
-              left: DesignDimens.PAGE_PADDING,
-              right: DesignDimens.PAGE_PADDING,
+              left: 76,
+              right: 76,
               top: 14,
               bottom: 14
             })
@@ -588,6 +632,22 @@ struct DivCastPage {
     })
   }
 
+  /**
+   * 子午线槽位派生数组（修复⑤：爻线/爻名不随掷爻进度重绘）。
+   * ForEach 的常量数组 [0,1,2,3,4,5] 在 @ComponentV2 下不随 @Local lines/pendingYao 变更
+   * 重执行 itemGenerator，节点内容定格在初始待掷态。让数组元素携带进度指纹
+   * （元素 = 槽位 + 指纹×100，指纹 = 已掷爻数×10 + 待落定爻标记），数据源随状态变化，
+   * ForEach 即重建节点、读取最新 nodeData。槽位取 slot % 100（指纹×100 不占低两位）。
+   */
+  private meridianSlots(): number[] {
+    const fingerprint = this.lines.length * 10 + (this.pendingYao !== null ? 1 : 0)
+    const slots: number[] = []
+    for (let i = 0; i < 6; i++) {
+      slots.push(i + fingerprint * 100)
+    }
+    return slots
+  }
+
   /** 单个子午线节点数据（displayIndex 0=上爻(index5) … 5=初爻(index0)） */
   private nodeData(displayIndex: number): MeridianNodeData {
     const lineIndex = 5 - displayIndex
@@ -595,10 +655,11 @@ struct DivCastPage {
     const isPending = this.pendingYao !== null && lineIndex === this.lines.length
     const yaoCode = committed !== null ? committed : (isPending && this.pendingYao !== null ? this.pendingYao.code : null)
 
-    let symbol = ''
+    let isYang = false
     let nameLabel = ''
     if (yaoCode !== null) {
-      symbol = yaoCode === 1 || yaoCode === 3 ? YAO_SYMBOL_YANG : YAO_SYMBOL_YIN
+      // 1/3 = 阳（少阳/老阳）；2/4 = 阴（少阴/老阴）
+      isYang = yaoCode === 1 || yaoCode === 3
       if (yaoCode === 1) {
         nameLabel = '少阳'
       } else if (yaoCode === 2) {
@@ -610,7 +671,7 @@ struct DivCastPage {
       }
     }
     return {
-      symbol: symbol,
+      isYang: isYang,
       nameLabel: nameLabel,
       isMoving: yaoCode !== null && yaoCode > 2,
       done: yaoCode !== null

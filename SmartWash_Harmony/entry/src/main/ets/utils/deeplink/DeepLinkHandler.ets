@@ -34,13 +34,59 @@ export class DeepLinkText {
 let routeDictCache: Array<DeeplinkRouteVo> | null = null
 
 /**
- * 深链统一入口。冷启动/热启动的 Want.uri 经 AppStorage 暂存后由 Home 页挂载时调起。
- * 未登录放行（对齐安卓取舍）：本地不做登录前置判断，需要登录的目标页由 401 统一兜底
- * （清 token → 清内存登录态 → 置 isLoggedIn=false，Index 据此切回登录根页，Axios 拦截器既有语义）。
+ * 公开深链 host 白名单（未登录可放行，对齐安卓 PUBLIC_DEEP_LINK_HOSTS，P-2001）：
+ * - web：内置浏览器分支，WebView 页不消费应用鉴权接口；
+ * - login / register：认证页自身（拦截即循环跳登录）；
+ * - lab：解压实验舱，纯本地玩具零网络请求。
+ * 其余 host 对应页面入口均消费 /web/auth 鉴权接口或依赖会话语义，未登录不放行。
+ */
+const PUBLIC_DEEP_LINK_HOSTS: string[] = ['web', 'login', 'register', 'lab']
+
+/**
+ * 深链动作是否指向公开页面（未登录可放行，P-2001）。
+ * WEB（http/https 与 smartwash://web）与 UNKNOWN（仅 toast 不导航）一律视为公开；
+ * ROUTE 仅 host ∈ 白名单时公开。
+ */
+function isPublicAction(result: DeepLinkResult): boolean {
+  if (result.kind !== DeepLinkKind.ROUTE) {
+    return true
+  }
+  return PUBLIC_DEEP_LINK_HOSTS.indexOf(result.host) >= 0
+}
+
+/**
+ * 供登出态消费端（Index）判定是否可立即分发：公开深链清暂存后立即导航，
+ * 受保护深链保留暂存（pendingDeepLinkUri），待登录后 Home 挂载补消费。
+ */
+export function isPublicDeepLink(uri: string): boolean {
+  return isPublicAction(parse(uri, lookup))
+}
+
+/** 本地会话态（对齐安卓 UserApi.hasSession 的挂起读口径；AppStorage 由 Index 维护） */
+function hasSession(): boolean {
+  return AppStorage.get<boolean>('isLoggedIn') === true
+}
+
+/**
+ * 深链统一入口。冷启动/热启动的 Want.uri 经 AppStorage 暂存后由 Home 页挂载时调起，
+ * 登出态由 Index 提前消费（见 Index.consumeLoggedOutDeepLink）。
+ *
+ * 登录守卫（P-2001，对齐安卓）：未登录 + 受保护 host → 落登录页并保留 deep link 待登录后消费
+ * （不清 pendingDeepLinkUri，Home 挂载时补消费）；公开 host 直接分发。
  */
 export async function handleDeepLink(uri: string): Promise<void> {
   try {
     const result: DeepLinkResult = parse(uri, lookup)
+    if (!isPublicAction(result) && !hasSession()) {
+      // 受保护深链 + 未登录：落登录页（会话态置假触发 Index 切登录根页 + 清栈），
+      // 保留 AppStorage 暂存供登录后消费
+      logger.debug('deeplink', `深链登录守卫拦截：未登录 + 受保护 host=${result.host}`)
+      clearLoginState()
+      if (pathStack.size() > 0) {
+        pathStack.clear()
+      }
+      return
+    }
     switch (result.kind) {
       case DeepLinkKind.ROUTE:
         navigateRoute(result)

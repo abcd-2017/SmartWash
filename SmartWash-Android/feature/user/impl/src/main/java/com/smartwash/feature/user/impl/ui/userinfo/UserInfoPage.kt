@@ -32,11 +32,13 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -64,9 +66,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.smartwash.common.ui.components.AppButton
+import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.AppInputDialog
 import com.smartwash.common.ui.components.ButtonSpinner
+import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.theme.AppColors
@@ -87,6 +92,7 @@ import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
 
 @SuppressLint("DefaultLocale")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserInfoPage(
     navController: NavHostController,
@@ -95,6 +101,8 @@ fun UserInfoPage(
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
     val userInfo by userInfoViewModel.userInfo.collectAsState()
+    // 最近一次失败载荷（A2）：非 null 且无数据 → 信息卡区错误卡；非 null 且有数据 → 离线提示条
+    val lastError by userInfoViewModel.lastError.collectAsState()
     val bindCampusState by userInfoViewModel.bindCampusState.collectAsState()
     val unBindCampusState by userInfoViewModel.unBindCampusState.collectAsState()
     val avatarUploadState by userInfoViewModel.avatarUploadState.collectAsState()
@@ -144,11 +152,15 @@ fun UserInfoPage(
         when (userInfoStatus) {
             is RequestState.Error -> {
                 firstLoadSettled = true
-                Toast.makeText(
-                    context,
-                    (userInfoStatus as RequestState.Error).getMessage(context),
-                    Toast.LENGTH_SHORT
-                ).show()
+                // 失败反馈改由页面内错误卡/离线提示条常驻承载（A2：2 秒即逝的 Toast + 归零假数据
+                // 是本轮回归缺陷）；仅在有数据（降级）时补一次 Toast 提示刷新失败
+                if (userInfoViewModel.userInfo.value != null) {
+                    Toast.makeText(
+                        context,
+                        (userInfoStatus as RequestState.Error).getMessage(context),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 userInfoViewModel.resetState()
             }
             is RequestState.Success -> {
@@ -202,9 +214,17 @@ fun UserInfoPage(
         }
     }
 
-    // 仅首载（还没有数据）显示骨架：回 tab / 绑定 / 换头像后的刷新保留现有内容，避免整页闪变
+    // 仅首载（还没有数据）显示骨架：回 tab / 绑定 / 换头像后的刷新保留现有内容，避免整页闪变。
+    // A2：失败落定后不回骨架也不渲染归零假数据——由 showErrorCard / showOfflineHint 承接
     val showSkeleton = userInfo == null && !firstLoadSettled &&
         (userInfoStatus is RequestState.Loading || userInfoStatus is RequestState.Idle)
+    // 刷新指示器：已有数据时的重拉（tab 往返/下拉/ON_RESUME）转圈；无数据刷新走骨架
+    val isRefreshing = userInfoStatus is RequestState.Loading && userInfo != null
+    // 失败且无任何成功数据：信息卡区出错误卡（具体文案 + 重试），绝不渲染 ¥0.00/未绑定假数据
+    val showErrorCard = userInfo == null && lastError != null
+    // 失败但有上次成功数据（内存）：用缓存渲染 + 轻量离线提示
+    val showOfflineHint = userInfo != null && lastError != null
+    val lastErrorMessage = lastError?.getMessage(context).orEmpty()
 
     Box(
         modifier = Modifier
@@ -219,6 +239,13 @@ fun UserInfoPage(
             if (skeleton) {
                 LoadingState(modifier = Modifier.fillMaxSize())
             } else {
+                // 下拉刷新（A2）：断网失败后恢复网络，下拉即可重新拉取（此前本页无下拉，
+                // Toast 2 秒即逝后用户没有任何恢复入口）；tab 往返与 ON_RESUME 既有触发保持
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { userInfoViewModel.getUserInfo() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -260,6 +287,25 @@ fun UserInfoPage(
                                 contentDescription = stringResource(R.string.settings),
                                 modifier = Modifier.size(20.dp),
                                 tint = AppColors.colorScheme.iconForegroundTeal
+                            )
+                        }
+                    }
+
+                    // A2 离线提示（有上次成功数据但上次刷新失败）：轻量常驻条，刷新成功自动消失
+                    if (showOfflineHint) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = AppDimens.pagePadding)
+                                .clip(RoundedCornerShape(AppDimens.radiusMd))
+                                .background(AppColors.colorScheme.warningContainer)
+                                .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.user_offline_hint),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = AppColors.colorScheme.onWarningContainer
                             )
                         }
                     }
@@ -382,8 +428,25 @@ fun UserInfoPage(
                     }
 
                     // 数据卡片（画板实测 = 首页账户卡同款）：余额通栏在上
-                    // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线
-                    GroupCard(
+                    // （上16 + label 16 + 4 + 大字 44），下方券/单两半格各居中、中间 1×40 发丝线。
+                    // A2：失败且无数据时以错误卡替代——「未加载」与「余额为 0 的合法状态」可区分
+                    if (showErrorCard) {
+                        EmptyState(
+                            // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
+                            icon = Icons.Default.CreditCard,
+                            message = lastErrorMessage,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = AppDimens.spaceMd),
+                            action = {
+                                AppButton(
+                                    text = stringResource(R.string.user_action_retry),
+                                    onClick = { userInfoViewModel.getUserInfo() },
+                                    variant = AppButtonVariant.SECONDARY,
+                                )
+                            }
+                        )
+                    } else GroupCard(
                         modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
                         // §3.1 卡片内边距 20dp（原纵向 16dp 不符）
                         contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 20.dp)
@@ -476,7 +539,13 @@ fun UserInfoPage(
                             label = stringResource(R.string.campus_card),
                             trailing = {
                                 Text(
-                                    text = if (userInfo?.campusCard != null) stringResource(R.string.bound) else stringResource(R.string.not_bound),
+                                    // A2：信息未加载时显示「未加载」而非「未绑定」——绑定状态是
+                                    // 服务端数据，失败态下不得用本地默认值冒充
+                                    text = when {
+                                        showErrorCard -> stringResource(R.string.user_info_unloaded)
+                                        userInfo?.campusCard != null -> stringResource(R.string.bound)
+                                        else -> stringResource(R.string.not_bound)
+                                    },
                                     // 画板实测行尾值 12/400（caption 400 档）
                                     style = MaterialTheme.typography.bodySmall,
                                     // U-103：原「已绑定」用 brand green #2D9B6A on 白 3.50:1（§10 绿字红线
@@ -492,8 +561,15 @@ fun UserInfoPage(
                                 )
                             },
                             onClick = {
-                                if (userInfo?.campusCard != null) showUnbindDialog = true
-                                else showBindDialog = true
+                                when {
+                                    showErrorCard -> Toast.makeText(
+                                        context,
+                                        context.getString(R.string.user_info_unloaded_toast),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    userInfo?.campusCard != null -> showUnbindDialog = true
+                                    else -> showBindDialog = true
+                                }
                             }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
@@ -531,7 +607,12 @@ fun UserInfoPage(
                             label = stringResource(R.string.my_orders),
                             trailing = {
                                 Text(
-                                    text = stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0),
+                                    // A2：信息未加载时显示「未加载」而非「0 单」（与真实 0 单区分）
+                                    text = if (showErrorCard) {
+                                        stringResource(R.string.user_info_unloaded)
+                                    } else {
+                                        stringResource(R.string.my_orders_count_format, userInfo?.orderCount ?: 0)
+                                    },
                                     // 画板实测行尾值 12/400（caption 400 档）；订单数是数量，开 tnum（规范 §2.2）
                                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                                     color = AppColors.colorScheme.textSecondary
@@ -565,6 +646,7 @@ fun UserInfoPage(
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
+                }
                 }
             }
         }

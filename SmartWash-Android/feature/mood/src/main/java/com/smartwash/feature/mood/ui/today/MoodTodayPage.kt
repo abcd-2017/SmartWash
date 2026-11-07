@@ -42,7 +42,6 @@ import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.feature.mood.R
-import com.smartwash.feature.mood.ui.MoodErrorState
 import com.smartwash.feature.mood.ui.MoodLevelRow
 import com.smartwash.feature.mood.ui.MoodSmallAction
 import com.smartwash.feature.mood.ui.MoodWordChip
@@ -56,6 +55,8 @@ import java.util.Locale
  * 今日记录页：五个心情色块一次点按即存（pixy 式低负担底线）+ 可选词 chips + 可选一句话。
  * 已记录当日进入回填态（level/word 回填，月历契约无 note 故备注不回填）；保存成功轻反馈
  * （成功触感 + 色块选中态，页内状态行提示覆盖语义，不弹 Toast 打断）。
+ * 2026-11-05 修复③：月历查询失败不再整页阻塞——选择器照常可用（保存链路独立报错），
+ * 月历回填单独错误条 + 重试（演示服务器缺 mood_record 表、月历接口 code=201 的容错）。
  */
 @Composable
 fun MoodTodayPage(
@@ -100,10 +101,18 @@ fun MoodTodayPage(
         )
         when (loadState) {
             RequestState.Loading -> SkeletonList(rows = 3)
-            is RequestState.Error -> MoodErrorState(
-                message = (loadState as RequestState.Error).getMessage(context),
-                onRetry = { viewModel.load() },
-                modifier = Modifier.fillMaxSize(),
+            // 月历查询失败不阻塞选择器（2026-11-05 修复③：后端 mood 月历接口异常时原整页只剩
+            // 「失败/重试」，无法记录心情）——内容照常渲染（选择器/词/一句话全部可用，保存接口
+            // 失败仍走内联报错），月历回填单独给错误条 + 重试
+            is RequestState.Error -> MoodTodayContent(
+                draft = draft,
+                saveState = saveState,
+                calendarErrorMessage = (loadState as RequestState.Error).getMessage(context),
+                onRetryCalendar = { viewModel.load() },
+                onSelectLevel = viewModel::selectLevel,
+                onToggleWord = viewModel::toggleWord,
+                onNoteChange = viewModel::updateNote,
+                onNoteCommit = viewModel::commitNote,
             )
             else -> MoodTodayContent(
                 draft = draft,
@@ -117,11 +126,16 @@ fun MoodTodayPage(
     }
 }
 
-/** 加载成功的内容体 */
+/**
+ * 内容体：月历成功/失败都渲染（修复③）。[calendarErrorMessage] 非 null = 月历回填失败，
+ * 在选择器上方给独立错误条（说明 + 重试），选择器照常可用。
+ */
 @Composable
 private fun MoodTodayContent(
     draft: MoodTodayViewModel.Draft,
     saveState: RequestState,
+    calendarErrorMessage: String? = null,
+    onRetryCalendar: () -> Unit = {},
     onSelectLevel: (Int) -> Unit,
     onToggleWord: (String) -> Unit,
     onNoteChange: (String) -> Unit,
@@ -136,6 +150,25 @@ private fun MoodTodayContent(
             .padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceLg),
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
     ) {
+        // ---------- 月历回填错误条（独立于保存链路，修复③） ----------
+        if (calendarErrorMessage != null) {
+            GroupCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = calendarErrorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.colorScheme.error,
+                        modifier = Modifier.weight(1f),
+                    )
+                    MoodSmallAction(
+                        text = stringResource(R.string.mood_action_retry),
+                        onClick = onRetryCalendar,
+                        contentColor = AppColors.colorScheme.primary,
+                    )
+                }
+            }
+        }
+
         // ---------- 日期 + 问句 ----------
         Column {
             Text(

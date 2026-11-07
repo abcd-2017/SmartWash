@@ -22,6 +22,8 @@
         "label": "$string:EntryAbility_label",
         "startWindowIcon": "$media:logo",
         "startWindowBackground": "$color:start_window_background",
+        // 方向锁定竖屏（对齐安卓 manifest screenOrientation="portrait"；module schema 支持该字段）
+        "orientation": "portrait",
         "exported": true,
         "skills": [
           {
