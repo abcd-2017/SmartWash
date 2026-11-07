@@ -538,6 +538,21 @@
 
 ---
 
+## 10. 速记手账
+
+### 10.1 速记（memo）
+
+- **代码标识**：`memo`、`content`、`tags`（逗号分隔）、`pinned`、`is_delete`
+- **定义**：flomo 式随手记（灵感/待办/日记），单人闭环，管理端无页面。`tags` 存储层为逗号分隔字符串（VARCHAR 255），端上交互为标签数组，后端负责 trim/去空/去重与分隔符转义（标签内禁止半角逗号）；`pinned=1` 置顶在列表中优先展示，其余按 `updated_at` 倒序；删除为**逻辑删除**（`is_delete=1`），是仓库首个带逻辑删除列的业务表（读路径一律过滤，物理数据保留），与仓库其余表的物理删除惯例不同。
+- **四端对应物**：
+  - 后端：`memo/entity/Memo.java`、`memo/controller/MemoController.java`（`/web/auth/memo/**`，`POST` 新增 / `GET /list` 分页 / `PUT /{id}` 更新 / `DELETE /{id}` 逻辑删除 / `GET /tags` 标签聚合）。
+  - Android：**本分支新增**（速记手账页消费 `/web/auth/memo` 契约）。
+  - 鸿蒙：**本分支新增**（同上契约）。
+  - Web：无对应实现（管理端无页面）。
+- **易混淆点**：工作台入口 `entry_key='quick-memo'` 与深链 `host='quick-memo'` 都叫 quick-memo，而表与接口前缀是 `memo`——前者是入口/路由标识，后者是数据域标识，检索时不要互相替换；`tags` 的 tag 过滤是**精确匹配完整标签**（`FIND_IN_SET`），不是 LIKE 子串；更新接口是 patch 语义（字段传 null 不更新），整条覆盖需三字段全传。
+
+---
+
 ## 附录 A：四端枚举对照速查
 
 | 概念 | 后端 | Android | 鸿蒙 | Web |

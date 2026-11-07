@@ -1295,7 +1295,8 @@ INSERT INTO `app_deeplink_route` (`host`, `name`, `platform`, `require_login`, `
   ('review',             '记忆复习',    3, 1, 'smartwash://review 打开记忆复习今日队列页', 1),
   ('subscription',       '订阅逃生舱',  3, 1, 'smartwash://subscription 打开订阅列表页', 1),
   ('delivery',           '设备投递',    3, 0, 'smartwash://delivery 打开设备投递发起页', 1),
-  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1);
+  ('lab',                '解压实验舱',  3, 0, 'smartwash://lab 打开解压实验舱首页', 1),
+  ('quick-memo',         '速记手账',    3, 1, 'smartwash://quick-memo 打开速记手账页', 1);
 
 -- ----------------------------
 -- 种子数据：workbench_entry（全部 enabled=1）
@@ -1311,7 +1312,8 @@ INSERT INTO `workbench_entry` (`entry_key`, `title`, `description`, `icon`, `col
   ('delivery',           '设备投递',   '手机与电脑互传文件',           'link',    'teal',   'row',   '日常管理', 'smartwash://delivery',           '新', 1, 6, NULL),
   ('my-history',         '我的卦历',   NULL,                           'history', 'purple', 'row',   '日常管理', 'smartwash://divination-history', NULL, 1, 7, NULL),
   ('toolbox-short-code', '短链工具箱', '生成与管理短链',               'link',    'blue',   'tile',  '效率工具', 'smartwash://toolbox-short-code', NULL, 1, 8, NULL),
-  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 9, NULL);
+  ('ai-assistant',       'AI 助手',    NULL,                           'chat',    'blue',   'tile',  '效率工具', 'smartwash://ai-work',            NULL, 1, 9, NULL),
+  ('quick-memo',         '速记手账',   '随手记灵感与待办',             'book',    'orange', 'tile',  '效率工具', 'smartwash://quick-memo',         '新', 1, 10, NULL);
 
 -- =====================================================================
 -- 游戏中心 —— H5 游戏库与下发配置（1 张业务表 + 管理端上传包存 MinIO game/{game_key}/ 前缀）
@@ -1522,4 +1524,25 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- =====================================================================
+-- 速记手账（flomo 式随手记）—— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for memo（速记手账,单人闭环,管理端无页面）
+-- ----------------------------
+DROP TABLE IF EXISTS `memo`;
+CREATE TABLE `memo` (
+  `id`         BIGINT        NOT NULL AUTO_INCREMENT,
+  `user_id`    BIGINT        NOT NULL COMMENT 'users.id',
+  `content`    VARCHAR(2000) NOT NULL COMMENT '手账正文(灵感/待办/日记)',
+  `tags`       VARCHAR(255)  NULL COMMENT '标签,逗号分隔(如 工作,灵感),标签内禁止半角逗号',
+  `pinned`     TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '1置顶 0普通,置顶在列表中优先展示',
+  `is_delete`  TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '1已删除(逻辑删除,读路径一律过滤),物理数据保留',
+  `created_at` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_updated` (`user_id`, `updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='速记手账-随手记';
 SET FOREIGN_KEY_CHECKS = 1;
