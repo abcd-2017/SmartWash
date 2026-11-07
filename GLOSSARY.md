@@ -54,34 +54,37 @@
 
 ### 1.4 JWT 访问令牌
 
-- **代码标识**：`JWT`、`jti`、`sub`（`admin-{用户名}` / `user-{手机号}`）、`JwtUtil`
-- **定义**：无状态 JWT，TTL 7 天；`sub` 带端别前缀；`jti` 是令牌唯一 ID（黑名单与刷新的键）。
+- **代码标识**：`JWT`、`typ`（`access` / `refresh`）、`jti`、`sub`（`admin-{用户名}` / `user-{手机号}`）、`JwtUtil`、`LoginVo.token / refreshToken`
+- **定义**：双 token 制——access（typ=access，TTL 2 小时，访问受保护端点）+ refresh（typ=refresh，TTL 7 天，仅用于 `/auth/refresh` 换发）。登录/注册自动登录在 `LoginVo` 一并下发双 token 与角色；`sub` 带端别前缀；`jti` 是令牌唯一 ID（黑名单与轮换的键）。**旧格式（无 `typ` claim）一律视为 access**，兼容存量会话。
 - **四端对应物**：
   - 后端：`utils/JwtUtil.java`（`JWT_SECRET` 环境变量，Base64 解码后 ≥32 字节，缺失/过弱拒绝启动）。
   - Android：token 存本地，经 `ResponseInterceptor` 注入 `Authorization: Bearer`。
   - 鸿蒙：`CommonConstants.USER_TOKEN`（键名 `"token"`）+ `StorageUtil`。
   - Web：`stores/auth.js` + `http.js` 注入。
-- **易混淆点**：`sub` 前缀是**端别**（admin/user），不是角色；角色变更通过下次登录生效，刷新端点不重查角色。
+- **易混淆点**：`sub` 前缀是**端别**（admin/user），不是角色；角色变更通过下次登录生效，刷新端点不重查角色。`typ=refresh` 的令牌**不能**当 access 用——访问受保护端点必 401，只能进刷新端点。
 - → ADR-0007
 
 ### 1.5 刷新端点（/auth/refresh）
 
-- **代码标识**：`POST /auth/refresh`、`refresh:limit:{jti}`
-- **定义**：公开端点，校验链为「签名/格式 → 过期单独提示 → 黑名单检查 → 60s 频控」；以旧 token 的 `sub` 原样重签，新 `exp/iat/jti`；响应 `data` 为新 token 字符串。**旧令牌不拉黑**（刷新后旧 token 继续有效至自然过期或主动登出）。
+- **代码标识**：`POST /auth/refresh`、`from/auth/RefreshTokenFrom`、`vo/TokenPairVo`
+- **定义**：公开端点，一次性轮换。校验链「格式/签名 → typ=refresh（否则 401 信封）→ jti 黑名单（命中即 401，视作重放）」→ 以 `sub` 原样重签**新的一对** token → **旧 refreshToken 的 jti 立即拉黑**（TTL=剩余有效期）。请求体 `{"refreshToken": "..."}`；响应 `data` 为 `{token, refreshToken}`（不含 role）。
+- **定义**：公开端点，一次性轮换。校验链「格式/签名 → typ=refresh（否则 401 信封）→ jti 黑名单（命中即 401，视作重放）」→ 以 `sub` 原样重签**新的一对** token → **旧 refreshToken 的 jti 立即拉黑**（TTL=剩余有效期）。请求体 `{"refreshToken": "..."}`；响应 `data` 为 `{token, refreshToken}`（不含 role）。**三端均已接入端上续签**：响应拦截器捕获 401 → 单飞（in-flight 去重）调本端点换新双 token → 落盘后重试原请求一次，仍 401 则清本地登录态跳登录页。
 - **四端对应物**：
-  - 后端：`controller/LoginController.java:307-337`、`JwtUtil.refreshToken`。
-  - Android / 鸿蒙 / Web：**三端均未接入静默续期**（端点存在但无消费方）。
-- **易混淆点**：这是「存在但未接入」的端点——不要在三端代码里找刷新调用；60s 频控是防公开端点被高频轮换滥用，不是安全边界。
+  - 后端：`controller/LoginController.java`（`/auth/refresh`）、`JwtUtil.generatorAccessToken / generatorRefreshToken`。
+  - Android：`:common:network` 的 `ResponseInterceptor.kt`（401 时经 `TokenRefresher` 接口单飞续签，实现为 `feature/user/impl` 的 `TokenRefresherImpl.kt`）。
+  - 鸿蒙：`network/Axios.ets` 响应拦截器 401 单飞续签（模块级 in-flight Promise 去重，落盘先于兑现）。
+  - Web：`src/utils/http.js` 的 `refreshTokens()`（模块级 in-flight Promise 单飞续签）。
+- **易混淆点**：refreshToken 是**一次性**凭证——同一 refreshToken 第二次使用必 401（重放拦截），这不是 bug；登出请求体可携带 refreshToken 一并拉黑，不携带仅拉黑 access（向后兼容）；不做 60s 频控与家族撤销（取舍见 ADR-0007 修订节）。
 - → ADR-0007
 
 ### 1.6 登出黑名单
 
 - **代码标识**：`jwt:blacklist:{jti}`、`JwtBlacklistService`、`JwtLogoutHandler`
-- **定义**：登出时提取 token 的 `jti` 写入 Redis，TTL = token 剩余有效期（到期自动清除）；认证过滤器对每个受保护请求查黑名单，命中即 401。
+- **定义**：登出时提取 token 的 `jti` 写入 Redis，TTL = token 剩余有效期（到期自动清除）；认证过滤器对每个受保护请求查黑名单，命中即 401。双 token 制下登出**双拉黑**：请求体可选携带 `refreshToken` 一并拉黑，不携带仅拉黑 access（向后兼容）。
 - **四端对应物**：
   - 后端：`service/JwtBlacklistService.java`、`filter/JwtAuthenticationFilter.java`、`JwtLogoutHandler`（`/auth/logout`）。
   - 三端：只负责调登出接口 + 清本地态，不感知黑名单。
-- **易混淆点**：黑名单只对「登出过的 token」生效；Redis 故障期间登出失效（fail-open，可接受降级）。7 天窗口内被窃取且未登出的 token 无法远程吊销。
+- **易混淆点**：黑名单只对「登出过/已轮换的 token」生效；Redis 故障期间登出失效（fail-open，可接受降级）。7 天 refresh 窗口内被窃取且未登出的 token 无法远程吊销。
 - → ADR-0007
 
 ### 1.7 用户角色（admin / user）

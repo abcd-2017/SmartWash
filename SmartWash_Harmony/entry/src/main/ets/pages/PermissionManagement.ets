@@ -5,6 +5,7 @@ import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { notificationManager } from "@kit.NotificationKit"
 import { abilityAccessCtrl, bundleManager, common } from "@kit.AbilityKit"
 import { promptAction } from "@kit.ArkUI"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // ========== 权限管理页（对齐安卓 PermissionManagementPage.kt）==========
 //
@@ -101,6 +102,10 @@ struct PermissionManagement {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       // 沉浸式：根容器避让状态栏（内容位置不变，背景延伸）
       Column() {
         PageHeader({ title: "权限管理" })
@@ -173,6 +178,7 @@ struct PermissionManagement {
       .height('100%')
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
     .onShown(() => {

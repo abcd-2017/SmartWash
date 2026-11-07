@@ -5,8 +5,10 @@ import com.smartwash.from.users.ResetPasswordFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.service.SmsService;
 import com.smartwash.utils.JwtUtil;
+import com.smartwash.vo.LoginVo;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +70,8 @@ class LoginControllerTest {
     private ValueOperations<String, String> valueOperations;
     @Mock
     private SmsService smsService;
+    @Mock
+    private JwtBlacklistService jwtBlacklistService;
 
     /** 模拟 Redis 的字符串存储与计数器，配合 mock 还原真实 get/set/increment/delete 语义 */
     private final Map<String, String> store = new ConcurrentHashMap<>();
@@ -79,7 +83,7 @@ class LoginControllerTest {
     @BeforeEach
     void setUp() {
         jwtUtil = new JwtUtil("dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3Nlcw==");
-        controller = new LoginController(adminUsersService, usersService, jwtUtil, authenticationManager, redisTemplate, smsService);
+        controller = new LoginController(adminUsersService, usersService, jwtUtil, authenticationManager, redisTemplate, smsService, jwtBlacklistService);
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(anyString())).thenAnswer(inv -> store.get(inv.getArgument(0, String.class)));
@@ -104,7 +108,7 @@ class LoginControllerTest {
         when(usersService.getUserByPhone(anyString())).thenReturn(null);
     }
 
-    private Result<String> register(String code) {
+    private Result<LoginVo> register(String code) {
         UserRegisterFrom from = new UserRegisterFrom();
         from.setPhoneNumber(PHONE);
         from.setPassword("abc12345");
@@ -182,7 +186,7 @@ class LoginControllerTest {
     void purposeIsolation_resetCodeCannotBeUsedForRegister() {
         store.put(RESET_KEY, CODE);
 
-        Result<String> registerResult = register(CODE);
+        Result<LoginVo> registerResult = register(CODE);
         assertEquals("验证码已过期，请重新获取", registerResult.getMessage(),
                 "注册必须查询 captcha:register:{phone}，重置密码码不能跨场景使用");
         verify(usersService, never()).registerUser(any(UserRegisterFrom.class));
@@ -271,15 +275,21 @@ class LoginControllerTest {
         store.put(REGISTER_KEY, CODE);
         when(usersService.registerUser(any(UserRegisterFrom.class))).thenReturn(true);
 
-        Result<String> first = register(CODE);
-        Result<String> second = register(CODE);
+        Result<LoginVo> first = register(CODE);
+        Result<LoginVo> second = register(CODE);
 
         assertEquals(200, first.getCode(), "首次注册（验证码正确）应成功");
         assertNull(second.getData(), "第二次使用同一验证码不得再签发 token");
         assertEquals("验证码已过期，请重新获取", second.getMessage(), "验证码一次性使用，消费后必须失效");
-        // 返回的 JWT 必须面向该手机号用户
-        Claims claims = jwtUtil.getPayloadFromToken(first.getData());
+        // 注册即自动登录：响应与登录同构（双 token + 角色），JWT 必须面向该手机号用户
+        assertNotNull(first.getData().getToken());
+        assertNotNull(first.getData().getRefreshToken(), "注册自动登录必须下发 refreshToken");
+        assertEquals("user", first.getData().getRole());
+        Claims claims = jwtUtil.getPayloadFromToken(first.getData().getToken());
         assertEquals("user-" + PHONE, claims.getSubject(), "注册成功签发的 JWT 应是 user-{手机号}");
+        assertEquals(JwtUtil.TOKEN_TYPE_ACCESS, jwtUtil.getTokenType(claims), "token 字段必须是 access 型");
+        assertEquals(JwtUtil.TOKEN_TYPE_REFRESH, jwtUtil.getTokenType(jwtUtil.getPayloadFromToken(first.getData().getRefreshToken())),
+                "refreshToken 字段必须是 refresh 型");
     }
 
     // ==================== 注册状态前置拦截（修复"已注册手机号注册报验证码已过期"） ====================
@@ -291,8 +301,7 @@ class LoginControllerTest {
         // 复现报障场景：已注册手机号发码实际签到 reset key（purpose 推断）
         store.put(RESET_KEY, CODE);
 
-        Result<String> result = register(CODE);
-
+        Result<LoginVo> result = register(CODE);
         assertEquals("该手机号已注册，请直接登录或使用忘记密码找回", result.getMessage(),
                 "已注册手机号必须明确拒绝，不得报\"验证码已过期\"误导用户");
         verify(usersService, never()).registerUser(any(UserRegisterFrom.class));
@@ -403,7 +412,10 @@ class LoginControllerTest {
         assertNotNull(result.getData(), "登录响应必须携带 token 与角色");
         assertEquals("root", result.getData().getRole(), "角色必须取该管理员实际绑定的角色名，而非硬编码");
         assertNotNull(result.getData().getToken());
+        assertNotNull(result.getData().getRefreshToken(), "管理员登录必须同步下发 refreshToken");
         Claims claims = jwtUtil.getPayloadFromToken(result.getData().getToken());
         assertEquals("admin-admin", claims.getSubject(), "管理员 JWT sub 应为 admin-{用户名}");
+        assertEquals(JwtUtil.TOKEN_TYPE_REFRESH, jwtUtil.getTokenType(jwtUtil.getPayloadFromToken(result.getData().getRefreshToken())),
+                "refreshToken 字段必须是 refresh 型");
     }
 }

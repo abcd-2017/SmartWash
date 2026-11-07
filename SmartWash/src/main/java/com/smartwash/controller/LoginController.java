@@ -2,18 +2,23 @@ package com.smartwash.controller;
 
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.Result;
+import com.smartwash.common.ResultCodeEnum;
+import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.from.admin_users.AdminUserLoginFrom;
+import com.smartwash.from.auth.RefreshTokenFrom;
 import com.smartwash.from.users.ResetPasswordFrom;
 import com.smartwash.from.users.UserLoginFrom;
 import com.smartwash.from.users.UserRegisterFrom;
 import com.smartwash.service.IAdminUsersService;
 import com.smartwash.service.IUsersService;
+import com.smartwash.service.JwtBlacklistService;
 import com.smartwash.service.SmsService;
 import com.smartwash.utils.JwtUtil;
 import com.smartwash.vo.LoginVo;
+import com.smartwash.vo.TokenPairVo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -67,6 +72,14 @@ public class LoginController {
     @Value("${security.trusted-proxy-cidrs:}")
     private String trustedProxyCidrs;
 
+    /**
+     * 短信桩实现开关（与 StubSmsServiceImpl 的装配条件同源，未配置时默认 true 与其 matchIfMissing 一致）。
+     * 仅本地演示便利：桩开启时短信并不真实发出、验证码只落 debug 日志，用户拿不到码，
+     * 此时验证码随发送响应文案回显便于联调；接入真实短信通道（关闭桩）后保持原文案，验证码绝不进响应体。
+     */
+    @Value("${smartwash.stub.sms-enabled:true}")
+    private boolean stubSmsEnabled;
+
     /** 验证码 Redis key 前缀，格式：captcha:{purpose}:{phone}，注册与重置密码按用途隔离 */
     private static final String CAPTCHA_KEY_PREFIX = "captcha:";
     /** 验证码校验失败计数 key 前缀，格式：captcha:fail:{purpose}:{phone}，TTL 与验证码对齐 */
@@ -90,14 +103,16 @@ public class LoginController {
     private final AuthenticationManager authenticationManager;
     private final StringRedisTemplate redisTemplate;
     private final SmsService smsService;
+    private final JwtBlacklistService jwtBlacklistService;
 
-    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService) {
+    public LoginController(IAdminUsersService adminUsersService, IUsersService usersService, JwtUtil jwtUtil, AuthenticationManager authenticationManager, StringRedisTemplate redisTemplate, SmsService smsService, JwtBlacklistService jwtBlacklistService) {
         this.adminUsersService = adminUsersService;
         this.usersService = usersService;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
         this.redisTemplate = redisTemplate;
         this.smsService = smsService;
+        this.jwtBlacklistService = jwtBlacklistService;
     }
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌与角色")
@@ -126,11 +141,12 @@ public class LoginController {
         relieveIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp);
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
-        String token = jwtUtil.generatorToken(username);
+        String token = jwtUtil.generatorAccessToken(username);
+        String refreshToken = jwtUtil.generatorRefreshToken(username);
         // 角色取该管理员在 roles 表中实际绑定的角色名，不硬编码（供 Web 管理后台按角色渲染）
         String role = adminUsersService.getAdminRoleName(userLoginFrom.getUsername());
         log.info("管理员登录成功, username: {}, role: {}", userLoginFrom.getUsername(), role);
-        return Result.ok(new LoginVo(token, role));
+        return Result.ok(new LoginVo(token, refreshToken, role));
     }
 
     @Operation(summary = "用户登录", description = "用户通过手机号和密码登录，返回JWT令牌与角色")
@@ -169,14 +185,15 @@ public class LoginController {
         relieveIpFailedAttempt(LOGIN_IP_ATTEMPT_KEY_PREFIX + clientIp);
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
-        String token = jwtUtil.generatorToken(username);
+        String token = jwtUtil.generatorAccessToken(username);
+        String refreshToken = jwtUtil.generatorRefreshToken(username);
         log.info("用户登录成功, phone: {}", maskPhone(userLoginFrom.getPhoneNumber()));
-        return Result.ok(new LoginVo(token, DefaultConstant.USER_LOGIN_TYPE));
+        return Result.ok(new LoginVo(token, refreshToken, DefaultConstant.USER_LOGIN_TYPE));
     }
 
-    @Operation(summary = "用户注册", description = "用户通过手机号、密码和验证码注册新账号，注册成功返回JWT令牌")
+    @Operation(summary = "用户注册", description = "用户通过手机号、密码和验证码注册新账号，注册成功即自动登录并返回双 token（token + refreshToken）与角色")
     @PostMapping("/user/register")
-    public Result<String> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom, HttpServletRequest request) {
+    public Result<LoginVo> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom, HttpServletRequest request) {
         String phone = userRegisterFrom.getPhoneNumber();
         String clientIp = getClientIp(request);
         // IP 维度统一风控：与登录共享同一 IP 锁，达到阈值后一刀切限流
@@ -202,9 +219,57 @@ public class LoginController {
         if (usersService.registerUser(userRegisterFrom)) {
             String username = String.format("%s-%s", DefaultConstant.USER_LOGIN_TYPE, phone);
             log.info("用户注册成功, phone: {}", maskPhone(phone));
-            return Result.ok(jwtUtil.generatorToken(username));
+            // 注册即自动登录：响应与登录同构（双 token + 角色），角色固定为 user
+            return Result.ok(new LoginVo(
+                    jwtUtil.generatorAccessToken(username),
+                    jwtUtil.generatorRefreshToken(username),
+                    DefaultConstant.USER_LOGIN_TYPE));
         }
         return Result.failMsg("注册失败");
+    }
+
+    @Operation(summary = "刷新令牌", description = "携带 refreshToken 换取全新的双 token；refreshToken 一次性使用，刷新成功后旧令牌立即失效，重放返回 401 信封")
+    @PostMapping("/refresh")
+    public Result<TokenPairVo> refresh(@RequestBody @Valid RefreshTokenFrom refreshTokenFrom) {
+        Claims claims;
+        try {
+            // 第一环：格式/签名/过期校验（parseSignedClaims 任一不过即抛异常）
+            claims = jwtUtil.getPayloadFromToken(refreshTokenFrom.getRefreshToken());
+        } catch (Exception e) {
+            log.warn("刷新令牌失败：refreshToken 无效或已过期");
+            return refreshUnauthorized();
+        }
+        // 第二环：令牌分型校验——仅 refresh 型可刷新；旧格式（无 typ）视为 access，不得用于刷新
+        if (!JwtUtil.TOKEN_TYPE_REFRESH.equals(jwtUtil.getTokenType(claims))) {
+            log.warn("刷新令牌失败：非 refresh 型令牌, typ: {}", jwtUtil.getTokenType(claims));
+            return refreshUnauthorized();
+        }
+        String jti = claims.get("jti", String.class);
+        String username = claims.getSubject();
+        if (!StringUtils.hasText(username)) {
+            return refreshUnauthorized();
+        }
+        // 第三环：原子「检查+占用」（替代原「查黑名单→重签→拉黑」两段式，封死并发重放双胜出竞态，见 ADR-0007 注记 (a)）——
+        // Lua SET NX 抢占 jwt:blacklist:{jti}，占用即拉黑一步完成；并发重放同一 refreshToken 仅首个请求胜出，
+        // 未抢到 = 已被并发消费或已登出，按重放 401。jti 缺失/已无剩余有效期时无占用对象，沿用原判空语义放行。
+        long ttlSeconds = jwtUtil.getRemainingValiditySeconds(claims);
+        if (!jwtBlacklistService.tryAcquireRefresh(jti, ttlSeconds)) {
+            log.warn("刷新令牌失败：refreshToken 已被使用或已登出（重放拦截）, jti: {}", jti);
+            return refreshUnauthorized();
+        }
+        // 以 sub 原样重签新的一对 token（admin-/user- 前缀不变，角色语义下次登录刷新，端点零 DB 依赖）
+        TokenPairVo tokenPair = new TokenPairVo(
+                jwtUtil.generatorAccessToken(username),
+                jwtUtil.generatorRefreshToken(username));
+        log.info("刷新令牌成功, subject: {}", username);
+        return Result.ok(tokenPair);
+    }
+
+    /**
+     * 刷新令牌失败的统一响应：401 信封（语义与过滤器/入口点的登录失效一致，端上按 401 走重新登录）
+     */
+    private Result<TokenPairVo> refreshUnauthorized() {
+        return Result.build(null, ResultCodeEnum.UNAUTHORIZED);
     }
 
     @Operation(summary = "获取短信验证码", description = "向指定手机号发送6位数字短信验证码，同一手机号60秒内只能请求一次")
@@ -237,7 +302,8 @@ public class LoginController {
             redisTemplate.opsForValue().set(captchaKey, code, DefaultConstant.CAPTCHA_TIMEOUT, TimeUnit.MILLISECONDS);
 
             // 经短信服务接口下发（当前为桩实现：dev 环境以 debug 日志输出验证码，仅开发环境）；
-            // 响应体只返回提示文案，严禁携带验证码明文
+            // 真实短信通道下响应体只返回提示文案，严禁携带验证码明文；
+            // 桩实现开启时（本地演示，短信并未真实发出）验证码随文案回显，便于本地联调
             if (!smsService.sendCaptcha(phoneNumber, code)) {
                 redisTemplate.delete(captchaKey);
                 redisTemplate.delete(rateKey);
@@ -245,6 +311,10 @@ public class LoginController {
                 return Result.failMsg("验证码发送失败，请稍后再试");
             }
             log.info("验证码已生成并下发, purpose: {}, phone: {}", purpose, maskPhone(phoneNumber));
+            if (stubSmsEnabled) {
+                log.debug("本地演示模式：验证码随响应回显, phone: {}", maskPhone(phoneNumber));
+                return Result.ok(String.format("验证码已发送（本地演示验证码：%s）", code));
+            }
             return Result.ok("验证码已发送");
         } catch (Exception e) {
             // 系统异常（如 DB 不可用）：释放频控便于重试，且不签出无法校验的验证码

@@ -46,4 +46,19 @@ sealed interface UserRoute : SmartWashRoute {
     @Serializable
     @SerialName("PermissionManagement")
     data object PermissionManagement : UserRoute
+
+    /** 钱包流水页（我的页账户卡跳入：充值/消费流水分页列表） */
+    @Serializable
+    @SerialName("WalletTransactions")
+    data object WalletTransactions : UserRoute
+
+    /** 修改密码页（设置页跳入；成功后清会话回登录页） */
+    @Serializable
+    @SerialName("ChangePassword")
+    data object ChangePassword : UserRoute
+
+    /** 重置密码页（登录页「忘记密码」跳入，免鉴权；成功后清会话回登录页） */
+    @Serializable
+    @SerialName("ResetPassword")
+    data object ResetPassword : UserRoute
 }

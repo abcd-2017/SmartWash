@@ -21,15 +21,18 @@ com.smartwash.feature.user.impl
 │   │   └── UserAccountApi.kt     # Retrofit 接口（验证码/注册/登录/资料/校园卡/头像）
 │   ├── entity/user/
 │   │   ├── LoginUser.kt          # 登录请求体
+│   │   ├── RefreshTokenRequest.kt # 刷新令牌请求体（/auth/refresh）
 │   │   ├── RegisterUser.kt       # 注册请求体
 │   │   └── UpdateUserInfo.kt     # 更新用户信息请求体
 │   └── vo/user/
 │       ├── LoginVo.kt            # 登录响应 VO（token/role）
+│       ├── TokenPairVo.kt        # 刷新令牌响应 VO（token/refreshToken，一次性轮换）
 │       └── UserInfoVo.kt         # 用户信息响应 VO
 ├── repository/
 │   └── UserRepository.kt         # 用户数据仓库（验证码/注册/登录/资料/校园卡/头像）
 ├── session/
 │   ├── SessionManager.kt         # 会话管理（TokenProvider 实现）：内存缓存 + DataStore 持久化
+│   ├── TokenRefresherImpl.kt     # 双 token 续签（TokenRefresher 实现）：单飞 + 裸客户端调 /auth/refresh
 │   └── SessionEventBus.kt        # 会话事件总线（SessionEventNotifier 实现）：四类事件 + 去重窗口
 └── ui/
     ├── UserGraph.kt              # NavGraphBuilder.userGraph 路由注册（4 页面聚合）
@@ -57,6 +60,7 @@ com.smartwash.feature.user.impl
 **模块内暴露**:
 - `UserApiImpl`：`@Singleton`，Hilt `@Binds UserApi → UserApiImpl`
 - `SessionManager`：`@Singleton`，实现 `TokenProvider`（`currentToken()` / `clearToken()`），`@Binds TokenProvider → SessionManager`
+- `TokenRefresherImpl`：`@Singleton`，实现 `TokenRefresher`（`refreshBlocking()` 单飞续签，裸 OkHttp 调 `/auth/refresh`，成功经 `SessionManager.updateTokens` 覆盖双 token），`@Binds TokenRefresher → TokenRefresherImpl`
 - `SessionEventBus`：`@Singleton`，实现 `SessionEventNotifier`（`notifyNeedLogin()` / `notifyUnauthorized()`），`@Binds SessionEventNotifier → SessionEventBus`
 - `SessionInitTask`：`@IntoSet InitTask`，`taskId="sessionWarmUp"`，`priority=10`，`blocking=true`
 - `NavGraphBuilder.userGraph(navController, checkUpdateContent?)`：路由聚合扩展函数
@@ -87,6 +91,7 @@ com.smartwash.feature.user.impl
 5. **school 映射容错**: `UserInfoVo.toUserInfo()` 中 `schoolVo` 字段逐项 `?: -1L` / `?: ""` / `?: 0` 容错，避免未绑定学校用户触发 NPE
 6. **幂等清 token**: `SessionManager.clearToken()` 幂等——已为空时不重复写盘，防并发多请求同时 401 重复落盘
 7. **设置页插槽**: `UserGraph` 的 `checkUpdateContent` 参数由 app 壳注入（feature:update 归壳层聚合），user-impl 不依赖 feature:update
+8. **续签单飞**: `TokenRefresherImpl.refresh()` 并发 401 只发一次刷新（`inFlight` CompletableDeferred 共享结果，Mutex 只护读取-置入竞速）——refreshToken 一次性轮换，重复刷新即重放失败；续签必须走自建裸 OkHttp 客户端（不挂业务拦截器防递归、不与主客户端共享 Dispatcher 防饿死死锁）；`refreshBlocking()` 的 runBlocking 仅允许发生在 OkHttp 拦截器线程（主通道全为 Retrofit suspend，无主线程路径）
 
 ## 已知坑
 

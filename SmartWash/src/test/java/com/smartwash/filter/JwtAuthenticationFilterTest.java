@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -179,16 +180,49 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("公开路径（/auth/**）无 token：直接放行，不做认证校验")
-    void publicPath_proceedsWithoutToken() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/auth/user/login");
+    @DisplayName("refresh 型令牌访问受保护路径：按 401 拒绝，终止链（refresh 仅用于 /auth/refresh）")
+    void refreshTokenOnProtectedEndpoint_returns401() throws Exception {
+        LoginUser user = loginUser();
+        String token = jwtUtil.generatorRefreshToken(user.getUsername());
+        when(jwtBlacklistService.isBlacklisted(anyString())).thenReturn(false);
+
+        MockHttpServletRequest request = protectedRequest();
+        request.addHeader("Authorization", "Bearer " + token);
         MockFilterChain chain = new MockFilterChain();
 
         MockHttpServletResponse response = pass(request, chain);
 
-        assertEquals(200, response.getStatus());
-        assertNotNull(chain.getRequest(), "公开路径无 token 也必须放行");
+        assertEquals(401, response.getStatus(), "refresh 型令牌不得访问受保护端点");
+        assertTrue(response.getContentAsString().contains("\"code\":401"));
+        assertNull(chain.getRequest());
         verifyNoInteractions(userDetailsService);
-        verifyNoInteractions(jwtBlacklistService);
+    }
+
+    @Test
+    @DisplayName("旧格式令牌（无 typ claim）访问受保护路径：视为 access 兼容放行")
+    void legacyTokenWithoutTyp_treatedAsAccess() throws Exception {
+        LoginUser user = loginUser();
+        // 手工构造无 typ claim 的存量格式 token，模拟双 token 改造前签发的会话
+        String legacyToken = io.jsonwebtoken.Jwts.builder()
+                .claims(Map.of(
+                        "iss", "SmartWash",
+                        "sub", user.getUsername(),
+                        "iat", new java.util.Date(),
+                        "exp", new java.util.Date(System.currentTimeMillis() + 60_000),
+                        "jti", "legacy-jti-001"))
+                .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                        java.util.Base64.getDecoder().decode(TEST_SECRET)))
+                .compact();
+        when(userDetailsService.loadUserByUsername(user.getUsername())).thenReturn(user);
+        when(jwtBlacklistService.isBlacklisted(anyString())).thenReturn(false);
+
+        MockHttpServletRequest request = protectedRequest();
+        request.addHeader("Authorization", "Bearer " + legacyToken);
+        MockFilterChain chain = new MockFilterChain();
+
+        MockHttpServletResponse response = pass(request, chain);
+
+        assertEquals(200, response.getStatus(), "存量无 typ 令牌应视为 access 继续有效（向后兼容）");
+        assertNotNull(chain.getRequest());
     }
 }

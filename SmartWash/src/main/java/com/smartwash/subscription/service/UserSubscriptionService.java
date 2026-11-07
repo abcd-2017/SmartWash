@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.smartwash.subscription.entity.UserSubscription;
 import com.smartwash.subscription.from.AddSubscriptionFrom;
+import com.smartwash.subscription.from.AdminSearchSubscriptionFrom;
 import com.smartwash.subscription.from.SearchSubscriptionFrom;
 import com.smartwash.subscription.from.UpdateSubscriptionFrom;
+import com.smartwash.subscription.vo.AdminSubscriptionVo;
 import com.smartwash.subscription.vo.SubscriptionStatsVo;
+import com.smartwash.subscription.vo.SubscriptionSummaryVo;
 import com.smartwash.subscription.vo.UserSubscriptionVo;
 
 /**
@@ -45,4 +48,12 @@ public interface UserSubscriptionService extends IService<UserSubscription> {
 
     /** 统计：月度应收总额 + 各活跃订阅近 90 天使用次数与单次折算成本 */
     SubscriptionStatsVo getMyStats(Long userId);
+
+    // ==================== 管理端（/admin/subscription，全平台只读） ====================
+
+    /** 管理端汇总：生效中 / 已过期（active 但续费日已过）/ 7 日内到期 计数 */
+    SubscriptionSummaryVo adminSummary();
+
+    /** 管理端订阅记录分页（含脱敏手机号），日期区间按下次续费日筛选，按到期日升序 */
+    IPage<AdminSubscriptionVo> adminPage(AdminSearchSubscriptionFrom from);
 }

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.TouchApp
@@ -311,6 +312,16 @@ fun SettingPage(
                 if (checkUpdateContent != null) {
                     HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 }
+                // 修改密码（成功后清会话回登录页，PUT /web/auth/user/password）
+                SettingRow(
+                    icon = Icons.Default.Lock,
+                    containerColor = AppColors.colorScheme.iconContainerTeal,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundTeal,
+                    title = stringResource(R.string.change_password),
+                    trailing = { IconChevron() },
+                    onClick = { navController.navigate(UserRoute.ChangePassword) }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
                     icon = Icons.Default.AdminPanelSettings,
                     containerColor = AppColors.colorScheme.iconContainerTeal,

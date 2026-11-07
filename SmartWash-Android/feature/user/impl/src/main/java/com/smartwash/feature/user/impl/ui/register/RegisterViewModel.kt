@@ -53,10 +53,18 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _registerState.value = RequestState.Loading
-                val token = userRepository.register(RegisterUser(phoneNumber, password, captcha))
+                // 注册即自动登录：响应已升级为 LoginVo 对象（token/refreshToken/role），与登录同构
+                val loginVo = userRepository.register(RegisterUser(phoneNumber, password, captcha))
+                val token = loginVo.token
+                if (token.isNullOrBlank()) {
+                    // 响应 data/token 为空时按失败处理：不落空 token、不置 Success
+                    AppLogger.error(TAG, "RegisterViewModel.userRegister: 注册响应数据为空")
+                    _registerState.value = RequestState.Error(R.string.error_login_failed)
+                    return@launch
+                }
                 _registerState.value = RequestState.Success
-                // 经 SessionManager 保存：内存缓存与 DataStore 同步更新
-                sessionManager.saveToken(token)
+                // 经 SessionManager 保存：token/role/refreshToken 内存缓存与 DataStore 同步更新
+                sessionManager.saveToken(token, loginVo.role, loginVo.refreshToken)
                 // 会话建立广播（注册即登录，UserApiImpl 桥接为 LoginEvent.LoggedIn）
                 sessionEventBus.notifyLoggedIn()
                 // 低频关键动作成功（手机号必须脱敏后才可入日志）

@@ -1,9 +1,12 @@
 import { BaseResponse } from "../BaseResponse"
+import { ChangePasswordForm } from "../entity/ChangePasswordForm";
 import { LoginUser } from "../entity/LoginUser";
 import { RegisterUser } from "../entity/RegisterUser";
+import { ResetPasswordForm } from "../entity/ResetPasswordForm";
 import { UpdateUserInfo } from "../entity/UpdateUserInfo";
 import { httpUtil } from "../HttpUtil"
 import { LoginVo, loginVoFromJSON } from "../vo/LoginVo";
+import { TransactionPageData, transactionPageFromJSON } from "../vo/TransactionVo";
 import { UserInfoVo } from "../vo/UserInfoVo";
 import { FormData, Type } from "@ohos/axios"
 import { fileIo as fs } from "@kit.CoreFileKit"
@@ -13,12 +16,23 @@ async function getCaptcha(phoneNumber: string): Promise<BaseResponse<string>> {
   return httpUtil.get<string>(`/auth/user/captcha/${phoneNumber}`);
 }
 
-//注册（后端信封 data 为 token 字符串；ArkTS 禁用包装类型 String，统一用小写 string）
-async function register(user: RegisterUser): Promise<BaseResponse<string>> {
-  return httpUtil.post<string>("/auth/user/register", user)
+//忘记密码-重置密码（公开接口，凭手机号 + 验证码 + 新密码重置；成功 Result<String>）
+async function resetPassword(form: ResetPasswordForm): Promise<BaseResponse<string>> {
+  return httpUtil.post<string>("/auth/user/resetPassword", form)
 }
 
-//登录（后端信封 data 为 {token, role} 对象，不再直接是 token 字符串）
+//注册（后端注册即自动登录：信封 data 为 {token, refreshToken, role} 对象，与登录 LoginVo 同构）
+async function register(user: RegisterUser): Promise<BaseResponse<LoginVo>> {
+  const raw: BaseResponse<Object> = await httpUtil.post<Object>("/auth/user/register", user)
+  const mapped: BaseResponse<LoginVo> = {
+    code: raw.code,
+    message: raw.message,
+    data: loginVoFromJSON(raw.data)
+  }
+  return mapped
+}
+
+//登录（后端信封 data 为 {token, refreshToken, role} 对象，不再直接是 token 字符串）
 async function login(user: LoginUser): Promise<BaseResponse<LoginVo>> {
   const raw: BaseResponse<Object> = await httpUtil.post<Object>("/auth/user/login", user)
   const mapped: BaseResponse<LoginVo> = {
@@ -42,6 +56,26 @@ async function updateUserInfo(userInfo: UpdateUserInfo): Promise<BaseResponse<st
 //获取用户详细信息
 async function getUserInfo(): Promise<BaseResponse<UserInfoVo>> {
   return httpUtil.get<UserInfoVo>("/web/auth/user/getUserInfo")
+}
+
+//获取钱包流水（充值+消费合并分页；page 从 1 起，pageSize 上限 50）
+async function getTransactions(page: number, pageSize: number): Promise<BaseResponse<TransactionPageData>> {
+  // ArkTS 禁止裸对象字面量作参数（arkts-no-untyped-obj-literals），查询参数用 Record 并按索引赋值
+  const params: Record<string, Object> = {}
+  params['page'] = page
+  params['pageSize'] = pageSize
+  const raw: BaseResponse<Object> = await httpUtil.get<Object>("/web/auth/user/transactions", params)
+  const mapped: BaseResponse<TransactionPageData> = {
+    code: raw.code,
+    message: raw.message,
+    data: transactionPageFromJSON(raw.data)
+  }
+  return mapped
+}
+
+//修改密码（登录态接口：原密码错误返回业务失败信封 message「原密码不正确」，成功 Result<String>「密码修改成功」）
+async function changePassword(form: ChangePasswordForm): Promise<BaseResponse<string>> {
+  return httpUtil.put<string>("/web/auth/user/password", form)
 }
 
 //判断当前学号是否已经存在
@@ -83,11 +117,14 @@ async function uploadAvatar(uri: string): Promise<BaseResponse<string>> {
 }
 
 export { getCaptcha,
+  resetPassword,
   register,
   login,
   getUserSchoolId,
   updateUserInfo,
   getUserInfo,
+  getTransactions,
+  changePassword,
   getUserByStudentId,
   bindCampus,
   unBindCampus,

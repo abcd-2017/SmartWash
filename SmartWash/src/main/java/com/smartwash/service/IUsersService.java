@@ -51,6 +51,15 @@ public interface IUsersService extends IService<Users> {
     Boolean resetPassword(String phoneNumber, String newPassword);
 
     /**
+     * 登录态修改密码：校验原密码通过后更新为新密码
+     *
+     * @param changePasswordFrom 原密码与新密码（校验已在 Form 层完成）
+     * @param userId             当前登录用户 ID
+     * @return true=修改成功；false=原密码不正确
+     */
+    Boolean changePassword(ChangePasswordFrom changePasswordFrom, Long userId);
+
+    /**
      * 交易流水分页查询（充值+支付合并，数据库层分页，评审报告后端 #24）
      *
      * @param userId   用户 ID

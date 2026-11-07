@@ -40,4 +40,31 @@
         group by mood_level
         order by mood_level
     </select>
+
+    <!-- 管理端：全平台各情绪等级计数（GROUP BY mood_level，按等级升序） -->
+    <select id="selectAdminLevelCounts" resultType="com.smartwash.mood.vo.MoodSummaryVo$EmotionCount">
+        select mood_level as moodLevel,
+               count(*)   as count
+        from mood_record
+        where mood_date between #{begin} and #{end}
+        group by mood_level
+        order by mood_level
+    </select>
+
+    <!-- 管理端：全平台按日计数（GROUP BY mood_date，按日期升序；连续性由服务层补零） -->
+    <select id="selectAdminDateCounts" resultType="com.smartwash.mood.vo.MoodSummaryVo$DateCount">
+        select mood_date as date,
+               count(*)  as count
+        from mood_record
+        where mood_date between #{begin} and #{end}
+        group by mood_date
+        order by mood_date
+    </select>
+
+    <!-- 管理端：区间内有记录的去重用户数 -->
+    <select id="selectAdminUserCount" resultType="long">
+        select count(distinct user_id)
+        from mood_record
+        where mood_date between #{begin} and #{end}
+    </select>
 </mapper>

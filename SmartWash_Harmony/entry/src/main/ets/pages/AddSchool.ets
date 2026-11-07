@@ -9,6 +9,7 @@ import { Debouncer } from "../utils/DebounceUtil"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { AppButton } from "../view/common/AppComponents"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 @Builder
 export function AddSchoolBuilder() {
@@ -231,6 +232,10 @@ struct AddSchool {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       // 修复（问题4）：原 Stack 内 layoutWeight 失效 + .align(Alignment.Bottom) 只作用于自身子组件，
       // 导致滚动内容收成内容高并居中、CTA 栏叠在表单中间。改 Column：Scroll 撑满余量，CTA 栏固定底部。
       Column() {
@@ -507,6 +512,7 @@ struct AddSchool {
       .width("100%")
       .height("100%")
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

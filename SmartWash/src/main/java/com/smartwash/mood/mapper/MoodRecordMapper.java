@@ -3,6 +3,7 @@ package com.smartwash.mood.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.smartwash.mood.entity.MoodRecord;
 import com.smartwash.mood.vo.MoodLevelCountVo;
+import com.smartwash.mood.vo.MoodSummaryVo;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDate;
@@ -36,4 +37,18 @@ public interface MoodRecordMapper extends BaseMapper<MoodRecord> {
     List<MoodLevelCountVo> selectLevelCounts(@Param("userId") Long userId,
                                              @Param("begin") LocalDate begin,
                                              @Param("end") LocalDate end);
+
+    // ==================== 管理端聚合（/admin/mood/summary，全平台维度只读） ====================
+
+    /** 管理端：日期区间内各情绪等级计数（全平台 GROUP BY mood_level，按等级升序） */
+    List<MoodSummaryVo.EmotionCount> selectAdminLevelCounts(@Param("begin") LocalDate begin,
+                                                            @Param("end") LocalDate end);
+
+    /** 管理端：日期区间内按日计数（全平台 GROUP BY mood_date，按日期升序；连续性由服务层补零） */
+    List<MoodSummaryVo.DateCount> selectAdminDateCounts(@Param("begin") LocalDate begin,
+                                                        @Param("end") LocalDate end);
+
+    /** 管理端：日期区间内有记录的去重用户数 */
+    Long selectAdminUserCount(@Param("begin") LocalDate begin,
+                              @Param("end") LocalDate end);
 }

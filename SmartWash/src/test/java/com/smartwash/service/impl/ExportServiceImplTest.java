@@ -3,6 +3,7 @@ package com.smartwash.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.service.IOrdersService;
+import com.smartwash.service.IRechargeRecordsService;
 import com.smartwash.vo.order.OrdersVo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,11 +38,14 @@ class ExportServiceImplTest {
     @Mock
     private IOrdersService ordersService;
 
+    @Mock
+    private IRechargeRecordsService rechargeRecordsService;
+
     private ExportServiceImpl exportService;
 
     @BeforeEach
     void setUp() {
-        exportService = new ExportServiceImpl(ordersService);
+        exportService = new ExportServiceImpl(ordersService, rechargeRecordsService);
     }
 
     // ==================== 单元格转义 ====================

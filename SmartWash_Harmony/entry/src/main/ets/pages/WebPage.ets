@@ -129,7 +129,8 @@ function bridgeWhitelist(): Set<string> {
 
 /**
  * 游戏 H5 主题/chrome 桥（注册名固定 SmartWashGameBridge，协议对齐安卓）：
- * - getTheme()：白名单内返回 'light'（App 固定亮色，语义对齐安卓 resolveBridgeThemeMode）；
+ * - getTheme()：白名单内返回当前主题实值（实读 AppStorage('darkMode')，App 已跟随系统深浅色，
+ *   语义对齐安卓 resolveBridgeThemeMode；「恒 light」为旧固定亮色时代的注释，已过时）；
  *   白名单外返回空串（H5 端空串走 matchMedia 跟随系统，不报错）；
  * - setChrome(mode)：白名单内切换原生顶部 chrome（标题栏显隐 + 状态栏显隐），
  *   白名单外静默忽略——通用容器不得让第三方 H5 改掉 App 的标题栏。
@@ -191,6 +192,10 @@ struct WebPage {
   @State canGoBack: boolean = false
   // chrome 模式（游戏 H5 经桥/路由参数控制，对齐安卓 chromeMode）：控制标题栏显隐与状态栏显隐
   @State chromeMode: string = CHROME_FULL
+  // 深浅色实时跟随（深色模式审计）：本页不套 ThemeRefresh（子树重建会销毁重建 Web 组件、
+  // 丢失 H5 浏览状态，代价过高），改用 @Watch 感知色模式变化后主动向 H5 推送主题，
+  // 对齐安卓 GameThemeBridge 的主动推送语义（原生薄层进度条/错误态颜色以重进页面刷新兜底）
+  @StorageProp('darkMode') @Watch('onDarkModeChange') darkMode: boolean = false
   private controller: webview.WebviewController = new webview.WebviewController()
   // 游戏桥：白名单 host 内才生效（构造即绑定 chrome 回调）
   private gameBridge: SmartWashGameBridge = new SmartWashGameBridge(bridgeWhitelist(), (mode: string) => {
@@ -211,6 +216,21 @@ struct WebPage {
   aboutToDisappear(): void {
     // 离页复原 chrome（对齐安卓 DisposableEffect onDispose → apply(FULL)）
     this.applyChrome(CHROME_FULL)
+  }
+
+  /**
+   * 系统深浅色切换（@Watch 回调）：主动向当前 H5 推送新主题（对齐安卓 onPageFinished
+   * pushGameTheme 的推送语义 + 拉取 getTheme 的双保险，跨端一致）。
+   * controller 未附加/页面未加载时静默（runJavaScript 失败无副作用）。
+   */
+  onDarkModeChange(): void {
+    try {
+      this.controller.runJavaScript(gameThemePushScript()).catch(() => {
+      })
+    } catch (err) {
+      // controller 未附加（主题切换时页面尚未加载）静默
+      logger.debug('webPage', '主题推送时 Web 控制器未就绪，跳过')
+    }
   }
 
   /** 是否显示原生标题返回栏（对齐安卓 GameChrome.shouldShowHeader） */

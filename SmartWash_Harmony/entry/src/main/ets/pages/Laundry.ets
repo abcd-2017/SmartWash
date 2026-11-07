@@ -12,6 +12,7 @@ import { AppButton, AppButtonVariant, AppInfoDialog, EmptyState, IconBox, Loadin
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 @Builder
 export function LaundryBuilder() {
@@ -283,6 +284,10 @@ struct Laundry {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Stack({ alignContent: Alignment.Bottom }) {
         Scroll() {
           Column() {
@@ -468,6 +473,7 @@ struct Laundry {
           .justifyContent(FlexAlign.Center)
           .zIndex(3)
         }
+      }
       }
     }
     // 修复（问题6）：未隐藏系统标题栏导致页面出现两个返回按钮（系统圆钮 + 自绘 PageHeader）

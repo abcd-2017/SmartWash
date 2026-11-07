@@ -4,7 +4,7 @@
  * 结构：PageHeader（标题「解压实验舱」）→ 入口卡纵排列表（10 个玩具入口，顺序即展示序）。
  * 模块为纯本地（无网络、无存储），入口配置为编译期固定列表；页面仍走「本地配置加载」
  * 状态机（加载骨架 / 失败重试 / 空态 / 内容），与后端配置页的三态形态一致。
- * 卡片点击经全局 pathStack 进对应玩具页（后 5 项目前为占位页）。
+ * 卡片点击经全局 pathStack 进对应玩具页（10 个实验均已实现）。
  */
 
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'

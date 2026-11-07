@@ -1,13 +1,17 @@
 package com.smartwash.feature.user.impl.repository
 
 import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.common.utils.model.PageData
 import com.smartwash.common.network.exception.NetworkException
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.network.api.UserAccountApi
+import com.smartwash.feature.user.impl.network.entity.user.ChangePasswordRequest
 import com.smartwash.feature.user.impl.network.entity.user.LoginUser
 import com.smartwash.feature.user.impl.network.entity.user.RegisterUser
+import com.smartwash.feature.user.impl.network.entity.user.ResetPasswordRequest
 import com.smartwash.feature.user.impl.network.entity.user.UpdateUserInfo
 import com.smartwash.feature.user.impl.network.vo.user.LoginVo
+import com.smartwash.feature.user.impl.network.vo.user.TransactionVo
 import com.smartwash.feature.user.impl.network.vo.user.UserInfoVo
 import okhttp3.MultipartBody
 import javax.inject.Inject
@@ -27,14 +31,33 @@ class UserRepository @Inject constructor(
         return userApi.getCaptcha(phoneNumber)
     }
 
-    suspend fun register(registerUser: RegisterUser): String {
-        return userApi.register(registerUser).data ?: ""
+    suspend fun register(registerUser: RegisterUser): LoginVo {
+        // 注册即自动登录：响应已升级为 {token, refreshToken, role} 对象（后端 LoginVo），
+        // 与 login 同构；为空按失败处理，不静默返回
+        return userApi.register(registerUser).data
+            ?: throw NetworkException("注册响应数据为空", R.string.error_login_failed)
     }
 
     suspend fun login(loginUser: LoginUser): LoginVo {
-        // data 为 {token, role} 对象（后端 LoginVo）；为空按失败处理，不静默返回
+        // data 为 {token, refreshToken, role} 对象（后端 LoginVo）；为空按失败处理，不静默返回
         return userApi.login(loginUser).data
             ?: throw NetworkException("登录响应数据为空", R.string.error_login_failed)
+    }
+
+    /** 钱包流水（分页，pageSize 上限 50） */
+    suspend fun getTransactions(page: Int, pageSize: Int): PageData<TransactionVo> {
+        return userApi.getTransactions(page, pageSize).data
+            ?: throw NetworkException("钱包流水为空", R.string.error_network_fail)
+    }
+
+    /** 修改密码（原密码不正确经 ResponseInterceptor 转译为携带后端文案的 NetworkException） */
+    suspend fun changePassword(oldPassword: String, newPassword: String) {
+        userApi.changePassword(ChangePasswordRequest(oldPassword, newPassword))
+    }
+
+    /** 重置密码（忘记密码链路，免鉴权） */
+    suspend fun resetPassword(phoneNumber: String, code: String, newPassword: String) {
+        userApi.resetPassword(ResetPasswordRequest(phoneNumber, code, newPassword))
     }
 
     suspend fun getUserInfo(): UserInfoVo {

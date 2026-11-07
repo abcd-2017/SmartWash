@@ -35,6 +35,7 @@ import {
   getGameList,
   withUniqueKeys
 } from '../network/GameApi'
+import { ThemeRefreshV2 } from '../../../view/common/ThemeRefresh'
 
 /** 网格列数（对齐安卓 GRID_COLUMNS = 2） */
 const GRID_COLUMNS: number = 2
@@ -317,7 +318,8 @@ struct GameCard {
                 .height(44)
                 .linearGradient({
                   angle: 180,
-                  colors: [['rgba(0, 0, 0, 0)', 0], ['rgba(0, 0, 0, 0.55)', 1]]
+                  // 封面压暗渐变令牌化（图片上沉浸层深浅共用，对齐安卓 ImageScrim 语义）
+                  colors: [[DesignColor.IMAGE_SCRIM_FADE, 0], [DesignColor.IMAGE_SCRIM, 1]]
                 })
               Text(this.game.title)
                 .fontSize(DesignFontSize.BODY_SMALL)
@@ -530,6 +532,10 @@ export struct GameCenterPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: GameText.title })
 
@@ -574,6 +580,7 @@ export struct GameCenterPage {
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

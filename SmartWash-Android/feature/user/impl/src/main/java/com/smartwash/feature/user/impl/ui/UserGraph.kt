@@ -18,11 +18,14 @@ import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.feature.user.api.UserRoute
+import com.smartwash.feature.user.impl.ui.changepassword.ChangePasswordPage
 import com.smartwash.feature.user.impl.ui.login.LoginPage
 import com.smartwash.feature.user.impl.ui.permission.PermissionManagementPage
 import com.smartwash.feature.user.impl.ui.register.RegisterPage
+import com.smartwash.feature.user.impl.ui.resetpassword.ResetPasswordPage
 import com.smartwash.feature.user.impl.ui.setting.SettingPage
 import com.smartwash.feature.user.impl.ui.update_userinfo.UpdateUserInfoPage
+import com.smartwash.feature.user.impl.ui.wallet.WalletTransactionsPage
 
 /** 退出时长 — 动效语言 v0.4：退出 ≈ 进入的 70%（由 vocabulary 派生，不写裸时长） */
 private val AUTH_EXIT_MS = DURATION_MICRO_MS * 7 / 10
@@ -70,6 +73,16 @@ fun NavGraphBuilder.userGraph(
     }
     composable<UserRoute.PermissionManagement> {
         PermissionManagementPage(navController)
+    }
+    // 以下三页走 NavHost 全局默认转场（与 Setting/PermissionManagement 同档）
+    composable<UserRoute.WalletTransactions> {
+        WalletTransactionsPage(navController)
+    }
+    composable<UserRoute.ChangePassword> {
+        ChangePasswordPage(navController)
+    }
+    composable<UserRoute.ResetPassword> {
+        ResetPasswordPage(navController)
     }
 }
 

@@ -10,6 +10,7 @@ import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontF
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 /**
  * PickupDelivery 路由入参：显式指定取件/寄件类型（差异分析 02 §8.3）。
@@ -547,6 +548,10 @@ struct PickupDelivery {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
         PageHeader({ title: this.isPickup ? "取件" : "寄件" })
@@ -625,6 +630,7 @@ struct PickupDelivery {
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

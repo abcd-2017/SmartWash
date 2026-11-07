@@ -12,6 +12,7 @@
    CSS animation 只在元素插入时触发，.filter-container/.table-card 是稳定 DOM 节点，
    数据池换（翻页/搜索）不重放进度条；路由每次进入该页重新挂载时自然播放 */
 .filter-container,
+.summary-card,
 .table-card {
   animation: page-fade-in-up var(--motion-slow) var(--ease-decelerate) both;
 }

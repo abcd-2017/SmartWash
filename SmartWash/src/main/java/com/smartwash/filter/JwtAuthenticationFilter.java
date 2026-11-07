@@ -86,6 +86,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
+            // 令牌分型校验：refresh 型令牌仅用于 /auth/refresh 换发，禁止访问受保护端点；
+            // 旧格式 token（无 typ claim）视为 access，兼容存量会话
+            if (JwtUtil.TOKEN_TYPE_REFRESH.equals(jwtUtil.getTokenType(claims))) {
+                log.warn("refresh 型令牌禁止访问受保护端点, uri: {}", requestURI);
+                SecurityContextHolder.clearContext();
+                UserContextHolder.clear();
+                writeUnauthorized(response);
+                return;
+            }
+
             // 从 token 获取 username
             String username = claims.get("sub", String.class);
 

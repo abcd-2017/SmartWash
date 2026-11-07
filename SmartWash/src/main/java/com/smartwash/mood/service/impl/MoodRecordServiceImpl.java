@@ -12,6 +12,7 @@ import com.smartwash.mood.vo.MoodCalendarDayVo;
 import com.smartwash.mood.vo.MoodLevelCountVo;
 import com.smartwash.mood.vo.MoodStatsVo;
 import com.smartwash.mood.vo.MoodRecordVo;
+import com.smartwash.mood.vo.MoodSummaryVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,10 @@ public class MoodRecordServiceImpl extends ServiceImpl<MoodRecordMapper, MoodRec
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
     /** 月均值保留小数位 */
     private static final int AVERAGE_SCALE = 2;
+    /** 管理端默认查询天数（近30天，含今日） */
+    private static final int ADMIN_DEFAULT_RANGE_DAYS = 30;
+    /** 管理端最大查询跨度（防全表级大区间扫描） */
+    private static final int ADMIN_MAX_RANGE_DAYS = 366;
 
     // ==================== 写入（upsert：唯一索引原子裁决） ====================
 
@@ -105,6 +112,36 @@ public class MoodRecordServiceImpl extends ServiceImpl<MoodRecordMapper, MoodRec
                 .setRecordedDays(recordedDays)
                 .setAverageLevel(averageLevel(distribution, recordedDays))
                 .setDistribution(distribution);
+    }
+
+    // ==================== 管理端聚合（/admin/mood/summary，只读） ====================
+
+    @Override
+    public MoodSummaryVo adminSummary(LocalDate dateFrom, LocalDate dateTo) {
+        LocalDate end = dateTo == null ? LocalDate.now() : dateTo;
+        LocalDate begin = dateFrom == null ? end.minusDays(ADMIN_DEFAULT_RANGE_DAYS - 1L) : dateFrom;
+        if (begin.isAfter(end)) {
+            throw new CustomExceptions("dateFrom 不能晚于 dateTo");
+        }
+        if (ChronoUnit.DAYS.between(begin, end) >= ADMIN_MAX_RANGE_DAYS) {
+            throw new CustomExceptions("查询跨度不能超过" + ADMIN_MAX_RANGE_DAYS + "天");
+        }
+        List<MoodSummaryVo.EmotionCount> byEmotion = this.baseMapper.selectAdminLevelCounts(begin, end);
+        Map<String, Long> dateCountMap = this.baseMapper.selectAdminDateCounts(begin, end).stream()
+                .collect(Collectors.toMap(MoodSummaryVo.DateCount::getDate, MoodSummaryVo.DateCount::getCount));
+        Long userCount = this.baseMapper.selectAdminUserCount(begin, end);
+        // 按日补零：区间内逐日连续（前端折线/柱状不断档），Σcount 即记录总条数
+        List<MoodSummaryVo.DateCount> byDate = begin.datesUntil(end.plusDays(1))
+                .map(day -> new MoodSummaryVo.DateCount()
+                        .setDate(day.format(ISO_DATE))
+                        .setCount(dateCountMap.getOrDefault(day.format(ISO_DATE), 0L)))
+                .collect(Collectors.toList());
+        long recordCount = byDate.stream().mapToLong(MoodSummaryVo.DateCount::getCount).sum();
+        return new MoodSummaryVo()
+                .setRecordCount(recordCount)
+                .setUserCount(userCount == null ? 0L : userCount)
+                .setByEmotion(byEmotion)
+                .setByDate(byDate);
     }
 
     // ==================== 内部方法 ====================

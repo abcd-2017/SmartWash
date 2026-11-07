@@ -11,6 +11,7 @@ import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, P
 import { TicketDashedLine, TicketNotch } from "../view/TicketNotchShape"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
 // 前端节流 + loading 是唯二防线（对齐安卓 rememberDebouncedClick）
@@ -238,6 +239,10 @@ struct Coupon {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         // ========== 页头（公共 PageHeader：22/600 + 48 热区返回，对齐安卓 CouponPage.kt:148） ==========
         PageHeader({ title: "优惠券" })
@@ -305,6 +310,7 @@ struct Coupon {
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
     .width("100%")

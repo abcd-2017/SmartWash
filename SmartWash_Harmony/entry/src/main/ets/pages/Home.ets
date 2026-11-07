@@ -9,6 +9,7 @@ import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 import { logger } from "../utils/Logger"
 import { bumpOrderRefresh, bumpUserInfoRefresh, HOME_TAB_BACK_TICK_KEY, ORDER_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 import vibrator from '@ohos.vibrator'
+import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
 @Builder
 export function HomeBuilder() {
@@ -118,6 +119,10 @@ struct Home {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
+      ThemeRefresh() {
       Column() {
         Tabs({ barPosition: BarPosition.End, controller: this.controller, index: this.currentIndex }) {
           TabContent() {
@@ -177,6 +182,7 @@ struct Home {
       .width("100%")
       .height("100%")
       .backgroundColor(DesignColor.SURFACE)
+      }
     }
     .width("100%")
     .height("100%")

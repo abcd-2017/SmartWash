@@ -120,6 +120,27 @@
       }
     },
     {
+      "name": "WalletTransactions",
+      "pageSourceFile": "src/main/ets/pages/WalletTransactions.ets",
+      "buildFunction": "WalletTransactionsBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ChangePassword",
+      "pageSourceFile": "src/main/ets/pages/ChangePassword.ets",
+      "buildFunction": "ChangePasswordBuilder",
+      "data": {
+      }
+    },
+    {
+      "name": "ResetPassword",
+      "pageSourceFile": "src/main/ets/pages/ResetPassword.ets",
+      "buildFunction": "ResetPasswordBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "Workbench",
       "pageSourceFile": "src/main/ets/feature/workbench/Workbench.ets",
       "buildFunction": "WorkbenchBuilder",

@@ -3,6 +3,7 @@ import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences } from '../utils/StorageUtil';
 import { applyDesignTheme } from '../constant/DesignSystem';
+import { DarkModeStore } from '../constant/DarkModeStore';
 import { ServerConfig } from '../config/ServerConfig'
 
 // 崩溃摘要最大长度：onUnhandledException 的 errMsg 含完整调用栈，截断防超长刷屏
@@ -58,16 +59,22 @@ export default class EntryAbility extends UIAbility {
   }
 
   /**
-   * 读取系统色模式（-1 未指定 / 0 亮 / 1 暗）：写入 AppStorage('darkMode') 供 Index 建立
-   * 依赖并重建，同时调用 applyDesignTheme 刷新 DesignColor 的全部可变令牌值。
+   * 读取系统色模式（-1 未指定 / 0 亮 / 1 暗）：写入 AppStorage('darkMode') 与
+   * DarkModeStore 单例（V2 组件消费链，见 constant/DarkModeStore.ets），并调用
+   * applyDesignTheme 刷新 DesignColor 的全部可变令牌值。
+   * 健壮性：config 缺失或 colorMode 取值意外（-1 未指定等）一律按 LIGHT 兜底，不崩溃；
+   * 冷启动（onCreate）与实时切换（onConfigurationUpdate）两条路径均经此函数收敛。
    */
   private syncDarkMode(): void {
     try {
       // UIAbilityContext 经 config 属性取当前 Configuration（getConfiguration 不在该类型上）
       const config: Configuration | undefined = this.context.config;
+      // 仅精确匹配 DARK 判定为暗色：未指定(-1)/意外取值/undefined 全部落 LIGHT
       const dark: boolean = config !== undefined &&
         config.colorMode === ConfigurationConstant.ColorMode.COLOR_MODE_DARK;
       AppStorage.setOrCreate('darkMode', dark);
+      // V2 消费链双写：@Trace 赋值驱动 ThemeRefreshV2 等订阅方刷新
+      DarkModeStore.getInstance().dark = dark;
       applyDesignTheme(dark);
     } catch (err) {
       logger.error('EntryAbility', '读取系统色模式失败', err instanceof Error ? err.message : '');
