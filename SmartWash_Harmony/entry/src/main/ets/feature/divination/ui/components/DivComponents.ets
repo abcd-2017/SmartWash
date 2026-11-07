@@ -41,6 +41,7 @@ export class DivText {
   static readonly historyTitle: string = '卦历 · 案卷'
   static readonly historyNote: string = '复盘沿用原盘原时刻 · 不因当前日期重算'
   static readonly filterAll: string = '全部'
+  static readonly historySynced: string = '已建档'
 
   // 问事页
   static readonly askTitle: string = '心中所问'
@@ -91,6 +92,8 @@ export class DivText {
   static readonly chartMissing: string = '未找到卦盘记录'
   static readonly chartInterpret: string = '求 解 读'
   static readonly chartSaved: string = '已存入卦历'
+  static readonly chartBuilding: string = '正在建档…'
+  static readonly chartBuildFailed: string = '解读建档失败，请稍后重试'
   static readonly liuyaoYongshen: string = '用神'
   static readonly liuyaoFacts: string = '规则事实'
   static readonly meihuaTiyong: string = '体用生克（规则层）'
@@ -104,9 +107,19 @@ export class DivText {
   static readonly readingShare: string = '分 享'
   static readonly readingLoading: string = '正在推演解读…'
   static readonly readingError: string = '解读暂不可用，请稍后重试'
+  static readonly readingRetry: string = '重 新 解 读'
   static readonly readingEndseal: string = '观'
   static readonly disclaimerReading: string =
     '本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。'
+  static readonly feedbackTitle: string = '解读反馈'
+  static readonly ratingLabel: string = '解读评分'
+  static readonly outcomeLabel: string = '应验回填'
+  static readonly outcomeYing: string = '应验'
+  static readonly outcomeWei: string = '未验'
+  static readonly outcomeNan: string = '难说'
+  static readonly feedbackSubmit: string = '提 交 反 馈'
+  static readonly feedbackDone: string = '反馈已提交'
+  static readonly ratingScores: string[] = ['一', '二', '三', '四', '五']
 
   // 追问页
   static readonly followupTitle: string = '继续追问'
@@ -223,7 +236,6 @@ export function divReduceMotion(): boolean {
   return false
 }
 
-@Builder
 @Builder
 function emptyContent() {
 }

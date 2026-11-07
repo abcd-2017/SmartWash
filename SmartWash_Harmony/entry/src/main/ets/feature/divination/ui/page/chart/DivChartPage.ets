@@ -22,6 +22,8 @@ import {
   readLiuRenChart
 } from '../../../data/DivChartReader'
 import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
+import { buildCreateRecordForm, createDivRecord } from '../../../network/DivinationApi'
+import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { DivChartParam } from '../../DivChartParam'
 import {
   DivCard,
@@ -65,6 +67,8 @@ struct DivChartPage {
   @Local liuren: LiuRenChart | null = null
   @Local liuYaoFacts: LiuYaoFacts | null = null
   @Local animateEntry: boolean = false
+  /** 求解读建档进行中（防重入；按钮同步置灰） */
+  @Local building: boolean = false
 
   async aboutToAppear(): Promise<void> {
     // 路由入参：recordId 必填；animate 默认 false（对齐安卓 DivChart/{recordId}?animate={animate}）
@@ -192,6 +196,54 @@ struct DivChartPage {
 
   private hasChart(): boolean {
     return this.liuYao !== null || this.meiHua !== null || this.qimen !== null || this.liuren !== null
+  }
+
+  // ========== 求解读：先服务端建档（幂等）再进解读页 ==========
+
+  /**
+   * 「求解读」入口（#80）：
+   * 1. 本地行已关联服务端卦例（serverRecordId>0）→ 直接进解读页；
+   * 2. 未关联 → POST /records 建档（lines/clientChart 由 DivChartCodec 盘面映射），
+   *    成功后回写本地 serverRecordId 再进解读页（保证解读/追问/反馈用服务端 id）；
+   * 3. 建档失败 → toast 错误态，停留卦盘页可重试。
+   * 解读页路由参数仍传本地 id：解读/追问页按本地行关联的服务端 id 走 SSE。
+   */
+  private async startInterpret(): Promise<void> {
+    const record = this.record
+    if (record === null || this.building) {
+      return
+    }
+    if (record.serverRecordId > 0) {
+      this.openReading(record.id)
+      return
+    }
+    this.building = true
+    try {
+      const resp = await createDivRecord(buildCreateRecordForm(record))
+      if (resp.code !== 200 || resp.data === null) {
+        showToastSafety(resp.message, DivText.chartBuildFailed)
+        this.building = false
+        logger.warn('divChartPage', `解读建档失败 recordId=${record.id} code=${resp.code} ` +
+          `message=${resp.message ?? ''}`)
+        return
+      }
+      const serverId = resp.data
+      await DivRecordRepository.updateServerRecordId(record.id, serverId)
+      record.serverRecordId = serverId
+      // 低频关键动作：解读建档成功（服务端卦例创建）
+      logger.info('divChartPage', `解读建档成功 localId=${record.id} serverRecordId=${serverId}`)
+      this.building = false
+      this.openReading(record.id)
+    } catch (err) {
+      this.building = false
+      logger.error('divChartPage', `解读建档异常 localId=${record.id}, ` +
+        `${err instanceof Error ? err.message : ''}`)
+      showToastSafety(null, DivText.chartBuildFailed)
+    }
+  }
+
+  private openReading(localRecordId: number): void {
+    pathStack.pushPathByName(RouteNames.DIV_READING, localRecordId)
   }
 
   // ========== 六爻：事实小卡内容 ==========
@@ -576,13 +628,12 @@ struct DivChartPage {
           Row({ space: 12 }) {
             Column() {
               DivGoldButton({
-                text: DivText.chartInterpret,
-                isEnabled: true,
+                text: this.building ? DivText.chartBuilding : DivText.chartInterpret,
+                isEnabled: !this.building,
                 btnHeight: 36,
                 fontSize: 12,
                 onAction: () => {
-                  const id = this.record?.id ?? 0
-                  pathStack.pushPathByName(RouteNames.DIV_READING, id)
+                  this.startInterpret()
                 }
               })
             }

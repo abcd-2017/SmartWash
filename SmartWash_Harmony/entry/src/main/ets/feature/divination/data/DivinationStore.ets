@@ -13,6 +13,7 @@
 
 import { relationalStore } from '@kit.ArkData'
 import { common } from '@kit.AbilityKit'
+import { logger } from '../../../utils/Logger'
 
 const DIV_DB_NAME = 'divination_db'
 const DIV_TABLE = 'div_records'
@@ -27,8 +28,15 @@ const CREATE_TABLE_SQL =
   'castAt INTEGER NOT NULL, ' +
   'chartJson TEXT NOT NULL, ' +
   'status INTEGER NOT NULL DEFAULT 0, ' +
-  'createdAt INTEGER NOT NULL' +
+  'createdAt INTEGER NOT NULL, ' +
+  // #80：服务端卦例 id（求解读/今日一签建档成功后回写；0 = 未建档）。
+  // 建档幂等的关键：本地行已关联服务端 id 后不再重复 POST /records
+  'serverRecordId INTEGER NOT NULL DEFAULT 0' +
   ')'
+
+/** 既有库迁移：v1 表结构无 serverRecordId 列，ALTER 幂等（列已存在时 catch 忽略） */
+const MIGRATION_ADD_SERVER_RECORD_ID =
+  'ALTER TABLE ' + DIV_TABLE + ' ADD COLUMN serverRecordId INTEGER NOT NULL DEFAULT 0'
 
 /** 卦象记录行（VO 用 interface + 转换函数，不用 class 直接接 JSON） */
 export interface DivRecordRow {
@@ -41,6 +49,8 @@ export interface DivRecordRow {
   chartJson: string
   status: number
   createdAt: number
+  /** 服务端卦例 id（#80 建档成功后回写；0 = 未建档） */
+  serverRecordId: number
 }
 
 /**
@@ -113,7 +123,7 @@ export function decodeBundleFromJson(json: string): DivChartBundle {
 
 let rdbStore: relationalStore.RdbStore | null = null
 
-/** 建库 + 建表（幂等）；已打开则直接返回 */
+/** 建库 + 建表 + 既有库迁移（幂等）；已打开则直接返回 */
 export async function initStore(context: Context): Promise<relationalStore.RdbStore> {
   if (rdbStore !== null) {
     return rdbStore
@@ -123,6 +133,11 @@ export async function initStore(context: Context): Promise<relationalStore.RdbSt
     securityLevel: relationalStore.SecurityLevel.S1
   })
   await store.executeSql(CREATE_TABLE_SQL)
+  try {
+    await store.executeSql(MIGRATION_ADD_SERVER_RECORD_ID)
+  } catch (err) {
+    // 列已存在（新装库/已迁移库）时静默忽略；其他迁移失败不阻塞建库
+  }
   rdbStore = store
   return store
 }
@@ -144,7 +159,8 @@ function rowFromResultSet(resultSet: relationalStore.ResultSet): DivRecordRow {
     castAt: resultSet.getLong(resultSet.getColumnIndex('castAt')),
     chartJson: resultSet.getString(resultSet.getColumnIndex('chartJson')),
     status: resultSet.getLong(resultSet.getColumnIndex('status')),
-    createdAt: resultSet.getLong(resultSet.getColumnIndex('createdAt'))
+    createdAt: resultSet.getLong(resultSet.getColumnIndex('createdAt')),
+    serverRecordId: resultSet.getLong(resultSet.getColumnIndex('serverRecordId'))
   }
 }
 
@@ -233,6 +249,29 @@ export class DivRecordRepository {
     const row = rowFromResultSet(resultSet)
     resultSet.close()
     return row
+  }
+
+  /**
+   * 回写服务端卦例 id（#80 建档成功 / 今日一签云端命中关联）。
+   * 已关联（serverRecordId>0）时不覆盖，避免并发建档产生双写漂移。
+   * 回写失败不抛出（「尽力关联」语义：失败仅影响下次建档重复，不阻断解读流程），warn 留痕。
+   */
+  static async updateServerRecordId(localId: number, serverRecordId: number): Promise<void> {
+    if (serverRecordId <= 0) {
+      return
+    }
+    try {
+      const context = getContext() as common.UIAbilityContext
+      const store = await initStore(context)
+      const predicates = new relationalStore.RdbPredicates(DIV_TABLE)
+      predicates.equalTo('id', localId)
+      predicates.equalTo('serverRecordId', 0)
+      const row: relationalStore.ValuesBucket = { 'serverRecordId': serverRecordId }
+      await store.update(row, predicates)
+    } catch (err) {
+      logger.warn('divStore', `serverRecordId 回写失败 localId=${localId}, ` +
+        `${err instanceof Error ? err.message : ''}`)
+    }
   }
 }
 

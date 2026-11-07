@@ -14,6 +14,7 @@ import { LunarAdapter } from '../../../core/LunarAdapter'
 import { MeiHuaChart } from '../../../core/meihua/MeiHuaChart'
 import { DivRecordRepository, DivRecordRow, encodeBundle, encodeBundleToJson } from '../../../data/DivinationStore'
 import { encodeChartJson } from '../../../data/DivChartCodec'
+import { getDivToday } from '../../../network/DivinationApi'
 import {
   CompassDial,
   DivCard,
@@ -67,6 +68,8 @@ struct DivHomePage {
   @Local todaySignName: string = ''
   @Local todaySignSub: string = ''
   @Local records: DivRecordRow[] = []
+  /** 服务端今日一签卦例 id（GET /today 幂等建档返回；0 = 未拉取/未登录/失败） */
+  @Local serverTodayId: number = 0
   // 玉牌按压缩放态（pressScale 0.97）+ 点击节流防抖（对齐安卓 rememberDebouncedClick）
   @Local pressedKey: string = ''
   private debouncer: Debouncer = new Debouncer()
@@ -77,6 +80,8 @@ struct DivHomePage {
 
   /**
    * 每次进入计算天象头 + 今日一签（确定性，不落库；落库只在点击时，对齐 DivHomeViewModel.refresh）。
+   * #80：并行静默拉 GET /today（服务端按当日时间卦生成/复用，幂等），命中后把服务端卦例 id
+   * 关联到本地今日一签记录，避免点击求解读时重复 POST /records；失败不阻塞本地展示。
    */
   private async refresh(): Promise<void> {
     const solar = Solar.fromDate(new Date())
@@ -97,18 +102,34 @@ struct DivHomePage {
     }
 
     try {
+      const resp = await getDivToday()
+      if (resp.code === 200 && resp.data !== null) {
+        this.serverTodayId = resp.data.id
+        logger.debug('divHomePage', `服务端今日一签命中 serverRecordId=${this.serverTodayId}`)
+      } else {
+        this.serverTodayId = 0
+      }
+    } catch (err) {
+      // 未登录 / 网络失败静默兜底：今日一签仍走本地，服务端建档延迟到求解读时
+      this.serverTodayId = 0
+      logger.debug('divHomePage', `服务端今日一签未获取（本地兜底）, ${err instanceof Error ? err.message : ''}`)
+    }
+
+    try {
       this.records = await DivRecordRepository.recent(3)
     } catch (err) {
       this.records = []
       logger.warn('divHomePage', `案卷加载失败，按空态呈现, ${err instanceof Error ? err.message : ''}`)
     }
     logger.debug('divHomePage', `观象台首页加载完成 hasTodaySign=${this.hasTodaySign} ` +
-      `records=${this.records.length}`)
+      `serverTodayId=${this.serverTodayId} records=${this.records.length}`)
   }
 
   /**
-   * 今日一签入库（同日去重：当天已有同签记录则复用，不重复落库）→ 跳卦盘。
+   * 今日一签入库（同日去重：当天已有同签记录则复用，不重复落库）→ 关联服务端卦例 id → 跳卦盘。
    * 对齐 DivHomeViewModel.ensureTodaySignSaved + DivRecordRepository.todaySign。
+   * #80：服务端 /today 已幂等建档，本地建档后把 serverTodayId 回写关联，
+   * 使求解读走 SSE 时不再重复 POST /records。
    */
   private async ensureTodaySignSaved(): Promise<void> {
     const solar = Solar.fromDate(new Date())
@@ -127,6 +148,11 @@ struct DivHomePage {
       id = await DivRecordRepository.save(
         'meihua', 'other', question, JSON.stringify(chart.lines), Date.now(), bundleJson)
       logger.info('divHomePage', `今日一签落库成功 recordId=${id}`)
+    }
+    // 服务端今日签命中且本地行未关联 → 回写（幂等：已关联不覆盖）
+    if (this.serverTodayId > 0) {
+      await DivRecordRepository.updateServerRecordId(id, this.serverTodayId)
+      logger.debug('divHomePage', `今日一签关联服务端卦例 localId=${id} serverRecordId=${this.serverTodayId}`)
     }
     // 跳卦盘（DivChart 路由随卦盘批次注册；复盘入口不播动爻进场动画）
     const chartParam: DivChartParam = { recordId: id, animate: false }

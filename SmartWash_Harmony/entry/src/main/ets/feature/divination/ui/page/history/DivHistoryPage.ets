@@ -198,6 +198,14 @@ export struct DivHistoryPage {
                     .layoutWeight(1)
                     .alignItems(HorizontalAlign.Start)
                     .margin({ left: 12 })
+                    // 服务端建档状态（#80：本地为主 + 同步标记；serverRecordId>0 即已建档可解读）
+                    if (row.serverRecordId > 0) {
+                      Text(DivText.historySynced)
+                        .fontSize(10)
+                        .fontColor(DivPalette.goldText)
+                        .opacity(0.75)
+                        .margin({ right: 4 })
+                    }
                     Text('›')
                       .fontSize(14)
                       .fontColor(DivPalette.textSecondary)
