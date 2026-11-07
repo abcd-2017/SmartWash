@@ -57,20 +57,49 @@ class JwtUtilTest {
     }
 
     @Test
-    @DisplayName("未过期 token 应可刷新")
-    void canRefresh() {
-        String token = jwtUtil.generatorToken("test-user");
-        assertTrue(jwtUtil.canRefresh(token));
+    @DisplayName("访问令牌 typ=access，有效期约 2 小时")
+    void generatorAccessToken_typAndTtl() {
+        long before = System.currentTimeMillis();
+        String token = jwtUtil.generatorAccessToken("test-user");
+        Claims claims = jwtUtil.getPayloadFromToken(token);
+
+        assertEquals(JwtUtil.TOKEN_TYPE_ACCESS, jwtUtil.getTokenType(claims), "访问令牌必须携带 typ=access");
+        long ttlMillis = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        assertEquals(JwtUtil.ACCESS_TOKEN_TTL, ttlMillis, 2000L, "访问令牌有效期应为 2 小时（容差 2s）");
+        assertTrue(claims.getExpiration().getTime() > before, "有效期必须在签发时刻之后");
     }
 
     @Test
-    @DisplayName("刷新 token 应生成新 token")
-    void refreshToken() {
-        String originalToken = jwtUtil.generatorToken("test-user");
-        String newToken = jwtUtil.refreshToken(originalToken);
+    @DisplayName("刷新令牌 typ=refresh，有效期约 7 天")
+    void generatorRefreshToken_typAndTtl() {
+        String token = jwtUtil.generatorRefreshToken("user-13800138000");
+        Claims claims = jwtUtil.getPayloadFromToken(token);
 
-        assertNotNull(newToken);
-        assertNotEquals(originalToken, newToken);
-        assertEquals("test-user", jwtUtil.getUserNameFromToken(newToken));
+        assertEquals(JwtUtil.TOKEN_TYPE_REFRESH, jwtUtil.getTokenType(claims), "刷新令牌必须携带 typ=refresh");
+        assertEquals("user-13800138000", claims.getSubject(), "刷新令牌 sub 必须与访问令牌同构");
+        long ttlMillis = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        assertEquals(JwtUtil.REFRESH_TOKEN_TTL, ttlMillis, 2000L, "刷新令牌有效期应为 7 天（容差 2s）");
+    }
+
+    @Test
+    @DisplayName("双 token 的 jti 互不相同（可分别拉黑）")
+    void tokenPair_distinctJti() {
+        String access = jwtUtil.generatorAccessToken("test-user");
+        String refresh = jwtUtil.generatorRefreshToken("test-user");
+
+        Claims accessClaims = jwtUtil.getPayloadFromToken(access);
+        Claims refreshClaims = jwtUtil.getPayloadFromToken(refresh);
+
+        assertNotEquals(accessClaims.getId(), refreshClaims.getId(), "access 与 refresh 的 jti 必须不同");
+        assertEquals(accessClaims.getSubject(), refreshClaims.getSubject(), "双 token 的 sub 必须一致");
+    }
+
+    @Test
+    @DisplayName("剩余有效期计算：未过期返回正数，过期返回 0")
+    void getRemainingValiditySeconds() {
+        String token = jwtUtil.generatorAccessToken("test-user");
+        Claims claims = jwtUtil.getPayloadFromToken(token);
+        assertTrue(jwtUtil.getRemainingValiditySeconds(claims) > 0, "未过期 token 剩余有效期必须为正数");
+        assertTrue(jwtUtil.getRemainingValiditySeconds(claims) <= JwtUtil.ACCESS_TOKEN_TTL / 1000, "剩余有效期不得超过 TTL");
     }
 }
