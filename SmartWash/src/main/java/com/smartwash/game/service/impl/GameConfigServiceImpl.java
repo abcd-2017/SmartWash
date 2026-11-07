@@ -378,7 +378,20 @@ public class GameConfigServiceImpl extends ServiceImpl<GameConfigMapper, GameCon
     @Cacheable(value = CACHE_NAME, key = "'all'")
     public List<GameVo> enabledGamesFromCache() {
         // 排序语义（sort 升序、id 升序）由 XML 的 ORDER BY 保证，此处不二次排序
-        return this.getBaseMapper().selectEnabledList().stream().map(this::buildVo).toList();
+        List<GameVo> all = this.getBaseMapper().selectEnabledList().stream().map(this::buildVo).toList();
+        // 不可玩记录不下发（可玩地址为空 = 数据残缺，游戏包从未上传或记录为占位数据）：
+        // 下发出去端上点击静默无响应，不如不暴露；warn 留痕便于定位残缺数据
+        List<GameVo> playable = all.stream()
+                .filter(vo -> StrUtil.isNotBlank(vo.getUrl()))
+                .toList();
+        if (playable.size() < all.size()) {
+            List<String> skippedKeys = all.stream()
+                    .filter(vo -> StrUtil.isBlank(vo.getUrl()))
+                    .map(GameVo::getGameKey)
+                    .toList();
+            log.warn("下发列表过滤不可玩记录（可玩地址为空，请在管理端重新上传游戏包）: {}", skippedKeys);
+        }
+        return playable;
     }
 
     // ==================== 内部方法 ====================
