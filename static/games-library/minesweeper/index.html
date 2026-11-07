@@ -7,8 +7,8 @@
 <title>扫雷</title>
 <style>
   /*token:GAME-THEME.md*/
-  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#C9526B;--g-scrim:#F5F6F3E6;--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;color-scheme:light }
-  :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:#141614E6;--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;color-scheme:dark }
+  :root { --g-bg:#F5F6F3;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-danger:#C9526B;--g-scrim:rgba(245,246,243,.9);--g-cell1:#E9EDF1;--g-cell2:#C6D0D8;--g-cellhi:rgba(255,255,255,.55);--g-celllo:rgba(70,90,105,.18);--g-open:#F2EFE7;--g-openln:rgba(120,140,155,.18);--g-n1:#2456C9;--g-n2:#2E7D32;--g-n3:#D3392F;--g-n4:#5B2A86;--g-n5:#8D2F23;--g-n6:#00838F;--g-n7:#37474F;--g-n8:#90A4AE;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface2:#262A27;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-danger:#DB7186;--g-scrim:rgba(20,22,20,.9);--g-cell1:#2A2F2C;--g-cell2:#232724;--g-cellhi:rgba(255,255,255,.07);--g-celllo:rgba(0,0,0,.45);--g-open:#262A27;--g-openln:rgba(255,255,255,.06);--g-n1:#7B9FF2;--g-n2:#6FCF8E;--g-n3:#F08A80;--g-n4:#B794E0;--g-n5:#E89A8E;--g-n6:#5BC8D6;--g-n7:#B7C4CC;--g-n8:#7E837D;color-scheme:dark }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
@@ -133,7 +133,7 @@ paint(B||"light");
   <div class="stage">
     <div class="board" id="board"></div>
     <div class="overlay" id="overlay">
-      <p class="ov-title" id="ovTitle"></p>
+      <p class="ov-title" id="ovTitle" role="status" aria-live="assertive"></p>
       <p class="ov-sub" id="ovSub"></p>
       <button class="btn" id="ovBtn">再来一局</button>
     </div>

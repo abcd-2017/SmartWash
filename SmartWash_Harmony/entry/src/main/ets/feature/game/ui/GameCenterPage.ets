@@ -42,8 +42,8 @@ const GRID_COLUMNS: number = 2
 /** 网格卡片间距（对齐安卓 GRID_SPACING = spaceXs 8） */
 const GRID_SPACING: number = DesignDimens.SPACE_XS
 
-/** 骨架卡高度（vp）：与真实卡构成对齐（20 + 44 + 12 + 20 + 4 + 32 + 20） */
-const SKELETON_CARD_HEIGHT: number = 152
+/** 骨架卡高度（vp）：与真实卡构成对齐（16:9 封面 ~94 + 描述区 ~64） */
+const SKELETON_CARD_HEIGHT: number = 158
 
 /** 页面文案（对齐安卓 feature/game/values/strings.xml） */
 class GameText {
@@ -114,6 +114,34 @@ struct GameCategoryChip {
 @ComponentV2
 struct GameGrid {
   @Param games: GameItem[] = []
+  // 服务端封面加载失败的 gameKey 集（onError 不可变追加，触发卡片回退本地封面）
+  @Local serverCoverFailed: string[] = []
+  // 本地兜底封面也失败的 gameKey 集（随包内置 30 款，正常为空；新上架未随包游戏会走到这）
+  @Local localCoverFailed: string[] = []
+
+  /** 服务端封面加载失败 → 该 gameKey 回退本地 rawfile 封面（不可变追加触发刷新） */
+  private markServerCoverFailed(gameKey: string): void {
+    if (this.serverCoverFailed.indexOf(gameKey) < 0) {
+      this.serverCoverFailed = [...this.serverCoverFailed, gameKey]
+    }
+  }
+
+  /** 本地兜底封面也失败（随包未内置的新游戏）→ 回退图标卡 */
+  private markLocalCoverFailed(gameKey: string): void {
+    if (this.localCoverFailed.indexOf(gameKey) < 0) {
+      this.localCoverFailed = [...this.localCoverFailed, gameKey]
+    }
+  }
+
+  /** 该游戏当前是否走服务端封面（下发非空且未失败） */
+  private useServerCover(game: GameItem): boolean {
+    return game.coverUrl.length > 0 && this.serverCoverFailed.indexOf(game.gameKey) < 0
+  }
+
+  /** 该游戏当前是否走本地兜底封面（服务端不可用且本地未失败） */
+  private useLocalCover(game: GameItem): boolean {
+    return !this.useServerCover(game) && this.localCoverFailed.indexOf(game.gameKey) < 0
+  }
 
   /** 两列分行（对齐安卓 games.chunked(2)） */
   private buildRows(games: GameItem[]): GameItem[][] {
@@ -146,8 +174,16 @@ struct GameGrid {
               Column() {
                 GameCard({
                   game: game,
+                  useServerCover: this.useServerCover(game),
+                  useLocalCover: this.useLocalCover(game),
                   onOpen: (item: GameItem): void => {
                     this.openGame(item)
+                  },
+                  onServerCoverError: (gameKey: string): void => {
+                    this.markServerCoverFailed(gameKey)
+                  },
+                  onLocalCoverError: (gameKey: string): void => {
+                    this.markLocalCoverFailed(gameKey)
                   }
                 })
                   .width('100%')
@@ -185,7 +221,13 @@ struct GameGrid {
 @ComponentV2
 struct GameCard {
   @Require @Param game: GameItem
+  @Param useServerCover: boolean = false
+  @Param useLocalCover: boolean = false
   @Event onOpen: (game: GameItem) => void = (_: GameItem) => {
+  }
+  @Event onServerCoverError: (gameKey: string) => void = (_: string) => {
+  }
+  @Event onLocalCoverError: (gameKey: string) => void = (_: string) => {
   }
 
   /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
@@ -231,21 +273,79 @@ struct GameCard {
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
       Column() {
-        IconBox({
-          icon: this.game.icon,
-          sizeValue: 44,
-          iconSize: 24,
-          containerColor: this.containerColor(this.game.tint),
-          iconColor: this.iconColor(this.game.tint),
-          radius: DesignDimens.CARD_RADIUS
-        })
+        // 封面三级兜底：服务端 coverUrl → 本地 rawfile（随包 30 款）→ 图标色块；
+        // 两级 onError 经事件上抛页面登记（失败集在页面状态，卡片无状态）
+        Stack({ alignContent: Alignment.BottomStart }) {
+          if (this.useServerCover) {
+            Image(this.game.coverUrl)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.onServerCoverError(this.game.gameKey)
+              })
+          } else if (this.useLocalCover) {
+            Image(this.game.localCover)
+              .width('100%')
+              .aspectRatio(1.78)
+              .objectFit(ImageFit.Cover)
+              .onError(() => {
+                this.onLocalCoverError(this.game.gameKey)
+              })
+          } else {
+            Row() {
+              IconBox({
+                icon: this.game.icon,
+                sizeValue: 44,
+                iconSize: 24,
+                containerColor: this.containerColor(this.game.tint),
+                iconColor: this.iconColor(this.game.tint),
+                radius: DesignDimens.RADIUS_MD
+              })
+            }
+            .width('100%')
+            .aspectRatio(1.78)
+            .justifyContent(FlexAlign.Center)
+            .backgroundColor(DesignColor.SURFACE_VARIANT)
+          }
 
-        Text(this.game.title)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .maxLines(1)
+          // 底部渐变遮罩 + 白字标题（封面上直接读，省一排行高；对齐安卓卡片样式）
+          if (this.useServerCover || this.useLocalCover) {
+            Stack({ alignContent: Alignment.BottomStart }) {
+              Column()
+                .width('100%')
+                .height(44)
+                .linearGradient({
+                  angle: 180,
+                  colors: [['rgba(0, 0, 0, 0)', 0], ['rgba(0, 0, 0, 0.55)', 1]]
+                })
+              Text(this.game.title)
+                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.ON_PRIMARY)
+                .maxLines(1)
+                .textOverflow({ overflow: TextOverflow.Ellipsis })
+                .width('100%')
+                .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
+            }
+            .width('100%')
+          }
+        }
+        .width('100%')
+        .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
+
+        Text(this.game.description)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
+          .padding({
+            left: DesignDimens.CARD_PADDING,
+            right: DesignDimens.CARD_PADDING,
+            top: DesignDimens.SPACE_SM,
+            bottom: DesignDimens.CARD_PADDING
+          })
           .margin({ top: DesignDimens.SPACE_SM })
 
         // 描述字重对齐安卓 labelSmall 12/500（原 400）
@@ -275,11 +375,17 @@ struct GameCard {
       if (this.game.badge.length > 0) {
         Text(this.game.badge)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .backgroundColor(DesignColor.SURFACE)
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
           .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: DesignColor.SHADOW_COLOR_CARD,
+            offsetX: 0,
+            offsetY: 1
+          })
       }
     }
     .width('100%')
@@ -300,6 +406,11 @@ export struct GameCenterPage {
   @Local isLoading: boolean = true
   @Local isError: boolean = false
   @Local selectedCategory: GameCategory | null = null
+  // 服务端封面加载失败的 gameKey 集（onError 不可变追加，触发卡片回退本地封面）
+  @Local serverCoverFailed: string[] = []
+  // 本地兜底封面也失败的 gameKey 集（随包内置 30 款，正常为空；新上架未随包游戏会走到这）
+  @Local localCoverFailed: string[] = []
+
 
   aboutToAppear(): void {
     logger.debug('gameCenterPage', '游戏中心挂载，拉取游戏列表')

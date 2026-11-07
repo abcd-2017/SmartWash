@@ -36,10 +36,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -476,7 +478,8 @@ class GameConfigServiceImplTest {
     @DisplayName("用户端列表：走 XML 下发查询（enabled=1/sort 排序由 SQL 保证），仅映射用户端字段")
     void listEnabledGames_mapsUserFacingFieldsOnly() {
         when(gameMapper.selectEnabledList()).thenReturn(List.of(
-                record(2L, "g2048", 1, 1).setTitle("2048").setBadge("新"),
+                record(2L, "g2048", 1, 1).setTitle("2048").setBadge("新")
+                        .setCoverUrl("game-covers/g2048.png"),
                 record(1L, "snake", 1, 1).setTitle("贪吃蛇")));
 
         List<GameVo> voList = service.listEnabledGames();
@@ -488,8 +491,27 @@ class GameConfigServiceImplTest {
         assertEquals("2048", vo.getTitle());
         assertEquals("新", vo.getBadge());
         assertEquals("http://minio.local:9000/smartwash/game/g2048/index.html", vo.getUrl());
+        // cover_url 由 coverUrlOf 拼成公共读直链；XML 缺列会恒 null（见 selectEnabledList 注释）
+        assertEquals("http://minio.local:9000/smartwash/game-covers/g2048.png", vo.getCoverUrl());
         assertEquals("arcade", vo.getCategory());
         // Vo 类型层面不含管理字段，这里确认 url/游戏标识等用户端关键字段完整
         assertTrue(vo.getGameKey() != null && vo.getUrl() != null);
+    }
+
+    @Test
+    @DisplayName("回归防护：selectEnabledList XML 必须 select 直链拼装所需列，缺列会导致 playable URL/封面失效")
+    void selectEnabledList_xmlSelectsUrlResolutionColumns() throws Exception {
+        // 单测用 mock 绕过 XML，故补一条直接校验 XML 列清单的回归防护
+        String xml = Files.readString(
+                Path.of("src/main/resources/mapper/GameConfigMapper.xml"), StandardCharsets.UTF_8);
+        java.util.regex.Matcher matcher = Pattern
+                .compile("selectEnabledList[\\s\\S]*?SELECT ([\\s\\S]*?) FROM game_config")
+                .matcher(xml);
+        assertTrue(matcher.find(), "未找到 selectEnabledList 的 SELECT 列清单");
+        String columns = matcher.group(1);
+        for (String required : List.of("url", "cover_url", "object_key", "entry_path", "source_type")) {
+            assertTrue(Pattern.compile("(?i)\\b" + required + "\\b").matcher(columns).find(),
+                    "selectEnabledList 缺列 " + required + "：playable URL/封面拼装会失败");
+        }
     }
 }

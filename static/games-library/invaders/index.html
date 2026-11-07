@@ -80,8 +80,8 @@ paint(B||"light");
     <div class="stat"><span class="label">波次</span><span class="val" id="stWave">1</span></div>
     <div class="stat"><span class="label">生命</span><span class="val" id="stLives">×3</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="星空保卫战战场"></canvas></div>
-  <p class="msg" id="msg">飞船跟随手指 · 火力全自动 · 别让敌阵压到地面</p>
+  <div class="stage"><canvas id="cv" aria-label="星空保卫战战场" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">飞船跟随手指 · 火力全自动 · 别让敌阵压到地面</p>
   <div class="tools"><button class="btn" id="btnPause">暂停</button></div>
   <p class="foot">顶排 30 分 · 中排 20 · 底排 10 · 神秘飞碟 +100 · 掩体能挡子弹也会被打穿</p>
 </div>
@@ -132,7 +132,7 @@ function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 几何 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.W=w;L.H=Math.round(w*1.18);L.gw=w/COLSN;
   cv.style.height=L.H+"px";
   cv.width=Math.round(w*dpr);cv.height=Math.round(L.H*dpr);

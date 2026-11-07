@@ -81,8 +81,8 @@ paint(B||"light");
     <div class="stat"><span class="label">赛点</span><span class="val" id="stTarget">5</span></div>
     <div class="stat"><span class="label">连胜</span><span class="val" id="stStreak">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="空气曲棍球球台"></canvas></div>
-  <p class="msg" id="msg">球拍跟手滑动 · 把球打进上方球门</p>
+  <div class="stage"><canvas id="cv" aria-label="空气曲棍球球台" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">球拍跟手滑动 · 把球打进上方球门</p>
   <div class="tools"><button class="btn" id="btnPause">暂停</button></div>
   <p class="foot">球拍不能过中线 · 进球后重新开球 · 键盘方向键也可移动（WASD）</p>
 </div>
@@ -123,7 +123,7 @@ function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 几何 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.W=w;L.H=Math.round(w*1.5);L.m=Math.round(w*0.055);L.gw=w*0.45;
   L.mr=Math.round(w*0.082);L.pr=Math.round(w*0.045);
   cv.style.height=L.H+"px";

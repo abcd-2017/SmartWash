@@ -41,7 +41,7 @@
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 14px 12px 26px;
+    padding: 16px 8px 30px;
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -49,7 +49,7 @@
     touch-action: manipulation;
     overscroll-behavior: none;
   }
-  .wrap { width: 100%; max-width: 420px; }
+  .wrap { width: 100%; max-width: 480px; }
   header { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
   .sub { margin: 0; font-size: 14px; color: var(--g-muted); }
   .chips { display: flex; gap: 6px; align-items: stretch; margin-bottom: 16px; }
@@ -138,14 +138,14 @@
     </button>
   </div>
   <div class="stage" id="stage">
-    <canvas id="cv" aria-label="弹弓风暴游戏画布"></canvas>
+    <canvas id="cv" aria-label="弹弓风暴游戏画布" role="img"></canvas>
     <div class="overlay show" id="ovReady">
       <h2 class="ov-title">弹弓风暴</h2>
       <p class="ov-sub">按住画布向后拖拽蓄力，松手发射<br>摧毁每一关的全部红色目标<br>石块坚硬，试试绕后或掀翻它</p>
       <div class="lv-grid" id="lvGrid"></div>
       <button class="btn" id="btnStart" type="button">开始</button>
     </div>
-    <div class="overlay" id="ovPause">
+    <div class="overlay" id="ovPause" aria-live="assertive">
       <h2 class="ov-title">暂停中</h2>
       <p class="ov-sub">皮筋已经松下来了</p>
       <div class="btn-row">
@@ -210,8 +210,14 @@ function rgba(c,a){
   if(m){var p=m[1].split(",");var oa=p.length>3?parseFloat(p[3]):1;return"rgba("+p[0]+","+p[1]+","+p[2]+","+(oa*a).toFixed(3)+")"}
   return s;
 }
-window.__gOnTheme=function(){palLoad()};
+window.__gOnTheme=function(){palLoad();grads=null;};
 palLoad();
+/* 渐变缓存：主题变更时失效重建（GROUND 为常量，几何不变） */
+var grads=null;
+function buildGrads(){
+  grads={sky:ctx.createLinearGradient(0,0,0,GROUND)};
+  grads.sky.addColorStop(0,PAL.sky1);grads.sky.addColorStop(1,PAL.sky2);
+}
 
 /*逻辑坐标:390x650 名义世界,等比缩放居中(任何画布比例都不变形)*/
 var NW=390,NH=650,GROUND=560;
@@ -481,9 +487,8 @@ function draw(){
   ctx.save();
   ctx.translate(offX,offY);ctx.scale(S,S);
   if(shakeT>0)ctx.translate(rand(-1,1)*shakeT*8,rand(-1,1)*shakeT*8);
-  var sky=ctx.createLinearGradient(0,0,0,GROUND);
-  sky.addColorStop(0,PAL.sky1);sky.addColorStop(1,PAL.sky2);
-  ctx.fillStyle=sky;ctx.fillRect(0,0,NW,GROUND);
+  if(!grads)buildGrads();
+  ctx.fillStyle=grads.sky;ctx.fillRect(0,0,NW,GROUND);
   /*云*/
   ctx.fillStyle=rgba(PAL.surface,0.75);
   cloud(70+Math.sin(clock*0.3)*8,86,26);

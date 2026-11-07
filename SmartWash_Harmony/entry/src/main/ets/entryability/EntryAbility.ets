@@ -3,6 +3,7 @@ import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences } from '../utils/StorageUtil';
 import { applyDesignTheme } from '../constant/DesignSystem';
+import { ServerConfig } from '../config/ServerConfig'
 
 // 崩溃摘要最大长度：onUnhandledException 的 errMsg 含完整调用栈，截断防超长刷屏
 const CRASH_SUMMARY_MAX_LEN: number = 300;
@@ -43,6 +44,8 @@ export default class EntryAbility extends UIAbility {
     this.syncDarkMode();
     // 冷启动深链：onCreate 先于 loadContent 执行，此处暂存 uri，待 Home 页挂载后消费
     this.savePendingDeepLink(want);
+    // 服务端公开配置预热（非阻塞，对齐安卓 ServerConfigInitTask）：游戏桥白名单运行期读取
+    ServerConfig.prefetch();
   }
 
   /**

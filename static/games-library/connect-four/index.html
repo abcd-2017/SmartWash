@@ -79,8 +79,8 @@ paint(B||"light");
     <div class="stat"><span class="label">负场</span><span class="val" id="stLose">0</span></div>
     <div class="stat"><span class="label">连胜</span><span class="val" id="stStreak">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="四子棋棋盘"></canvas></div>
-  <p class="msg" id="msg">轮到你了 · 点击列落子</p>
+  <div class="stage"><canvas id="cv" aria-label="四子棋棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">轮到你了 · 点击列落子</p>
   <div class="bar"><button class="btn" id="btnNew">重新开始</button></div>
   <p class="foot">点击列落子 · 键盘 ←→ 选列、↓/空格落子 · 胜场与连胜本地保存</p>
 </div>

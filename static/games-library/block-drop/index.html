@@ -79,8 +79,8 @@ paint(B||"light");
     <div class="stat"><span class="label">分数</span><span class="val" id="stScore">0</span></div>
     <div class="stat"><span class="label">最高分</span><span class="val" id="stBest">0</span></div>
   </div>
-  <div class="stage"><canvas id="cv" aria-label="方块消除棋盘"></canvas></div>
-  <p class="msg" id="msg">从底部托盘拖一块放到棋盘上，单次消多行有连击加分。</p>
+  <div class="stage"><canvas id="cv" aria-label="方块消除棋盘" role="img"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">从底部托盘拖一块放到棋盘上，单次消多行有连击加分。</p>
   <div class="tools"><button class="btn ghost" id="btnNew">重新开始</button></div>
   <p class="foot">三个方块都放不下时游戏结束 · 无重力下落，放哪算哪</p>
 </div>
@@ -153,7 +153,7 @@ function $(id){return document.getElementById(id)}
 function say(t){$("msg").textContent=t}
 /* ---------- 几何 ---------- */
 function resize(){
-  var w=cv.parentElement.clientWidth||360,dpr=window.devicePixelRatio||1;
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
   L.W=w;L.cell=Math.floor((w-2*L.pad)/N);L.boardW=L.cell*N;
   L.boardX=(w-L.boardW)/2;L.boardY=L.pad;
   L.trayY=L.boardY+L.boardW+14;

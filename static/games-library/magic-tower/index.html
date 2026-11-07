@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>魔塔</title>
+<style>
+  /*token:GAME-THEME.md §2 + §3 素材 token（塔内 mt-*：墙/地/怪物系）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-success:#2D9B6A;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;--g-mt-wall:#3C4A42;--g-mt-floor:#F2F1EA;--g-mt-grid:#E2E0D5;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-success:#4ADE6E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);--g-mt-wall:#2A332E;--g-mt-floor:#1D201E;--g-mt-grid:#2C312D;color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 6px; margin-bottom: 8px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 5px 2px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .stat .val.hp { color: var(--g-danger); }
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; touch-action: none; border-radius: var(--g-radius-inner); }
+  .msg { min-height: 20px; margin: 8px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .tools { display: flex; gap: 8px; }
+  .btn {
+    min-height: 44px; padding: 0 14px; flex: 1;
+    border: 0; border-radius: var(--g-radius-btn);
+    background: var(--g-primary); color: #fff;
+    font: inherit; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 10px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: var(--g-scrim);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .panel {
+    width: 100%; max-width: 320px; padding: 22px 18px;
+    background: var(--g-surface); border-radius: var(--g-radius);
+    box-shadow: var(--g-shadow); text-align: center;
+    animation: pop .25s ease-out;
+  }
+  @keyframes pop { from { transform: scale(.92); } to { transform: scale(1); opacity: 1; } }
+  .panel h2 { margin: 0 0 6px; font-size: 22px; }
+  .panel .desc { margin: 0 0 16px; font-size: 14px; color: var(--g-muted); line-height: 1.6; }
+  .panel .btn { width: 100%; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点格移动 · 战胜塔主即通关</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">楼层</span><span class="val" id="stFloor">1</span></div>
+    <div class="stat"><span class="label">生命</span><span class="val hp" id="stHp">1000</span></div>
+    <div class="stat"><span class="label">攻击</span><span class="val" id="stAtk">12</span></div>
+    <div class="stat"><span class="label">防御</span><span class="val" id="stDef">10</span></div>
+    <div class="stat"><span class="label">黄钥匙</span><span class="val" id="stKey">0</span></div>
+  </div>
+  <div class="stage"><canvas id="cv" role="img" aria-label="魔塔楼层地图"></canvas></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点击相邻格子移动，点击远处自动寻路。</p>
+  <div class="tools"><button class="btn ghost" id="btnNew">重新开始</button></div>
+  <p class="foot">战斗自动进行 · 打不过的怪物会拒绝进入 · 上楼梯进入上一层</p>
+</div>
+<div class="overlay" id="overlay" aria-live="assertive">
+  <div class="panel">
+    <h2 id="ovTitle">游戏结束</h2>
+    <p class="desc" id="ovDesc"></p>
+    <button class="btn" id="ovBtn">再来一次</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 调色板：全部经 CSS 变量读取，JS 零颜色字面量 ---------- */
+var PAL={};
+function palLoad(){
+  var s=getComputedStyle(document.documentElement);
+  function v(n){return s.getPropertyValue(n).trim()}
+  PAL={bg:v("--g-bg"),surface:v("--g-surface"),surface2:v("--g-surface2"),border:v("--g-border"),
+    text:v("--g-text"),muted:v("--g-muted"),faint:v("--g-faint"),
+    primary:v("--g-primary"),deep:v("--g-primary-deep"),soft:v("--g-primary-soft"),
+    danger:v("--g-danger"),success:v("--g-success"),warning:v("--g-warning"),water:v("--g-water"),
+    wall:v("--g-mt-wall"),floor:v("--g-mt-floor"),grid:v("--g-mt-grid")};
+}
+window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF/重绘自动生效
+/* ---------- 存档 ---------- */
+var KEY="sw.magictower.v1";
+function loadSave(){
+  try{
+    var s=JSON.parse(localStorage.getItem(KEY));
+    if(s&&typeof s==="object"&&s.floor)return s;
+  }catch(e){}
+  return null;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({floor:floor+1,hp:hp,atk:atk,def:def,keys:keys}))}catch(e){}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+/* ---------- 怪物与数值（经典魔塔战斗公式） ---------- */
+var MONSTERS={
+  s:{name:"绿史莱姆",hp:50,atk:12,def:2,c:"success"},
+  b:{name:"小蝙蝠",hp:60,atk:13,def:3,c:"warning"},
+  r:{name:"红史莱姆",hp:110,atk:18,def:5,c:"danger"},
+  k:{name:"骷髅兵",hp:150,atk:24,def:8,c:"muted"},
+  m:{name:"小法师",hp:200,atk:30,def:10,c:"water"},
+  g:{name:"石像守卫",hp:250,atk:34,def:12,c:"text"},
+  B:{name:"塔主",hp:600,atk:55,def:22,c:"danger"}
+};
+/* 预估战损：正数=会损血，0=无损，-1=打不过 */
+function predictLoss(m){
+  var dmg=atk-m.def;
+  if(dmg<=0)return -1;
+  var turns=Math.ceil(m.hp/dmg);
+  var per=m.atk-def;
+  return per<=0?0:per*(turns-1);
+}
+/* ---------- 地图（8 层 · 11×11）
+   #墙 .地 h起点 U上楼梯 Y黄钥匙 y黄门 R红药+100 B蓝药+250 A红宝石+2攻 D蓝宝石+2防
+   s/b/r/k/m/g/B 怪物 X终点(顶层塔主房出口) ---------- */
+var MAPS=[
+[
+  "###########",
+  "#h........#",
+  "#..#...#R.#",
+  "#.Y.......#",
+  "#.........#",
+  "###s##s##.#",
+  "#.......Y.#",
+  "#....s....#",
+  "#..#..#...#",
+  "#.......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....A...#",
+  "#..#...#R.#",
+  "#.Y.......#",
+  "#.........#",
+  "###b##b##.#",
+  "#.......Y.#",
+  "#...r.....#",
+  "#.B#..#...#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....D...#",
+  "#..#...#R.#",
+  "#.Y.......#",
+  "#.........#",
+  "###r##r##.#",
+  "#.......Y.#",
+  "#...b.....#",
+  "#.B#..#...#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....A...#",
+  "#..#...#R.#",
+  "#.Y.......#",
+  "#.........#",
+  "###k##k##.#",
+  "#.......Y.#",
+  "#...r.....#",
+  "#.B#..#A..#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....A...#",
+  "#..#...#R.#",
+  "#.Y.......#",
+  "#.........#",
+  "###k##m##.#",
+  "#.......Y.#",
+  "#...k.....#",
+  "#.B#..#...#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....D...#",
+  "#..#...#B.#",
+  "#.Y.......#",
+  "#.........#",
+  "###m##g##.#",
+  "#.......Y.#",
+  "#...m.....#",
+  "#.B#..#...#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....A...#",
+  "#..#...#B.#",
+  "#.Y.......#",
+  "#.........#",
+  "###g##m##.#",
+  "#.......Y.#",
+  "#...g.....#",
+  "#.A#..#...#",
+  "#E......#U#",
+  "###########"
+],
+[
+  "###########",
+  "#.....A...#",
+  "#..#...#B.#",
+  "#.Y.......#",
+  "#........##",
+  "###g##m####",
+  "#........##",
+  "#...mB....#",
+  "#.B#..#...#",
+  "#E......#X#",
+  "###########"
+]
+];
+/* ---------- 状态 ---------- */
+var N=11,cell=0,W=0,H=0;
+var floor=0,hp=1000,atk=12,def=10,keys=0;
+var grid=[],hero={x:1,y:1},over=false,busy=false;
+var saved=loadSave();
+var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+function $(id){return document.getElementById(id)}
+function say(t){$("msg").textContent=t}
+/* ---------- 初始化 / 存档恢复 ---------- */
+function loadFloor(f){
+  grid=[];
+  var rows=MAPS[f];
+  for(var y=0;y<N;y++){
+    var row=[];
+    for(var x=0;x<N;x++)row.push(rows[y].charAt(x));
+    grid.push(row);
+  }
+}
+function findTile(t){
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++)if(grid[y][x]===t)return{x:x,y:y};
+  return null;
+}
+function newGame(){
+  var s=saved;saved=null;
+  floor=0;hp=1000;atk=12;def=10;keys=0;over=false;busy=false;
+  if(s){floor=Math.min(s.floor,MAPS.length-1);hp=s.hp;atk=s.atk;def=s.def;keys=s.keys|0;
+    say("已恢复到第 "+(floor+1)+" 层的进度。");}
+  loadFloor(floor);
+  var start=floor===0?findTile("h"):findTile("E");
+  hero={x:start.x,y:start.y};grid[start.y][start.x]=".";
+  /* 中途层若存档里玩家已站上楼道，直接从楼梯位出发 */
+  hideOverlay();updateStats();resize();draw();
+  if(floor===0)clearSave();
+}
+function updateStats(){
+  $("stFloor").textContent=floor+1;
+  $("stHp").textContent=hp;$("stAtk").textContent=atk;$("stDef").textContent=def;
+  $("stKey").textContent=keys;
+}
+/* ---------- 战斗 ---------- */
+function fight(key){
+  var m=MONSTERS[key],loss=predictLoss(m);
+  if(loss<0){say(m.name+"（攻 "+m.atk+"）太强了，先去捡宝石提升攻击。");return false;}
+  hp-=loss;
+  if(hp<=0){hp=0;updateStats();draw();die();return false;}
+  say("战胜 "+m.name+"，损失 "+loss+" 点生命。");
+  return true;
+}
+/* ---------- 拾取 ---------- */
+function pickup(t){
+  switch(t){
+    case "Y":keys++;say("捡到一把黄钥匙。");break;
+    case "R":hp+=150;say("红药水：生命 +150。");break;
+    case "B":hp+=300;say("蓝药水：生命 +300。");break;
+    case "A":atk+=4;say("红宝石：攻击 +4。");break;
+    case "D":def+=4;say("蓝宝石：防御 +4。");break;
+  }
+}
+/* ---------- 移动（含 BFS 远程寻路，遇阻停在目标前一步） ---------- */
+function canEnter(x,y){
+  var t=grid[y][x];
+  if(t==="#"||t==="U"&&false)return false;
+  if(t==="#")return false;
+  if(t==="y")return keys>0;
+  if(MONSTERS[t])return predictLoss(MONSTERS[t])>=0;
+  return ".YRBADUXE".indexOf(t)>=0;
+}
+function stepOn(x,y){
+  var t=grid[y][x];
+  if(t==="y"){keys--;grid[y][x]=".";say("用黄钥匙打开了黄门。");updateStats();return true;}
+  if(MONSTERS[t]){if(!fight(t))return false;grid[y][x]=".";updateStats();return true;}
+  if(t==="U"){goUp();return false;}
+  if(t==="X"){win();return false;}
+  if(t!==".")pickup(t);
+  grid[y][x]=".";
+  return true;
+}
+function tryMove(x,y){
+  if(over||busy)return;
+  if(Math.abs(x-hero.x)+Math.abs(y-hero.y)!==1)return;
+  if(!canEnter(x,y)){
+    var t=grid[y][x];
+    if(t==="y")say("黄门需要黄钥匙。");
+    else if(MONSTERS[t]&&predictLoss(MONSTERS[t])<0)say(MONSTERS[t].name+"打不过，先变强再来。");
+    return;
+  }
+  if(stepOn(x,y)){hero.x=x;hero.y=y;}
+  updateStats();draw();
+}
+/* BFS：返回从 hero 到 target 的下一步；不可达返回 null */
+function nextStep(tx,ty){
+  var prev={},q=[[hero.x,hero.y]],seen={};
+  seen[hero.x+","+hero.y]=1;
+  var DX=[1,-1,0,0],DY=[0,0,1,-1],head=0;
+  while(head<q.length){
+    var cur=q[head++];
+    var cx=cur[0],cy=cur[1];
+    if(cx===tx&&cy===ty)break;
+    for(var i=0;i<4;i++){
+      var nx=cx+DX[i],ny=cy+DY[i];
+      if(nx<0||ny<0||nx>=N||ny>=N)continue;
+      var kk=nx+","+ny;
+      if(seen[kk])continue;
+      if(!(nx===tx&&ny===ty)&&!canEnter(nx,ny))continue;
+      seen[kk]=1;prev[kk]=[cx,cy];
+      q.push([nx,ny]);
+    }
+  }
+  if(!seen[tx+","+ty])return null;
+  var cur2=[tx,ty];
+  while(prev[cur2.join(",")]&&!(prev[cur2.join(",")][0]===hero.x&&prev[cur2.join(",")][1]===hero.y))
+    cur2=prev[cur2.join(",")];
+  return prev[cur2.join(",")]?{x:cur2[0],y:cur2[1]}:(cur2[0]===tx&&cur2[1]===ty?{x:tx,y:ty}:null);
+}
+function walkTo(tx,ty){
+  if(over||busy)return;
+  if(grid[ty][tx]==="#")return;
+  if(Math.abs(tx-hero.x)+Math.abs(ty-hero.y)===1){tryMove(tx,ty);return;}
+  var stepPos=nextStep(tx,ty);
+  if(!stepPos){say("那里过不去。");return;}
+  busy=true;
+  var guard=0;
+  (function walk(){
+    if(over||guard++>200){busy=false;return;}
+    var s=nextStep(tx,ty);
+    if(!s){busy=false;draw();return;}
+    var t=grid[s.y][s.x];
+    var cont=stepOn(s.x,s.y);
+    hero.x=s.x;hero.y=s.y;
+    updateStats();draw();
+    if(!cont){busy=false;return;}
+    if(s.x===tx&&s.y===ty){busy=false;return;}
+    setTimeout(walk,90);
+  })();
+}
+function goUp(){
+  save();
+  floor++;
+  if(floor>=MAPS.length){win();return;}
+  loadFloor(floor);
+  var e=findTile("E")||{x:1,y:9};
+  hero={x:e.x,y:e.y};grid[e.y][e.x]=".";
+  updateStats();resize();draw();
+  say("来到第 "+(floor+1)+" 层。");
+}
+function win(){
+  over=true;clearSave();
+  $("ovTitle").textContent="通关！";
+  $("ovDesc").innerHTML="你战胜了塔主，登顶魔塔。<br>剩余生命 <b>"+hp+"</b>";
+  showOverlay();
+  say("通关！");
+}
+function die(){
+  over=true;clearSave();
+  $("ovTitle").textContent="挑战失败";
+  $("ovDesc").innerHTML="生命耗尽倒在第 "+(floor+1)+" 层。<br>下次先捡药水和宝石再开战。";
+  showOverlay();
+  say("生命耗尽……");
+}
+function showOverlay(){$("overlay").classList.add("show")}
+function hideOverlay(){$("overlay").classList.remove("show")}
+/* ---------- 绘制 ---------- */
+function resize(){
+  var w=cv.parentElement.clientWidth||360,dpr=Math.min(window.devicePixelRatio||1,2);
+  W=w;cell=Math.floor((w-8)/N);
+  var bw=cell*N;
+  H=bw+8;
+  cv.style.height=H+"px";
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function rr(x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function drawShape(t,x,y,cx,cy){
+  var c=MONSTERS[t]?PAL[MONSTERS[t].c]:null;
+  switch(t){
+    case "s":case "r":/* 史莱姆：半圆水滴 */
+      ctx.beginPath();ctx.arc(cx,cy+4,cell*0.28,Math.PI,0);ctx.lineTo(cx+cell*0.28,cy+6);ctx.lineTo(cx-cell*0.28,cy+6);ctx.closePath();
+      ctx.fillStyle=c;ctx.fill();break;
+    case "b":/* 蝙蝠：双翼三角 */
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-cell*0.3,cy-cell*0.2);ctx.lineTo(cx-cell*0.12,cy+cell*0.1);
+      ctx.lineTo(cx,cy-cell*0.05);ctx.lineTo(cx+cell*0.12,cy+cell*0.1);ctx.lineTo(cx+cell*0.3,cy-cell*0.2);ctx.closePath();
+      ctx.fillStyle=c;ctx.fill();break;
+    case "k":/* 骷髅：圆头 + 眼 */
+      ctx.beginPath();ctx.arc(cx,cy-2,cell*0.24,0,6.3);ctx.fillStyle=c;ctx.fill();
+      ctx.fillStyle=PAL.floor;
+      ctx.beginPath();ctx.arc(cx-cell*0.09,cy-3,cell*0.05,0,6.3);ctx.fill();
+      ctx.beginPath();ctx.arc(cx+cell*0.09,cy-3,cell*0.05,0,6.3);ctx.fill();break;
+    case "m":/* 法师：菱形 */
+      ctx.beginPath();ctx.moveTo(cx,cy-cell*0.3);ctx.lineTo(cx+cell*0.22,cy);ctx.lineTo(cx,cy+cell*0.3);ctx.lineTo(cx-cell*0.22,cy);ctx.closePath();
+      ctx.fillStyle=c;ctx.fill();break;
+    case "g":/* 石像：方脸 */
+      rr(cx-cell*0.24,cy-cell*0.24,cell*0.48,cell*0.48,4);ctx.fillStyle=c;ctx.fill();break;
+    case "B":/* 塔主：大红菱 */
+      ctx.beginPath();ctx.moveTo(cx,cy-cell*0.36);ctx.lineTo(cx+cell*0.3,cy);ctx.lineTo(cx,cy+cell*0.36);ctx.lineTo(cx-cell*0.3,cy);ctx.closePath();
+      ctx.fillStyle=c;ctx.fill();break;
+    case "Y":/* 黄钥匙 */
+      ctx.fillStyle=PAL.warning;
+      ctx.beginPath();ctx.arc(cx-cell*0.1,cy,cell*0.1,0,6.3);ctx.fill();
+      ctx.fillRect(cx-cell*0.02,cy-2,cell*0.24,4);break;
+    case "y":/* 黄门 */
+      ctx.fillStyle=PAL.warning;rr(x+6,y+4,cell-12,cell-8,5);ctx.fill();
+      ctx.fillStyle=PAL.floor;ctx.beginPath();ctx.arc(cx,cy,cell*0.07,0,6.3);ctx.fill();break;
+    case "R":case "B":/* 药水：瓶 */
+      ctx.fillStyle=t==="R"?PAL.danger:PAL.water;
+      ctx.beginPath();ctx.moveTo(cx-2,cy-cell*0.22);ctx.lineTo(cx+2,cy-cell*0.22);ctx.lineTo(cx+cell*0.2,cy+cell*0.22);ctx.lineTo(cx-cell*0.2,cy+cell*0.22);ctx.closePath();ctx.fill();
+      ctx.fillRect(cx-3,cy-cell*0.3,6,5);break;
+    case "A":case "D":/* 宝石：菱 */
+      ctx.beginPath();ctx.moveTo(cx,cy-cell*0.24);ctx.lineTo(cx+cell*0.18,cy);ctx.lineTo(cx,cy+cell*0.24);ctx.lineTo(cx-cell*0.18,cy);ctx.closePath();
+      ctx.fillStyle=t==="A"?PAL.danger:PAL.water;ctx.fill();break;
+    case "U":/* 上楼梯 */
+      ctx.fillStyle=PAL.deep;
+      ctx.fillRect(x+10,y+cell-14,cell-20,4);
+      ctx.fillRect(x+14,y+cell-24,cell-28,4);
+      ctx.fillRect(x+18,y+cell-34,cell-36,4);break;
+    case "X":/* 出口 */
+      ctx.strokeStyle=PAL.success;ctx.lineWidth=3;
+      ctx.strokeRect(x+8,y+8,cell-16,cell-16);break;
+    case "h":/* 英雄标记（起始位遗留时） */
+      ctx.fillStyle=PAL.primary;ctx.beginPath();ctx.arc(cx,cy,cell*0.2,0,6.3);ctx.fill();break;
+  }
+}
+function draw(){
+  ctx.fillStyle=PAL.bg;ctx.fillRect(0,0,W,H);
+  var ox=4,oy=4;
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){
+    var t=grid[y][x],px=ox+x*cell,py=oy+y*cell,cx=px+cell/2,cy=py+cell/2;
+    if(t==="#"){ctx.fillStyle=PAL.wall;rr(px+1,py+1,cell-2,cell-2,4);ctx.fill();continue;}
+    ctx.fillStyle=PAL.floor;rr(px+1,py+1,cell-2,cell-2,4);ctx.fill();
+    ctx.fillStyle=PAL.grid;ctx.fillRect(px+1,py+cell-3,cell-2,2);
+    if(t!==".")drawShape(t,px,py,cx,cy);
+  }
+  /* 英雄 */
+  var hx=ox+hero.x*cell,hy=oy+hero.y*cell;
+  ctx.fillStyle=PAL.primary;
+  ctx.beginPath();ctx.arc(hx+cell/2,hy+cell/2-2,cell*0.2,0,6.3);ctx.fill();
+  ctx.fillRect(hx+cell/2-cell*0.16,hy+cell/2+cell*0.08,cell*0.32,cell*0.2);
+}
+/* ---------- 交互 ---------- */
+cv.addEventListener("pointerdown",function(e){
+  if(over||busy)return;
+  var rect=cv.getBoundingClientRect();
+  var x=Math.floor((e.clientX-rect.left-4)/cell),y=Math.floor((e.clientY-rect.top-4)/cell);
+  if(x<0||y<0||x>=N||y>=N)return;
+  walkTo(x,y);
+});
+/* ---------- 主流程 ---------- */
+$("btnNew").addEventListener("click",function(){saved=null;clearSave();newGame();});
+$("ovBtn").addEventListener("click",function(){saved=null;clearSave();newGame();});
+window.addEventListener("resize",resize);
+palLoad();newGame();
+})();
+</script>
+</body>
+</html>

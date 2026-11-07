@@ -7,8 +7,8 @@
 <title>节拍点按</title>
 <style>
   /* token:GAME-THEME.md §2 (D5 终版:仅 :root 浅色 + [data-theme=dark] 深色,桥唯一控制) */
-  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:#F5F6F3E6;--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;color-scheme:light}
-  [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:#141614E6;--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
+  :root{--g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-on-primary:#FFF;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-danger:#C9526B;--g-warning:#D98A26;--g-water:#4A9FD4;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;color-scheme:light}
+  [data-theme="dark"]{--g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-danger:#DB7186;--g-warning:#E2A44E;--g-water:#6BB4DE;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark}
   [hidden]{display:none!important}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;height:100%}
@@ -80,10 +80,11 @@ paint(B||"light");
   <header>
     <button class="btn ghost" id="menuBtn" type="button">选曲</button>
     <button class="btn" id="pauseBtn" type="button" disabled>暂停</button>
+    <button class="btn ghost" id="muteBtn" type="button" aria-pressed="false">静音</button>
   </header>
   <div class="stage" id="stage">
-    <canvas id="cv" aria-label="节拍游戏区"></canvas>
-    <div class="overlay" id="overlay">
+    <canvas id="cv" aria-label="节拍游戏区" role="img"></canvas>
+    <div class="overlay" id="overlay" aria-live="assertive">
       <div class="panel" id="vMenu">
         <p class="rt">选择曲目</p>
         <p class="rs">音乐由 WebAudio 现场合成 · 建议佩戴耳机</p>
@@ -230,7 +231,7 @@ paint(B||"light");
       try{
         const AC = window.AudioContext || window.webkitAudioContext;
         actx = new AC();
-        master = actx.createGain(); master.gain.value = 0.9;
+        master.gain.value = muted?0:0.9;
         const comp = actx.createDynamicsCompressor();
         master.connect(comp); comp.connect(actx.destination);
         const len = actx.sampleRate | 0;
@@ -605,7 +606,18 @@ paint(B||"light");
       else if(state === "paused") resumeGame();
     }else if(e.code === "Escape" && state !== "menu"){ toMenu(); }
   });
-  menuBtn.addEventListener("click", toMenu);
+/* 静音:偏好独立存档键 sw.beattap.audio.v1(新键按现行规范),master 建立后也生效 */
+  const MKEY = "sw.beattap.audio.v1";
+  let muted = false;
+  try { muted = JSON.parse(localStorage.getItem(MKEY)).muted === true; } catch(e) {}
+  function applyMute() {
+    if (master) master.gain.value = muted ? 0 : 0.9;
+    muteBtn.textContent = muted ? "已静音" : "静音";
+    muteBtn.setAttribute("aria-pressed", String(muted));
+  }
+  function saveMute() { try { localStorage.setItem(MKEY, JSON.stringify({ muted })); } catch(e) {} }
+  muteBtn.addEventListener("click", () => { muted = !muted; saveMute(); applyMute(); });
+  applyMute();
   pauseBtn.addEventListener("click", () => { if(state === "playing") pauseGame(); else if(state === "paused") resumeGame(); });
   btnResume.addEventListener("click", resumeGame);
   btnMenu2.addEventListener("click", toMenu);

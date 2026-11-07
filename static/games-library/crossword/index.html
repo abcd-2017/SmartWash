@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6F3">
+<title>中文填字</title>
+<style>
+  /*token:GAME-THEME.md §2 基线（全部 UI 壳走 token）*/
+  :root { --g-bg:#F5F6F3;--g-surface:#FFFFFF;--g-surface2:#EFF1EE;--g-primary:#2D9B6A;--g-primary-deep:#1E8C5C;--g-primary-soft:#E8F6EF;--g-on-soft:#0B3625;--g-text:#1C1C1E;--g-muted:#6B6E73;--g-faint:#A9AEA9;--g-border:#E6E9E6;--g-scrim:rgba(245,246,243,.9);--g-shadow:0 2px 12px rgba(20,40,30,.05);--g-radius:16px;--g-radius-btn:14px;--g-radius-inner:12px;color-scheme:light }
+  :root[data-theme=dark] { --g-bg:#141614;--g-surface:#1D201E;--g-surface2:#262A27;--g-primary-deep:#5BC894;--g-primary-soft:#1D3229;--g-on-soft:#B9E8CF;--g-text:#E6E9E6;--g-muted:#A9AEA9;--g-faint:#7E837D;--g-border:#2C312D;--g-scrim:rgba(20,22,20,.9);--g-shadow:0 2px 12px rgba(0,0,0,.28);color-scheme:dark }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--g-bg); color: var(--g-text);
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px 8px 30px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; overscroll-behavior: none;
+  }
+  .wrap { width: 100%; max-width: 480px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 2px; }
+  .sub { font-size: 14px; color: var(--g-muted); }
+  .stats { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat { flex: 1; background: var(--g-surface2); border-radius: var(--g-radius-inner); padding: 6px 4px; text-align: center; line-height: 1.3; }
+  .stat .label { display: block; font-size: 12px; color: var(--g-muted); }
+  .stat .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--g-primary-deep); }
+  .grid { display: grid; gap: 2px; width: 100%; margin-bottom: 12px; }
+  .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; border-radius: 6px; background: var(--g-surface2); color: var(--g-faint); font-size: clamp(12px, 4.2vw, 18px); }
+  .cell.w { background: var(--g-surface); color: var(--g-text); border: 1px solid var(--g-border); cursor: pointer; }
+  .cell.w.on { background: var(--g-primary-soft); border-color: transparent; }
+  .cell.w.cur { box-shadow: inset 0 0 0 2px var(--g-primary-deep); }
+  .cell.w.lock { background: var(--g-primary-soft); color: var(--g-on-soft); border-color: transparent; cursor: default; }
+  .msg { min-height: 20px; margin: 10px 2px; font-size: 14px; color: var(--g-muted); text-align: center; }
+  .sec { font-size: 12px; color: var(--g-faint); margin: 12px 2px 6px; }
+  .pool { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pool button { min-height: 44px; min-width: 44px; padding: 2px 10px; border: 0; border-radius: 10px; background: var(--g-surface); color: var(--g-text); font: inherit; cursor: pointer; box-shadow: 0 1px 0 var(--g-border); display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .pool button b { font-size: 18px; font-weight: 600; }
+  .pool button i { font-style: normal; font-size: 12px; color: var(--g-faint); }
+  .pool button:disabled { opacity: .35; box-shadow: none; }
+  .hints { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .hints button { min-height: 44px; border: 0; border-radius: var(--g-radius-inner); background: var(--g-surface); color: var(--g-muted); font: inherit; font-size: 14px; text-align: left; padding: 8px 12px; cursor: pointer; }
+  .hints button b { font-weight: 600; margin-right: 8px; color: var(--g-primary-deep); white-space: nowrap; }
+  .hints button.on { background: var(--g-primary-soft); color: var(--g-on-soft); }
+  .hints button.on b { color: var(--g-on-soft); }
+  .hints button.ok { color: var(--g-faint); }
+  .hints button.ok b { color: var(--g-faint); text-decoration: line-through; }
+  .tools { display: flex; gap: 8px; }
+  .btn { min-height: 44px; padding: 0 14px; flex: 1; border: 0; border-radius: var(--g-radius-btn); background: var(--g-primary); color: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+  .btn:active { opacity: .85; }
+  .btn.ghost { background: var(--g-surface2); color: var(--g-text); }
+  .foot { margin: 12px 2px 0; font-size: 12px; color: var(--g-faint); text-align: center; line-height: 1.6; }
+</style>
+<script>
+//主题运行时:GAME-THEME.md§4(桥唯一控制,无桥恒浅色)
+(function(){
+var R=document.documentElement,B=null;
+function paint(m){R.dataset.theme=m;var c=document.querySelector('meta[name=theme-color]');
+  if(c)c.content=getComputedStyle(R).getPropertyValue("--g-bg").trim();
+  try{window.__gOnTheme(m)}catch(e){}}
+window.__applySmartWashTheme=function(m){if(m==="light"||m==="dark"){B=m;paint(m)}};//App推送
+try{var t=SmartWashGameBridge&&SmartWashGameBridge.getTheme();if(t==="light"||t==="dark")B=t}catch(e){}
+paint(B||"light");
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="sub">点格子选词 · 点字块填入 · 点已填格撤回</span></header>
+  <div class="stats">
+    <div class="stat"><span class="label">关卡</span><span class="val" id="stLv">1/4</span></div>
+    <div class="stat"><span class="label">已填</span><span class="val" id="stDone">0/8</span></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="msg" id="msg" role="status" aria-live="polite">点格子选中词语，再点下方字块填入</p>
+  <p class="sec">字块（角标为剩余次数）</p>
+  <div class="pool" id="pool"></div>
+  <p class="sec">词条提示（点击可选中）</p>
+  <div class="hints" id="hints"></div>
+  <div class="tools">
+    <button class="btn ghost" id="btnClear">重玩本关</button>
+    <button class="btn" id="btnNext" hidden>下一关</button>
+  </div>
+  <p class="foot">灰色空格为填充装饰 · 填对的词会自动锁定 · 进度自动保存</p>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- 数据 ---------- */
+var LEVELS = [{"name":"动物","words":[["大马哈鱼","出生在河里、长大游回大海，洄游千里也要回家的鱼","h",2,3],["海马","由爸爸负责育儿、长得像小马的海鱼","v",1,4],["金枪鱼","在海里游得飞快的大型海产，常上餐桌","v",0,6],["大熊猫","黑白两色的国宝，一天要吃掉好多好多竹子","v",2,3],["猫头鹰","白天睡觉夜里捕田鼠，脸像圆圆的盘子","h",4,3],["北极熊","冰天雪地里最大的白色猛兽","h",3,1],["东北虎","生活在长白山一带的大型猫科猛兽","v",2,1],["老虎","森林里的百兽之王","h",4,0]],"distractors":["象","鹿","狮","龟","蛙","蝶"]},{"name":"自然","words":[["流星雨","夜空中许多亮迹仿佛从同一点洒落的天象","h",2,2],["雨季","一年里降水最集中、连着下好多天的时段","v",2,4],["季风","夏天吹向陆地、冬天吹向海洋，方向随季节变换","h",3,4],["风暴","狂风卷着巨浪一起来的坏天气","v",3,5],["暴雨","下得又急又猛、洼地会积水的强降水","h",4,5],["气流","看不见摸不着、永远在流动不息的透明气体","v",1,2],["水蒸气","水受热变成的看不见摸不着的气体","h",1,0],["洪水","河水暴涨漫出河道、淹没田地村庄的灾害","v",0,0]],"distractors":["雪","云","火","冰","虹","震"]},{"name":"校园","words":[["功课","老师布置的课后练习","h",0,0],["课间操","铃声一响就排队下楼，全校一起做的运动","v",0,1],["操场","学校里最开阔的那块空地，上体育课都用它","h",2,1],["值日生","轮到谁擦黑板、倒垃圾，今天就是他当家","h",5,5],["值周","轮流负责班级一周值日的安排","v",5,5],["节日","值得庆祝纪念的日子","v",4,6],["生物课","老师带大家认识花草、虫鸟和人体奥秘","v",5,7],["课程表","贴在教室墙上，写清每天上课安排的表","h",7,7]],"distractors":["书","笔","黑","考","试","教","室"]},{"name":"常识","words":[["天气预报","电视里说说明天阴晴风雨的节目","h",1,3],["空气","包围地球、看不见摸不着，动植物都离不开它","v",0,4],["天气","一个地方短时间里阴晴风雨的状况","v",1,3],["报纸","印着新闻和文章、定期出版的读物","v",1,6],["天然气","埋在地下的蓝色火焰燃料","h",2,1],["星期天","上完六天课后的那个休息日","v",0,1],["星空","缀满星星的夜空","h",0,1],["星期","七天为一个轮回来计日的方法","h",1,0]],"distractors":["节","日","月","灯","城","谜"]}];
+/* ---------- 存档 ---------- */
+var KEY = "sw.crossword.v1";
+function loadSave(){ try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.lv >= 0) return s; } catch (e) {} return { lv: 0, done: {} }; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify({ lv: cur, done: doneSave })); } catch (e) {} }
+var saveData = loadSave();
+/* ---------- 状态 ---------- */
+var cur = 0, words = [], rows = 0, cols = 0;
+var cellInfo = {}, user = {}, locked = new Set(), pool = {}, sel = -1, cursor = -1, cellEls = {};
+var doneSave = saveData.done || {};
+var gridEl = document.getElementById("grid"), poolEl = document.getElementById("pool"), hintsEl = document.getElementById("hints"), msgEl = document.getElementById("msg");
+function $(id){ return document.getElementById(id); }
+function say(t){ msgEl.textContent = t; }
+/* ---------- 关卡构建 ---------- */
+function startLevel(n){
+  cur = n;
+  var L = LEVELS[n];
+  words = L.words;
+  rows = 0; cols = 0;
+  words.forEach(function(w){
+    var len = w[0].length, dr = w[2] === "v" ? 1 : 0, dc = w[2] === "v" ? 0 : 1;
+    rows = Math.max(rows, w[3] + dr * len);
+    cols = Math.max(cols, w[4] + dc * len);
+  });
+  cellInfo = {}; user = {}; locked = new Set(); sel = -1; cursor = -1; cellEls = {};
+  var cells = {};
+  words.forEach(function(w, wi){
+    var dr = w[2] === "v" ? 1 : 0, dc = w[2] === "v" ? 0 : 1;
+    for (var i = 0; i < w[0].length; i++) {
+      var k = (w[3] + dr * i) + "," + (w[4] + dc * i);
+      (cellInfo[k] = cellInfo[k] || []).push({ w: wi, i: i });
+      cells[k] = w[0][i];
+    }
+  });
+  pool = {};
+  Object.keys(cellInfo).forEach(function(k){
+    var ch = cells[k];
+    pool[ch] = (pool[ch] || 0) + 1;
+  });
+  gridEl.innerHTML = "";
+  gridEl.style.gridTemplateColumns = "repeat(" + cols + ",1fr)";
+  for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) {
+    var k = r + "," + c;
+    if (cellInfo[k]) gridEl.appendChild(mkCell(k));
+    else {
+      var d = document.createElement("div");
+      d.className = "cell";
+      gridEl.appendChild(d);
+    }
+  }
+  $("stLv").textContent = (n + 1) + "/" + LEVELS.length;
+  hintsEl.innerHTML = "";
+  words.forEach(function(w, wi){
+    var b = document.createElement("button");
+    b.className = "hint";
+    b.innerHTML = "<b>" + (wi + 1) + (w[2] === "h" ? "横" : "竖") + "·" + w[0].length + "字</b>" + w[1];
+    b.addEventListener("click", function(){ pickWord(wi); });
+    hintsEl.appendChild(b);
+  });
+  renderPool();
+  var saved = doneSave[n] || [];
+  saved.forEach(function(wi){
+    if (wi < words.length) lockWord(wi, true);
+  });
+  renderHints();
+  render();
+  save();
+  say("第" + (n + 1) + "关 · " + L.name + " · 已完成 " + locked.size + "/" + words.length + " 词");
+}
+var cellEls = {};
+function mkCell(key){
+  var d = document.createElement("div");
+  d.className = "cell w";
+  d.addEventListener("click", function(){ pickCell(key); });
+  cellEls[key] = d;
+  return d;
+}
+/* ---------- 渲染 ---------- */
+function render(){
+  var keys = Object.keys(cellInfo);
+  keys.forEach(function(k){
+    var d = cellEls[k];
+    if (!d) return;
+    var isLock = cellInfo[k].some(function(e){ return locked.has(e.w); });
+    var isOn = sel >= 0 && cellInfo[k].some(function(e){ return e.w === sel; });
+    var isCur = sel >= 0 && cursor >= 0 && cellInfo[k].some(function(e){ return e.w === sel && e.i === cursor; });
+    var cls = "cell w" + (isLock ? " lock" : isOn ? " on" : "") + (isCur && !isLock ? " cur" : "");
+    d.className = cls;
+    d.textContent = user[k] || "";
+  });
+  $("stDone").textContent = locked.size + "/" + words.length;
+  $("btnNext").hidden = locked.size !== words.length;
+}
+function renderPool(){
+  poolEl.innerHTML = "";
+  Object.keys(pool).sort().forEach(function(ch){
+    var b = document.createElement("button");
+    b.innerHTML = "<b>" + ch + "</b><i>×" + pool[ch] + "</i>";
+    b.disabled = pool[ch] <= 0;
+    b.addEventListener("click", function(){ pickPool(ch); });
+    poolEl.appendChild(b);
+  });
+}
+function renderHints(){
+  var bs = hintsEl.children;
+  words.forEach(function(w, wi){
+    if (!bs[wi]) return;
+    bs[wi].className = "hint" + (sel === wi ? " on" : "") + (locked.has(wi) ? " ok" : "");
+  });
+}
+/* ---------- 交互 ---------- */
+function pickCell(key){
+  var cands = cellInfo[key];
+  if (!cands) return;
+  if (user[key] && !cands.some(function(e){ return locked.has(e.w); })) {
+    pool[user[key]] = (pool[user[key]] || 0) + 1;
+    delete user[key];
+  }
+  var w = sel >= 0 && cands.some(function(e){ return e.w === sel; }) ? sel : -1;
+  if (w < 0) {
+    var h = cands.find(function(e){ return words[e.w][2] === "h" && !locked.has(e.w); });
+    w = h ? h.w : cands.find(function(e){ return !locked.has(e.w); }).w;
+  }
+  sel = w;
+  var me = cands.find(function(e){ return e.w === w; });
+  cursor = me.i;
+  if (cursor >= 0 && user[keyAt(w, cursor)]) cursor = nextBlank(w, cursor);
+  renderPool(); renderHints(); render();
+}
+function pickWord(wi){
+  if (locked.has(wi)) { say("「" + words[wi][0] + "」已填好"); return; }
+  sel = wi;
+  cursor = nextBlank(wi, 0);
+  renderHints(); render();
+}
+function pickPool(ch){
+  if (sel < 0 || cursor < 0) { say("先点格子或词条选择位置"); return; }
+  if ((pool[ch] || 0) <= 0) { say("「" + ch + "」已经用完了"); return; }
+  var key = keyAt(sel, cursor);
+  user[key] = ch;
+  pool[ch]--;
+  var nx = nextBlank(sel, cursor + 1);
+  if (nx >= 0) cursor = nx;
+  renderPool(); render();
+  checkWord(sel);
+}
+function keyAt(w, i){
+  var word = words[w], dr = word[2] === "v" ? 1 : 0, dc = word[2] === "v" ? 0 : 1;
+  return (word[3] + dr * i) + "," + (word[4] + dc * i);
+}
+function nextBlank(w, from){
+  var word = words[w];
+  for (var i = from; i < word[0].length; i++) if (!user[keyAt(w, i)]) return i;
+  return -1;
+}
+function checkWord(w){
+  var word = words[w], full = true, good = true;
+  for (var i = 0; i < word[0].length; i++) {
+    var k = keyAt(w, i), u = user[k];
+    if (!u) full = false;
+    if (u !== word[0][i]) good = false;
+  }
+  if (full && good) {
+    lockWord(w, false);
+    (doneSave[cur] = doneSave[cur] || []).push(w);
+    renderHints(); render(); save();
+    if (locked.size === words.length) {
+      say(cur < LEVELS.length - 1 ? "本关完成！点「下一关」继续" : "全部关卡完成，太棒了！");
+      $("btnNext").textContent = cur < LEVELS.length - 1 ? "下一关" : "再玩一遍";
+    } else {
+      say("「" + word[0] + "」正确！");
+    }
+    return;
+  }
+  if (full) say("「" + word[0] + "」填满了，有字不对就点格子改一改");
+}
+function lockWord(w, silent){
+  locked.add(w);
+  var word = words[w];
+  for (var i = 0; i < word[0].length; i++) {
+    var k = keyAt(w, i);
+    user[k] = word[0][i];
+    pool[word[0][i]] = Math.max(0, (pool[word[0][i]] || 0) - 1);
+  }
+  if (sel === w) sel = -1;
+  if (!silent) renderPool();
+  renderHints(); render();
+}
+/* ---------- 按钮 ---------- */
+$("btnClear").addEventListener("click", function(){
+  doneSave[cur] = [];
+  save();
+  startLevel(cur);
+  say("本关已重置");
+});
+$("btnNext").addEventListener("click", function(){
+  startLevel(cur < LEVELS.length - 1 ? cur + 1 : 0);
+});
+/* ---------- 启动 ---------- */
+startLevel(saveData.lv < LEVELS.length ? saveData.lv : 0);
+})();
+</script>
+</body>
+</html>
