@@ -452,6 +452,16 @@
   - Web：管理端展示。
 - **易混淆点**：端上**只展示、不拼接**——后端返回的 `shortUrl` 即完整地址（`{shortLinkBaseUrl}/web/t/{code}`）。
 
+### 7.5 稍后读（read_later）
+
+- **代码标识**：`read_later`、`ReadLater`、`digest`、`status`（0未读/1已读）、`is_delete`
+- **定义**：用户收藏 https 链接的单人闭环功能：入库时后端用 Jsoup 抓取页面 `<title>`（连接/读取各 5s，失败以 url 兜底不阻塞入库）→ 按需调**平台默认模型**（divination 域 `LlmGateway`，禁用用户 BYOK）生成 ≤150 字摘要落 `digest` → 标签（逗号分隔）与已读状态管理 → `POST /{id}/shorten` 经短码内核（contentType=1）一键转短链。列表排序固定「未读优先 + 时间倒序」（`status asc, created_at desc`）。
+- **四端对应物**：
+  - 后端：`readlater/` 包（controller/entity/mapper/service/vo/from/toolkit），接口前缀 `/web/auth/readlater/**`（ROLE_USER）；抓取安全复用 `divination/support/DivUrlSafetyValidator`（SSRF fail-closed + `followRedirect(false)`）。
+  - Android / 鸿蒙：无对应实现（待接入，入口 `smartwash://read-later`，工作台 entry_key=`read-later`、deeplink 字典 host=`read-later`）。
+  - Web：无对应实现（管理端无页面）。
+- **易混淆点**：`read_later` 是主库中**唯一使用 is_delete 逻辑删除**的业务表（其余表均为物理删除，无 `@TableLogic`），删除走条件 UPDATE 置 1、查询一律过滤；`digest` 只存摘要结果，不存页面正文；摘要与观象台解读共用 LLM 网关但**不共用用户 BYOK**。
+
 ---
 
 ## 8. 深链路由

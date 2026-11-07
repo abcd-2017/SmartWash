@@ -120,6 +120,12 @@
             <artifactId>javase</artifactId>
             <version>3.5.3</version>
         </dependency>
+        <!-- Jsoup：稍后读页面标题抓取（仅 https 公网地址，SSRF 校验见 DivUrlSafetyValidator） -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.3</version>
+        </dependency>
         <!-- 测试用 H2 内存数据库 -->
         <dependency>
             <groupId>com.h2database</groupId>
