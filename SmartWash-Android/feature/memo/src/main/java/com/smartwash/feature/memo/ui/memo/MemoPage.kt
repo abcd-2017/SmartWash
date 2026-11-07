@@ -506,7 +506,7 @@ private fun MemoComposerCard(
 
 /**
  * 记录卡片（画法对齐短链卡：r16 surface 底 + 1px outline 描边 + softCardShadow）：
- * 置顶标记 chip → 内容 → 标签 chips → 时间行（updateTime 与 createTime 不同时标注「已编辑」）
+ * 置顶标记 chip → 内容 → 标签 chips → 时间行（updatedAt 与 createdAt 不同时标注「已编辑」）
  * → 操作行（置顶/编辑/删除）。
  */
 @Composable
@@ -558,11 +558,11 @@ private fun MemoCard(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = MemoTimeFormat.display(vo.createTime),
+                    text = MemoTimeFormat.display(vo.createdAt),
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary,
                 )
-                val edited = !vo.updateTime.isNullOrBlank() && vo.updateTime != vo.createTime
+                val edited = !vo.updatedAt.isNullOrBlank() && vo.updatedAt != vo.createdAt
                 if (edited) {
                     Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                     Text(

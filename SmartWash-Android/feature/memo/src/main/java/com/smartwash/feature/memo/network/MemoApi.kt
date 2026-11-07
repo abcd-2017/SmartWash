@@ -81,8 +81,10 @@ data class MemoVo(
     val content: String = "",
     val tags: List<String> = emptyList(),
     val pinned: Boolean = false,
-    val createTime: String? = null,
-    val updateTime: String? = null,
+    // 后端 MemoVo 实际序列化键为 createdAt/updatedAt（非 createTime/updateTime），
+    // Gson 按属性名映射，属性名必须与后端键一致，否则时间列解析为 null 显示空白
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )
 
 /** 标签聚合条目（GET /tags 响应项） */

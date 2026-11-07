@@ -18,7 +18,7 @@ object MemoTimeFormat {
     private val SAME_YEAR = DateTimeFormatter.ofPattern("M月d日 HH:mm")
     private val CROSS_YEAR = DateTimeFormatter.ofPattern("yyyy年M月d日")
 
-    /** createTime/updateTime 原始串 → 展示文案（空/不可解析回落原文） */
+    /** createdAt/updatedAt 原始串 → 展示文案（空/不可解析回落原文） */
     fun display(raw: String?): String {
         val text = raw?.takeIf { it.isNotBlank() } ?: return ""
         val time = parse(text) ?: return text
