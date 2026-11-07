@@ -2,6 +2,7 @@ package com.smartwash.divination.service.impl;
 
 import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
+import com.smartwash.divination.entity.DivPlatformSetting;
 import com.smartwash.divination.entity.DivRecord;
 import com.smartwash.divination.llm.LlmCallException;
 import com.smartwash.divination.llm.LlmChatResult;
@@ -12,8 +13,11 @@ import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.llm.SseBridge;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
+import com.smartwash.divination.service.DivModelConfigService;
+import com.smartwash.divination.service.DivPlatformSettingService;
 import com.smartwash.divination.service.DivSafetyService;
 import com.smartwash.divination.service.DivUsageService;
+import com.smartwash.divination.service.DivUserApiConfigService;
 import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.config.MdcTaskDecorator;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +62,9 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final DivSafetyService safetyService;
     private final DivUsageService usageService;
     private final OpenAiCompatClient llmClient;
+    private final DivUserApiConfigService userApiConfigService;
+    private final DivPlatformSettingService platformSettingService;
+    private final DivModelConfigService modelConfigService;
 
     /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
     private final MdcTaskDecorator mdcTaskDecorator;
@@ -65,6 +72,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     /** 异步推流线程池 */
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /** 用户每日解读次数兜底限额：仅当 div_platform_setting 对应限额缺失时使用（主路径以 DB 为准） */
     @Value("${div.llm.limit.interpret-per-user-day:20}")
     private int interpretPerUserDay;
 
@@ -90,7 +98,8 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         return emitter;
     }
 
-    private void doInterpret(SseEmitter emitter, Long recordId, String question, Long userId, boolean isFollowup) throws IOException {
+    /** 包级可见便于单测直调（异步线程池外同步执行）；对外入口为 {@link #interpret} */
+    void doInterpret(SseEmitter emitter, Long recordId, String question, Long userId, boolean isFollowup) throws IOException {
         // 1. 查卦例
         DivRecord record = recordMapper.selectById(recordId);
         if (record == null || !record.getUserId().equals(userId)) {
@@ -106,19 +115,18 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 3. 限流
-        if (!usageService.tryConsumeUserLimit(userId, interpretPerUserDay)) {
-            sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
-            return;
+        // 3. 解析供应商（先解析再限额：BYOK 与平台 key 的日限额数值不同，限额需按解析出的 keySource 区分）
+        DivPlatformSetting setting = platformSettingService.getSetting();
+        OpenAiCompatProvider userProvider = null;
+        if (setting.getByokEnabled() != null && setting.getByokEnabled() == 1) {
+            // 平台开启 BYOK 才查用户配置（enabled=1 且 verified=1），关闭时不查不传
+            userProvider = userApiConfigService.resolveUserProvider(userId);
         }
-
-        // 4. 组装 prompt packet（简化版：server_chart + 问题）
-        String prompt = buildPrompt(record, question);
-
-        // 5. 解析供应商（简化：使用 bootstrap 兜底）
         LlmGateway.ResolvedProvider resolved;
         try {
-            resolved = llmGateway.resolveProvider(null);
+            // 平台默认模型以 Supplier 懒加载：仅 BYOK 未配置/未启用/熔断时才查库解密
+            resolved = llmGateway.resolveProvider(userProvider,
+                    () -> modelConfigService.resolvePlatformDefaultProvider());
         } catch (IllegalStateException e) {
             // 供应商解析失败 = 服务降级（SSE 返回 503），warn 留痕便于排查密钥/平台配置问题
             log.warn("LLM 供应商解析失败，SSE 降级返回 503, recordId: {}, userId: {}, 原因: {}",
@@ -126,6 +134,16 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             sseBridge.sendError(emitter, 503, "解读服务暂不可用，请稍后再试");
             return;
         }
+
+        // 4. 限额：按 keySource 取对应日限额（BYOK→byok_daily_limit，平台 key→platform_daily_limit）
+        int dailyLimit = resolveDailyLimit(setting, resolved.getKeySource());
+        if (!usageService.tryConsumeUserLimit(userId, dailyLimit)) {
+            sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
+            return;
+        }
+
+        // 5. 组装 prompt packet（简化版：server_chart + 问题）
+        String prompt = buildPrompt(record, question);
 
         // 6. 流式调用 LLM 并推流（真实调用，失败且未推出增量时由客户端做一次非流式回退）
         OpenAiCompatProvider provider = resolved.getProvider();
@@ -186,6 +204,27 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
 
         // 9. 推送完成帧
         sseBridge.sendDone(emitter, interpretation.getId(), false);
+    }
+
+    /**
+     * 按密钥来源解析用户每日解读限额。
+     *
+     * <p>BYOK 请求取 {@code div_platform_setting.byok_daily_limit}，
+     * 平台 key 请求取 {@code platform_daily_limit}；
+     * DB 单例尚未初始化对应字段时兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
+     *
+     * @param setting   平台设置（单例）
+     * @param keySource 密钥来源（user=BYOK，platform=平台 key/bootstrap）
+     * @return 每日限额
+     */
+    private int resolveDailyLimit(DivPlatformSetting setting, String keySource) {
+        boolean byokRequest = "user".equals(keySource);
+        Integer limit = byokRequest ? setting.getByokDailyLimit() : setting.getPlatformDailyLimit();
+        if (limit == null || limit <= 0) {
+            log.debug("平台设置未配置{}日限额，兜底 yml 默认值", byokRequest ? "BYOK" : "平台");
+            return interpretPerUserDay;
+        }
+        return limit;
     }
 
     /**

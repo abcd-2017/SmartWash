@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * LLM 网关：路由（主备+熔断）+ 重试 + token 计量。
@@ -43,10 +44,16 @@ public class LlmGateway {
     /**
      * 解析当前请求应使用的供应商（三层密钥解析）。
      *
-     * @param userConfig 用户 BYOK 配置（可为 null）
-     * @return 解析结果（含供应商 + 来源标记）
+     * <p>优先级：用户 BYOK → 平台默认模型 → yml bootstrap 兜底，全失败抛 {@link IllegalStateException}。
+     * 平台默认以 {@link Supplier} 懒加载注入（由 Service 层查库解密构造），
+     * 仅在 BYOK 未配置/未启用/熔断时才会触发查库，避免每次请求多查两张表。</p>
+     *
+     * @param userConfig              用户 BYOK 配置（可为 null；平台关闭 BYOK 或用户未配置时为 null）
+     * @param platformDefaultSupplier 平台默认模型懒加载提供者（可返回 null 表示平台未配置可用模型）
+     * @return 解析结果（含供应商 + 来源标记 + 配置 ID）
      */
-    public ResolvedProvider resolveProvider(OpenAiCompatProvider userConfig) {
+    public ResolvedProvider resolveProvider(OpenAiCompatProvider userConfig,
+                                            Supplier<OpenAiCompatProvider> platformDefaultSupplier) {
         // 优先级 1：用户 BYOK
         if (userConfig != null && userConfig.isEnabled()) {
             if (!isCircuitBroken(userConfig.getName())) {
@@ -55,7 +62,17 @@ public class LlmGateway {
             log.warn("用户 BYOK 供应商熔断中，降级到平台默认: {}", userConfig.getName());
         }
 
-        // 优先级 2：平台默认模型（由调用方注入，此处 fallback 到 bootstrap）
+        // 优先级 2：平台默认模型（Service 层懒加载：div_platform_setting.default_model_id → div_model_config）
+        if (platformDefaultSupplier != null) {
+            OpenAiCompatProvider platformDefault = platformDefaultSupplier.get();
+            if (platformDefault != null && platformDefault.isEnabled()) {
+                if (!isCircuitBroken(platformDefault.getName())) {
+                    return new ResolvedProvider(platformDefault, "platform", platformDefault.getConfigId());
+                }
+                log.warn("平台默认模型熔断中，降级到 bootstrap: {}", platformDefault.getName());
+            }
+        }
+
         // 优先级 3：yml bootstrap 兜底
         List<OpenAiCompatProvider> bootstrapProviders = getBootstrapProviders();
         for (OpenAiCompatProvider provider : bootstrapProviders) {

@@ -2,7 +2,9 @@ package com.smartwash.divination.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartwash.divination.entity.DivModelConfig;
+import com.smartwash.divination.entity.DivPlatformSetting;
 import com.smartwash.divination.llm.OpenAiCompatClient;
+import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.mapper.DivModelConfigMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ public class DivModelConfigService {
     private final DivModelConfigMapper modelConfigMapper;
     private final AesGcmCipher cipher;
     private final OpenAiCompatClient llmClient;
+    private final DivPlatformSettingService platformSettingService;
 
     /**
      * 查询启用的模型目录（列表仅掩码，无明文/密文）。
@@ -134,5 +137,53 @@ public class DivModelConfigService {
     public void deleteById(Long id) {
         modelConfigMapper.deleteById(id);
         log.info("删除模型配置, id: {}", id);
+    }
+
+    /**
+     * 解析平台默认模型供应商（解读链路优先级 2，由 LlmGateway 以 Supplier 懒加载调用）。
+     *
+     * <p>读 {@code div_platform_setting}（单例 id=1）的 {@code default_model_id}，
+     * 不可用（未配置/未启用/无密钥/解密失败/熔断由网关判）时用 {@code fallback_model_id}；
+     * 两者都不可用返回 null，由 LlmGateway 落到 yml bootstrap 兜底。</p>
+     *
+     * @return 平台默认供应商（source="platform"）；平台未配置可用模型时返回 null
+     */
+    public OpenAiCompatProvider resolvePlatformDefaultProvider() {
+        DivPlatformSetting setting = platformSettingService.getSetting();
+        OpenAiCompatProvider primary = buildModelProvider(setting.getDefaultModelId());
+        if (primary != null) {
+            return primary;
+        }
+        return buildModelProvider(setting.getFallbackModelId());
+    }
+
+    /**
+     * 按 div_model_config 主键构造运行时供应商。
+     * 跳过不可用配置：不存在、未启用、base_url/model_id 缺失、api_key_cipher 为空
+     * （种子数据 key 留空，管理端录入后才可用）、密文解密失败。
+     */
+    private OpenAiCompatProvider buildModelProvider(Long modelId) {
+        if (modelId == null || modelId <= 0) {
+            return null;
+        }
+        DivModelConfig config = modelConfigMapper.selectById(modelId);
+        if (config == null
+                || config.getEnabled() == null || config.getEnabled() != 1
+                || !StringUtils.hasText(config.getBaseUrl())
+                || !StringUtils.hasText(config.getModelId())
+                || !StringUtils.hasText(config.getApiKeyCipher())) {
+            log.debug("平台模型配置不可用，跳过, modelId: {}", modelId);
+            return null;
+        }
+        try {
+            String plainKey = cipher.decrypt(config.getApiKeyCipher());
+            int priority = config.getPriority() != null ? config.getPriority() : 100;
+            return new OpenAiCompatProvider(config.getName(), config.getBaseUrl(), plainKey,
+                    config.getModelId(), priority, true, "platform", config.getId());
+        } catch (Exception e) {
+            // 解密失败（主密钥不匹配/密文损坏）：跳过该配置，默认模型落备用/兜底
+            log.warn("平台模型密钥解密失败，跳过该配置, modelId: {}, 原因: {}", modelId, e.getMessage());
+            return null;
+        }
     }
 }
