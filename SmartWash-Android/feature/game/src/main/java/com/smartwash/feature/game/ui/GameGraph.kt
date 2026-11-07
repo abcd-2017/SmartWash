@@ -24,7 +24,7 @@ fun NavGraphBuilder.gameGraph(navController: NavHostController) {
 /**
  * 游戏卡 → 内置浏览器：复用壳层 WebView 类型安全路由（[ShellRoute.WebView]，
  * 单一事实来源在 common:ui）。后端下发的 url 即最终可玩地址，端上零拼装；
- * url 为空不响应（后端契约保证非空，此处防御）。
+ * url 为空的可见反馈（toast）由页面层承担，此处保留防御 return 兜底其他调用方。
  */
 fun NavHostController.navigateToGameWebView(game: GameItem) {
     if (game.url.isBlank()) return
