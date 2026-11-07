@@ -28,6 +28,30 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="来源">
+          <el-select
+            v-model="listQuery.sourceType"
+            placeholder="全部来源"
+            clearable
+            style="width: 110px"
+            @change="handleSearch"
+          >
+            <el-option label="上传" :value="1" />
+            <el-option label="外链" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="下发">
+          <el-select
+            v-model="listQuery.enabled"
+            placeholder="全部"
+            clearable
+            style="width: 100px"
+            @change="handleSearch"
+          >
+            <el-option label="已下发" :value="1" />
+            <el-option label="未下发" :value="0" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -626,12 +650,17 @@ const {
   baseQuery: {
     keyword: '',
     category: null,
+    sourceType: null,
+    enabled: null,
   },
   buildParams: (q) => ({
     ...q,
-    // 契约 §2.2：keyword 单参数模糊匹配 title 或 gameKey
+    // 契约 §2.2：keyword 单参数模糊匹配 title 或 gameKey；
+    // sourceType/enabled 用 ?? 清洗（enabled=0 未下发是合法筛选值，|| 会误清）
     keyword: q.keyword || undefined,
     category: q.category || undefined,
+    sourceType: q.sourceType ?? undefined,
+    enabled: q.enabled ?? undefined,
   }),
   errorMsg: '获取游戏列表失败',
 });
