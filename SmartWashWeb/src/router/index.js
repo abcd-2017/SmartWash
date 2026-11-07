@@ -160,6 +160,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 系统与安全 =====
+      {
+        path: '/audit-logs',
+        name: 'AuditLogList',
+        component: () => import('@/views/system/AuditLogList.vue'),
+        meta: {
+          title: '操作审计',
+          showInMenu: true,
+          icon: 'DocumentChecked',
+          requiresAuth: true,
+        },
+      },
       // ===== 演示工具 =====
       {
         path: '/captcha',
