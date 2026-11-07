@@ -343,3 +343,65 @@ export const deeplinkPlatformText = (platform) => DEEPLINK_PLATFORM_TEXT[platfor
 /** 平台标签配色 */
 export const deeplinkPlatformTagType = (platform) =>
   dictValue(DEEPLINK_PLATFORM_TAG_TYPES, platform);
+
+// ---------- 情绪气象站（与后端 mood_record.mood_level 对齐：1暴雨 2阴 3多云 4晴 5大晴） ----------
+
+/** 情绪等级 → 文案 */
+export const MOOD_LEVEL_TEXT = {
+  1: '暴雨',
+  2: '阴',
+  3: '多云',
+  4: '晴',
+  5: '大晴',
+};
+
+/** 情绪等级文案（未知值回显原值，空值占位 "-"；联调以实际下发为准） */
+export const moodLevelText = (level) =>
+  MOOD_LEVEL_TEXT[level] ?? (level === null || level === undefined ? '-' : String(level));
+
+// ---------- 订阅逃生舱（与后端 user_subscription.status 对齐） ----------
+
+/** 订阅状态选项（筛选下拉用） */
+export const SUBSCRIPTION_STATUS_OPTIONS = [
+  { value: 'active', label: '生效中' },
+  { value: 'paused', label: '已暂停' },
+  { value: 'canceled', label: '已取消' },
+  { value: 'finished', label: '已结束' },
+];
+
+/** 订阅状态 → 文案 */
+export const SUBSCRIPTION_STATUS_TEXT = {
+  active: '生效中',
+  paused: '已暂停',
+  canceled: '已取消',
+  finished: '已结束',
+};
+
+/** 订阅状态 → el-tag 类型 */
+export const SUBSCRIPTION_STATUS_TAG_TYPES = {
+  active: 'success',
+  paused: 'warning',
+  canceled: 'info',
+  finished: 'info',
+};
+
+/** 订阅状态文案（未知值兜底） */
+export const subscriptionStatusText = (status) => SUBSCRIPTION_STATUS_TEXT[status] || status || '-';
+
+/** 订阅状态标签配色 */
+export const subscriptionStatusTagType = (status) =>
+  dictValue(SUBSCRIPTION_STATUS_TAG_TYPES, status);
+
+/** 计费周期 → 文案（cycle_type month/year + cycle_interval → 每月/每2月/每年，未知值回显原值） */
+export const subscriptionCycleText = (cycleType, interval) => {
+  const unit = { month: '月', year: '年' }[cycleType];
+  if (!unit) {
+    return cycleType || '-';
+  }
+  const n = Number(interval);
+  const step = Number.isFinite(n) && n > 1 ? n : '';
+  return `每${step}${unit}`;
+};
+
+/** 自动续费 → 文案（auto_renew 1是 0否） */
+export const subscriptionAutoRenewText = (autoRenew) => (Number(autoRenew) === 1 ? '是' : '否');

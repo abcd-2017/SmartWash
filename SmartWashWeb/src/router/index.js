@@ -297,6 +297,29 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 情绪与订阅（用户生活模块） =====
+      {
+        path: '/moodReport',
+        name: 'MoodReport',
+        component: () => import('@/views/system/MoodReport.vue'),
+        meta: {
+          title: '心情报表',
+          showInMenu: true,
+          icon: 'MostlyCloudy',
+          requiresAuth: true,
+        },
+      },
+      {
+        path: '/subscriptions',
+        name: 'SubscriptionList',
+        component: () => import('@/views/system/SubscriptionList.vue'),
+        meta: {
+          title: '订阅管理',
+          showInMenu: true,
+          icon: 'AlarmClock',
+          requiresAuth: true,
+        },
+      },
     ],
   },
   {

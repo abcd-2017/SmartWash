@@ -57,6 +57,9 @@ import {
   Cpu,
   Setting,
   Message,
+  // 情绪与订阅
+  MostlyCloudy,
+  AlarmClock,
   // 树形分组表头图标 + 短链管理
   Files,
   OfficeBuilding,
@@ -99,6 +102,9 @@ const iconRegistry = {
   Cpu: markRaw(Cpu),
   Setting: markRaw(Setting),
   Message: markRaw(Message),
+  // 情绪与订阅
+  MostlyCloudy: markRaw(MostlyCloudy),
+  AlarmClock: markRaw(AlarmClock),
   // 工具箱与分组表头
   Link: markRaw(Link),
   Files: markRaw(Files),
@@ -149,6 +155,7 @@ const MENU_GROUP_CONFIG = [
     icon: 'Grid',
     paths: ['/workbench/entries', '/workbench/deeplink-routes', '/game/list'],
   },
+  { title: '情绪与订阅', icon: 'MostlyCloudy', paths: ['/moodReport', '/subscriptions'] },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);
