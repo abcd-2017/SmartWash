@@ -25,9 +25,12 @@ public class DivUserApiConfigService {
     private final DivUserApiConfigMapper userApiConfigMapper;
     private final AesGcmCipher cipher;
     private final DivModelConfigService modelConfigService;
+    private final DivPlatformSettingService platformSettingService;
 
     /**
      * 获取用户 BYOK 配置（仅掩码，无明文/密文）。
+     * 同时下发平台 BYOK 开关（byokEnabled 0/1），供客户端决定是否隐藏配置入口；
+     * 平台关闭时已有配置仍原样回显（服务端在保存/试呼/解读链路强制拦截）。
      */
     public UserApiConfigVo getUserConfig(Long userId) {
         LambdaQueryWrapper<DivUserApiConfig> wrapper = new LambdaQueryWrapper<>();
@@ -40,6 +43,7 @@ public class DivUserApiConfigService {
         vo.setApiKeyMask(config.getApiKeyMask());
         vo.setVerified(config.getVerified());
         vo.setEnabled(config.getEnabled());
+        vo.setByokEnabled(platformSettingService.getSetting().getByokEnabled());
         if (config.getModelConfigId() != null) {
             vo.setProviderName("平台预设");
         }
@@ -49,10 +53,25 @@ public class DivUserApiConfigService {
     }
 
     /**
-     * 保存/更换 BYOK（真实 1-token 试呼 → 通过才加密入库）。
-     * 试呼不通过或接入点不合法时抛业务异常（经全局 advice 转为 Result 失败信封），不写库。
+     * 平台 BYOK 开关（div_platform_setting.byok_enabled，缺省按关闭处理）。
+     * 供保存/试呼链路服务端强制，以及用户端控制器复用。
+     */
+    public boolean isByokEnabled() {
+        Integer byokEnabled = platformSettingService.getSetting().getByokEnabled();
+        return byokEnabled != null && byokEnabled == 1;
+    }
+
+    /**
+     * 保存/更换 BYOK（平台开关强制 → 真实 1-token 试呼 → 通过才加密入库）。
+     * 平台关闭 BYOK、试呼不通过或接入点不合法时抛业务异常
+     * （经全局 advice 转为 Result 失败信封），不写库。
      */
     public void saveUserConfig(Long userId, String baseUrl, String model, String apiKey) {
+        // 平台开关服务端强制：关闭后不允许保存/更换 BYOK（不写库）
+        if (!isByokEnabled()) {
+            throw new CustomExceptions("平台已关闭自带模型功能");
+        }
+
         // SSRF 防护：必须 https、拒绝内网
         if (!isValidBaseUrl(baseUrl)) {
             throw new CustomExceptions("连通性校验失败：接入点必须为 HTTPS 且非内网地址");

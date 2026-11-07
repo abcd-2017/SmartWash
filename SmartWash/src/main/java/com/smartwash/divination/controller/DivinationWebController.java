@@ -147,12 +147,16 @@ public class DivinationWebController {
         return Result.ok("删除成功");
     }
 
-    @Operation(summary = "连通性测试", description = "不保存，独立限流")
-    @PostMapping("/settings/api/test")
-    public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
-        boolean ok = modelConfigService.testConnectivity(from.getBaseUrl(), from.getApiKey(), from.getModel());
-        return Result.ok(ok);
-    }
+	@Operation(summary = "连通性测试", description = "不保存，独立限流")
+	@PostMapping("/settings/api/test")
+	public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
+		// 平台关闭 BYOK 时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
+		if (!userApiConfigService.isByokEnabled()) {
+			return Result.ok(false);
+		}
+		boolean ok = modelConfigService.testConnectivity(from.getBaseUrl(), from.getApiKey(), from.getModel());
+		return Result.ok(ok);
+	}
 
     private MethodVo createMethod(String code, String name, String desc) {
         MethodVo vo = new MethodVo();
