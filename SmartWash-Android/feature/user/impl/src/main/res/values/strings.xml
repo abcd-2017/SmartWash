@@ -126,6 +126,40 @@
     <string name="off">关</string>
     <string name="disabled">已关闭</string>
 
+    <!-- 解读模型 BYOK（issue #79：设置页观象台分组，用户自带模型密钥经平台网关加密中转） -->
+    <string name="api_config_title">解读模型</string>
+    <string name="api_config_unconfigured">未配置，使用平台默认模型</string>
+    <string name="api_config_verified">已验证</string>
+    <string name="api_config_platform_disabled">平台已关闭自带模型</string>
+    <string name="api_config_privacy_note">API Key 经平台网关加密存储，仅用于后端转发解读请求；不配置则由平台默认模型解读；支持任意 OpenAI 兼容接入点。</string>
+    <string name="api_config_base_url_label">接入点地址</string>
+    <string name="api_config_base_url_hint">https://api.example.com</string>
+    <string name="api_config_model_label">模型名称</string>
+    <string name="api_config_model_hint">如 deepseek-chat</string>
+    <string name="api_config_model_catalog_expand">从平台模型目录选择</string>
+    <string name="api_config_model_catalog_collapse">收起平台模型目录</string>
+    <string name="api_config_model_catalog_empty">暂无平台模型目录</string>
+    <string name="api_config_key_label">API Key</string>
+    <string name="api_config_key_hint_new">输入 API Key</string>
+    <string name="api_config_key_hint_edit">重新输入 API Key</string>
+    <string name="api_config_key_show">显示 API Key</string>
+    <string name="api_config_key_hide">隐藏 API Key</string>
+    <string name="api_config_test">测试连接</string>
+    <string name="api_config_test_ok">连通性正常，可保存使用</string>
+    <string name="api_config_test_fail">连通性测试未通过，请检查接入点、模型名称与 API Key</string>
+    <string name="api_config_save">保存</string>
+    <string name="api_config_save_success">保存成功，解读将使用你的模型</string>
+    <string name="api_config_delete">删除配置</string>
+    <string name="api_config_delete_success">已删除配置</string>
+    <string name="api_config_confirm_delete_title">删除解读模型配置？</string>
+    <string name="api_config_confirm_delete_message">删除后将恢复使用平台默认模型解读，已保存的密钥将从服务端清除。</string>
+    <string name="api_config_load_failed">配置加载失败</string>
+    <string name="api_config_retry">重试</string>
+    <string name="api_config_error_base_url_empty">请输入接入点地址</string>
+    <string name="api_config_error_base_url_https">接入点必须以 https:// 开头</string>
+    <string name="api_config_error_model_empty">请输入模型名称</string>
+    <string name="api_config_error_key_empty">请输入 API Key</string>
+
     <!-- 权限管理页（2026-11-01 缺陷 5c 新增） -->
     <string name="permission_management">权限管理</string>
     <string name="permission_notification">通知权限</string>

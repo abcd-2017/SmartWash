@@ -2,6 +2,9 @@ package com.smartwash.divination.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartwash.divination.entity.DivModelConfig;
+import com.smartwash.divination.entity.DivPlatformSetting;
+import com.smartwash.divination.llm.OpenAiCompatClient;
+import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.mapper.DivModelConfigMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,8 @@ public class DivModelConfigService {
 
     private final DivModelConfigMapper modelConfigMapper;
     private final AesGcmCipher cipher;
+    private final OpenAiCompatClient llmClient;
+    private final DivPlatformSettingService platformSettingService;
 
     /**
      * 查询启用的模型目录（列表仅掩码，无明文/密文）。
@@ -68,8 +73,8 @@ public class DivModelConfigService {
     }
 
     /**
-     * 连通性测试（不保存）。用该 key 向 base_url 发一次试呼。
-     * 简化实现：校验格式 + 返回模拟结果（真实实现需 WebClient 试呼）。
+     * 连通性测试（不保存）。真实 1-token 试呼：max_tokens=1、stream=false、10s 超时。
+     * 同时服务管理端 POST /admin/div/models/{id}/test 与用户端 POST /web/auth/div/settings/api/test。
      */
     public boolean testConnectivity(String baseUrl, String apiKey, String modelId) {
         if (!StringUtils.hasText(baseUrl) || !StringUtils.hasText(apiKey)) {
@@ -84,9 +89,37 @@ public class DivModelConfigService {
             log.warn("连通性测试拒绝内网地址: {}", baseUrl);
             return false;
         }
-        // TODO: 真实实现需 WebClient 1-token chat 试呼
-        log.info("连通性测试通过（简化实现）, baseUrl: {}, model: {}", baseUrl, modelId);
-        return true;
+        // 真实 1-token chat 试呼（WebClient，超时收紧）
+        return llmClient.probeConnectivity(baseUrl, apiKey, modelId);
+    }
+
+    /**
+     * 按平台模型目录 ID 试呼：解密密钥 → 真实 1-token 试呼 → 回填测试留痕。
+     * 供管理端 POST /admin/div/models/{id}/test 使用（接口签名不变）。
+     */
+    public boolean testConnectivityById(Long id) {
+        DivModelConfig config = modelConfigMapper.selectById(id);
+        if (config == null || !StringUtils.hasText(config.getBaseUrl())
+                || !StringUtils.hasText(config.getApiKeyCipher())) {
+            return false;
+        }
+        boolean ok;
+        try {
+            String plainKey = cipher.decrypt(config.getApiKeyCipher());
+            ok = testConnectivity(config.getBaseUrl(), plainKey, config.getModelId());
+        } catch (Exception e) {
+            // 解密失败（主密钥不匹配/密文损坏）按试呼失败处理，不向管理端抛异常
+            log.warn("平台模型密钥解密失败, id: {}, 原因: {}", id, e.getMessage());
+            ok = false;
+        }
+        // 回填测试留痕（last_test_at / last_test_ok）
+        DivModelConfig patch = new DivModelConfig();
+        patch.setId(id);
+        patch.setLastTestOk(ok ? 1 : 0);
+        patch.setLastTestAt(LocalDateTime.now());
+        modelConfigMapper.updateById(patch);
+        log.info("平台模型连通性测试, id: {}, name: {}, 结果: {}", id, config.getName(), ok);
+        return ok;
     }
 
     /** 判断是否为内网地址（SSRF 防护） */
@@ -104,5 +137,54 @@ public class DivModelConfigService {
     public void deleteById(Long id) {
         modelConfigMapper.deleteById(id);
         log.info("删除模型配置, id: {}", id);
+    }
+
+    /**
+     * 解析平台默认模型供应商（解读链路优先级 2，由 LlmGateway 以 Supplier 懒加载调用）。
+     *
+     * <p>读 {@code div_platform_setting}（单例 id=1）的 {@code default_model_id}，
+     * 不可用（未配置/未启用/无密钥/解密失败/熔断由网关判）时用 {@code fallback_model_id}；
+     * 两者都不可用返回 null，由 LlmGateway 落到 yml bootstrap 兜底。</p>
+     *
+     * @return 平台默认供应商（source="platform"）；平台未配置可用模型时返回 null
+     */
+    public OpenAiCompatProvider resolvePlatformDefaultProvider() {
+        DivPlatformSetting setting = platformSettingService.getSetting();
+        OpenAiCompatProvider primary = buildModelProvider(setting.getDefaultModelId());
+        if (primary != null) {
+            return primary;
+        }
+        return buildModelProvider(setting.getFallbackModelId());
+    }
+
+    /**
+     * 按 div_model_config 主键构造运行时供应商。
+     * 跳过不可用配置：不存在、未启用、base_url/model_id 缺失、api_key_cipher 为空
+     * （种子数据 key 留空，管理端录入后才可用）、密文解密失败。
+     */
+    private OpenAiCompatProvider buildModelProvider(Long modelId) {
+        if (modelId == null || modelId <= 0) {
+            return null;
+        }
+        DivModelConfig config = modelConfigMapper.selectById(modelId);
+        if (config == null
+                || config.getEnabled() == null || config.getEnabled() != 1
+                || !StringUtils.hasText(config.getBaseUrl())
+                || !StringUtils.hasText(config.getModelId())
+                || !StringUtils.hasText(config.getApiKeyCipher())) {
+            log.debug("平台模型配置不可用，跳过, modelId: {}", modelId);
+            return null;
+        }
+        try {
+            String plainKey = cipher.decrypt(config.getApiKeyCipher());
+            int priority = config.getPriority() != null ? config.getPriority() : 100;
+            return new OpenAiCompatProvider(config.getName(), config.getBaseUrl(), plainKey,
+                    config.getModelId(), priority, true, "platform", config.getId(),
+                    "platform:" + config.getId());
+        } catch (Exception e) {
+            // 解密失败（主密钥不匹配/密文损坏）：跳过该配置，默认模型落备用/兜底
+            log.warn("平台模型密钥解密失败，跳过该配置, modelId: {}, 原因: {}", modelId, e.getMessage());
+            return null;
+        }
     }
 }

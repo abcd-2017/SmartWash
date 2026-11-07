@@ -8,6 +8,7 @@ import com.smartwash.feature.user.api.UserApi
 import com.smartwash.feature.user.impl.UserApiImpl
 import com.smartwash.feature.user.impl.init.HapticSettingsInitTask
 import com.smartwash.feature.user.impl.init.SessionInitTask
+import com.smartwash.feature.user.impl.network.api.DivSettingApi
 import com.smartwash.feature.user.impl.network.api.UserAccountApi
 import com.smartwash.feature.user.impl.session.SessionEventBus
 import com.smartwash.feature.user.impl.session.SessionManager
@@ -51,6 +52,11 @@ object UserAccountApiModule {
     @Provides
     fun provideUserAccountApi(retrofit: Retrofit): UserAccountApi =
         retrofit.create(UserAccountApi::class.java)
+
+    /** 观象台 BYOK 接口（设置页「解读模型」入口，issue #79；观象台模块属 #78 范围不在此动） */
+    @Provides
+    fun provideDivSettingApi(retrofit: Retrofit): DivSettingApi =
+        retrofit.create(DivSettingApi::class.java)
 }
 
 /**

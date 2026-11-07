@@ -88,8 +88,24 @@ export function markLoggedIn(): void {
 }
 
 /**
+ * 401 防抖窗口认领（导出供 DivSseClient 共享同一时间戳）：窗口期内首个调用方
+ * 记录时间戳并返回 true，窗口内的后续调用返回 false —— SSE 通道与 axios 通道
+ * 同刻 401 时只执行一次「清登录态 + toast」，避免双 toast / 双清理。
+ * @returns true = 本次调用负责执行 401 收尾；false = 窗口内已有调用方处理
+ */
+export function tryClaimUnauthorizedDebounce(): boolean {
+  const now = Date.now()
+  if (now - lastUnauthorizedAt < UNAUTHORIZED_DEBOUNCE_MS) {
+    return false
+  }
+  lastUnauthorizedAt = now
+  return true
+}
+
+/**
  * 401 统一处理：清 token → 清内存登录态 → 切回登录根页（经 isLoggedIn 会话态，不再压栈）。
- * 1.5s 时间窗防抖；已处于未登录态时静默返回，避免轮询/并发请求重复弹 toast、重复跳页。
+ * 1.5s 时间窗防抖（tryClaimUnauthorizedDebounce，SSE 通道共享同一时间戳）；
+ * 已处于未登录态时静默返回，避免轮询/并发请求重复弹 toast、重复跳页。
  * @param toastMessage 提示文案，传空串则不弹 toast（如本地无 token 的静默跳转场景）
  */
 function handleUnauthorized(toastMessage: string): void {
@@ -98,11 +114,9 @@ function handleUnauthorized(toastMessage: string): void {
   if (AppStorage.get<boolean>("isLoggedIn") === false) {
     return
   }
-  const now = Date.now()
-  if (now - lastUnauthorizedAt < UNAUTHORIZED_DEBOUNCE_MS) {
+  if (!tryClaimUnauthorizedDebounce()) {
     return
   }
-  lastUnauthorizedAt = now
   if (toastMessage !== "") {
     showErrorToast(toastMessage)
   }

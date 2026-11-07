@@ -108,12 +108,28 @@
 
     <!-- 解读页 -->
     <string name="div_reading_title">解 读</string>
+    <string name="div_reading_summary">一句话断语</string>
     <string name="div_reading_action">总结与行动</string>
     <string name="div_reading_followup">继 续 追 问</string>
     <string name="div_reading_share">分 享</string>
     <string name="div_reading_loading">正在推演解读…</string>
     <string name="div_reading_error">解读暂不可用，请稍后重试</string>
+    <string name="div_reading_section_fallback">解读</string>
     <string name="div_reading_endseal">观</string>
+
+    <!-- 解读错误（issue #78 error 帧映射：message 优先、以下为兜底） -->
+    <string name="div_error_record_missing">卦例不存在或已失效</string>
+    <string name="div_error_refused">该问题涉及高风险领域，请咨询专业机构</string>
+    <string name="div_error_rate_limited">今日解读次数已达上限，请明日再来</string>
+    <string name="div_error_service_unavailable">解读服务暂不可用，请稍后重试</string>
+    <string name="div_error_network">网络连接失败，请稍后重试</string>
+    <string name="div_error_create_record">解读建档失败，请稍后重试</string>
+    <string name="div_error_unauthorized">登录已失效，请重新登录</string>
+
+    <!-- 应验反馈（issue #78：POST /records/{id}/feedback，评分 1-5） -->
+    <string name="div_feedback_title">应验反馈</string>
+    <string name="div_feedback_done">反馈已提交</string>
+    <string name="div_feedback_submitting">正在提交…</string>
 
     <!-- 追问页 -->
     <string name="div_followup_title">继续追问</string>

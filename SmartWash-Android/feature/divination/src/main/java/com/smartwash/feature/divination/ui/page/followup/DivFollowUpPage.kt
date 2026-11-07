@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,11 +80,13 @@ fun DivFollowUpPage(
     val state by viewModel.uiState.collectAsState()
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    // 新消息到底部
-    LaunchedEffect(state.history.size) {
-        if (state.history.isNotEmpty()) {
-            listState.animateScrollToItem(state.history.size - 1)
+    // 新消息/流式增量到底部（issue #78：streamingReply 每次增量都跟随滚动）
+    LaunchedEffect(state.history.size, state.streamingReply?.length) {
+        val itemCount = state.history.size + if (state.streamingReply != null) 1 else 0
+        if (itemCount > 0) {
+            listState.animateScrollToItem(itemCount - 1)
         }
     }
 
@@ -134,22 +136,45 @@ fun DivFollowUpPage(
                         }
                     }
                 }
-                items(state.history, key = { it.content + it.role }) { turn ->
+                // key 用追加序号（history 只追加不删除，index 稳定）：旧 key=content+role 在
+                // 同会话出现相同文案轮次（Mock 固定回复/用户重发同句）会 Duplicate key 崩溃
+                itemsIndexed(state.history, key = { index, _ -> "h$index" }) { _, turn ->
                     ChatBubble(turn)
                 }
-                if (state.followUpState is RequestState.Loading) {
-                    item {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // 推演中的水波指示（§4.5 附：观象台金色；自带 reduced motion 静止分支）
-                            WaveIcon(isLoading = true, tint = c.gold, size = 16.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.div_followup_thinking),
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
-                                color = c.textTertiary,
+                // 流式回复气泡（issue #78 SSE delta 增量上屏；空增量先出水波 + 「正在推演…」）
+                state.streamingReply?.let { reply ->
+                    item(key = "streaming") {
+                        if (reply.isBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                WaveIcon(isLoading = true, tint = c.gold, size = 16.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.div_followup_thinking),
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    color = c.textTertiary,
+                                )
+                            }
+                        } else {
+                            ChatBubble(
+                                turn = DivFollowUpTurn(role = "assistant", content = reply),
+                                streaming = true,
                             )
                         }
+                    }
+                }
+                // 错误行（error 帧/网络失败；用户轮保留可重发）
+                val errorState = state.followUpState as? RequestState.Error
+                if (errorState != null) {
+                    item(key = "error") {
+                        Text(
+                            text = errorState.getMessage(context),
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = c.textTertiary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
                 // 流尾常驻脚注（画板：—— 继续追问将沿用本卦盘推演 ——）
@@ -181,16 +206,19 @@ fun DivFollowUpPage(
 }
 
 /** 聊天气泡（画板双板）：用户实金底右对齐（玄墨 gold.500 / 宣纸 gold.300、墨字、r16 无描边），
- *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 12/16，宽上限 220/240；新气泡首帧淡入。 */
+ *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 12/16，宽上限 220/240；新气泡首帧淡入。
+ *  streaming=true 为 SSE 增量上屏中的回复（取消首帧淡入，避免每帧重启动画）。 */
 @Composable
-private fun ChatBubble(turn: DivFollowUpTurn) {
+private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false) {
     val c = DivColors.current
     val isUser = turn.role == "user"
-    // 新气泡首帧 alpha 0→1（reduced motion 取消，直接呈现）
+    // 新气泡首帧 alpha 0→1（reduced motion 取消，直接呈现）；流式气泡跳过（增量逐帧重组会重启动画）
     val reduceMotion = LocalReduceMotion.current
-    val alpha = remember { Animatable(0f) }
+    val alpha = remember { Animatable(if (streaming) 1f else 0f) }
     LaunchedEffect(Unit) {
-        if (reduceMotion) {
+        if (streaming) {
+            alpha.snapTo(1f)
+        } else if (reduceMotion) {
             alpha.snapTo(1f)
         } else {
             alpha.animateTo(1f, tween(BUBBLE_FADE_MS))

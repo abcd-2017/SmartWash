@@ -1,16 +1,20 @@
 /**
- * 追问页 —— 对齐安卓 ui/page/followup/DivFollowUpPage.kt + DivFollowUpViewModel.kt。
+ * 追问页 —— 对齐安卓 ui/page/followup/DivFollowUpPage.kt + 同票 #78 的 SSE 追问。
  *
  * 结构：页头（居中标题 + 副题）→ 聊天流（user 金底右对齐 / assistant 素底左对齐）
- * → 新消息自动滚底 + Loading 尾部「推演中…」→ 底部输入栏（胶囊输入 + 发送金按钮）。
+ * → 新消息自动滚底 + Loading 尾部「推演中…」+ 流式回复气泡（delta 渐进出字）
+ * → 底部输入栏（胶囊输入 + 发送金按钮）。
  *
  * 关键约束：
  * - 记录读库（getById），沿用原盘原 castAt，不重算。
- * - followUp(form) 走 Mock；Loading 中防重入；发送后清输入框。
- * - 记录无则显示 div_chart_missing。
+ * - followUp 走 DivLlmRepository（SSE 流式优先 + 攒流兜底 + Mock 回退开关），
+ *   只发当前问题（历史解读上下文由服务端按 recordId 拼接）；
+ * - 服务端卦例 id：本地行已关联直接用；未关联（旧记录）先建档回写；
+ * - Loading 中防重入；发送后清输入框。记录无则显示 div_chart_missing。
  */
 
-import { DivMessage, followUp as requestFollowUp } from '../../../network/DivinationApi'
+import { buildCreateRecordForm, createDivRecord, DivMessage } from '../../../network/DivinationApi'
+import { followUpMarkdown, isLlmMock } from '../../../data/DivLlmRepository'
 import { DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivPageHeader,
@@ -117,6 +121,10 @@ struct DivFollowUpPage {
   @Local historyLength: number = 0
   @Local sending: boolean = false
   @Local input: string = ''
+  /** 流式回复累积文本（尾部气泡渐进出字；done 后并入 history 并清空） */
+  @Local streamingReply: string = ''
+  /** 本轮流式错误文案（非空时尾部显示错误行） */
+  @Local streamingError: string = ''
   private scroller: Scroller = new Scroller()
 
   async aboutToAppear(): Promise<void> {
@@ -130,9 +138,10 @@ struct DivFollowUpPage {
       const row = await DivRecordRepository.getById(recordId)
       this.record = row
       if (row !== null) {
-        logger.debug('divFollowUpPage', `追问页记录加载完成 recordId=${recordId}`)
+        logger.debug('divFollowUpPage', `追问页记录加载完成 localId=${recordId} ` +
+          `serverRecordId=${row.serverRecordId}`)
       } else {
-        logger.warn('divFollowUpPage', `追问页卦象记录不存在 recordId=${recordId}，按空态呈现`)
+        logger.warn('divFollowUpPage', `追问页卦象记录不存在 localId=${recordId}，按空态呈现`)
       }
     } catch (err) {
       this.record = null
@@ -150,8 +159,37 @@ struct DivFollowUpPage {
     }
   }
 
-  /** 发送追问：追加 user 轮 → followUp → 追加 assistant 轮；Loading 中防重入 */
-  private send(): void {
+  /** 流式回复增长滚底（频次与 delta 同步；smooth 滚动保证阅读连续） */
+  @Monitor('streamingReply')
+  onStreamingChange(): void {
+    if (this.sending) {
+      this.scroller.scrollToIndex(this.historyLength, false)
+    }
+  }
+
+  /** 服务端卦例 id 就绪（未关联先建档回写；Mock 模式完全离线跳过） */
+  private async ensureServerRecordId(record: DivRecordRow): Promise<number> {
+    if (isLlmMock()) {
+      return record.serverRecordId > 0 ? record.serverRecordId : -1
+    }
+    if (record.serverRecordId > 0) {
+      return record.serverRecordId
+    }
+    const resp = await createDivRecord(buildCreateRecordForm(record))
+    if (resp.code !== 200 || resp.data === null) {
+      logger.warn('divFollowUpPage', `追问建档失败 localId=${record.id} code=${resp.code} ` +
+        `message=${resp.message ?? ''}`)
+      return 0
+    }
+    await DivRecordRepository.updateServerRecordId(record.id, resp.data)
+    record.serverRecordId = resp.data
+    this.record = record
+    logger.info('divFollowUpPage', `追问建档成功 localId=${record.id} serverRecordId=${resp.data}`)
+    return resp.data
+  }
+
+  /** 发送追问：追加 user 轮 → SSE 追问（流式渐进出字）→ done 后并入 assistant 轮；Loading 中防重入 */
+  private async send(): Promise<void> {
     const q = this.input.trim()
     if (q.length === 0 || this.sending) {
       return
@@ -161,32 +199,53 @@ struct DivFollowUpPage {
       return
     }
     const userTurn: DivMessage = { role: 'user', content: q }
-    const newHistory = this.history.concat(userTurn)
-    this.history = newHistory
-    this.historyLength = newHistory.length
+    this.history = this.history.concat(userTurn)
+    this.historyLength = this.history.length
     // 发送后清输入框
     this.input = ''
     this.sending = true
-    requestFollowUp({
-      recordId: record.id,
-      question: q,
-      history: newHistory
-    }).then((resp): void => {
-      if (resp.code === 200 && resp.data !== null) {
-        const reply: DivMessage = { role: 'assistant', content: resp.data.reply }
-        this.history = this.history.concat(reply)
-        this.historyLength = this.history.length
-        // 低频关键动作：追问提交成功（追问内容只记长度，不打全文）
-        logger.info('divFollowUpPage', `追问提交成功 recordId=${record.id} turn=${newHistory.length}`)
-      } else {
-        logger.warn('divFollowUpPage', `追问响应异常 recordId=${record.id} code=${resp.code}`)
+    this.streamingReply = ''
+    this.streamingError = ''
+    try {
+      const serverId = await this.ensureServerRecordId(record)
+      if (serverId === 0) {
+        this.streamingError = '追问通道不可用，请稍后重试'
+        this.sending = false
+        return
       }
+      const turn = this.history.length
+      await followUpMarkdown(serverId, q, turn, {
+        onAccumulated: (full: string): void => {
+          this.streamingReply = full
+        },
+        onDone: (interpretationId: number, cached: boolean): void => {
+          const reply: DivMessage = { role: 'assistant', content: this.streamingReply }
+          this.history = this.history.concat(reply)
+          this.historyLength = this.history.length
+          this.streamingReply = ''
+          this.streamingError = ''
+          this.sending = false
+          // 低频关键动作：追问提交成功（追问内容只记长度，不打全文）
+          logger.info('divFollowUpPage', `追问提交成功 serverRecordId=${serverId} ` +
+            `interpretationId=${interpretationId} turn=${turn} chars=${reply.content.length}`)
+        },
+        onSseError: (code: number, message: string): void => {
+          this.streamingError = message
+          this.sending = false
+          logger.warn('divFollowUpPage', `追问 error 帧 serverRecordId=${serverId} code=${code}`)
+        },
+        onFail: (message: string): void => {
+          this.streamingError = message
+          this.sending = false
+          logger.warn('divFollowUpPage', `追问通道失败 serverRecordId=${serverId}: ${message}`)
+        }
+      })
+    } catch (err) {
+      this.streamingError = '追问通道不可用，请稍后重试'
       this.sending = false
-    }).catch((err: Object): void => {
-      this.sending = false
-      logger.error('divFollowUpPage', `追问提交失败 recordId=${record.id}`,
-        err instanceof Error ? err.message : '')
-    })
+      logger.error('divFollowUpPage', `追问发起异常 localId=${record.id}, ` +
+        `${err instanceof Error ? err.message : ''}`)
+    }
   }
 
   /**
@@ -322,7 +381,12 @@ struct DivFollowUpPage {
                 }
               }, (turn: DivMessage, index: number) => `${index}-${turn.role}-${turn.content}`)
 
-              if (this.sending) {
+              if (this.sending && this.streamingReply.length > 0) {
+                // 流式回复气泡（assistant 样式，delta 渐进出字；done 后并入聊天流）
+                ListItem() {
+                  ChatBubbleView({ turn: { role: 'assistant', content: this.streamingReply } })
+                }
+              } else if (this.sending) {
                 ListItem() {
                   Row() {
                     // 推演中的水波指示（金色 16）+ 文字 12
@@ -338,6 +402,24 @@ struct DivFollowUpPage {
                   }
                   .width('100%')
                   .alignItems(VerticalAlign.Center)
+                }
+              }
+
+              if (this.streamingError.length > 0) {
+                ListItem() {
+                  Row() {
+                    DivSerifText({
+                      text: this.streamingError,
+                      textSize: 12,
+                      weight: 400,
+                      spacing: 0,
+                      color: DivPalette.textTertiary,
+                      textAlign: TextAlign.Center
+                    })
+                  }
+                  .width('100%')
+                  .justifyContent(FlexAlign.Center)
+                  .padding({ top: 8, bottom: 8 })
                 }
               }
 

@@ -1,14 +1,26 @@
 package com.smartwash.divination.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.smartwash.divination.core.DivinationCore;
 import com.smartwash.divination.entity.DivInterpretation;
+import com.smartwash.divination.entity.DivPlatformSetting;
 import com.smartwash.divination.entity.DivRecord;
+import com.smartwash.divination.llm.ClientGoneException;
+import com.smartwash.divination.llm.LlmCallException;
+import com.smartwash.divination.llm.LlmChatResult;
+import com.smartwash.divination.llm.LlmErrorMapping;
 import com.smartwash.divination.llm.LlmGateway;
+import com.smartwash.divination.llm.OpenAiCompatClient;
+import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.llm.SseBridge;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRecordMapper;
+import com.smartwash.divination.prompt.PromptAssembler;
+import com.smartwash.divination.service.DivModelConfigService;
+import com.smartwash.divination.service.DivPlatformSettingService;
 import com.smartwash.divination.service.DivSafetyService;
 import com.smartwash.divination.service.DivUsageService;
+import com.smartwash.divination.service.DivUserApiConfigService;
 import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.config.MdcTaskDecorator;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +31,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,11 +42,11 @@ import java.util.concurrent.Executors;
  * 全链路时序：
  *   1. 安全分流（敏感问题拦截）
  *   2. Redis 限流 INCR → 超限 429
- *   3. 查解读缓存（Redis）→ 命中回放
- *   4. 组装 prompt packet（server_chart + 规则事实 + prompt 版本 + RAG）
+ *   3. 查解读缓存（Redis）→ 命中回放（预留，未实现；当前每次均真实调用 LLM）
+ *   4. 组装 prompt packet（激活 prompt 版本 + server_chart + 领域方法；追问时拼接历史解读上下文）
  *   5. 三层密钥解析 → LlmGateway 路由
- *   6. WebClient 流式调用 → SseBridge 逐 chunk 推流并累积
- *   7. 落库 div_interpretation
+ *   6. OpenAiCompatClient 流式调用 → SseBridge 逐 chunk 推流并累积（失败一次非流式回退）
+ *   7. 落库 div_interpretation（含 usage 计量与 prompt_version_id）
  *   8. 异步事实审计（B3 实现）
  */
 @Slf4j
@@ -47,6 +61,11 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final SseBridge sseBridge;
     private final DivSafetyService safetyService;
     private final DivUsageService usageService;
+    private final OpenAiCompatClient llmClient;
+    private final DivUserApiConfigService userApiConfigService;
+    private final DivPlatformSettingService platformSettingService;
+    private final DivModelConfigService modelConfigService;
+    private final PromptAssembler promptAssembler;
 
     /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
     private final MdcTaskDecorator mdcTaskDecorator;
@@ -54,6 +73,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     /** 异步推流线程池 */
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    /** 用户每日解读次数兜底限额：仅当 div_platform_setting 对应限额缺失时使用（主路径以 DB 为准） */
     @Value("${div.llm.limit.interpret-per-user-day:20}")
     private int interpretPerUserDay;
 
@@ -79,7 +99,8 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
         return emitter;
     }
 
-    private void doInterpret(SseEmitter emitter, Long recordId, String question, Long userId, boolean isFollowup) throws IOException {
+    /** 包级可见便于单测直调（异步线程池外同步执行）；对外入口为 {@link #interpret} */
+    void doInterpret(SseEmitter emitter, Long recordId, String question, Long userId, boolean isFollowup) throws IOException {
         // 1. 查卦例
         DivRecord record = recordMapper.selectById(recordId);
         if (record == null || !record.getUserId().equals(userId)) {
@@ -87,27 +108,28 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 2. 安全分流
-        String refusal = safetyService.check(question);
+        // 2. 安全分流：question 为空（首次解读空 body）时回退卦例自身问题，与 buildPacket 的
+        //    effectiveQuestion 同口径——防止空 body 请求绕过关键词拦截
+        String effectiveQuestion = question != null ? question : record.getQuestion();
+        String refusal = safetyService.check(effectiveQuestion);
         if (refusal != null) {
-            safetyService.recordBlocked(userId, question, record.getMethod(), "keyword");
+            safetyService.recordBlocked(userId, effectiveQuestion, record.getMethod(), "keyword");
             sseBridge.sendError(emitter, 403, refusal);
             return;
         }
 
-        // 3. 限流
-        if (!usageService.tryConsumeUserLimit(userId, interpretPerUserDay)) {
-            sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
-            return;
+        // 3. 解析供应商（先解析再限额：BYOK 与平台 key 的日限额数值不同，限额需按解析出的 keySource 区分）
+        DivPlatformSetting setting = platformSettingService.getSetting();
+        OpenAiCompatProvider userProvider = null;
+        if (setting.getByokEnabled() != null && setting.getByokEnabled() == 1) {
+            // 平台开启 BYOK 才查用户配置（enabled=1 且 verified=1），关闭时不查不传
+            userProvider = userApiConfigService.resolveUserProvider(userId);
         }
-
-        // 4. 组装 prompt packet（简化版：server_chart + 问题）
-        String prompt = buildPrompt(record, question);
-
-        // 5. 解析供应商（简化：使用 bootstrap 兜底）
         LlmGateway.ResolvedProvider resolved;
         try {
-            resolved = llmGateway.resolveProvider(null);
+            // 平台默认模型以 Supplier 懒加载：仅 BYOK 未配置/未启用/熔断时才查库解密
+            resolved = llmGateway.resolveProvider(userProvider,
+                    () -> modelConfigService.resolvePlatformDefaultProvider());
         } catch (IllegalStateException e) {
             // 供应商解析失败 = 服务降级（SSE 返回 503），warn 留痕便于排查密钥/平台配置问题
             log.warn("LLM 供应商解析失败，SSE 降级返回 503, recordId: {}, userId: {}, 原因: {}",
@@ -116,75 +138,143 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 6. 流式调用 LLM 并推流（简化实现：模拟流式输出）
-        StringBuilder contentBuilder = new StringBuilder();
-        long startTime = System.currentTimeMillis();
-
-        // TODO: 接入真实 WebClient 流式调用（B2 后续迭代完善）
-        // 当前为占位实现：返回提示文本
-        String placeholder = generatePlaceholderInterpretation(record, question);
-        for (String chunk : placeholder.split("(?<=\\n)")) {
-            sseBridge.sendDelta(emitter, chunk);
-            contentBuilder.append(chunk);
-            try {
-                Thread.sleep(50); // 模拟流式延迟
-            } catch (InterruptedException e) {
-                // 线程关闭信号，恢复中断标志（原行为保持不变，仅补 debug 留痕）
-                log.debug("解读流式推送延迟被中断，线程恢复中断标志, recordId: {}", recordId);
-                Thread.currentThread().interrupt();
-            }
+        // 4. 限额：按密钥来源三分流取对应日限额（BYOK / 平台 key / yml bootstrap）
+        int dailyLimit = resolveDailyLimit(setting, resolved);
+        if (!usageService.tryConsumeUserLimit(userId, dailyLimit)) {
+            sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
+            return;
         }
 
-        // 7. 落库
-        long latency = (int) (System.currentTimeMillis() - startTime);
+        // 5. 组装 prompt packet（激活 prompt 版本 + 完整 serverChart + 领域方法；追问时拼接历史解读上下文）
+        Map<String, String> packet = buildPacket(record, question, isFollowup);
+        String systemPrompt = packet.get("system");
+        String userPrompt = packet.get("user");
+        Long promptVersionId = parseVersionId(packet.get("promptVersionId"));
+        // 日志只打长度摘要，不打完整 prompt（含盘面与解读内容，避免刷日志）
+        log.debug("prompt 组装完成, recordId: {}, kind: {}, promptVersionId: {}, userPromptChars: {}",
+                recordId, isFollowup ? "followup" : "first", promptVersionId, userPrompt.length());
+
+        // 6. 流式调用 LLM 并推流（真实调用，失败且未推出增量时由客户端做一次非流式回退）
+        OpenAiCompatProvider provider = resolved.getProvider();
+        long startTime = System.currentTimeMillis();
+        LlmChatResult llmResult = null;
+        LlmCallException callError = null;
+        boolean clientGone = false;
+        try {
+            llmResult = llmClient.chatWithFallback(provider, systemPrompt, userPrompt,
+                    chunk -> sseBridge.sendDelta(emitter, chunk));
+        } catch (LlmCallException e) {
+            callError = e;
+        } catch (ClientGoneException e) {
+            // 客户端断连（emitter 已完成/已提交后仍推送）：非供应商失败——
+            // 不记熔断窗口、不 sendError（sendError 对已完成 emitter 会二次抛 ISE），静默收尾
+            clientGone = true;
+            log.debug("客户端已断开，解读推流中止, recordId: {}, userId: {}", recordId, userId);
+        }
+
+        // 熔断统计：仅记录有确定结果的调用；客户端断连时供应商结果未知，不进窗口（避免污染错误率）
+        if (!clientGone) {
+            llmGateway.recordResult(provider, callError == null);
+        }
+
+        if (callError != null) {
+            // 7. 错误映射：4xx 透传脱敏 message；5xx/网络异常 → 503 固定文案
+            int sseCode = LlmErrorMapping.mapToSseCode(callError);
+            String sseMsg = LlmErrorMapping.mapToSseMessage(callError);
+            log.warn("LLM 调用失败, recordId: {}, provider: {}, httpStatus: {}, sseCode: {}",
+                    recordId, provider.getName(), callError.getHttpStatus(), sseCode);
+            sseBridge.sendError(emitter, sseCode, sseMsg);
+            return;
+        }
+        if (clientGone) {
+            return;
+        }
+
+        // 8. 落库（usage 计量：供应商未返回 usage 时计 0，不阻塞主流程）
+        long latency = System.currentTimeMillis() - startTime;
         DivInterpretation interpretation = new DivInterpretation();
         interpretation.setRecordId(recordId);
         interpretation.setUserId(userId);
-        interpretation.setPromptVersionId(0L); // TODO: 从缓存取激活版本
+        interpretation.setPromptVersionId(promptVersionId); // 无激活版本走兜底时落 0
         interpretation.setKind(isFollowup ? "followup" : "first");
         interpretation.setQuestion(isFollowup ? question : null);
-        interpretation.setProvider(resolved.getProvider().getName());
-        interpretation.setModel(resolved.getProvider().getModel());
+        interpretation.setProvider(provider.getName());
+        interpretation.setModel(provider.getModel());
         interpretation.setKeySource(resolved.getKeySource());
         interpretation.setConfigId(resolved.getConfigId());
-        interpretation.setContentMd(contentBuilder.toString());
-        interpretation.setTokensIn(0);
-        interpretation.setTokensOut(0);
+        interpretation.setContentMd(llmResult.getContent());
+        interpretation.setTokensIn(llmResult.getTokensIn());
+        interpretation.setTokensOut(llmResult.getTokensOut());
         interpretation.setLatencyMs((int) latency);
         interpretation.setCacheHit(0);
         interpretation.setAuditStatus(0);
         interpretationMapper.insert(interpretation);
 
-        log.info("解读完成, recordId: {}, interpretationId: {}, latency: {}ms",
-                recordId, interpretation.getId(), latency);
+        log.info("解读完成, recordId: {}, interpretationId: {}, provider: {}, tokensIn: {}, tokensOut: {}, latency: {}ms",
+                recordId, interpretation.getId(), provider.getName(),
+                llmResult.getTokensIn(), llmResult.getTokensOut(), latency);
 
-        // 8. 推送完成帧
+        // 9. 推送完成帧
         sseBridge.sendDone(emitter, interpretation.getId(), false);
     }
 
     /**
-     * 组装 prompt packet（简化版）。
-     * 完整实现应包含：server_chart + 规则事实 + prompt 版本 + RAG top-k 引用。
+     * 按密钥来源解析用户每日解读限额（三分流）：
+     *   1. BYOK 请求（keySource=user）→ {@code div_platform_setting.byok_daily_limit}
+     *   2. 平台 key 请求（keySource=platform 且 provider.source=platform）→ {@code platform_daily_limit}
+     *   3. yml bootstrap 兜底请求（provider.source=bootstrap）→ 不读平台 DB 设置，
+     *      直接用 yml 兜底值（bootstrap 是平台配置全失效时的最后防线，限额不应依赖可能异常的 DB 设置）
+     *
+     * <p>DB 单例尚未初始化对应字段时统一兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
+     *
+     * @param setting  平台设置（单例）
+     * @param resolved 供应商解析结果（含 keySource 与 provider.source）
+     * @return 每日限额
      */
-    private String buildPrompt(DivRecord record, String question) {
-        return String.format(
-                "术数方法：%s\n问题：%s\n盘面：%s",
-                record.getMethod(), question, record.getServerChart()
-        );
+    private int resolveDailyLimit(DivPlatformSetting setting, LlmGateway.ResolvedProvider resolved) {
+        if ("bootstrap".equals(resolved.getProvider().getSource())) {
+            log.debug("yml bootstrap 兜底供应商请求，日限额直接用 yml 默认值: {}", interpretPerUserDay);
+            return interpretPerUserDay;
+        }
+        boolean byokRequest = "user".equals(resolved.getKeySource());
+        Integer limit = byokRequest ? setting.getByokDailyLimit() : setting.getPlatformDailyLimit();
+        if (limit == null || limit <= 0) {
+            log.debug("平台设置未配置{}日限额，兜底 yml 默认值", byokRequest ? "BYOK" : "平台");
+            return interpretPerUserDay;
+        }
+        return limit;
     }
 
     /**
-     * 生成占位解读文本（真实实现由 WebClient 流式调用 LLM 替代）。
+     * 组装 prompt packet：首次解读与追问分别委托 {@link PromptAssembler}。
+     *
+     * <p>追问（isFollowup=true）时按 recordId 查 div_interpretation 历史解读
+     * （首轮 + 历次追问，按时间升序）拼进 user prompt；首次解读 question 入参可为 null
+     * （对应落库语义 interpretation.question=null），此时 prompt 使用卦例自身问题。</p>
+     *
+     * @param record     卦例（已校验归属）
+     * @param question   本次问题（首次解读时与卦例问题相同或为 null，追问时为子问题）
+     * @param isFollowup 是否追问
+     * @return prompt packet（system/user/method/promptVersionId，见 PromptAssembler 键约定）
      */
-    private String generatePlaceholderInterpretation(DivRecord record, String question) {
-        return String.format(
-                "【观象台 · %s解读（占位）】\n\n" +
-                        "您的问题：%s\n\n" +
-                        "服务端已重算权威盘面并完成校验（chart_verified=%s）。\n" +
-                        "LLM 解读功能正在接入中，敬请期待。\n\n" +
-                        "免责声明：本解读仅供娱乐参考，不构成任何建议。",
-                record.getMethod(), question,
-                record.getChartVerified() != null && record.getChartVerified() == 1 ? "一致" : "待校验"
-        );
+    private Map<String, String> buildPacket(DivRecord record, String question, boolean isFollowup) {
+        if (!isFollowup) {
+            String effectiveQuestion = question != null ? question : record.getQuestion();
+            return promptAssembler.assemble(record.getMethod(), record.getServerChart(), effectiveQuestion);
+        }
+        // 追问：查该卦例此前全部解读记录（含首轮解读与历次追问），按时间升序供拼上下文
+        QueryWrapper<DivInterpretation> wrapper = new QueryWrapper<>();
+        wrapper.eq("record_id", record.getId())
+                .orderByAsc("created_at")
+                .orderByAsc("id");
+        List<DivInterpretation> history = interpretationMapper.selectList(wrapper);
+        return promptAssembler.assembleFollowup(record.getMethod(), record.getServerChart(), question, history);
+    }
+
+    /**
+     * 从 packet 取激活 prompt 版本 id；无激活版本走兜底时 packet 不含该键，落 0（保持现状语义）。
+     */
+    private Long parseVersionId(String versionIdStr) {
+        return versionIdStr != null && !versionIdStr.isEmpty() ? Long.valueOf(versionIdStr) : 0L;
     }
 }

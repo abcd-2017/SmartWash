@@ -10,6 +10,17 @@ apply from: "$rootDir/config/serialization.gradle"
 
 android {
     namespace 'com.smartwash.feature.divination'
+
+    buildFeatures {
+        // DivLlmRepository 按 BuildConfig.DIV_LLM_MOCK_ENABLED 决定解读走 Mock 还是真连
+        buildConfig true
+    }
+
+    defaultConfig {
+        // 观象台 LLM 解读 Mock 开关（issue #78）：默认 false = 走后端 SSE 真连；
+        // 后端不可用时翻 true 回退内置 Mock 文本（回归验收口径：翻回后行为与真连前一致）
+        buildConfigField "boolean", "DIV_LLM_MOCK_ENABLED", "false"
+    }
 }
 
 dependencies {

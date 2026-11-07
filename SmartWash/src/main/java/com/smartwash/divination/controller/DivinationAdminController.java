@@ -162,13 +162,12 @@ public class DivinationAdminController {
         return Result.ok("删除成功");
     }
 
-    @Operation(summary = "模型连通性测试", description = "不保存，试呼校验")
+    @Operation(summary = "模型连通性测试", description = "不保存，解密密钥后真实 1-token 试呼")
     @PostMapping("/models/{id}/test")
     public Result<Boolean> testModel(@PathVariable("id") Long id) {
         DivModelConfig config = modelConfigService.getById(id);
         if (config == null) return Result.failMsg("模型不存在");
-        // 解密后试呼（简化：直接返回 true）
-        return Result.ok(true);
+        return Result.ok(modelConfigService.testConnectivityById(id));
     }
 
     // ==================== 平台全局设置 ====================

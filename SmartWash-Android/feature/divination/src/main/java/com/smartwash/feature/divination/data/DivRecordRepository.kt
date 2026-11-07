@@ -6,7 +6,11 @@ import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.meihua.MeiHuaChart
 import com.smartwash.feature.divination.database.DivRecordDao
 import com.smartwash.feature.divination.database.DivRecordEntity
+import com.smartwash.feature.divination.network.DivinationApi
+import com.smartwash.feature.divination.network.DivRecordVo
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
@@ -15,10 +19,14 @@ import javax.inject.Singleton
 /**
  * 卦历仓库 —— 观象台排盘全部离线，数据走「内存即时计算 → Room」，
  * 复盘/追问一律读库中原盘原时刻，不重算。
+ *
+ * 服务端关联（issue #78）：卦历对账（分页对账回填 serverRecordId）与今日一签
+ * 服务端幂等关联也由本仓库承接（VM 不直连 Retrofit Api）。
  */
 @Singleton
 class DivRecordRepository @Inject constructor(
     private val dao: DivRecordDao,
+    private val api: DivinationApi,
 ) {
 
     fun observeAll(): Flow<List<DivRecordEntity>> = dao.observeAll()
@@ -30,6 +38,78 @@ class DivRecordRepository @Inject constructor(
     suspend fun getById(id: Long): DivRecordEntity? = dao.getById(id)
 
     suspend fun recent(limit: Int = 3): List<DivRecordEntity> = dao.recent(limit)
+
+    suspend fun findUnlinked(): List<DivRecordEntity> = dao.findUnlinked()
+
+    /** 回写服务端卦例 id（建档 / 今日一签关联） */
+    suspend fun markServerLinked(localId: Long, serverRecordId: Long) {
+        if (serverRecordId > 0) dao.updateServerRecordId(localId, serverRecordId)
+    }
+
+    /** 回写最近一次解读的服务端 id（SSE done 帧） */
+    suspend fun markInterpretation(localId: Long, interpretationId: Long) {
+        if (interpretationId > 0) dao.updateInterpretationId(localId, interpretationId)
+    }
+
+    /**
+     * 卦历对账（issue #78，自 DivHistoryViewModel 下沉）：静默拉服务端分页首页，把
+     * 「本地未关联服务端」的记录按 method+question+castAt 对账回填 serverRecordId——
+     * 后续求解读/追问直接复用服务端卦例。失败静默返回 0（卦盘/解读链路另有
+     * ensureServerRecord 兜底建档），本地展示不受影响。
+     *
+     * @return 本次回填关联的记录数（0 = 无回填或拉取失败）
+     */
+    suspend fun syncServerLinks(page: Int = 1, size: Int = 50): Int {
+        val result = runCatching { api.searchRecords(page = page, size = size) }
+            .onFailure { AppLogger.warn(TAG, "卦历服务端同步失败（本地展示不受影响）: ${it.message}") }
+            .getOrNull() ?: return 0
+        val serverRecords = result.data?.records.orEmpty()
+        if (result.code != 200 || serverRecords.isEmpty()) return 0
+        val unlinked = findUnlinked()
+        if (unlinked.isEmpty()) return 0
+        var linked = 0
+        unlinked.forEach { local ->
+            serverRecords.firstOrNull { it.matches(local) }?.let { match ->
+                markServerLinked(local.id, match.id)
+                linked++
+            }
+        }
+        if (linked > 0) {
+            AppLogger.info(TAG, "卦历同步回填 serverRecordId ×$linked / 未关联 ${unlinked.size}")
+        }
+        return linked
+    }
+
+    /**
+     * 今日一签服务端幂等关联（issue #78，自 DivHomeViewModel 下沉）：GET /today
+     * （服务端同日幂等）取服务端卦例 id 回写本地记录 serverRecordId（服务端优先）。
+     * 失败静默回退纯本地（解读时再由 DivLlmRepository.ensureServerRecord 兜底建档）。
+     */
+    suspend fun linkTodaySign(localId: Long) {
+        runCatching { api.getTodayRecord() }
+            .onSuccess { result ->
+                val serverId = result.data?.id ?: 0L
+                if (result.code == 200 && serverId > 0) {
+                    markServerLinked(localId, serverId)
+                    AppLogger.info(TAG, "今日一签关联服务端卦例 localId=$localId serverRecordId=$serverId")
+                }
+            }
+            .onFailure {
+                AppLogger.warn(TAG, "今日一签服务端关联失败（回退本地，解读时再兜底建档）: ${it.message}")
+            }
+    }
+
+    /** 对账键：method + question + castAt（服务端 LocalDateTime 按 tzOffset 还原为 epoch millis） */
+    private fun DivRecordVo.matches(local: DivRecordEntity): Boolean =
+        method == local.method &&
+            question == local.question &&
+            castAtMillis() == local.castAt
+
+    private fun DivRecordVo.castAtMillis(): Long? = runCatching {
+        val iso = castAt ?: return null
+        val offsetSeconds = (tzOffset ?: 480) * 60
+        LocalDateTime.parse(iso).toEpochSecond(ZoneOffset.ofTotalSeconds(offsetSeconds)) * 1000L
+    }.getOrNull()
 
     /** 保存排盘记录（摇卦成卦 / 起局 / 今日一签入库），返回记录 id */
     suspend fun save(

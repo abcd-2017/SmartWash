@@ -1,141 +1,314 @@
 /**
- * 观象台解读 / 追问接口契约 —— 当前为 Mock 实现。
+ * 观象台用户端接口封装（#80 真连）—— 唯一事实标准：后端 DivinationWebController
+ * （SmartWash/src/main/java/com/smartwash/divination/controller/DivinationWebController.java，
+ * 前缀 /web/auth/div，需 ROLE_USER，JWT Bearer，响应信封 {code,message,data}）。
  *
- * 蓝本：安卓 feature/divination/.../network/DivinationApi.kt + data/DivLlmRepository.kt。
+ * 接口清单（与 Android 端同票 #78 契约 100% 对齐）：
+ * - POST   /web/auth/div/records                建档 → data=服务端 recordId(Long)
+ * - GET    /web/auth/div/records?page&size       卦历分页 → Page<RecordVo>
+ * - GET    /web/auth/div/records/{id}            卦例详情（含最近一次解读）
+ * - GET    /web/auth/div/today                   今日一签（服务端按当日时间卦生成/复用，幂等）
+ * - POST   /web/auth/div/records/{id}/feedback   反馈与应验回填
+ * - GET    /web/auth/div/methods                 四术元信息与免责声明文案
+ * - POST   /web/auth/div/records/{id}/interpret  SSE 流式解读（body 为纯文本 question，可空）
+ * - POST   /web/auth/div/records/{id}/followup   同卦追问 SSE（body 为纯文本 question，必填）
  *
- * 后端现状：`SmartWash/src/main/java/com/smartwash/divination/` 已有服务层（管理端接口 + RAG + 记录），
- * 但**没有用户端 controller**——`web/auth/divination/interpret|followup` 尚未对外暴露。
- * 因此本文件先返回与安卓同结构的 Mock 文本；后端就绪后只需替换本文件的实现，
- * 调用方（解读页 / 追问页）零改动。
+ * 通道划分：
+ * - JSON 信封接口走既有 httpUtil（Axios 拦截器自动注入 Bearer / 统一 401 处理）；
+ * - interpret / followup 走 DivSseClient（@ohos.net.http 流式 + 攒流兜底，手动注入 token，
+ *   401 与 Axios 同语义）。
  *
- * 注意：本模块的 `/web/auth/` 前缀会被 Axios 请求拦截器自动注入 Bearer token。
+ * 爻值口径（六爻/梅花 lines 映射，服务端 core 重算权威盘面的输入）：
+ * - 六爻：后端 6/7/8/9（老阴6/少阳7/少阴8/老阳9），端上 1/2/3/4（少阳1/少阴2/老阳3/老阴4）
+ *   → 提交前映射 1→7、2→8、3→9、4→6（奇偶阴阳一致，动爻 6/9 对齐）；
+ * - 梅花：后端 lines 为 [上卦先天数, 下卦先天数, 动爻]（1..8 与端上 Trigram.number 同源），
+ *   端上 chartJson 的 lines 是 6 爻值编码 → 从 chart 的 upper/lower/movingYao 重构三元组；
+ * - 奇门/六壬：无 lines（服务端按 castAt 重算），castMethod 仅为元数据。
  */
 
 import { BaseResponse } from '../../../network/BaseResponse'
 import { httpUtil } from '../../../network/HttpUtil'
 import { logger } from '../../../utils/Logger'
+import { decodeBundle, decodeBundleFromJson, DivRecordRow } from '../data/DivinationStore'
+import { DivSseCallbacks, divSsePost } from './DivSseClient'
+// 平台模型目录与 BYOK 设置同属 /web/auth/div 域，已由 #81 在 DivSettingsApi 实现，此处转发复用（勿重复定义）
+export { getDivModels, DivModelVo } from './DivSettingsApi'
 
-/** 解读请求体（字段与安卓 DivinationApi.interpret 一致） */
-export interface DivInterpretForm {
-  recordId: number
-  method: string
-  category: string
-  question: string
-  castAt: number
-  chartJson: string
-  stream: boolean
-}
+// ========== 请求体 ==========
 
-/** 追问请求体 */
-export interface DivFollowUpForm {
-  recordId: number
-  question: string
-  history: Array<DivMessage>
-}
-
+/** 追问页聊天单轮（user/assistant 本地聊天流渲染用；追问请求只发当前问题，历史由服务端拼） */
 export interface DivMessage {
   role: string
   content: string
 }
 
-export interface DivReadingSection {
-  title: string
-  content: string
+/** 建档请求体（对齐后端 CreateRecordFrom，method/question/castMethod/castAt 必填） */
+export interface DivCreateRecordForm {
+  /** 术数：liuyao/meihua/qimen/liuren */
+  method: string
+  /** 所问领域 id；后端空值落 general */
+  category: string
+  question: string
+  /** 起卦方式：auto/manual/time/number（引擎仅作元数据，盘面由 lines/castAt 决定） */
+  castMethod: string
+  /** 起卦时刻（epoch 毫秒） */
+  castAt: number
+  /** 时区偏移分钟（东八=480；按 castAt 时刻的设备时区计算，对齐安卓 TimeZone.getOffset） */
+  tzOffset: number
+  /** 起卦原始输入（六爻爻值数组 / 梅花三元组；奇门六壬不传） */
+  lines?: Array<number>
+  /** 端上排盘结果 JSON 字符串（chartJson 原文 = bundle 全文，对齐安卓 DivChartCodec.encode(bundle)） */
+  clientChart: string
 }
 
-export interface DivReadingVo {
-  summary: string
-  sections: Array<DivReadingSection>
-  action: string
+/** 反馈 + 应验回填请求体（对齐后端 FeedbackFrom） */
+export interface DivFeedbackForm {
+  interpretationId: number
+  /** 1-5 */
+  rating: number
+  /** 0未回填/1应验/2未验/3难说 */
+  outcome: number
+  outcomeNote?: string
+}
+
+// ========== 响应 VO（字段名与后端逐一勿改；LocalDateTime 为字符串） ==========
+
+/** 卦例视图（卦历列表返回，对齐后端 RecordVo） */
+export interface DivRecordVo {
+  id: number
+  method: string
+  category: string
+  question: string
+  castMethod: string
+  /** 后端 LocalDateTime 序列化字符串（yyyy-MM-dd HH:mm:ss） */
+  castAt: string
+  tzOffset: number
+  source: string
+  /** 1 端上/服务端盘面一致，0 不一致（仅标记，不影响建档与解读） */
+  chartVerified: number
+  latestInterpretation: string | null
+  createdAt: string
+}
+
+/** 解读记录视图（对齐后端 InterpretationVo） */
+export interface DivInterpretationVo {
+  id: number
+  recordId: number
+  /** first / followup */
+  kind: string
+  question: string | null
+  provider: string
+  model: string
+  keySource: string
+  /** 解读正文（Markdown 单文） */
+  contentMd: string
+  tokensIn: number
+  tokensOut: number
+  latencyMs: number
+  cacheHit: number
+  auditStatus: number
+  createdAt: string
+}
+
+/** 卦例详情视图（对齐后端 RecordDetailVo） */
+export interface DivRecordDetailVo {
+  id: number
+  method: string
+  category: string
+  question: string
+  castMethod: string
+  castAt: string
+  tzOffset: number
+  source: string
+  lines: string | null
+  clientChart: string | null
+  serverChart: string | null
+  chartVerified: number
+  latestInterpretation: DivInterpretationVo | null
+  createdAt: string
+}
+
+/** 卦历分页（对齐后端 Page<RecordVo> 的关键分页字段） */
+export interface DivRecordPageVo {
+  records: Array<DivRecordVo>
+  total: number
+  size: number
+  current: number
+}
+
+/** 四术元信息（对齐后端 MethodVo） */
+export interface DivMethodVo {
+  code: string
+  name: string
+  description: string
   disclaimer: string
 }
 
-export interface DivFollowUpVo {
-  reply: string
+/** 卦历分页查询参数（对齐后端 BaseSearchFrom 的 page/size） */
+interface DivRecordPageQuery {
+  page: number
+  size: number
 }
 
-const METHOD_NAMES: Record<string, string> = {
-  'liuyao': '六爻',
-  'meihua': '梅花易数',
-  'qimen': '奇门遁甲',
-  'liuren': '大六壬'
+// ========== 爻值口径映射（建档 lines / clientChart 输入） ==========
+
+/** chartJson 局部视图：六爻爻值数组 */
+interface ChartLinesView {
+  lines?: number[]
 }
 
-const CATEGORY_NAMES: Record<string, string> = {
-  'career': '事业',
-  'wealth': '财运',
-  'love': '感情',
-  'study': '学业',
-  'travel': '出行',
-  'other': '综合'
+/** chartJson 局部视图：梅花先天卦数三元组（Trigram.number 1..8 与后端同源） */
+interface ChartTrigramView {
+  number?: number
 }
 
-const DISCLAIMER = '观象台为传统术数排盘与文化解读工具，结果仅供娱乐与文化研究参考，不构成任何决策依据。'
-
-function delay(ms: number): Promise<void> {
-  return new Promise<void>((resolve: (value: void) => void) => {
-    setTimeout(resolve, ms)
-  })
+interface ChartMeiHuaView {
+  upper?: ChartTrigramView
+  lower?: ChartTrigramView
+  /** 动爻 1..6（MeiHuaChart 序列化键即 movingYao；勿读 moving——恒 undefined 会丢三元组） */
+  movingYao?: number
 }
 
-function buildMockReading(form: DivInterpretForm): DivReadingVo {
-  const methodName = METHOD_NAMES[form.method] ?? form.method
-  const categoryName = CATEGORY_NAMES[form.category] ?? form.category
-  const question = form.question.trim()
-
-  const summary = `${methodName}起卦，问「${question}」。所问属${categoryName}领域，以下为盘面推演结果。`
-
-  const sections: Array<DivReadingSection> = []
-  sections.push({
-    title: '直接判断',
-    content: `${methodName}本卦成象，问事之体与用已分。就${categoryName}而言，盘面呈现的是事情当前的状态与推力，` +
-      '而非定局——变爻所在之处即转机所在。'
-  })
-  sections.push({
-    title: form.method === 'liuyao' ? '用神与旺衰' : (form.method === 'meihua' ? '体用生克' : '格局要点'),
-    content: form.method === 'liuyao'
-      ? '用神已依所问领域取定，旺相休囚死看月令日辰。用神旺相则事有根基，休囚则推进乏力；若用神落旬空月破，须待出空填实之期。'
-      : (form.method === 'meihua'
-        ? '体卦为己、用卦为事。体用比和则顺，体克用则事可成而费力，用克体则事多阻，体生用则耗散，用生体则有人相助。'
-        : '以日干为体、时干为用，看值符值使之落宫与空亡驿马。落宫得生则事顺，落空亡则须待时日。')
-  })
-  sections.push({
-    title: form.method === 'liuren' ? '三传与天将' : '关键动变',
-    content: form.method === 'liuren'
-      ? '四课三传已成。初传为事之始、末传为事之终，中传为过程；天将加临处即助力与阻碍的来源。'
-      : '动爻为变化之机，静爻为既定之势。动而化进则事进，化退则事退；回头生克决定这一变化对用神是助是损。'
-  })
-  sections.push({
-    title: '应期',
-    content: '应期取用神逢值逢合之期，或出空填实之时。盘面所示为时机倾向，具体时日仍需结合现实节奏判断。'
-  })
-
-  return {
-    summary: summary,
-    sections: sections,
-    action: '建议以盘面提示的方向调整节奏：用神得力则积极推进，用神休囚则先固本再图进。重要决策请回到现实信息核对。',
-    disclaimer: DISCLAIMER
+/** 端上爻值 → 后端六爻爻值（1少阳→7 / 2少阴→8 / 3老阳→9 / 4老阴→6；其余原样兜底） */
+function toServerYaoCode(localCode: number): number {
+  if (localCode === 1) {
+    return 7
   }
+  if (localCode === 2) {
+    return 8
+  }
+  if (localCode === 3) {
+    return 9
+  }
+  if (localCode === 4) {
+    return 6
+  }
+  return localCode
 }
 
-/** 解读（Mock）：后端就绪后替换为 httpUtil.post 真连 */
-export async function interpret(form: DivInterpretForm): Promise<BaseResponse<DivReadingVo>> {
-  // Mock 留痕（debug）：标记解读内容为本地 Mock 产物，便于排查"内容为模板文本"类反馈；
-  // 问事内容只记长度，chartJson 不打全文
-  logger.debug('divinationApi', `解读 Mock 生成 recordId=${form.recordId} method=${form.method} ` +
-    `category=${form.category} questionLen=${form.question.length}`)
-  await delay(600)
-  return { code: 200, message: 'ok', data: buildMockReading(form) }
+/**
+ * 由本地卦盘记录构建服务端建档 lines：
+ * - liuyao：chartJson.lines 逐爻转后端码；
+ * - meihua：从 upper/lower/movingYao 重构 [上卦数, 下卦数, 动爻]；
+ * - qimen/liuren：undefined（服务端按 castAt 重算）。
+ */
+function buildServerLines(row: DivRecordRow): Array<number> | undefined {
+  try {
+    const chartJson = decodeBundle(decodeBundleFromJson(row.chartJson))
+    if (row.method === 'liuyao') {
+      const chart = JSON.parse(chartJson) as ChartLinesView
+      if (Array.isArray(chart.lines)) {
+        return chart.lines.map((code: number): number => toServerYaoCode(code))
+      }
+      return undefined
+    }
+    if (row.method === 'meihua') {
+      const chart = JSON.parse(chartJson) as ChartMeiHuaView
+      const upper = chart.upper?.number
+      const lower = chart.lower?.number
+      const movingYao = chart.movingYao
+      if (typeof upper === 'number' && typeof lower === 'number' && typeof movingYao === 'number') {
+        return [upper, lower, movingYao]
+      }
+      return undefined
+    }
+  } catch (err) {
+    // 解码失败按无原始输入建档（服务端按 castAt 时间卦重算），warn 留痕不打盘面内容
+    logger.warn('divinationApi', `建档 lines 构建失败 method=${row.method}, ` +
+      `${err instanceof Error ? err.message : ''}`)
+  }
+  return undefined
 }
 
-/** 追问（Mock）：沿用原盘原 castAt，不重算（见 Repository 铁律） */
-export async function followUp(form: DivFollowUpForm): Promise<BaseResponse<DivFollowUpVo>> {
-  logger.debug('divinationApi', `追问 Mock 应答 recordId=${form.recordId} turn=${form.history.length}`)
-  await delay(600)
-  const turn = form.history.length
-  const reply = turn <= 2
-    ? '已沿用你所起的这一卦继续推演。盘面未变，变化的只是你追问的切口——说得更具体些，我可以就那一处细论。'
-    : '这一卦的推演已趋完整。若想换一个角度，可以重新起卦；同一卦象反复追问，信息增量有限。'
-  return { code: 200, message: 'ok', data: { reply: reply } }
+/** 起卦方式元数据（引擎无分支依赖；梅花恒传 number——lines 三元组即数字卦输入口径） */
+function inferCastMethod(method: string): string {
+  if (method === 'liuyao') {
+    return 'auto'
+  }
+  if (method === 'meihua') {
+    return 'number'
+  }
+  return 'time'
 }
 
+/** 建档问题防御：trim + 空白兜底「未记所问」（后端 @NotBlank，本地历史脏数据防建档 400，对齐安卓） */
+function normalizeQuestion(question: string): string {
+  const trimmed = question.trim()
+  return trimmed.length > 0 ? trimmed : '未记所问'
+}
+
+/**
+ * 由本地卦盘记录（RDB divination_db 行）构建服务端建档表单。
+ * clientChart 传 row.chartJson 原文（bundle 全文，对齐安卓 DivChartCodec.encode(bundle)）：
+ * 解包后的裸 chart 丢 method 信封且 __map 包裹形态与安卓不一致，服务端 chartVerified 比对会误判。
+ */
+export function buildCreateRecordForm(row: DivRecordRow): DivCreateRecordForm {
+  const form: DivCreateRecordForm = {
+    method: row.method,
+    category: row.category,
+    question: normalizeQuestion(row.question),
+    castMethod: inferCastMethod(row.method),
+    castAt: row.castAt,
+    // 起卦时刻的设备时区偏移（分钟，东八=480）：按 castAt 计算而非当前时刻，跨时区回填不漂移
+    tzOffset: -new Date(row.castAt).getTimezoneOffset(),
+    lines: buildServerLines(row),
+    clientChart: row.chartJson
+  }
+  return form
+}
+
+// ========== JSON 信封接口（走 httpUtil，Axios 拦截器自动注入 token） ==========
+
+/** 建档：返回服务端 recordId（Long） */
+export async function createDivRecord(form: DivCreateRecordForm): Promise<BaseResponse<number>> {
+  logger.debug('divinationApi', `建档请求 method=${form.method} castAt=${form.castAt} ` +
+    `lines=${form.lines === undefined ? 0 : form.lines.length}`)
+  return httpUtil.post<number>('/web/auth/div/records', form)
+}
+
+/** 今日一签（服务端按当日时间卦生成/复用，幂等）；未登录/网络失败由调用方兜底 */
+export async function getDivToday(): Promise<BaseResponse<DivRecordDetailVo>> {
+  return httpUtil.get<DivRecordDetailVo>('/web/auth/div/today')
+}
+
+/** 卦历分页（当前用户卦例历史） */
+export async function getDivRecords(page: number, size: number): Promise<BaseResponse<DivRecordPageVo>> {
+  const query: DivRecordPageQuery = { page: page, size: size }
+  return httpUtil.get<DivRecordPageVo>('/web/auth/div/records', query)
+}
+
+/** 四术元信息与免责声明文案 */
+export async function getDivMethods(): Promise<BaseResponse<Array<DivMethodVo>>> {
+  return httpUtil.get<Array<DivMethodVo>>('/web/auth/div/methods')
+}
+
+/** 反馈与应验回填（interpretationId 来自解读 done 帧） */
+export async function submitDivFeedback(recordId: number,
+  form: DivFeedbackForm): Promise<BaseResponse<string>> {
+  logger.debug('divinationApi', `反馈提交 recordId=${recordId} interpretationId=${form.interpretationId} ` +
+    `rating=${form.rating} outcome=${form.outcome}`)
+  return httpUtil.post<string>(`/web/auth/div/records/${recordId}/feedback`, form)
+}
+
+// ========== SSE 流式接口（走 DivSseClient：流式优先 + 攒流兜底） ==========
+
+/**
+ * 解读（SSE）：POST /web/auth/div/records/{id}/interpret。
+ * body 为纯文本 question（后端 @RequestBody(required=false) String 直取原始 body；
+ * 空串 = 无补充问题，服务端按盘面直出解读），trim 对齐安卓。
+ */
+export async function streamInterpret(recordId: number, question: string,
+  cb: DivSseCallbacks): Promise<void> {
+  logger.debug('divinationApi', `解读 SSE 请求 recordId=${recordId} questionLen=${question.trim().length}`)
+  return divSsePost(`/web/auth/div/records/${recordId}/interpret`, question.trim(), cb)
+}
+
+/**
+ * 同卦追问（SSE）：POST /web/auth/div/records/{id}/followup。
+ * 只发当前问题（历史解读上下文由服务端按 recordId 拼接），body 为纯文本（必填）。
+ */
+export async function streamFollowUp(recordId: number, question: string,
+  cb: DivSseCallbacks): Promise<void> {
+  logger.debug('divinationApi', `追问 SSE 请求 recordId=${recordId} questionLen=${question.length}`)
+  return divSsePost(`/web/auth/div/records/${recordId}/followup`, question, cb)
+}

@@ -31,6 +31,12 @@ data class DivHomeUiState(
 
 /**
  * 卜问首页 VM：干支天象头（当日四柱）、今日一签（梅花时间卦按当天日期确定性计算）、案卷近三条。
+ *
+ * 今日一签（issue #78）：签面仍由本地确定性时间卦呈现（同日同签，与服务端算法同源）；
+ * 点击入库时先本地幂等建档，再经 [DivRecordRepository.linkTodaySign] 调 GET /today
+ * （服务端同日幂等）取服务端卦例 id 回写关联（serverRecordId，服务端优先）——后续求解读
+ * 直接复用服务端卦例，避免重复建档；服务端不可达时静默回退纯本地（解读时再由
+ * DivLlmRepository.ensureServerRecord 兜底建档）。
  */
 @HiltViewModel
 class DivHomeViewModel @Inject constructor(
@@ -68,13 +74,14 @@ class DivHomeViewModel @Inject constructor(
         }
     }
 
-    /** 今日一签入库（同日去重），返回卦历记录 id 供跳转卦盘复盘 */
+    /** 今日一签入库（本地同日去重 + 服务端 /today 幂等关联），返回卦历记录 id 供跳转卦盘复盘 */
     fun ensureTodaySignSaved(onSaved: (Long) -> Unit) {
         viewModelScope.launch {
             val (id, _) = repository.todaySign(
                 question = "今日一签",
                 category = DivCategory.OTHER.id,
             )
+            repository.linkTodaySign(id)
             onSaved(id)
         }
     }

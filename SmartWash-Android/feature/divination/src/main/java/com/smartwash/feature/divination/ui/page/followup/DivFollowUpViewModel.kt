@@ -5,15 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartwash.feature.divination.R
 import com.smartwash.common.utils.AppLogger
-import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.data.DivChartBundle
 import com.smartwash.feature.divination.data.DivChartCodec
 import com.smartwash.feature.divination.data.DivFollowUpTurn
 import com.smartwash.feature.divination.data.DivLlmRepository
+import com.smartwash.feature.divination.data.DivStreamEvent
 import com.smartwash.feature.divination.database.DivRecordEntity
 import com.smartwash.feature.divination.data.DivRecordRepository
 import com.smartwash.common.utils.model.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,13 +25,16 @@ data class DivFollowUpUiState(
     val record: DivRecordEntity? = null,
     val bundle: DivChartBundle? = null,
     val history: List<DivFollowUpTurn> = emptyList(),
+    /** 当前流式回复（delta 增量累积；null=无进行中回复，空串=已发起尚无增量） */
+    val streamingReply: String? = null,
     val followUpState: RequestState = RequestState.Idle,
     val loadingRecord: Boolean = true,
 )
 
 /**
- * 追问页 VM：从 Room 读原盘原时刻（沿用原 castAt 与原盘面，不重算）→ 调 [DivLlmRepository.followUp]。
- * 后端就绪后只换 Repository 实现，VM 不变。
+ * 追问页 VM（issue #78 真连）：followUp 走与解读同一 SSE 通道，历史上下文由服务端拼接
+ * （客户端只发当前问题）。delta 增量累积进 streamingReply 流式上屏，done 后并入 history；
+ * error 帧映射 UI 错误态（用户轮保留，可重发）。必要时先确保服务端建档（Repository 内兜底）。
  */
 @HiltViewModel
 class DivFollowUpViewModel @Inject constructor(
@@ -63,41 +67,71 @@ class DivFollowUpViewModel @Inject constructor(
         }
     }
 
-    /** 发送追问：追加 user 轮 → 调 followUp → 追加 assistant 轮 */
+    /** 发送追问：追加 user 轮 → SSE 流式回复（delta 累积 / done 并入 history / error 呈错误态） */
     fun send(question: String) {
         val q = question.trim()
         if (q.isEmpty() || _uiState.value.followUpState is RequestState.Loading) return
         viewModelScope.launch {
-            val record = _uiState.value.record ?: return@launch
-            val method = runCatching { DivMethod.fromId(record.method) }.getOrDefault(DivMethod.LIU_YAO)
+            // send 前重读最新记录（不用 load() 时的快照）：首轮追问 done 后 Room 已回写
+            // serverRecordId/interpretationId，旧快照带 serverRecordId==0 会让 Repository
+            // 重复 POST /records 建档——新卦例名下无解读记录，服务端拼历史为空
+            val record = recordRepository.getById(recordId) ?: _uiState.value.record ?: return@launch
 
             val userTurn = DivFollowUpTurn(role = "user", content = q)
             val newHistory = _uiState.value.history + userTurn
             _uiState.value = _uiState.value.copy(
+                record = record,
                 history = newHistory,
+                streamingReply = "",
                 followUpState = RequestState.Loading,
             )
 
-            val result = runCatching {
-                llmRepository.followUp(
-                    method = method,
-                    question = q,
-                    history = newHistory,
-                )
-            }
-            if (result.isSuccess) {
-                val reply = DivFollowUpTurn(role = "assistant", content = result.getOrThrow())
+            try {
+                llmRepository.followUp(record, q, newHistory) { event -> onStreamEvent(event) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLogger.error(TAG, "DivFollowUpViewModel.send: ${e.message}", e)
                 _uiState.value = _uiState.value.copy(
-                    history = newHistory + reply,
-                    followUpState = RequestState.Success,
-                )
-                AppLogger.debug(TAG, "追问回复成功 recordId=$recordId 轮次=${newHistory.size / 2}")
-            } else {
-                AppLogger.error(TAG, "DivFollowUpViewModel.send: ${result.exceptionOrNull()?.message}", result.exceptionOrNull())
-                _uiState.value = _uiState.value.copy(
+                    streamingReply = null,
                     followUpState = RequestState.Error(
                         messageResId = R.string.div_reading_error,
-                        message = result.exceptionOrNull()?.message,
+                        message = e.message,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun onStreamEvent(event: DivStreamEvent) {
+        when (event) {
+            is DivStreamEvent.Delta -> {
+                _uiState.value = _uiState.value.copy(
+                    streamingReply = (_uiState.value.streamingReply ?: "") + event.text,
+                )
+            }
+
+            is DivStreamEvent.Done -> {
+                val reply = _uiState.value.streamingReply.orEmpty()
+                _uiState.value = _uiState.value.copy(
+                    history = _uiState.value.history + DivFollowUpTurn(role = "assistant", content = reply),
+                    streamingReply = null,
+                    followUpState = RequestState.Success,
+                )
+                AppLogger.info(TAG, "追问回复成功 recordId=$recordId interpretationId=${event.interpretationId}")
+            }
+
+            is DivStreamEvent.Failure -> {
+                if (event.reason == DivStreamEvent.Failure.Reason.UNAUTHORIZED) {
+                    // 401：SseClient 已清会话并通知 UI 跳登录，本页不再叠加错误文案
+                    return
+                }
+                AppLogger.warn(TAG, "追问失败 recordId=$recordId reason=${event.reason} msg=${event.message}")
+                _uiState.value = _uiState.value.copy(
+                    streamingReply = null,
+                    followUpState = RequestState.Error(
+                        messageResId = event.messageResId,
+                        message = event.message,
                     ),
                 )
             }
