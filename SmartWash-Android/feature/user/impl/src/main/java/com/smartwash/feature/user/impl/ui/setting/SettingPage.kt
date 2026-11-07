@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -42,12 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -127,6 +131,12 @@ fun SettingPage(
     }
     // 触感反馈真实开关（SettingViewModel 持久化 + HapticSettings 内存态）
     val hapticEnabled by settingViewModel.hapticEnabled.collectAsState()
+    // 解读模型 BYOK 配置（null = 未配置，行尾显示引导文案；仅掩码回显，issue #79）
+    val apiConfig by settingViewModel.apiConfig.collectAsState()
+    // 平台级 BYOK 开关（2026-11-07 契约追加 byokEnabled 0/1）：仅响应明确返回 0 时关闭，
+    // 字段缺失（旧响应）或 data=null（未配置）均视为开启——additive 向后兼容
+    val byokDisabled = apiConfig?.byokEnabled == 0
+    var showApiConfigSheet by remember { mutableStateOf(false) }
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -215,8 +225,67 @@ fun SettingPage(
             )
             Spacer(modifier = Modifier.height(8.dp))
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
-                // 「解读模型」假数据行已移除（2026-11-01 缺陷 5b）：端上无模型选择能力，
-                // 硬编码型号属虚假展示；解读模型由服务端网关统一调度
+                // 解读模型 BYOK 入口（issue #79，替换 2026-11-01 移除的假数据行）：
+                // 已配置回显 customModel + apiKeyMask（仅掩码，verified 徽标），
+                // 未配置显示引导文案；点击进编辑弹层（查/存/删/试呼，见 ApiConfigSheet）。
+                // 平台级开关 byokEnabled=0 时整行置灰、显示关闭提示且弹层不可进入
+                SettingRow(
+                    icon = Icons.Default.Psychology,
+                    containerColor = AppColors.colorScheme.iconContainerPurple,
+                    iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
+                    title = stringResource(R.string.api_config_title),
+                    trailing = {
+                        if (byokDisabled) {
+                            Text(
+                                text = stringResource(R.string.api_config_platform_disabled),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AppColors.colorScheme.textTertiary,
+                            )
+                        } else {
+                            val cfg = apiConfig
+                            Column(
+                                modifier = Modifier.widthIn(max = 180.dp),
+                                horizontalAlignment = Alignment.End,
+                            ) {
+                                if (cfg != null) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = cfg.customModel.orEmpty(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = AppColors.colorScheme.textSecondary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        if (cfg.verified == 1) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            VerifiedBadge()
+                                        }
+                                    }
+                                    if (!cfg.apiKeyMask.isNullOrBlank()) {
+                                        Text(
+                                            text = cfg.apiKeyMask.orEmpty(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AppColors.colorScheme.textTertiary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = stringResource(R.string.api_config_unconfigured),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.colorScheme.textSecondary,
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconChevron()
+                        }
+                    },
+                    enabled = !byokDisabled,
+                    onClick = { showApiConfigSheet = true }
+                )
+                HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
                 SettingRow(
                     icon = Icons.AutoMirrored.Default.Help,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
@@ -320,6 +389,14 @@ fun SettingPage(
             onDismiss = { showPrivacyDialog = false }
         )
     }
+
+    // 解读模型 BYOK 编辑弹层（issue #79）：关闭时 ViewModel 已在弹层内重置瞬态
+    if (showApiConfigSheet) {
+        ApiConfigSheet(
+            settingViewModel = settingViewModel,
+            onDismiss = { showApiConfigSheet = false }
+        )
+    }
 }
 
 /**
@@ -357,6 +434,9 @@ private fun SettingRow(
     iconForegroundColor: Color,
     title: String,
     trailing: @Composable () -> Unit = { IconChevron() },
+    // 置灰禁用（2026-11-07 byokEnabled=0）：移除点击热区并整行降透明度，
+    // 语义同 ListRow「onClick=null 不可点」，避免调用方传空 onClick 造成可点假象
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     // 水平缩进由分组卡内边距统一承载（画板：行内容与分隔线同缩进 20），
@@ -364,8 +444,9 @@ private fun SettingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .pressable(onClick = onClick),
+            .then(if (enabled) Modifier.pressable(onClick = onClick) else Modifier)
+            .then(if (!enabled) Modifier.alpha(0.45f) else Modifier)
+            .height(64.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // ib32 图标容器（32dp，12px圆角，彩色浅底 + 语义色前景图标）
