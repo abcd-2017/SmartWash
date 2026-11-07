@@ -1,5 +1,6 @@
 package com.smartwash.toolbox.controller;
 
+import com.smartwash.common.ratelimit.RateLimit;
 import com.smartwash.toolbox.listener.ShortCodeVisitedEvent;
 import com.smartwash.toolbox.service.ToolboxShortCodeService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,8 +34,11 @@ public class ToolboxRedirectController {
     private final ToolboxShortCodeService toolboxShortCodeService;
     private final ApplicationEventPublisher eventPublisher;
 
-    @Operation(summary = "短码 302 跳转", description = "公开码 302 至目标；不存在/私有 404；过期/未解锁/达上限 410")
+    @Operation(summary = "短码 302 跳转", description = "公开码 302 至目标；不存在/私有 404；过期/未解锁/达上限 410；超限 429")
     @GetMapping("/{code}")
+    // 限流：扫码流量匿名访问按 IP 兜底，防脚本批量拉取短链刷统计/探测；
+    // 浏览器消费方（ResponseEntity 返回类型）超限时异常处理器返回 HTTP 429，与 404/410 的状态码语义设计一致
+    @RateLimit(name = "short-link", window = 60, limit = 30, message = "访问过于频繁，请稍后再试")
     public ResponseEntity<Void> redirect(@PathVariable("code") String code, HttpServletRequest request) {
         ToolboxShortCodeService.ResolveResult r = toolboxShortCodeService.resolveForRedirect(code);
         if (r.isNotFound()) {
