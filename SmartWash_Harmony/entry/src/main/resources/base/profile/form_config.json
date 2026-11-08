@@ -1,0 +1,25 @@
+{
+  "forms": [
+    {
+      "name": "OrderStatusCard",
+      "displayName": "$string:widget_order_display_name",
+      "description": "$string:widget_order_desc",
+      "src": "./ets/widget/pages/WidgetCard.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "auto",
+      "isDynamic": true,
+      "isDefault": true,
+      "updateEnabled": true,
+      "updateDuration": 1,
+      "defaultDimension": "2*2",
+      "supportDimensions": [
+        "2*2",
+        "2*4"
+      ]
+    }
+  ]
+}

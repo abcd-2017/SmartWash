@@ -19,6 +19,14 @@
     {
       "name": "accelerometer_reason",
       "value": "用于读取设备姿态，支撑实验舱掌上星图转动手机环顾夜空"
+    },
+    {
+      "name": "widget_order_display_name",
+      "value": "洗衣进度"
+    },
+    {
+      "name": "widget_order_desc",
+      "value": "展示进行中洗衣订单的状态与取件信息，点击直达订单"
     }
   ]
 }
