@@ -24,6 +24,8 @@ export class RouteNames {
   static readonly RECHARGE_RECORD: string = "RechargeRecord"
   // 钱包流水页（充值+消费合并明细，入口：我的页账户卡「钱包流水」行）
   static readonly WALLET_TRANSACTIONS: string = "WalletTransactions"
+  // 签到有礼页（扩展提案功能 17/18 双端闭环；入口：我的页功能卡「签到有礼」行 + 深链 smartwash://points）
+  static readonly POINTS: string = "Points"
   // 修改密码页（登录态接口，成功后登出回登录页；入口：设置页「其他」组）
   static readonly CHANGE_PASSWORD: string = "ChangePassword"
   // 忘记密码-重置密码页（公开接口，凭手机号+验证码重置；入口：登录页密码行下「忘记密码？」）
