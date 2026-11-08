@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.points.mapper.PointSignInMapper">
+
+    <!-- 走 uk_sign_user_date(user_id, sign_date) 唯一索引，点查 -->
+    <select id="selectByUserIdAndDate" resultType="com.smartwash.points.entity.PointSignIn">
+        select sign_id, user_id, sign_date, streak, created_at
+        from point_sign_in
+        where user_id = #{userId}
+          and sign_date = #{signDate}
+    </select>
+</mapper>

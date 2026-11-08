@@ -135,3 +135,14 @@ smartwash:
       - /favicon.ico
     # 追加的敏感掩码字段（默认清单内置 password/token/secret/captcha/code 等，此处为追加而非覆盖）
     mask-fields:
+
+# 平台积分配置（积分值规则集中管理，业务代码禁止魔法数；绑定类 com.smartwash.points.config.PointsProperties）
+points:
+  sign-in:
+    base-points: 5           # 每日签到基础分
+    streak-bonus-step: 7     # 连签奖励周期：连签第 7/14/21…天额外发放一次奖励
+    streak-bonus-points: 10  # 连签奖励积分
+    attempt-daily-limit: 20  # 签到接口每日尝试上限（幂等接口重复请求无副作用，仅防恶意打库）
+  leaderboard:
+    size: 50                 # 月榜 TOP N
+    recent-ledger-size: 20   # /me 最近流水条数
