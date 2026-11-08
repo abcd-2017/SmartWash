@@ -1,0 +1,24 @@
+// :feature:points:api —— 积分域对外契约（扩展提案功能 17，按域嵌套结构 feature/points/{api,impl}，
+// 模式对齐 coupon 的 api/impl 拆分）。暴露面三件：PointsRoute 路由常量（宿主 NavHost 注册 +
+// 深链 host "points" 目标）+ Gson 载荷模型（与后端 points 包 vo 一一对应，全可空容错）+
+// PointsServiceApi 网络接口（@RequireAuthorization 鉴权）。
+// 放置说明：Retrofit 接口随模型放本模块（与 coupon 先例不同，见接口 KDoc）——points 无跨模块
+// 消费方（无 CouponApi 式服务契约需求），VO 即领域载荷，避免 impl 再映射一层。
+// 依赖方向：api → common（铁律 1/2：不依赖任何 feature，不引 Hilt 运行时）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
+
+android {
+    namespace 'com.smartwash.feature.points.api'
+}
+
+dependencies {
+    // suspend 契约（coroutines-core，无需 android 变体）
+    implementation libs.kotlinx.coroutines.core
+    // @Keep（Gson 载荷防 release 混淆；annotation 不经 common 传递，显式声明）
+    implementation libs.androidx.annotation
+    // SmartWashRoute 类型安全路由契约（PointsRoute 实现该接口）+ ApiResult 响应信封
+    implementation project(':common:utils')
+    // @RequireAuthorization 注解（retrofit 类型经其 api 依赖传递，无需显式声明 retrofit）
+    implementation project(':common:network')
+}

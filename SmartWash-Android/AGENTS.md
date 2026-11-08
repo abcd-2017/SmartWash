@@ -54,6 +54,8 @@
 :feature:laundry:impl           Laundry/School Repository + 洗衣预约/服务页（内存→Room→网络 缓存降级）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
 :feature:coupon:impl            CouponRepository + 优惠券页
+:feature:points:api             PointsRoute + 积分 Gson 载荷（全可空容错）+ PointsServiceApi 网络接口
+:feature:points:impl            PointsRepository + 签到有礼页（签到/余额/月榜/流水单页）+ 深链 host "points"
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
 
@@ -79,6 +81,8 @@ build-logic                     convention plugin（smartwash.android.library / 
 | `:feature:laundry:impl` | [feature/laundry/impl/AGENTS.md](feature/laundry/impl/AGENTS.md) |
 | `:feature:coupon:api` | [feature/coupon/api/AGENTS.md](feature/coupon/api/AGENTS.md) |
 | `:feature:coupon:impl` | [feature/coupon/impl/AGENTS.md](feature/coupon/impl/AGENTS.md) |
+| `:feature:points:api` | [feature/points/api/AGENTS.md](feature/points/api/AGENTS.md) |
+| `:feature:points:impl` | [feature/points/impl/AGENTS.md](feature/points/impl/AGENTS.md) |
 | `:feature:divination` | [feature/divination/AGENTS.md](feature/divination/AGENTS.md) |
 | `:feature:update` | [feature/update/AGENTS.md](feature/update/AGENTS.md) |
 ```

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 积分域模块（扩展提案功能 17）：无组件声明，manifest merger 合入宿主。 -->
+<manifest />
