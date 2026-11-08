@@ -405,6 +405,13 @@
       "buildFunction": "StarMapBuilder",
       "data": {
       }
+    },
+    {
+      "name": "Messages",
+      "pageSourceFile": "src/main/ets/feature/notice/ui/NoticeInboxPage.ets",
+      "buildFunction": "NoticeInboxBuilder",
+      "data": {
+      }
     }
   ]
 }
