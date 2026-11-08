@@ -405,3 +405,38 @@ export const subscriptionCycleText = (cycleType, interval) => {
 
 /** 自动续费 → 文案（auto_renew 1是 0否） */
 export const subscriptionAutoRenewText = (autoRenew) => (Number(autoRenew) === 1 ? '是' : '否');
+
+// ---------- 站内信/消息中心（与后端 notice.type 对齐：SYSTEM/ANNOUNCEMENT） ----------
+
+/** 公告类型选项（发送表单 + 列表筛选共用） */
+export const NOTICE_TYPE_OPTIONS = [
+  { value: 'SYSTEM', label: '系统通知' },
+  { value: 'ANNOUNCEMENT', label: '运营公告' },
+];
+
+/** 公告类型 → 文案（未知值回显原值） */
+export const NOTICE_TYPE_TEXT = {
+  SYSTEM: '系统通知',
+  ANNOUNCEMENT: '运营公告',
+};
+
+/** 公告类型 → el-tag 类型 */
+export const NOTICE_TYPE_TAG_TYPES = {
+  SYSTEM: 'warning',
+  ANNOUNCEMENT: 'success',
+};
+
+/** 公告类型文案（未知值兜底） */
+export const noticeTypeText = (type) => NOTICE_TYPE_TEXT[type] || type || '-';
+
+/** 公告类型标签配色 */
+export const noticeTypeTagType = (type) => dictValue(NOTICE_TYPE_TAG_TYPES, type);
+
+/** 已读率 → el-tag 类型（≥80% 绿、≥50% 蓝、>0 橙、0 灰） */
+export const noticeReadRateTagType = (rateText) => {
+  const value = Number.parseFloat(rateText);
+  if (!Number.isFinite(value) || value <= 0) return 'info';
+  if (value >= 80) return 'success';
+  if (value >= 50) return 'primary';
+  return 'warning';
+};
