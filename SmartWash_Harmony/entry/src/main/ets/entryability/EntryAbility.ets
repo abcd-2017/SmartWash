@@ -2,6 +2,7 @@ import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want,
 import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences } from '../utils/StorageUtil';
+import { initPickupReminder } from '../utils/ReminderService';
 import { applyDesignTheme } from '../constant/DesignSystem';
 import { DarkModeStore } from '../constant/DarkModeStore';
 import { ServerConfig } from '../config/ServerConfig'
@@ -98,6 +99,8 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     initPreferences(this.context)
+    // 取件提醒文案资源注入（fire-and-forget：失败回落 ReminderLogic 内置兜底文案）
+    initPickupReminder(this.context)
 
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {

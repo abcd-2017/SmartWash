@@ -26,7 +26,21 @@
     },
     {
       "name": "widget_order_desc",
-      "value": "展示进行中洗衣订单的状态与取件信息，点击直达订单"
+      "value": "展示进行中洗衣订单的状态与取件信息，点击直达订单",
+      "name": "reminder_agent_reason",
+      "value": "用于在衣物洗好后发送本地取件提醒，避免衣物滞留寄存柜"
+    },
+    {
+      "name": "pickup_reminder_title",
+      "value": "衣物已洗好"
+    },
+    {
+      "name": "pickup_reminder_content_prefix",
+      "value": "衣物已洗好"
+    },
+    {
+      "name": "pickup_reminder_content_suffix",
+      "value": "请及时到寄存柜取件，超时可能占用公共筒位"
     }
   ]
 }

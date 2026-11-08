@@ -13,6 +13,7 @@ import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppCo
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { safeTopVp } from "../utils/SafeArea"
+import { cancelPickupReminderForOrder, ReminderSyncOrder, syncPickupReminderOrders } from "../utils/ReminderService"
 import vibrator from '@ohos.vibrator'
 import { bumpOrderRefresh, bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
@@ -212,6 +213,27 @@ struct OrderList {
     if (mergingCurrent) {
       this.sections = next
     }
+    this.syncPickupReminders(flat)
+  }
+
+  /**
+   * 取件提醒同步（fire-and-forget，对齐调研候选 2 解耦原则）：
+   * 列表数据就绪后按状态逐单决策——待取件(6)未登记则发布 30 分钟倒计时提醒，
+   * 已完成/已取消/已退款则撤销对应提醒。同步内部全量容错（失败仅日志），
+   * 不 await、不向列表主流程抛出任何异常。
+   */
+  private syncPickupReminders(orders: Array<OrderInfo>): void {
+    const inputs: Array<ReminderSyncOrder> = orders.map((order: OrderInfo): ReminderSyncOrder => {
+      return {
+        orderId: order.orderId,
+        status: order.status,
+        lockerNumber: order.lockersVo?.lockerNumber ?? null
+      }
+    })
+    syncPickupReminderOrders(inputs).catch((err: Object) => {
+      // 双保险（sync 内部已兜底）：意外 throw 也不得影响列表
+      logger.debug('orderList', `取件提醒同步意外失败（已忽略）${err instanceof Error ? err.message : ''}`)
+    })
   }
 
   aboutToDisappear(): void {
@@ -251,6 +273,8 @@ struct OrderList {
       // 后端 Result.ok(boolean) 直传：data=false（CAS 失败，订单已被支付/取消）必须按失败处理，
       // 不能只看 code=200 就弹「取消成功」（对齐 AddSchool 对 getUserByStudentId 的判法）
       if (res.code === HttpStatusCode.Ok && res.data === true) {
+        // 取件提醒防御性撤销：取消仅允许在待支付态（该态不登记提醒），此处兜底清除可能的历史登记
+        cancelPickupReminderForOrder(this.pendingCancelOrderId)
         // 全量刷新语义（对齐安卓 loadAllOrders）：单状态分页下即整列表重置重拉，
         // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
         bumpOrderRefresh()

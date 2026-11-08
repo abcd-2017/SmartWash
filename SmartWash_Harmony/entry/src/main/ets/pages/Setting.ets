@@ -7,6 +7,7 @@ import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, AppCard, AppConfirmDialog, AppInfoDialog, PageHeader } from "../view/common/AppComponents"
 import { getAppVersionCode, getAppVersionName } from "../utils/AppInfoUtil"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
+import { isPickupReminderEnabled, setPickupReminderEnabled } from "../utils/ReminderService"
 import { notificationManager } from "@kit.NotificationKit"
 import { common } from "@kit.AbilityKit"
 import { promptAction } from "@kit.ArkUI"
@@ -60,6 +61,8 @@ struct Setting {
   @State notificationGranted: boolean = false
   // 触感反馈开关（内存态即时生效 + preferences 异步落盘，对齐安卓 SettingViewModel）
   @State hapticEnabled: boolean = true
+  // 取件提醒开关（同 haptic 模式：内存态即时生效 + ReminderService 异步落盘；关闭即全量撤销未触发提醒）
+  @State pickupReminderEnabled: boolean = true
   // 检查更新进行中标记：拦截连点，避免重复拉取版本接口
   @State checkingUpdate: boolean = false
   // 「发现新版本」弹窗内容（open 前赋值，弹窗以当次值初始化）
@@ -192,6 +195,8 @@ struct Setting {
     // 触感反馈启动补读：覆盖冷启动后未预热就进设置页的窗口（对齐安卓 SettingViewModel.init）
     const stored = await getValue(HAPTIC_PREF_KEY, true) as boolean
     this.hapticEnabled = stored
+    // 取件提醒开关回显（读取失败/未初始化按默认开启，见 ReminderService.isPickupReminderEnabled）
+    this.pickupReminderEnabled = await isPickupReminderEnabled()
   }
 
   /** 消息通知真实授权态（系统通知开关） */
@@ -213,6 +218,17 @@ struct Setting {
     if (newValue) {
       this.performHaptic()
     }
+  }
+
+  /**
+   * 取件提醒开关：先改内存态（行尾值即时翻转），再经 ReminderService 异步落盘；
+   * 关闭时服务内部全量撤销未触发提醒（fire-and-forget，撤销失败仅日志不影响开关态）。
+   */
+  private togglePickupReminder(): void {
+    const newValue = !this.pickupReminderEnabled
+    this.pickupReminderEnabled = newValue
+    logger.debug('setting', `取件提醒开关切换为 ${newValue ? "开" : "关"}`)
+    setPickupReminderEnabled(newValue)
   }
 
   /** 触感反馈（对齐安卓 performHaptic；不支持的设备静默忽略） */
@@ -819,6 +835,23 @@ struct Setting {
                 trailingValue: this.hapticEnabled ? "已开启" : "已关闭",
                 onRowClick: () => {
                   this.toggleHaptic()
+                }
+              })
+
+              Divider()
+                .color(DesignColor.HAIRLINE)
+                .strokeWidth(0.5)
+
+              // 取件提醒（真实开关，调研候选 2）：订单进入待取件后 30 分钟本地提醒取件；
+              // 关闭即撤销全部未触发提醒，重新开启后列表/详情同步自动补登记
+              SettingRow({
+                icon: $r('sys.symbol.hourglass'),
+                containerColor: DesignColor.ICON_CONTAINER_BLUE,
+                iconColor: DesignColor.ICON_FOREGROUND_BLUE,
+                title: "取件提醒",
+                trailingValue: this.pickupReminderEnabled ? "已开启" : "已关闭",
+                onRowClick: () => {
+                  this.togglePickupReminder()
                 }
               })
             }
