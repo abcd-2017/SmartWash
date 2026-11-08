@@ -56,6 +56,8 @@
 :feature:coupon:impl            CouponRepository + 优惠券页
 :feature:points:api             PointsRoute + 积分 Gson 载荷（全可空容错）+ PointsServiceApi 网络接口
 :feature:points:impl            PointsRepository + 签到有礼页（签到/余额/月榜/流水单页）+ 深链 host "points"
+:feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute（扩展提案 #4）
+:feature:notice:impl            NoticeRepository + 消息中心收件箱页（未读高亮/全部已读/深链）
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
 
@@ -83,6 +85,8 @@ build-logic                     convention plugin（smartwash.android.library / 
 | `:feature:coupon:impl` | [feature/coupon/impl/AGENTS.md](feature/coupon/impl/AGENTS.md) |
 | `:feature:points:api` | [feature/points/api/AGENTS.md](feature/points/api/AGENTS.md) |
 | `:feature:points:impl` | [feature/points/impl/AGENTS.md](feature/points/impl/AGENTS.md) |
+| `:feature:notice:api` | [feature/notice/api/AGENTS.md](feature/notice/api/AGENTS.md) |
+| `:feature:notice:impl` | [feature/notice/impl/AGENTS.md](feature/notice/impl/AGENTS.md) |
 | `:feature:divination` | [feature/divination/AGENTS.md](feature/divination/AGENTS.md) |
 | `:feature:update` | [feature/update/AGENTS.md](feature/update/AGENTS.md) |
 ```
@@ -445,6 +449,7 @@ com.smartwash.feature.coupon/
 | 支付 | `PaymentRoute` | `:feature:payment:api` |
 | 洗衣 | `LaundryRoute` | `:feature:laundry:api` |
 | 优惠券 | `CouponRoute` | `:feature:coupon:api` |
+| 站内信 | `NoticeRoute` | `:feature:notice:api` |
 | 观象台 | `DivRoute` | `:feature:divination` |
 
 ### 路由常量一览

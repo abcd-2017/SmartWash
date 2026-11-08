@@ -52,6 +52,7 @@ import com.smartwash.feature.game.ui.gameGraph
 import com.smartwash.feature.lab.ui.labGraph
 import com.smartwash.feature.laundry.ui.laundryGraph
 import com.smartwash.feature.mood.ui.moodGraph
+import com.smartwash.feature.notice.ui.noticeGraph
 import com.smartwash.feature.order.impl.ui.orderGraph
 import com.smartwash.feature.payment.impl.ui.paymentGraph
 import com.smartwash.feature.points.ui.pointsGraph
@@ -277,6 +278,8 @@ class MainActivity : ComponentActivity() {
                             paymentGraph(navController, reduceMotion)
                             laundryGraph(navController)
                             couponGraph(navController)
+                            // 消息中心（扩展提案 #4；入口走我的页功能卡与深链 smartwash://messages）
+                            noticeGraph(navController)
                             divinationGraph(navController)
                             // 工具箱短链（独立路由；工作台入口走深链 smartwash://toolbox-short-code）
                             toolboxGraph(navController, sharedTransitionScope)

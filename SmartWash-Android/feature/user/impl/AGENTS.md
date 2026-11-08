@@ -50,7 +50,8 @@ com.smartwash.feature.user.impl
     │   └── UpdateUserInfoViewModel.kt
     └── userinfo/
         ├── UserInfoPage.kt       # 用户中心主页 Composable
-        └── UserInfoViewModel.kt  # 用户中心主页 ViewModel
+        ├── UserInfoViewModel.kt  # 用户中心主页 ViewModel
+        └── UnreadBadgeFormatter.kt # 未读角标文案格式化（纯 JVM：0/负数隐藏，>99 封顶 99+）
 ```
 
 ## 公开 API
@@ -73,6 +74,7 @@ com.smartwash.feature.user.impl
 - `:feature:order:api`（OrderApi/OrderRoute/ShowOrderStatus — 用户中心订单计数与跳订单页）
 - `:feature:laundry:api`（SchoolSearchSource/SchoolOption — 资料编辑页搜学校）
 - `:feature:coupon:api`（CouponRoute — 用户中心「优惠券」入口）
+- `:feature:notice:api`（NoticeRoute / NoticeApi — 用户中心「消息中心」入口跨域跳转 + 未读角标消费未读数）
 - `:common:utils`（ApiResult / RequestState）
 - `:common:network`（Retrofit / @RequireAuthorization / NetworkException / TokenProvider / SessionEventNotifier）
 - `:common:ui`（清氧设计系统）
@@ -92,6 +94,7 @@ com.smartwash.feature.user.impl
 6. **幂等清 token**: `SessionManager.clearToken()` 幂等——已为空时不重复写盘，防并发多请求同时 401 重复落盘
 7. **设置页插槽**: `UserGraph` 的 `checkUpdateContent` 参数由 app 壳注入（feature:update 归壳层聚合），user-impl 不依赖 feature:update
 8. **续签单飞**: `TokenRefresherImpl.refresh()` 并发 401 只发一次刷新（`inFlight` CompletableDeferred 共享结果，Mutex 只护读取-置入竞速）——refreshToken 一次性轮换，重复刷新即重放失败；续签必须走自建裸 OkHttp 客户端（不挂业务拦截器防递归、不与主客户端共享 Dispatcher 防饿死死锁）；`refreshBlocking()` 的 runBlocking 仅允许发生在 OkHttp 拦截器线程（主通道全为 Retrofit suspend，无主线程路径）
+9. **未读角标独立链路**: `UserInfoViewModel.loadUnreadCount()` 经 `:feature:notice:api` 的 `NoticeApi` 取未读数，失败仅留痕（角标隐藏），不影响用户信息主流程；页面 active / ON_RESUME 触发（从消息中心返回时刷新）
 
 ## 已知坑
 
