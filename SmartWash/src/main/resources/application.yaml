@@ -121,7 +121,6 @@ toolbox:
 # 无独立域名配置；生产环境必须将 MINIO_ENDPOINT 配置为 https 公网地址（环境红线：生产禁明文 HTTP）
 
 # 请求链路日志（request_id 注入由 TraceIdFilter 始终执行，不受开关影响）
-smartwash:
   request-log:
     # 出入日志开关；关闭后仅保留 request_id 链路注入与回写
     access-log-enabled: true
