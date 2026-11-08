@@ -60,6 +60,15 @@ export function bumpSubscriptionRefresh(): void {
   AppStorage.setOrCreate(SUBSCRIPTION_TICK_KEY, current + 1)
 }
 
+/**
+ * 站内信数据（我的页未读角标）需要刷新。
+ * 标记已读 / 全部已读成功后 bump，我的页入口角标经 @StorageLink + @Watch 重拉。
+ */
+export function bumpNoticeRefresh(): void {
+  const current = AppStorage.get<number>(NOTICE_TICK_KEY) ?? 0
+  AppStorage.setOrCreate(NOTICE_TICK_KEY, current + 1)
+}
+
 /** AppStorage key（写读双方共用，避免字符串漂移） */
 export const USER_INFO_TICK_KEY: string = 'refreshUserInfoTick'
 export const ORDER_TICK_KEY: string = 'refreshOrderCountTick'
@@ -67,3 +76,4 @@ export const HOME_TAB_BACK_TICK_KEY: string = 'homeTabBackTick'
 export const MOOD_TICK_KEY: string = 'refreshMoodTick'
 export const REVIEW_TICK_KEY: string = 'refreshReviewTick'
 export const SUBSCRIPTION_TICK_KEY: string = 'refreshSubscriptionTick'
+export const NOTICE_TICK_KEY: string = 'refreshNoticeTick'

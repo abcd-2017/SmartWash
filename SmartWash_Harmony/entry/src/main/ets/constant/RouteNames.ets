@@ -83,4 +83,6 @@ export class RouteNames {
   // 建设中占位页（深链兜底：安卓新增域 mood/review/subscription/delivery/ai-work
   // 在鸿蒙端未实现时，DeepLinkRegistry 把这些 host 注册到本页，避免卡片点击成死路）
   static readonly COMING_SOON: string = "ComingSoon"
+  // 消息中心页（站内信收件箱；入口为我的页功能卡「消息中心」行 + 深链 smartwash://messages）
+  static readonly MESSAGES: string = "Messages"
 }

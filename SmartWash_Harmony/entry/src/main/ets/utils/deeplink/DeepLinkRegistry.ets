@@ -8,7 +8,7 @@
 //   login / register / setting / recharge / recharge-record / coupon / order(query tab) /
 //   order-detail/{orderId}（鸿蒙端内：桌面洗衣卡片点击直达详情，安卓无此入口） /
 //   laundry / pickup / divination / divination-history / toolbox-short-code / delivery /
-//   t/{code} / game-center / lab / mood / review / subscription / ai-work / points / web(内建)
+//   t/{code} / game-center / lab / mood / review / subscription / ai-work / points / messages / web(内建)
 //
 // 未实现域的兜底（对齐「先兜底实现」排期）：
 //   后端 workbench_entry 种子对全部端统一下发这些卡片（无 platform 过滤），未落地域注册到
@@ -81,6 +81,8 @@ function buildHostRoutes(): Map<string, DeepLinkRouteTarget> {
   // 积分域已落地（对齐安卓 PointsDeepLinkModule：points → PointsRoute.Home 签到有礼页，
   // 扩展提案功能 17/18 双端闭环；入口为我的页「签到有礼」行与深链 smartwash://points）
   routes.set('points', { routeName: RouteNames.POINTS, param: null })
+  // messages 已落地（对齐安卓 NoticeDeepLinkModule：messages → NoticeRoute.Inbox）
+  routes.set('messages', { routeName: RouteNames.MESSAGES, param: null })
   return routes
 }
 
