@@ -320,6 +320,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 消息中心（站内信）=====
+      {
+        path: '/notices',
+        name: 'NoticeList',
+        component: () => import('@/views/system/NoticeList.vue'),
+        meta: {
+          title: '站内信管理',
+          showInMenu: true,
+          icon: 'Bell',
+          requiresAuth: true,
+        },
+      },
     ],
   },
   {

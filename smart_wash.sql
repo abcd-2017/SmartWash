@@ -1522,4 +1522,42 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- =====================================================================
+-- 站内信/消息中心（v1：运营通知 + 用户收件箱）—— 2 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for notice（站内信主表）
+-- 已读采用懒创建：notice_read 仅在用户首次标记时插入，未读 = notice 不在 read 表，
+-- 未读数 = notice 总数 − 当前用户已读数（两个 COUNT 相减），不做全量 fan-out。
+-- v2 若未读数成为热点，改为 fan-out（发送时写全量占位行或 Redis 计数缓存）。
+-- ----------------------------
+DROP TABLE IF EXISTS `notice`;
+CREATE TABLE `notice` (
+  `id`               BIGINT       NOT NULL AUTO_INCREMENT COMMENT '公告 ID',
+  `title`            VARCHAR(100) NOT NULL COMMENT '标题',
+  `content`          TEXT         NOT NULL COMMENT '正文（可含换行）',
+  `type`             VARCHAR(20)  NOT NULL COMMENT '类型：SYSTEM系统通知/ANNOUNCEMENT运营公告（v2 可扩展业务事件类型）',
+  `deep_link`        VARCHAR(512) NULL COMMENT '深链：smartwash://... 或 https://...；NULL=纯文案公告无跳转',
+  `creator_admin_id` BIGINT       NULL COMMENT '发送人(admin_users.admin_id)',
+  `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信主表（运营通知/公告）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for notice_read（已读账本，懒创建 + uk 幂等）
+-- uk_user_notice(user_id, notice_id) 唯一索引 = 幂等 DB 闸门：
+-- 并发/重复标记只允许一条插入成功，其余由服务层捕获 DuplicateKeyException 判幂等。
+-- ----------------------------
+DROP TABLE IF EXISTS `notice_read`;
+CREATE TABLE `notice_read` (
+  `id`        BIGINT   NOT NULL AUTO_INCREMENT COMMENT '已读记录 ID',
+  `user_id`   BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `notice_id` BIGINT   NOT NULL COMMENT '公告 ID(notice.id)',
+  `read_at`   DATETIME NOT NULL COMMENT '首次标记已读时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_notice` (`user_id`,`notice_id`) USING BTREE COMMENT '幂等闸门:一人一公告一条已读记录'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信已读账本（懒创建）' ROW_FORMAT = Dynamic;
 SET FOREIGN_KEY_CHECKS = 1;
