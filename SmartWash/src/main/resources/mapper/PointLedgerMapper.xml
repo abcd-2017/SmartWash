@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.points.mapper.PointLedgerMapper">
+
+    <!-- 唯一写操作：追加流水（append-only，本 mapper 不提供 update/delete） -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="ledgerId">
+        insert into point_ledger (user_id, delta, reason, ref_date, balance_after)
+        values (#{userId}, #{delta}, #{reason}, #{refDate}, #{balanceAfter})
+    </insert>
+
+    <!-- 个人最近流水：走 idx_ledger_user_time(user_id, created_at) 覆盖索引；
+         次序键补 ledger_id 兜底同秒多条流水的稳定性 -->
+    <select id="selectRecentByUserId" resultType="com.smartwash.points.entity.PointLedger">
+        select ledger_id, user_id, delta, reason, ref_date, balance_after, created_at
+        from point_ledger
+        where user_id = #{userId}
+        order by created_at desc, ledger_id desc
+        limit #{limit}
+    </select>
+</mapper>

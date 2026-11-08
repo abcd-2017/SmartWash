@@ -1522,4 +1522,57 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- =====================================================================
+-- 平台积分体系（points）—— 3 张业务表（账户 / 流水 / 签到）
+-- 设计纪律：point_ledger 为 append-only 事实源（禁删禁改，不提供任何删除/更新入口）；
+--           point_account.balance 是流水的派生缓存值，仅允许条件 UPDATE 单语句自增
+--           （balance = balance + delta），禁止"先查再改"（对齐资金链路并发纪律）；
+--           幂等闸门 = point_sign_in 的 uk_sign_user_date 唯一索引（DB 层兜底并发签到）。
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for point_account（积分账户,一人一行懒创建）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_account`;
+CREATE TABLE `point_account` (
+  `account_id`   BIGINT   NOT NULL AUTO_INCREMENT COMMENT '账户 ID',
+  `user_id`      BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `balance`      INT      NOT NULL DEFAULT 0 COMMENT '当前积分余额(流水派生值,仅经条件 UPDATE 增减)',
+  `total_earned` INT      NOT NULL DEFAULT 0 COMMENT '累计获得积分(只增不减,负向变动不计入)',
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`account_id`) USING BTREE,
+  UNIQUE INDEX `uk_point_account_user` (`user_id`) USING BTREE COMMENT '一人一行(懒创建,并发首建由唯一索引兜底)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分账户(余额为流水派生缓存,事实源在 point_ledger)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for point_ledger（积分流水,append-only 禁删禁改）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_ledger`;
+CREATE TABLE `point_ledger` (
+  `ledger_id`     BIGINT      NOT NULL AUTO_INCREMENT COMMENT '流水 ID',
+  `user_id`       BIGINT      NOT NULL COMMENT '所属用户(users.user_id)',
+  `delta`         INT         NOT NULL COMMENT '积分变动(正=入账 负=出账)',
+  `reason`        VARCHAR(32) NOT NULL COMMENT '业务原因枚举(SIGN_IN每日签到/STREAK_BONUS连签奖励,见 PointReason,预留扩展)',
+  `ref_date`      DATE        NULL COMMENT '业务日期维度(签到类=签到日,业务防重对账与未来防重查询依据)',
+  `balance_after` INT         NOT NULL COMMENT '本笔变动后余额快照(流水连续性对账字段,单加分来源下连续)',
+  `created_at`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ledger_id`) USING BTREE,
+  KEY `idx_ledger_user_time` (`user_id`,`created_at`) USING BTREE COMMENT '个人流水按时间倒序查询(最近N条)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分流水(append-only,删除/更新入口一律禁止新增)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for point_sign_in（每日签到,uk 唯一索引 = 幂等 DB 闸门）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_sign_in`;
+CREATE TABLE `point_sign_in` (
+  `sign_id`    BIGINT   NOT NULL AUTO_INCREMENT COMMENT '签到 ID',
+  `user_id`    BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `sign_date`  DATE     NOT NULL COMMENT '签到日(业务日期)',
+  `streak`     INT      NOT NULL COMMENT '签到时点的连签天数(昨日有记录则+1,否则重置 1)',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`sign_id`) USING BTREE,
+  UNIQUE INDEX `uk_sign_user_date` (`user_id`,`sign_date`) USING BTREE COMMENT '幂等闸门:一人一日一条,并发签到靠它兜底'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日签到记录' ROW_FORMAT = Dynamic;
 SET FOREIGN_KEY_CHECKS = 1;
