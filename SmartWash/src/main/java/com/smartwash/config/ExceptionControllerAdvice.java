@@ -2,6 +2,7 @@ package com.smartwash.config;
 
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
+import com.smartwash.common.ratelimit.RateLimitExceededException;
 import com.smartwash.exception.CustomExceptions;
 import com.smartwash.exception.GameServiceException;
 import com.smartwash.exception.UserAuthenticationException;
@@ -50,6 +51,23 @@ public class ExceptionControllerAdvice {
         log.warn("方法参数校验失败：{}", message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Result.build(null, HttpStatus.BAD_REQUEST.value(), message));
+    }
+
+    /**
+     * 限流超限捕获（@RateLimit 注解触发，见 common/ratelimit）：
+     * - JSON 消费方（Android/鸿蒙/Web）：HTTP 200 + 业务码 201（FAIL）+ 限流文案，
+     *   三端拦截器按既有业务失败分支透传 message，不新增错误码、无需改端；
+     * - 浏览器消费方（短链跳转等 ResponseEntity 接口）：HTTP 429，与该类接口
+     *   「302/404/410 状态码即语义、不走 Result 信封」的既有设计一致。
+     */
+    @ExceptionHandler(value = RateLimitExceededException.class)
+    public ResponseEntity<Result<String>> handleRateLimitExceeded(RateLimitExceededException e) {
+        log.warn("请求超限被拒绝：{}", e.getMessage());
+        if (e.isBrowserFacing()) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Result.build(null, HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage()));
+        }
+        return ResponseEntity.ok(Result.build(null, ResultCodeEnum.FAIL.getCode(), e.getMessage()));
     }
 
     /**

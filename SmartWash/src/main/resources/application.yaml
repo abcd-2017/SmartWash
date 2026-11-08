@@ -86,6 +86,16 @@ div:
     top-k: 6
     max-chunk: 20000
 
+# 分布式限流（@RateLimit 方法注解 + Redis Lua 滑动窗口，common/ratelimit）
+# 保护对象：登录/注册/验证码（短信成本）、短链跳转、占卜 LLM 解读（按次计费的真实 token 成本）等公开/高频接口
+smartwash:
+  rate-limit:
+    # 总开关：false 时限流切面不装配，所有 @RateLimit 注解不生效（本地调试可关）
+    enabled: true
+    # 计数存储：redis=分布式滑动窗口，多实例共享配额（生产默认）；
+    #           memory=进程内存版，仅单实例语义（无 Redis 回退/测试用）
+    store: redis
+
 # 登录防护
 security:
   # 可信反向代理网段（IPv4 CIDR，逗号分隔，如 "10.0.0.0/8,172.16.0.0/12"）。
