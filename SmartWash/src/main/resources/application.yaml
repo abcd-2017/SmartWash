@@ -112,3 +112,19 @@ toolbox:
 
 # 游戏中心：可玩地址 = MinIO 对象直链（minio.endpoint/bucket/对象键/入口，与头像 uploadFile 同一构造方式），
 # 无独立域名配置；生产环境必须将 MINIO_ENDPOINT 配置为 https 公网地址（环境红线：生产禁明文 HTTP）
+
+# 请求链路日志（request_id 注入由 TraceIdFilter 始终执行，不受开关影响）
+smartwash:
+  request-log:
+    # 出入日志开关；关闭后仅保留 request_id 链路注入与回写
+    access-log-enabled: true
+    # 慢请求阈值（毫秒）：达到即在 INFO 日志行追加 (慢请求) 标记（级别恒为 INFO，既有任务约定）
+    slow-threshold-ms: 2000
+    # 不做出入日志的路径前缀（actuator/swagger/静态资源；前缀匹配，配 /actuator 即覆盖其全部子路径）
+    exclude-paths:
+      - /actuator
+      - /swagger-ui
+      - /v3/api-docs
+      - /favicon.ico
+    # 追加的敏感掩码字段（默认清单内置 password/token/secret/captcha/code 等，此处为追加而非覆盖）
+    mask-fields:

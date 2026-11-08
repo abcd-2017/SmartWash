@@ -7,8 +7,9 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * MDC 上下文装饰器：把提交任务线程的 MDC（主要是 TraceIdFilter 写入的 traceId）复制到
- * 异步执行线程，任务结束后清理，避免线程复用导致的 traceId 串扰，实现链路日志跨线程传播。
+ * MDC 上下文装饰器：把提交任务线程的 MDC（主要是 {@link com.smartwash.common.log.TraceIdFilter}
+ * 写入的 request_id）复制到
+ * 异步执行线程，任务结束后清理，避免线程复用导致的 request_id 串扰，实现链路日志跨线程传播。
  *
  * <p>生效方式：
  * <ul>
