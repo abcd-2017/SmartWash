@@ -1,0 +1,24 @@
+// :feature:notice:api —— 站内信域对外契约（扩展提案 #4 端上闭环第一端，按域嵌套结构 feature/notice/{api,impl}，
+// 模式对齐 coupon 的 api/impl 拆分）。暴露面四件：
+// - NoticeRoute 路由常量（宿主 NavHost 注册 + 深链 host "messages" 目标）
+// - NoticeVo 模型（与后端 notice/vo/NoticeVo 一一对应，Gson 全可空容错）
+// - NoticeServiceApi 网络接口（@RequireAuthorization，路径/参数/响应以后端 WebNoticeController 为契约源）
+// - NoticeApi 跨域服务契约（我的页未读角标消费未读数，命名对齐 CouponApi/OrderApi 先例）
+// 依赖方向：api → common（铁律 1/2：不依赖任何 feature，不引 Hilt 运行时）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/serialization.gradle"
+
+android {
+    namespace 'com.smartwash.feature.notice.api'
+}
+
+dependencies {
+    // suspend 契约（coroutines-core，无需 android 变体）
+    implementation libs.kotlinx.coroutines.core
+    // @Keep（Gson 载荷防 release 混淆；annotation 不经 common 传递，显式声明）
+    implementation libs.androidx.annotation
+    // SmartWashRoute 类型安全路由契约 + ApiResult 信封 + PageData 分页载荷
+    implementation project(':common:utils')
+    // @RequireAuthorization 注解（retrofit 类型经其 api 依赖传递，无需显式声明 retrofit）
+    implementation project(':common:network')
+}

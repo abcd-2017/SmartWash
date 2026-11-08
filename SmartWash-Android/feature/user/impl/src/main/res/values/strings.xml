@@ -186,6 +186,8 @@
     <string name="shipping_address">收货地址</string>
     <string name="my_orders">我的订单</string>
     <string name="my_orders_count_format">%d 单</string>
+    <!-- 消息中心入口（扩展提案 #4；与 notice 域 notice_title 同义，模块资源各自独立） -->
+    <string name="messages_entry">消息中心</string>
 
     <!-- 断网降级（回归 2026-11-06 A2）：离线提示条 + 信息卡错误卡重试 -->
     <string name="user_offline_hint">网络异常，当前展示上次数据，可能不是最新</string>

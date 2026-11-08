@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 站内信域文案（收件箱页：未读高亮 / 类型 tag / 时间 / 全部已读 / 空态与错误态）。 -->
+<resources>
+    <!-- 页面标题（与我的页入口同名） -->
+    <string name="notice_title">消息中心</string>
+
+    <!-- 顶部未读计数 + 全部已读 -->
+    <string name="notice_unread_count_format">%d 条未读</string>
+    <string name="notice_read_all">全部已读</string>
+    <string name="notice_read_all_confirm_title">全部标为已读？</string>
+    <string name="notice_read_all_confirm_message">将所有消息标记为已读，该操作不可撤销。</string>
+    <string name="notice_read_all_success">已全部标记为已读</string>
+
+    <!-- 类型 tag（与后端 NoticeType 枚举一一对应） -->
+    <string name="notice_type_system">系统通知</string>
+    <string name="notice_type_announcement">运营公告</string>
+    <string name="notice_type_unknown">通知</string>
+
+    <!-- 时间展示（今天/昨天带时分，本年 M月d日，更早 yyyy-MM-dd） -->
+    <string name="notice_time_today_format">今天 %s</string>
+    <string name="notice_time_yesterday_format">昨天 %s</string>
+    <string name="notice_time_this_year_format">%1$d月%2$d日</string>
+    <string name="notice_time_older_format">%1$d-%2$02d-%3$02d</string>
+
+    <!-- 加载更多 -->
+    <string name="notice_load_more">加载更多</string>
+    <string name="notice_load_more_failed">加载失败，点击重试</string>
+
+    <!-- 空态 / 错误态（说明发生了什么 + 怎么解决，规范 §3.6） -->
+    <string name="notice_inbox_empty">暂无消息</string>
+    <string name="notice_load_failed">消息加载失败，请检查网络后重试</string>
+    <string name="notice_action_retry">重试</string>
+</resources>

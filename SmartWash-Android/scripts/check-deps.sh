@@ -53,12 +53,12 @@ check "铁律3: core:init 零项目依赖" "$INIT_BAD"
 
 # --- 铁律 2a: feature-api 不引用其他 feature 包（自身域内部引用合法） ---
 API_FE=0
-for d in feature/user/api feature/order/api feature/payment/api feature/laundry/api feature/coupon/api; do
+for d in feature/user/api feature/order/api feature/payment/api feature/laundry/api feature/coupon/api feature/notice/api; do
   domain="${d#feature/}"; domain="${domain%/api}"
   [ -d "$d/src" ] || continue
   for f in $(grep -rn --include='*.kt' -lE 'import com\.smartwash\.feature\.' "$d/src" 2>/dev/null); do
     # 排除自身域（feature.<domain>.）与 package 声明
-    hits=$(grep -E 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon)\.' "$f" \
+    hits=$(grep -E 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon|notice)\.' "$f" \
            | grep -vE "import com\.smartwash\.feature\.${domain}\." || true)
     if [ -n "$hits" ]; then
       API_FE=$((API_FE + 1))
@@ -70,8 +70,8 @@ check "铁律2a: feature-api 不引用其他 feature" "$API_FE"
 
 # --- 铁律 2b: feature-impl 跨域引用必须经 api（禁止 impl→他人 impl） ---
 IMPL_CROSS_IMPL=0
-for d in feature/user/impl feature/order/impl feature/payment/impl feature/laundry/impl feature/coupon/impl; do
-  domain="${d#feature/}"; domain="${domain%/impl}"   # e.g. user/order/payment/laundry/coupon
+for d in feature/user/impl feature/order/impl feature/payment/impl feature/laundry/impl feature/coupon/impl feature/notice/impl; do
+  domain="${d#feature/}"; domain="${domain%/impl}"   # e.g. user/order/payment/laundry/coupon/notice
   [ -d "$d/src" ] || continue
   for f in $(grep -rn --include='*.kt' -lE 'import com\.smartwash\.feature\.[a-z]+\.impl\.' "$d/src" 2>/dev/null); do
     # 找出引用了其他域 impl 的行（排除自身域的 impl 包）
@@ -91,12 +91,12 @@ check "铁律2b: feature-impl 不引用其他 feature-impl" "$IMPL_CROSS_IMPL"
 # 这里做简化：检查是否存在 impl→其他域的非 api 导入（已在 2b 覆盖 impl→impl，
 # 再检查 impl 引用其他域的 model/包路径是否来自 api 模块）
 IMPL_CROSS_NONAPI=0
-for d in feature/user/impl feature/order/impl feature/payment/impl feature/laundry/impl feature/coupon/impl; do
+for d in feature/user/impl feature/order/impl feature/payment/impl feature/laundry/impl feature/coupon/impl feature/notice/impl; do
   domain="${d#feature/}"; domain="${domain%/impl}"
   [ -d "$d/src" ] || continue
-  for f in $(grep -rn --include='*.kt' -lE 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon)\.' "$d/src" 2>/dev/null); do
+  for f in $(grep -rn --include='*.kt' -lE 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon|notice)\.' "$d/src" 2>/dev/null); do
     # 排除自身域；跨域引用必须经 api 包（路径含 .api.）
-    hits=$(grep -E 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon)\.' "$f" \
+    hits=$(grep -E 'import com\.smartwash\.feature\.(user|order|payment|laundry|coupon|notice)\.' "$f" \
            | grep -vE "import com\.smartwash\.feature\.${domain}\." \
            | grep -vE 'import com\.smartwash\.feature\.[a-z]+\.api\.' \
            || true)

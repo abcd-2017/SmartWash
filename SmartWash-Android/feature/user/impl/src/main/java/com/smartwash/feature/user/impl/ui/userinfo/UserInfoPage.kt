@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -87,6 +88,7 @@ import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.api.CouponRoute
+import com.smartwash.feature.notice.api.NoticeRoute
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.feature.user.api.UserRoute
@@ -102,6 +104,8 @@ fun UserInfoPage(
 ) {
     val userInfoStatus by userInfoViewModel.userInfoStatus.collectAsState()
     val userInfo by userInfoViewModel.userInfo.collectAsState()
+    // 消息中心未读数（跨域经 notice-api；失败时 VM 置 0，角标自动隐藏）
+    val unreadCount by userInfoViewModel.unreadCount.collectAsState()
     // 最近一次失败载荷（A2）：非 null 且无数据 → 信息卡区错误卡；非 null 且有数据 → 离线提示条
     val lastError by userInfoViewModel.lastError.collectAsState()
     val bindCampusState by userInfoViewModel.bindCampusState.collectAsState()
@@ -122,7 +126,10 @@ fun UserInfoPage(
 
     // 每次 settled 落到本 tab 时刷新（原为监听 tab 栈 currentBackStackEntry，等价迁移）
     LaunchedEffect(isActive) {
-        if (isActive) userInfoViewModel.getUserInfo()
+        if (isActive) {
+            userInfoViewModel.getUserInfo()
+            userInfoViewModel.loadUnreadCount()
+        }
     }
 
     // ON_RESUME 刷新（P-603）：App 从后台回前台时重新拉取用户信息（本页 getUserInfo
@@ -139,6 +146,8 @@ fun UserInfoPage(
                     isFirstResume = false
                 } else {
                     userInfoViewModel.getUserInfo()
+                    // 从消息中心返回时刷新未读角标（已读操作后计数变化）
+                    userInfoViewModel.loadUnreadCount()
                 }
             }
         }
@@ -646,6 +655,28 @@ fun UserInfoPage(
                             onClick = { navController.navigate(OrderRoute.Order(0)) }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                        // 消息中心（扩展提案 #4）：跨域经 notice-api 的 NoticeRoute（impl → 他人 api 合法），
+                        // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）；行尾未读数字角标（0 隐藏）
+                        SettingRow(
+                            icon = Icons.Default.Notifications,
+                            containerColor = AppColors.colorScheme.iconContainerOrange,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                            label = stringResource(R.string.messages_entry),
+                            trailing = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    UnreadBadge(count = unreadCount)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = AppColors.colorScheme.textTertiary
+                                    )
+                                }
+                            },
+                            onClick = { navController.navigate(NoticeRoute.Inbox) }
+                        )
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(
                             icon = Icons.Default.Settings,
                             containerColor = AppColors.colorScheme.iconContainerGreen,
@@ -747,6 +778,30 @@ private fun SettingRow(
             modifier = Modifier.weight(1f)
         )
         trailing()
+    }
+}
+
+/**
+ * 未读数字角标（规范 §3.2 六色浅底：粉 = 提醒/异常语义；12sp captionStrong 档）：
+ * 0/负数/缺失不渲染；>99 封顶「99+」（格式化逻辑 [formatUnreadBadge] 纯 JVM 可测）。
+ */
+@Composable
+private fun UnreadBadge(count: Long) {
+    val label = formatUnreadBadge(count) ?: return
+    Box(
+        modifier = Modifier
+            .height(18.dp)
+            .clip(RoundedCornerShape(AppDimens.radiusFull))
+            .background(AppColors.colorScheme.iconContainerPink)
+            .padding(horizontal = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            // 角标是数量，开 tabular numbers（规范 §2.2 硬规则）
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+            color = AppColors.colorScheme.iconForegroundPink,
+        )
     }
 }
 
