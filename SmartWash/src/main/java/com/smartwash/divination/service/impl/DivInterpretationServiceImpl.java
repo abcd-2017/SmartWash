@@ -67,7 +67,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     private final DivModelConfigService modelConfigService;
     private final PromptAssembler promptAssembler;
 
-    /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 traceId */
+    /** MDC 装饰器：自建线程池任务提交时包装，向异步线程传播 request_id */
     private final MdcTaskDecorator mdcTaskDecorator;
 
     /** 异步推流线程池 */
@@ -81,7 +81,7 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     public SseEmitter interpret(Long recordId, String question, Long userId, boolean isFollowup) {
         SseEmitter emitter = new SseEmitter(120_000L); // 120s 超时
 
-        // 经 MdcTaskDecorator 包装，把当前请求的 traceId 传播到推流线程，日志可跨线程串联
+        // 经 MdcTaskDecorator 包装，把当前请求的 request_id 传播到推流线程，日志可跨线程串联
         executor.execute(mdcTaskDecorator.decorate(() -> {
             try {
                 doInterpret(emitter, recordId, question, userId, isFollowup);

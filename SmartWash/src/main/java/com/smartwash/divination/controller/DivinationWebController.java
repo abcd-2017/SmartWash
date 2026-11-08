@@ -2,6 +2,7 @@ package com.smartwash.divination.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.ratelimit.RateLimit;
 import com.smartwash.divination.from.CreateRecordFrom;
 import com.smartwash.divination.from.FeedbackFrom;
 import com.smartwash.divination.from.SaveUserApiFrom;
@@ -76,6 +77,9 @@ public class DivinationWebController {
 
     @Operation(summary = "SSE 流式解读", description = "对卦例进行 LLM 流式解读（event: delta/done/error）")
     @PostMapping("/records/{id}/interpret")
+    // 限流：登录态按 userId 计数。LLM 解读按次产生真实 token 成本，QPS 层限流与 div.limit
+    // 的每日限额（interpret-per-user-day）互补——日限额防总量刷穿，本层防瞬时高频
+    @RateLimit(name = "div-interpret", window = 60, limit = 6, message = "解读请求过于频繁，请稍后再试")
     public SseEmitter interpret(@PathVariable("id") Long id, @RequestBody(required = false) String question) {
         LoginUser user = UserContextHolder.getUser();
         return interpretationService.interpret(id, normalizeQuestion(question), user.getUserId(), false);
@@ -83,6 +87,8 @@ public class DivinationWebController {
 
     @Operation(summary = "同卦追问", description = "对同一卦例进行追问（SSE 流式）")
     @PostMapping("/records/{id}/followup")
+    // 限流：同 interpret，追问同样消耗 LLM token
+    @RateLimit(name = "div-followup", window = 60, limit = 6, message = "解读请求过于频繁，请稍后再试")
     public SseEmitter followup(@PathVariable("id") Long id, @RequestBody(required = false) String question) {
         LoginUser user = UserContextHolder.getUser();
         // 空 body / 空白问题按空追问处理（required=false 避免 400；服务端 prompt 组装有空安全路径）
@@ -150,6 +156,8 @@ public class DivinationWebController {
 
     @Operation(summary = "连通性测试", description = "不保存，独立限流")
     @PostMapping("/settings/api/test")
+    // 限流：连通性测试独立计数（与方法注释约定一致），按 userId 防高频试呼外部 LLM 网关
+    @RateLimit(name = "div-api-test", window = 60, limit = 3, message = "连通性测试过于频繁，请稍后再试")
     public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
         // 平台关闭 BYOK 时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
         if (!userApiConfigService.isByokEnabled()) {

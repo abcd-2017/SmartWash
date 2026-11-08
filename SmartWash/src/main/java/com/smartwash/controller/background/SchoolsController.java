@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,7 @@ public class SchoolsController {
     }
 
     @Operation(summary = "新增学校", description = "新增学校信息，学校名称不可重复")
+    @Audited(action = "SCHOOL_ADD", targetType = "school")
     @PostMapping("/add")
     public Result<String> addSchool(@RequestBody @Valid AddSchoolsFrom addSchoolsFrom) {
         if (schoolsService.getSearchByName(addSchoolsFrom.getSchoolName()) != null) {
@@ -54,6 +56,7 @@ public class SchoolsController {
     }
 
     @Operation(summary = "更新学校", description = "修改学校信息")
+    @Audited(action = "SCHOOL_UPDATE", targetType = "school", targetIdSpEL = "#schoolsFrom.schoolId")
     @PostMapping("/update")
     public Result<String> updateSchool(@RequestBody @Valid UpdateSchoolsFrom schoolsFrom) {
         if (schoolsService.getById(schoolsFrom.getSchoolId()) == null) {
@@ -71,6 +74,7 @@ public class SchoolsController {
     }
 
     @Operation(summary = "批量删除学校", description = "根据ID批量删除学校，多个ID用逗号分隔")
+    @Audited(action = "SCHOOL_DELETE", targetType = "school", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteSchools(@PathVariable("ids") @Parameter(description = "学校ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除学校, ids: {}", ids);

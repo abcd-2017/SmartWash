@@ -2,6 +2,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,7 @@ public class RolesController {
     }
 
     @Operation(summary = "新增角色", description = "新增系统角色，角色名不可重复")
+    @Audited(action = "ROLE_ADD", targetType = "role")
     @PostMapping("/add")
     public Result<String> addRole(@RequestBody @Valid AddRolesFrom addRolesFrom) {
         if (StringUtils.hasText(addRolesFrom.getRoleName()) && rolesService.getByRoleName(addRolesFrom.getRoleName()) != null) {
@@ -54,6 +56,7 @@ public class RolesController {
     }
 
     @Operation(summary = "更新角色", description = "修改角色信息")
+    @Audited(action = "ROLE_UPDATE", targetType = "role", targetIdSpEL = "#rolesFrom.roleId")
     @PostMapping("/update")
     public Result<String> updateRole(@RequestBody @Valid UpdateRolesFrom rolesFrom) {
         Roles user = rolesService.getById(rolesFrom.getRoleId());
@@ -71,6 +74,7 @@ public class RolesController {
     }
 
     @Operation(summary = "批量删除角色", description = "根据ID批量删除角色，多个ID用逗号分隔")
+    @Audited(action = "ROLE_DELETE", targetType = "role", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteRoles(@PathVariable("ids") @Parameter(description = "角色ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除角色, ids: {}", ids);

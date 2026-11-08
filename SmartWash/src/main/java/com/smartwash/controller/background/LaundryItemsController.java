@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,7 @@ public class LaundryItemsController {
     }
 
     @Operation(summary = "新增洗衣项目", description = "新增洗衣套餐，项目名称不可重复")
+    @Audited(action = "LAUNDRY_ITEM_ADD", targetType = "laundry_item")
     @PostMapping("/add")
     public Result<String> addLaundryItem(@RequestBody @Valid AddLaundryItemsFrom addLaundryPackageFrom) {
         if (laundryItemsService.getSearchByName(addLaundryPackageFrom.getItemName()) != null) {
@@ -54,6 +56,7 @@ public class LaundryItemsController {
     }
 
     @Operation(summary = "更新洗衣项目", description = "修改洗衣套餐信息")
+    @Audited(action = "LAUNDRY_ITEM_UPDATE", targetType = "laundry_item", targetIdSpEL = "#laundryPackageFrom.itemId")
     @PostMapping("/update")
     public Result<String> updateLaundryItem(@RequestBody @Valid UpdateLaundryItemsFrom laundryPackageFrom) {
         LaundryItems laundryItems = laundryItemsService.getById(laundryPackageFrom.getItemId());
@@ -71,6 +74,7 @@ public class LaundryItemsController {
     }
 
     @Operation(summary = "批量删除洗衣项目", description = "根据ID批量删除洗衣套餐，多个ID用逗号分隔")
+    @Audited(action = "LAUNDRY_ITEM_DELETE", targetType = "laundry_item", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteLaundryPackage(@PathVariable("ids") @Parameter(description = "洗衣项目ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除洗衣项目, ids: {}", ids);

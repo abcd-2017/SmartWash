@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 积分域对外契约模块（扩展提案功能 17）：路由常量 + Gson 载荷 + 网络接口，无组件声明，manifest merger 合入宿主。 -->
+<manifest />

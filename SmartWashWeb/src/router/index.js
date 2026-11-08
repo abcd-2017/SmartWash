@@ -160,6 +160,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      // ===== 系统与安全 =====
+      {
+        path: '/audit-logs',
+        name: 'AuditLogList',
+        component: () => import('@/views/system/AuditLogList.vue'),
+        meta: {
+          title: '操作审计',
+          showInMenu: true,
+          icon: 'DocumentChecked',
+          requiresAuth: true,
+        },
+      },
       // ===== 演示工具 =====
       {
         path: '/captcha',
@@ -317,6 +329,18 @@ const routes = [
           title: '订阅管理',
           showInMenu: true,
           icon: 'AlarmClock',
+          requiresAuth: true,
+        },
+      },
+      // ===== 消息中心（站内信）=====
+      {
+        path: '/notices',
+        name: 'NoticeList',
+        component: () => import('@/views/system/NoticeList.vue'),
+        meta: {
+          title: '站内信管理',
+          showInMenu: true,
+          icon: 'Bell',
           requiresAuth: true,
         },
       },

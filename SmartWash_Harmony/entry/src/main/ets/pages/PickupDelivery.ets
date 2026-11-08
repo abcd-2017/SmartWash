@@ -9,6 +9,7 @@ import { BaseResponse } from "../network/BaseResponse"
 import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
+import { cancelPickupReminderForOrder } from "../utils/ReminderService"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
 
@@ -168,6 +169,14 @@ struct PickupDelivery {
       if (res.code === HttpStatusCode.Ok && res.data === true) {
         logger.info('pickupDelivery',
           `${this.isPickup ? "取件" : "寄件"}确认成功 orderId=${this.orderInfo?.orderId ?? -1}`)
+        // 取件成功：撤销该订单的取件提醒（订单转已完成，提醒已无意义；
+        // fire-and-forget，撤销内部全量容错不影响确认主流程）
+        if (this.isPickup) {
+          const pickedOrderId = this.orderInfo?.orderId
+          if (pickedOrderId !== null && pickedOrderId !== undefined) {
+            cancelPickupReminderForOrder(pickedOrderId)
+          }
+        }
         // 确认成功触感（recap §9-F4，对齐安卓 HapticEffect.SUCCESS）
         try {
           vibrator.startVibration({ type: 'time', duration: 30 }, { id: 0, usage: 'unknown' })

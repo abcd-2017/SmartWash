@@ -186,12 +186,17 @@
     <string name="shipping_address">收货地址</string>
     <string name="my_orders">我的订单</string>
     <string name="my_orders_count_format">%d 单</string>
+    <!-- 消息中心入口（扩展提案 #4；与 notice 域 notice_title 同义，模块资源各自独立） -->
+    <string name="messages_entry">消息中心</string>
 
     <!-- 断网降级（回归 2026-11-06 A2）：离线提示条 + 信息卡错误卡重试 -->
     <string name="user_offline_hint">网络异常，当前展示上次数据，可能不是最新</string>
     <string name="user_action_retry">重试</string>
     <string name="user_info_unloaded">未加载</string>
     <string name="user_info_unloaded_toast">信息未加载，请检查网络后重试</string>
+
+    <!-- 签到有礼入口（扩展提案功能 17：跳转 points 域 PointsRoute.Home，页面文案在 points-impl） -->
+    <string name="points_entry">签到有礼</string>
 
     <!-- 网络错误（error_network_fail 为跨域共享文案，app 侧同名保留） -->
     <string name="error_network_fail">请求失败</string>

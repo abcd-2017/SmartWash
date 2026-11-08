@@ -86,12 +86,29 @@ div:
     top-k: 6
     max-chunk: 20000
 
+# 分布式限流（@RateLimit 方法注解 + Redis Lua 滑动窗口，common/ratelimit）
+# 保护对象：登录/注册/验证码（短信成本）、短链跳转、占卜 LLM 解读（按次计费的真实 token 成本）等公开/高频接口
+smartwash:
+  rate-limit:
+    # 总开关：false 时限流切面不装配，所有 @RateLimit 注解不生效（本地调试可关）
+    enabled: true
+    # 计数存储：redis=分布式滑动窗口，多实例共享配额（生产默认）；
+    #           memory=进程内存版，仅单实例语义（无 Redis 回退/测试用）
+    store: redis
+
 # 登录防护
 security:
   # 可信反向代理网段（IPv4 CIDR，逗号分隔，如 "10.0.0.0/8,172.16.0.0/12"）。
   # 仅当请求的 TCP 直连地址落在该网段内，登录 IP 解析才采信 X-Forwarded-For / X-Real-IP；
   # 直连部署（当前 demo 形态）保持为空，否则客户端可伪造头部绕过 IP 登录锁定或定向锁定他人出口 IP
   trusted-proxy-cidrs:
+
+# 管理端操作审计（admin_audit_log，HMAC 链防篡改）
+audit:
+  # HMAC-SHA256 链密钥：与 JWT_SECRET 同一环境变量纪律——本文件不落生产默认值，
+  # 生产必须通过 AUDIT_HMAC_SECRET 注入全新随机密钥（>= 32 字节）；
+  # 未配置时审计链退化为无密钥 SHA-256 摘要（仅防意外篡改，启动 warn 提示），不影响业务
+  hmac-secret: ${AUDIT_HMAC_SECRET:}
 
 # 工作台工具箱配置
 toolbox:
@@ -102,3 +119,29 @@ toolbox:
 
 # 游戏中心：可玩地址 = MinIO 对象直链（minio.endpoint/bucket/对象键/入口，与头像 uploadFile 同一构造方式），
 # 无独立域名配置；生产环境必须将 MINIO_ENDPOINT 配置为 https 公网地址（环境红线：生产禁明文 HTTP）
+
+# 请求链路日志（request_id 注入由 TraceIdFilter 始终执行，不受开关影响）
+  request-log:
+    # 出入日志开关；关闭后仅保留 request_id 链路注入与回写
+    access-log-enabled: true
+    # 慢请求阈值（毫秒）：达到即在 INFO 日志行追加 (慢请求) 标记（级别恒为 INFO，既有任务约定）
+    slow-threshold-ms: 2000
+    # 不做出入日志的路径前缀（actuator/swagger/静态资源；前缀匹配，配 /actuator 即覆盖其全部子路径）
+    exclude-paths:
+      - /actuator
+      - /swagger-ui
+      - /v3/api-docs
+      - /favicon.ico
+    # 追加的敏感掩码字段（默认清单内置 password/token/secret/captcha/code 等，此处为追加而非覆盖）
+    mask-fields:
+
+# 平台积分配置（积分值规则集中管理，业务代码禁止魔法数；绑定类 com.smartwash.points.config.PointsProperties）
+points:
+  sign-in:
+    base-points: 5           # 每日签到基础分
+    streak-bonus-step: 7     # 连签奖励周期：连签第 7/14/21…天额外发放一次奖励
+    streak-bonus-points: 10  # 连签奖励积分
+    attempt-daily-limit: 20  # 签到接口每日尝试上限（幂等接口重复请求无副作用，仅防恶意打库）
+  leaderboard:
+    size: 50                 # 月榜 TOP N
+    recent-ledger-size: 20   # /me 最近流水条数

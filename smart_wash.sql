@@ -1522,4 +1522,119 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- =====================================================================
+-- 管理端操作审计 —— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for admin_audit_log（管理端敏感操作审计,HMAC 链防篡改）
+-- hash = HMAC-SHA256(AUDIT_HMAC_SECRET, prev_hash + 规范化payload); 首条 prev_hash = 64 个 0 (genesis)
+-- payload 规范化串 = admin_user|action|target_type|target_id|before_json|after_json|ip|created_at(秒), | 分隔,null 空串占位
+-- ----------------------------
+DROP TABLE IF EXISTS `admin_audit_log`;
+CREATE TABLE `admin_audit_log` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT,
+  `admin_user`  VARCHAR(64) NOT NULL COMMENT '操作人管理员用户名(无登录态兜底 unknown)',
+  `action`      VARCHAR(64) NOT NULL COMMENT '动作标识,如 LAUNDRY_ITEM_UPDATE/COUPON_DELETE/PAYMENT_MANUAL_ADD',
+  `target_type` VARCHAR(64) NULL COMMENT '目标对象类型,如 laundry_item/coupon/user',
+  `target_id`   VARCHAR(64) NULL COMMENT '目标对象ID(批量操作存逗号分隔串,无法解析时为空)',
+  `before_json` TEXT        NULL COMMENT '操作前摘要(入参JSON,密码等敏感字段掩码,超2KB截断,截断后可能非合法JSON)',
+  `after_json`  TEXT        NULL COMMENT '操作后摘要(返回值JSON,超2KB截断)',
+  `ip`          VARCHAR(45) NULL COMMENT '操作来源IP(IPv6最长45;无请求上下文为空)',
+  `prev_hash`   CHAR(64)    NOT NULL COMMENT '链上前一条hash(首条为genesis=64个0)',
+  `hash`        CHAR(64)    NOT NULL COMMENT 'HMAC-SHA256(AUDIT_HMAC_SECRET, prev_hash+规范化payload),64位小写hex',
+  `created_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时刻(秒级,参与规范化payload)',
+  PRIMARY KEY (`id`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_admin_user` (`admin_user`),
+  KEY `idx_target` (`target_type`, `target_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理端操作审计日志';
+-- 平台积分体系（points）—— 3 张业务表（账户 / 流水 / 签到）
+-- 设计纪律：point_ledger 为 append-only 事实源（禁删禁改，不提供任何删除/更新入口）；
+--           point_account.balance 是流水的派生缓存值，仅允许条件 UPDATE 单语句自增
+--           （balance = balance + delta），禁止"先查再改"（对齐资金链路并发纪律）；
+--           幂等闸门 = point_sign_in 的 uk_sign_user_date 唯一索引（DB 层兜底并发签到）。
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for point_account（积分账户,一人一行懒创建）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_account`;
+CREATE TABLE `point_account` (
+  `account_id`   BIGINT   NOT NULL AUTO_INCREMENT COMMENT '账户 ID',
+  `user_id`      BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `balance`      INT      NOT NULL DEFAULT 0 COMMENT '当前积分余额(流水派生值,仅经条件 UPDATE 增减)',
+  `total_earned` INT      NOT NULL DEFAULT 0 COMMENT '累计获得积分(只增不减,负向变动不计入)',
+  `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`account_id`) USING BTREE,
+  UNIQUE INDEX `uk_point_account_user` (`user_id`) USING BTREE COMMENT '一人一行(懒创建,并发首建由唯一索引兜底)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分账户(余额为流水派生缓存,事实源在 point_ledger)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for point_ledger（积分流水,append-only 禁删禁改）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_ledger`;
+CREATE TABLE `point_ledger` (
+  `ledger_id`     BIGINT      NOT NULL AUTO_INCREMENT COMMENT '流水 ID',
+  `user_id`       BIGINT      NOT NULL COMMENT '所属用户(users.user_id)',
+  `delta`         INT         NOT NULL COMMENT '积分变动(正=入账 负=出账)',
+  `reason`        VARCHAR(32) NOT NULL COMMENT '业务原因枚举(SIGN_IN每日签到/STREAK_BONUS连签奖励,见 PointReason,预留扩展)',
+  `ref_date`      DATE        NULL COMMENT '业务日期维度(签到类=签到日,业务防重对账与未来防重查询依据)',
+  `balance_after` INT         NOT NULL COMMENT '本笔变动后余额快照(流水连续性对账字段,单加分来源下连续)',
+  `created_at`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ledger_id`) USING BTREE,
+  KEY `idx_ledger_user_time` (`user_id`,`created_at`) USING BTREE COMMENT '个人流水按时间倒序查询(最近N条)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分流水(append-only,删除/更新入口一律禁止新增)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for point_sign_in（每日签到,uk 唯一索引 = 幂等 DB 闸门）
+-- ----------------------------
+DROP TABLE IF EXISTS `point_sign_in`;
+CREATE TABLE `point_sign_in` (
+  `sign_id`    BIGINT   NOT NULL AUTO_INCREMENT COMMENT '签到 ID',
+  `user_id`    BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `sign_date`  DATE     NOT NULL COMMENT '签到日(业务日期)',
+  `streak`     INT      NOT NULL COMMENT '签到时点的连签天数(昨日有记录则+1,否则重置 1)',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`sign_id`) USING BTREE,
+  UNIQUE INDEX `uk_sign_user_date` (`user_id`,`sign_date`) USING BTREE COMMENT '幂等闸门:一人一日一条,并发签到靠它兜底'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日签到记录' ROW_FORMAT = Dynamic;
+-- 站内信/消息中心（v1：运营通知 + 用户收件箱）—— 2 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for notice（站内信主表）
+-- 已读采用懒创建：notice_read 仅在用户首次标记时插入，未读 = notice 不在 read 表，
+-- 未读数 = notice 总数 − 当前用户已读数（两个 COUNT 相减），不做全量 fan-out。
+-- v2 若未读数成为热点，改为 fan-out（发送时写全量占位行或 Redis 计数缓存）。
+-- ----------------------------
+DROP TABLE IF EXISTS `notice`;
+CREATE TABLE `notice` (
+  `id`               BIGINT       NOT NULL AUTO_INCREMENT COMMENT '公告 ID',
+  `title`            VARCHAR(100) NOT NULL COMMENT '标题',
+  `content`          TEXT         NOT NULL COMMENT '正文（可含换行）',
+  `type`             VARCHAR(20)  NOT NULL COMMENT '类型：SYSTEM系统通知/ANNOUNCEMENT运营公告（v2 可扩展业务事件类型）',
+  `deep_link`        VARCHAR(512) NULL COMMENT '深链：smartwash://... 或 https://...；NULL=纯文案公告无跳转',
+  `creator_admin_id` BIGINT       NULL COMMENT '发送人(admin_users.admin_id)',
+  `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信主表（运营通知/公告）' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for notice_read（已读账本，懒创建 + uk 幂等）
+-- uk_user_notice(user_id, notice_id) 唯一索引 = 幂等 DB 闸门：
+-- 并发/重复标记只允许一条插入成功，其余由服务层捕获 DuplicateKeyException 判幂等。
+-- ----------------------------
+DROP TABLE IF EXISTS `notice_read`;
+CREATE TABLE `notice_read` (
+  `id`        BIGINT   NOT NULL AUTO_INCREMENT COMMENT '已读记录 ID',
+  `user_id`   BIGINT   NOT NULL COMMENT '所属用户(users.user_id)',
+  `notice_id` BIGINT   NOT NULL COMMENT '公告 ID(notice.id)',
+  `read_at`   DATETIME NOT NULL COMMENT '首次标记已读时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_notice` (`user_id`,`notice_id`) USING BTREE COMMENT '幂等闸门:一人一公告一条已读记录'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信已读账本（懒创建）' ROW_FORMAT = Dynamic;
 SET FOREIGN_KEY_CHECKS = 1;

@@ -2,6 +2,7 @@ import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want,
 import { display, window, KeyboardAvoidMode } from '@kit.ArkUI';
 import { logger } from '../utils/Logger';
 import { initPreferences } from '../utils/StorageUtil';
+import { initPickupReminder } from '../utils/ReminderService';
 import { applyDesignTheme } from '../constant/DesignSystem';
 import { DarkModeStore } from '../constant/DarkModeStore';
 import { ServerConfig } from '../config/ServerConfig'
@@ -32,6 +33,12 @@ class CrashLogObserver {
 // 深链暂存 key：Want.uri 经 AppStorage 过桥到 UI 侧（Home 页挂载后消费）
 const PENDING_DEEP_LINK_KEY: string = 'pendingDeepLinkUri';
 
+// 卡片 router 事件 params 中的跳转键：与 widget/pages/WidgetCard.ets postCardAction 的
+// params 键逐字一致（跨进程唯一通道，sw = SmartWash 前缀，避开系统注入保留键）
+const WIDGET_URI_KEY: string = 'swWidgetUri';
+// 卡片跳转 uri 合法性：只接受本应用深链 scheme，杜绝卡片数据被篡改后拉起任意页面
+const WIDGET_URI_SCHEME_PREFIX: string = 'smartwash://';
+
 // 安全区 AppStorage key：页面根容器按这两个值做内容避让（vp），背景色/渐变自然延伸到系统栏
 const SAFE_AREA_TOP_VP_KEY: string = 'safeAreaTopVp';
 const SAFE_AREA_BOTTOM_VP_KEY: string = 'safeAreaBottomVp';
@@ -45,6 +52,8 @@ export default class EntryAbility extends UIAbility {
     this.syncDarkMode();
     // 冷启动深链：onCreate 先于 loadContent 执行，此处暂存 uri，待 Home 页挂载后消费
     this.savePendingDeepLink(want);
+    // 桌面卡片 router 事件（postCardAction 拉起）：params 转深链 uri 走同一消费链路
+    this.saveWidgetLaunch(want);
     // 服务端公开配置预热（非阻塞，对齐安卓 ServerConfigInitTask）：游戏桥白名单运行期读取
     ServerConfig.prefetch();
   }
@@ -85,10 +94,13 @@ export default class EntryAbility extends UIAbility {
   // （对齐安卓 singleTask + onNewIntent 语义），同样暂存由 Home 页 @Watch 感知消费
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.savePendingDeepLink(want);
+    this.saveWidgetLaunch(want);
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     initPreferences(this.context)
+    // 取件提醒文案资源注入（fire-and-forget：失败回落 ReminderLogic 内置兜底文案）
+    initPickupReminder(this.context)
 
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {
@@ -153,6 +165,62 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       logger.error('EntryAbility', 'updateSafeArea 失败', err instanceof Error ? err.message : '');
     }
+  }
+
+  /**
+   * 桌面卡片点击落地（postCardAction router 事件）：把卡片 params 里的跳转 uri 暂存到
+   * pendingDeepLinkUri，与深链共用同一条消费链路（Index 登出态消费 / Home 挂载与热启动
+   * @Watch 消费 → handleDeepLink 分发）——登录守卫（P-2001：未登录点卡片保留暂存、
+   * 登录后补消费）与路由注册全部复用，不新增一套导航语义。
+   *
+   * 拉起时机：应用未运行 → onCreate；后台运行 → onNewWant，两处均调用本方法。
+   * params 位置存在两种系统形态（WisdomDaily 实测兼容，此处同样兼容）：
+   * ① want.parameters 直接是 params 键值对；
+   * ② want.parameters.params 内嵌 params（JSON 字符串或对象）。
+   */
+  private saveWidgetLaunch(want: Want): void {
+    try {
+      const parameters = want.parameters;
+      if (parameters === undefined) {
+        return;
+      }
+      const bag = EntryAbility.unwrapWidgetParams(parameters);
+      if (bag === undefined) {
+        return;
+      }
+      const raw: Object = bag[WIDGET_URI_KEY];
+      if (typeof raw !== 'string') {
+        return;
+      }
+      const uri: string = raw;
+      // scheme 白名单：仅本应用深链可入暂存（卡片数据键值可被系统重建，防御性收口）
+      if (!uri.toLowerCase().startsWith(WIDGET_URI_SCHEME_PREFIX)) {
+        return;
+      }
+      AppStorage.setOrCreate(PENDING_DEEP_LINK_KEY, uri);
+      // debug 留痕不打 uri 全文（与深链日志口径一致，host/path 细节由 deeplink 模块按需记录）
+      logger.debug('EntryAbility', '洗衣卡片跳转请求已暂存，待深链链路消费');
+    } catch (err) {
+      // 卡片参数解析永不击穿启动流程：异常仅留摘要日志
+      logger.error('EntryAbility', '卡片跳转参数解析失败',
+        err instanceof Error ? err.message : '');
+    }
+  }
+
+  /** 兼容两种 want.parameters 形态：直接键值对 / parameters.params 内嵌（JSON 串或对象） */
+  private static unwrapWidgetParams(parameters: Record<string, Object>): Record<string, Object> | undefined {
+    const nested: Object | undefined = parameters['params'];
+    if (nested === undefined) {
+      return parameters;
+    }
+    if (typeof nested === 'string') {
+      const parsed: Object = JSON.parse(nested);
+      return parsed instanceof Object ? parsed as Record<string, Object> : undefined;
+    }
+    if (nested instanceof Object) {
+      return nested as Record<string, Object>;
+    }
+    return undefined;
   }
 
   /**

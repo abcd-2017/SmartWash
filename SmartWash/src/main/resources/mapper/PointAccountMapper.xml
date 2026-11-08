@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.points.mapper.PointAccountMapper">
+
+    <select id="selectByUserId" resultType="com.smartwash.points.entity.PointAccount">
+        select account_id, user_id, balance, total_earned, created_at, updated_at
+        from point_account
+        where user_id = #{userId}
+    </select>
+
+    <!--
+        条件 UPDATE 加分：单语句自增（balance = balance + delta），
+        InnoDB 行锁保证同账户并发加分串行化，不存在"读-改-写"竞态（对齐 UsersMapper.decrUserBalance 纪律）。
+        影响行数 0 = 账户不存在，调用方懒创建后重试或视为异常回滚。
+    -->
+    <update id="addPoints">
+        update point_account
+        set balance = balance + #{delta},
+            total_earned = total_earned + #{earned}
+        where user_id = #{userId}
+    </update>
+
+    <!-- 月榜展示列：仅取脱敏所需字段，禁止带出 password/campus_card 等敏感列 -->
+    <select id="selectLeaderboardUsers" resultType="com.smartwash.points.vo.LeaderboardUserVo">
+        select user_id, phone_number, avatar
+        from users
+        where user_id in
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+    </select>
+</mapper>

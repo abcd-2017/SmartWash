@@ -3,6 +3,7 @@ package com.smartwash.controller;
 import com.smartwash.common.DefaultConstant;
 import com.smartwash.common.Result;
 import com.smartwash.common.ResultCodeEnum;
+import com.smartwash.common.ratelimit.RateLimit;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -117,6 +118,8 @@ public class LoginController {
 
     @Operation(summary = "管理员登录", description = "管理员通过用户名和密码登录，返回JWT令牌与角色")
     @PostMapping("/adminUsers/login")
+    // 限流：按用户名维度 QPS 防高频爆破脚本（与下方失败计数锁互补——失败计数防累计爆破，限流防瞬时高频）
+    @RateLimit(key = "#userLoginFrom.username", window = 60, limit = 10, message = "登录请求过于频繁，请稍后再试")
     public Result<LoginVo> login(@RequestBody @Valid AdminUserLoginFrom userLoginFrom, HttpServletRequest request) {
         String clientIp = getClientIp(request);
         String lockKey = "login:lock:admin:" + userLoginFrom.getUsername();
@@ -151,6 +154,8 @@ public class LoginController {
 
     @Operation(summary = "用户登录", description = "用户通过手机号和密码登录，返回JWT令牌与角色")
     @PostMapping("/user/login")
+    // 限流：按手机号维度 QPS 防单号高频爆破；换号遍历行为由下方 IP 失败计数锁兜底
+    @RateLimit(key = "#userLoginFrom.phoneNumber", window = 60, limit = 10, message = "登录请求过于频繁，请稍后再试")
     public Result<LoginVo> login(@RequestBody @Valid UserLoginFrom userLoginFrom, HttpServletRequest request) {
         String clientIp = getClientIp(request);
         String lockKey = "login:lock:user:" + userLoginFrom.getPhoneNumber();
@@ -193,6 +198,8 @@ public class LoginController {
 
     @Operation(summary = "用户注册", description = "用户通过手机号、密码和验证码注册新账号，注册成功即自动登录并返回双 token（token + refreshToken）与角色")
     @PostMapping("/user/register")
+    // 限流：匿名接口按 IP 兜底，防脚本批量刷注册（阈值高于正常人手工注册节奏）
+    @RateLimit(window = 60, limit = 5, message = "注册请求过于频繁，请稍后再试")
     public Result<LoginVo> register(@RequestBody @Valid UserRegisterFrom userRegisterFrom, HttpServletRequest request) {
         String phone = userRegisterFrom.getPhoneNumber();
         String clientIp = getClientIp(request);
@@ -274,6 +281,9 @@ public class LoginController {
 
     @Operation(summary = "获取短信验证码", description = "向指定手机号发送6位数字短信验证码，同一手机号60秒内只能请求一次")
     @GetMapping("/user/captcha/{phoneNumber}")
+    // 限流：按 IP 维度防"单 IP 遍历海量手机号刷短信"（每条短信都是真实成本）；
+    // 单手机号 60 秒一次的频控由方法内既有逻辑承担，两层互补
+    @RateLimit(window = 60, limit = 10, message = "验证码获取过于频繁，请稍后再试")
     public Result<String> getCaptcha(@PathVariable @Parameter(description = "手机号码", required = true, example = "13800138000") String phoneNumber) {
         if (!phoneNumber.matches(PHONE_REGEX)) {
             log.warn("验证码请求手机号格式错误, phone: {}", maskPhone(phoneNumber));
@@ -326,6 +336,8 @@ public class LoginController {
 
     @Operation(summary = "重置密码", description = "通过短信验证码重置用户密码")
     @PostMapping("/user/resetPassword")
+    // 限流：匿名接口按 IP 兜底，防验证码穷举型脚本高频提交
+    @RateLimit(window = 60, limit = 5, message = "操作过于频繁，请稍后再试")
     public Result<String> resetPassword(@RequestBody @Valid ResetPasswordFrom resetPasswordFrom, HttpServletRequest request) {
         String phone = resetPasswordFrom.getPhoneNumber();
         String clientIp = getClientIp(request);

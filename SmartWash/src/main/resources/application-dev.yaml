@@ -31,3 +31,7 @@ smartwash:
 logging:
   level:
     com.smartwash.mapper: debug
+
+# 管理端审计 HMAC 链密钥：开发占位值（非生产密钥），生产必须由 AUDIT_HMAC_SECRET 注入全新随机密钥
+audit:
+  hmac-secret: ${AUDIT_HMAC_SECRET:dev-only-audit-hmac-placeholder}

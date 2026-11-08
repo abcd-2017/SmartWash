@@ -30,6 +30,12 @@ dependencies {
     // T7.2 起替换 HostRoutes.COUPON 过渡字面量）
     implementation project(':feature:coupon:api')
 
+    // 积分域路由常量（PointsRoute；用户中心「签到有礼」入口跨域跳转，扩展提案功能 17）
+    implementation project(':feature:points:api')
+    // 站内信域路由常量与服务契约（NoticeRoute/NoticeApi；用户中心「消息中心」入口跨域跳转
+    // + 未读角标消费未读数，扩展提案 #4）
+    implementation project(':feature:notice:api')
+
     // 响应信封 ApiResult / HttpStatusCode / RequestState
     implementation project(':common:utils')
     // Retrofit（api 传递）+ @RequireAuthorization + NetworkException + TokenProvider/SessionEventNotifier 契约

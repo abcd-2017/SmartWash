@@ -13,6 +13,7 @@ import { DrumIllustration } from "../view/DrumIllustration"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { ReminderSyncOrder, syncPickupReminderForOrder } from "../utils/ReminderService"
 
 @Builder
 export function OrderDetailBuilder() {
@@ -103,6 +104,19 @@ struct OrderDetail {
         logger.debug('orderDetail', `订单详情加载成功 orderId=${this.orderId} status=${res.data?.status ?? ""}`)
         this.orderInfo = res.data
         this.loadFailed = false
+        // 取件提醒同步（fire-and-forget，调研候选 2 解耦原则）：详情是待取件单最准确的
+        // 发现点（带柜号上下文，文案可落到具体柜位）；同步内部全量容错不影响详情主流程
+        if (res.data !== null) {
+          const syncInput: ReminderSyncOrder = {
+            orderId: res.data.orderId,
+            status: res.data.status,
+            lockerNumber: res.data.lockersVo?.lockerNumber ?? null
+          }
+          syncPickupReminderForOrder(syncInput).catch((err: Object) => {
+            // 双保险（sync 内部已兜底）：意外 throw 也不得影响详情
+            logger.debug('orderDetail', `取件提醒同步意外失败（已忽略）${err instanceof Error ? err.message : ''}`)
+          })
+        }
       } else {
         logger.warn('orderDetail', `订单详情加载失败 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)

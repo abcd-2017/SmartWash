@@ -48,3 +48,8 @@ minio:
   access-key: test-access-key
   secret-key: test-secret-key
   bucket-name: smartwash-test
+
+# 限流组件测试环境关闭：安全集成测试同 IP 高频请求不应被限流拦截（限流自身行为有独立单测覆盖）
+smartwash:
+  rate-limit:
+    enabled: false

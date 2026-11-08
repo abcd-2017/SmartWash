@@ -53,3 +53,7 @@ toolbox:
 
 # 游戏中心：可玩地址 = MinIO 对象直链（MINIO_ENDPOINT 必须为 https 公网地址，禁止明文 HTTP 上生产）
 # 对象元数据携带 immutable 缓存，读取授权依赖桶公共读策略（与头像同先例，见 MinioStorageServiceImpl）
+
+# 管理端审计 HMAC 链密钥：无默认值围栏——AUDIT_HMAC_SECRET 缺失即启动失败，杜绝带弱链上生产
+audit:
+  hmac-secret: ${AUDIT_HMAC_SECRET}

@@ -7,10 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.network.exception.NetworkException
+import com.smartwash.feature.notice.api.NoticeApi
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.network.vo.user.UserInfoVo
 import com.smartwash.feature.user.impl.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -22,12 +24,20 @@ import javax.inject.Inject
 @HiltViewModel
 class UserInfoViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val noticeApi: NoticeApi,
     private val application: Application,
 ) : ViewModel() {
     private val _userInfoStatus = MutableStateFlow<RequestState>(RequestState.Idle)
     val userInfoStatus = _userInfoStatus.asStateFlow()
     private val _userInfo = MutableStateFlow<UserInfoVo?>(null)
     val userInfo = _userInfo.asStateFlow()
+
+    /**
+     * 消息中心未读数（跨域经 notice-api 的 [NoticeApi]，impl → 他人 api 合法）。
+     * 独立于用户信息主流程：失败仅留痕，角标隐藏，不影响我的页渲染。
+     */
+    private val _unreadCount = MutableStateFlow(0L)
+    val unreadCount = _unreadCount.asStateFlow()
 
     /**
      * 最近一次 getUserInfo 的失败载荷（回归 2026-11-06 A2）：
@@ -56,6 +66,20 @@ class UserInfoViewModel @Inject constructor(
                 val error = RequestState.Error(e.resId, e.message)
                 _lastError.value = error
                 _userInfoStatus.value = error
+            }
+        }
+    }
+
+    /** 未读数独立拉取（页面 active / ON_RESUME 触发；失败仅留痕，角标隐藏） */
+    fun loadUnreadCount() {
+        viewModelScope.launch {
+            try {
+                _unreadCount.value = noticeApi.getUnreadCount()
+            } catch (e: CancellationException) {
+                // 取消不作为网络错误，直接上抛
+                throw e
+            } catch (e: Exception) {
+                AppLogger.warn(TAG, "未读数拉取失败（角标隐藏）：${e.message}")
             }
         }
     }

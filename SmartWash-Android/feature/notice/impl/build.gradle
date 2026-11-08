@@ -1,0 +1,42 @@
+// :feature:notice:impl —— 站内信域实现（扩展提案 #4 端上闭环第一端，按域嵌套结构 feature/notice/{api,impl}；
+// 包名/namespace 保持 com.smartwash.feature.notice，与模块路径解耦，同 coupon/points 先例）。
+// 站内信网络消费（NoticeServiceApi 契约在 api 模块）+ 站内信仓库 + 收件箱页
+// （未读高亮/已读灰化 + 全部已读 + 点击标记已读与深链跳转）；深链 host "messages"
+// （di @IntoSet 贡献，模式同 coupon/points）。
+// 依赖方向：notice:api / common（禁止依赖 app 壳与其他 feature-impl）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.notice'
+}
+
+dependencies {
+    // 本域路由常量、Gson 载荷、网络接口与跨域服务契约（NoticeRoute/NoticeVo/NoticeServiceApi/NoticeApi）
+    implementation project(':feature:notice:api')
+
+    // 响应信封 ApiResult / RequestState / AppLogger / 触感 / pressable / motionSpec
+    implementation project(':common:utils')
+    // NetworkException（ResponseInterceptor 错误转译产物；Retrofit 经 api 模块传递）
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens/AppTextStyles 主题 + PageHeader/GroupCard/AppButton/
+    // EmptyState/LoadingState/ButtonSpinner/LoadingDots 组件 + ShellRoute 深链跳转目标）
+    implementation project(':common:ui')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（收件箱页返回上级 + http(s) 深链落内置浏览器）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/items/Row/Box；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // 图标（EmptyState 占位参数 / 空态引导）
+    implementation libs.androidx.material.icons.extended
+    // ViewModel 协程 launch / MutableStateFlow
+    implementation libs.kotlinx.coroutines.android
+
+    // JVM 单测（类型文案映射 / 未读角标格式化 / 时间格式化）
+    testImplementation libs.junit
+}

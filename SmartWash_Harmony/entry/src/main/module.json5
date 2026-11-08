@@ -56,6 +56,21 @@
     ],
     "extensionAbilities": [
       {
+        // 洗衣订单状态卡片提供方（查证：SDK modulecheck/module.json schema extension type 支持
+        // "form"；metadata name "ohos.extension.form" 指向 form_config.json 为官方约定）
+        "name": "EntryFormAbility",
+        "srcEntry": "./ets/entryformability/EntryFormAbility.ets",
+        "description": "$string:widget_order_desc",
+        "type": "form",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.form",
+            "resource": "$profile:form_config"
+          }
+        ]
+      },
+      {
         "name": "EntryBackupAbility",
         "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
         "type": "backup",
@@ -80,6 +95,13 @@
         // （声明会报 00303221 构建失败），不要尝试为磁力计追加 requestPermissions
         "name": "ohos.permission.ACCELEROMETER",
         "reason": "$string:accelerometer_reason"
+      },
+      {
+        // 后台代理提醒（reminderAgentManager publishReminder/cancelReminder 所需）。
+        // system_grant 授权：静态声明即可，无需 requestPermissionsFromUser 弹窗
+        // （SDK d.ts @permission 注释 + 官方权限列表确认，调研候选 2 / healthy-life-arkts 实践同款）。
+        "name": "ohos.permission.PUBLISH_AGENT_REMINDER",
+        "reason": "$string:reminder_agent_reason"
       }
     ]
   }

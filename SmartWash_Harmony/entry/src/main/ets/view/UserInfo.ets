@@ -5,12 +5,14 @@ import { getUserInfo, uploadAvatar } from "../network/api/UserApi"
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { promptAction } from '@kit.ArkUI'
 import { UserInfoVo } from "../network/vo/UserInfoVo"
+import { getUnreadCount } from "../network/api/NoticeApi"
+import { NoticeText, formatUnreadBadge } from "../utils/NoticeLogic"
 import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, AppButtonVariant, EmptyState, LoadingState } from "./common/AppComponents"
 import { safeTopVp } from "../utils/SafeArea"
-import { USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
+import { NOTICE_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 
 /**
  * 手机号掩码（3+****+4，对齐安卓 UserInfoPage.kt:623-624 maskPhone）：
@@ -36,6 +38,10 @@ export struct UserInfo {
   @State isUploading: boolean = false
   // 下拉刷新进行中标记（对齐安卓 PullToRefreshBox；与首载骨架/错误重试互补）
   @State refreshing: boolean = false
+  // 消息中心未读数（独立链路：失败仅留痕，角标隐藏，不影响用户信息主流程）
+  @State unreadCount: number = 0
+  // 跨页刷新信号（自增 tick）：消息中心标记已读 / 全部已读成功后 bump
+  @StorageLink(NOTICE_TICK_KEY) @Watch("onNoticeTick") noticeTick: number = 0
 
   //监听用户信息刷新状态变化
   onUserInfoChange() {
@@ -44,8 +50,38 @@ export struct UserInfo {
     }
   }
 
+  /** 消费站内信变更 tick：重拉未读数（自增保证每次变更都触发） */
+  onNoticeTick() {
+    if (this.noticeTick > 0) {
+      this.loadUnreadCount()
+    }
+  }
+
   aboutToAppear() {
     this.refreshUserInfo()
+    this.loadUnreadCount()
+  }
+
+  /**
+   * 未读数独立拉取（对齐安卓 UserInfoViewModel.loadUnreadCount）：
+   * 失败仅留痕（角标隐藏），不影响我的页主流程。
+   */
+  async loadUnreadCount() {
+    try {
+      const res = await getUnreadCount()
+      if (res.code === HttpStatusCode.Ok) {
+        this.unreadCount = res.data ?? 0
+      } else {
+        logger.warn('userInfo', `未读数拉取失败 code=${res.code ?? 0}`)
+      }
+    } catch (err) {
+      logger.warn('userInfo', '未读数拉取异常（角标隐藏）')
+    }
+  }
+
+  /** 行尾未读角标文案（0/缺失/负数返回空串，UI 隐藏角标；>99 封顶 99+） */
+  private unreadBadgeText(): string {
+    return formatUnreadBadge(this.unreadCount) ?? ''
   }
 
   async refreshUserInfo() {
@@ -67,10 +103,11 @@ export struct UserInfo {
     }
   }
 
-  /** 下拉刷新（对齐安卓 PullToRefreshBox）：复用 refreshUserInfo，结束后复位 refreshing */
+  /** 下拉刷新（对齐安卓 PullToRefreshBox）：复用 refreshUserInfo + 未读数，结束后复位 refreshing */
   private async onRefresh(): Promise<void> {
     this.refreshing = true
     await this.refreshUserInfo()
+    await this.loadUnreadCount()
     this.refreshing = false
   }
 
@@ -477,6 +514,66 @@ export struct UserInfo {
               () => {
                 this.jumpToOrderList(0)
               })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
+            // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
+            // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
+            this.settingRow($r('sys.symbol.gift'), "签到有礼",
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                pathStack.pushPathByName(RouteNames.POINTS, null)
+              })
+            // 消息中心入口（扩展提案 #4；对齐安卓 UserInfoPage 功能卡「消息中心」行）：
+            // 橙容器 = 通知/提醒语义（规范 §3.2 六色浅底）。
+            // 行尾未读角标依赖 @State，不能走 @Builder 按值参数（已知坑：参数首帧定格），
+            // 故本行不走 settingRow，直接内联渲染以随 unreadCount 变更重绘。
+            Row() {
+              Column() {
+                SymbolGlyph($r('sys.symbol.bell'))
+                  .fontSize(20)
+                  .fontColor([DesignColor.ICON_FOREGROUND_ORANGE])
+              }
+              .width(32)
+              .height(32)
+              .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
+              .backgroundColor(DesignColor.ICON_CONTAINER_ORANGE)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
+
+              Text(NoticeText.notice_title)
+                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontWeight(DesignFontWeight.NORMAL)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+                .layoutWeight(1)
+                .margin({ left: 12 })
+
+              // 未读数字角标（0/缺失隐藏；>99 封顶 99+）
+              if (this.unreadBadgeText().length > 0) {
+                Text(this.unreadBadgeText())
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor(DesignColor.ICON_FOREGROUND_PINK)
+                  .fontFeature(DesignFontFeature.TNUM)
+                  .padding({ left: 5, right: 5, top: 1, bottom: 1 })
+                  .backgroundColor(DesignColor.ICON_CONTAINER_PINK)
+                  .borderRadius(DesignDimens.RADIUS_FULL)
+                  .margin({ right: DesignDimens.SPACE_XXS })
+              }
+
+              SymbolGlyph($r('sys.symbol.chevron_right'))
+                .fontSize(20)
+                .fontColor([DesignColor.TEXT_TERTIARY])
+            }
+            .width("100%")
+            .height(64)
+            .alignItems(VerticalAlign.Center)
+            .onClick(() => {
+              pathStack.pushPathByName(RouteNames.MESSAGES, null)
+            })
 
             Divider()
               .strokeWidth(0.5)
