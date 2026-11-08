@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 积分域文案（签到有礼页：签到 / 余额 / 月榜 / 最近流水）。 -->
+<resources>
+    <!-- 页面标题（与我的页入口同名） -->
+    <string name="points_title">签到有礼</string>
+
+    <!-- Hero 余额卡（每页唯一锚点 = 余额大字） -->
+    <string name="points_balance_label">当前积分</string>
+    <string name="points_total_earned_format" formatted="false">累计获得 %1$d 积分</string>
+    <string name="points_unit">积分</string>
+
+    <!-- 签到区（hero 内 CTA + 连签进度） -->
+    <string name="points_sign_in">签到</string>
+    <string name="points_signed_today">已签到</string>
+    <string name="points_sign_in_success_format" formatted="false">签到成功 +%1$d 积分</string>
+    <string name="points_sign_in_already">今日已签到，明天再来吧</string>
+    <string name="points_streak_format" formatted="false">已连签 %1$d 天</string>
+    <string name="points_next_bonus_format" formatted="false">再签 %1$d 天得连签奖励</string>
+
+    <!-- 月榜 -->
+    <string name="points_leaderboard_title">本月排行榜</string>
+    <string name="points_leaderboard_month_format" formatted="false">%1$d年%2$d月</string>
+    <string name="points_leaderboard_load_failed">排行榜加载失败，请检查网络后重试</string>
+    <string name="points_leaderboard_empty">本月还没有人上榜，签到赢积分</string>
+    <string name="points_my_rank_format" formatted="false">我的排名 #%1$d · %2$d 积分</string>
+    <string name="points_my_rank_none">本月暂未上榜，签到赢积分</string>
+
+    <!-- 最近流水 -->
+    <string name="points_ledger_title">积分明细</string>
+    <string name="points_ledger_empty">暂无积分记录，签到得积分</string>
+    <string name="points_reason_sign_in">每日签到</string>
+    <string name="points_reason_streak_bonus">连签奖励</string>
+    <string name="points_reason_unknown">积分变动</string>
+
+    <!-- 状态反馈（错误态文案 = 说明发生了什么 + 怎么解决，规范 §3.6） -->
+    <string name="points_load_failed">积分信息加载失败</string>
+    <string name="points_action_retry">重试</string>
+</resources>

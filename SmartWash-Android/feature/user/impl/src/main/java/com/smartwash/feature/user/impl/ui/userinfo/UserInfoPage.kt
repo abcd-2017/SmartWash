@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -89,6 +90,7 @@ import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.feature.coupon.api.CouponRoute
 import com.smartwash.feature.order.api.OrderRoute
 import com.smartwash.feature.payment.api.PaymentRoute
+import com.smartwash.feature.points.api.PointsRoute
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
 
@@ -644,6 +646,24 @@ fun UserInfoPage(
                                 )
                             },
                             onClick = { navController.navigate(OrderRoute.Order(0)) }
+                        )
+                        HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
+                        // 签到有礼（扩展提案功能 17）：跨域经 points-api 的 PointsRoute（impl → 他人 api 合法），
+                        // 橙容器 = 通知/待办/营销奖励语义（规范 §3.2 六色浅底）
+                        SettingRow(
+                            icon = Icons.Default.Redeem,
+                            containerColor = AppColors.colorScheme.iconContainerOrange,
+                            iconForegroundColor = AppColors.colorScheme.iconForegroundOrange,
+                            label = stringResource(R.string.points_entry),
+                            trailing = {
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = AppColors.colorScheme.textTertiary
+                                )
+                            },
+                            onClick = { navController.navigate(PointsRoute.Home) }
                         )
                         HorizontalDivider(color = AppColors.colorScheme.hairline, thickness = 0.5.dp)
                         SettingRow(

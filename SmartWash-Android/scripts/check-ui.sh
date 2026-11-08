@@ -36,7 +36,7 @@ check() {
 }
 
 # 业务层扫描范围（业务层收编目标；观象台 feature/divination 与 common/ui 封装层不在内）
-SCOPES=(app/src feature/user/impl/src feature/order/impl/src feature/payment/impl/src feature/laundry/impl/src feature/coupon/impl/src feature/update/src)
+SCOPES=(app/src feature/user/impl/src feature/order/impl/src feature/payment/impl/src feature/laundry/impl/src feature/coupon/impl/src feature/points/impl/src feature/update/src)
 
 # §3.7 输入控件检查文件（common/ui 封装层自身 + 验证码行所在 RegisterPage）
 INPUT_FILES=(

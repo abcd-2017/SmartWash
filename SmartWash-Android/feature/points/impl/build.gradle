@@ -1,0 +1,39 @@
+// :feature:points:impl —— 积分域实现（扩展提案功能 17，按域嵌套结构 feature/points/{api,impl}；
+// 包名/namespace 保持 com.smartwash.feature.points，与模块路径解耦，同 coupon 先例）。
+// 积分网络消费（PointsServiceApi 契约在 api 模块）+ 积分仓库 + 签到有礼页
+// （签到 / 余额 / 月榜 / 最近流水单页）；深链 host "points"（di @IntoSet 贡献，模式同 coupon/mood）。
+// 依赖方向：points:api / common（禁止依赖 app 壳与其他 feature-impl）。
+apply from: "$rootDir/config/android-library.gradle"
+apply from: "$rootDir/config/compose.gradle"
+apply from: "$rootDir/config/hilt.gradle"
+
+android {
+    namespace 'com.smartwash.feature.points'
+}
+
+dependencies {
+    // 本域路由常量、Gson 载荷与网络接口（PointsRoute/PointsServiceApi/各 Vo）
+    implementation project(':feature:points:api')
+
+    // 响应信封 ApiResult / HttpStatusCode / RequestState / AppLogger / 触感 / pressable
+    implementation project(':common:utils')
+    // NetworkException（ResponseInterceptor 错误转译产物；Retrofit 经 api 模块传递）
+    implementation project(':common:network')
+    // 清氧设计系统（AppColors/AppDimens/AppTextStyles 主题 + PageHeader/GroupCard/AppButton/
+    // EmptyState/LoadingState/ButtonSpinner/DrumMark 组件）
+    implementation project(':common:ui')
+
+    // ViewModel 基类 + viewModelScope
+    implementation libs.androidx.lifecycle.viewmodel
+    // hiltViewModel()（页面默认参数）
+    implementation libs.androidx.hilt.navigation.compose
+    // NavHostController（积分页返回上级）
+    implementation libs.androidx.navigation.compose
+    // Compose 基础（LazyColumn/BorderStroke/RoundedCornerShape；compose convention 只带 ui/material3）
+    implementation libs.androidx.compose.foundation
+    // ViewModel 协程 launch / MutableStateFlow
+    implementation libs.kotlinx.coroutines.android
+
+    // JVM 单测（连签周期进度 / nextBonusIn 重算 / reason 文案映射 / 榜单名次 tier / 月份与时间解析）
+    testImplementation libs.junit
+}
