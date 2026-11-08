@@ -482,6 +482,19 @@ export struct UserInfo {
               .strokeWidth(0.5)
               .color(DesignColor.HAIRLINE)
 
+            // 签到有礼（扩展提案功能 17/18 双端闭环；橙容器 = 通知/待办/营销奖励语义，
+            // 对齐安卓 UserInfoPage 功能卡「我的订单」与「设置」之间的 SettingRow 位置）
+            this.settingRow($r('sys.symbol.gift'), "签到有礼",
+              DesignColor.ICON_CONTAINER_ORANGE, DesignColor.ICON_FOREGROUND_ORANGE,
+              "", DesignColor.TEXT_SECONDARY,
+              () => {
+                pathStack.pushPathByName(RouteNames.POINTS, null)
+              })
+
+            Divider()
+              .strokeWidth(0.5)
+              .color(DesignColor.HAIRLINE)
+
             this.settingRow($r('sys.symbol.gearshape'), "设置",
               DesignColor.ICON_CONTAINER_GREEN, DesignColor.ICON_FOREGROUND_GREEN,
               "", DesignColor.TEXT_SECONDARY,

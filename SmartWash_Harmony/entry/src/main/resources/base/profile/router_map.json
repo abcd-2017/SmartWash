@@ -127,6 +127,13 @@
       }
     },
     {
+      "name": "Points",
+      "pageSourceFile": "src/main/ets/pages/Points.ets",
+      "buildFunction": "PointsBuilder",
+      "data": {
+      }
+    },
+    {
       "name": "ChangePassword",
       "pageSourceFile": "src/main/ets/pages/ChangePassword.ets",
       "buildFunction": "ChangePasswordBuilder",
