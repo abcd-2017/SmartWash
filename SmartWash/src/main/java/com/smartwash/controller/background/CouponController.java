@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,6 +43,7 @@ public class CouponController {
     }
 
     @Operation(summary = "新增优惠券", description = "新增优惠券模板，标题不可重复")
+    @Audited(action = "COUPON_ADD", targetType = "coupon")
     @PostMapping("/add")
     public Result<String> addCoupon(@RequestBody @Valid AddCouponFrom addCouponFrom) {
         if (couponService.getSearchByName(addCouponFrom.getTitle()) != null) {
@@ -54,6 +56,7 @@ public class CouponController {
     }
 
     @Operation(summary = "更新优惠券", description = "修改优惠券模板信息")
+    @Audited(action = "COUPON_UPDATE", targetType = "coupon", targetIdSpEL = "#couponFrom.couponId")
     @PostMapping("/update")
     public Result<String> updateCoupon(@RequestBody @Valid UpdateCouponFrom couponFrom) {
         Coupon coupon = couponService.getById(couponFrom.getCouponId());
@@ -71,6 +74,7 @@ public class CouponController {
     }
 
     @Operation(summary = "批量删除优惠券", description = "根据ID批量删除优惠券模板，多个ID用逗号分隔")
+    @Audited(action = "COUPON_DELETE", targetType = "coupon", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteCoupon(@PathVariable("ids") @Parameter(description = "优惠券ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除优惠券, ids: {}", ids);

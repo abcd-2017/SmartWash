@@ -103,6 +103,13 @@ security:
   # 直连部署（当前 demo 形态）保持为空，否则客户端可伪造头部绕过 IP 登录锁定或定向锁定他人出口 IP
   trusted-proxy-cidrs:
 
+# 管理端操作审计（admin_audit_log，HMAC 链防篡改）
+audit:
+  # HMAC-SHA256 链密钥：与 JWT_SECRET 同一环境变量纪律——本文件不落生产默认值，
+  # 生产必须通过 AUDIT_HMAC_SECRET 注入全新随机密钥（>= 32 字节）；
+  # 未配置时审计链退化为无密钥 SHA-256 摘要（仅防意外篡改，启动 warn 提示），不影响业务
+  hmac-secret: ${AUDIT_HMAC_SECRET:}
+
 # 工作台工具箱配置
 toolbox:
   # 短码对外完整跳转 URL 的域名前缀（拼 {base}/web/t/{code}）。

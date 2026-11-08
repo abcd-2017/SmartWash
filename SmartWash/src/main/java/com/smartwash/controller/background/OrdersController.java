@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.OrderStatus;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.from.order.SearchOrderFrom;
 import com.smartwash.from.order.UpdateOrderStatus;
 import com.smartwash.service.ExportService;
@@ -53,6 +54,7 @@ public class OrdersController {
     }
 
     @Operation(summary = "批量删除订单", description = "根据ID批量删除订单，多个ID用逗号分隔")
+    @Audited(action = "ORDER_DELETE", targetType = "order", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteOrders(@PathVariable("ids") @Parameter(description = "订单ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("管理员删除订单, ids: {}", ids);
@@ -60,6 +62,7 @@ public class OrdersController {
     }
 
     @Operation(summary = "更新订单状态", description = "手动更新指定订单的状态")
+    @Audited(action = "ORDER_STATUS_UPDATE", targetType = "order", targetIdSpEL = "#orderStatus.orderId")
     @PostMapping("/updateOrderStatus")
     public Result<Boolean> updateOrderStatus(@RequestBody @Valid UpdateOrderStatus orderStatus) {
         log.info("管理员更新订单状态, orderId: {}, 目标状态: {}", orderStatus.getOrderId(), orderStatus.getStatus());

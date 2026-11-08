@@ -1522,4 +1522,32 @@ CREATE TABLE `toolbox_delivery_item` (
   KEY `idx_code_time` (`session_code`, `created_at`),
   KEY `idx_expire` (`expire_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工具箱-设备投递条目';
+
+-- =====================================================================
+-- 管理端操作审计 —— 1 张业务表
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for admin_audit_log（管理端敏感操作审计,HMAC 链防篡改）
+-- hash = HMAC-SHA256(AUDIT_HMAC_SECRET, prev_hash + 规范化payload); 首条 prev_hash = 64 个 0 (genesis)
+-- payload 规范化串 = admin_user|action|target_type|target_id|before_json|after_json|ip|created_at(秒), | 分隔,null 空串占位
+-- ----------------------------
+DROP TABLE IF EXISTS `admin_audit_log`;
+CREATE TABLE `admin_audit_log` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT,
+  `admin_user`  VARCHAR(64) NOT NULL COMMENT '操作人管理员用户名(无登录态兜底 unknown)',
+  `action`      VARCHAR(64) NOT NULL COMMENT '动作标识,如 LAUNDRY_ITEM_UPDATE/COUPON_DELETE/PAYMENT_MANUAL_ADD',
+  `target_type` VARCHAR(64) NULL COMMENT '目标对象类型,如 laundry_item/coupon/user',
+  `target_id`   VARCHAR(64) NULL COMMENT '目标对象ID(批量操作存逗号分隔串,无法解析时为空)',
+  `before_json` TEXT        NULL COMMENT '操作前摘要(入参JSON,密码等敏感字段掩码,超2KB截断,截断后可能非合法JSON)',
+  `after_json`  TEXT        NULL COMMENT '操作后摘要(返回值JSON,超2KB截断)',
+  `ip`          VARCHAR(45) NULL COMMENT '操作来源IP(IPv6最长45;无请求上下文为空)',
+  `prev_hash`   CHAR(64)    NOT NULL COMMENT '链上前一条hash(首条为genesis=64个0)',
+  `hash`        CHAR(64)    NOT NULL COMMENT 'HMAC-SHA256(AUDIT_HMAC_SECRET, prev_hash+规范化payload),64位小写hex',
+  `created_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时刻(秒级,参与规范化payload)',
+  PRIMARY KEY (`id`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_admin_user` (`admin_user`),
+  KEY `idx_target` (`target_type`, `target_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='管理端操作审计日志';
 SET FOREIGN_KEY_CHECKS = 1;

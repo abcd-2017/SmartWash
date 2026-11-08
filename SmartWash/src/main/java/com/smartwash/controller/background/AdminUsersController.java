@@ -2,6 +2,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +46,7 @@ public class AdminUsersController {
     }
 
     @Operation(summary = "新增管理员", description = "新增管理员用户，用户名不可重复")
+    @Audited(action = "ADMIN_USER_ADD", targetType = "admin_user")
     @PostMapping("/add")
     public Result<String> addAdminUser(@RequestBody @Valid AddAdminUserFrom adminUserFrom) {
         if (adminUsersService.getAdminUserByName(adminUserFrom.getUsername()) != null) {
@@ -64,6 +66,7 @@ public class AdminUsersController {
     }
 
     @Operation(summary = "更新管理员", description = "修改管理员用户信息")
+    @Audited(action = "ADMIN_USER_UPDATE", targetType = "admin_user", targetIdSpEL = "#adminUsersFrom.adminId")
     @PostMapping("/update")
     public Result<String> updateAdminUser(@RequestBody @Valid UpdateAdminUserFrom adminUsersFrom) {
         AdminUsers user = adminUsersService.getById(adminUsersFrom.getAdminId());
@@ -81,6 +84,7 @@ public class AdminUsersController {
     }
 
     @Operation(summary = "批量删除管理员", description = "根据ID批量删除管理员用户，多个ID用逗号分隔")
+    @Audited(action = "ADMIN_USER_DELETE", targetType = "admin_user", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteAdminUsers(@PathVariable("ids") @Parameter(description = "管理员ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除管理员, ids: {}", ids);

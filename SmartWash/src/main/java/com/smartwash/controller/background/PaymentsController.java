@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.smartwash.common.PaymentStatus;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import com.smartwash.from.payment.AddPaymentFrom;
 import com.smartwash.from.payment.SearchPaymentFrom;
 import com.smartwash.from.payment.UpdatePaymentFrom;
@@ -71,6 +72,7 @@ public class PaymentsController {
     }
 
     @Operation(summary = "新增支付记录", description = "手动新增一条支付记录")
+    @Audited(action = "PAYMENT_MANUAL_ADD", targetType = "payment")
     @PostMapping("/add")
     public Result<String> addPayment(@RequestBody @Valid AddPaymentFrom paymentsFrom) {
 //        if (paymentsService.getPaymentByName(PaymentFrom.getUsername()) != null) {
@@ -82,6 +84,7 @@ public class PaymentsController {
     }
 
     @Operation(summary = "更新支付记录", description = "修改支付记录信息")
+    @Audited(action = "PAYMENT_MANUAL_UPDATE", targetType = "payment", targetIdSpEL = "#paymentsFrom.paymentId")
     @PostMapping("/update")
     public Result<String> updatePayment(@RequestBody @Valid UpdatePaymentFrom paymentsFrom) {
         if (paymentsService.getById(paymentsFrom.getPaymentId()) == null) {

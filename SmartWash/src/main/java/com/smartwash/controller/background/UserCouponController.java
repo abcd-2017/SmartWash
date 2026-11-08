@@ -3,6 +3,7 @@ package com.smartwash.controller.background;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.common.Result;
+import com.smartwash.common.audit.Audited;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +37,7 @@ public class UserCouponController {
     }
 
     @Operation(summary = "批量删除用户优惠券", description = "根据ID批量删除用户优惠券记录，多个ID用逗号分隔")
+    @Audited(action = "USER_COUPON_DELETE", targetType = "user_coupon", targetIdSpEL = "#ids")
     @DeleteMapping("/delete/{ids}")
     public Result<Boolean> deleteCoupon(@PathVariable("ids") @Parameter(description = "用户优惠券ID列表，多个ID用逗号分隔", required = true, example = "1,2,3") String ids) {
         log.info("批量删除用户优惠券记录, ids: {}", ids);

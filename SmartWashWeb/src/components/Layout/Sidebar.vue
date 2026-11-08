@@ -73,6 +73,9 @@ import {
   Guide,
   // 游戏库
   VideoPlay,
+  // 系统与安全
+  Lock,
+  DocumentChecked,
 } from '@element-plus/icons-vue';
 
 const route = useRoute();
@@ -118,6 +121,9 @@ const iconRegistry = {
   Guide: markRaw(Guide),
   // 游戏库
   VideoPlay: markRaw(VideoPlay),
+  // 系统与安全
+  Lock: markRaw(Lock),
+  DocumentChecked: markRaw(DocumentChecked),
 };
 
 // 按图标名解析组件，未登记的图标回退为空（不渲染）
@@ -156,6 +162,7 @@ const MENU_GROUP_CONFIG = [
     paths: ['/workbench/entries', '/workbench/deeplink-routes', '/game/list'],
   },
   { title: '情绪与订阅', icon: 'MostlyCloudy', paths: ['/moodReport', '/subscriptions'] },
+  { title: '系统与安全', icon: 'Lock', paths: ['/audit-logs'] },
 ];
 
 const homeRoute = computed(() => menuRoutes.value.find((r) => r.path === '/') || null);
