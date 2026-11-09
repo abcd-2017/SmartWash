@@ -231,6 +231,18 @@ const routes = [
           requiresAuth: true,
         },
       },
+      {
+        // 游戏运行期数据管理：关卡维护（热更新，不重传游戏包）+ 存档/成绩查看
+        path: '/game/data',
+        name: 'GameData',
+        component: () => import('@/views/game/GameData.vue'),
+        meta: {
+          title: '游戏数据',
+          showInMenu: true,
+          icon: 'DataAnalysis',
+          requiresAuth: true,
+        },
+      },
       // ===== 观象台（占卜模块）管理端 =====
       {
         path: '/divination/prompts',
