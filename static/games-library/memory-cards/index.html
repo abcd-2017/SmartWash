@@ -156,13 +156,101 @@ var GLYPHS=[
   {n:"雪花",c:"--g-water",s:'<g stroke="currentColor" stroke-width="4.5" stroke-linecap="round"><line x1="32" y1="10" x2="32" y2="54"/><line x1="14.7" y1="21" x2="49.3" y2="43"/><line x1="49.3" y1="21" x2="14.7" y2="43"/></g>'}
 ];
 var BACK='<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="19" cy="20" r="6" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="42" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="49" cy="31" r="3" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M32 26c-5.5 7.5-10 13-10 18.5a10 10 0 0 0 20 0C42 39 37.5 33.5 32 26Z" fill="currentColor"/></svg>';
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify(obj||{})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 /* ---------- 关表：对数与列数（N×2 牌阵） ---------- */
-var LEVELS=[{p:3,cols:3},{p:4,cols:4},{p:6,cols:4},{p:8,cols:4},{p:10,cols:5},{p:12,cols:6}];
-/* ---------- 存档 ---------- */
+var DEFAULT_LEVELS=[{p:3,cols:3},{p:4,cols:4},{p:6,cols:4},{p:8,cols:4},{p:10,cols:5},{p:12,cols:6}];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.memory.v1.levels",LEVELS_VER_KEY="sw.memory.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;
+  GB.getLevels("memory-cards").then(function(res){
+    if(!res||!Array.isArray(res.levels))return;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      try{
+        var d=JSON.parse(res.levels[i].dataJson);
+        list.push({p:parseInt(d.p,10)||3,cols:parseInt(d.cols,10)||3});
+      }catch(e){return;}
+    }
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      save.lv=Math.min(save.lv,cur);persist();
+      build();
+    }
+  }).catch(function(){});
+}
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.memory.v1";
 function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function persist(){
+  try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}
+  if(GB.available)GB.saveState("memory-cards",save).catch(function(){});
+}
 var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("memory-cards").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      if(rlv>save.lv){save.lv=Math.min(LEVELS.length-1,rlv);persist();}
+      if(remote.best&&typeof remote.best==="object"){
+        var changed=false;
+        for(var k in remote.best){
+          if(!save.best[k]){save.best[k]=remote.best[k];changed=true;}
+          else{
+            if(remote.best[k].m<save.best[k].m){save.best[k].m=remote.best[k].m;changed=true;}
+            if(remote.best[k].t<save.best[k].t){save.best[k].t=remote.best[k].t;changed=true;}
+          }
+        }
+        if(changed){persist();build();}
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
 save.best=save.best||{};
 save.lv=Math.min(Math.max(parseInt(save.lv,10)||0,0),LEVELS.length-1);
 /* ---------- 状态 ---------- */
@@ -248,6 +336,8 @@ function win(){
   $("ovTitle").textContent="配对完成！";
   $("ovDesc").innerHTML="用时 <b>"+fmt(sec)+"</b> · 步数 <b>"+moves+"</b>"+record+"<br>理论最少 "+min+" 步"+(prev?" · 最佳 "+save.best[cur].m+"步 / "+fmt(save.best[cur].t):"");
   $("ovNext").textContent=cur+1<LEVELS.length?"下一关":"全部通关";
+  // 成绩上报（步数，asc：越少越好）
+  if(GB.available)GB.reportScore("memory-cards",{metricValue:moves,metricExtra:sec}).catch(function(){});
   $("overlay").classList.add("show");
 }
 function hideOverlay(){$("overlay").classList.remove("show")}
@@ -259,6 +349,7 @@ $("ovNext").addEventListener("click",function(){
   else say("六关全部通关，记忆大师！");
 });
 build();
+syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 </body>
