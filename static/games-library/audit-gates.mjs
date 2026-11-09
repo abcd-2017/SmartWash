@@ -291,7 +291,9 @@ function audit(name) {
   // ⑫ 存档键（全量提取：新游戏全部键须 sw.<key>.v1；存量为 §6 豁免信息项）
   const extracted = extractStorageKeys(html);
   const swKey = html.match(/sw\.([a-z0-9-]+)\.v1/);
-  const badKeys = extracted.keys.filter((k) => !/^sw\.[a-z0-9-]+\.v1$/.test(k));
+  // 存档键须以 sw.<key>.v1 为命名空间锚点，允许其下挂子键（如关卡缓存 sw.<key>.v1.levels），
+  // 避免另起一套键名脱离游戏标识（2026-11-09 游戏数据平台化引入关卡缓存键时放宽）
+  const badKeys = extracted.keys.filter((k) => !/^sw\.[a-z0-9-]+\.v1(\.[a-z0-9-]+)*$/.test(k));
   info.saveKey = extracted.keys.length
     ? (extracted.keys.length === 1 ? extracted.keys[0] : `${extracted.keys.length}键`) + (badKeys.length ? `（${badKeys.length} 遗留）` : "")
     : "无存档";

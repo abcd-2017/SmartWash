@@ -15,6 +15,15 @@
 
 ## 修订记录
 
+- **2026-11-09（游戏数据平台化·试点）sokoban 接入账号存档 / 关卡热更新 / 排行榜**：
+  桥代理落地——Android `SmartWashGameBridge` 扩展 `loadState/saveState/reportScore/getLeaderboard/getLevels`，
+  原生侧带 token 请求（token 不出 H5），白名单外 fail-closed；后端 3 表（`game_user_save` /
+  `game_score_entry` / `game_level`）+ `/web/auth/game/*` 用户端接口 + `/admin/game/*` 管理端接口。
+  sokoban 作为全链路试点改造：存档双写（本地 + 账号，账号优先）、关卡 DB 下发 + 版本缓存 +
+  包内默认关兜底、过关上报到达关卡进榜。库内沉淀可复用「游戏桥适配层」（`GB`，无桥自动降级
+  localStorage），后续 30 款按同一模式铺开。审计规则同步放宽：存档键允许 `sw.<key>.v1.<子键>`
+  （关卡缓存键归入游戏存档命名空间）。
+
 - **2026-11-07（六批）crossword 填字（游戏库 30 → 31 款，word 品类第 2 款）**：
   槽位法内容生产落地（蛇形主链在部分主题下数学无解，改自由方向生成 + 极大连通串
   校验；校园层双独立连通块布局）。4 关 × 8 词，提示事实准确（校园场景口径），
