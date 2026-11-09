@@ -15,7 +15,12 @@
 
 ## 项目概述
 
-SmartWash 智能洗衣管理系统的 Vue 3 后台管理端，功能：学校管理、学生管理、洗护套餐、寄存柜、订单、支付记录、充值记录、优惠券、角色管理、管理员用户管理。
+SmartWash 智能洗衣管理系统的 Vue 3 后台管理端。管理主航道之外，还承载平台实验性模块的运营台：
+
+- **洗衣主航道**：学校、学生、洗护套餐、寄存柜、订单、支付记录、充值记录、优惠券、用户优惠券、角色、管理员账号、验证码查询。
+- **平台模块**：站内信（消息中心）、订阅管理、心情报表、操作审计、游戏库、工作台入口、跳转路由字典、短链管理。
+- **观象台**：Prompt / 语料 / 审计复审 / 用量看板 / 拦截日志 / 模型目录 / 平台设置。
+- **公开页**：设备投递对端页（`/d/:code?`，免登录，交付箱业务的对端承载）。
 
 ## 常用命令
 
@@ -26,7 +31,7 @@ npm run build      # 生产构建，输出到 dist/
 npm run preview    # 预览生产构建
 ```
 
-- **测试**：vitest + happy-dom + @vue/test-utils 已配置，`package.json` 已含 `test`（`vitest run`）与 `lint`/`lint:fix` script；现有 `src/__tests__/http.test.js` 的 baseURL 与响应解包断言已和实现脱节（跑必挂）——新增测试前先修这两处。
+- **测试**：vitest + happy-dom + @vue/test-utils 已配置，`package.json` 含 `test`（`vitest run`）与 `lint`/`lint:fix`。当前生效 3 个用例（`http.test.js`、`LockerList.test.js`、`toolbox.test.js`）；另有 2 个审计相关用例以 `.bak-feat-audit-log` 后缀禁用（不匹配 vitest 默认 include），需要时改后缀启用。
 - **环境变量**：生产 API 地址已改为构建时环境变量 `SMART_WASH_BASE_URL` 注入（不再写死 IP）；地图组件依赖 `VITE_AMAP_KEY` 与 `VITE_AMAP_SECURITY_CODE`，**两者已在 `.env.development`/`.env.production` 声明**（`VITE_AMAP_KEY` 当前为空需配置，`VITE_AMAP_SECURITY_CODE` 已迁移自 `index.html` 内联，旧值已泄露待轮换）。
 
 ## 技术架构
@@ -36,12 +41,12 @@ npm run preview    # 预览生产构建
 ### 分层结构
 
 1. **入口** — `src/main.js`：注册 Element Plus、Pinia、Router，`$dayjs` 全局属性。
-2. **HTTP 层** — `src/utils/http.js`：Axios 实例。请求拦截器从 `useAuthStore` 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`res.code !== 200` 视为错误。新代码保持「清 token + 跳 `/login`」语义，不要使用 `window.location.reload()`。
-3. **API 层** — `src/api/*.js`：按领域拆分（共 13 个模块：order/user/school/laundry/locker/payment/recharge/coupon/role/adminUser/auth/dashboard/userCoupon/divination），统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。
-4. **状态管理** — `src/stores/auth.js`：Pinia `useAuthStore` 统一管理 token/角色（初始化自动从 localStorage 恢复），路由守卫与 HTTP 拦截器统一从 store 读取登录态。不要新增裸 localStorage 读写。
-5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 免认证；**所有页面已使用 `() => import(...)` 懒加载**（含 404 兜底页 `NotFound.vue`，通配路由 `/:pathMatch(.*)*`）。`beforeEach` 守卫从 `useAuthStore` 检查 token/角色。
-6. **布局** — `src/components/Layout/Layout.vue`：`Sidebar`（菜单，按 `meta.showInMenu` 过滤）+ `Navbar`（meta 面包屑 + 用户下拉）+ `<router-view />`。菜单/面包屑/图标均由路由 `meta` 驱动，新增页面记得配齐 meta（title、showInMenu、icon）。
-7. **页面** — `src/views/`：登录页 + `src/views/system/` 下 11 个管理模块 CRUD 页面 + `src/views/divination/` 下 7 个观象台管理页面（Prompt/语料/审计/用量/拦截/模型/设置）+ `NotFound.vue`（404 兜底）。
+2. **HTTP 层** — `src/utils/http.js`：默认导出 `http`（管理端实例）+ 命名导出 `envelopeHttp`（公开信封实例，供设备投递页）。请求拦截器从 `useAuthStore` 取 token 加 `Bearer` 头；响应拦截器解包 `response.data`，`code !== 200` 视为错误。**401 已统一为单飞续签**：`/auth/refresh` 换新双 token → 落盘 store → 重试原请求一次，仍 401 则清态跳 `/login?redirect=`；1.5s 去重窗防并发堆叠。新代码不要使用 `window.location.reload()`，也不要另写一套 401 处理。
+3. **API 层** — `src/api/*.js`：按领域拆分，共 24 个模块：order / user / school / laundry / locker / payment / recharge / coupon / role / adminUser / auth / dashboard / userCoupon / divination / game / toolbox / workbench / deeplink / notice / subscription / mood / audit / captcha / delivery。统一 `request({url, method, params})` 模式，`code === 200` 时返回 `res.data`，失败抛 `Error(res.message)`。例外：`delivery.js` 用 `envelopeHttp`（公开端返回完整信封，业务码 200/403/404/409/413 由页面分支）。
+4. **状态管理** — `src/stores/auth.js`：Pinia `useAuthStore` 统一管理 token / refreshToken / role（初始化从 localStorage 恢复；`setTokens` 供 401 续签后更新），路由守卫与 HTTP 拦截器统一从 store 读取登录态。不要新增裸 localStorage 读写。
+5. **路由** — `src/router/index.js`：管理页面均为 `Layout` 子路由（路径 `/`），`/login` 与 `/d/:code?`（设备投递对端页）免认证；**所有页面已使用 `() => import(...)` 懒加载**（含 404 兜底页 `NotFound.vue`，通配路由 `/:pathMatch(.*)*`）。`beforeEach` 守卫从 `useAuthStore` 检查 token/角色；侧边栏按 `MENU_GROUP_CONFIG` 分组渲染。
+6. **布局与共享层** — `src/components/Layout/`（Layout + Sidebar + Navbar，菜单/面包屑/图标由路由 `meta` 驱动）、`AmapPicker.vue` / `RegionCascader.vue`（高德选点与省市区）、`TrendChart.vue`（ECharts 趋势图）；通用逻辑抽在 `src/composables/`（`useTableList` 列表分页、`useTimeRange`、`useConfirm`、`useAnimatedNumber`）。新增页面优先复用，禁止再复制第 N 份 CRUD。
+7. **页面** — `src/views/`：登录页 + `system/` 16 个管理页（含审计、站内信、订阅、心情报表、验证码查询）+ `divination/` 7 个观象台页 + `game/` 3 个游戏库页 + `toolbox/` 1 个短链页 + `workbench/` 2 个配置页 + `delivery/` 2 个公开投递页 + `NotFound.vue`。
 
 ### API 响应约定
 
@@ -57,7 +62,7 @@ npm run preview    # 预览生产构建
 - 标准方法：`fetchData`、`handleSearch`、`resetSearch`、`handleCreate`、`handleEdit`、`handleDelete`、`submitForm`
 - `formatTime` 用 dayjs 格式化；枚举状态经映射函数渲染文本/标签（参考 `OrderList.vue`）
 
-**重要**：这套结构在 11 个列表页中是复制粘贴的（含 `formatTime`、时间范围 computed 均逐字重复）。新增列表页时，若发现逻辑在多页重复，优先抽取 composable（如 `useTableList`、`useTimeRange`）或放入 `src/utils/`，禁止继续复制第 12 份。枚举/字典值新增时建 `src/constants/` 统一维护，与后端枚举对齐。
+**重要**：`src/composables/` 已提供 `useTableList`（列表/分页/搜索/竞态守卫）与 `useTimeRange`，新列表页必须复用；`formatTime`/`formatAmount`/`formatFileSize` 统一在 `src/utils/format.js`。枚举/字典值统一在 `src/constants/dict.js`（68 个导出，含订单/支付/充值/优惠券/短码/观象台/工作台/游戏/深链/情绪/订阅/站内信分组），与后端枚举对齐，禁止页面内联映射。
 
 ## 相关 Skills 与子代理
 
@@ -69,7 +74,11 @@ npm run preview    # 预览生产构建
 
 ## 已知坑（改动前先看）
 
-详见 [.claude/web-known-pitfalls.md](.claude/web-known-pitfalls.md)。
+详见 [.claude/web-known-pitfalls.md](.claude/web-known-pitfalls.md)。要点：
+
+- 高德 `VITE_AMAP_SECURITY_CODE` 旧值已泄露待轮换，`VITE_AMAP_KEY` 当前为空（地图选点/行政区划不可用）。
+- 设备投递公开页（`/d/:code?`）走 `envelopeHttp`，业务码 403/404/409/413 由页面分支处理，不要按管理端 `code !== 200` 的惯例直接 reject。
+- 401 已单飞续签（双 token），不要再写 `window.location.reload()` 或第二套清态逻辑。
 
 ---
 

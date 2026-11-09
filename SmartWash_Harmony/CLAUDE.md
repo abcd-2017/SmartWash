@@ -46,25 +46,31 @@ code-linter --fix            # Lint 检查
 
 ```
 entry/src/main/ets/
-  entryability/       → EntryAbility（主 UIAbility，应用入口）
-  pages/              → 页面组件（每个页面暴露 @Builder 函数）
-  view/               → 可复用 UI 组件（view/common/AppComponents 有支持 loading 的 AppButton；
-                        IndexPage 首页框架 + Service/UserInfo Tab 内容页；
-                        OrderCard/OrderItemRow/LoadingFooter 在用组件）
+  entryability/       → EntryAbility（主 UIAbility，应用入口；深链/卡片 Want 暂存、ServerConfig 预热）
+  entryformability/   → EntryFormAbility（桌面卡片提供方，OrderStatusCard）
+  entrybackupability/ → EntryBackupAbility（备份占位）
+  pages/              → 页面组件（26 个；每个页面暴露 @Builder 函数；Index 为唯一 @Entry）
+  feature/            → 9 个业务域（divination/game/lab/mood/notice/review/subscription/toolbox/workbench）
+                       每个域目录即模块，页面禁绕 api.ets 契约
+  view/               → 可复用 UI 组件（IndexPage/Service/UserInfo 首页三 tab、BottomNavBar、
+                        OrderCard/OrderItemRow/LoadingFooter、common/AppComponents 等）
+  widget/             → 桌面卡片（OrderStatusCard：WidgetCard + WidgetOrderModel/WidgetDataLoader/WidgetFormStore）
   network/
-    api/              → API 函数（按业务域拆分，返回 Promise<BaseResponse<T>>）
+    api/              → 12 个 API 模块（按业务域拆分，返回 Promise<BaseResponse<T>>）
     entity/           → 请求体 DTO
     vo/               → 响应值对象 DTO
-    Axios.ets         → Axios 实例 + 请求/响应拦截器
+    Axios.ets         → Axios 实例 + 请求/响应拦截器（401 单飞续签）
+    HttpUtil.ets      → GET/POST/PUT/DELETE/upload 封装（单例）+ 信封转译
     BaseResponse.ets  → 通用响应包装 {data, code, message}
-    HttpUtil.ets      → GET/POST 封装（单例）
-  constant/           → 枚举、状态常量、设计系统色值
-  utils/              → StorageUtil、PathStackUtil、Logger、TimeUtil、CheckStatus、ToastUtil
+    PublicPaths.ets   → 公开路径白名单（token 注入判定）
+  constant/           → 枚举、状态常量、设计系统色值（OrderStatus/ShowOrderStatus/RouteNames 等）
+  utils/              → StorageUtil、PathStackUtil、Logger、TimeUtil、ReminderService 等
+    deeplink/         → DeepLinkParser / DeepLinkRegistry / DeepLinkHandler
 ```
 
 ### 核心设计模式
 
-**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 16 条命名路由，页面经全局 `pathStack` 跳转。
+**Stage 模型 + NavPathStack 路由** — `EntryAbility` 加载 `pages/Index`；`Index` 根据 token 和学校信息决定初始页（Login / AddSchool / Home）。`router_map.json` 注册 60 条命名路由（与 `RouteNames` 一一对应），页面经全局 `pathStack` 跳转。
 
 **鉴权流程** — Axios 请求拦截器检测 URL 以 `/web` 开头时，从 preferences 读取 token 注入 `Authorization: Bearer <token>`；响应拦截器统一处理 401 和网络错误。401 已统一为「清 token → 清内存登录态 → replace 到登录页」+ 1.5s 防抖。
 
@@ -73,6 +79,8 @@ entry/src/main/ets/
 **HTTP 请求链路** — `页面 → HttpUtil.get/post<T>() → Axios 实例（拦截器）→ errorHandle 钩子 → BaseResponse<T>`。
 
 **页面组件模式** — 每个页面是 `@Component` 或 `@ComponentV2`，被包含在 `NavDestination` 中，通过对应 `@Builder` 函数暴露给路由系统。按钮统一用 `AppButton`（自带 loading 防重），不要裸写可点击组件。
+
+**桌面卡片与提醒** — `widget/` 提供 `OrderStatusCard`（2x2 / 2x4，每 30 分钟刷新，展示进行中订单与取件码）；取件提醒不是卡片，由 `utils/ReminderService` + `ReminderLogic` 经 `reminderAgentManager` 注册系统级定时提醒（权限 `ohos.permission.PUBLISH_AGENT_REMINDER`）。
 
 ### API 返回格式
 

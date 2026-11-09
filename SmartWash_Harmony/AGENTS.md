@@ -1,6 +1,6 @@
 # AGENTS.md — SmartWash 鸿蒙端指南
 
-> 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件。接口与 Android 端 100% 对齐。
+> 智慧校园洗衣服务 App（HarmonyOS NEXT）：与 Android 端功能对齐——注册登录、洗衣套餐选购下单、订单状态追踪、优惠券、钱包充值、储物柜取寄件；并承载平台实验模块（观象台、游戏中心、实验舱、情绪气象站、消息中心、记忆复习、订阅逃生舱、工具箱/短链/设备投递、工作台）。接口与 Android 端逐接口对齐。
 >
 > 相关文档：编码 agent 硬规则见 [CLAUDE.md](CLAUDE.md)；子代理定义见 [.claude/agents/](.claude/agents/)；四端联动约定见仓库根目录 CLAUDE.md。
 
@@ -27,29 +27,40 @@
 ```
 entry/src/main/ets/
 ├── entryability/EntryAbility.ets   # 主 UIAbility，加载 pages/Index
-├── pages/                          # 页面（Index.ets 为唯一 @Entry 入口页）
+├── entryformability/               # EntryFormAbility（桌面卡片提供方）
+├── pages/                          # 26 个页面（Index.ets 为唯一 @Entry 入口页）
 │   ├── Index.ets                   # 启动分流：token + 学校信息 → Login / AddSchool / Home
-│   ├── Login.ets  Register.ets  Home.ets  AddSchool.ets
-│   ├── Laundry.ets  Payment.ets  PaymentSuccess.ets
-│   ├── OrderList.ets  OrderDetail.ets
-│   ├── PickUp.ets  PickupDelivery.ets
-│   ├── Recharge.ets  RechargeRecord.ets
-│   ├── Coupon.ets  Setting.ets  UserInfo.ets  BingCampusCardAlert.ets
-│   └── WebPage.ets                 # 内置浏览器页（深链 web 分支与运营位 H5 承载）
+│   ├── Login / Register / Home / AddSchool / ChangePassword / ResetPassword
+│   ├── Laundry / Payment / PaymentSuccess / OrderList / OrderDetail
+│   ├── PickUp / PickupDelivery / Recharge / RechargeRecord / WalletTransactions
+│   ├── Coupon / Points / Setting / PermissionManagement / BingCampusCardAlert
+│   ├── WebPage / AiWorkPage / ComingSoon
+├── feature/                        # 9 个业务域（目录即模块，页面禁绕 api.ets 契约）
+│   ├── divination/                 # 观象台（四术排盘 + 卦例 RDB + SSE 解读 + BYOK）
+│   ├── game/                       # 游戏中心
+│   ├── lab/                        # 解压实验舱（10 个纯本地玩具）
+│   ├── mood/                       # 情绪气象站
+│   ├── notice/                     # 消息中心
+│   ├── review/                     # 记忆复习（FSRS）
+│   ├── subscription/               # 订阅逃生舱
+│   ├── toolbox/                    # 工具箱（短链 + 设备投递）
+│   └── workbench/                  # 工作台（底栏第 4 tab）
 ├── view/                           # 可复用组件
 │   ├── common/AppComponents.ets    # AppButton（自带 loading 防重）等
-│   ├── IndexPage.ets               # 首页框架（Tab + 轮询）
-│   ├── Service.ets  UserInfo.ets   # Tab 内容页
-│   └── CouponCard.ets 等           # 死代码，待删除，勿引用
+│   ├── IndexPage / Service / UserInfo / BottomNavBar
+│   └── OrderCard / OrderItemRow / LoadingFooter / DrumIllustration 等
+├── widget/                         # 桌面卡片 OrderStatusCard（2x2 / 2x4）
 ├── network/
-│   ├── Axios.ets                   # Axios 实例 + 请求/响应拦截器
-│   ├── HttpUtil.ets                # GET/POST 封装（单例）
+│   ├── Axios.ets                   # Axios 实例 + 请求/响应拦截器（401 单飞续签）
+│   ├── HttpUtil.ets                # GET/POST/PUT/DELETE/upload 封装（单例）
 │   ├── BaseResponse.ets            # { data, code?, message? } 信封
-│   ├── api/                        # 8 个 API 模块（与 Android network/api/ 逐接口一致，含 workbench.ets）
+│   ├── PublicPaths.ets             # 公开路径白名单（token 注入判定）
+│   ├── api/                        # 12 个 API 模块（与 Android 逐接口一致）
 │   ├── entity/                     # 请求体 DTO
 │   └── vo/                         # 响应 VO
-├── constant/                       # 枚举、状态常量、DesignSystem 色值
-└── utils/                          # StorageUtil、PathStackUtil、Logger、TimeUtil、CheckStatus
+├── constant/                       # 枚举、状态常量、DesignSystem 色值、RouteNames（60 个）
+└── utils/                          # StorageUtil、PathStackUtil、Logger、TimeUtil、
+    │                               # ReminderService/ReminderLogic、RefreshSignal 等
     └── deeplink/                   # 深链解析/注册表/分发（Parser / Registry / Handler）
 ```
 
@@ -57,7 +68,7 @@ entry/src/main/ets/
 
 ## 三、页面与路由
 
-- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 16 条命名路由；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
+- **系统路由表**：`entry/src/main/resources/base/profile/router_map.json` 注册 60 条命名路由（与 `RouteNames` 一一对应）；`main_pages` 仅保留 Index 入口；页面经 `@Builder` 函数导出给路由系统；NavDestination 页面**禁止标 `@Entry`**。
 - **导航**：一律经 `utils/PathStackUtil.ets` 全局 `pathStack`（`pushPathByName` / `replacePathByName` / `pop`），禁止 `@ohos.router`。需要替换当前页（如跳登录）用 `replacePathByName`，并发 401 场景禁止连续 push。
 - **传参**：页面参数用 `getParamByName` 获取——禁止 `[0] as X` 裸强转（参数缺失即崩溃），禁止字符串/number 类型错位（Laundry→Payment 曾 orderId 传成字符串）。
 
@@ -75,13 +86,14 @@ entry/src/main/ets/
 
 ## 五、深链（smartwash:// scheme）
 
-完整契约与调测命令见 [docs/deeplink-对接文档.md](docs/deeplink-对接文档.md)（与 Android 端同名文档对齐）。要点：
+完整契约以代码为准（`utils/deeplink/` 三件套 + `DeepLinkRegistry.HOST_ROUTES`，与 Android 端同构）。要点：
 
 - **架构**：解析与执行下沉 `utils/deeplink/`（`DeepLinkParser.ets` 纯函数解析、`DeepLinkRegistry.ets` host → 路由名注册表、`DeepLinkHandler.ets` 三态分发），Want 接入在 `entryability/EntryAbility.ets`，WebView 承载页为 `pages/WebPage.ets`（路由名 `RouteNames.WEB_PAGE`）。
 - **声明**：`module.json5` EntryAbility skills 独立对象声明 `scheme: "smartwash"`（`ohos.want.action.viewData` + `entity.system.browsable`），host 省略即通配。
 - **消费时序**：`onCreate` / `onNewWant` 把 `want.uri` 暂存 `AppStorage('pendingDeepLinkUri')`；`pages/Home.ets` 挂载后（aboutToAppear）与热更新时（@StorageLink + @Watch）消费。未登录时暂存不丢，登录后补消费；消费点不做登录前置判断，由 401 统一兜底（对齐 Android）。
 - **新页面接入**：router_map 注册路由 + `RouteNames` 加常量 + `DeepLinkRegistry.lookup` 加映射（带参 host 仿 `order` / `t` 自行解析校验），三处同步。
-- **host 表**：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）与 `ai-work`（鸿蒙未实现该页）不注册。
+- **host 表**（22 个，含内建 `web`）：login/register/setting/recharge/recharge-record/coupon/order(query tab)/pickup/laundry/divination/divination-history/toolbox-short-code/game-center/delivery/lab/mood/review/subscription/ai-work/points/messages/order-detail/{orderId}/t/{code}/web(内建)；`user-info`/`service`（tab 页非独立路由）不注册。
+- **公开白名单** `PUBLIC_DEEP_LINK_HOSTS = ['web','login','register','lab']`（未登录可放行，其余 host 未登录由壳层拦截）。
 
 ---
 
@@ -92,6 +104,14 @@ entry/src/main/ets/
 3. **严格模式**：`!==`/`===`（禁宽松比较）；VO 用 interface + 转换函数（不靠 class 直接接 JSON）；padding/margin 传 number；金额用 parseFloat 并校验 > 0（禁 parseInt 截断小数）。
 4. **日志脱敏**：release 禁止打印完整响应体（手机号/余额），仅 DEBUG 开 body 日志。
 5. **BASE_URL 禁止新增硬编码**（当前为明文 HTTP 演示服务器地址 `http://8.148.70.81:9000`，待环境化，与 Android 分环境机制对齐）。
+
+---
+
+## 六之二、桌面卡片与取件提醒
+
+- **OrderStatusCard**（`widget/` + `entryformability/`）：2x2 / 2x4 双版式，展示进行中订单（在途五态 2/3/4/5/6，优先级 6>5>4>3>2，同状态取 orderId 最大）；待取件显示取件码，其余显示更新时间；点击跳 `smartwash://order-detail/{orderId}`，无订单/未登录走引导态跳 `smartwash://order?tab=0`。`form_config.json` 声明 `updateDuration 1`（每 30 分钟刷新）。
+- **取件提醒**：不是卡片，由 `utils/ReminderService` + `ReminderLogic` 经 `reminderAgentManager`（`REMINDER_TYPE_TIMER`）注册系统级定时提醒；权限 `ohos.permission.PUBLISH_AGENT_REMINDER`，登记表 orderId→reminderId 存 preferences。
+- **卡片进程独立**：401 时卡片进程无 UI，清 token 后下次进 App 落登录页。
 
 ---
 
@@ -134,11 +154,11 @@ code-linter --fix      # Lint
 
 ## 十、已知问题
 
-完整评审清单（含行号）见 `docs/code-review-2026-08-28.md` 第四章。P0 级：
+完整评审清单（含行号）见 [../../docs/code-review-2026-08-28.md](../../docs/code-review-2026-08-28.md) 第四章。当前状态：
 
-- baseURL 硬编码演示服务器明文 HTTP 且与 Android 不对齐（`network/Axios.ets:22`）——待环境化
-- 401 处理已修复：清 token + 清内存登录态 + replace 登录 + 1.5s 防抖（原 `Axios.ets:32,45-49` 问题已解决）
-- `@ComponentV2` 轮询已改用 `@Monitor('isActive')`（原 `view/IndexPage.ets:32-41` 问题已解决）
-- Laundry→Payment 传参已统一 `number` 类型（已修复）；支付按钮已加 `paying` 防重、Radio 已支持取消选券（已修复）
-- 金额校验已改用 `parseFloat` 并校验 >0 与上限（`pages/Recharge.ets` 已修复）
-- 启动闪登录页无 loading 态（`pages/Index.ets:14-30`）
+- baseURL 仍为演示服务器明文 HTTP（`network/Axios.ets`，当前指向 `http://124.221.159.61:7748`）——待环境化，与 Android 分环境机制对齐。
+- 401 已统一为「清 token → 清内存登录态 → replace 登录页」+ 1.5s 防抖，并接入双 token 单飞续签（`/auth/refresh`）。
+- `@ComponentV2` 轮询已改用 `@Monitor('isActive')`。
+- Laundry→Payment 传参统一 `number` 类型；支付按钮已加 `paying` 防重、Radio 支持取消选券。
+- 金额校验已改用 `parseFloat` 并校验 >0 与上限。
+- 测试：`entry/src/test/` 下有 10 个用例（四术锚点、HttpUtil、PublicPaths、RequestRules、LocalUnit、List 等）。
