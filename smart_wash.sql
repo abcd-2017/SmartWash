@@ -1415,6 +1415,42 @@ CREATE TABLE `game_level` (
   UNIQUE INDEX `uk_game_level` (`game_key`,`level_no`) USING BTREE COMMENT '一游戏一序号一行'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏关卡定义(仅关卡定义型游戏使用)' ROW_FORMAT = Dynamic;
 
+-- ----------------------------
+-- 游戏排行榜配置种子（metric_enabled / metric_label / metric_order）
+-- 说明：仅对已存在的 game_key 生效（游戏经管理端上传后才有行，故用 UPDATE 而非 INSERT）；
+--       falling-sand 无排行榜，不在此列；metric_order 决定榜内排序方向（desc 大在前 / asc 小在前）。
+-- ----------------------------
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='到达关卡',   `metric_order`='desc' WHERE `game_key`='sokoban';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最少步数',   `metric_order`='asc'  WHERE `game_key`='memory-cards';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='到达关卡',   `metric_order`='desc' WHERE `game_key`='nonogram';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='到达层数',   `metric_order`='desc' WHERE `game_key`='magic-tower';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='到达关卡',   `metric_order`='desc' WHERE `game_key`='slingshot';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='到达关卡',   `metric_order`='desc' WHERE `game_key`='crossword';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='连胜',       `metric_order`='desc' WHERE `game_key`='idiom';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='beat-tap';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='g2048';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='flappy';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='tetris';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='fruit-slice';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `metric_order`='desc' WHERE `game_key`='air-hockey';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='moon-lander';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='snow-trail';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='forest-run';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='invaders';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='block-drop';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高关卡',   `metric_order`='desc' WHERE `game_key`='lights-out';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='用时',       `metric_order`='asc'  WHERE `game_key`='minesweeper';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='用时',       `metric_order`='asc'  WHERE `game_key`='sudoku';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='pacman';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='筹码',       `metric_order`='desc' WHERE `game_key`='blackjack';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `metric_order`='desc' WHERE `game_key`='solitaire';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `metric_order`='desc' WHERE `game_key`='gomoku';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `metric_order`='desc' WHERE `game_key`='connect-four';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='胜场',       `metric_order`='desc' WHERE `game_key`='reversi';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高关卡',   `metric_order`='desc' WHERE `game_key`='billiards';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='breakout';
+UPDATE `game_config` SET `metric_enabled`=1, `metric_label`='最高分',     `metric_order`='desc' WHERE `game_key`='snake';
+
 -- =====================================================================
 -- 情绪气象站 —— 1 张业务表
 -- =====================================================================
