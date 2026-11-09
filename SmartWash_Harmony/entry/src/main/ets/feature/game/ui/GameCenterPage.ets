@@ -2,10 +2,11 @@
  * 游戏中心页 —— 对齐安卓 feature/game/.../ui/center/GameCenterPage.kt。
  *
  * 结构：PageHeader（标题「游戏中心」）→ 分类筛选 chips（全部/益智/街机/文字/桌版，本地过滤）
- * → 两列网格（44vp 图标色块 + 标题 + 描述两行 + badge 角标）。
+ * → 两列网格（封面主导卡：16:9 封面占卡顶 + 白底文字区（标题 + 两行描述）；封面两级均不可用时
+ * 回退 44vp 图标色块卡；badge 白胶囊叠封面右上 / 图标卡内主色浅底胶囊）。
  * 数据来自 GET /web/auth/game/list（全量 <100 不分页），三态：骨架屏 / 空态 / 错误重试
  * （对齐安卓 when 分支顺序：Error 优先，其次 Loading 骨架，再次空态，最后网格）。
- * 卡片点击 → 既有 WebPage 页（后端下发 url 即最终可玩地址，端上零拼装；url 为空不响应）。
+ * 卡片点击 → 既有 WebPage 页（后端下发 url 即最终可玩地址，端上零拼装；url 为空 toast 提示不跳转）。
  *
  * 域目录约定（feature/README.md）：本文件为域内实现，仅经 network/GameApi 对外暴露契约。
  */
@@ -23,7 +24,9 @@ import {
 } from '../../../constant/DesignSystem'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
-import { AppButton, EmptyState, IconBox, PageHeader, SkeletonBlock } from '../../../view/common/AppComponents'
+import { Debouncer } from '../../../utils/DebounceUtil'
+import { showToastSafety } from '../../../utils/ToastUtil'
+import { AppButton, AppPillTabRow, EmptyState, IconBox, PageHeader, SkeletonBlock } from '../../../view/common/AppComponents'
 import { WebPageParam } from '../../../pages/WebPage'
 import {
   GAME_CHIP_ORDER,
@@ -43,9 +46,6 @@ const GRID_COLUMNS: number = 2
 /** 网格卡片间距（对齐安卓 GRID_SPACING = spaceXs 8） */
 const GRID_SPACING: number = DesignDimens.SPACE_XS
 
-/** 骨架卡高度（vp）：与真实卡构成对齐（16:9 封面 ~94 + 描述区 ~64） */
-const SKELETON_CARD_HEIGHT: number = 158
-
 /** 页面文案（对齐安卓 feature/game/values/strings.xml） */
 class GameText {
   static readonly title: string = '游戏中心'
@@ -54,6 +54,7 @@ class GameText {
   static readonly emptyCategory: string = '该分类暂无游戏，看看全部吧'
   static readonly errorLoad: string = '游戏加载失败，请检查网络后重试'
   static readonly actionRetry: string = '重试'
+  static readonly unavailable: string = '游戏暂未开放，请稍后再试'
 }
 
 /** 分类 chip 文案（全部之外的固定四类映射；OTHER 无 chip 无文案） */
@@ -69,42 +70,6 @@ function categoryChipLabel(category: GameCategory): string {
       return '桌版'
     default:
       return ''
-  }
-}
-
-/**
- * 分类筛选 chip —— 用 @ComponentV2 + @Param 承载选中态（已知坑：@Builder 按值传参在
- * selectedCategory 变更后不重建，chip 背景定格、列表也不过滤）。点击经 @Event 上抛，
- * 由页面统一写 selectedCategory。
- */
-@ComponentV2
-struct GameCategoryChip {
-  @Param label: string = ''
-  @Param selected: boolean = false
-  @Param chipIndex: number = 0
-  @Event onSelect: (chipIndex: number) => void = (_: number) => {
-  }
-
-  build() {
-    Column() {
-      Row() {
-        Text(this.label)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      }
-      // 垂直内边距 9 → 14：视觉高对齐安卓 AppPillTabRow 的 44dp（文字行盒 16 + 上下 14）
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .border({ width: 1, color: this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
-      .justifyContent(FlexAlign.Center)
-    }
-    .padding({ top: 5, bottom: 5 })
-    .margin({ right: DesignDimens.SPACE_XS })
-    .onClick(() => {
-      this.onSelect(this.chipIndex)
-    })
   }
 }
 
@@ -153,9 +118,11 @@ struct GameGrid {
     return rows
   }
 
-  /** 游戏卡点击：进既有 WebPage（url 为空不响应，对齐安卓 navigateToGameWebView 防御） */
+  /** 游戏卡点击：进既有 WebPage（url 为空给 toast 反馈，对齐安卓 navigateToGameWebView 防御） */
   private openGame(game: GameItem): void {
     if (game.url.length === 0) {
+      // 数据残缺防御（后端契约保证非空，正常配置不会走到）：可见反馈替代静默
+      showToastSafety(GameText.unavailable)
       return
     }
     // 游戏入场留痕（低频动作按约定记 debug；url 不落日志）
@@ -214,9 +181,16 @@ struct GameGrid {
 }
 
 /**
- * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + level1 阴影 + 圆角 16；
- * 44vp 图标色块（六色浅底 + 对应前景色，圆角 16）+ 标题（14/400，1 行截断）
- * + 描述（12/400，2 行截断）+ badge 文字角标（主色浅底胶囊）。
+ * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + level1 阴影 + 圆角 16。
+ * 两种构图按封面可用性分流：
+ * - 有封面（服务端 MinIO 直链优先，加载失败回退本地 rawfile 兜底）：16:9 封面独立占卡顶
+ *   （随卡片圆角裁顶角），文字区白底置于封面下方（标题 + 两行描述），文字永不遮图
+ *   （2026-11-07 对齐安卓构图调整：原「底部渐变遮罩压白字」遮挡封面细节，弃用）；
+ *   badge 白胶囊叠封面右上（surface 底 + textPrimary 字），任意封面底色下可读。
+ * - 无封面：44vp 图标色块（六色浅底 + 对应前景色，圆角 16）+ 标题 + 描述两行截断
+ *   + badge 主色浅底胶囊。
+ * 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖）；
+ * a11y：整卡一个语义节点，contentDescription = 标题 + 描述。
  * @ComponentV2 + @Param：避免 @Builder 按值传参在列表重建时定格。
  */
 @ComponentV2
@@ -229,6 +203,15 @@ struct GameCard {
   @Event onServerCoverError: (gameKey: string) => void = (_: string) => {
   }
   @Event onLocalCoverError: (gameKey: string) => void = (_: string) => {
+  }
+
+  // 连点节流（对齐安卓 rememberDebouncedClick 500ms；页面/卡片销毁时清理）
+  private debouncer: Debouncer = new Debouncer()
+  // 按压态（scale 0.97 + 100ms，对齐安卓 pressable；V2 组件内部状态用 @Local）
+  @Local pressed: boolean = false
+
+  aboutToDisappear(): void {
+    this.debouncer.cancel()
   }
 
   /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
@@ -272,11 +255,12 @@ struct GameCard {
   }
 
   build() {
-    Stack({ alignContent: Alignment.TopEnd }) {
-      Column() {
-        // 封面三级兜底：服务端 coverUrl → 本地 rawfile（随包 30 款）→ 图标色块；
-        // 两级 onError 经事件上抛页面登记（失败集在页面状态，卡片无状态）
-        Stack({ alignContent: Alignment.BottomStart }) {
+    Column() {
+      if (this.useServerCover || this.useLocalCover) {
+        // 封面区：16:9 满宽，随卡片圆角裁顶角；badge 白胶囊叠右上角
+        Stack({ alignContent: Alignment.TopEnd }) {
+          // 封面两级兜底：服务端 coverUrl → 本地 rawfile（随包 30 款）；
+          // onError 经事件上抛页面登记（失败集在页面状态，卡片无状态）
           if (this.useServerCover) {
             Image(this.game.coverUrl)
               .width('100%')
@@ -285,7 +269,7 @@ struct GameCard {
               .onError(() => {
                 this.onServerCoverError(this.game.gameKey)
               })
-          } else if (this.useLocalCover) {
+          } else {
             Image(this.game.localCover)
               .width('100%')
               .aspectRatio(1.78)
@@ -293,106 +277,121 @@ struct GameCard {
               .onError(() => {
                 this.onLocalCoverError(this.game.gameKey)
               })
-          } else {
-            Row() {
-              IconBox({
-                icon: this.game.icon,
-                sizeValue: 44,
-                iconSize: 24,
-                containerColor: this.containerColor(this.game.tint),
-                iconColor: this.iconColor(this.game.tint),
-                radius: DesignDimens.RADIUS_MD
-              })
-            }
-            .width('100%')
-            .aspectRatio(1.78)
-            .justifyContent(FlexAlign.Center)
-            .backgroundColor(DesignColor.SURFACE_VARIANT)
           }
-
-          // 底部渐变遮罩 + 白字标题（封面上直接读，省一排行高；对齐安卓卡片样式）
-          if (this.useServerCover || this.useLocalCover) {
-            Stack({ alignContent: Alignment.BottomStart }) {
-              Column()
-                .width('100%')
-                .height(44)
-                .linearGradient({
-                  angle: 180,
-                  // 封面压暗渐变令牌化（图片上沉浸层深浅共用，对齐安卓 ImageScrim 语义）
-                  colors: [[DesignColor.IMAGE_SCRIM_FADE, 0], [DesignColor.IMAGE_SCRIM, 1]]
-                })
-              Text(this.game.title)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.ON_PRIMARY)
-                .maxLines(1)
-                .textOverflow({ overflow: TextOverflow.Ellipsis })
-                .width('100%')
-                .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XS })
-            }
-            .width('100%')
+          if (this.game.badge.length > 0) {
+            Text(this.game.badge)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .backgroundColor(DesignColor.SURFACE)
+              .borderRadius(DesignDimens.RADIUS_FULL)
+              .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
+              .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
           }
         }
         .width('100%')
         .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
+        .clip(true)
 
-        Text(this.game.description)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .padding({
-            left: DesignDimens.CARD_PADDING,
-            right: DesignDimens.CARD_PADDING,
-            top: DesignDimens.SPACE_SM,
-            bottom: DesignDimens.CARD_PADDING
+        // 文字区：封面下方独立白底，文字不遮图（2026-11-07 对齐安卓构图调整）
+        Column() {
+          Text(this.game.title)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('100%')
+          if (this.game.description.length > 0) {
+            Text(this.game.description)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .width('100%')
+              .margin({ top: DesignDimens.SPACE_XXS })
+          }
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .padding({
+          left: DesignDimens.SPACE_SM,
+          right: DesignDimens.SPACE_SM,
+          top: DesignDimens.SPACE_XS,
+          bottom: DesignDimens.SPACE_XS
+        })
+      } else {
+        // 图标卡：44vp 图标色块（圆角 16）+ 标题 + 描述两行 + badge 主色浅底胶囊
+        Column() {
+          IconBox({
+            icon: this.game.icon,
+            sizeValue: 44,
+            iconSize: 24,
+            containerColor: this.containerColor(this.game.tint),
+            iconColor: this.iconColor(this.game.tint),
+            radius: DesignDimens.CARD_RADIUS
           })
-          .margin({ top: DesignDimens.SPACE_SM })
-
-        // 描述字重对齐安卓 labelSmall 12/500（原 400）
-        Text(this.game.description)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .margin({ top: DesignDimens.SPACE_XXS })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Start)
-      .padding(DesignDimens.CARD_PADDING)
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .border({ width: 1, color: DesignColor.OUTLINE })
-      .backgroundColor(DesignColor.SURFACE)
-      .shadow({
-        radius: DesignElevation.LEVEL_1,
-        color: DesignColor.SHADOW_COLOR_CARD,
-        offsetX: 0,
-        offsetY: 2
-      })
-
-      // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底/主色文字
-      if (this.game.badge.length > 0) {
-        Text(this.game.badge)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.SURFACE)
-          .borderRadius(DesignDimens.RADIUS_FULL)
-          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
-          .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
-          .shadow({
-            radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
-            offsetX: 0,
-            offsetY: 1
-          })
+          Text(this.game.title)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontColor(DesignColor.TEXT_PRIMARY)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('100%')
+            .margin({ top: DesignDimens.SPACE_SM })
+          if (this.game.description.length > 0) {
+            Text(this.game.description)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+              .width('100%')
+              .margin({ top: DesignDimens.SPACE_XXS })
+          }
+          if (this.game.badge.length > 0) {
+            Text(this.game.badge)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(DesignColor.TEXT_PRIMARY)
+              .backgroundColor(DesignColor.PRIMARY_LIGHT)
+              .borderRadius(DesignDimens.RADIUS_FULL)
+              .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
+              .margin({ top: DesignDimens.SPACE_XXS })
+          }
+        }
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
+        .padding(DesignDimens.CARD_PADDING)
       }
     }
     .width('100%')
+    .borderRadius(DesignDimens.CARD_RADIUS)
+    .border({ width: 1, color: DesignColor.OUTLINE })
+    .backgroundColor(DesignColor.SURFACE)
+    .shadow({
+      radius: DesignElevation.LEVEL_1,
+      color: DesignColor.SHADOW_COLOR_CARD,
+      offsetX: 0,
+      offsetY: 2
+    })
+    // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖）
+    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    // 无障碍：整卡一个语义节点（对齐安卓 semantics contentDescription，封面为装饰图不出语义）
+    .accessibilityDescription(this.game.description.length > 0
+      ? `${this.game.title}，${this.game.description}`
+      : this.game.title)
     .onClick(() => {
-      this.onOpen(this.game)
+      this.debouncer.throttle((): void => {
+        this.onOpen(this.game)
+      }, 500)
     })
   }
 }
@@ -458,69 +457,80 @@ export struct GameCenterPage {
     return [0, 1, 2]
   }
 
-  /**
-   * 分类筛选 chips 行（可横滚；对齐安卓 AppPillTabRow：选中 = primary 实底 + 白字，
-   * 未选中 = surface 白底 + 1px outline 描边 + textSecondary，radiusFull，视觉高 34，
-   * 外层上下 5 把触控热区抬到 44）。
-   */
   /** chip 点击分流：chipIndex=0 → 全部（null）；其余按 GAME_CHIP_ORDER 映射回分类 */
   private onChipSelect(chipIndex: number): void {
     this.selectedCategory = chipIndex === 0 ? null : GAME_CHIP_ORDER[chipIndex - 1]
   }
 
-  @Builder
-  CategoryChipsRow() {
-    Scroll() {
-      Row() {
-        GameCategoryChip({
-          label: GameText.categoryAll,
-          selected: this.selectedCategory === null,
-          chipIndex: 0,
-          onSelect: (chipIndex: number): void => {
-            this.onChipSelect(chipIndex)
-          }
-        })
-        ForEach(GAME_CHIP_ORDER, (category: GameCategory, index: number) => {
-          GameCategoryChip({
-            label: categoryChipLabel(category),
-            selected: this.selectedCategory === category,
-            chipIndex: index + 1,
-            onSelect: (chipIndex: number): void => {
-              this.onChipSelect(chipIndex)
-            }
-          })
-        }, (category: GameCategory) => category)
-      }
+  /** 分类 chip 文案组（全部 + 四类；OTHER 无 chip，对齐安卓 GameCategoryChipsRow） */
+  private chipTabs(): string[] {
+    const tabs: string[] = [GameText.categoryAll]
+    for (let i = 0; i < GAME_CHIP_ORDER.length; i++) {
+      tabs.push(categoryChipLabel(GAME_CHIP_ORDER[i]))
     }
-    .scrollable(ScrollDirection.Horizontal)
-    .scrollBar(BarState.Off)
-    // 左对齐 + 左右页边距（对齐安卓 AppPillTabRow：horizontalScroll Row 内 padding(horizontal =
-    // pagePadding)；Scroll 默认居中会把 chips 推到屏幕中央）
-    .align(Alignment.Start)
-    .width('100%')
-    .padding({
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING,
-      top: DesignDimens.SPACE_XS,
-      bottom: DesignDimens.SPACE_SM
-    })
+    return tabs
+  }
+
+  /** 选中分类对应 chip 下标（null → 0 全部；OTHER 无 chip → indexOf 得 -1 落回 0，对齐安卓） */
+  private selectedChipIndex(): number {
+    const selected: GameCategory | null = this.selectedCategory
+    if (selected === null) {
+      return 0
+    }
+    return GAME_CHIP_ORDER.indexOf(selected) + 1
   }
 
   /**
-   * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；3 行 × 2 列，
-   * 卡高 152vp 与真实卡构成对齐）。
+   * 分类筛选 chips 行 —— 复用公共 AppPillTabRow（对齐安卓 2026-11-01「自绘 chips 迁移到公共
+   * 组件」：选中 = primary 实底 + onPrimary 字，未选中 = surface + 1px outline + textSecondary，
+   * 胶囊视觉高 34 / 触控热区 48，自带选中态读屏播报与 SELECTION 触感）。
+   */
+  @Builder
+  CategoryChipsRow() {
+    Column() {
+      AppPillTabRow({
+        tabs: this.chipTabs(),
+        selectedIndex: this.selectedChipIndex(),
+        tabSelected: (index: number): void => {
+          this.onChipSelect(index)
+        }
+      })
+    }
+    .width('100%')
+    // 上下间距对齐安卓 GameCategoryChipsRow 的 modifier.padding(top = spaceXs, bottom = spaceSm)
+    .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_SM })
+  }
+
+  /**
+   * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实网格一致；3 行 × 2 列）。
+   * 与真实卡同构：16:9 封面块（顶角圆角）+ 下方标题/描述文字条块（对齐安卓骨架）。
    */
   @Builder
   GameGridSkeleton() {
     Column({ space: GRID_SPACING }) {
       ForEach(this.skeletonRows(), (row: number) => {
         Row({ space: GRID_SPACING }) {
-          SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS })
-            .layoutWeight(1)
-            .height(SKELETON_CARD_HEIGHT)
-          SkeletonBlock({ blockRadius: DesignDimens.CARD_RADIUS })
-            .layoutWeight(1)
-            .height(SKELETON_CARD_HEIGHT)
+          Column() {
+            // 封面块：块体直角 + 外层裁剪出顶角弧度（对齐安卓 topStart/topEnd radiusLg）
+            Stack() {
+              SkeletonBlock({ blockRadius: 0 })
+                .width('100%')
+                .aspectRatio(1.78)
+            }
+            .width('100%')
+            .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
+            .clip(true)
+            SkeletonBlock({ blockRadius: DesignDimens.RADIUS_SMALL })
+              .width('65%')
+              .height(14)
+              .margin({ top: DesignDimens.SPACE_XS })
+            SkeletonBlock({ blockRadius: DesignDimens.RADIUS_SMALL })
+              .width('90%')
+              .height(11)
+              .margin({ top: DesignDimens.SPACE_XXS })
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Start)
         }
         .width('100%')
       }, (row: number) => row.toString())
@@ -547,6 +557,7 @@ export struct GameCenterPage {
           Column() {
             EmptyState({ message: GameText.errorLoad }) {
               AppButton({
+                small: true,
                 text: GameText.actionRetry,
                 click: () => {
                   this.loadGames()
