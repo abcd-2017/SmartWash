@@ -177,7 +177,7 @@ var GB=(function(){
   return {
     available:!!window.SmartWashGameBridge,
     loadState:function(gameKey){return call("loadState",[gameKey]);},
-    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify(obj||{})]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
     reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
     getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
     getLevels:function(gameKey){return call("getLevels",[gameKey]);}

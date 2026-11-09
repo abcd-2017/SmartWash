@@ -165,6 +165,33 @@ paint(B||"light");
   let dpr = 1;
 
   // ===== 存档(localStorage,try/catch) =====
+  /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+  var GB=(function(){
+    var pending={},seq=0;
+    window.__gOnGameBridgeResult=function(cbId,ok,payload){
+      var cb=pending[cbId];if(!cb)return;
+      delete pending[cbId];
+      try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+    };
+    function call(method,args){
+      return new Promise(function(resolve,reject){
+        var bridge=window.SmartWashGameBridge;
+        if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+        var cbId="gb"+Date.now()+"_"+(++seq);
+        pending[cbId]={resolve:resolve,reject:reject};
+        try{bridge[method].apply(bridge,args.concat([cbId]));}
+        catch(e){delete pending[cbId];reject(e);}
+      });
+    }
+    return {
+      available:!!window.SmartWashGameBridge,
+      loadState:function(gameKey){return call("loadState",[gameKey]);},
+      saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+      reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+      getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+      getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+    };
+  })();
   function loadPrefs(){
     try{
       const v = JSON.parse(localStorage.getItem(PREFS_KEY) || "null");
@@ -177,6 +204,24 @@ paint(B||"light");
   }
   function savePrefs(){
     try{ localStorage.setItem(PREFS_KEY, JSON.stringify({e:curElem, b:brush, d:[...discovered]})); }catch(e){}
+    if(GB.available)GB.saveState("falling-sand",{e:curElem,b:brush,d:[...discovered]}).catch(function(){});
+  }
+  function syncSaveFromServer(){
+    if(!GB.available||!GB.loadState)return;
+    GB.loadState("falling-sand").then(function(res){
+      if(!res||!res.stateJson)return;
+      try{
+        var r=JSON.parse(res.stateJson),changed=false;
+        // 账号发现进度取并集（元素/笔刷偏好保留本地）
+        if(Array.isArray(r.d)){
+          for(var i=0;i<r.d.length;i++){
+            var k=r.d[i];
+            if(REACT_NAMES[k]&&!discovered.has(k)){discovered.add(k);changed=true;}
+          }
+        }
+        if(changed){savePrefs();reactCountEl.textContent=discovered.size+"/"+REACT_KEYS.length;}
+      }catch(e){}
+    }).catch(function(){});
   }
 
   // ===== 气体生成(带寿命) =====
@@ -463,6 +508,7 @@ paint(B||"light");
   reactCountEl.textContent = discovered.size + "/" + REACT_KEYS.length;
   fit();
   requestAnimationFrame(loop);
+  syncSaveFromServer();
 
   // QA 钩子(自动化测试用,不影响玩法)
   window.__fs = { grid, life, step, render, stamp, GW, GH };

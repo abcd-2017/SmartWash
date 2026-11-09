@@ -15,6 +15,65 @@
 
 ## 修订记录
 
+- **2026-11-09（游戏数据平台化·批量铺开）8 款街机型接入账号存档 / 成绩上报**：
+  g2048、flappy、tetris、fruit-slice、air-hockey、moon-lander、snow-trail、forest-run
+  复用 `GB` 桥适配层（无桥自动降级 localStorage）：存档双写（本地 + 账号，账号更优才覆盖），
+  在胜利 / 结束点上报 metric——g2048 最高分（desc，附最大方块值）、flappy / tetris 最高分（desc）、
+  fruit-slice 最高分（desc，附最高连击）、air-hockey 胜场（desc，附当前连胜）、
+  moon-lander / snow-trail / forest-run 最高分（desc）。本批无关卡数据，不做关卡热更新。
+  存档 JSON 与本地结构完全一致：单值存档（g2048 / flappy / snow-trail）按 snake 先例保持裸值，
+  多键存档（moon-lander）按 billiards 先例把本地键名镜像进账号 JSON。
+  顺带修复 tetris 既有回归：`saveBest` 误把 `best` 对象整体写入、`loadBest` 读出后 `parseInt` 恒为 0，
+  最高分从未真正持久化。`theme-gates` + `audit-gates` 8/8 全绿。
+
+- **2026-11-09（游戏数据平台化·批次三）crossword / idiom / beat-tap 接入账号存档 / 关卡热更新 / 排行榜**：
+  复用 sokoban 沉淀的 `GB` 桥适配层铺开第三批，均为「DB 下发 + localStorage 版本缓存 +
+  包内默认关兜底」，无桥自动降级。crossword 4 关 × 8 词（dataJson `{name,words,distractors}`，
+  words 为 `[词,提示,方向,x,y]`），存档 `{lv,done}` 双写、账号按「关卡更高 + 已锁词并集」合并，
+  通关上报到达关卡（desc）；idiom 114 词库整表作为关卡列表（dataJson `{word,meaning}`，
+  校验四字），存档 `{played,streak,best}` 逐字段取更优，一局结束上报连胜 / 最佳连胜（desc）；
+  beat-tap 3 谱曲配置原样下发（dataJson = 现有曲目结构 `{id,name,bpm,bars,seed,base,grid,tiers,diff}`），
+  存档 `{曲id:{score,grade}}` 逐曲取更高分，结算上报最高分 / 准确率（desc）。
+  两关（theme-gates / audit-gates）全绿；Playwright 冒烟 36/36（含无桥降级与缓存兜底两段）。
+  另修复 beat-tap 既有回归：`abd791de`（静音 MVP）误删 `master = actx.createGain()`，
+  导致音频图从未建立——无声且每次击打/鼓点抛 `connect` 错。
+
+- **2026-11-09（游戏数据平台化·批量铺开）6 款无关卡游戏接入账号存档 / 成绩上报**：
+  gomoku、connect-four、reversi、billiards、breakout、falling-sand
+  按 sokoban / memory-cards 沉淀的 `GB` 桥适配层改造：存档双写（本地 localStorage + 账号，
+  账号优先、更优才覆盖；存档 JSON 与本地结构完全一致，服务端不解析）——三款棋类取胜场更多者
+  （reversi 保留本地难度偏好），billiards 三键镜像取更大，breakout 取最高分 / 最高关卡更大，
+  falling-sand 发现进度取并集；在胜利 / 结束点上报 metricValue（+ metricExtra）——
+  gomoku / connect-four / reversi 胜场（desc）、billiards 最高关卡（desc，附限时最佳）、
+  breakout 最高分（desc，附最高关卡）；falling-sand 无排行榜，不上报成绩。
+  本批无关卡数据，未做关卡热更新。无桥环境自动降级为纯本地，游戏照常可玩。
+  `theme-gates` + `audit-gates` 6/6 全绿（connect-four / reversi 严格模式 0 违规）。
+
+- **2026-11-09（游戏数据平台化·批量铺开）8 款无关卡游戏接入账号存档 / 成绩上报**：
+  invaders、block-drop、lights-out、minesweeper、sudoku、pacman、blackjack、solitaire
+  按 sokoban / memory-cards 沉淀的 `GB` 桥适配层改造：存档双写（本地 localStorage + 账号，
+  账号优先、更优才覆盖；存档 JSON 与本地结构完全一致，服务端不解析）；在胜利 / 结束点上报
+  metricValue（+ metricExtra）——invaders 最高分（desc，附最高波次）、block-drop 最高分（desc）、
+  lights-out 最高关卡（desc，附 ★ 数）、minesweeper 用时（asc）、sudoku 用时（asc）、
+  pacman 最高分（desc，附到达关卡）、blackjack 筹码（desc，附胜场）、solitaire 胜场（desc，附最佳用时）。
+  本批无关卡数据，未做关卡热更新；minesweeper 原无存档，新增 `sw.minesweeper.v1` 记最佳用时。
+  无桥环境自动降级为纯本地，游戏照常可玩。`theme-gates` + `audit-gates` 8/8 全绿。
+
+- **2026-11-09（游戏数据平台化·批量铺开）snake 接入账号存档 / 成绩上报**：
+  复用 sokoban / memory-cards 沉淀的 `GB` 桥适配层，改造第 1 款非关卡制游戏（无关卡热更新）。
+  存档双写（本地 + 账号，账号更优才覆盖本地）：该游戏存档键为历史遗留的 `sw_h5_snake_best`，
+  结构保持裸最高分不变（服务端不解析，未新增 / 改名任何本地键）；游戏结束上报最高分进排行榜
+  （desc，无 metricExtra）。无桥环境自动降级为纯本地。`theme-gates` + `audit-gates` 全绿。
+
+- **2026-11-09（游戏数据平台化·批量铺开）nonogram / magic-tower / slingshot 接入账号存档 / 关卡热更新 / 排行榜**：
+  复用 sokoban / memory-cards 沉淀的 `GB` 桥适配层，一次落地 3 款关卡制游戏。
+  关卡数组拆为 `DEFAULT_LEVELS`（包内兜底）+ `LEVELS`（DB 下发优先，`sw.<key>.v1.levels[.ver]` 缓存），
+  按各游戏 `dataJson` 实际结构解析（nonogram `{name,grid}`、magic-tower 11×11 字符串数组、
+  slingshot `{name,ammo,blocks}`）；存档双写（本地 + 账号，账号更优才覆盖本地：nonogram 取解锁更大 /
+  通关并集 / 最佳步数更小，magic-tower 取楼层更高，slingshot 取最高分与解锁更大）；
+  成绩上报到达关卡 / 层数（desc，分别附步数 / 剩余 HP / 剩余弹丸）。无桥环境自动降级为纯本地。
+  三款 `theme-gates` + `audit-gates` 全绿（magic-tower 严格模式 0 违规）。
+
 - **2026-11-09（游戏数据平台化·试点）sokoban 接入账号存档 / 关卡热更新 / 排行榜**：
   桥代理落地——Android `SmartWashGameBridge` 扩展 `loadState/saveState/reportScore/getLeaderboard/getLevels`，
   原生侧带 token 请求（token 不出 H5），白名单外 fail-closed；后端 3 表（`game_user_save` /

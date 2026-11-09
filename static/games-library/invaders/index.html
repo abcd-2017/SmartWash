@@ -106,10 +106,51 @@ function palLoad(){
     danger:v("--g-danger"),warning:v("--g-warning")};
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
-/* ---------- 存档 ---------- */
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.invaders.v1";
 function loadBest(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{best:Math.max(0,parseInt(s.best,10)||0),wave:Math.max(1,parseInt(s.wave,10)||1)}}catch(e){return{best:0,wave:1}}}
-function saveBest(){try{localStorage.setItem(KEY,JSON.stringify({best:best,wave:wave}))}catch(e){}}
+function saveBest(){var w=Math.max(best.wave,wave);best.wave=w;//最高波次单调不减
+  try{localStorage.setItem(KEY,JSON.stringify({best:best.best,wave:w}))}catch(e){}
+  if(GB.available)GB.saveState("invaders",{best:best.best,wave:w}).catch(function(){});}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("invaders").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),rb=Math.max(0,parseInt(r.best,10)||0),rw=Math.max(1,parseInt(r.wave,10)||1),changed=false;
+      if(rb>best.best){best.best=rb;changed=true}
+      if(rw>best.wave){best.wave=rw;changed=true}
+      if(changed){saveBest();$("stBest").textContent=best.best}
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 常量 ---------- */
 var COLSN=8,ROWSN=5;
 var ROWPTS=[30,20,20,10,10];
@@ -198,6 +239,8 @@ function hitShip(){
 function gameOver(){
   over=true;state="idle";
   saveBest();
+  // 成绩上报（最高分 desc：越大越好；附最高波次）
+  if(GB.available)GB.reportScore("invaders",{metricValue:best.best,metricExtra:wave}).catch(function(){});
   $("ovTitle").textContent="防线失守";
   $("ovDesc").innerHTML="坚守到第 <b>"+wave+"</b> 波<br>本局得分 <b>"+score+"</b><br>"+(score>=best.best&&score>0?"新纪录！最高分 "+best.best:"历史最高分 "+best.best);
   $("ovBtn").textContent="再战一局";
@@ -453,6 +496,7 @@ palLoad();resize();spawnAliens();spawnBunkers();
 $("stBest").textContent=best.best;
 showOverlay();
 requestAnimationFrame(loop);
+syncSaveFromServer();
 })();
 </script>
 </body>

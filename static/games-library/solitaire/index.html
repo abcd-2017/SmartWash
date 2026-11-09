@@ -169,10 +169,55 @@ function cardName(c){return SUITS[c.s]+RANKS[c.r]}
 /* 操作模型：sel 记录选中来源（废牌顶，或某列从某张起的一串明牌）；
    点目标列时先尝试整体移动，失败则取消选中并提示；
    双击（detail===2 或 320ms 内两次点同一位置）触发 autoFnd 自动进 foundation。 */
-/* ---------- 存档（try/catch 包裹读写） ---------- */
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 存档（本地 + 账号双写，try/catch 包裹读写） ---------- */
 function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+var saveBooted=false;//首次 newGame 的本地持久化不写账号，避免起步场次覆盖账号更优存档
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available&&saveBooted)GB.saveState("solitaire",save).catch(function(){});}
 var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("solitaire").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rw=Math.max(0,parseInt(r.wins,10)||0);
+      var rp=Math.max(0,parseInt(r.played,10)||0);
+      var rt=Math.max(0,parseInt(r.bestTime,10)||0);
+      if(rw>save.wins){save.wins=rw;changed=true}
+      if(rp>save.played){save.played=rp;changed=true}
+      if(rt>0&&(save.bestTime===0||rt<save.bestTime)){save.bestTime=rt;changed=true}
+      if(changed){persist();syncHud()}
+    }catch(e){}
+  }).catch(function(){});
+}
 save.played=Math.max(0,parseInt(save.played,10)||0);
 save.wins=Math.max(0,parseInt(save.wins,10)||0);
 save.bestTime=parseInt(save.bestTime,10)||0;
@@ -307,6 +352,8 @@ function checkWin(){
   var t=elapsed(),isNew=save.bestTime===0||t<save.bestTime;
   if(isNew)save.bestTime=t;
   save.wins++;persist();
+  // 成绩上报（胜场 desc：越多越好；附最佳用时）
+  if(GB.available)GB.reportScore("solitaire",{metricValue:save.wins,metricExtra:save.bestTime}).catch(function(){});
   els.ovTitle.textContent="通关！";
   els.ovDesc.innerHTML="用时 <b>"+fmt(t)+"</b> · 步数 <b>"+moves+"</b><br>"
     +(isNew?"新纪录！最佳 <b>"+fmt(t)+"</b>":"最佳纪录 "+fmt(save.bestTime))
@@ -444,6 +491,8 @@ function buildCols(){
 }
 buildCols();
 newGame();
+saveBooted=true;
+syncSaveFromServer();
 })();
 </script>
 </body>

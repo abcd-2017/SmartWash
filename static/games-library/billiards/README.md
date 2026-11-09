@@ -7,7 +7,7 @@
   - **限时挑战**：60 秒内连续进球冲分，进球 +100、连续进球有连击加成（最多 +100），清空球架补架 +200，最佳分存档。
   - 目标球入袋 +100；**母球落袋罚 50 分**并在置球点重摆（占用本杆）。
 - 操作：在母球附近（约 56px 容差）按住并向后拖拽——显示虚线瞄准线、幽灵球落点、目标球预测方向线、球杆后拉与环绕母球的力度环（百分比），松手出杆；拖距越远力度越大。球-球近似弹性碰撞、库边反弹、滚动摩擦指数减速。
-- 说明：单文件自包含 H5；固定 1/120s 子步物理（基于 dt 累积器）；最高关卡 / 闯关最高分 / 限时最佳存 localStorage（键 `g_billiards_unlock`、`g_billiards_best_run`、`g_billiards_timed_best`，读写均 try/catch）；切后台自动暂停；球体彩色为玩法素材色（D2 保留字面），其余 canvas 颜色全部经 `PAL` 从 CSS 变量读取。
+- 说明：单文件自包含 H5；固定 1/120s 子步物理（基于 dt 累积器）；最高关卡 / 闯关最高分 / 限时最佳存 localStorage（键 `g_billiards_unlock`、`g_billiards_best_run`、`g_billiards_timed_best`，读写均 try/catch）；切后台自动暂停；球体彩色为玩法素材色（D2 保留字面），其余 canvas 颜色全部经 `PAL` 从 CSS 变量读取。**已接入游戏数据平台化**：存档经桥代理跟随账号（本地 + 账号双写，账号更优才覆盖本地）；上报最高关卡进排行榜（desc，附限时最佳）。无桥环境自动降级为纯本地。
 - 主题：清氧色板（GAME-THEME.md §2）；深浅色按 **D5 裁定（二修）由桥唯一控制**——`<head>` 运行时读 `SmartWashGameBridge.getTheme()`，App 推送 `__applySmartWashTheme(mode)` 切换并经 `__gOnTheme` 触发 `palLoad()` + 重绘；无桥恒浅色；无手动切换按钮、无 `g-theme`、无 matchMedia 层。
 
 ## 自查清单

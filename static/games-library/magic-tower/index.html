@@ -97,6 +97,33 @@ paint(B||"light");
 <script>
 (function(){
 "use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 /* ---------- 调色板：全部经 CSS 变量读取，JS 零颜色字面量 ---------- */
 var PAL={};
 function palLoad(){
@@ -118,8 +145,33 @@ function loadSave(){
   }catch(e){}
   return null;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify({floor:floor+1,hp:hp,atk:atk,def:def,keys:keys}))}catch(e){}}
+function saveObj(){return{floor:floor+1,hp:hp,atk:atk,def:def,keys:keys}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(saveObj()))}catch(e){}
+  if(GB.available)GB.saveState("magic-tower",saveObj()).catch(function(){});}
 function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("magic-tower").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rf=parseInt(remote.floor,10)||0;
+      // 账号进度更优（楼层更高）才覆盖本地
+      if(rf>floor+1){
+        floor=Math.min(LEVELS.length-1,rf-1);
+        hp=parseInt(remote.hp,10)||hp;
+        atk=parseInt(remote.atk,10)||atk;
+        def=parseInt(remote.def,10)||def;
+        keys=parseInt(remote.keys,10)||0;
+        loadFloor(floor);
+        var start=floor===0?findTile("h"):findTile("E");
+        hero={x:start.x,y:start.y};grid[start.y][start.x]=".";
+        hideOverlay();updateStats();resize();draw();
+        say("已同步账号进度：第 "+(floor+1)+" 层。");
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 怪物与数值（经典魔塔战斗公式） ---------- */
 var MONSTERS={
   s:{name:"绿史莱姆",hp:50,atk:12,def:2,c:"success"},
@@ -141,7 +193,7 @@ function predictLoss(m){
 /* ---------- 地图（8 层 · 11×11）
    #墙 .地 h起点 U上楼梯 Y黄钥匙 y黄门 R红药+100 B蓝药+250 A红宝石+2攻 D蓝宝石+2防
    s/b/r/k/m/g/B 怪物 X终点(顶层塔主房出口) ---------- */
-var MAPS=[
+var DEFAULT_LEVELS=[
 [
   "###########",
   "#h........#",
@@ -247,6 +299,46 @@ var MAPS=[
   "###########"
 ]
 ];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.magictower.v1.levels",LEVELS_VER_KEY="sw.magictower.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("magic-tower").then(function(res){
+    if(!res||!Array.isArray(res.levels))return;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      try{
+        var d=JSON.parse(res.levels[i].dataJson);
+        if(!Array.isArray(d)||d.length!==N)return;
+        for(var y=0;y<d.length;y++)if(typeof d[y]!=="string"||d[y].length!==N)return;
+        list.push(d);
+      }catch(e){return;}
+    }
+    if(applyLevels(list,res.version||0)){
+      if(floor>LEVELS.length-1)floor=LEVELS.length-1;
+      loadFloor(floor);
+      var start=floor===0?findTile("h"):findTile("E");
+      hero={x:start.x,y:start.y};grid[start.y][start.x]=".";
+      updateStats();resize();draw();
+    }
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var N=11,cell=0,W=0,H=0;
 var floor=0,hp=1000,atk=12,def=10,keys=0;
@@ -258,7 +350,7 @@ function say(t){$("msg").textContent=t}
 /* ---------- 初始化 / 存档恢复 ---------- */
 function loadFloor(f){
   grid=[];
-  var rows=MAPS[f];
+  var rows=LEVELS[f];
   for(var y=0;y<N;y++){
     var row=[];
     for(var x=0;x<N;x++)row.push(rows[y].charAt(x));
@@ -272,7 +364,7 @@ function findTile(t){
 function newGame(){
   var s=saved;saved=null;
   floor=0;hp=1000;atk=12;def=10;keys=0;over=false;busy=false;
-  if(s){floor=Math.min(s.floor,MAPS.length-1);hp=s.hp;atk=s.atk;def=s.def;keys=s.keys|0;
+  if(s){floor=Math.min(s.floor,LEVELS.length-1);hp=s.hp;atk=s.atk;def=s.def;keys=s.keys|0;
     say("已恢复到第 "+(floor+1)+" 层的进度。");}
   loadFloor(floor);
   var start=floor===0?findTile("h"):findTile("E");
@@ -385,7 +477,9 @@ function walkTo(tx,ty){
 function goUp(){
   save();
   floor++;
-  if(floor>=MAPS.length){win();return;}
+  // 成绩上报（到达层数，desc：越大越好）
+  if(GB.available)GB.reportScore("magic-tower",{metricValue:Math.min(floor+1,LEVELS.length),metricExtra:hp}).catch(function(){});
+  if(floor>=LEVELS.length){win();return;}
   loadFloor(floor);
   var e=findTile("E")||{x:1,y:9};
   hero={x:e.x,y:e.y};grid[e.y][e.x]=".";
@@ -502,6 +596,7 @@ $("btnNew").addEventListener("click",function(){saved=null;clearSave();newGame()
 $("ovBtn").addEventListener("click",function(){saved=null;clearSave();newGame();});
 window.addEventListener("resize",resize);
 palLoad();newGame();
+syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 </body>

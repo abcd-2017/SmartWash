@@ -162,6 +162,33 @@
 <script>
 (function(){
 "use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d"),stage=document.getElementById("stage");
 var ui={dist:document.getElementById("uiDist"),score:document.getElementById("uiScore"),best:document.getElementById("uiBest"),
   ovReady:document.getElementById("ovReady"),ovPause:document.getElementById("ovPause"),ovOver:document.getElementById("ovOver"),
@@ -172,7 +199,18 @@ function storeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function storeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 var BEST_KEY="snow-trail-best";
 function loadBest(){var v=Number(storeGet(BEST_KEY));return isFinite(v)&&v>0?v:0}
-function saveBest(v){storeSet(BEST_KEY,String(v))}
+function saveBest(v){storeSet(BEST_KEY,String(v));
+  if(GB.available)GB.saveState("snow-trail",String(v)).catch(function(){});}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("snow-trail").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=parseInt(JSON.parse(res.stateJson),10)||0;
+      if(rb>best){best=rb;saveBest(best);ui.best.textContent=String(best)}
+    }catch(e){}
+  }).catch(function(){});
+}
 
 /*canvas 调色板:全部颜色读 CSS 变量,零字面量(恒白高光除外)*/
 var PAL={};
@@ -292,6 +330,8 @@ function crash(){
   burst(player.x,skY(),PAL.surface,12);
   var sc=score();
   if(sc>best){best=sc;isNewBest=true;saveBest(best)}
+  // 成绩上报（最高分 desc：越大越好）
+  if(GB.available)GB.reportScore("snow-trail",{metricValue:best}).catch(function(){});
   ui.ovScore.textContent=String(sc);
   ui.ovDist.textContent=Math.floor(distM)+"m";
   ui.ovBest.textContent=String(best);
@@ -607,6 +647,7 @@ state="ready";
 show("ready");
 ui.best.textContent=String(best);
 rafId=requestAnimationFrame(frame);
+syncSaveFromServer();
 })();
 </script>
 </body>

@@ -138,10 +138,48 @@ function pickShape(){
   for(i=0;i<SHAPES.length;i++){t-=SHAPES[i].w;if(t<0)return SHAPES[i]}
   return SHAPES[0];
 }
-/* ---------- 存档 ---------- */
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.blockdrop.v1";
 function loadBest(){try{return Math.max(0,parseInt(JSON.parse(localStorage.getItem(KEY)).best,10)||0)}catch(e){return 0}}
-function saveBest(v){try{localStorage.setItem(KEY,JSON.stringify({best:v}))}catch(e){}}
+function saveBest(v){try{localStorage.setItem(KEY,JSON.stringify({best:v}))}catch(e){}
+  if(GB.available)GB.saveState("block-drop",{best:v}).catch(function(){});}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("block-drop").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var rb=Math.max(0,parseInt(JSON.parse(res.stateJson).best,10)||0);
+      if(rb>best){best=rb;saveBest(best);$("stBest").textContent=best}
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var N=8,grid=[],tray=[],score=0,best=loadBest(),over=false;
 var COMBO=[0,0,10,30,60,100,150,210,280,360];
@@ -230,6 +268,8 @@ function place(i,r0,c0){
 function gameOver(){
   over=true;drag=null;
   updBest();
+  // 成绩上报（最高分 desc：越大越好）
+  if(GB.available)GB.reportScore("block-drop",{metricValue:best}).catch(function(){});
   $("ovScore").textContent=score;
   $("ovBest").textContent=score>=best&&score>0?"新纪录！最高分 "+best:"历史最高分 "+best;
   showOverlay();
@@ -409,6 +449,7 @@ $("btnNew").addEventListener("click",newGame);
 $("ovBtn").addEventListener("click",newGame);
 window.addEventListener("resize",resize);
 palLoad();resize();newGame();loop();
+syncSaveFromServer();
 })();
 </script>
 </body>

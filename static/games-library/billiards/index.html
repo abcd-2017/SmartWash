@@ -124,6 +124,58 @@ var TIMED_BALLS=6,TIMED_SEC=60;
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,String(v))}catch(e){}}
 function lsNum(k,d){var v=parseInt(lsGet(k),10);return isFinite(v)?v:d}
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 账号存档（本地三键镜像，账号更优才覆盖） ---------- */
+function accountSave(){
+  if(!GB.available)return;
+  GB.saveState("billiards",{
+    "g_billiards_unlock":lsNum(K_UNLOCK,1),
+    "g_billiards_best_run":lsNum(K_RUN,0),
+    "g_billiards_timed_best":lsNum(K_TIME,0)
+  }).catch(function(){});
+}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("billiards").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var ru=parseInt(r["g_billiards_unlock"],10);
+      var rr=parseInt(r["g_billiards_best_run"],10);
+      var rt=parseInt(r["g_billiards_timed_best"],10);
+      if(isFinite(ru)&&ru>lsNum(K_UNLOCK,1)){lsSet(K_UNLOCK,String(ru));changed=true;}
+      if(isFinite(rr)&&rr>lsNum(K_RUN,0)){lsSet(K_RUN,String(rr));changed=true;}
+      if(isFinite(rt)&&rt>lsNum(K_TIME,0)){lsSet(K_TIME,String(rt));changed=true;}
+      if(changed){prepLevel(Math.min(lsNum(K_UNLOCK,1),99));if(S.phase==="menu")showMenu(false);}
+    }catch(e){}
+  }).catch(function(){});
+}
 function clamp(v,a,b){return v<a?a:(v>b?b:v)}
 function mulberry(seed){seed=seed|0;return function(){seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
@@ -315,6 +367,9 @@ function resolveShot(){
       if(S.level+1>un)lsSet(K_UNLOCK,S.level+1);
       var best=lsNum(K_RUN,0);
       if(S.score>best)lsSet(K_RUN,S.score);
+      accountSave();
+      // 成绩上报（最高关卡 desc，附限时最佳）
+      if(GB.available)GB.reportScore("billiards",{metricValue:lsNum(K_UNLOCK,1),metricExtra:lsNum(K_TIME,0)}).catch(function(){});
       S.phase="over";
       showOv({kicker:"LEVEL CLEAR",title:"清台成功",
         text:"第 "+S.level+" 关完成，剩余杆数转化为加分。",
@@ -325,6 +380,7 @@ function resolveShot(){
     if(S.shotsLeft<=0){
       var best2=lsNum(K_RUN,0);
       if(S.score>best2)lsSet(K_RUN,S.score);
+      accountSave();
       S.phase="over";
       showOv({kicker:"OUT OF SHOTS",title:"杆数用尽",
         text:"还剩 "+targetsLeft()+" 颗目标球。重整思路，再战本关。",
@@ -395,6 +451,9 @@ function timedOver(){
   S.phase="over";S.timerOn=false;
   var best=lsNum(K_TIME,0);
   if(S.score>best)lsSet(K_TIME,S.score);
+  accountSave();
+  // 成绩上报（最高关卡 desc，附限时最佳）
+  if(GB.available)GB.reportScore("billiards",{metricValue:lsNum(K_UNLOCK,1),metricExtra:lsNum(K_TIME,0)}).catch(function(){});
   showOv({kicker:"TIME UP",title:"时间到",
     text:"60 秒限时挑战结束，连续进球可获得连击加分。",
     stats:[["本局得分",S.score],["历史最佳",Math.max(best,S.score)],["当前连击",S.streak]],
@@ -668,6 +727,7 @@ prepLevel(Math.min(lsNum(K_UNLOCK,1),99)); //背景摆球
 showMenu(false);
 resize();
 requestAnimationFrame(loop);
+syncSaveFromServer();
 })();
 </script>
 </body>

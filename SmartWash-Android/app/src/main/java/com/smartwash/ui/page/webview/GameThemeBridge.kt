@@ -147,7 +147,10 @@ internal class SmartWashGameBridge(
             val payload = parsePayload(payloadJson)
             api.saveState(GameBridgeStateUpdateBody(
                 gameKey = gameKey,
-                stateJson = payload?.get("stateJson")?.takeIf { !it.isJsonNull }?.asString.orEmpty(),
+                // 兼容两种 H5 载荷：{stateJson,schemaVer}（标准）与裸 JSON（早期 GB 实现），
+                // 裸载荷直接作为存档内容落库，避免「存档内容不能为空」静默失败
+                stateJson = payload?.get("stateJson")?.takeIf { !it.isJsonNull }?.asString
+                    ?: payloadJson.orEmpty(),
                 schemaVer = payload?.get("schemaVer")?.takeIf { !it.isJsonNull }?.asInt,
             ))
         }

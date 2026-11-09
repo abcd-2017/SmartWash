@@ -4,7 +4,7 @@
 
 - 玩法：竖屏无尽雪道，速度随距离渐增（250→630px/s + 冲刺）；穿过旗门 +100 并累积连击（连续穿门最高 5 倍），错过旗门重置连击；驶入加速带获得 1.6s 冲刺 +40 分；撞上树木 / 岩石立即结束；得分 = 距离（米）+ 旗门与加速奖励。
 - 操作：手指在画布内左右拖动控制滑手走位（跟随手指横移），桌面支持 ←→ 键与空格（开始 / 暂停）；HUD 暂停按钮 44px；切后台（`document.hidden`）自动暂停。
-- 说明：单文件自包含 H5；最高分 localStorage（`snow-trail-best`，读写均 try/catch）；主题按 D5 终版裁定由桥唯一控制（`getTheme` 初值 + `__applySmartWashTheme` 推送，'system'/空串/无桥=浅色），无 matchMedia 层与手动切换钮；canvas 颜色全部经 PAL 对象读 CSS 变量，主题切换经 `__gOnTheme → palLoad()` 实时重绘。
+- 说明：单文件自包含 H5；最高分 localStorage（`snow-trail-best`，读写均 try/catch）；主题按 D5 终版裁定由桥唯一控制（`getTheme` 初值 + `__applySmartWashTheme` 推送，'system'/空串/无桥=浅色），无 matchMedia 层与手动切换钮；canvas 颜色全部经 PAL 对象读 CSS 变量，主题切换经 `__gOnTheme → palLoad()` 实时重绘。**已接入游戏数据平台化**：存档经桥代理跟随账号（本地 + 账号双写，账号更优才覆盖）；上报最高分进排行榜（desc）。无桥环境自动降级为纯本地。
 
 ## 与原型的机制差异（复刻取舍）
 
