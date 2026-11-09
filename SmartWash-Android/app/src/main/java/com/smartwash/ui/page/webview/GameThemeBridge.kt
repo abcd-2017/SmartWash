@@ -2,7 +2,16 @@ package com.smartwash.ui.page.webview
 
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.google.gson.Gson
 import com.smartwash.common.utils.AppLogger
+import com.smartwash.common.utils.model.ApiResult
+import com.smartwash.network.api.GameBridgeApi
+import com.smartwash.network.api.GameBridgeScoreReportBody
+import com.smartwash.network.api.GameBridgeStateUpdateBody
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.net.URI
 
 /** 主题桥白名单与模式解析的纯函数集（单测锚定 GameThemeBridgePolicyTest） */
@@ -81,11 +90,22 @@ internal class SmartWashGameBridge(
     private val onHostRejected: (String?) -> Unit = { AppLogger.warn(TAG, "桥调用拒绝非白名单来源: $it") },
     /** chrome 模式切换回调（JS 桥线程 → UI 线程的 Compose 状态）；默认空实现供单测/非游戏页使用 */
     private val onChromeChange: (String) -> Unit = {},
+    /** 游戏数据代理 API（存档/成绩/关卡）；为空时数据方法直接回调失败，H5 降级 localStorage */
+    private val gameBridgeApi: GameBridgeApi? = null,
 ) {
 
     /** 当前页 host 快照（JS 桥线程读、UI 线程写） */
     @Volatile
     internal var currentPageHost: String? = null
+
+    /** WebView 提供者（组合侧在 WebView 创建后注入，用于异步结果回调） */
+    @Volatile
+    internal var webViewProvider: (() -> WebView?)? = null
+
+    /** 桥数据请求作用域（主线程回调，随桥存活） */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private val gson = Gson()
 
     @JavascriptInterface
     fun getTheme(): String {
@@ -110,6 +130,99 @@ internal class SmartWashGameBridge(
             return
         }
         onChromeChange(mode)
+    }
+
+    // ==================== 游戏数据代理（存档 / 成绩 / 关卡） ====================
+
+    /** 读存档：H5 传 gameKey + 回调 id，原生带 token 请求后回传 */
+    @JavascriptInterface
+    fun loadState(gameKey: String, cbId: String) {
+        dispatchData(cbId, "loadState") { it.getState(gameKey) }
+    }
+
+    /** 写存档：payloadJson = {"stateJson":"...","schemaVer":1} */
+    @JavascriptInterface
+    fun saveState(gameKey: String, payloadJson: String, cbId: String) {
+        dispatchData(cbId, "saveState") { api ->
+            val payload = parsePayload(payloadJson)
+            api.saveState(GameBridgeStateUpdateBody(
+                gameKey = gameKey,
+                stateJson = payload?.get("stateJson")?.takeIf { !it.isJsonNull }?.asString.orEmpty(),
+                schemaVer = payload?.get("schemaVer")?.takeIf { !it.isJsonNull }?.asInt,
+            ))
+        }
+    }
+
+    /** 上报成绩：payloadJson = {"metricValue":100,"metricExtra":null,"metricJson":null} */
+    @JavascriptInterface
+    fun reportScore(gameKey: String, payloadJson: String, cbId: String) {
+        dispatchData(cbId, "reportScore") { api ->
+            val payload = parsePayload(payloadJson)
+            api.reportScore(GameBridgeScoreReportBody(
+                gameKey = gameKey,
+                metricValue = payload?.get("metricValue")?.takeIf { !it.isJsonNull }?.asLong ?: 0L,
+                metricExtra = payload?.get("metricExtra")?.takeIf { !it.isJsonNull }?.asLong,
+                metricJson = payload?.get("metricJson")?.takeIf { !it.isJsonNull }?.asString,
+            ))
+        }
+    }
+
+    /** 排行榜：limit 非法时按 20 处理 */
+    @JavascriptInterface
+    fun getLeaderboard(gameKey: String, limit: Int, cbId: String) {
+        dispatchData(cbId, "getLeaderboard") { it.getLeaderboard(gameKey, if (limit <= 0) 20 else limit) }
+    }
+
+    /** 关卡下发 */
+    @JavascriptInterface
+    fun getLevels(gameKey: String, cbId: String) {
+        dispatchData(cbId, "getLevels") { it.getLevels(gameKey) }
+    }
+
+    /**
+     * 统一数据请求分发：白名单校验 → 协程请求 → 结果回调 H5。
+     * 白名单外 / 无 API / 请求异常一律回调失败（ok=false），H5 侧据此降级 localStorage。
+     */
+    private fun <T> dispatchData(cbId: String, method: String, block: suspend (GameBridgeApi) -> ApiResult<T>) {
+        val host = currentPageHost
+        if (!GameThemeBridgePolicy.isAllowedHost(host, whitelist)) {
+            onHostRejected(host)
+            callback(cbId, false, "非白名单来源")
+            return
+        }
+        val api = gameBridgeApi
+        if (api == null) {
+            callback(cbId, false, "桥未就绪")
+            return
+        }
+        scope.launch {
+            try {
+                val result = block(api)
+                if (result.code == 200) {
+                    callback(cbId, true, result.data)
+                } else {
+                    callback(cbId, false, result.message)
+                }
+            } catch (e: Exception) {
+                AppLogger.warn(TAG, "桥数据请求失败, method: $method, err: ${e.message}")
+                callback(cbId, false, "网络异常")
+            }
+        }
+    }
+
+    /** 结果回调：window.__gOnGameBridgeResult(cbId, ok, payload)；payload 为 JSON 对象字面量 */
+    private fun callback(cbId: String, ok: Boolean, payload: Any?) {
+        val webView = webViewProvider?.invoke() ?: return
+        val json = gson.toJson(payload ?: emptyMap<String, Any?>())
+        val safeCbId = cbId.replace("\\", "\\\\").replace("'", "\\'")
+        val js = "window.__gOnGameBridgeResult && window.__gOnGameBridgeResult('$safeCbId', $ok, $json)"
+        webView.post { webView.evaluateJavascript(js, null) }
+    }
+
+    /** 解析 H5 传入的 payload JSON（非法/非对象返回 null，由调用方按缺省处理） */
+    private fun parsePayload(json: String?): com.google.gson.JsonObject? {
+        if (json.isNullOrBlank()) return null
+        return runCatching { gson.fromJson(json, com.google.gson.JsonObject::class.java) }.getOrNull()
     }
 }
 

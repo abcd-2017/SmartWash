@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.game.mapper.GameScoreEntryMapper">
+
+    <!-- 榜内 TOP N：desc 游戏按 metric_value 降序（分数类），asc 游戏按升序（步数/用时类）。
+         同分按 id 升序兜底，保证榜单稳定可复现。 -->
+    <select id="selectTopN" resultType="com.smartwash.game.entity.GameScoreEntry">
+        SELECT id, user_id, game_key, metric_value, metric_extra, metric_json,
+               played_count, last_played_at, created_at, updated_at
+        FROM game_score_entry
+        WHERE game_key = #{gameKey}
+        ORDER BY metric_value
+        <choose>
+            <when test="asc">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+        , id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 榜内用户信息批量查询（脱敏手机号 + 头像），与积分月榜同一口径 -->
+    <select id="selectScoreUsers" resultType="com.smartwash.game.vo.GameScoreUserVo">
+        SELECT user_id,
+               CONCAT(LEFT(phone_number, 3), '****', RIGHT(phone_number, 4)) AS masked_phone,
+               avatar
+        FROM users
+        WHERE user_id IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+    </select>
+
+    <!-- 管理端成绩分页列表：联表 users 取脱敏手机号、game_config 取游戏名。
+         默认按 metric_value 降序（运营视角先看高分）。 -->
+    <select id="selectAdminPage" resultType="com.smartwash.game.vo.GameScoreAdminVo">
+        SELECT e.id,
+               e.user_id,
+               CONCAT(LEFT(u.phone_number, 3), '****', RIGHT(u.phone_number, 4)) AS masked_phone,
+               e.game_key,
+               c.title AS game_title,
+               e.metric_value,
+               e.metric_extra,
+               e.metric_json,
+               e.played_count,
+               e.last_played_at
+        FROM game_score_entry e
+        LEFT JOIN users u ON u.user_id = e.user_id
+        LEFT JOIN game_config c ON c.game_key = e.game_key
+        <where>
+            <if test="gameKey != null and gameKey != ''">
+                AND e.game_key = #{gameKey}
+            </if>
+        </where>
+        ORDER BY e.metric_value DESC, e.id ASC
+    </select>
+
+</mapper>

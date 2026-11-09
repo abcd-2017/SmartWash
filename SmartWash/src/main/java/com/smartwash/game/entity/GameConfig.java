@@ -76,6 +76,18 @@ public class GameConfig implements Serializable {
     /** 排序，越小越靠前 */
     private Integer sort;
 
+    /** 是否开启排行榜（1 开 0 关，关则 game_score_entry 不下发） */
+    private Integer metricEnabled;
+
+    /** 排行榜列名（最高分/最少步数/最高关卡等，由游戏语义决定） */
+    private String metricLabel;
+
+    /** 排行榜排序方向：desc 大在前（分数类）/ asc 小在前（步数、用时类） */
+    private String metricOrder;
+
+    /** 关卡数据版本号（后台改关卡时递增，供 H5 缓存判断） */
+    private Integer levelsVersion;
+
     /** 备注 */
     private String remark;
 

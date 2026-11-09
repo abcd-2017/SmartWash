@@ -94,6 +94,8 @@ dependencies {
     //Retrofit 供 di/ 各业务 API @Provides，okhttp 供上传/下载）
     implementation libs.retrofit
     implementation libs.okhttp
+    // Gson：游戏桥代理序列化回调 payload（:common:network 的 converter-gson 是 implementation，不传递）
+    implementation libs.gson
 
     //自动注入
     implementation(libs.hilt.android)

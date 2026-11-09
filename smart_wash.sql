@@ -1338,12 +1338,82 @@ CREATE TABLE `game_config` (
   `cover_url`   VARCHAR(512) DEFAULT NULL COMMENT '封面对象键(MinIO game-covers/ 前缀),读时拼公共读直链,空则端上用本地兜底封面',
   `enabled`     TINYINT      NOT NULL DEFAULT 0 COMMENT '1下发 0不下发(上架开关)',
   `sort`        INT          NOT NULL DEFAULT 100 COMMENT '排序,越小越靠前',
+  `metric_enabled` TINYINT  NOT NULL DEFAULT 0 COMMENT '1开启排行榜 0不开启(game_score_entry)',
+  `metric_label`   VARCHAR(32) DEFAULT NULL COMMENT '排行榜列名(最高分/最少步数/最高关卡)',
+  `metric_order`   VARCHAR(4)  NOT NULL DEFAULT 'desc' COMMENT '排行榜排序方向:desc大在前/asc小在前',
+  `levels_version` INT         NOT NULL DEFAULT 1 COMMENT '关卡数据版本号(后台改关卡时递增,供H5缓存判断)',
   `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',
   `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_game_key` (`game_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='H5游戏库与下发配置';
+
+-- =====================================================================
+-- 游戏数据平台化 —— 3 张业务表（用户存档 / 排行榜 / 关卡定义）
+-- 设计纪律：
+--   game_user_save.state_json 为游戏自定义结构：服务端不解析语义，仅校验 JSON 合法性与大小；
+--   game_score_entry 为排行榜事实源，Redis ZSet 仅展示缓存（同步失败仅告警，允许短暂不一致）；
+--   game_level 仅关卡定义型游戏使用（sokoban/nonogram/magic-tower/slingshot/
+--     memory-cards/crossword/idiom/beat-tap），关卡与游戏包解耦，扩展关卡不改游戏包；
+--   data_json 结构由各游戏自定，后台按游戏渲染专用编辑器（先通用 JSON 编辑器过渡）。
+-- =====================================================================
+
+-- ----------------------------
+-- Table structure for game_user_save（游戏账号存档，一人一游戏一行）
+-- ----------------------------
+DROP TABLE IF EXISTS `game_user_save`;
+CREATE TABLE `game_user_save` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT COMMENT '存档 ID',
+  `user_id`     BIGINT      NOT NULL COMMENT '所属用户(users.user_id)',
+  `game_key`    VARCHAR(64) NOT NULL COMMENT '游戏标识(game_config.game_key)',
+  `state_json`  JSON        NOT NULL COMMENT '游戏自定义存档(服务端不解析,仅校验 JSON 合法性与大小)',
+  `schema_ver`  INT         NOT NULL DEFAULT 1 COMMENT '存档结构版本(游戏侧升级时递增,供迁移)',
+  `created_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_game` (`user_id`,`game_key`) USING BTREE COMMENT '一人一游戏一行(并发首写由唯一索引兜底)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏账号存档(H5 经桥读写,服务端不解析内容)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for game_score_entry（游戏排行榜条目，一人一游戏一行取历史最佳）
+-- ----------------------------
+DROP TABLE IF EXISTS `game_score_entry`;
+CREATE TABLE `game_score_entry` (
+  `id`             BIGINT      NOT NULL AUTO_INCREMENT COMMENT '条目 ID',
+  `user_id`        BIGINT      NOT NULL COMMENT '所属用户(users.user_id)',
+  `game_key`       VARCHAR(64) NOT NULL COMMENT '游戏标识(game_config.game_key)',
+  `metric_value`   BIGINT      NOT NULL COMMENT '主排序值(游戏自定义语义:分数/步数/到达关卡等)',
+  `metric_extra`   BIGINT      NULL COMMENT '辅助值(如用时/连击,用于同分 tie-break 或展示)',
+  `metric_json`    JSON        NULL COMMENT '详情(评级/关卡快照等,结构由游戏自定)',
+  `played_count`   INT         NOT NULL DEFAULT 1 COMMENT '累计上报次数',
+  `last_played_at` DATETIME    NOT NULL COMMENT '最近一次上报时间',
+  `created_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_game` (`user_id`,`game_key`) USING BTREE COMMENT '一人一游戏一行(取历史最佳)',
+  KEY `idx_game_metric` (`game_key`,`metric_value`) USING BTREE COMMENT '榜内排名查询'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏排行榜条目(一人一游戏一行,取历史最佳)' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for game_level（游戏关卡定义，仅关卡定义型游戏使用）
+-- ----------------------------
+DROP TABLE IF EXISTS `game_level`;
+CREATE TABLE `game_level` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '关卡 ID',
+  `game_key`    VARCHAR(64)  NOT NULL COMMENT '游戏标识(game_config.game_key)',
+  `level_no`    INT          NOT NULL COMMENT '关卡序号(游戏内展示顺序)',
+  `name`        VARCHAR(32)  DEFAULT NULL COMMENT '关卡名',
+  `data_json`   JSON         NOT NULL COMMENT '关卡定义(结构由游戏自定,如地图/词库/谱面)',
+  `difficulty`  INT          DEFAULT NULL COMMENT '难度(展示用,语义由游戏自定)',
+  `enabled`     TINYINT      NOT NULL DEFAULT 1 COMMENT '1下发 0不下发',
+  `sort`        INT          NOT NULL DEFAULT 100 COMMENT '排序,越小越靠前',
+  `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_game_level` (`game_key`,`level_no`) USING BTREE COMMENT '一游戏一序号一行'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='游戏关卡定义(仅关卡定义型游戏使用)' ROW_FORMAT = Dynamic;
 
 -- =====================================================================
 -- 情绪气象站 —— 1 张业务表
