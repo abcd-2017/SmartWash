@@ -189,6 +189,8 @@ export struct AppButton {
   @Param solid: boolean = false
   /** 次按钮文字语义色覆盖（如退出登录 dangerInk）；仅 SECONDARY 生效，容器形态不变 */
   @Param contentColor: number | null = null
+  /** 小按钮档（§3.3：36vp / 12vp 圆角 / 横向 16vp / 文字 13sp·600），按内容宽度居中；用于空态/错误态行动按钮 */
+  @Param small: boolean = false
   @Event click: () => void = () => {
   }
 
@@ -246,12 +248,12 @@ export struct AppButton {
       Button() {
         if (this.loading) {
           LoadingProgress()
-            .width(22)
-            .height(22)
+            .width(this.small ? 18 : 22)
+            .height(this.small ? 18 : 22)
             .color(this.contentTint())
         } else {
           Text(this.text)
-            .fontSize(DesignFontSize.BUTTON)
+            .fontSize(this.small ? DesignFontSize.BUTTON_TEXT : DesignFontSize.BUTTON)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             // U-116：v0.4 字阶已废字距，删除 letterSpacing 1sp（对齐安卓 AppButton）
             .fontFeature(DesignFontFeature.TNUM)
@@ -259,9 +261,11 @@ export struct AppButton {
         }
       }
       .type(ButtonType.Normal)
-      .width('100%')
-      .height(48)
-      .borderRadius(DesignDimens.RADIUS_FULL)
+      // small 档（§3.3）按内容宽度居中，不铺满；默认档通栏 CTA
+      .width(this.small ? 'auto' : '100%')
+      .height(this.small ? 36 : 48)
+      .borderRadius(this.small ? DesignDimens.RADIUS_MD : DesignDimens.RADIUS_FULL)
+      .padding(this.small ? { left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD } : 0)
       // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）；
       // solid = 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）
       .backgroundColor(this.variant === AppButtonVariant.SECONDARY

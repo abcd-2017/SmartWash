@@ -41,6 +41,7 @@ import { toolboxCardTransition } from './ToolboxCardTransition'
 import { ToolboxDatePickerDialog } from './ToolboxDatePickerDialog'
 import { ToolboxRenewDialog } from './ToolboxRenewDialog'
 import { AppButton, AppButtonVariant, AppConfirmDialog, SkeletonBlock, SkeletonList } from '../../view/common/AppComponents'
+import { InfoRow } from '../../view/common/InfoRow'
 import { logger } from '../../utils/Logger'
 import { PagingController } from '../../utils/PagingUtil'
 import { getObjectParam, pathStack } from '../../utils/PathStackUtil'
@@ -481,50 +482,22 @@ struct ToolboxShortCodeDetail {
     }
   }
 
-  /**
-   * 信息行（对齐安卓 InfoRow：行高 56、标签 bodySmall 12 textSecondary、值 bodySmall 12）。
-   * @param monospace 值是否走 tabular numbers（短码/点击数/时间等数字槽位）
-   */
-  @Builder
-  InfoRow(label: string, value: string, valueColor: number, monospace: boolean) {
-    Row() {
-      Text(label)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      Blank()
-
-      Text(value)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(valueColor)
-        .fontFeature(monospace ? DesignFontFeature.TNUM : 'normal')
-        .textAlign(TextAlign.End)
-    }
-    .width('100%')
-    .height(56)
-    .alignItems(VerticalAlign.Center)
-  }
-
   /** 基础信息卡（6 行 + 目标链接全文 + 「修改有效期」文字按钮） */
   @Builder
   InfoCard() {
     Column() {
-      this.InfoRow(ToolboxText.toolbox_label_code, this.param?.code ?? "", DesignColor.TEXT_PRIMARY, true)
-      this.InfoRow(ToolboxText.toolbox_label_type, ToolboxText.toolbox_type_short_link, DesignColor.TEXT_PRIMARY, false)
-      this.InfoRow(ToolboxText.toolbox_label_visibility,
-        this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value,
-        this.isPublicCode() ? DesignColor.SUCCESS : DesignColor.ONGOING_INK, false)
-      this.InfoRow(ToolboxText.toolbox_label_clicks,
-        toolboxClicksFormat(this.param?.clickCount ?? 0), DesignColor.PRIMARY, true)
-      this.InfoRow(ToolboxText.toolbox_label_created, this.displayCreated(), DesignColor.TEXT_PRIMARY, true)
+      InfoRow({ label: ToolboxText.toolbox_label_code, value: this.param?.code ?? "", valueColor: DesignColor.TEXT_PRIMARY, valueTnum: true })
+      InfoRow({ label: ToolboxText.toolbox_label_type, value: ToolboxText.toolbox_type_short_link, valueColor: DesignColor.TEXT_PRIMARY, valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? DesignColor.SUCCESS : DesignColor.ONGOING_INK, valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: DesignColor.PRIMARY, valueTnum: true })
+      InfoRow({ label: ToolboxText.toolbox_label_created, value: this.displayCreated(), valueColor: DesignColor.TEXT_PRIMARY, valueTnum: true })
 
       if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.PERMANENT) {
-        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_permanent, DesignColor.SUCCESS, false)
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_permanent, valueColor: DesignColor.SUCCESS, valueTnum: false })
       } else if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.ACTIVE) {
-        this.InfoRow(ToolboxText.toolbox_label_expiry,
-          toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), DesignColor.TEXT_SECONDARY, true)
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), valueColor: DesignColor.TEXT_SECONDARY, valueTnum: true })
       } else {
-        this.InfoRow(ToolboxText.toolbox_label_expiry, ToolboxText.toolbox_expiry_expired, DesignColor.DANGER_INK, false)
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_expired, valueColor: DesignColor.DANGER_INK, valueTnum: false })
       }
 
       if ((this.param?.target ?? "").length > 0) {

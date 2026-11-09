@@ -136,6 +136,7 @@ fun PaySuccessPage(
                     modifier = Modifier.fillMaxSize(),
                     action = {
                         AppButton(
+                            small = true,
                             text = stringResource(R.string.pay_success_retry),
                             onClick = {
                                 if (orderId != -1L) paySuccessViewModel.getOrderDetail(orderId)

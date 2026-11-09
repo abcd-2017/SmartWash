@@ -153,6 +153,7 @@ struct ReviewQueuePage {
               EmptyState({ message: ReviewText.review_queue_empty_message }) {
                 Column() {
                   AppButton({
+                    small: true,
                     text: ReviewText.review_queue_empty_action,
                     click: (): void => {
                       this.goMaterials()

@@ -386,6 +386,7 @@ struct PaymentSuccess {
               message: "加载失败，请重试",
               action: () => {
                 AppButton({
+                  small: true,
                   text: "重试",
                   click: () => {
                     this.loadOrder()

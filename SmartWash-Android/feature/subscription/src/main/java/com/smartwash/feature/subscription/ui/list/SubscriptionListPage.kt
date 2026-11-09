@@ -209,6 +209,7 @@ fun SubscriptionListPage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.subscription_action_retry),
                                     onClick = { pagingItems.retry() },
                                 )
@@ -229,6 +230,7 @@ fun SubscriptionListPage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.subscription_empty_action),
                                     onClick = { navController.navigateToSubscriptionEdit(-1L) },
                                 )

@@ -146,6 +146,7 @@ struct SubscriptionReminderPage {
             EmptyState({ message: SubscriptionText.subscription_reminder_error_load }) {
               Column() {
                 AppButton({
+                  small: true,
                   text: SubscriptionText.subscription_action_retry,
                   click: (): void => {
                     this.load()

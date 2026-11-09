@@ -428,6 +428,7 @@ struct WebPage {
               Column() {
                 EmptyState({ message: WEB_ERROR_LOAD }) {
                   AppButton({
+                    small: true,
                     text: WEB_ACTION_RETRY,
                     variant: AppButtonVariant.TEXT,
                     click: () => {

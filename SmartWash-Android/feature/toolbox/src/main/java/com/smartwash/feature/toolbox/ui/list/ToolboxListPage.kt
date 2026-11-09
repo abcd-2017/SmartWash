@@ -173,6 +173,7 @@ fun ToolboxListPage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.toolbox_action_retry),
                                     onClick = { pagingItems.retry() },
                                 )
@@ -193,6 +194,7 @@ fun ToolboxListPage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.toolbox_empty_action),
                                     onClick = { navController.navigate(ToolboxRoute.Create) },
                                 )

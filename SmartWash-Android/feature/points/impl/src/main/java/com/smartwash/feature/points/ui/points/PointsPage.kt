@@ -174,6 +174,7 @@ fun PointsPage(
                             .padding(horizontal = AppDimens.pagePadding),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.points_action_retry),
                                 onClick = { pointsViewModel.load() },
                                 variant = AppButtonVariant.SECONDARY,

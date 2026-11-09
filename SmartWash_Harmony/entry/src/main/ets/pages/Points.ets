@@ -682,6 +682,7 @@ export struct PointsPage {
             Column() {
               EmptyState({ message: PointsText.loadFailed }) {
                 AppButton({
+                  small: true,
                   text: PointsText.actionRetry,
                   variant: AppButtonVariant.SECONDARY,
                   click: (): void => {

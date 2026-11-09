@@ -413,6 +413,7 @@ struct MaterialListPage {
       EmptyState({ message: ReviewText.review_material_empty }) {
         Column() {
           AppButton({
+            small: true,
             text: ReviewText.review_material_action_new,
             click: (): void => {
               this.toggleCreateForm()

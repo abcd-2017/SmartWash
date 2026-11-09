@@ -663,6 +663,7 @@ struct DeliverySessionPage {
             EmptyState({ message: DeliveryText.toolbox_delivery_error_load }) {
               Column() {
                 AppButton({
+                  small: true,
                   text: DeliveryText.toolbox_delivery_action_retry,
                   click: () => {
                     this.isLoadingFirst = true

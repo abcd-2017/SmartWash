@@ -249,6 +249,7 @@ fun OrderPage(
                                     .padding(top = 96.dp),
                                 action = {
                                     AppButton(
+                                        small = true,
                                         text = stringResource(R.string.order_action_retry),
                                         onClick = { orderViewModel.loadAllOrders() },
                                         variant = AppButtonVariant.SECONDARY,

@@ -199,6 +199,7 @@ fun CouponPage(
                                 .padding(horizontal = AppDimens.pagePadding),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.coupon_action_retry),
                                     onClick = { couponViewModel.loadAllCoupons() },
                                     variant = AppButtonVariant.SECONDARY,
@@ -417,6 +418,7 @@ internal fun CouponSectionError(onRetry: () -> Unit, modifier: Modifier = Modifi
         modifier = modifier,
         action = {
             AppButton(
+                small = true,
                 text = stringResource(R.string.coupon_action_retry),
                 onClick = onRetry,
                 variant = AppButtonVariant.SECONDARY,

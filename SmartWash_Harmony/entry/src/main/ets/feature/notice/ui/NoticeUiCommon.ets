@@ -107,6 +107,7 @@ export struct NoticeErrorState {
       EmptyState({ message: this.message }) {
         Column() {
           AppButton({
+            small: true,
             text: NoticeText.notice_action_retry,
             variant: AppButtonVariant.SECONDARY,
             click: (): void => {

@@ -62,6 +62,7 @@ import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.AppConfirmDialog
 import com.smartwash.common.ui.components.EmptyState
+import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SelectionDot
@@ -202,9 +203,19 @@ fun PaymentPage(
                                     color = AppColors.colorScheme.hairline,
                                     modifier = Modifier.padding(vertical = 16.dp)
                                 )
-                                InfoLine(stringResource(R.string.order_number), "${orderInfo?.orderNo ?: ""}")
-                                InfoLine(stringResource(R.string.service_type), "${orderInfo?.laundryPackageVo?.itemName ?: ""}")
-                                InfoLine(stringResource(R.string.estimated_completion_time), stringResource(R.string.within_24_hours))
+                                InfoRow(
+                                    label = stringResource(R.string.order_number),
+                                    value = "${orderInfo?.orderNo ?: ""}",
+                                    valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum")
+                                )
+                                InfoRow(
+                                    label = stringResource(R.string.service_type),
+                                    value = "${orderInfo?.laundryPackageVo?.itemName ?: ""}"
+                                )
+                                InfoRow(
+                                    label = stringResource(R.string.estimated_completion_time),
+                                    value = stringResource(R.string.within_24_hours)
+                                )
                             }
                         }
 
@@ -522,29 +533,6 @@ fun PaymentPage(
                 navController.navigate(PaymentRoute.Recharge)
             },
             onDismiss = { showRechargeDialog = false }
-        )
-    }
-}
-
-@Composable
-private fun InfoLine(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = AppColors.colorScheme.textSecondary
-        )
-        Text(
-            value,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontFeatureSettings = "tnum"
-            ),
-            color = AppColors.colorScheme.textPrimary
         )
     }
 }

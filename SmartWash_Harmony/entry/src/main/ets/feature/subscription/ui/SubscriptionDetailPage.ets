@@ -57,6 +57,7 @@ import { SUBSCRIPTION_TICK_KEY, bumpSubscriptionRefresh } from '../../../utils/R
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { InfoRow } from '../../../view/common/InfoRow'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionDetailPage'
@@ -482,6 +483,7 @@ struct SubscriptionDetailPage {
             EmptyState({ message: SubscriptionText.subscription_error_load_detail }) {
               Column() {
                 AppButton({
+                  small: true,
                   text: SubscriptionText.subscription_detail_retry,
                   click: (): void => {
                     this.reloadAll()
@@ -531,34 +533,40 @@ struct SubscriptionDetailPage {
                 .alignItems(VerticalAlign.Center)
 
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_amount,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_amount,
                   value: subscriptionAmountText(this.detail?.amount ?? 0),
                   valueColor: this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK,
                   valueWeight: DesignFontWeight.SEMI_BOLD,
                 })
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_cycle,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_cycle,
                   value: subscriptionCycleDescription(
                     subscriptionCycleTypeFromRaw(this.detail?.cycleType ?? 'month'),
                     this.detail?.cycleInterval ?? 1),
                 })
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_next_renew,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_next_renew,
                   value: this.detail !== null ? subscriptionRenewRelativeText(this.detail) : '',
                   valueColor: this.detail !== null ? subscriptionRenewRelativeColor(this.detail) : DesignColor.TEXT_PRIMARY,
                 })
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_trial_end,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_trial_end,
                   value: this.detail?.trialEndDate ?? SubscriptionText.subscription_value_none,
                 })
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_auto_renew,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_auto_renew,
                   value: this.detail?.autoRenew === SUBSCRIPTION_FLAG_ON
                     ? SubscriptionText.subscription_detail_auto_renew_on
                     : SubscriptionText.subscription_detail_auto_renew_off
                 })
                 InfoRow({
-                  label: SubscriptionText.subscription_detail_remind_days,
+                    labelWidth: 88,
+label: SubscriptionText.subscription_detail_remind_days,
                   value: this.detail !== null && this.detail.remindDaysBefore > 0
                     ? subscriptionFormat(SubscriptionText.subscription_detail_remind_days_format,
                       this.detail.remindDaysBefore)
@@ -566,7 +574,8 @@ struct SubscriptionDetailPage {
                 })
                 if ((this.detail?.note ?? '').length > 0) {
                   InfoRow({
-                    label: SubscriptionText.subscription_detail_note,
+                      labelWidth: 88,
+label: SubscriptionText.subscription_detail_note,
                     value: this.detail?.note ?? ''
                   })
                 }
@@ -654,7 +663,8 @@ struct SubscriptionDetailPage {
                     })
                 } else {
                   InfoRow({
-                    label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
+                      labelWidth: 88,
+label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                       this.statsItem?.usageCount90d ?? 0),
                     value: subscriptionFormat(SubscriptionText.subscription_stats_monthly_format,
                       formatAmount(this.statsItem?.monthlyNormalized ?? 0)),
@@ -918,33 +928,4 @@ struct SubscriptionDetailPage {
   }
 }
 
-// ==================== 信息行（内容依赖状态 → @ComponentV2 + @Param） ====================
-
-/** 信息行（label + value，value 可定色/定重；数字一律 tnum 防跳动） */
-@ComponentV2
-struct InfoRow {
-  @Param label: string = ''
-  @Param value: string = ''
-  @Param valueColor: number = DesignColor.TEXT_PRIMARY
-  @Param valueWeight: number = DesignFontWeight.NORMAL
-
-  build() {
-    Row() {
-      Text(this.label)
-        .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .width(88)
-
-      Text(this.value)
-        .fontSize(DesignFontSize.BODY_SMALL)
-        .fontWeight(this.valueWeight)
-        .fontColor(this.valueColor)
-        .fontFeature(DesignFontFeature.TNUM)
-        .layoutWeight(1)
-        .textAlign(TextAlign.End)
-    }
-    .width('100%')
-    .alignItems(VerticalAlign.Center)
-    .margin({ top: DesignDimens.SPACE_XS })
-  }
-}
+// 信息行统一用公共二级组件 InfoRow（view/common/InfoRow.ets，40vp / 12sp）

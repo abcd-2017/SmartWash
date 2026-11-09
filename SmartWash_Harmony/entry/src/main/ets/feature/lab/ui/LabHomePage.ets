@@ -142,6 +142,7 @@ export struct LabHomePage {
           Column() {
             EmptyState({ message: LabText.errorLoad }) {
               AppButton({
+                small: true,
                 text: LabText.actionRetry,
                 click: () => {
                   this.loadEntries()

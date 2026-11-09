@@ -167,6 +167,7 @@ fun MaterialListPage(
                         modifier = Modifier.fillMaxSize(),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.review_action_retry),
                                 onClick = { viewModel.load() },
                             )
@@ -270,6 +271,7 @@ private fun MaterialListContent(
                     modifier = Modifier.fillMaxWidth(),
                     action = {
                         AppButton(
+                            small = true,
                             text = stringResource(R.string.review_material_action_new),
                             onClick = onToggleCreateForm,
                         )

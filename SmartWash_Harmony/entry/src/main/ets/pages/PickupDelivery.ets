@@ -12,6 +12,7 @@ import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { cancelPickupReminderForOrder } from "../utils/ReminderService"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { InfoRow } from '../view/common/InfoRow'
 
 /**
  * PickupDelivery 路由入参：显式指定取件/寄件类型（差异分析 02 §8.3）。
@@ -368,31 +369,7 @@ struct PickupDelivery {
     .alignItems(HorizontalAlign.Center)
   }
 
-  /**
-   * 寄存柜信息行（对齐安卓 InfoRow）：标签 12/400 textSecondary，值 12/400 textPrimary，行高 56（§3.4）。
-   * 仅柜号行开 tnum（编号类数字，DESIGN.md 数字等宽规则）；OrderItemRow 固定 14/13/Medium 且恒 tnum，
-   * 不满足按行切换，故页内自绘（不改动 view/OrderItemRow.ets）。
-   */
-  @Builder
-  LockerInfoRow(title: string, content: string, valueTnum: boolean) {
-    Row() {
-      Text(title)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      Text(content)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontWeight(DesignFontWeight.NORMAL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
-        .fontFeature(valueTnum ? DesignFontFeature.TNUM : 'normal')
-    }
-    .width("100%")
-    .height(56)
-    .justifyContent(FlexAlign.SpaceBetween)
-    .alignItems(VerticalAlign.Center)
-  }
-
+// 寄存柜信息行统一用公共二级组件 InfoRow（view/common/InfoRow.ets，40vp / 12sp）
   /** 寄存柜信息卡（recap §9-F6/V6）：IconBox 36/20 + 3 行（学校/地址/柜号），码已在上方大字展示不再重复 */
   @Builder
   LockerInfoCard() {
@@ -417,10 +394,10 @@ struct PickupDelivery {
       .margin({ bottom: 4 })
 
       Column({ space: 14 }) {
-        this.LockerInfoRow("学校名称", `${this.orderInfo?.schoolsVo?.schoolName ?? ""}`, false)
-        this.LockerInfoRow("地址", `${this.orderInfo?.schoolsVo?.location ?? ""}`, false)
+        InfoRow({ label: "学校名称", value: `${this.orderInfo?.schoolsVo?.schoolName ?? ""}` })
+        InfoRow({ label: "地址", value: `${this.orderInfo?.schoolsVo?.location ?? ""}` })
         // 柜号是编号类数字，开 tnum（对齐安卓 InfoRow valueStyle = bodySmall.copy(tnum)）
-        this.LockerInfoRow("寄存柜柜号", `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`, true)
+        InfoRow({ label: "寄存柜柜号", value: `${this.orderInfo?.lockersVo?.lockerNumber ?? ""}`, valueTnum: true })
       }
       .width("100%")
     }
@@ -581,6 +558,7 @@ struct PickupDelivery {
               message: "请求失败",
               action: () => {
                 AppButton({
+                  small: true,
                   text: "重试",
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {

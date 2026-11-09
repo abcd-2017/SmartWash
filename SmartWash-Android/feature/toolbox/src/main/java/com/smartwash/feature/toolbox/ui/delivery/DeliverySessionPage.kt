@@ -196,6 +196,7 @@ fun DeliverySessionPage(
                     modifier = listModifier,
                     action = {
                         AppButton(
+                            small = true,
                             text = stringResource(R.string.toolbox_delivery_action_retry),
                             onClick = viewModel::refreshNow,
                         )

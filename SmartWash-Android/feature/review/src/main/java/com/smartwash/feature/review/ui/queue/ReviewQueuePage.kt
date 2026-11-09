@@ -106,6 +106,7 @@ fun ReviewQueuePage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.review_action_retry),
                                     onClick = { viewModel.load() },
                                 )
@@ -122,6 +123,7 @@ fun ReviewQueuePage(
                                 modifier = Modifier.fillMaxSize(),
                                 action = {
                                     AppButton(
+                                        small = true,
                                         text = stringResource(R.string.review_queue_empty_action),
                                         onClick = { navController.navigate(ReviewRoute.Materials) },
                                     )

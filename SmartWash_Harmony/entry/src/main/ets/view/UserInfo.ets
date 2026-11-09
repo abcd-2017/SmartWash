@@ -275,6 +275,7 @@ export struct UserInfo {
             Column() {
               EmptyState({ message: "用户信息加载失败" }) {
                 AppButton({
+                  small: true,
                   text: "重试",
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {

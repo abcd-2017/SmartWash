@@ -313,6 +313,7 @@ private fun WebViewContent(
                     .background(AppColors.colorScheme.background),
                 action = {
                     AppButton(
+                        small = true,
                         text = stringResource(R.string.webview_action_retry),
                         onClick = {
                             loadError = false
