@@ -185,12 +185,12 @@ fun OrderDetailPage(
                                     stringResource(R.string.order_number),
                                     orderInfo?.orderNo ?: "",
                                     valueStyle = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 InfoRow(
                                     stringResource(R.string.package_type),
                                     orderInfo?.laundryPackageVo?.itemName ?: "",
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 // 价格行（D-OD3，恢复旧版套餐信息卡的 totalPrice 数据；设计稿仅 5 行无此项，保留为信息增强）
                                 InfoRow(
@@ -199,7 +199,7 @@ fun OrderDetailPage(
                                     stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.totalPrice ?: 0f)),
                                     // 金额行开 tnum（规范 §2.2 硬规则，与实付款行成对）
                                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 // 实付款：AmountMedium 18/24/700（屏 6 实测 18/700）；强调绿随画板
                                 // 取 primary（P10 裁定，浅 #2D9B6A / 深提亮 #5BC894）
@@ -208,17 +208,17 @@ fun OrderDetailPage(
                                     stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueColor = AppColors.colorScheme.textGreen,
                                     valueStyle = AppTextStyles.AmountMedium.copy(fontWeight = FontWeight.Bold),
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 InfoRow(
                                     stringResource(R.string.school_name),
                                     orderInfo?.schoolsVo?.schoolName ?: "",
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 InfoRow(
                                     stringResource(R.string.address),
                                     orderInfo?.schoolsVo?.location ?: "",
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                             }
                         }

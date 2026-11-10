@@ -161,11 +161,59 @@ var SUIT={
 };
 var SUITS=[{k:"spade",red:false},{k:"heart",red:true},{k:"club",red:false},{k:"diamond",red:true}];
 var RANKS=["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-/* ---------- 存档 ---------- */
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.blackjack.v1",MIN_BET=10,START_BANK=1000;
 function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return v}catch(e){}return{}}
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available)GB.saveState("blackjack",save).catch(function(){});}
 var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("blackjack").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson);
+      if(!r||typeof r!=="object")return;
+      var rb=Math.max(0,parseInt(r.bank,10)||0);
+      // 账号筹码更多则整体接管（筹码与胜负同向，避免半套合并）
+      if(rb>save.bank){
+        save.bank=rb;
+        save.resets=Math.max(0,parseInt(r.resets,10)||0);
+        save.w=Math.max(0,parseInt(r.w,10)||0);
+        save.l=Math.max(0,parseInt(r.l,10)||0);
+        save.lastBet=Math.min(Math.max(parseInt(r.lastBet,10)||50,MIN_BET),500);
+        bank=save.bank;persist();syncHud();
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
 save.bank=Math.max(0,parseInt(save.bank,10)||0);
 if(!save.bank)save.bank=START_BANK;
 save.resets=Math.max(0,parseInt(save.resets,10)||0);
@@ -317,6 +365,8 @@ function settle(kind,text){
   else if(kind==="push"){bank+=stake}
   else save.l++;
   save.bank=bank;persist();syncHud();
+  // 成绩上报（筹码 desc：越多越好；附胜场）
+  if(GB.available)GB.reportScore("blackjack",{metricValue:bank,metricExtra:save.w}).catch(function(){});
   say(text,kind==="lose"?"lose":"win");
   $("ovTitle").textContent=kind==="win"||kind==="bj"?"本局获胜":kind==="push"?"平局":"本局告负";
   $("ovDesc").innerHTML=text+"<br>筹码 <b>"+bank+"</b>";
@@ -345,6 +395,7 @@ $("ovBtn").addEventListener("click",function(){
 });
 syncHud();
 toBet();
+syncSaveFromServer();
 })();
 </script>
 </body>

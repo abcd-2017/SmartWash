@@ -452,6 +452,7 @@ fun UserInfoPage(
                                 .padding(top = AppDimens.spaceMd),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.user_action_retry),
                                     onClick = { userInfoViewModel.getUserInfo() },
                                     variant = AppButtonVariant.SECONDARY,

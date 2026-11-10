@@ -114,6 +114,7 @@ fun GameCenterPage(
                         .padding(horizontal = AppDimens.pagePadding),
                     action = {
                         AppButton(
+                            small = true,
                             text = stringResource(R.string.game_action_retry),
                             onClick = viewModel::loadGames,
                         )

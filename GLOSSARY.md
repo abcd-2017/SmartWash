@@ -1,7 +1,7 @@
 # SmartWash 术语表（GLOSSARY）
 
 > 本文件是 SmartWash 四端（Spring Boot 后端 / Android / 鸿蒙 NEXT / Web 管理后台）共享的领域词汇表。
-> 事实来源：**当前 `main` 分支代码**（PR #47 已合入）+ 根目录 `smart_wash.sql` + `docs/adr/`。
+> 事实来源：**当前分支代码**（`feat/game-data-platform`，2026-11-09 同步）+ 根目录 `smart_wash.sql` + `docs/adr/`。
 > 与 ADR 冲突时，以 ADR 的裁定为准；本表只描述「代码现在是什么」，不替代 ADR 的「为什么这样定」。
 
 ## 维护约定
@@ -301,7 +301,7 @@
 
 ---
 
-## 5. 游戏库
+## 5. 游戏库与游戏数据平台
 
 ### 5.1 游戏配置（game_config / gameKey）
 
@@ -310,9 +310,9 @@
 - **四端对应物**：
   - 后端：`game/entity/GameConfig.java`、`game/service/impl/GameConfigServiceImpl.java`、`WebGameListController`（`/web/auth/game/list` 下发）。
   - Android：`:feature:game` `network/GameApi.kt`、`model/GameItem.kt`、`ui/center/GameCenterPage.kt`。
-  - 鸿蒙：**无对应实现**（无游戏中心页、无 GameApi、DeepLinkRegistry 无 game-center 条目）。
+  - 鸿蒙：`feature/game/network/GameApi.ets` + `ui/GameCenterPage.ets`（路由 `GameCenter`），深链 host `game-center`。
   - Web：`views/game/GameList.vue`、`api/game.js`。
-- **易混淆点**：`id` 是自增主键，`game_key` 才是业务标识；种子字典 `app_deeplink_route` 的 `game-center` 标 `platform=3` 双端，但鸿蒙实际未接入（能力缺口）。
+- **易混淆点**：`id` 是自增主键，`game_key` 才是业务标识；种子字典 `app_deeplink_route` 的 `game-center` 标 `platform=3` 双端，Android / 鸿蒙均已接入。
 - → ADR-0005
 
 ### 5.2 来源类型（source_type）
@@ -322,7 +322,7 @@
 - **四端对应物**：
   - 后端：`GameConfigServiceImpl.playUrlOf`、`GameConfig.sourceType`。
   - Android：游戏详情消费下发的 `url`，不感知 source_type。
-  - 鸿蒙：无对应实现。
+  - 鸿蒙：游戏中心消费下发 `url`，不感知 source_type。
   - Web：`dict.js` `GAME_SOURCE_TYPE_TEXT`（1 上传 / 2 外链）。
 - **易混淆点**：`source_type=1` 时 `url` 列**不落库**，读时由 `object_key + entry_path` 拼 MinIO 直链；`source_type=2` 的 `url` 不可当对象键重写。
 
@@ -342,7 +342,7 @@
 - **四端对应物**：
   - 后端：`GameConfig.category/icon/color`（管理端二次校验白名单）。
   - Android：`:feature:game` `GameConstant.kt`（`GameCategory`、`gameIconFromKey`、`GameTint`）。
-  - 鸿蒙：无对应实现。
+  - 鸿蒙：`GameCenterPage` 消费 `category/icon/color` 做分类筛选与封面渲染。
   - Web：`dict.js` `GAME_CATEGORY_OPTIONS` / `GAME_ICON_OPTIONS` / `GAME_COLOR_OPTIONS`。
 - **易混淆点**：游戏色组与工作台入口色组**共用同一份六色白名单**（`GAME_COLOR_OPTIONS = WORKBENCH_ENTRY_COLOR_OPTIONS`）；未知 color key 兜底 GREEN，未知 icon 兜底「应用格」图标。
 
@@ -353,10 +353,21 @@
 - **四端对应物**：
   - Android：`ui/page/webview/WebViewPage.kt`（挂载）、`GameThemeBridge.kt`、`GameChrome.kt`。
   - 后端：无（纯端侧协议）。
-  - 鸿蒙：无对应实现。
+  - 鸿蒙：`pages/WebPage.ets` 内置浏览器承接 H5 游戏；主题桥能力待与 Android 对齐。
   - H5：`games-library/GAME-THEME.md`（H5 侧权威文档，20 款游戏内联同一运行时）。
 - **易混淆点**：桥生效的**host 白名单**只含「后端 API host + 运行期下发的 MinIO endpoint」；白名单外 `getTheme` 返回空串、`setChrome` 忽略、推送跳过。`system` 是协议保留值，H5 已裁撤 matchMedia 监听，无桥恒浅色。
 - → ADR-0005
+
+### 5.6 游戏数据平台（game_user_save / game_score_entry / game_level）
+
+- **代码标识**：`game_user_save`、`game_score_entry`、`game_level`、`GameStateVo`、`GameLeaderboardVo`、`GameLevelsVo`、`WebGameDataController`
+- **定义**：游戏账号存档（按 `game_key` + 用户）、成绩上报与排行榜、关卡热更新下发。Android 经 app 壳的 `GameBridgeApi` 访问 `/web/auth/game/state|score|leaderboard|levels`；后端 `WebGameDataController`（用户端）+ `GameDataAdminController`（管理端查询/关卡维护）。
+- **四端对应物**：
+  - 后端：`game/entity/{GameUserSave,GameScoreEntry,GameLevel}.java`、`game/service/impl/*`。
+  - Android：`app/network/api/GameBridgeApi.kt`（壳层桥链，非 `:feature:game`）。
+  - 鸿蒙：无对应实现（游戏中心仅列表 + WebView）。
+  - Web：`views/game/GameData.vue` + `api/gameData.js`（关卡/存档/成绩管理）。
+- **易混淆点**：`state` 是客户端自定义结构的整块 JSON 存档；`score` 是单条成绩，排行榜按其聚合；`levels` 由管理端热更新，端上拉取即可玩新关卡，无需发版。
 
 ---
 
@@ -390,7 +401,8 @@
 - **定义**：两类 LLM 密钥：平台目录密钥（`div_model_config`）与用户自带密钥（BYOK，`div_user_api_config`，支持自定义 `custom_base_url`）。BYOK 的 API Key 以 AES-256-GCM 加密入库，列格式 `v{keyVersion}:{base64(iv)}:{base64(ciphertext+tag)}`；主密钥走 `DIV_MASTER_KEY` 环境变量，启动即校验。
 - **四端对应物**：
   - 后端：`divination/service/AesGcmCipher.java`、`DivUserApiConfigService`、`DivModelConfigService`。
-  - Android / 鸿蒙：**无对应实现**（无 BYOK 设置页，`DivinationApi` 当前只有解读/追问接口）。
+  - Android：`:feature:user:impl` `DivSettingApi.kt`（设置页「解读模型」入口，掩码回显 + 试呼校验）。
+  - 鸿蒙：`feature/divination/network/DivSettingsApi.ets` + 设置页。
   - Web：`views/divination/DivSettings.vue`（BYOK 设置）、`DivModelList.vue`（平台模型目录）。
 - **易混淆点**：保存即 `verified=0`（诚实落库，试呼未接入）；列表/回显只出掩码 `****` + 明文尾 4 位，**永不出明文与密文**；必须对明文掩码（对密文掩码无意义）。
 - → ADR-0006
@@ -448,9 +460,20 @@
 - **四端对应物**：
   - 后端：`vo/ServerConfigVo.java`、`toolbox/toolkit/PublicBaseUrlResolver.java`、`WebConfigController`。
   - Android：`config/ServerConfig.kt`（`shortLinkBaseUrl`，仅展示不拼接）。
-  - 鸿蒙：无对应实现。
+  - 鸿蒙：`network/api/ServerConfigApi.ets`（`GET /web/config`，启动预热）。
   - Web：管理端展示。
 - **易混淆点**：端上**只展示、不拼接**——后端返回的 `shortUrl` 即完整地址（`{shortLinkBaseUrl}/web/t/{code}`）。
+
+### 7.5 设备投递（toolbox_delivery_item / delivery session）
+
+- **代码标识**：`toolbox_delivery_item`、`DeliverySessionVo`、`/web/auth/toolbox/delivery/**`、`/web/delivery/**`
+- **定义**：设备间文件/文本投递会话——创建会话得 code，会话内发布文本或文件（MinIO）、取走条目、关闭会话；对端经公开页 `/web/delivery/{code}/enter` 免登录进入。会话过期 10 分钟由 `ToolboxDeliveryCleaner` 清理（MinIO 对象 → 条目 → 会话）。
+- **四端对应物**：
+  - 后端：`toolbox/delivery/`（`ToolboxDeliveryController` 创作端 + `ToolboxDeliveryPublicController` 公开对端）。
+  - Android：`:feature:toolbox` `DeliveryApi.kt` + `ui/delivery/`。
+  - 鸿蒙：`feature/toolbox/DeliveryApi.ets` + `ui/delivery/`。
+  - Web：`views/delivery/DeliveryPickup.vue` / `DeliverySession.vue`（公开对端页）。
+- **易混淆点**：公开对端接口 `/web/delivery/**` 与创作端 `/web/auth/toolbox/delivery/**` 是**两组**，不要混用；文件上限 20MB，业务码 403/404/409/413 由页面分支。
 
 ---
 
@@ -464,7 +487,7 @@
   - Android：`app/.../deeplink/DeepLinkRegistry.kt`、各域 `di/DeepLinkModule.kt`、`common/utils/deeplink/DeepLinkContributor.kt`。
   - 鸿蒙：`utils/deeplink/DeepLinkRegistry.ets`（`lookup`）。
   - 后端 / Web：无对应实现（后端只有路由**字典**，见 §8.3）。
-- **易混淆点**：Android 是**运行时聚合**（Hilt 多绑定），鸿蒙是**编译期集中表**；两端 host 清单需逐字对齐，否则同包游戏/同链接行为分叉。
+- **易混淆点**：Android 是**运行时聚合**（Hilt 多绑定），鸿蒙是**编译期集中表**；两端 host 清单需逐字对齐，否则同包游戏/同链接行为分叉。**已知缺口**：鸿蒙已注册 `order-detail/{orderId}`，Android 尚未注册（只有 `order`）——同链接两端行为不一致，待补齐。
 
 ### 8.2 DeepLinkParser 与 DeepLinkAction
 
@@ -520,7 +543,7 @@
 - **四端对应物**：
   - 后端：`controller/web/WebConfigController.java`、`vo/ServerConfigVo.java`、`MinioConfig.publicEndpoint()`（`externalEndpoint` 优先，缺失回退 `endpoint`）。
   - Android：`config/ServerConfig.kt`（`minioEndpoint` / `shortLinkBaseUrl`）、`init/ServerConfigInitTask.kt`（优先级 300，非阻塞，失败静默）。
-  - 鸿蒙：无对应实现（游戏桥未接入）。
+  - 鸿蒙：`network/api/ServerConfigApi.ets`（启动预热；H5 主题桥未接入）。
   - Web：无（管理端不消费）。
 - **易混淆点**：`minioConfig.urlOf(objectKey)` 是所有拼给端上直链（游戏可玩地址、头像）的统一口径，**禁止直接用 `getEndpoint()`**（那是内部通信地址）；启动极早期白名单只含 API host 属可接受降级。
 - → ADR-0004
@@ -535,6 +558,91 @@
   - Web：**独立的「靛蓝工作台」设计系统**（`SmartWashWeb/DESIGN.md`，Indigo/Slate），**不适用清氧**。
   - 后端：无。
 - **易混淆点**：绿色 `#2D9B6A` 是红线（玄墨子主题除外）；Android 禁用动画库（Lottie/Rive/Shimmer/Vico）、禁新增 `Icons.*`、动效必须带 reduced motion 分支；Web 与 Android 是两套设计系统，不要跨端套用色板。
+
+---
+
+## 10. 平台模块
+
+### 10.1 站内信（notice / notice_read / NoticeType）
+
+- **代码标识**：`notice`、`notice_read`、`NoticeType`（SYSTEM / ANNOUNCEMENT）、`WebNoticeController`
+- **定义**：管理端发送站内信（title / content / type / deepLink），用户端收件箱分页 + 未读数 + 标记已读（幂等）+ 全部已读；已读记录按用户落库。
+- **四端对应物**：
+  - 后端：`notice/controller/WebNoticeController.java` + `NoticeAdminController`。
+  - Android：`:feature:notice`（`NoticeServiceApi` + 收件箱页）。
+  - 鸿蒙：`feature/notice/`（`NoticeApi.ets` + `NoticeInboxPage`）。
+  - Web：`views/system/NoticeList.vue` + `api/notice.js`。
+- **易混淆点**：未读数 data 缺失按 0（角标隐藏，不拖垮我的页）；已读标记 / 全部已读在后端幂等，端上不做请求去重。
+
+### 10.2 积分（point_account / point_ledger / point_sign_in / PointReason）
+
+- **代码标识**：`point_account`、`point_ledger`、`point_sign_in`、`PointReason`、`PointsOverviewVo`
+- **定义**：平台积分账户（余额 / 累计获得），签到得基础分（5）+ 连签奖励（7 天周期 +10），流水记账，月榜 TOP 50。
+- **四端对应物**：
+  - 后端：`points/`（`PointsWebController` + `PointsProperties`）。
+  - Android：`:feature:points`（`PointsServiceApi` + 签到有礼页）。
+  - 鸿蒙：`feature/points`（`PointsApi.ets` + `Points.ets`）。
+  - Web：无对应管理页（积分仅移动端消费）。
+- **易混淆点**：`signIn` 幂等——重复请求 `code=200` 且 `alreadySigned=true`，不重复加分；月榜手机号后端已脱敏。
+
+### 10.3 订阅（user_subscription / user_subscription_usage_log / subscription_reminder_log）
+
+- **代码标识**：`user_subscription`、`SubscriptionStatus`（active/paused/canceled/finished）、`SubscriptionRemindType`
+- **定义**：订阅全生命周期——新建 / 编辑 / 详情 / 列表，状态流转 pause / resume / cancel / finish；用量打卡与明细分页；到期提醒（已读幂等）。后端每日 07:30 `SubscriptionRenewJob` 推进自动续费。
+- **四端对应物**：
+  - 后端：`subscription/`（`UserSubscriptionController` + `SubscriptionAdminController` + `SubscriptionRenewJob`）。
+  - Android：`:feature:subscription`（15 个端点 + 4 个页面）。
+  - 鸿蒙：`feature/subscription/`（`api.ets` + 4 个页面）。
+  - Web：`views/system/SubscriptionList.vue` + `api/subscription.js`（只读汇总/列表）。
+- **易混淆点**：状态流转动作由后端裁定，端上只做按钮可见性；提醒已读在后端幂等。
+
+### 10.4 情绪（mood_record / MoodLevel）
+
+- **代码标识**：`mood_record`、`MoodLevel`（1 暴雨 / 2 阴 / 3 多云 / 4 晴 / 5 大晴）
+- **定义**：今日情绪 upsert（同用户同月内覆盖）、月历视图、月统计（记录数 / 用户数 / 等级分布）。
+- **四端对应物**：
+  - 后端：`mood/`（`MoodController` + `MoodAdminController`）。
+  - Android：`:feature:mood`（3 个端点 + 今日/日历/趋势页）。
+  - 鸿蒙：`feature/mood/`（`api.ets` + 3 个页面）。
+  - Web：`views/system/MoodReport.vue` + `api/mood.js`。
+- **易混淆点**：`ym` 统一 `yyyy-MM` 字符串；统计口径为「记录数 / 用户数」两个维度。
+
+### 10.5 记忆复习（review_card / study_material / FSRS）
+
+- **代码标识**：`review_card`、`study_material`、`review_log`、`FsrsScheduler`、`ReviewRating`
+- **定义**：资料 → 卡片；FSRS-6 调度（后端 `review/scheduler/FsrsScheduler` 纯函数，移植自 py-fsrs）；端上只传 `(cardId, rating 1..4)`，不参与调度计算。
+- **四端对应物**：
+  - 后端：`review/`（`ReviewWebController` + `FsrsScheduler`）。
+  - Android：`:feature:review`（7 个端点 + 队列/学习/资料页）。
+  - 鸿蒙：`feature/review/`（`api.ets` + 3 个页面）。
+  - Web：无管理页。
+- **易混淆点**：rating 语义 1=Again / 2=Hard / 3=Good / 4=Easy（Anki 惯例）；新卡 `stability/difficulty` 为 null；`durationMs` 由端上以自身时钟折算，服务端以自身时钟为准。
+
+### 10.6 操作审计（admin_audit_log / @Audited / HMAC 链）
+
+- **代码标识**：`admin_audit_log`、`@Audited`、`AdminAuditLogController`、`audit.hmac-secret`
+- **定义**：管理端写操作留痕，HMAC 链防篡改；`/admin/audit-logs` 分页查询，`/admin/audit-logs/verify` 校验链完整性。`@Audited` 已覆盖角色/储物柜/订单/用户券/优惠券/支付/用户/学校/管理员/洗衣项目等管理端写接口。
+- **四端对应物**：
+  - 后端：`common/audit/`（`AdminAuditLogController` + 切面 + HMAC）。
+  - Web：`views/system/AuditLogList.vue` + `api/audit.js`。
+  - Android / 鸿蒙：无对应实现。
+- **易混淆点**：`audit.hmac-secret` 生产 profile 无默认值（围栏），未配置则审计链无法校验；新增管理端写接口必须加 `@Audited`。
+
+### 10.7 限流与请求追踪（@RateLimit / TraceId / AccessLog）
+
+- **代码标识**：`@RateLimit`、`RateLimitConfig`、`TraceIdFilter`、`AccessLogFilter`、`X-Request-Id`
+- **定义**：`@RateLimit` 用 Redis Lua 做分布式限流（登录/注册/验证码/短链跳转/占卜解读按 IP 或用户限流，超限 429）；`TraceIdFilter` 生成/复用 `X-Request-Id` 写入 MDC；`AccessLogFilter` 每请求一行日志（方法/路径/状态/耗时/用户）+ 敏感字段脱敏。
+- **四端对应物**：
+  - 后端：`common/ratelimit/` + `common/log/`。
+  - Android / 鸿蒙 / Web：无感知（Web 经响应头可观测 request_id）。
+- **易混淆点**：`application.yaml` 中 `request-log` 缩进在 `toolbox:` 下（实际生效 `toolbox.request-log.*`），而绑定前缀是 `smartwash.request-log`——配置未生效，需统一。
+
+### 10.8 深链主机缺口
+
+- **代码标识**：`order-detail/{orderId}`
+- **定义**：鸿蒙 `DeepLinkRegistry` 已注册 `order-detail/{orderId}` → `OrderDetail`；Android 尚未注册（只有 `order` 带 tab）。两端 host 清单需逐字对齐。
+- **四端对应物**：鸿蒙 `utils/deeplink/DeepLinkRegistry.ets`；Android `DeepLinkRegistry`（缺该 host）。
+- **易混淆点**：同链接在鸿蒙可直达订单详情、在 Android 回 `Unknown`；补注册时注意 Android 订单详情页留壳、路由常量归 `OrderRoute`。
 
 ---
 
@@ -554,6 +662,11 @@
 | 游戏来源 | `source_type`（1/2） | 消费 `url` | 无 | `GAME_SOURCE_TYPE_TEXT` |
 | 占卜术数 | `method`（liuyao/meihua/qimen/liuren） | `DivinationApi` | `METHOD_NAMES` | `DIV_METHOD_OPTIONS` |
 | 深链平台 | `platform`（1/2/3） | `DeeplinkRouteDict` | `DeeplinkRouteDict` | `DEEPLINK_PLATFORM_OPTIONS` |
+| 站内信类型 | `NoticeType`（SYSTEM/ANNOUNCEMENT） | `NoticeVo.type` | `feature/notice` | `NOTICE_TYPE_OPTIONS` |
+| 订阅状态 | `SubscriptionStatus`（active/paused/canceled/finished） | `SubscriptionEnums.kt` | `feature/subscription` | `SUBSCRIPTION_STATUS_OPTIONS` |
+| 情绪等级 | `MoodLevel`（1 暴雨 / 2 阴 / 3 多云 / 4 晴 / 5 大晴） | `MoodLevel.kt` | `feature/mood` | `MOOD_LEVEL_TEXT` |
+| 复习评分 | `ReviewRating`（1 Again / 2 Hard / 3 Good / 4 Easy） | `ReviewModels.kt` | `feature/review` | — |
+| 游戏存档/成绩 | `gameKey` + `state` / `score` | `GameBridgeApi` | 无对应实现 | `views/game/GameData.vue` |
 
 ## 附录 B：术语与 ADR 索引
 
@@ -566,3 +679,6 @@
 | 游戏库宿主契约与主题桥 | ADR-0005 |
 | 观象台 BYOK 与 SSRF 边界 | ADR-0006 |
 | JWT 黑名单与 `/auth/refresh` | ADR-0007 |
+| 游戏数据平台（存档 / 排行榜 / 关卡热更新） | 待补 ADR |
+| 站内信 / 积分 / 订阅 / 情绪 / 复习 | 待补 ADR |
+| 操作审计 HMAC 链 / 分布式限流 / TraceId | 待补 ADR |

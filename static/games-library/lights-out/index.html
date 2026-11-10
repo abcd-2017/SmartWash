@@ -112,11 +112,53 @@ paint(B||"light");
 <script>
 (function(){
 "use strict";
-/* ---------- 存档 ---------- */
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.lightsout.v1";
 function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{lv:Math.max(1,parseInt(s.lv,10)||1),flags:Array.isArray(s.flags)?s.flags:[]}}catch(e){return{lv:1,flags:[]}}}
-function saveGame(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function saveGame(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+  if(GB.available)GB.saveState("lights-out",save).catch(function(){});}
 var save=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("lights-out").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),rlv=Math.max(1,parseInt(r.lv,10)||1),lvUp=false,starUp=false;
+      if(rlv>save.lv){save.lv=rlv;lv=rlv;lvUp=true}
+      if(Array.isArray(r.flags)){
+        for(var i=0;i<r.flags.length;i++)if(r.flags[i]&&!flags[i]){flags[i]=true;save.flags=flags;starUp=true}
+      }
+      if(lvUp||starUp){saveGame();if(lvUp)startLevel();else paint()}
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var N=5,lamp=[],lit=[],moves=0,ref=0,lv=save.lv,flags=save.flags,done=false;
 function $(id){return document.getElementById(id)}
@@ -178,6 +220,8 @@ function checkWin(){
   done=true;
   if(moves<=ref)flags[lv-1]=true;
   saveGame();paint();
+  // 成绩上报（最高关卡 desc：越大越好；附 ★ 数）
+  if(GB.available)GB.reportScore("lights-out",{metricValue:lv,metricExtra:flags.filter(Boolean).length}).catch(function(){});
   $("ovTitle").textContent="第 "+lv+" 关 过关！";
   $("ovDesc").innerHTML="用步 <b>"+moves+"</b> / 参考最优 "+ref+
     (moves<=ref?"<br>★ 最优解！":"<br>试试更少的步数拿 ★")+
@@ -202,6 +246,7 @@ $("ovBtn").addEventListener("click",function(){
   lv++;saveGame();startLevel();
 });
 buildGrid();startLevel();
+syncSaveFromServer();
 })();
 </script>
 </body>

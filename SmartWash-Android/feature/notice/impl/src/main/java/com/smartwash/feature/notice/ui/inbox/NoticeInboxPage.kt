@@ -171,6 +171,7 @@ fun NoticeInboxPage(
                             .padding(horizontal = AppDimens.pagePadding),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.notice_action_retry),
                                 onClick = { noticeInboxViewModel.load() },
                                 variant = AppButtonVariant.SECONDARY,

@@ -36,31 +36,44 @@
 
 ## 项目架构
 
-智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。已完成模块化重构（阶段 0–8，提交 3276513 起），从单模块拆为 18 个 Gradle 模块。
+智慧校园洗衣服务 App，**多模块 Gradle 项目**，MVVM + Jetpack Compose + Hilt。模块化重构后共 **27 个 Gradle 模块**（1 app + 5 common + 21 feature 子模块）。
 
 ### 模块地图
 
 ```
-:app                             壳：Application + MainActivity(NavHost 聚合) + 首页(HomePage/IndexPage) + 订单详情页(OrderDetailPage) + 取件页(PickupPage/PickupDeliveryPage) + 更新弹窗(UpdateDialog/UpdateFlow) + AI 工作台页(AiWorkPage)
+:app                             壳：Application + MainActivity(NavHost 聚合 16 个 graph) + 首页/订单详情/取件/内置浏览器/工作台/更新弹窗 + 深链注册表 + InitEngine 调度
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
-:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
-:common:utils                    跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装(SharePreferenceUtils) / 动效触感 / 二维码 / pagingFlow
+:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / 401 单飞续签 / SSE 客户端 / @RequireAuthorization / NetworkException
+:common:utils                    跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装(SharePreferenceUtils) / 深链解析契约 / 动效触感 / 二维码 / pagingFlow
 :common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
 :common:init                      InitTask 契约 + InitEngine + InitTaskRegistry（零业务依赖：仅 Android SDK + Hilt + coroutines）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
-:feature:coupon:impl            CouponRepository + CouponStatus + CouponApiImpl + EntityMappers + 三 Tab 页(AvailableCouponsTab/HistoricalCouponsTab/ClaimedCouponsTab)
-:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + 解读网关 + 7 页面(ask/cast/chart/followup/history/home/reading) + 独立库）
+:feature:coupon:impl            CouponRepository + CouponStatus + CouponApiImpl + EntityMappers + 三 Tab 页
+:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK 设置 + 7 页面 + 独立库）
+:feature:game                   游戏中心（封面网格 + WebView 承载 + 深链 game-center）
+:feature:lab                    解压实验舱（10 个纯本地玩具，零网络/零存储）
 :feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
 :feature:laundry:impl           Laundry/School Repository + EntityMappers + SchoolSearchSourceImpl + SchoolApi/LaundryItemsApi + 洗衣预约/服务页（内存→Room→网络 缓存降级）
+:feature:mood                   情绪气象站（今日打卡/日历/趋势）
+:feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute + NoticeServiceApi
+:feature:notice:impl            消息中心收件箱（未读高亮/全部已读/深链 messages）
 :feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
 :feature:order:impl             OrderRepository + OrderGroup + OrderPagingSource + OrderServiceApi + 订单 VO 实体 + 订单页
 :feature:payment:api            PaymentRoute 路由常量（零跨模块数据消费）
 :feature:payment:impl            PaymentRepository + RechargeRepository + RechargeRecordPagingSource + PaymentType + PaySuccessPage + 支付/充值网络链路与页面
+:feature:points:api             PointsRoute + 积分模型 + PointsServiceApi
+:feature:points:impl            签到有礼页（余额/连签/月榜/流水）+ 深链 points
+:feature:review                 记忆复习（FSRS 队列/学习/资料，单模块）
+:feature:subscription           订阅逃生舱（列表/编辑/详情/提醒 + 分页）
+:feature:toolbox                工具箱（短链 + 设备投递会话 + 本地二维码兜底）
 :feature:update                 热更新全链路 + UpdateInitTask + ApkDownloadWorker + ApkInstaller + UpdateEventBus
 :feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
-:feature:user:impl              SessionManager + SessionEventBus + UserAccountApi + UserRepository + 登录/注册/用户中心/资料编辑/设置页
+:feature:user:impl              SessionManager + SessionEventBus + UserAccountApi + DivSettingApi + UserRepository + 登录/注册/重置修改密码/用户中心/资料编辑/设置/权限/钱包流水
 config/                          convention 脚本目录（android-library.gradle / compose.gradle / hilt.gradle，传统 apply from 方式）
+build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
+
+> **孤儿目录**：`feature/ai`、`feature/lostfound`、`common/security` 只有历史 `build/` 残留，无源码、无 `build.gradle`、未被 `settings.gradle` include，**不是模块**，不要在文档或代码中引用。
 
 ### 六条依赖铁律（强制，`scripts/check-deps.sh` 静态校验前四条）
 
@@ -84,13 +97,15 @@ abstract class XxxInitModule {
 }
 ```
 
-`App.onCreate` 注入 `InitTaskRegistry`，经 `applicationScope.launch { InitEngine(registry.getTasks()).executeAll() }` 调度。已接入：`SessionInitTask`（user:impl，阻塞高优先级，预热 token）、`UpdateInitTask`（feature:update，非阻塞，静默检查）。
+`App.onCreate` 注入 `InitTaskRegistry`，经 `applicationScope.launch { InitEngine(registry.getTasks()).executeAll() }` 调度。已接入 4 个：`SessionInitTask`（user:impl，blocking，priority=10，预热 token）、`HapticSettingsInitTask`（user:impl，非阻塞，priority=200）、`ServerConfigInitTask`（app，非阻塞，priority=300，拉取 `/web/config`）、`UpdateInitTask`（feature:update，非阻塞，priority=900，静默检查）。
 
 **api/impl 服务化** — api 模块（纯 Kotlin/轻 Android，不引 Hilt 运行时）放接口 + 模型 + 路由常量；impl 模块 `@Binds Api → ApiImpl`；消费方 `@Inject` 接口。api 模块**可带 res** 先例：`feature:order:api`（OrderStatus/ShowOrderStatus 枚举的 descriptionRes）、`feature:payment:api`（无 res）、`feature:coupon:api`（枚举带 res）。判断标准：res 仅服务于本 api 模块的枚举/模型即可带。
 
 **鉴权流程** — API 方法加 `@RequireAuthorization`，`RequestInterceptor` 经 `retrofit2.Invocation` tag 检测后从 `TokenProvider`（user:impl 的 SessionManager `@Binds`）取 token 注入 `Bearer <token>`。`ResponseInterceptor` 遇 401 清 token 并经 `SessionEventNotifier`（user:impl 的 SessionEventBus `@Binds`）通知 UI 跳登录。
 
-**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
+**路由** — 单 Activity + NavHost。各域暴露 `NavGraphBuilder.xxxGraph` 扩展函数，壳层 `MainActivity` 聚合 16 个 graph（shell/user/order/payment/laundry/coupon/notice/divination/toolbox/game/lab/mood/review/subscription/points/delivery）；路由常量单一事实来源在各域 `*Route`。壳层路由契约 `ShellRoute`（common:ui）。
+
+**深链** — `smartwash://{host}` scheme。解析契约 `DeepLinkParser`/`DeepLinkAction`/`DeepLinkContributor` 在 common:utils；各域 impl（或单模块域）经 `@IntoSet` 贡献 host 路由工厂；壳层 `DeepLinkRegistry` 合并、`DeepLinkHandler` 分发（未命中查后端 `/web/deeplink/routes` 字典兜底）。host 清单与贡献者对照表见 [app/AGENTS.md](app/AGENTS.md) 深链章节。
 
 **状态管理** — ViewModel 用 `MutableStateFlow` → `asStateFlow()`；`RequestState` 密封类统一异步 UI 状态。
 

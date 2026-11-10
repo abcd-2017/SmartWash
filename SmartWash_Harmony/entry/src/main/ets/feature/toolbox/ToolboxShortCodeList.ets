@@ -245,6 +245,7 @@ struct ToolboxShortCodeList {
         // 间距由插槽内给出（EmptyState 自身只在插槽为空时零占位）
         Column() {
           AppButton({
+            small: true,
             text: actionText,
             click: () => {
               if (isError) {

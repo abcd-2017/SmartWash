@@ -89,13 +89,114 @@ paint(B||"light");
 <script>
 (function(){
 "use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 /* ---------- 数据 ---------- */
-var LEVELS = [{"name":"动物","words":[["大马哈鱼","出生在河里、长大游回大海，洄游千里也要回家的鱼","h",2,3],["海马","由爸爸负责育儿、长得像小马的海鱼","v",1,4],["金枪鱼","在海里游得飞快的大型海产，常上餐桌","v",0,6],["大熊猫","黑白两色的国宝，一天要吃掉好多好多竹子","v",2,3],["猫头鹰","白天睡觉夜里捕田鼠，脸像圆圆的盘子","h",4,3],["北极熊","冰天雪地里最大的白色猛兽","h",3,1],["东北虎","生活在长白山一带的大型猫科猛兽","v",2,1],["老虎","森林里的百兽之王","h",4,0]],"distractors":["象","鹿","狮","龟","蛙","蝶"]},{"name":"自然","words":[["流星雨","夜空中许多亮迹仿佛从同一点洒落的天象","h",2,2],["雨季","一年里降水最集中、连着下好多天的时段","v",2,4],["季风","夏天吹向陆地、冬天吹向海洋，方向随季节变换","h",3,4],["风暴","狂风卷着巨浪一起来的坏天气","v",3,5],["暴雨","下得又急又猛、洼地会积水的强降水","h",4,5],["气流","看不见摸不着、永远在流动不息的透明气体","v",1,2],["水蒸气","水受热变成的看不见摸不着的气体","h",1,0],["洪水","河水暴涨漫出河道、淹没田地村庄的灾害","v",0,0]],"distractors":["雪","云","火","冰","虹","震"]},{"name":"校园","words":[["功课","老师布置的课后练习","h",0,0],["课间操","铃声一响就排队下楼，全校一起做的运动","v",0,1],["操场","学校里最开阔的那块空地，上体育课都用它","h",2,1],["值日生","轮到谁擦黑板、倒垃圾，今天就是他当家","h",5,5],["值周","轮流负责班级一周值日的安排","v",5,5],["节日","值得庆祝纪念的日子","v",4,6],["生物课","老师带大家认识花草、虫鸟和人体奥秘","v",5,7],["课程表","贴在教室墙上，写清每天上课安排的表","h",7,7]],"distractors":["书","笔","黑","考","试","教","室"]},{"name":"常识","words":[["天气预报","电视里说说明天阴晴风雨的节目","h",1,3],["空气","包围地球、看不见摸不着，动植物都离不开它","v",0,4],["天气","一个地方短时间里阴晴风雨的状况","v",1,3],["报纸","印着新闻和文章、定期出版的读物","v",1,6],["天然气","埋在地下的蓝色火焰燃料","h",2,1],["星期天","上完六天课后的那个休息日","v",0,1],["星空","缀满星星的夜空","h",0,1],["星期","七天为一个轮回来计日的方法","h",1,0]],"distractors":["节","日","月","灯","城","谜"]}];
+var DEFAULT_LEVELS = [{"name":"动物","words":[["大马哈鱼","出生在河里、长大游回大海，洄游千里也要回家的鱼","h",2,3],["海马","由爸爸负责育儿、长得像小马的海鱼","v",1,4],["金枪鱼","在海里游得飞快的大型海产，常上餐桌","v",0,6],["大熊猫","黑白两色的国宝，一天要吃掉好多好多竹子","v",2,3],["猫头鹰","白天睡觉夜里捕田鼠，脸像圆圆的盘子","h",4,3],["北极熊","冰天雪地里最大的白色猛兽","h",3,1],["东北虎","生活在长白山一带的大型猫科猛兽","v",2,1],["老虎","森林里的百兽之王","h",4,0]],"distractors":["象","鹿","狮","龟","蛙","蝶"]},{"name":"自然","words":[["流星雨","夜空中许多亮迹仿佛从同一点洒落的天象","h",2,2],["雨季","一年里降水最集中、连着下好多天的时段","v",2,4],["季风","夏天吹向陆地、冬天吹向海洋，方向随季节变换","h",3,4],["风暴","狂风卷着巨浪一起来的坏天气","v",3,5],["暴雨","下得又急又猛、洼地会积水的强降水","h",4,5],["气流","看不见摸不着、永远在流动不息的透明气体","v",1,2],["水蒸气","水受热变成的看不见摸不着的气体","h",1,0],["洪水","河水暴涨漫出河道、淹没田地村庄的灾害","v",0,0]],"distractors":["雪","云","火","冰","虹","震"]},{"name":"校园","words":[["功课","老师布置的课后练习","h",0,0],["课间操","铃声一响就排队下楼，全校一起做的运动","v",0,1],["操场","学校里最开阔的那块空地，上体育课都用它","h",2,1],["值日生","轮到谁擦黑板、倒垃圾，今天就是他当家","h",5,5],["值周","轮流负责班级一周值日的安排","v",5,5],["节日","值得庆祝纪念的日子","v",4,6],["生物课","老师带大家认识花草、虫鸟和人体奥秘","v",5,7],["课程表","贴在教室墙上，写清每天上课安排的表","h",7,7]],"distractors":["书","笔","黑","考","试","教","室"]},{"name":"常识","words":[["天气预报","电视里说说明天阴晴风雨的节目","h",1,3],["空气","包围地球、看不见摸不着，动植物都离不开它","v",0,4],["天气","一个地方短时间里阴晴风雨的状况","v",1,3],["报纸","印着新闻和文章、定期出版的读物","v",1,6],["天然气","埋在地下的蓝色火焰燃料","h",2,1],["星期天","上完六天课后的那个休息日","v",0,1],["星空","缀满星星的夜空","h",0,1],["星期","七天为一个轮回来计日的方法","h",1,0]],"distractors":["节","日","月","灯","城","谜"]}];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.crossword.v1.levels",LEVELS_VER_KEY="sw.crossword.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存关卡
+  GB.getLevels("crossword").then(function(res){
+    if(!res||!Array.isArray(res.levels))return;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      try{
+        var d=JSON.parse(res.levels[i].dataJson);
+        if(!d||!Array.isArray(d.words)||!d.words.length)return;
+        var words=[];
+        for(var j=0;j<d.words.length;j++){
+          var w=d.words[j];
+          if(!Array.isArray(w)||w.length<5||typeof w[0]!=="string"||!w[0])return;
+          words.push([w[0],String(w[1]||""),w[2]==="v"?"v":"h",parseInt(w[3],10)||0,parseInt(w[4],10)||0]);
+        }
+        list.push({name:String(d.name||("第"+(i+1)+"关")),words:words,
+          distractors:Array.isArray(d.distractors)?d.distractors.map(String):[]});
+      }catch(e){return;}
+    }
+    if(applyLevels(list,res.version||0)){
+      if(cur>LEVELS.length-1)cur=LEVELS.length-1;
+      startLevel(cur);
+    }
+  }).catch(function(){});
+}
 /* ---------- 存档 ---------- */
 var KEY = "sw.crossword.v1";
 function loadSave(){ try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.lv >= 0) return s; } catch (e) {} return { lv: 0, done: {} }; }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify({ lv: cur, done: doneSave })); } catch (e) {} }
+function save(){
+  var data = { lv: cur, done: doneSave };
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+  if (GB.available) GB.saveState("crossword", data).catch(function(){});
+}
 var saveData = loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("crossword").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var rlv=parseInt(remote.lv,10)||0;
+      var changed=false;
+      if(rlv>saveData.lv){saveData.lv=Math.min(LEVELS.length-1,rlv);changed=true;}
+      if(remote.done&&typeof remote.done==="object"){
+        for(var k in remote.done){
+          if(!Array.isArray(remote.done[k]))continue;
+          var mine=doneSave[k]||(doneSave[k]=[]);
+          for(var i=0;i<remote.done[k].length;i++){
+            var w=parseInt(remote.done[k][i],10);
+            if(w>=0&&mine.indexOf(w)<0){mine.push(w);changed=true}
+          }
+        }
+      }
+      if(changed){
+        var n=Math.min(Math.max(saveData.lv,0),LEVELS.length-1);
+        saveData.lv=n;
+        startLevel(n);
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var cur = 0, words = [], rows = 0, cols = 0;
 var cellInfo = {}, user = {}, locked = new Set(), pool = {}, sel = -1, cursor = -1, cellEls = {};
@@ -259,6 +360,8 @@ function checkWord(w){
     if (locked.size === words.length) {
       say(cur < LEVELS.length - 1 ? "本关完成！点「下一关」继续" : "全部关卡完成，太棒了！");
       $("btnNext").textContent = cur < LEVELS.length - 1 ? "下一关" : "再玩一遍";
+      // 成绩上报（到达关卡，desc：越大越好）
+      if (GB.available) GB.reportScore("crossword", { metricValue: cur + 1 }).catch(function(){});
     } else {
       say("「" + word[0] + "」正确！");
     }
@@ -290,6 +393,7 @@ $("btnNext").addEventListener("click", function(){
 });
 /* ---------- 启动 ---------- */
 startLevel(saveData.lv < LEVELS.length ? saveData.lv : 0);
+syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 </body>

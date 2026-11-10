@@ -32,12 +32,15 @@ mvn clean package -DskipTests  # 打包
 
 | URL 前缀 | 需要认证 | 角色 |
 |---|---|---|
-| `/auth/**` | 否 | 公开接口（登录、注册、验证码） |
-| `/admin/**` | 是 | `ROLE_ADMIN` |
-| `/web/auth/**` | 是 | `ROLE_USER` |
+| `/auth/**` | 否 | 公开接口（登录、注册、验证码、刷新令牌） |
+| `/admin/**` | 是 | `ROLE_ADMIN`（Web 管理后台） |
+| `/web/auth/div/**` | 是 | `ROLE_USER`（**先于** `/web/auth/**` 匹配） |
+| `/web/auth/**` | 是 | `ROLE_USER`（Android / 鸿蒙） |
 | `/web/**` | 否 | 公开 Web 接口 |
 
-两种用户类型，登录流程不同：管理员（`/auth/adminUsers/login`）通过用户名认证，普通用户（`/auth/user/login`）通过手机号认证。登录成功返回 JWT（7 天有效期），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
+**公开只读路径**（SecurityConfig 显式 permitAll）：`/web/laundryItems/all`、`/web/schools/allName`、`/web/payments/payType`、`/web/payments/payStatus`、`/web/app/version`、`/web/app/download`、`/web/t/**`（短链跳转）、`/web/deeplink/routes`、`/web/config`、`/web/delivery/**`（设备投递对端公开页）、`/swagger-ui/**`、`/v3/api-docs/**`。其余 `/web/**`（如 `/web/orders/status`、`/web/lockers/status`、`/web/lockers/all`）需**任意已认证**用户。
+
+两种用户类型，登录流程不同：管理员（`/auth/adminUsers/login`）通过用户名认证，普通用户（`/auth/user/login`）通过手机号认证。登录成功返回**双 token**：access（TTL 2 小时）+ refresh（TTL 7 天），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`；refresh 仅用于 `/auth/refresh` 一次性轮换，`jti` 是黑名单键。
 
 认证链：`JwtAuthenticationFilter`（提取 Bearer token，经 `CustomUserDetailsService` 加载 `LoginUser`，设置 `SecurityContext`）→ `SecurityConfig`（基于角色的访问控制）。
 
@@ -45,18 +48,26 @@ mvn clean package -DskipTests  # 打包
 
 | 包 | 用途 |
 |---|---|
-| `common/` | 枚举（`OrderStatus`、`LockerStatusEnum` 等）、常量（`DefaultConstant`）、统一响应 `Result<T>` |
-| `config/` | Security、CORS、MyBatis-Plus、Redis、全局异常处理 |
-| `controller/` | `LoginController` 在顶层；`background/` 管理端 API，`web/` 用户端 API |
-| `entity/` | 数据库实体（MyBatis-Plus 映射） |
-| `exception/` | 自定义异常（`CustomExceptions`、`UserAuthenticationException`） |
-| `filter/` | `JwtAuthenticationFilter` — 每次请求执行 JWT 校验 |
-| `from/` | 请求 DTO。命名 `{操作}{实体}From`（`Add*From`、`Update*From`、`Search*From`），分页继承 `BaseSearchFrom` |
+| `common/` | 枚举（`OrderStatus`、`LockerStatusEnum` 等）、常量、统一响应 `Result<T>`；子包 `audit/`（`@Audited` + HMAC 链）、`ratelimit/`（`@RateLimit` + Redis Lua）、`log/`（TraceId / AccessLog / 脱敏） |
+| `config/` | Security、CORS、Redis、缓存序列化、MyBatis-Plus、MinIO、OpenAPI、全局异常、JWT 入口/登出、日志过滤器注册、MDC 任务装饰器 |
+| `controller/` | `LoginController` 在顶层；`background/` 管理端 API（含 Dashboard、导出），`web/` 用户端 API |
+| `entity/` | 核心业务实体（12 张表，MyBatis-Plus 映射） |
+| `exception/` | 自定义异常（`CustomExceptions`、`GameServiceException`、`UserAuthenticationException`） |
+| `filter/` | `JwtAuthenticationFilter` — 每次请求执行 JWT 校验 + Redis 黑名单 |
+| `from/` | 请求 DTO。命名 `{操作}{实体}From`，分页继承 `BaseSearchFrom` |
 | `mapper/` | MyBatis-Plus `BaseMapper`。自定义 SQL 在 `src/main/resources/mapper/*.xml` |
 | `service/` | 接口继承 `IService<T>`；实现在 `service/impl/` 继承 `ServiceImpl<M, T>` |
-| `task/` | 定时任务（`OrderTimeoutManager` 订单超时取消） |
-| `divination/` | 「观象台」占卜子系统（controller / core 四算法 / llm / prompt / entity / mapper / service / vo / from / task） |
-| `utils/` | `JwtUtil`、`LoginUser`、`UserContextHolder`（ThreadLocal）、`SecurityUtil`、`QrCodeUtil` |
+| `task/` | `OrderTimeoutManager`（动态 TaskScheduler，30 分钟未支付自动取消，非 `@Scheduled`） |
+| `divination/` | 「观象台」占卜子系统（controller / core 四算法 / llm SSE 网关 / prompt / rag / entity / mapper / service / vo / from / task 用量聚合） |
+| `game/` | 游戏中心：游戏库 / 关卡 / 存档 / 成绩 / 排行榜，MinIO 对象存储与上传包校验 |
+| `mood/` | 情绪记录、月历、统计 |
+| `notice/` | 站内信公告与已读记录 |
+| `points/` | 积分账户、签到、流水、月榜 |
+| `review/` | 记忆复习（FSRS-6 纯函数调度器 + 资料/卡片/队列/统计） |
+| `subscription/` | 订阅、续费推进、用量、提醒 |
+| `toolbox/` | 短链、设备投递（`delivery/` 子包含公开对端接口）、访问统计 |
+| `workbench/` | 工作台入口与 deeplink 路由字典 |
+| `utils/` | `JwtUtil`（双 token）、`JsonUtils`、`LoginUser`、`PickupCodeUtils`、`SecurityUtil`、`UserContextHolder` |
 | `vo/` | 视图对象，命名 `{实体}Vo` |
 
 ### 关键模式
@@ -67,6 +78,8 @@ mvn clean package -DskipTests  # 打包
 - **Form 对象**用 `@Valid` + Jakarta Bean Validation 校验。
 - **ThreadLocal 用户上下文**：`UserContextHolder.setUser(loginUser)` 在 JWT 过滤器设置，Service 层经 `SecurityUtil.getCurrentUser()` 获取。
 - **Lombok** 全项目使用（`@Data`、`@Slf4j`、`@AllArgsConstructor`）；**Hutool** 提供 `Snowflake`、`IdUtil` 等；**FastJSON 2** 是 JSON 库。
+- **横切能力**：`@RateLimit`（Redis Lua 分布式限流，登录/注册/验证码/短链跳转/占卜解读按 IP 或用户限流）、`@Audited`（管理端写操作 HMAC 链审计，`/admin/audit-logs/verify` 校验完整性）、TraceId/AccessLog（`X-Request-Id` + MDC + 敏感字段脱敏）。
+- **缓存**：Redis `CacheManager`（schools/laundryItems/workbenchEntries/deeplinkRoutes/gameList 30min、coupon 10min、dashboard 2min），缓存序列化带 autoType 白名单。
 
 ## 硬性约束
 
@@ -75,6 +88,21 @@ mvn clean package -DskipTests  # 打包
 - **新增接口遵循 URL 路由规范**（见上表），响应统一 `Result<T>`。
 - **不硬编码敏感信息**：密钥/密码走环境变量，`application.yaml` 中不落默认生产密钥。
 - **代码注释和日志使用中文**，日志用 Lombok `@Slf4j`，请求级高频日志用 debug 级别。
+- **限流/审计注解**：新增公开高频接口按需加 `@RateLimit`；管理端写接口必须加 `@Audited`，不得绕过审计直接改库。
+
+## 定时任务
+
+| 任务 | 调度 | 用途 |
+|---|---|---|
+| `OrderTimeoutManager` | 动态 TaskScheduler（每单 30 分钟，启动重载） | 未支付订单 CAS 取消 + 释放柜子 |
+| `SubscriptionRenewJob` | 每日 07:30 | 推进过期自动续费订阅（CAS + 幂等提醒） |
+| `ToolboxShortCodeCleaner` | 每日 03:30 | 清理过期 30 天的短码 + 孤儿访问明细 |
+| `ToolboxDeliveryCleaner` | 每 5 分钟 | 清理过期 10 分钟的投递会话（MinIO 对象 → 条目 → 会话） |
+| `DivUsageAggregator` | 每日 00:05 | 聚合昨日占卜用量到 `div_usage_daily`（删后插幂等） |
+
+## 测试
+
+`src/test` 共 36 个测试类 + `application-test.yaml` / `schema.sql`（H2 内存库，`smartwash.rate-limit.enabled=false`）。覆盖登录验证码、JWT、资金幂等、订单 CAS、游戏、工具箱、工作台等；新增核心逻辑请配套单测。
 
 ## 已知坑（改动前先看）
 

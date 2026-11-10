@@ -225,6 +225,7 @@ struct SubscriptionListPage {
       EmptyState({ message: message }) {
         Column() {
           AppButton({
+            small: true,
             text: actionText,
             click: (): void => {
               if (isError) {

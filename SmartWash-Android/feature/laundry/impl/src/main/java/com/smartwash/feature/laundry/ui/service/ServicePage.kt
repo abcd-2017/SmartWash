@@ -157,6 +157,7 @@ private fun ServiceErrorState(
         modifier = Modifier.fillMaxSize(),
         action = {
             AppButton(
+                small = true,
                 text = stringResource(R.string.service_retry),
                 onClick = onRetry,
                 variant = AppButtonVariant.SECONDARY

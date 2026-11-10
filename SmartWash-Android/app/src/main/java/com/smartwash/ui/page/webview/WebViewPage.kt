@@ -1,6 +1,7 @@
 package com.smartwash.ui.page.webview
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Build
@@ -24,6 +25,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +51,8 @@ import com.smartwash.common.ui.components.AppButtonVariant
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.di.GameBridgeEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 
 /** 日志 TAG（"SmartWash/" 前缀由 AppLogger 统一拼接；供 WebViewClient 回调留痕） */
 private const val TAG = "WebViewPage"
@@ -164,11 +168,22 @@ private fun WebViewContent(
     // 桥回调经 rememberUpdatedState 取值：remember{桥} 只建一次，回调需始终读到最新组合
     // （否则桥持有一份陈旧 lambda，chrome 切换会写不进当前状态）
     val currentOnChromeChange by rememberUpdatedState(onChromeChange)
+    // 桥代理 API（存档/成绩/关卡）：经 EntryPoint 取 Hilt 供给的 Retrofit 实例；
+    // 取用失败（极早期）按无 API 降级——数据方法回调失败，H5 回落 localStorage。
+    val gameBridgeApi = remember {
+        runCatching {
+            EntryPointAccessors.fromActivity(
+                context as Activity,
+                GameBridgeEntryPoint::class.java,
+            ).gameBridgeApi()
+        }.getOrNull()
+    }
     val themeBridge = remember {
         SmartWashGameBridge(
             whitelist = themeBridgeWhitelist,
             themeModeProvider = { bridgeThemeMode },
             onChromeChange = { currentOnChromeChange(GameChrome.normalize(it)) },
+            gameBridgeApi = gameBridgeApi,
         ).apply {
             currentPageHost = GameThemeBridgePolicy.hostOf(url)
         }
@@ -257,6 +272,9 @@ private fun WebViewContent(
         }
     }
 
+    // 注入 WebView 提供者（桥异步结果回调用；SideEffect 避免组合期写状态）
+    SideEffect { themeBridge.webViewProvider = { webView } }
+
     // 系统返回优先回退网页历史（返回键语义跟随用户浏览预期），历史为空才出栈本页
     BackHandler(enabled = canGoBack) {
         webView.goBack()
@@ -313,6 +331,7 @@ private fun WebViewContent(
                     .background(AppColors.colorScheme.background),
                 action = {
                     AppButton(
+                        small = true,
                         text = stringResource(R.string.webview_action_retry),
                         onClick = {
                             loadError = false

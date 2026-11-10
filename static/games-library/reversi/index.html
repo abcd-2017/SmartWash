@@ -110,10 +110,49 @@ function palLoad(){
     felt:v("--g-felt"),felt2:v("--g-felt2"),line:v("--g-line")};
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 /* ---------- 存档 ---------- */
 var KEY="sw.reversi.v1";
 function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==="object")return{wins:+s.wins||0,losses:+s.losses||0,draws:+s.draws||0,diff:s.diff==="easy"?"easy":"hard"}}catch(e){}return{wins:0,losses:0,draws:0,diff:"hard"}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(GB.available)GB.saveState("reversi",S).catch(function(){});}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("reversi").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson);
+      var rw=parseInt(r.wins,10)||0;
+      // 账号胜场更多才覆盖本地（难度偏好保留本地）
+      if(rw>S.wins){S.wins=rw;S.losses=parseInt(r.losses,10)||0;S.draws=parseInt(r.draws,10)||0;save();updateStats();}
+    }catch(e){}
+  }).catch(function(){});}
 /* ---------- 规则 ---------- */
 var N=8,EMPTY=0,BLACK=1,WHITE=2;
 var DIRS=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
@@ -299,6 +338,8 @@ function gameOver(){
   else if(cnt.black<cnt.white){S.losses++;result="电脑获胜"}
   else {S.draws++;result="平局"}
   save();updateStats();
+  // 成绩上报（胜场，desc：越大越好）
+  if(GB.available&&cnt.black>cnt.white)GB.reportScore("reversi",{metricValue:S.wins}).catch(function(){});
   $("ovTitle").textContent=result;
   $("ovDesc").innerHTML="黑棋 <b>"+cnt.black+"</b> : <b>"+cnt.white+"</b> 白棋<br>历史战绩 "+S.wins+" 胜 / "+S.losses+" 负 / "+S.draws+" 平";
   showOverlay();
@@ -399,6 +440,7 @@ $("btnDiff").addEventListener("click",function(){
 window.addEventListener("resize",resize);
 $("btnDiff").textContent="难度："+(S.diff==="hard"?"困难":"简单");
 palLoad();resize();newGame();loop();
+syncSaveFromServer();
 })();
 </script>
 </body>

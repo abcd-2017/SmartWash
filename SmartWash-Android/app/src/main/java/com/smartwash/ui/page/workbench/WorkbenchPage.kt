@@ -307,6 +307,7 @@ fun WorkbenchPage(
                             .padding(top = AppDimens.sectionSpacing),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.workbench_retry),
                                 onClick = { workbenchViewModel.loadEntries() },
                                 variant = AppButtonVariant.SECONDARY

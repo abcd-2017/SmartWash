@@ -343,6 +343,7 @@ export struct Workbench {
       if (isError) {
         Column() {
           AppButton({
+            small: true,
             text: WorkbenchText.workbench_retry,
             variant: AppButtonVariant.SECONDARY,
             click: () => {

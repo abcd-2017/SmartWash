@@ -262,6 +262,7 @@ fun WalletTransactionsPage(
                         modifier = Modifier.fillMaxSize(),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.user_action_retry),
                                 onClick = { transactions.retry() },
                                 variant = AppButtonVariant.SECONDARY,

@@ -9,6 +9,7 @@ import { OrderInfo } from "../network/vo/OrderInfo"
 import { getNumberParam, pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, LoadingState } from "../view/common/AppComponents"
+import { InfoRow } from "../view/common/InfoRow"
 import { DrumIllustration } from "../view/DrumIllustration"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
@@ -393,7 +394,7 @@ struct OrderDetail {
   }
 
   /**
-   * 订单信息卡（对齐安卓 InfoSection 单卡 6 行）：标题 IconBox 36/20 蓝 + 行高 48 + 行距 8。
+   * 订单信息卡（对齐安卓 InfoSection 单卡 6 行）：标题 IconBox 36/20 蓝 + 二级 InfoRow 行高 40（行间 0）。
    * 安卓 InfoSection 将订单编号/套餐/价格/实付款/学校/地址合并在一张「订单信息」卡内，
    * 寄存柜信息仅经取件码弹窗承载，故此处不再拆 4 卡。
    */
@@ -418,8 +419,8 @@ struct OrderDetail {
       .width("100%")
       .margin({ bottom: 4 })
 
-      // 行距 8（对齐安卓 OrderDetailPage.kt:189 Arrangement.spacedBy(8.dp)）
-      Column({ space: DesignDimens.SPACE_XS }) {
+      // 二级信息行：行高 40 自身承担节奏，行间不加距（对齐安卓 InfoRow 行间 0）
+      Column() {
         InfoRow({
           label: "订单编号",
           value: `${this.orderInfo?.orderNo ?? ""}`,
@@ -643,6 +644,7 @@ struct OrderDetail {
               message: "订单详情加载失败",
               action: () => {
                 AppButton({
+                  small: true,
                   text: "重试",
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
@@ -667,54 +669,7 @@ struct OrderDetail {
   }
 }
 
-/**
- * 卡片内「标签 — 值」信息行（对齐安卓 InfoRow）：行高 48，标签与值分列两端。
- * 值侧样式由调用方给定（默认 bodySmall 12/400；订单号 12/500、实付款 18/700）。
- */
-@ComponentV2
-struct InfoRow {
-  @Param label: string = ""
-  @Param value: string = ""
-  @Param valueColor: number = DesignColor.TEXT_PRIMARY
-  @Param valueSize: number = DesignFontSize.CAPTION
-  @Param valueWeight: number = DesignFontWeight.NORMAL
-  @Param valueTnum: boolean = false
-
-  build() {
-    Row() {
-      Text(this.label)
-        .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-
-      if (this.valueTnum) {
-        Text(this.value)
-          .fontSize(this.valueSize)
-          .fontWeight(this.valueWeight)
-          .fontColor(this.valueColor)
-          .fontFeature(DesignFontFeature.TNUM)
-          // 值侧占满剩余宽度 + 单行省略：长地址/长单号不得溢出（问题9）
-          .layoutWeight(1)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .textAlign(TextAlign.End)
-      } else {
-        Text(this.value)
-          .fontSize(this.valueSize)
-          .fontWeight(this.valueWeight)
-          .fontColor(this.valueColor)
-          .layoutWeight(1)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .textAlign(TextAlign.End)
-      }
-    }
-    .width("100%")
-    // 行高 48（对齐安卓 OrderDetailPage.kt:194 rowHeight = 48.dp）
-    .height(48)
-    .justifyContent(FlexAlign.SpaceBetween)
-    .alignItems(VerticalAlign.Center)
-  }
-}
+// 信息行统一用公共二级组件 InfoRow（view/common/InfoRow.ets，40vp / 12sp）
 
 /**
  * 取件码弹窗（N2，对齐安卓 OrderDetailPage.kt PickupCodeDialog）：

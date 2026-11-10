@@ -280,6 +280,7 @@ export struct ReviewErrorState {
       EmptyState({ message: this.message }) {
         Column() {
           AppButton({
+            small: true,
             text: ReviewText.review_action_retry,
             click: (): void => {
               this.onRetry()

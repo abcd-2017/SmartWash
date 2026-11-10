@@ -457,6 +457,7 @@ struct Laundry {
               message: "套餐加载失败",
               action: () => {
                 AppButton({
+                  small: true,
                   text: "重试",
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {

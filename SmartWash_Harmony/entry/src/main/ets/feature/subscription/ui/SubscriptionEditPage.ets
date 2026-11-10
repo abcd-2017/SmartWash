@@ -383,6 +383,7 @@ struct SubscriptionEditPage {
             EmptyState({ message: SubscriptionText.subscription_error_load_detail }) {
               Column() {
                 AppButton({
+                  small: true,
                   text: SubscriptionText.subscription_detail_retry,
                   click: (): void => {
                     this.loadDetail()

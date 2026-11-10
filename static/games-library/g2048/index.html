@@ -148,6 +148,33 @@ paint(B||"light");
 <script>
 "use strict";
 (() => {
+  /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+  var GB=(function(){
+    var pending={},seq=0;
+    window.__gOnGameBridgeResult=function(cbId,ok,payload){
+      var cb=pending[cbId];if(!cb)return;
+      delete pending[cbId];
+      try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+    };
+    function call(method,args){
+      return new Promise(function(resolve,reject){
+        var bridge=window.SmartWashGameBridge;
+        if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+        var cbId="gb"+Date.now()+"_"+(++seq);
+        pending[cbId]={resolve:resolve,reject:reject};
+        try{bridge[method].apply(bridge,args.concat([cbId]));}
+        catch(e){delete pending[cbId];reject(e);}
+      });
+    }
+    return {
+      available:!!window.SmartWashGameBridge,
+      loadState:function(gameKey){return call("loadState",[gameKey]);},
+      saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+      reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+      getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+      getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+    };
+  })();
   const SIZE = 4;
   const WIN_VALUE = 2048;
   const BEST_KEY = "sw_h5_2048_best";
@@ -168,6 +195,22 @@ paint(B||"light");
     get(key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } },
     set(key, val) { try { window.localStorage.setItem(key, val); } catch (e) { /* 忽略 */ } }
   };
+
+  /* ---------- 账号存档（本地 + 账号双写，账号更优才覆盖） ---------- */
+  function persistBest() {
+    store.set(BEST_KEY, String(best));
+    if (GB.available) GB.saveState("g2048", String(best)).catch(function () {});
+  }
+  function syncSaveFromServer() {
+    if (!GB.available || !GB.loadState) return;
+    GB.loadState("g2048").then(function (res) {
+      if (!res || !res.stateJson) return;
+      try {
+        var rb = parseInt(JSON.parse(res.stateJson), 10) || 0;
+        if (rb > best) { best = rb; persistBest(); bestEl.textContent = best; }
+      } catch (e) {}
+    }).catch(function () {});
+  }
 
   let grid, flagNew, flagMerge;
   let score = 0, startBest = 0, alive = true, wonShown = false;
@@ -238,6 +281,16 @@ paint(B||"light");
     return false;
   }
 
+  function maxTile() {
+    let m = 0;
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (grid[r][c] > m) m = grid[r][c];
+    return m;
+  }
+  // 成绩上报（最高分 desc：越大越好；附最大方块值）
+  function reportScore() {
+    if (GB.available) GB.reportScore("g2048", { metricValue: best, metricExtra: maxTile() }).catch(function () {});
+  }
+
   function showOverlay(title, sub, withMore) {
     ovTitle.textContent = title;
     ovSub.textContent = sub;
@@ -252,12 +305,14 @@ paint(B||"light");
       alive = false;
       wonShown = true;
       showOverlay("达成 2048！", "当前分数 " + score, true);
+      reportScore();
       return;
     }
     if (!canSlide()) {
       alive = false;
       const record = score > startBest && score > 0 ? " · 新纪录" : "";
       showOverlay("游戏结束", "分数 " + score + record, false);
+      reportScore();
     }
   }
 
@@ -295,7 +350,7 @@ paint(B||"light");
       score += gained;
       if (score > best) {
         best = score;
-        store.set(BEST_KEY, String(best));
+        persistBest();
       }
     }
     flagNew = emptyMatrix();
@@ -358,6 +413,7 @@ paint(B||"light");
   ovMore.addEventListener("click", (e) => { alive = true; hideOverlay(); e.currentTarget.blur(); });
 
   restart();
+  syncSaveFromServer();
 })();
 </script>
 </body>

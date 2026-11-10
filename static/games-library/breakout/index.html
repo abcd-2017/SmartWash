@@ -79,6 +79,33 @@ paint(B||"light");
 'use strict';
 function read(k,d){try{var v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
 function write(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 
 var stage=document.getElementById('stage');
 var cv=document.getElementById('cv');
@@ -116,6 +143,23 @@ var score=0,lives=3,level=1;
 var baseSpeed=320,ballSpeed=320;
 var best=parseInt(read('breakout.best','0'),10)||0;
 var bestLevel=parseInt(read('breakout.bestLevel','0'),10)||0;
+function accountSave(){if(GB.available)GB.saveState("breakout",{best:best,bestLevel:bestLevel}).catch(function(){});}
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("breakout").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson);
+      var rb=parseInt(r.best,10)||0,rl=parseInt(r.bestLevel,10)||0,changed=false;
+      if(rb>best){best=rb;changed=true;}
+      if(rl>bestLevel){bestLevel=rl;changed=true;}
+      if(changed){
+        write('breakout.best',String(best));write('breakout.bestLevel',String(bestLevel));
+        elSBest.textContent=String(best);elSBestLevel.textContent=String(bestLevel);
+      }
+    }catch(e){}
+  }).catch(function(){});
+}
 
 function hideAll(){
   ovStart.classList.add('hide');
@@ -179,6 +223,7 @@ function nextLevel(){
 function levelClear(){
   state='clear';
   if(level>bestLevel){bestLevel=level;write('breakout.bestLevel',String(bestLevel));}
+  accountSave();
   elClearTitle.textContent='第 '+level+' 关完成';
   elClearScore.textContent=String(score);
   btnNext.textContent='进入第 '+(level+1)+' 关';
@@ -189,6 +234,9 @@ function gameOver(){
   var isNew=false;
   if(score>best){best=score;isNew=true;write('breakout.best',String(best));}
   if(level>bestLevel){bestLevel=level;write('breakout.bestLevel',String(bestLevel));}
+  accountSave();
+  // 成绩上报（最高分 desc，附最高关卡）
+  if(GB.available)GB.reportScore("breakout",{metricValue:best,metricExtra:bestLevel}).catch(function(){});
   elOverScore.textContent=String(score);
   elOverInfo.textContent=(isNew?'新纪录！':'')+'最高分 '+best+' · 最高关卡 '+bestLevel;
   ovOver.classList.remove('hide');
@@ -377,6 +425,7 @@ updateHud();
 elSBest.textContent=String(best);
 elSBestLevel.textContent=String(bestLevel);
 requestAnimationFrame(frame);
+syncSaveFromServer();
 })();
 </script>
 </body>

@@ -245,6 +245,7 @@ fun RechargeRecordPage(
                             modifier = Modifier.fillMaxSize(),
                             action = {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.record_action_retry),
                                     onClick = { records.retry() },
                                     variant = AppButtonVariant.SECONDARY,

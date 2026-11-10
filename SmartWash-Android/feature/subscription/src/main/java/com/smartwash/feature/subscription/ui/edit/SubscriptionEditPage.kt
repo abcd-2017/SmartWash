@@ -131,6 +131,7 @@ fun SubscriptionEditPage(
                     modifier = Modifier.fillMaxSize(),
                     action = {
                         AppButton(
+                            small = true,
                             text = stringResource(R.string.subscription_detail_retry),
                             onClick = viewModel::load,
                         )

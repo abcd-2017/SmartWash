@@ -38,27 +38,29 @@ SmartWash/
 ```
 com.smartwash/
 ├── controller/
-│   ├── LoginController.java  # 登录/注册/验证码（顶层）
+│   ├── LoginController.java  # 登录/注册/验证码/刷新（顶层）
 │   ├── web/                  # 移动端 API（Android / 鸿蒙消费）+ AppDownloadController、AppVersionController
 │   └── background/           # 后台管理 API（Web 消费）
 ├── service/                  # 业务逻辑层（接口 + impl/）
 ├── mapper/                   # MyBatis-Plus 数据访问层（自定义 SQL 在 resources/mapper/）
-├── entity/                   # 数据库实体
+├── entity/                   # 核心数据库实体（12 张表）
 ├── from/                     # 请求表单对象（DTO）
 ├── vo/                       # 视图响应对象（VO）
-├── config/                   # Spring 配置（Security / CORS / Redis / MyBatis / JWT / Minio）
-├── filter/                   # JWT 认证过滤器
-├── common/                   # 公共类（统一响应、分页等）
-├── utils/                    # 工具类
-├── task/                     # 定时任务（OrderTimeoutManager）
+├── config/                   # Security / CORS / Redis / MyBatis / MinIO / OpenAPI / 全局异常 / 日志过滤器
+├── filter/                   # JWT 认证过滤器（含 Redis 黑名单）
+├── common/                   # 统一响应 + audit（@Audited HMAC 链）/ ratelimit（@RateLimit）/ log（TraceId）
+├── utils/                    # JwtUtil（双 token）/ JsonUtils / PickupCodeUtils 等
+├── task/                     # OrderTimeoutManager（动态 TaskScheduler）
 ├── exception/                # 全局异常定义
-└── divination/               # 「观象台」AI 占卜子系统
-    ├── controller/           # 占卜 Web/Admin 接口
-    ├── core/                 # 六十四卦 / 六壬 / 奇门 / 梅花算法内核
-    ├── llm/                  # LLM 网关与 SSE 流式解读
-    ├── prompt/               # Prompt 模板管理
-    ├── entity/ / mapper/ / service/ / vo/ / from/
-    └── task/                 # 审计与用量聚合任务
+├── divination/               # 「观象台」AI 占卜子系统（四算法 core / LLM SSE / prompt / rag / 用量聚合）
+├── game/                     # 游戏中心（游戏库 / 关卡 / 存档 / 成绩 / 排行榜 + MinIO 对象存储）
+├── mood/                     # 情绪记录 / 月历 / 统计
+├── notice/                   # 站内信与已读记录
+├── points/                   # 积分账户 / 签到 / 流水 / 月榜
+├── review/                   # 记忆复习（FSRS-6 调度器 + 资料/卡片/队列）
+├── subscription/             # 订阅 / 续费推进 / 用量 / 提醒
+├── toolbox/                  # 短链 + 设备投递（delivery/ 子包含公开对端接口）
+└── workbench/                # 工作台入口 + deeplink 路由字典
 ```
 
 各端消费关系：
@@ -138,34 +140,52 @@ com.smartwash/
 
 | 模块 | 说明 |
 |------|------|
-| 注册 / 登录 | 手机号 + 验证码，JWT 认证 |
-| 首页 | 轮播、服务入口、推荐套餐 |
+| 注册 / 登录 | 手机号 + 验证码，JWT 双 token 认证（access 2h + refresh 7d，401 单飞续签） |
+| 首页 | 服务入口、推荐套餐、进行中订单 |
 | 洗衣套餐 | 浏览 / 选购洗衣项目，提交订单 |
 | 订单 | 列表、详情、状态追踪（待寄件 → 已收取 → 清洗中 → 已烘干 → 配送中 → 待取件 → 已完成） |
-| 订单评价 | 评分 + 文字评价 |
-| 取件 | 储物柜取件码 |
+| 订单评价 | 评分 + 文字评价（后端接口已实现） |
+| 取件 | 储物柜取件码 / 二维码 |
 | 优惠券 | 领取 / 查看可用优惠券 |
 | 充值 | 钱包余额充值（支持多种充值类型） |
 | 支付 | 余额支付 / 优惠券核销 |
-| 个人中心 | 用户信息修改、设置 |
-| 观象台（占卜） | 六十四卦起卦、AI 流式解读、卦历本地缓存（Android） |
+| 钱包流水 | 充值 + 消费合并分页 |
+| 个人中心 | 用户信息修改、设置、修改/重置密码、权限管理 |
+| 消息中心 | 站内信收件箱、未读角标、全部已读 |
+| 签到有礼 | 积分余额、连签进度、月排行榜、积分流水 |
+| 订阅逃生舱 | 订阅列表 / 编辑 / 详情 / 用量打卡 / 到期提醒 |
+| 情绪气象站 | 今日情绪打卡、月历、月趋势 |
+| 记忆复习 | FSRS 今日队列、翻面复习、资料与建卡 |
+| 工具箱 | 短链创建 / 列表 / 详情 / 访问统计；设备投递会话 |
+| 游戏中心 | H5 游戏列表（封面网格）+ 存档 / 排行榜 / 关卡 |
+| 实验舱 | 10 个纯本地解压玩具（泡泡纸 / 呼吸 / 鱼群等） |
+| 工作台 | 后端配置化入口卡片 + 深链分发 |
+| 观象台（占卜） | 六十四卦起卦、AI 流式解读、卦历本地缓存、BYOK 模型设置 |
 
 ### 管理后台（Web）
 
 | 模块 | 说明 |
 |------|------|
-| 仪表盘 | 订单 / 用户 / 收入概览（ECharts） |
+| 仪表盘 | 订单 / 用户 / 收入概览 + 趋势图（ECharts） |
 | 用户管理 | CRUD、状态管理 |
 | 学校管理 | 学校 CRUD、地图选点（高德） |
-| 储物柜管理 | 储物柜 CRUD、关联学校 |
+| 储物柜管理 | 储物柜 CRUD、关联学校、批量新增 |
 | 洗衣项目管理 | 套餐 CRUD、图片上传（Minio） |
-| 订单管理 | 订单列表、状态流转、详情 |
+| 订单管理 | 订单列表、状态流转、详情、导出 |
 | 支付记录 | 支付流水查询 |
-| 充值记录 | 充值流水查询 |
+| 充值记录 | 充值流水查询 + 汇总 + 导出 |
 | 优惠券模板 | 优惠券 CRUD |
 | 用户优惠券 | 已发放优惠券管理 |
 | 角色权限 | 超级管理员 / 学校管理员 / 厂房管理员 |
 | 后台用户 | 管理员账号管理 |
+| 操作审计 | 管理端敏感操作留痕 + 审计链完整性校验 |
+| 站内信管理 | 发送公告、已发列表、送达统计 |
+| 订阅管理 | 订阅汇总与列表 |
+| 心情报表 | 情绪记录汇总与趋势 |
+| 游戏库 | 游戏上传 / 封面 / 上下架 / 关卡 / 存档 / 成绩管理 |
+| 工作台入口 | 入口卡片配置（target 支持下拉深链） |
+| 跳转路由字典 | deeplink host 配置 |
+| 短链管理 | 短码列表 / 详情 / 访问统计 |
 | 观象台管理 | 模型目录、Prompt 版本、RAG 语料、审计复审、拦截日志、用量看板、平台设置 |
 
 ---
@@ -188,6 +208,20 @@ com.smartwash/
 | `recharge_records` | 充值记录（含幂等键） |
 | `coupon` | 优惠券模板 |
 | `user_coupon` | 用户领取优惠券记录 |
+| `admin_audit_log` | 管理端敏感操作审计（HMAC 链） |
+
+### 平台模块表
+
+| 表名 | 说明 |
+|------|------|
+| `notice` / `notice_read` | 站内信公告 / 已读记录 |
+| `point_account` / `point_ledger` / `point_sign_in` | 积分账户 / 流水 / 签到 |
+| `mood_record` | 情绪记录 |
+| `review_card` / `review_log` / `study_material` | 复习卡片 / 复习日志 / 学习资料 |
+| `user_subscription` / `user_subscription_usage_log` / `subscription_reminder_log` | 订阅 / 用量 / 提醒 |
+| `game_config` / `game_level` / `game_user_save` / `game_score_entry` | 游戏配置 / 关卡 / 账号存档 / 成绩 |
+| `toolbox_short_code` / `toolbox_short_visit` / `toolbox_delivery_item` | 短码 / 访问明细 / 投递条目 |
+| `workbench_entry` / `app_deeplink_route` | 工作台入口 / deeplink 路由字典 |
 
 ### 占卜子系统表（divination，共 11 张）
 
@@ -242,8 +276,18 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 | `POST /web/auth/recharge/userRecharge` | 钱包充值 |
 | `GET /web/auth/coupon/allCoupon` | 可领优惠券 |
 | `POST /web/auth/userCoupon/receiveCoupon/{id}` | 领取优惠券 |
+| `GET /web/auth/notices` / `unread-count` | 站内信收件箱 / 未读数 |
+| `GET /web/auth/points/me` / `POST /sign-in` / `GET /leaderboard` | 积分概览 / 签到 / 月榜 |
+| `PUT /web/auth/mood/today` / `GET /calendar` / `GET /stats` | 情绪打卡 / 月历 / 统计 |
+| `/web/auth/review/**` | 记忆复习（资料/卡片/队列/评分/统计） |
+| `/web/auth/subscription/**` | 订阅（CRUD/状态流转/用量/提醒/统计） |
+| `/web/auth/toolbox/short-codes/**` | 短链 CRUD / 统计 / 解析 |
+| `/web/auth/toolbox/delivery/**` | 设备投递会话 |
+| `/web/auth/game/list` / `state` / `score` / `leaderboard` / `levels` | 游戏中心与存档 |
 | `GET /web/app/version` | App 版本检查 |
 | `GET /web/app/download` | APK 预签名下载链接 |
+| `GET /web/config` | 运行期下发 MinIO 端点 / 短链域名 |
+| `GET /web/deeplink/routes` | deeplink 路由字典（公开） |
 
 **管理端（`/admin/**`）：**
 
@@ -253,8 +297,16 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 | `GET /admin/users` | 用户列表 |
 | `GET /admin/orders` | 订单列表 |
 | `POST /admin/laundryItems` | 新增洗衣项目 |
-| `GET /admin/dashboard` | 仪表盘数据 |
-| 观象台管理接口 | 模型/Prompt/RAG/审计/黑名单/用量/设置（见 `controller/background/` 与 `divination/controller/`） |
+| `GET /admin/dashboard/stats` / `trend` | 仪表盘统计 / 趋势 |
+| `/admin/audit-logs` / `verify` | 操作审计查询 / 链完整性校验 |
+| `/admin/notices` | 站内信发送 / 列表 / 送达统计 |
+| `/admin/subscription/summary` / `list` | 订阅汇总 / 列表 |
+| `/admin/mood/summary` | 心情报表 |
+| `/admin/game/**` | 游戏库 / 关卡 / 存档 / 成绩管理 |
+| `/admin/workbench/entries/**` | 工作台入口配置 |
+| `/admin/deeplink/routes/**` | 跳转路由字典 |
+| `/admin/toolbox/short-codes/**` | 短链管理 |
+| 观象台管理接口 | 模型/Prompt/RAG/审计/黑名单/用量/设置（见 `divination/controller/`） |
 
 ---
 
@@ -271,6 +323,12 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 | `CORS_ORIGINS` | http://localhost:*,http://192.168.* | 跨域白名单 |
 | `MINIO_ENDPOINT` | http://192.168.1.61:9000 | 文件存储 |
 | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` | minioadmin | **生产必须覆盖** |
+| `MINIO_BUCKET` | smartwash | 对象存储桶 |
+| `REDIS_PASSWORD` / `REDIS_DATABASE` | 空 / 3 | Redis 凭证与库号 |
+| `AUDIT_HMAC_SECRET` | 空（prod 无默认） | 操作审计 HMAC 链密钥，**生产必须配置** |
+| `TOOLBOX_PUBLIC_BASE_URL` | 空 | 短链对外域名（`GET /web/config` 下发） |
+| `DIV_MASTER_KEY` | 空 | 观象台 BYOK 主密钥（AES-256-GCM） |
+| `APP_VERSION_FILEPATH` / `APP_APK_OBJECT_PREFIX` | /app/config/releases/latest/version.json / android/ | 热更新版本文件与对象前缀 |
 
 提供 `application-dev.yaml`（开发）与 `application-prod.yaml`（生产）两套 profile。
 
@@ -284,7 +342,7 @@ JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
 
 ### Android
 
-`local.properties` 配置 SDK 路径；`applicationId = "com.smartwash"`；BASE_URL 通过 Gradle 属性 `baseUrl` 注入（生产 `-PbaseUrl=https://your-domain.com/`）。
+`local.properties` 配置 SDK 路径；`applicationId = "com.smartwash"`；BASE_URL 通过 Gradle 属性 `baseUrl` 注入（生产 `-PbaseUrl=https://your-domain.com/`）。项目共 27 个 Gradle 模块（app 壳 + 5 common + 21 feature 子模块），api/impl 分离与单模块域混合。
 
 ### 鸿蒙
 
@@ -395,6 +453,12 @@ npm run dev
 - Android `usesCleartextTraffic=true` demo 全局放行（发版前须移除）
 - 部分接口缺少参数校验
 - 鸿蒙 token 明文存 preferences（待迁移 HUKS/Asset Store）
+- 后端 `application.yaml` 的 `request-log` 缩进错位（实际生效 `toolbox.request-log.*`，与绑定前缀 `smartwash.request-log` 不符）
+
+### 已收敛
+
+- 401 语义四端统一：清 token → 清内存登录态 → replace 登录页 + 双 token 单飞续签 + 去重窗。
+- 管理端敏感操作已接入 `@Audited` HMAC 审计链，公开高频接口已加 `@RateLimit` 分布式限流。
 
 > 做任何涉及订单、支付、充值、优惠券的改动前，先读评审报告第一章的 P0 项。
 

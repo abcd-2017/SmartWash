@@ -216,6 +216,7 @@ fun PickupDeliveryPage(
                         action = if (orderId != -1L) {
                             {
                                 AppButton(
+                                    small = true,
                                     text = stringResource(R.string.retry),
                                     onClick = { pickupDeliveryViewModel.getOrderDetail(orderId) }
                                 )
@@ -344,19 +345,19 @@ fun PickupDeliveryPage(
                                 InfoRow(
                                     stringResource(R.string.school_name_label),
                                     orderInfo?.schoolsVo?.schoolName ?: "",
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 InfoRow(
                                     stringResource(R.string.address),
                                     orderInfo?.schoolsVo?.location ?: "",
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                                 // 柜号是编号类数字，开 tnum（规范 §2.2）
                                 InfoRow(
                                     stringResource(R.string.locker_number_label),
                                     "$lockerNumber",
                                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                                    rowHeight = 48.dp
+                                    rowHeight = 40.dp
                                 )
                             }
                         }

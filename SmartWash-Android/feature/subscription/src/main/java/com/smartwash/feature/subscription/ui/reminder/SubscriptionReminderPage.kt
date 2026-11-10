@@ -126,6 +126,7 @@ fun SubscriptionReminderPage(
                         modifier = Modifier.fillMaxSize(),
                         action = {
                             AppButton(
+                                small = true,
                                 text = stringResource(R.string.subscription_action_retry),
                                 onClick = viewModel::load,
                             )

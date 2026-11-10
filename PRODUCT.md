@@ -33,16 +33,19 @@ SmartWash 是校园智能洗衣一站式服务平台：学生在 App（Android /
 
 **核心能力**：手机号注册登录（校园卡绑定）、学校选择、洗衣项目（种子 5 档：29.9–199.9）、预约下单（30 分钟未支付自动取消）、支付（钱包余额/支付宝/微信，当前为桩实现 `StubPaymentGatewayServiceImpl`）、充值与流水、优惠券（模板发放/领取/门槛核销）、订单评价、取件码与二维码、APK 热更新。
 
+**平台实验模块**（四端联动，允许更大设计自由度）：站内信消息中心、积分签到与月榜、订阅管理、情绪气象站、记忆复习（FSRS）、工具箱（短链 + 设备投递）、游戏中心（H5 游戏 + 存档/排行榜/关卡热更新）、解压实验舱（纯本地玩具）、工作台（后端配置化入口 + 深链分发）、观象台（AI 占卜：四术排盘 + LLM SSE 解读 + BYOK）。
+
 **硬性契约与约束**（来自根 AGENTS.md 与各端 CLAUDE.md，改动不得绕过）：
 
-- 统一响应信封 `{code, message, data}`，业务成功 code=200；401 语义四端一致（清 token → replace 登录页，只跳一次）。
+- 统一响应信封 `{code, message, data}`，业务成功 code=200；401 语义四端一致（清 token → replace 登录页，只跳一次），并已接入双 token 单飞续签（access 2h + refresh 7d）。
 - 订单状态机：0 待支付 / 1 待寄件 / 2 已收取 / 3 清洗中 / 4 已烘干 / 5 配送中 / 6 待取件 / 7 已完成 / -1 已退款 / -2 已取消。
 - 资金操作（支付/充值/核销）后端以条件更新保证幂等；`payments`/`recharge_records` 禁止新增删除接口；金额展示用 tabular numbers。
 - 生产禁明文 HTTP；密钥一律环境变量注入。
+- 管理端写操作必须加 `@Audited`（HMAC 审计链）；公开高频接口按需加 `@RateLimit`（Redis Lua 分布式限流）。
 - Android 端 UI 必须走「清氧」设计系统：禁引入动画库（Lottie/Rive/Shimmer/Vico）、禁新增 `Icons.*`、动效必须带 reduced motion 分支（有静态门禁脚本强制）。
 - Web 端：权限以后端鉴权为准、禁 v-html、CRUD 页禁止复制第 12 份（需抽通用组件）。
 
-**未决/开放事项**：GLOSSARY.md 与 docs/adr/ 已规划未创建；产品中文名与 slogan 缺失；成功标准未正式定义；`plant` 角色职责边界未定义；鸿蒙端无障碍标注空白。
+**未决/开放事项**：`docs/adr/` 仍未创建（GLOSSARY 中 ADR-0001~0007 为引用占位，游戏数据平台/站内信/积分/订阅/情绪/复习/审计/限流等新领域待补 ADR）；产品中文名与 slogan 缺失；成功标准未正式定义；`plant` 角色职责边界未定义；鸿蒙端无障碍标注空白；Android 缺 `order-detail/{orderId}` 深链（鸿蒙已注册）。
 
 ## Brand Commitments
 
@@ -54,8 +57,9 @@ SmartWash 是校园智能洗衣一站式服务平台：学生在 App（Android /
 
 ## Evidence on Hand
 
-- `smart_wash.sql`：9 所衡阳市中小学种子数据、5 档洗衣项目价格、完整状态枚举与角色种子。
+- `smart_wash.sql`：9 所衡阳市中小学种子数据、5 档洗衣项目价格、完整状态枚举与角色种子；含平台模块 30+ 张表。
 - `README.md`：功能模块表、API 契约、默认账号（root/admin/lisi，生产必改）。
+- `GLOSSARY.md`：四端共享术语表（含游戏数据平台、站内信、积分、订阅、情绪、复习、审计、限流等）。
 - `docs/code-review-2026-08-28.md`：四端深度评审问题清单与优先级（做订单/支付/充值/优惠券改动前必读）。
 - `SmartWash-Android/.claude/ui-design-spec.md`：清氧设计系统完整规范（本仓库唯一成文的设计规范文档）。
 - **不存在**：真实用户数据、运营案例、用户评价、媒体报道——任何设计与文案不得虚构此类内容。

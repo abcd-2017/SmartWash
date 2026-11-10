@@ -67,7 +67,7 @@ com.smartwash
 | NavHost 聚合 | `MainActivity` 经 `shellGraph` + `userGraph` + `orderGraph` + `paymentGraph` + `laundryGraph` + `couponGraph` + `divinationGraph` + `toolboxGraph` + `gameGraph` 完成路由注册 |
 | InitEngine 调度 | `App.onCreate` 经 `applicationScope.launch { InitEngine(initTaskRegistry.getTasks()).executeAll() }` 启动各模块 InitTask |
 | 登录态事件分发 | `MainActivity` 收集 `UserApi.loginEvents`（LoginEvent.LoggedOut/LoggedIn）→ 统一跳登录页，401 去重 + `launchSingleTop` |
-| 深链分发 | `MainActivity`（Manifest scheme `smartwash`，singleTask）冷启动 onCreate / 热启动 onNewIntent → `pendingDeepLinkUri` → NavHost 就绪后 `DeepLinkHandler.resolve + navigate`；未登录直接放行（401 兜底拉回登录）。host 由各域贡献者注册（见下方「深链章节」），scheme 清单与 adb 示例见 docs/deeplink-对接文档.md |
+| 深链分发 | `MainActivity`（Manifest scheme `smartwash`，singleTask）冷启动 onCreate / 热启动 onNewIntent → `pendingDeepLinkUri` → NavHost 就绪后 `DeepLinkHandler.resolve + navigate`；未登录直接放行（401 兜底拉回登录）。host 由各域贡献者注册（见下方「深链章节」），scheme 清单与 adb 示例以 `DeepLinkParser` / `DeepLinkRegistry` 代码为准 |
 | 更新流程 | `UpdateFlow` 收集 `UpdateEventBus` 事件 → 驱动 `UpdateViewModel` → `UpdateDialog` 弹窗 |
 | WorkManager 工厂 | `App` 实现 `Configuration.Provider`，注入 `HiltWorkerFactory` 供 `@HiltWorker` 实例化 |
 

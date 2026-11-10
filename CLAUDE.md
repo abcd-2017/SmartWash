@@ -11,7 +11,7 @@
 | 目录 | 说明 | 技术栈 | 端别文档 |
 |------|------|--------|---------|
 | `SmartWash/` | Spring Boot 3.4 后端（MyBatis-Plus + MySQL + Redis + JWT） | Java 17 / Maven | [SmartWash/CLAUDE.md](SmartWash/CLAUDE.md) |
-| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app壳 + core:init + common五模块 + 7域feature模块） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
+| `SmartWash-Android/` | Android 用户端 | Kotlin / Jetpack Compose / Hilt（多模块：app 壳 + 5 common + 21 feature 子模块，api/impl 拆分） | [SmartWash-Android/CLAUDE.md](SmartWash-Android/CLAUDE.md) |
 | `SmartWash_Harmony/` | 鸿蒙 NEXT 用户端 | ArkTS / ArkUI / Stage 模型 | [SmartWash_Harmony/CLAUDE.md](SmartWash_Harmony/CLAUDE.md) |
 | `SmartWashWeb/` | Web 管理后台 | Vue 3 / Vite / Element Plus / Pinia | [SmartWashWeb/CLAUDE.md](SmartWashWeb/CLAUDE.md) |
 | `smart_wash.sql` | MySQL 建表 + 种子数据（结构变更以本文件为准） | — | — |
@@ -36,13 +36,14 @@
   - `/admin/**` 管理端，需 ROLE_ADMIN（Web 后台消费）
   - `/web/auth/**` 用户端，需 ROLE_USER（Android / 鸿蒙消费）
   - `/web/**` 公开 Web 接口
-- **认证**：JWT Bearer token，`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`。
-- **401 语义三端必须一致**：清空本地 token → 清内存登录态 → replace（非 push）到登录页，并发 401 去重只跳一次。
+- **认证**：JWT Bearer **双 token**（access 2h + refresh 7d），`sub` 带前缀 `admin-{用户名}` 或 `user-{手机号}`；refresh 仅用于 `/auth/refresh` 一次性轮换。
+- **401 语义三端必须一致**：清空本地 token → 清内存登录态 → replace（非 push）到登录页，并发 401 去重只跳一次；并接入双 token 单飞续签（401 → `/auth/refresh` 换双 token → 落盘 → 重试一次）。
 
 ## 环境红线
 
 - **生产禁明文 HTTP**：鸿蒙端 BASE_URL 当前硬编码演示服务器地址（明文 HTTP），Web 端生产地址已改为构建时环境变量注入（不再写死 IP）。改动网络层时必须按环境注入（dev 内网 / prod HTTPS），禁止新增硬编码地址。Android 端 `usesCleartextTraffic=true` 为 demo 全局放行，发版前须按生产地址改为 HTTPS 并移除该开关。
-- **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
+- **密钥不入库**：JWT_SECRET、DB 密码、高德 key/securityJsCode、支付密钥、`AUDIT_HMAC_SECRET`、`DIV_MASTER_KEY` 一律走环境变量或本地未跟踪配置文件；发现入库立即轮换。
+- **横切红线**：管理端写接口必须加 `@Audited`（HMAC 审计链）；公开高频接口按需加 `@RateLimit`（Redis Lua 分布式限流）。
 - 后端地址等环境差异见各子项目 CLAUDE.md 的「构建与运行」。
 
 ## 相关 Skills 与子代理编制
@@ -63,6 +64,8 @@
 ## 已知风险
 
 四端深度评审（2026-08-28）发现的问题清单与优先级路线图见 **[docs/code-review-2026-08-28.md](docs/code-review-2026-08-28.md)**。做任何涉及订单、支付、充值、优惠券的改动前，先读该报告第一章的 P0 项——后端资金链路存在已知的并发竞态与幂等缺失。
+
+> 平台模块（站内信 / 积分 / 订阅 / 情绪 / 复习 / 工具箱 / 游戏 / 审计 / 限流）已大规模落地，术语与四端对应关系见 **[GLOSSARY.md](GLOSSARY.md)**；`docs/adr/` 仍为规划未创建，GLOSSARY 中的 ADR 编号为引用占位。
 
 ## Agent skills
 

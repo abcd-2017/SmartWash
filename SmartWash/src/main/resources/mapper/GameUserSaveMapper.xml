@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smartwash.game.mapper.GameUserSaveMapper">
+
+    <!-- 管理端存档分页列表：联表 users 取脱敏手机号、game_config 取游戏名。
+         手机号脱敏口径与积分月榜一致（前 3 + **** + 后 4）。 -->
+    <select id="selectAdminPage" resultType="com.smartwash.game.vo.GameSaveAdminVo">
+        SELECT s.id,
+               s.user_id,
+               CONCAT(LEFT(u.phone_number, 3), '****', RIGHT(u.phone_number, 4)) AS masked_phone,
+               s.game_key,
+               c.title AS game_title,
+               s.schema_ver,
+               s.state_json,
+               s.updated_at
+        FROM game_user_save s
+        LEFT JOIN users u ON u.user_id = s.user_id
+        LEFT JOIN game_config c ON c.game_key = s.game_key
+        <where>
+            <if test="gameKey != null and gameKey != ''">
+                AND s.game_key = #{gameKey}
+            </if>
+            <if test="userId != null">
+                AND s.user_id = #{userId}
+            </if>
+        </where>
+        ORDER BY s.updated_at DESC
+    </select>
+
+</mapper>

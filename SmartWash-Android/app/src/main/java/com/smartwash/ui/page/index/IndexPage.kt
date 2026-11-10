@@ -181,6 +181,7 @@ fun IndexPage(
                                     .padding(top = 96.dp),
                                 action = {
                                     AppButton(
+                                        small = true,
                                         text = stringResource(R.string.retry),
                                         onClick = { indexViewModel.getInfoData() },
                                         variant = AppButtonVariant.SECONDARY,

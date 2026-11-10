@@ -17,16 +17,17 @@ import androidx.compose.ui.unit.dp
 import com.smartwash.common.ui.theme.AppColors
 
 /**
- * 卡片内「标签 — 值」信息行 — DESIGN-SPEC v0.4 §5 列表项规格（行高 ≥48）。
+ * 卡片内「标签 — 值」信息行 —— **二级信息组件**（与设置页 SettingRow 一级组件区分）。
  *
- * 行高默认 56dp（实现自定默认值；规范仅要求 ≥48，信息密度高的页面可传参收紧）。
+ * 分级口径（2026-11-09 用户拍板）：
+ * - 一级 = SettingRow（设置页行）：14sp/500 + 64dp 高，可点击导航；
+ * - 二级 = 本组件（卡内信息行）：12sp caption + 40dp 高，纯信息展示不可点。
+ *
+ * 行高默认 40dp（二级紧凑档，行间 0；12sp 字号在 40dp 行内上下留白约 12dp，比例协调）。
  * 标签与值分列两端；值侧 [value] 用弹性占位把值推到行尾，标签过长时值不会被挤出可视区
  * （旧实现固定 Spacer(24dp) 在长标签下会与值重叠）。
  *
- * 注：旧注释曾引用「§3.4 卡片内信息行高 56dp」，经核对 DESIGN-SPEC v0.4 无 §3.4 条款，
- * 该引用不成立，已于 2026-11-05 修正。
- *
- * @param rowHeight 行高，默认 56dp（规范下限 ≥48，见 §5）
+ * @param rowHeight 行高，默认 40dp（二级紧凑档）
  */
 @Composable
 fun InfoRow(
@@ -34,7 +35,7 @@ fun InfoRow(
     value: String,
     valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
     valueStyle: TextStyle = MaterialTheme.typography.bodySmall,
-    rowHeight: Dp = 56.dp,
+    rowHeight: Dp = 40.dp,
 ) {
     Row(
         modifier = Modifier

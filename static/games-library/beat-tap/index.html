@@ -123,6 +123,33 @@ paint(B||"light");
 <script>
 "use strict";
 (() => {
+  /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+  var GB=(function(){
+    var pending={},seq=0;
+    window.__gOnGameBridgeResult=function(cbId,ok,payload){
+      var cb=pending[cbId];if(!cb)return;
+      delete pending[cbId];
+      try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+    };
+    function call(method,args){
+      return new Promise(function(resolve,reject){
+        var bridge=window.SmartWashGameBridge;
+        if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+        var cbId="gb"+Date.now()+"_"+(++seq);
+        pending[cbId]={resolve:resolve,reject:reject};
+        try{bridge[method].apply(bridge,args.concat([cbId]));}
+        catch(e){delete pending[cbId];reject(e);}
+      });
+    }
+    return {
+      available:!!window.SmartWashGameBridge,
+      loadState:function(gameKey){return call("loadState",[gameKey]);},
+      saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+      reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+      getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+      getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+    };
+  })();
   // ===== 常量 =====
   const KEY = "sw_h5_beattap_records";
   const WIN_P = 60, WIN_G = 120;        // 判定窗口 ms:±60 Perfect / ±120 Good
@@ -133,11 +160,58 @@ paint(B||"light");
   const FONT = "system-ui,sans-serif";
 
   // ===== 曲目(BPM 程序化生成固定谱:种子固定 → 谱面固定) =====
-  const SONGS = [
+  const DEFAULT_LEVELS = [
     {id:"dew",  name:"晨露",     bpm:96,  bars:20, seed:8128,  base:57, grid:8,  tiers:[0.10,0.22,0.30,0.38], diff:"轻松"},
     {id:"fizz", name:"午后气泡", bpm:118, bars:24, seed:2718,  base:62, grid:8,  tiers:[0.14,0.28,0.38,0.48], diff:"进阶"},
     {id:"neon", name:"霓虹疾走", bpm:140, bars:28, seed:90125, base:64, grid:16, tiers:[0.08,0.15,0.21,0.28], diff:"狂热"}
   ];
+  let LEVELS = DEFAULT_LEVELS;
+  // ===== 关卡数据（DB 下发优先，本地缓存兜底） =====
+  const LEVELS_KEY = "sw.beattap.v1.levels", LEVELS_VER_KEY = "sw.beattap.v1.levels.ver";
+  function applyLevels(list, version){
+    if(!Array.isArray(list) || !list.length) return false;
+    LEVELS = list;
+    try{ localStorage.setItem(LEVELS_KEY, JSON.stringify(list)); localStorage.setItem(LEVELS_VER_KEY, String(version || 0)); }catch(e){}
+    return true;
+  }
+  function loadCachedLevels(){
+    try{
+      const v = parseInt(localStorage.getItem(LEVELS_VER_KEY), 10) || 0;
+      const list = JSON.parse(localStorage.getItem(LEVELS_KEY) || "null");
+      if(Array.isArray(list) && list.length){ LEVELS = list; return v; }
+    }catch(e){}
+    return 0;
+  }
+  loadCachedLevels();
+  // 谱面配置解析（DB 下发结构 = 现有曲目结构；缺字段补默认，非法整批丢弃）
+  function parseLevel(d, i){
+    if(!d || typeof d !== "object") return null;
+    const bpm = parseInt(d.bpm, 10), bars = parseInt(d.bars, 10), seed = parseInt(d.seed, 10);
+    const base = parseInt(d.base, 10), grid = parseInt(d.grid, 10);
+    if(!(bpm > 0) || !(bars > 0) || !isFinite(seed) || !isFinite(base) || !(grid > 0)) return null;
+    let tiers = Array.isArray(d.tiers) && d.tiers.length === 4 ? d.tiers.map(Number) : null;
+    if(!tiers || !tiers.every(t => isFinite(t))) tiers = [0.10, 0.22, 0.30, 0.38];
+    return { id: String(d.id || ("song" + (i + 1))), name: String(d.name || ("曲目" + (i + 1))),
+      bpm: bpm, bars: bars, seed: seed, base: base, grid: grid, tiers: tiers, diff: String(d.diff || "") };
+  }
+  function syncLevelsFromServer(){
+    if(!GB.available || !GB.getLevels) return;   // 无桥：用默认/缓存曲目
+    GB.getLevels("beat-tap").then(res => {
+      if(!res || !Array.isArray(res.levels)) return;
+      const list = [];
+      for(let i = 0; i < res.levels.length; i++){
+        let d;
+        try{ d = JSON.parse(res.levels[i].dataJson); }catch(e){ return; }
+        const def = parseLevel(d, i);
+        if(!def) return;
+        list.push(def);
+      }
+      if(applyLevels(list, res.version || 0)){
+        charts = LEVELS.map(buildChart);
+        buildMenu();
+      }
+    }).catch(() => {});
+  }
 
   // ===== DOM =====
   const $ = id => document.getElementById(id);
@@ -221,7 +295,7 @@ paint(B||"light");
     const end = notes.length ? notes[notes.length-1].t + 1400 : def.bars * barLen;
     return {def, notes, events, end, duration:end + 600};
   }
-  const charts = new Array(SONGS.length).fill(null);
+  let charts = new Array(LEVELS.length).fill(null);
 
   // ===== WebAudio 合成(振荡器 + 噪声 + 包络,零外部音频) =====
   let actx = null, master = null, noiseBuf = null, audioFailed = false;
@@ -231,7 +305,7 @@ paint(B||"light");
       try{
         const AC = window.AudioContext || window.webkitAudioContext;
         actx = new AC();
-        master.gain.value = muted?0:0.9;
+        master = actx.createGain(); master.gain.value = muted?0:0.9;
         const comp = actx.createDynamicsCompressor();
         master.connect(comp); comp.connect(actx.destination);
         const len = actx.sampleRate | 0;
@@ -353,6 +427,31 @@ paint(B||"light");
   }
   function saveRecords(r){
     try{ localStorage.setItem(KEY, JSON.stringify(r)); }catch(e){}
+    if(GB.available) GB.saveState("beat-tap", r).catch(() => {});
+  }
+  // 账号存档：逐曲取历史最佳（本地与账号取更高分），然后刷新选曲页
+  function syncSaveFromServer(){
+    if(!GB.available || !GB.loadState) return;
+    GB.loadState("beat-tap").then(res => {
+      if(!res || !res.stateJson) return;
+      try{
+        const remote = JSON.parse(res.stateJson);
+        if(!remote || typeof remote !== "object") return;
+        const recs = getRecords();
+        let changed = false;
+        for(const id in remote){
+          const r = remote[id];
+          if(!r || typeof r.score === "undefined") continue;
+          const rs = parseInt(r.score, 10) || 0;
+          const mine = recs[id];
+          if(!mine || rs > (parseInt(mine.score, 10) || 0)){
+            recs[id] = {score: rs, grade: String(r.grade || (mine ? mine.grade : ""))};
+            changed = true;
+          }
+        }
+        if(changed){ saveRecords(recs); buildMenu(); }
+      }catch(e){}
+    }).catch(() => {});
   }
 
   // ===== 覆盖层视图 =====
@@ -365,7 +464,7 @@ paint(B||"light");
   function hideOverlay(){ overlay.hidden = true; }
   function buildMenu(){
     const recs = getRecords();
-    songListEl.innerHTML = SONGS.map((s, i) => {
+    songListEl.innerHTML = LEVELS.map((s, i) => {
       const r = recs[s.id];
       const dur = Math.round((charts[i] ? charts[i].end : s.bars * 4 * 60000 / s.bpm) / 1000);
       const cls = r ? " g-" + r.grade : "";
@@ -380,7 +479,7 @@ paint(B||"light");
   // ===== 流程 =====
   function startSong(i){
     curIdx = i;
-    if(!charts[i]) charts[i] = buildChart(SONGS[i]);
+    if(!charts[i]) charts[i] = buildChart(LEVELS[i]);
     song = charts[i];
     song.notes.forEach(n => { n.judged = false; });
     score = 0; combo = 0; maxCombo = 0; cnt = {p:0, g:0, m:0};
@@ -431,6 +530,8 @@ paint(B||"light");
       }
       best = getRecords()[song.def.id] || null;
     }catch(e){}
+    // 成绩上报（最高分 / 准确率%，desc：越大越好）
+    if(GB.available) GB.reportScore("beat-tap", {metricValue: score, metricExtra: Math.round(acc * 100)}).catch(() => {});
     resGrade.textContent = grade;
     resGrade.className = "grade g-" + grade;
     resScore.textContent = String(score);
@@ -667,6 +768,7 @@ paint(B||"light");
   showView("menu");
   fit();
   requestAnimationFrame(loop);
+  syncLevelsFromServer();syncSaveFromServer();
 
   // QA 钩子(自动化测试用,不影响玩法)
   window.__bt = {

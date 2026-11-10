@@ -106,6 +106,33 @@ paint(B||"light");
 <script>
 "use strict";
 (() => {
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
   const N = 15;             // 15×15 网格
   const BEST_KEY = "sw_h5_snake_best";
   const BASE_SPEED = 170;   // 初始步进间隔（ms）
@@ -142,6 +169,23 @@ paint(B||"light");
   let score = 0, speed = BASE_SPEED, state = "ready", timer = null;
   let best = parseInt(store.get(BEST_KEY) || "0", 10) || 0;
   bestEl.textContent = best;
+
+  // 存档双写：本地 localStorage + 账号（历史遗留键 sw_h5_snake_best，结构保持裸最高分，服务端不解析）
+  function persistBest() {
+    store.set(BEST_KEY, String(best));
+    if (GB.available) GB.saveState("snake", String(best)).catch(function () {});
+  }
+  // 账号优先：账号最高分更优才覆盖本地
+  function syncSaveFromServer() {
+    if (!GB.available || !GB.loadState) return;
+    GB.loadState("snake").then(function (res) {
+      if (!res || !res.stateJson) return;
+      try {
+        var rb = parseInt(JSON.parse(res.stateJson), 10) || 0;
+        if (rb > best) { best = rb; persistBest(); bestEl.textContent = best; }
+      } catch (e) {}
+    }).catch(function () {});
+  }
 
   // 画布随容器尺寸与 DPR 重建，保证清晰
   function fit() {
@@ -234,9 +278,11 @@ paint(B||"light");
     const isRecord = score > best && score > 0;
     if (isRecord) {
       best = score;
-      store.set(BEST_KEY, String(best));
+      persistBest();
       bestEl.textContent = best;
     }
+    // 成绩上报（最高分，desc：越大越好）
+    if (GB.available) GB.reportScore("snake", { metricValue: best }).catch(function () {});
     return isRecord ? " · 新纪录" : "";
   }
 
@@ -379,6 +425,7 @@ paint(B||"light");
   resetRound(); // 就绪状态先摆好初始局面作预览
   showOverlay("准备开始", "滑动屏幕或按方向键控制方向", "开始游戏");
   mainBtn.textContent = "开始游戏";
+  syncSaveFromServer();
 })();
 </script>
 </body>

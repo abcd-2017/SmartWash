@@ -124,8 +124,35 @@ paint(B||"light");
 <script>
 (function(){
 "use strict";
-/* ---------- 词库：成语 + 一句话释义 ---------- */
-var IDIOMS=[
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
+/* ---------- 词库：成语 + 一句话释义（关卡制：DB 下发优先） ---------- */
+var DEFAULT_LEVELS=[
 ["画蛇添足","多此一举，反而坏事"],["亡羊补牢","出事之后设法补救"],["守株待兔","不劳而获的侥幸心理"],
 ["一鸣惊人","平日不显，忽然做出惊人成绩"],["掩耳盗铃","自己欺骗自己"],["井底之蛙","眼界狭小的人"],
 ["刻舟求剑","拘泥固执，不懂变通"],["狐假虎威","借别人的势力吓唬人"],["杯弓蛇影","疑神疑鬼，自相惊扰"],
@@ -165,11 +192,64 @@ var IDIOMS=[
 ["语重心长","言辞诚恳，情意深长"],["念念不忘","牢记在心，时刻不忘"],["历历在目","清晰地展现在眼前"],
 ["一模一样","完全相同，毫无二致"],["千篇一律","形式陈旧呆板，毫无变化"],["五花八门","花样繁多，变化多端"]
 ];
+var LEVELS=DEFAULT_LEVELS;
+/* ---------- 关卡数据（DB 下发优先，本地缓存兜底） ---------- */
+var LEVELS_KEY="sw.idiom.v1.levels",LEVELS_VER_KEY="sw.idiom.v1.levels.ver";
+function applyLevels(list,version){
+  if(!Array.isArray(list)||!list.length)return false;
+  LEVELS=list;
+  try{localStorage.setItem(LEVELS_KEY,JSON.stringify(list));localStorage.setItem(LEVELS_VER_KEY,String(version||0));}catch(e){}
+  return true;
+}
+function loadCachedLevels(){
+  try{
+    var v=parseInt(localStorage.getItem(LEVELS_VER_KEY),10)||0;
+    var list=JSON.parse(localStorage.getItem(LEVELS_KEY)||"null");
+    if(Array.isArray(list)&&list.length){LEVELS=list;return v;}
+  }catch(e){}
+  return 0;
+}
+loadCachedLevels();
+function syncLevelsFromServer(){
+  if(!GB.available||!GB.getLevels)return;   // 无桥：用默认/缓存词库
+  GB.getLevels("idiom").then(function(res){
+    if(!res||!Array.isArray(res.levels))return;
+    var list=[];
+    for(var i=0;i<res.levels.length;i++){
+      try{
+        var d=JSON.parse(res.levels[i].dataJson);
+        if(!d||typeof d.word!=="string"||d.word.length!==4)return;   // 游戏按四字成语硬编码
+        list.push([d.word,String(d.meaning||"")]);
+      }catch(e){return;}
+    }
+    if(applyLevels(list,res.version||0)){
+      if(recent.length>=LEVELS.length)recent=[];   // 词库收缩时避免抽取死循环
+    }
+  }).catch(function(){});
+}
 /* ---------- 存档 ---------- */
 var KEY="sw.idiom.v1";
 function loadStats(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{played:s.played||0,streak:s.streak||0,best:s.best||0}}catch(e){return{played:0,streak:0,best:0}}}
-function saveStats(s){try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}}
+function saveStats(s){
+  try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}
+  if(GB.available)GB.saveState("idiom",s).catch(function(){});
+}
 var stats=loadStats();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("idiom").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var remote=JSON.parse(res.stateJson);
+      var changed=false;
+      var rp=parseInt(remote.played,10)||0,rs=parseInt(remote.streak,10)||0,rb=parseInt(remote.best,10)||0;
+      if(rp>stats.played){stats.played=rp;changed=true}
+      if(rs>stats.streak){stats.streak=rs;changed=true}
+      if(rb>stats.best){stats.best=rb;changed=true}
+      if(changed){saveStats(stats);paintStats()}
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var ROWS=6,target="",meaning="",keys=[],guess=[],row=0,over=false,hinted=false;
 var history=[],fbOf=[],recent=[];
@@ -178,10 +258,10 @@ function say(t){$("msg").textContent=t}
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 /* ---------- 词盘 ---------- */
 function pickIdiom(){
-  var i,n=IDIOMS.length;
+  var i,n=LEVELS.length;
   do{i=Math.floor(Math.random()*n)}while(recent.indexOf(i)>=0);
   recent.push(i);if(recent.length>15)recent.shift();
-  return IDIOMS[i];
+  return LEVELS[i];
 }
 function newRound(){
   var it=pickIdiom();
@@ -191,9 +271,9 @@ function newRound(){
   var uniq=[];
   for(var i=0;i<4;i++)if(uniq.indexOf(target[i])<0)uniq.push(target[i]);
   var pool=[];
-  for(var j=0;j<IDIOMS.length;j++){
-    if(IDIOMS[j][0]===target)continue;
-    var w=IDIOMS[j][0];
+  for(var j=0;j<LEVELS.length;j++){
+    if(LEVELS[j][0]===target)continue;
+    var w=LEVELS[j][0];
     for(var k=0;k<4;k++)pool.push(w[k]);
   }
   keys=uniq.slice();
@@ -307,6 +387,8 @@ function endRound(win){
     $("ovDesc").innerHTML="六次没猜中，连胜结束<br>释义："+meaning;
   }
   saveStats(stats);paintStats();
+  // 成绩上报（连胜 / 最佳连胜，desc：越大越好）
+  if(GB.available)GB.reportScore("idiom",{metricValue:stats.streak,metricExtra:stats.best}).catch(function(){});
   $("ovWord").textContent=target;
   $("ovBtn").textContent="下一局";
   $("overlay").classList.add("show");
@@ -329,6 +411,7 @@ $("ovBtn").addEventListener("click",function(){
   newRound();
 });
 paintStats();newRound();
+syncLevelsFromServer();syncSaveFromServer();
 })();
 </script>
 </body>

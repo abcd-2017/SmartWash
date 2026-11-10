@@ -96,6 +96,33 @@ paint(B||"light");
 <script>
 (function(){
 "use strict";
+/* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+var GB=(function(){
+  var pending={},seq=0;
+  window.__gOnGameBridgeResult=function(cbId,ok,payload){
+    var cb=pending[cbId];if(!cb)return;
+    delete pending[cbId];
+    try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+  };
+  function call(method,args){
+    return new Promise(function(resolve,reject){
+      var bridge=window.SmartWashGameBridge;
+      if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+      var cbId="gb"+Date.now()+"_"+(++seq);
+      pending[cbId]={resolve:resolve,reject:reject};
+      try{bridge[method].apply(bridge,args.concat([cbId]));}
+      catch(e){delete pending[cbId];reject(e);}
+    });
+  }
+  return {
+    available:!!window.SmartWashGameBridge,
+    loadState:function(gameKey){return call("loadState",[gameKey]);},
+    saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+    reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+    getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+    getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+  };
+})();
 /* ---------- 调色板：UI 壳走 token，球拍/球饼为玩法素材 ---------- */
 var PAL={};
 function palLoad(){
@@ -107,11 +134,26 @@ function palLoad(){
     danger:v("--g-danger"),warning:v("--g-warning")};
 }
 window.__gOnTheme=function(){palLoad()};//App 推送主题时刷新调色板，rAF 循环自动重绘
-/* ---------- 存档 ---------- */
+/* ---------- 存档（本地 + 账号双写） ---------- */
 var KEY="sw.airhockey.v1";
 function loadSave(){try{var s=JSON.parse(localStorage.getItem(KEY))||{};return{wins:Math.max(0,parseInt(s.wins,10)||0),losses:Math.max(0,parseInt(s.losses,10)||0),streak:Math.max(0,parseInt(s.streak,10)||0)}}catch(e){return{wins:0,losses:0,streak:0}}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(stats))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(stats))}catch(e){}
+  if(GB.available)GB.saveState("air-hockey",{wins:stats.wins,losses:stats.losses,streak:stats.streak}).catch(function(){});}
 var stats=loadSave();
+function syncSaveFromServer(){
+  if(!GB.available||!GB.loadState)return;
+  GB.loadState("air-hockey").then(function(res){
+    if(!res||!res.stateJson)return;
+    try{
+      var r=JSON.parse(res.stateJson),changed=false;
+      var rw=Math.max(0,parseInt(r.wins,10)||0),rl=Math.max(0,parseInt(r.losses,10)||0),rs=Math.max(0,parseInt(r.streak,10)||0);
+      if(rw>stats.wins){stats.wins=rw;changed=true}
+      if(rl>stats.losses){stats.losses=rl;changed=true}
+      if(rs>stats.streak){stats.streak=rs;changed=true}
+      if(changed){save();$("stStreak").textContent=stats.streak}
+    }catch(e){}
+  }).catch(function(){});
+}
 /* ---------- 状态 ---------- */
 var TARGET=5;
 var cv=document.getElementById("cv"),ctx=cv.getContext("2d");
@@ -171,6 +213,8 @@ function endMatch(win){
   state="over";
   if(win){stats.wins++;stats.streak++}else{stats.losses++;stats.streak=0}
   save();$("stStreak").textContent=stats.streak;
+  // 成绩上报（胜场 desc：越大越好；附当前连胜）
+  if(GB.available)GB.reportScore("air-hockey",{metricValue:stats.wins,metricExtra:stats.streak}).catch(function(){});
   $("ovTitle").textContent=win?"你赢了！":"惜败";
   $("ovDesc").innerHTML="比分 <b>"+scoreMe+" : "+scoreAi+"</b><br>累计 "+(win?"胜 "+stats.wins+" 场 · ":"负 "+stats.losses+" 场 · ")+"当前连胜 "+stats.streak;
   $("ovBtn").textContent="再来一局";
@@ -361,6 +405,7 @@ palLoad();resize();
 $("stStreak").textContent=stats.streak;
 showOverlay();
 requestAnimationFrame(loop);
+syncSaveFromServer();
 })();
 </script>
 </body>

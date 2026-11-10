@@ -160,6 +160,50 @@ paint(B||"light");
   const FLAG_SVG = '<svg viewBox="0 0 24 24" width="60%" height="60%"><path d="M7 4 16 7.5 7 11Z" fill="var(--g-danger)"/><path d="M7 21V3.5" stroke="var(--g-muted)" stroke-width="2.4" stroke-linecap="round"/></svg>';
   const MINE_SVG = '<svg viewBox="0 0 24 24" width="64%" height="64%"><g stroke="var(--g-text)" stroke-width="2" stroke-linecap="round" fill="none"><path d="M12 2.5v19M2.5 12h19M5.3 5.3l13.4 13.4M18.7 5.3 5.3 18.7"/></g><circle cx="12" cy="12" r="5.6" fill="var(--g-text)"/><circle cx="10" cy="10" r="1.7" fill="#eceff1" opacity=".85"/></svg>';
 
+  /* ========== 游戏桥适配层（存档/关卡/成绩，无桥自动降级 localStorage） ========== */
+  var GB=(function(){
+    var pending={},seq=0;
+    window.__gOnGameBridgeResult=function(cbId,ok,payload){
+      var cb=pending[cbId];if(!cb)return;
+      delete pending[cbId];
+      try{ok?cb.resolve(payload):cb.reject(new Error(typeof payload==="string"?payload:"桥调用失败"));}catch(e){}
+    };
+    function call(method,args){
+      return new Promise(function(resolve,reject){
+        var bridge=window.SmartWashGameBridge;
+        if(!bridge||typeof bridge[method]!=="function"){reject(new Error("桥不可用"));return;}
+        var cbId="gb"+Date.now()+"_"+(++seq);
+        pending[cbId]={resolve:resolve,reject:reject};
+        try{bridge[method].apply(bridge,args.concat([cbId]));}
+        catch(e){delete pending[cbId];reject(e);}
+      });
+    }
+    return {
+      available:!!window.SmartWashGameBridge,
+      loadState:function(gameKey){return call("loadState",[gameKey]);},
+      saveState:function(gameKey,obj){return call("saveState",[gameKey,JSON.stringify({stateJson:JSON.stringify(obj||{}),schemaVer:1})]);},
+      reportScore:function(gameKey,obj){return call("reportScore",[gameKey,JSON.stringify(obj||{})]);},
+      getLeaderboard:function(gameKey,limit){return call("getLeaderboard",[gameKey,limit||20]);},
+      getLevels:function(gameKey){return call("getLevels",[gameKey]);}
+    };
+  })();
+  /* ---------- 存档（本地 + 账号双写）：仅记最佳用时（秒） ---------- */
+  var KEY="sw.minesweeper.v1";
+  function loadSave(){try{var v=JSON.parse(localStorage.getItem(KEY));if(v&&typeof v==="object")return{best:Math.max(0,parseInt(v.best,10)||0)}}catch(e){}return{best:0}}
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
+    if(GB.available)GB.saveState("minesweeper",save).catch(function(){});}
+  var save=loadSave();
+  function syncSaveFromServer(){
+    if(!GB.available||!GB.loadState)return;
+    GB.loadState("minesweeper").then(function(res){
+      if(!res||!res.stateJson)return;
+      try{
+        var r=JSON.parse(res.stateJson),rb=Math.max(0,parseInt(r.best,10)||0);
+        if(rb>0&&(save.best===0||rb<save.best)){save.best=rb;persist()}
+      }catch(e){}
+    }).catch(function(){});
+  }
+
   let mines = [], open = [], flags = [], counts = [];
   let cellsArr = [];
   let placed = false, finished = false, openCount = 0, flagCount = 0;
@@ -324,8 +368,13 @@ paint(B||"light");
     }
     minesEl.textContent = MINES - flagCount;
     timeEl.textContent = elapsedSec();
+    // 最佳用时（asc：越少越好）入本地 + 账号存档
+    var t = elapsedSec();
+    if (!save.best || t < save.best) { save.best = t; persist(); }
+    // 成绩上报（用时 asc：越少越好）
+    if (GB.available) GB.reportScore("minesweeper", { metricValue: t }).catch(function () {});
     ovTitle.textContent = "扫雷成功！";
-    ovSub.textContent = "用时 " + elapsedSec() + " 秒";
+    ovSub.textContent = "用时 " + t + " 秒 · 最佳 " + save.best + " 秒";
     ovBtn.textContent = "再来一局";
     overlayEl.classList.add("show");
   }
@@ -403,6 +452,7 @@ paint(B||"light");
   ovBtn.addEventListener("click", (e) => { reset(); e.currentTarget.blur(); });
 
   reset();
+  syncSaveFromServer();
 })();
 </script>
 </body>

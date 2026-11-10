@@ -31,35 +31,43 @@
 
 ## 二、模块结构
 
-项目已从单模块重构为 **16 个 Gradle 模块**（含 `build-logic`），采用 api/impl 分离模式。
+项目已从单模块重构为 **27 个 Gradle 模块**（1 app + 5 common + 21 feature 子模块），采用 api/impl 分离与单模块域混合模式。
 
 ### 模块地图
 
 ```
-:app                             壳：Application + MainActivity(NavHost 聚合) + 更新弹窗 UI + 取件留守页
+:app                             壳：Application + MainActivity(NavHost 聚合 16 个 graph) + 更新弹窗 UI + 取件留守页 + 深链注册表
 :common:init                      InitTask 契约 + InitEngine（零业务依赖：仅 Android SDK + Hilt + coroutines）
-:common:utils                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装 / 动效触感 / 二维码 / pagingFlow
-:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / @RequireAuthorization / NetworkException
+:common:utils                   跨模块共享：ApiResult 信封 / PageData / HttpStatusCode / RequestState / DataStore 封装 / 深链解析契约 / 动效触感 / 二维码 / pagingFlow
+:common:network                 OkHttp/Retrofit 供给 / 鉴权+错误转译拦截器 / 401 单飞续签 / SSE 客户端 / @RequireAuthorization / NetworkException
 :common:database                Room 主缓存库(AppDatabase v3)：洗衣项目/学校/优惠券三表（共库，T8.2 决策不拆）
 :common:ui                      清氧设计系统(theme) + 共享组件(components) + ShellRoute 壳层路由契约
-:feature:update                 热更新全链路 + UpdateInitTask（InitTask 首业务案例）
-:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + 解读网关 + 7 页面 + 独立库）
+:feature:update                 热更新全链路 + UpdateInitTask
+:feature:divination             观象台占卜子系统（四套算法内核 + 卦历库 + SSE 解读网关 + BYOK + 7 页面 + 独立库）
+:feature:game                   游戏中心（封面网格 + WebView 承载，单模块）
+:feature:lab                    解压实验舱（10 个纯本地玩具，单模块，零网络/零存储）
+:feature:mood                   情绪气象站（今日/日历/趋势，单模块）
+:feature:review                 记忆复习（FSRS 队列/学习/资料，单模块）
+:feature:subscription           订阅逃生舱（列表/编辑/详情/提醒，单模块）
+:feature:toolbox                工具箱（短链 + 设备投递会话，单模块）
 :feature:user:api               UserApi 契约 + User 模型 + UserRoute（登录态/用户信息/登录事件）
-:feature:user:impl              SessionManager + UserRepository + 登录/注册/用户中心/资料编辑/设置页
+:feature:user:impl              SessionManager + UserRepository + 登录/注册/重置修改密码/用户中心/资料编辑/设置/权限/钱包流水
 :feature:order:api              OrderApi 契约 + 订单模型 + OrderRoute（含寄件取件路由常量）
-:feature:order:impl             OrderRepository + 订单页
+:feature:order:impl             OrderRepository + OrderGroup + OrderPagingSource + OrderServiceApi + 订单页
 :feature:payment:api            PaymentRoute 路由常量（零跨模块数据消费）
 :feature:payment:impl           支付 + 充值网络链路与页面
 :feature:laundry:api            LaundryRoute + 学校搜索最小契约（SchoolSearchSource）
 :feature:laundry:impl           Laundry/School Repository + 洗衣预约/服务页（内存→Room→网络 缓存降级）
 :feature:coupon:api             CouponApi 契约 + 优惠券模型 + CouponRoute
-:feature:coupon:impl            CouponRepository + 优惠券页
+:feature:coupon:impl            CouponRepository + 三 Tab 优惠券页
 :feature:points:api             PointsRoute + 积分 Gson 载荷（全可空容错）+ PointsServiceApi 网络接口
 :feature:points:impl            PointsRepository + 签到有礼页（签到/余额/月榜/流水单页）+ 深链 host "points"
-:feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute（扩展提案 #4）
-:feature:notice:impl            NoticeRepository + 消息中心收件箱页（未读高亮/全部已读/深链）
+:feature:notice:api             NoticeApi 契约 + 站内信模型 + NoticeRoute + NoticeServiceApi
+:feature:notice:impl            NoticeRepository + 消息中心收件箱页（未读高亮/全部已读/深链 messages）
 build-logic                     convention plugin（smartwash.android.library / smartwash.compose / smartwash.hilt）
 ```
+
+> **孤儿目录**：`feature/ai`、`feature/lostfound`、`common/security` 仅有历史 `build/` 残留，无源码/无 `build.gradle`/未被 include，**不是模块**。
 
 ### 各模块独立文档
 
@@ -88,6 +96,12 @@ build-logic                     convention plugin（smartwash.android.library / 
 | `:feature:notice:api` | [feature/notice/api/AGENTS.md](feature/notice/api/AGENTS.md) |
 | `:feature:notice:impl` | [feature/notice/impl/AGENTS.md](feature/notice/impl/AGENTS.md) |
 | `:feature:divination` | [feature/divination/AGENTS.md](feature/divination/AGENTS.md) |
+| `:feature:game` | [feature/game/AGENTS.md](feature/game/AGENTS.md) |
+| `:feature:lab` | [feature/lab/AGENTS.md](feature/lab/AGENTS.md) |
+| `:feature:mood` | [feature/mood/AGENTS.md](feature/mood/AGENTS.md) |
+| `:feature:review` | [feature/review/AGENTS.md](feature/review/AGENTS.md) |
+| `:feature:subscription` | [feature/subscription/AGENTS.md](feature/subscription/AGENTS.md) |
+| `:feature:toolbox` | [feature/toolbox/AGENTS.md](feature/toolbox/AGENTS.md) |
 | `:feature:update` | [feature/update/AGENTS.md](feature/update/AGENTS.md) |
 ```
 
@@ -432,6 +446,136 @@ com.smartwash.feature.coupon/
         └── tab/                   # 三 Tab（可领取/已领取/历史）
 ```
 
+#### `:feature:game`
+
+```
+com.smartwash.feature.game/
+├── GameRoute.kt                   # GameRoute.Center = "GameCenter"
+├── GameConstant.kt                # 分类/图标/色组白名单
+├── di/
+│   ├── GameModule.kt              # Hilt 模块
+│   └── DeepLinkModule.kt          # host "game-center" → GameRoute.Center
+├── model/GameItem.kt
+├── network/GameApi.kt             # GET web/auth/game/list
+├── repository/
+│   ├── GameRepository.kt
+│   └── GameRepositoryImpl.kt
+└── ui/
+    ├── GameGraph.kt               # gameGraph（游戏卡复用 ShellRoute.WebView）
+    └── center/
+        ├── GameCenterPage.kt      # 分类 chips + 两列封面网格 + 骨架/空/错误三态
+        └── GameCenterViewModel.kt
+```
+
+#### `:feature:lab`
+
+```
+com.smartwash.feature.lab/
+├── LabRoute.kt                    # Home/BubbleWrap/Breath/Fish/Sand/Fluid/Drum/Painting/Soundscape/Pet/StarMap + LabToy
+├── di/LabDeepLinkModule.kt        # host "lab" → LabRoute.Home
+├── util/PopSoundPlayer.kt         # AudioTrack 程序化合成 pop 短音（零音频资产）
+└── ui/
+    ├── LabGraph.kt                # labGraph（11 个 composable）
+    ├── home/                      # 实验舱首页（10 张玩具入口卡）
+    └── {breath,bubble,drum,fish,fluid,painting,pet,sand,soundscape,starmap}/  # 10 个玩具页
+```
+
+> 纯本地模块：零网络、零存储、零 Api/Repository；玩具状态会话内即弃。
+
+#### `:feature:mood`
+
+```
+com.smartwash.feature.mood/
+├── MoodRoute.kt                   # Today / Calendar / Trend
+├── MoodConstant.kt
+├── di/
+│   ├── MoodModule.kt
+│   └── MoodDeepLinkModule.kt      # host "mood" → MoodRoute.Today
+├── network/MoodApi.kt             # PUT web/auth/mood/today、GET calendar、GET stats
+├── repository/
+│   ├── MoodRepository.kt
+│   └── MoodRepositoryImpl.kt
+└── ui/
+    ├── MoodGraph.kt  MoodLevel.kt  MoodWidgets.kt
+    ├── today/                     # 今日打卡
+    ├── calendar/                  # 月历
+    └── trend/                     # 趋势
+```
+
+#### `:feature:review`
+
+```
+com.smartwash.feature.review/
+├── ReviewRoute.kt                 # Queue / Study(startCardId) / Materials + CHANGED_KEY
+├── ReviewConstant.kt
+├── model/ReviewModels.kt          # ReviewRating(1..4) / ReviewCardState(1/2/3)
+├── network/ReviewApi.kt           # 7 个端点（资料/卡片/队列/评分/统计）
+├── repository/                    # ReviewRepository 接口 + Impl
+├── di/ReviewModule.kt
+├── logic/ReviewFormat.kt          # 到期量级换算 + 日期截取
+└── ui/
+    ├── ReviewGraph.kt             # reviewGraph + notifyReviewDataChanged
+    ├── ReviewUiCommon.kt
+    ├── queue/                     # 今日队列
+    ├── study/                     # 复习（翻面 + 四档评分）
+    └── material/                  # 资料与建卡
+```
+
+#### `:feature:subscription`
+
+```
+com.smartwash.feature.subscription/
+├── SubscriptionRoute.kt           # List / Edit(id) / Detail(id) / Reminders + CHANGED_KEY
+├── SubscriptionConstant.kt
+├── SubscriptionEnums.kt
+├── network/SubscriptionApi.kt     # 15 个端点（订阅 CRUD/暂停/恢复/取消/完成/用量/提醒/统计）
+├── logic/SubscriptionRules.kt
+├── paging/
+│   ├── SubscriptionPagingSource.kt
+│   └── SubscriptionUsagePagingSource.kt
+├── repository/
+│   ├── SubscriptionRepository.kt
+│   └── SubscriptionRepositoryImpl.kt
+├── di/
+│   ├── SubscriptionModule.kt
+│   └── SubscriptionDeepLinkModule.kt  # host "subscription" → SubscriptionRoute.List
+└── ui/
+    ├── SubscriptionGraph.kt  SubscriptionUiCommon.kt
+    └── list/ edit/ detail/ reminder/
+```
+
+#### `:feature:toolbox`
+
+```
+com.smartwash.feature.toolbox/
+├── ToolboxRoute.kt                # List / Create / Detail / Delivery / DeliverySession + CHANGED_KEY
+├── ToolboxConstant.kt
+├── network/
+│   ├── ToolboxApi.kt              # 短链 6 个端点
+│   ├── DeliveryApi.kt             # 设备投递 7 个端点
+│   └── DeliveryBusinessCode.kt
+├── logic/
+│   ├── ShortCodeRules.kt
+│   └── DeliveryRules.kt
+├── paging/
+│   ├── ShortCodePagingSource.kt
+│   └── ShortCodeStatsPagingSource.kt
+├── repository/
+│   ├── ToolboxRepository.kt (+ Impl)
+│   └── DeliveryRepository.kt (+ Impl)
+├── di/
+│   ├── ToolboxModule.kt
+│   └── DeepLinkModule.kt          # toolbox-short-code / delivery / t/{code}
+└── ui/
+    ├── ToolboxGraph.kt  ToolboxUiCommon.kt
+    ├── list/ create/ detail/
+    └── delivery/
+        ├── DeliveryGraph.kt
+        ├── DeliveryCreatePage.kt
+        ├── DeliverySessionPage.kt
+        ├── DeliveryCountdown.kt  DeliveryDeviceSaver.kt  DeliveryPreviewDialog.kt
+```
+
 ---
 
 ## 三、页面清单与路由
@@ -442,15 +586,22 @@ com.smartwash.feature.coupon/
 
 | 域 | Route 类 | 位置 |
 |----|---------|------|
-| 壳层留守 | `PageConstant`（仅剩 Pickup） | `:app` |
-| 壳层路由契约 | `ShellRoute`（HOME） | `:common:ui` |
+| 壳层留守 | `PageConstant`（Pickup / AiWork） | `:app` |
+| 壳层路由契约 | `ShellRoute`（HOME / WebView） | `:common:ui` |
 | 用户 | `UserRoute` | `:feature:user:api` |
 | 订单 | `OrderRoute` | `:feature:order:api` |
 | 支付 | `PaymentRoute` | `:feature:payment:api` |
 | 洗衣 | `LaundryRoute` | `:feature:laundry:api` |
 | 优惠券 | `CouponRoute` | `:feature:coupon:api` |
 | 站内信 | `NoticeRoute` | `:feature:notice:api` |
+| 积分 | `PointsRoute` | `:feature:points:api` |
 | 观象台 | `DivRoute` | `:feature:divination` |
+| 游戏 | `GameRoute` | `:feature:game` |
+| 实验舱 | `LabRoute` | `:feature:lab` |
+| 情绪 | `MoodRoute` | `:feature:mood` |
+| 复习 | `ReviewRoute` | `:feature:review` |
+| 订阅 | `SubscriptionRoute` | `:feature:subscription` |
+| 工具箱 | `ToolboxRoute` | `:feature:toolbox` |
 
 ### 路由常量一览
 
@@ -461,24 +612,38 @@ com.smartwash.feature.coupon/
 | `UserRoute.UserInfo` | `"UserInfo"` | — | user | 用户中心 Tab |
 | `UserRoute.UpdateUserInfo` | `"UpdateUserInfoPage"` | — | user | 学校信息补全 |
 | `UserRoute.Setting` | `"Setting"` | — | user | 设置页 |
-| `OrderRoute.Order` | `"Order"` | `itemId: Int` | order | 订单列表 |
-| `OrderRoute.OrderDetail` | `"OrderDetail"` | `orderId: Long` | order | 订单详情 |
-| `OrderRoute.PickupDelivery` | `"PickupDelivery"` | `orderId: Long`, `pickupType: Int` | order | 寄件取件 |
-| `PaymentRoute.Payment` | `"Payment"` | `orderId: Long` | payment | 支付页 |
-| `PaymentRoute.PaySuccess` | `"PaySuccess"` | `orderId: Long` | payment | 支付成功 |
+| `UserRoute.PermissionManagement` | `"PermissionManagement"` | — | user | 权限管理 |
+| `UserRoute.WalletTransactions` | `"WalletTransactions"` | — | user | 钱包流水 |
+| `UserRoute.ChangePassword` | `"ChangePassword"` | — | user | 修改密码 |
+| `UserRoute.ResetPassword` | `"ResetPassword"` | — | user | 重置密码 |
+| `OrderRoute.Order` | `"Order/{itemId}"` | `itemId: Int` | order | 订单列表 |
+| `OrderRoute.OrderDetail` | `"OrderDetail/{orderId}"` | `orderId: Long` | order | 订单详情 |
+| `OrderRoute.PickupDelivery` | `"PickupDelivery/{orderId}/{pickupType}"` | `orderId: Long`, `pickupType: Int` | order | 寄件取件 |
+| `PaymentRoute.Payment` | `"Payment/{orderId}"` | `orderId: Long` | payment | 支付页 |
+| `PaymentRoute.PaySuccess` | `"PaySuccess/{orderId}"` | `orderId: Long` | payment | 支付成功 |
 | `PaymentRoute.Recharge` | `"Recharge"` | — | payment | 充值页 |
 | `PaymentRoute.RechargeRecord` | `"RechargeRecord"` | — | payment | 充值记录 |
-| `LaundryRoute.Laundry` | `"Laundry"` | — | laundry | 洗衣预约 |
-| `LaundryRoute.Service` | `"Service"` | — | laundry | 服务目录 |
+| `LaundryRoute.Laundry` | `"Laundry?itemId={itemId}"` | `itemId: Long` | laundry | 洗衣预约 |
+| `LaundryRoute.Service` | `"Service"` | — | laundry | 服务目录（底栏 tab） |
 | `CouponRoute.Coupon` | `"Coupon"` | — | coupon | 优惠券管理 |
+| `NoticeRoute.Inbox` | `"Messages"` | — | notice | 消息中心收件箱 |
+| `PointsRoute.Home` | `"PointsHome"` | — | points | 签到有礼 |
 | `DivRoute.Home` | `"DivHome"` | — | divination | 观象台首页 |
-| `DivRoute.Ask` | `"DivAsk"` | — | divination | 心中所问 |
-| `DivRoute.Cast` | `"DivCast"` | — | divination | 摇卦 |
-| `DivRoute.Chart` | `"DivChart"` | — | divination | 卦盘 |
-| `DivRoute.Reading` | `"DivReading"` | — | divination | 解读 |
-| `DivRoute.FollowUp` | `"DivFollowUp"` | — | divination | 继续追问 |
+| `DivRoute.Ask` | `"DivAsk?method={method}"` | `method: String` | divination | 心中所问 |
+| `DivRoute.Cast` | `"DivCast?question={question}&category={category}"` | `question`, `category` | divination | 摇卦 |
+| `DivRoute.Chart` | `"DivChart/{recordId}?animate={animate}"` | `recordId: Long`, `animate: Boolean` | divination | 卦盘 |
+| `DivRoute.Reading` | `"DivReading/{recordId}"` | `recordId: Long` | divination | 解读 |
+| `DivRoute.FollowUp` | `"DivFollowUp/{recordId}"` | `recordId: Long` | divination | 继续追问 |
 | `DivRoute.History` | `"DivHistory"` | — | divination | 卦历案卷 |
+| `GameRoute.Center` | `"GameCenter"` | — | game | 游戏中心 |
+| `LabRoute.Home` | `"LabHome"` | — | lab | 实验舱首页（另有 10 个玩具路由） |
+| `MoodRoute.Today` | `"MoodToday"` | — | mood | 今日情绪 |
+| `ReviewRoute.Queue` | `"ReviewQueue"` | — | review | 今日复习队列 |
+| `SubscriptionRoute.List` | `"SubscriptionList"` | — | subscription | 订阅列表 |
+| `ToolboxRoute.List` | `"ToolboxShortCodeList"` | — | toolbox | 短链列表 |
+| `ToolboxRoute.Delivery` | `"ToolboxDelivery"` | — | toolbox | 设备投递创建 |
 | `PageConstant.Pickup` | `"Pickup"` | — | 壳层 | 取件列表 |
+| `PageConstant.AiWork` | `"AiWork"` | — | 壳层 | AI 助手 |
 
 ### 底部导航 Tab（HomePageConstant）— 4 个 Tab
 
@@ -486,7 +651,7 @@ com.smartwash.feature.coupon/
 |-----|------|-----------|---------|
 | `Index` | Home | 壳层自持 | `IndexPage` |
 | `Service` | List | `LaundryRoute.Service` | `ServicePage` |
-| `Divination` | Explore | `DivRoute.Home` | `DivHomePage` |
+| `Workbench` | Grid | 壳层自持 | `WorkbenchPage` |
 | `UserInfo` | Person | `UserRoute.UserInfo` | `UserInfoPage` |
 
 ---
@@ -635,7 +800,7 @@ object XxxInitModule {
 >
 > **接口类位置已分散到各域 api/impl 模块**（不再集中在 `app/network/api/`）。
 
-### 用户模块（UserAccountApi）— 10 个端点
+### 用户模块（UserAccountApi）— 13 个端点
 
 > 接口类位置：`:feature:user:impl/network/api/UserAccountApi.kt`
 
@@ -644,13 +809,28 @@ object XxxInitModule {
 | GET | `/auth/user/captcha/{phoneNumber}` | 否 | 获取短信验证码 |
 | POST | `/auth/user/register` | 否 | 用户注册 |
 | POST | `/auth/user/login` | 否 | 用户登录 |
+| POST | `/auth/user/resetPassword` | 否 | 重置密码（手机号 + 验证码） |
+| GET | `/web/auth/user/getUserInfo` | 是 | 获取用户详情 |
 | POST | `/web/auth/user/updateUserInfo` | 是 | 更新学校信息 |
 | GET | `/web/auth/user/school` | 是 | 获取用户学校 ID |
 | GET | `/web/auth/user/getUserByStudentId?studentId=` | 是 | 按学号查用户（Query 参数） |
-| GET | `/web/auth/user/getUserInfo` | 是 | 获取用户详情 |
 | POST | `/web/auth/user/bingCampus/{campusCard}` | 是 | 绑定校园卡 |
 | POST | `/web/auth/user/unBingCampus` | 是 | 解绑校园卡 |
 | POST | `/web/auth/user/avatar` | 是 | 上传头像（Multipart） |
+| GET | `/web/auth/user/transactions?page=&pageSize=` | 是 | 钱包流水（分页） |
+| PUT | `/web/auth/user/password` | 是 | 修改密码 |
+
+### 观象台设置（DivSettingApi）— 5 个端点
+
+> 接口类位置：`:feature:user:impl/network/api/DivSettingApi.kt`（设置页「解读模型」入口）
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/web/auth/div/settings/api` | 是 | 获取 BYOK 配置（掩码回显） |
+| PUT | `/web/auth/div/settings/api` | 是 | 保存 BYOK 配置 |
+| DELETE | `/web/auth/div/settings/api` | 是 | 删除 BYOK 配置 |
+| POST | `/web/auth/div/settings/api/test` | 是 | 试呼校验 |
+| GET | `/web/auth/div/models` | 是 | 平台模型目录 |
 
 ### 订单模块（OrderServiceApi）— 10 个端点
 
@@ -669,15 +849,14 @@ object XxxInitModule {
 | DELETE | `/web/auth/orders/{orderId}` | 是 | 取消订单 |
 | GET | `/web/auth/orders/{orderId}/calculation?userCouponId=` | 是 | 计算价格 |
 
-### 优惠券模块（CouponServiceApi）— 5 个端点
+### 优惠券模块（CouponServiceApi）— 4 个端点
 
-> 接口类位置：`:feature:coupon/network/api/CouponServiceApi.kt`
+> 接口类位置：`:feature:coupon/impl/network/api/CouponServiceApi.kt`
 
 | 方法 | 端点 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/web/auth/coupon/allCoupon` | 是 | 所有可领取优惠券 |
 | POST | `/web/auth/userCoupon/receiveCoupon/{couponId}` | 是 | 领取优惠券 |
-| GET | `/web/auth/userCoupon/getUserCoupon?status=&page=&pageSize=` | 是 | 用户已领优惠券（分页） |
 | GET | `/web/auth/userCoupon/available/{orderId}` | 是 | 可用优惠券（支付时） |
 | GET | `/web/auth/userCoupon/allCoupons` | 是 | 聚合接口（可领+已领+历史） |
 
@@ -717,81 +896,182 @@ object XxxInitModule {
 
 ### 学校模块（SchoolApi）— 1 个端点
 
-> 接口类位置：`:feature:laundry/network/api/SchoolApi.kt`
+> 接口类位置：`:feature:laundry/impl/network/api/SchoolApi.kt`
 
 | 方法 | 端点 | 鉴权 | 说明 |
 |------|------|------|------|
 | GET | `/web/schools/allName?schoolName=` | 否 | 搜索学校（按名称模糊匹配） |
 
+### 站内信模块（NoticeServiceApi）— 4 个端点
+
+> 接口类位置：`:feature:notice/api/NoticeServiceApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/web/auth/notices?page=&size=` | 是 | 收件箱分页 |
+| GET | `/web/auth/notices/unread-count` | 是 | 未读数（我的页角标） |
+| POST | `/web/auth/notices/{id}/read` | 是 | 标记已读（幂等） |
+| POST | `/web/auth/notices/read-all` | 是 | 全部已读（幂等） |
+
+### 积分模块（PointsServiceApi）— 3 个端点
+
+> 接口类位置：`:feature:points/api/PointsServiceApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/web/auth/points/me` | 是 | 概览（余额/连签/流水） |
+| POST | `/web/auth/points/sign-in` | 是 | 签到（幂等，重复返回 `alreadySigned=true`） |
+| GET | `/web/auth/points/leaderboard?scope=month` | 是 | 月榜 |
+
+### 观象台模块（DivinationApi）— 7 个端点 + 2 个 SSE
+
+> 接口类位置：`:feature:divination/network/DivinationApi.kt`（SSE 经 `common:network` 的 `SseClient`）
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `web/auth/div/records` | 是 | 建档起卦 |
+| GET | `web/auth/div/records?method=&dateFrom=&dateTo=&page=&size=` | 是 | 卦历分页 |
+| GET | `web/auth/div/records/{id}` | 是 | 卦例详情 |
+| GET | `web/auth/div/today` | 是 | 今日一签 |
+| POST | `web/auth/div/records/{id}/feedback` | 是 | 反馈 |
+| GET | `web/auth/div/methods` | 是 | 术数方法列表 |
+| GET | `web/auth/div/models` | 是 | 平台模型目录 |
+| POST | `web/auth/div/records/{id}/interpret`（SSE） | 是 | 流式解读 |
+| POST | `web/auth/div/records/{id}/followup`（SSE） | 是 | 流式追问 |
+
+### 游戏模块（GameApi + GameBridgeApi）— 6 个端点
+
+> 接口类位置：`:feature:game/network/GameApi.kt`、`app/network/api/GameBridgeApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `web/auth/game/list` | 是 | 游戏下发列表 |
+| GET | `web/auth/game/state` | 是 | 读取游戏存档 |
+| PUT | `web/auth/game/state` | 是 | 保存游戏存档 |
+| POST | `web/auth/game/score` | 是 | 上报成绩 |
+| GET | `web/auth/game/leaderboard` | 是 | 排行榜 |
+| GET | `web/auth/game/levels` | 是 | 关卡列表 |
+
+### 情绪模块（MoodApi）— 3 个端点
+
+> 接口类位置：`:feature:mood/network/MoodApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| PUT | `web/auth/mood/today` | 是 | 今日情绪 upsert |
+| GET | `web/auth/mood/calendar?ym=` | 是 | 月历 |
+| GET | `web/auth/mood/stats?ym=` | 是 | 月统计 |
+
+### 复习模块（ReviewApi）— 7 个端点
+
+> 接口类位置：`:feature:review/network/ReviewApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `web/auth/review/materials` | 是 | 创建资料 |
+| GET | `web/auth/review/materials?page=&size=` | 是 | 资料分页 |
+| POST | `web/auth/review/materials/{id}/cards` | 是 | 建卡 |
+| GET | `web/auth/review/cards?materialId=&page=&size=` | 是 | 卡片分页 |
+| GET | `web/auth/review/queue` | 是 | 今日队列（FSRS 调度在后端） |
+| POST | `web/auth/review/answer` | 是 | 复习评分（rating 1..4） |
+| GET | `web/auth/review/stats` | 是 | 复习统计 |
+
+### 订阅模块（SubscriptionApi）— 15 个端点
+
+> 接口类位置：`:feature:subscription/network/SubscriptionApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST | `web/auth/subscription` | 是 | 新建订阅 |
+| PUT | `web/auth/subscription/{id}` | 是 | 更新订阅 |
+| DELETE | `web/auth/subscription/{id}` | 是 | 删除订阅 |
+| GET | `web/auth/subscription?page=&size=&status=&keyword=` | 是 | 订阅分页 |
+| GET | `web/auth/subscription/{id}` | 是 | 订阅详情 |
+| POST | `web/auth/subscription/{id}/pause` `/resume` `/cancel` `/finish` | 是 | 状态流转 |
+| POST | `web/auth/subscription/{id}/usages` | 是 | 用量打卡 |
+| GET | `web/auth/subscription/{id}/usages?page=&size=` | 是 | 明细分页 |
+| DELETE | `web/auth/subscription/{id}/usages/{usageId}` | 是 | 删除明细 |
+| GET | `web/auth/subscription/reminders?unread=` | 是 | 提醒列表 |
+| POST | `web/auth/subscription/reminders/{id}/read` | 是 | 标记提醒已读 |
+| GET | `web/auth/subscription/stats` | 是 | 统计 |
+
+### 工具箱模块（ToolboxApi + DeliveryApi）— 13 个端点
+
+> 接口类位置：`:feature/toolbox/network/ToolboxApi.kt`、`DeliveryApi.kt`
+
+| 方法 | 端点 | 鉴权 | 说明 |
+|------|------|------|------|
+| POST/GET/PUT/DELETE | `web/auth/toolbox/short-codes...` | 是 | 短链 CRUD |
+| GET | `web/auth/toolbox/short-codes/{id}/stats` | 是 | 访问统计 |
+| GET | `web/auth/toolbox/short-codes/resolve` | 是 | 短码解析 |
+| POST | `web/auth/toolbox/delivery/sessions` | 是 | 创建投递会话 |
+| GET | `web/auth/toolbox/delivery/sessions/{code}` | 是 | 会话详情 |
+| POST | `web/auth/toolbox/delivery/sessions/{code}/close` | 是 | 关闭会话 |
+| POST | `web/auth/toolbox/delivery/sessions/{code}/items` | 是 | 发布文本 |
+| POST | `web/auth/toolbox/delivery/sessions/{code}/items/file` | 是 | 发布文件（Multipart） |
+| POST | `web/auth/toolbox/delivery/sessions/{code}/items/{itemId}/take` | 是 | 取走条目 |
+| GET | `web/auth/toolbox/delivery/sessions/{code}/items/{itemId}/content` | 是 | 读取文本内容 |
+
 ---
 
 ## 六、设计系统（清氧设计系统）
 
-面向学生用户，设计理念：高级感 + 环保 + 年轻化（参考 MUJI/Aesop）。
+> **唯一约束来源**：[.claude/ui-design-spec.md](.claude/ui-design-spec.md)（含 2026-10-29 DESIGN-SPEC v0.4 覆写）。本节只列高频取值，**冲突以规范为准**。代码位于 `:common:ui/theme/`（`AppDesign.kt` / `Color.kt` / `Theme.kt` / `Type.kt`）。
 
-> **位置已迁移至 `:common:ui` 模块**（原 `app/src/main/java/com/smartwash/ui/theme/` 已不存在）。
+### 色彩（v0.4 结构层）
 
-### 配色
-
-| 用途 | 色值 |
-|------|------|
-| 主色（自然绿） | `#2D9B6A` |
-| 主色浅（标签/图标底色） | `#E8F6EF` |
-| 主色超浅（选中态背景） | `#F0FAF5` |
-| 页面底色（微暖米白） | `#FAFAF8` |
-| 卡片底色 | `#FFFFFF` |
-| 主文字 | `#1C1C1E` |
-| 次要文字 | `#8E8E93` |
-| 弱化文字 | `#C7C7CC` |
-| 分隔线 | `#F2F2F7` |
-| 错误色 | `#FF3B30` |
-| 警告色 | `#FF9500` |
-| 成功色 | `#34C759` |
-
-### 圆角
-
-- 大卡片：20dp
-- 小卡片/按钮/输入框：14-16dp
-- 图标容器：12dp
-
-### 阴影
-
-- **不使用阴影**，用底色差（米白底 `#FAFAF8` vs 白卡 `#FFFFFF`）创造层次
-- 需要浮起效果时用 0.5dp 分隔线
-
-### 排版
-
-| 元素 | 字号 | 字重 |
+| 令牌 | 值 | 用途 |
 |------|------|------|
-| 页面标题 | 28sp | Bold |
-| 区块标题 | 18sp | SemiBold |
-| 卡片标题 | 16sp | Medium |
-| 正文 | 15sp | Normal |
-| 辅助文字 | 13sp | Normal |
+| `background` | `#F5F6F3` | 页面底 |
+| `surface` | `#FFFFFF` | 卡片 |
+| `surfaceVariant` | `#EFF1EE` | 卡内次级块 |
+| `groupBackground` | `#E7EAE4` | 分组容器底 |
+| `outline` | `#E6E9E6` | 卡片描边 |
+| `hairline` | `#EFF1EE` | 卡内行分隔线（0.5dp） |
+| `textPrimary` | `#1C1C1E` | 主文本 |
+| `textSecondary` | `#6B6E73` | 次文本 |
+| `textTertiary` | `#A9AEA9` | 弱文本 / tab 未选中 |
+| `primary` | `#2D9B6A` | 主色（**不改**，玄墨子主题除外） |
+| `primaryDeep` | `#1E8C5C` | 按下态 / 渐变暗端 |
+| `primarySoft` | `#E8F6EF` | 浅绿容器 / 选中底 |
+| `water` / `waterSoft` | `#4A9FD4` / `#DCEFF7` | 次要强调 / 水滴意象 |
+| `ongoing` / `ongoingInk` | `#D98A26` / `#8F5B0C` | 进行中 / 橙色小字 |
+| `danger` / `dangerInk` | `#C9526B` / `#A8435A` | 异常 / 红色小字 |
 
-### 认证页（登录/注册）
+### 排版（v0.4 八档，weight 仅 400/500/600/700）
 
-- 全屏渐变：`#1A9E6E` → `#0B5C3A`
-- 毛玻璃卡片：`Color.White.copy(alpha = 0.12f)` + 1dp `alpha 0.18` 白边
+| 档 | 字号 / 行高 / 字重 | 语义 |
+|---|---|---|
+| `display` | 36sp / 44sp / 700 + tnum | 数据大字（余额、应付金额、取件码） |
+| `headline` | 28sp / 36sp / 700 | — |
+| `titleLarge` | 22sp / 28sp / 600 | `PageHeader`（内页标题）、`RootTitle`（根页大标题） |
+| `title` | 18sp / 24sp / 600 | 卡片标题、区块标题、金额中字 |
+| `bodyLarge` | 16sp / 24sp / 400 | 正文 |
+| `body` | 14sp / 20sp / 400 | 列表行主文案 |
+| `caption` | 12sp / 16sp / 400 | 辅助 / 角标 |
+| `captionStrong` | 12sp / 16sp / 500 | — |
 
-### 功能页
+- 金额 / 数量 / 取件码 / 订单号**必须** tabular numbers（`fontFeatureSettings = "tnum"`）。
+- 一屏只允许一个锚点级大字；标题不参与大字竞争。
 
-- 统一 `Box(#FAFAF8)` 背景
-- 自定义 `PageHeader`（不用 Scaffold + TopAppBar）
-- `AppCard`：白底 20dp 圆角无阴影
-- `AppButton`：绿底 14dp 圆角 52dp 高
-- `AppTabBar`：文字标签 + 底部短横线指示器
-- 底部导航：白底 + 0.5dp 顶部分隔线 + 短横线选中指示
+### 圆角与阴影
+
+- 圆角：`radiusCard` 16dp（卡片唯一值）· `radiusHero` 20dp · `radiusInner` 12dp · `radiusSmall` 10dp · `radiusFull` 胶囊。
+- 层级：卡片 1px `outline` + `level1` 阴影；浮层 / 弹窗 `floatLayer`；hero 无描边靠渐变。
+- 按钮：`AppButton` **48dp 高 + 胶囊（`radiusFull`）+ 文字 15sp·600·ls 1sp**；主/次按钮共用。
+
+### 认证页 / 功能页
+
+- 认证页（登录/注册）：品牌渐变（`primary` → `primaryDeep`）+ 毛玻璃卡片。
+- 功能页：`background #F5F6F3` + 白卡；共用 `PageHeader`（内页标题 titleLarge 22sp）、`AppCard`、`AppButton`、`AppTabBar`。
+- 底部导航：白底 + 4 个 tab（Index / Service / Workbench / UserInfo），选中 `primary`、未选中 `textTertiary`。
 
 ### 相关文件（`:common:ui`）
 
-- `common/ui/src/main/java/com/smartwash/common/ui/theme/Color.kt` — 颜色定义
-- `common/ui/src/main/java/com/smartwash/common/ui/theme/Theme.kt` — 主题配置
-- `common/ui/src/main/java/com/smartwash/common/ui/theme/Type.kt` — 字体排版
-- `common/ui/src/main/java/com/smartwash/common/ui/theme/AppDesign.kt` — 设计 Token + 可复用组件
-- `common/ui/src/main/java/com/smartwash/common/ui/components/AppComponents.kt` — 共通组件（PageHeader, AppCard, AppButton, SettingRow, AppTabBar）
-- `common/ui/src/main/java/com/smartwash/common/ui/components/InfoSection.kt` — 信息分组卡片
-- `common/ui/src/main/java/com/smartwash/common/ui/components/InfoRow.kt` — 信息行
+- `common/ui/src/main/java/com/smartwash/common/ui/theme/{Color,Theme,Type,AppDesign}.kt` — 令牌与主题
+- `common/ui/src/main/java/com/smartwash/common/ui/components/AppComponents.kt` — PageHeader / AppCard / AppButton / AppTabBar / SettingRow
+- `common/ui/src/main/java/com/smartwash/common/ui/components/{InfoSection,InfoRow,PasswordInput,PhoneNumberInput}.kt`
+- `common/ui/src/main/java/com/smartwash/common/ui/navigation/ShellRoute.kt` — 壳层路由契约
 
 ---
 
@@ -932,4 +1212,4 @@ data class PageData<T>(
 - **网络层健壮性**：`:common:network` 的 ResponseInterceptor 空 body NPE、`peekBody(Long.MAX_VALUE)` 双重解析、`:common:database` 的 Room 无 migration、缓存写入无事务
 - **分层破洞**：LaundryViewModel/CouponViewModel 直连 Api 绕过 Repository；订单分页手写 Map 与 Paging 3 双轨并存
 - **RechargePage 组合期副作用**：`RechargePage.kt` 的金额选择/支付状态分支中存在写在 `when(state)` 渲染分支里的副作用，待独立任务修复
-- **测试覆盖**：含模板用例 `ExampleUnitTest` + 观象台四套算法内核锚点单测（`feature:divination/src/test/.../liuren|liuyao|meihua|qimen/*AnchorTest.kt`）；优先给 ResponseInterceptor、ParamValidUtils、OrderStatus 映射补 JVM 单测
+- **测试覆盖**：当前 19 个测试文件，分布在 app（ExampleUnitTest、ParamValidUtilsTest、EntityMappersTest×2、SessionEventBusTest、GameThemeBridgePolicyTest）、common:init（InitEngineTest）、common:utils（DeepLinkParserTest）、feature:divination（5 个算法锚点单测）、feature/game（GameConstantTest、GameDeepLinkModuleTest）、feature/payment:impl（RechargeAmountValidatorTest）、feature/toolbox（ToolboxDeepLinkModuleTest）、feature/update（ApkDownloadWorkerNotificationTest、ApkInstallerTest）；优先给 ResponseInterceptor、OrderStatus 映射补 JVM 单测
