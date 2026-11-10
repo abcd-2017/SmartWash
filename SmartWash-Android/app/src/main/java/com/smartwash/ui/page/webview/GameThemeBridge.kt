@@ -3,6 +3,7 @@ package com.smartwash.ui.page.webview
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.smartwash.common.utils.AppLogger
 import com.smartwash.common.utils.model.ApiResult
 import com.smartwash.network.api.GameBridgeApi
@@ -14,7 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.net.URI
 
-/** 主题桥白名单与模式解析的纯函数集（单测锚定 GameThemeBridgePolicyTest） */
+/** 主题桥（白名单/模式）与数据桥（存档/成绩/排行榜）的纯函数集（单测锚定 GameThemeBridgePolicyTest / GameDataBridgePolicyTest） */
 internal object GameThemeBridgePolicy {
 
     /**
@@ -59,6 +60,50 @@ internal object GameThemeBridgePolicy {
         if ((uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
         ) GameThemeMode.DARK else GameThemeMode.LIGHT
+
+    // ==================== 游戏数据桥（存档 / 成绩 / 排行榜）纯逻辑 ====================
+
+    /** 排行榜 limit 非法（<= 0）时的缺省 TOP N */
+    const val DEFAULT_LEADERBOARD_LIMIT = 20
+
+    /** payload JSON 解析共用实例（Gson 线程安全，无状态） */
+    private val gson = Gson()
+
+    /** saveState 载荷解析结果（stateJson 已含裸载荷回退兜底；schemaVer 缺省 null） */
+    data class SaveStatePayload(val stateJson: String, val schemaVer: Int?)
+
+    /** 解析 H5 传入的 payload JSON（非法/非对象返回 null，由调用方按缺省处理） */
+    fun parseJsonObject(json: String?): JsonObject? {
+        if (json.isNullOrBlank()) return null
+        return runCatching { gson.fromJson(json, JsonObject::class.java) }.getOrNull()
+    }
+
+    /**
+     * saveState 载荷解析，兼容两种 H5 载荷：
+     * - 标准 {"stateJson":"...","schemaVer":1}：提取 stateJson / schemaVer；
+     * - 裸 JSON（早期 GB 实现：非对象、无 stateJson 键或 stateJson 为 null）：
+     *   整个原始字符串作为存档内容落库，避免「存档内容不能为空」静默失败；
+     * 空/非法输入解析为 null，stateJson 同样回退原始字符串（null → 空串），语义与存量桥一致。
+     */
+    fun parseSaveStatePayload(payloadJson: String?): SaveStatePayload {
+        val payload = parseJsonObject(payloadJson)
+        return SaveStatePayload(
+            stateJson = payload?.get("stateJson")?.takeIf { !it.isJsonNull }?.asString
+                ?: payloadJson.orEmpty(),
+            schemaVer = payload?.get("schemaVer")?.takeIf { !it.isJsonNull }?.asInt,
+        )
+    }
+
+    /**
+     * cbId 经 JS 单引号字符串字面量转义（回调脚本以 'cbId' 内嵌）：
+     * 先转反斜杠再转单引号——顺序保证已转义序列不被二次转义，防止 cbId 注入破坏回调脚本。
+     */
+    fun escapeJsSingleQuoted(raw: String): String =
+        raw.replace("\\", "\\\\").replace("'", "\\'")
+
+    /** 排行榜 limit 归一化：H5 传 0 / 负数按缺省 20 处理，其余原值透传 */
+    fun normalizeLeaderboardLimit(limit: Int): Int =
+        if (limit <= 0) DEFAULT_LEADERBOARD_LIMIT else limit
 }
 
 /** 深浅色模式 key（H5 协议取值，见 GAME-THEME-PROMPT「深色模式同步机制」） */
@@ -144,14 +189,13 @@ internal class SmartWashGameBridge(
     @JavascriptInterface
     fun saveState(gameKey: String, payloadJson: String, cbId: String) {
         dispatchData(cbId, "saveState") { api ->
-            val payload = parsePayload(payloadJson)
+            // 兼容两种 H5 载荷：{stateJson,schemaVer}（标准）与裸 JSON（早期 GB 实现），
+            // 裸载荷直接作为存档内容落库，避免「存档内容不能为空」静默失败（见 Policy.parseSaveStatePayload）
+            val payload = GameThemeBridgePolicy.parseSaveStatePayload(payloadJson)
             api.saveState(GameBridgeStateUpdateBody(
                 gameKey = gameKey,
-                // 兼容两种 H5 载荷：{stateJson,schemaVer}（标准）与裸 JSON（早期 GB 实现），
-                // 裸载荷直接作为存档内容落库，避免「存档内容不能为空」静默失败
-                stateJson = payload?.get("stateJson")?.takeIf { !it.isJsonNull }?.asString
-                    ?: payloadJson.orEmpty(),
-                schemaVer = payload?.get("schemaVer")?.takeIf { !it.isJsonNull }?.asInt,
+                stateJson = payload.stateJson,
+                schemaVer = payload.schemaVer,
             ))
         }
     }
@@ -160,7 +204,7 @@ internal class SmartWashGameBridge(
     @JavascriptInterface
     fun reportScore(gameKey: String, payloadJson: String, cbId: String) {
         dispatchData(cbId, "reportScore") { api ->
-            val payload = parsePayload(payloadJson)
+            val payload = GameThemeBridgePolicy.parseJsonObject(payloadJson)
             api.reportScore(GameBridgeScoreReportBody(
                 gameKey = gameKey,
                 metricValue = payload?.get("metricValue")?.takeIf { !it.isJsonNull }?.asLong ?: 0L,
@@ -173,7 +217,9 @@ internal class SmartWashGameBridge(
     /** 排行榜：limit 非法时按 20 处理 */
     @JavascriptInterface
     fun getLeaderboard(gameKey: String, limit: Int, cbId: String) {
-        dispatchData(cbId, "getLeaderboard") { it.getLeaderboard(gameKey, if (limit <= 0) 20 else limit) }
+        dispatchData(cbId, "getLeaderboard") {
+            it.getLeaderboard(gameKey, GameThemeBridgePolicy.normalizeLeaderboardLimit(limit))
+        }
     }
 
     /** 关卡下发 */
@@ -217,15 +263,9 @@ internal class SmartWashGameBridge(
     private fun callback(cbId: String, ok: Boolean, payload: Any?) {
         val webView = webViewProvider?.invoke() ?: return
         val json = gson.toJson(payload ?: emptyMap<String, Any?>())
-        val safeCbId = cbId.replace("\\", "\\\\").replace("'", "\\'")
+        val safeCbId = GameThemeBridgePolicy.escapeJsSingleQuoted(cbId)
         val js = "window.__gOnGameBridgeResult && window.__gOnGameBridgeResult('$safeCbId', $ok, $json)"
         webView.post { webView.evaluateJavascript(js, null) }
-    }
-
-    /** 解析 H5 传入的 payload JSON（非法/非对象返回 null，由调用方按缺省处理） */
-    private fun parsePayload(json: String?): com.google.gson.JsonObject? {
-        if (json.isNullOrBlank()) return null
-        return runCatching { gson.fromJson(json, com.google.gson.JsonObject::class.java) }.getOrNull()
     }
 }
 
