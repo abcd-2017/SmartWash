@@ -202,7 +202,7 @@
     },
     {
       "name": "div_method_liuyao_desc",
-      "value": "摇铜钱问一事\\n装卦最全 · 应期可推"
+      "value": "摇铜钱问一事\n装卦最全 · 应期可推"
     },
     {
       "name": "div_method_liuyao_use_for",
@@ -214,7 +214,7 @@
     },
     {
       "name": "div_method_meihua_desc",
-      "value": "时间数字起卦\\n体用生克 · 快占一事"
+      "value": "时间数字起卦\n体用生克 · 快占一事"
     },
     {
       "name": "div_method_meihua_use_for",
@@ -222,7 +222,7 @@
     },
     {
       "name": "div_method_qimen_desc",
-      "value": "九宫排局\\n择时择方 · 趋避有道"
+      "value": "九宫排局\n择时择方 · 趋避有道"
     },
     {
       "name": "div_method_qimen_use_for",
@@ -230,7 +230,7 @@
     },
     {
       "name": "div_method_liuren_desc",
-      "value": "月将加时 · 三传定机\\n人事占验最精"
+      "value": "月将加时 · 三传定机\n人事占验最精"
     },
     {
       "name": "div_method_liuren_use_for",
@@ -4102,11 +4102,11 @@
     },
     {
       "name": "pickup_delivery_9",
-      "value": "• 请确保在30分钟内完成操作\\n"
+      "value": "• 请确保在30分钟内完成操作\n"
     },
     {
       "name": "pickup_delivery_10",
-      "value": "• 如遇问题请联系客服\\n"
+      "value": "• 如遇问题请联系客服\n"
     },
     {
       "name": "pickup_delivery_11",
@@ -4402,31 +4402,31 @@
     },
     {
       "name": "setting_1",
-      "value": "本应用收集的信息与用途：\\n\\n"
+      "value": "本应用收集的信息与用途：\n\n"
     },
     {
       "name": "setting_2",
-      "value": "· 手机号与学号：仅用于账号注册、登录与校内身份识别；\\n"
+      "value": "· 手机号与学号：仅用于账号注册、登录与校内身份识别；\n"
     },
     {
       "name": "setting_3",
-      "value": "· 学校与校园卡信息：用于寄存柜投递、取件与计费；\\n"
+      "value": "· 学校与校园卡信息：用于寄存柜投递、取件与计费；\n"
     },
     {
       "name": "setting_4",
-      "value": "· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\\n"
+      "value": "· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\n"
     },
     {
       "name": "setting_5",
-      "value": "· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\\n"
+      "value": "· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\n"
     },
     {
       "name": "setting_6",
-      "value": "· 设备标识与崩溃日志：仅用于问题排查与热更新。\\n\\n"
+      "value": "· 设备标识与崩溃日志：仅用于问题排查与热更新。\n\n"
     },
     {
       "name": "setting_7",
-      "value": "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\\n\\n"
+      "value": "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n"
     },
     {
       "name": "setting_8",
