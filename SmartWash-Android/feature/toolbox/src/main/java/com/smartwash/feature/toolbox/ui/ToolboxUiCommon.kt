@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.utils.pressable
@@ -243,13 +242,16 @@ private fun DialogTextAction(
 ) {
     Box(
         modifier = Modifier
+            // 热区外扩至 48dp（触控红线 ≥48）：原 vertical 8×2 + 13sp 行高 ≈34dp 不达标；
+            // 13sp 非规范档收敛 labelMedium 12/500（v0.4 字阶迁移表 13→12）
+            .defaultMinSize(minHeight = 48.dp)
             .pressable(onClick = onClick, debounce = false)
-            .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs)
+            .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.labelMedium,
             color = AppColors.colorScheme.textGreen,
         )
     }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -97,16 +98,36 @@ fun DivHistoryPage(
         // 画板：筛选行到首卡间距 20（本 Spacer 16 + 列表 contentPadding 顶 4）
         Spacer(Modifier.height(16.dp))
 
+        // 三态判定（audit-08 #3）：null=Room 首帧未到（加载中，渲染同形骨架）、empty=数据库真空（空态）、
+        // 非空=列表——VM 初值已三态化，加载期不再以空态冒充首帧
+        val current = records
+        val listState = when {
+            current == null -> HistoryListState.LOADING
+            current.isEmpty() -> HistoryListState.EMPTY
+            else -> HistoryListState.READY
+        }
         // 空态与列表互相替换走 Crossfade，避免 0ms 硬切
         Crossfade(
-            targetState = records.isEmpty(),
+            targetState = listState,
             animationSpec = tween(CROSSFADE_ALT_MS),
-            label = "historyEmpty",
-        ) { empty ->
-            if (empty) {
-                Box(Modifier.fillMaxWidth().padding(top = 80.dp), contentAlignment = Alignment.Center) {
+            label = "historyState",
+        ) { state ->
+            when (state) {
+                HistoryListState.LOADING -> Column(Modifier.weight(1f)) {
+                    // 骨架行 ×3 与 HistoryCard 同形；直接取静态浅块形态
+                    // （规范 §8 骨架微光的 reduced-motion 降级形态，无动效即免降级分支）
+                    repeat(3) {
+                        HistorySkeletonRow()
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+                HistoryListState.EMPTY -> Box(
+                    Modifier.fillMaxWidth().padding(top = 80.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        DivSeal("空", size = 44.dp, fontSize = 22.sp)
+                        // 卦历画板 = flat 平涂深朱口径（DivSeal 组件契约），同时印文对比 3.4→5.31:1 达标（audit-08 #1）
+                        DivSeal("空", size = 44.dp, fontSize = 22.sp, flat = true)
                         Spacer(Modifier.height(16.dp))
                         Text(
                             text = stringResource(R.string.div_history_empty),
@@ -115,12 +136,11 @@ fun DivHistoryPage(
                         )
                     }
                 }
-            } else {
-                LazyColumn(
+                HistoryListState.READY -> LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 ) {
-                    items(records, key = { it.id }) { record ->
+                    items(current.orEmpty(), key = { it.id }) { record ->
                         HistoryCard(
                             record = record,
                             onClick = {
@@ -161,7 +181,8 @@ private fun HistoryCard(
             Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            DivSeal(stringResource(methodSealRes(record.method)), size = 32.dp, fontSize = 14.sp, cornerRadius = 8.dp)
+            // 卦历画板 = flat 平涂深朱口径（DivSeal 组件契约），同时印文对比 3.4→5.31:1 达标（audit-08 #1）
+            DivSeal(stringResource(methodSealRes(record.method)), size = 32.dp, fontSize = 14.sp, cornerRadius = 8.dp, flat = true)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -175,8 +196,12 @@ private fun HistoryCard(
                 Text(
                     text = "$timeText · ${methodLabel(DivMethod.fromId(record.method))} · ${record.summaryLine()}",
                     fontSize = 12.sp,
+                    // 行高维持画板 12/14 口径（观象台域既有画板豁免；v0.4 caption 12/16 留画板复核）
                     lineHeight = 14.sp,
                     color = c.textSecondary,
+                    // 与主文案同策略单行截断（audit-08 #6）：长摘要不换行撑破「卡高 60」画板口径
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -210,4 +235,46 @@ private fun methodSealRes(methodId: String): Int = when (DivMethod.fromId(method
     DivMethod.MEI_HUA -> R.string.div_seal_meihua
     DivMethod.QI_MEN -> R.string.div_seal_qimen
     DivMethod.LIU_REN -> R.string.div_seal_liuren
+}
+
+/** 列表三态（audit-08 #3）：区分「Room 首帧未到（加载中）」与「数据库真空（空态）」，消除进页闪空态 */
+private enum class HistoryListState {
+    LOADING, EMPTY, READY,
+}
+
+/** 加载骨架行（audit-08 #3）：与 [HistoryCard] 同形（卡高 60 画板：印章位 32 方块 r8 + 问句/元信息两条浅块，
+ *  取值全部镜像 HistoryCard 既有画板值），直接取静态浅块形态——规范 §8 骨架微光的
+ *  reduced-motion 降级形态即静态浅块，无动效即免降级分支 */
+@Composable
+private fun HistorySkeletonRow() {
+    val c = DivColors.current
+    DivCard {
+        Row(
+            Modifier.padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(c.hair),
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(14.dp)
+                        .background(c.hair),
+                )
+                Spacer(Modifier.height(2.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth(0.4f)
+                        .height(12.dp)
+                        .background(c.hair),
+                )
+            }
+        }
+    }
 }

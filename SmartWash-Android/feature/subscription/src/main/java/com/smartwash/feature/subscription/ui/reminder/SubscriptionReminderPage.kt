@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +40,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
+import com.smartwash.common.ui.components.LoadingDots
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonList
 import com.smartwash.common.ui.theme.AppColors
@@ -110,6 +116,39 @@ fun SubscriptionReminderPage(
             }
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
 
+            // 切换筛选重拉时 VM 保留旧 items（audit-16 #5）：非空状态下补可见加载/错误反馈，
+            // 禁止旧筛选数据静默冒充新结果（DESIGN-SPEC §7 加载态可见、§8 错误含原因与出路）
+            if (items.isNotEmpty()) {
+                when (val state = listState) {
+                    is RequestState.Loading -> LoadingDots(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = AppDimens.spaceXs),
+                    )
+                    is RequestState.Error -> Row(
+                        modifier = Modifier.padding(
+                            horizontal = AppDimens.pagePadding,
+                            vertical = AppDimens.spaceXs,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = state.getMessage(context),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AppColors.colorScheme.error,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(modifier = Modifier.width(AppDimens.spaceXs))
+                        AppButton(
+                            small = true,
+                            text = stringResource(R.string.subscription_action_retry),
+                            onClick = viewModel::load,
+                        )
+                    }
+                    else -> {}
+                }
+            }
+
             when {
                 listState is RequestState.Loading && items.isEmpty() -> {
                     SkeletonList(
@@ -144,11 +183,17 @@ fun SubscriptionReminderPage(
                     )
                 }
                 else -> {
+                    // 底部避让导航条（audit-16 #4）：edge-to-edge 下手势条/三键导航不压末卡，
+                    // 对齐 detail 页口径 bottom 取 max(spaceSm, navigationBars)，无导航条设备回落 spaceSm；
+                    // PaddingValues 四参数全命名（horizontal+top+bottom 混搭不匹配任何重载）
+                    val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                         contentPadding = PaddingValues(
-                            horizontal = AppDimens.pagePadding,
-                            vertical = AppDimens.spaceXs,
+                            start = AppDimens.pagePadding,
+                            top = AppDimens.spaceXs,
+                            end = AppDimens.pagePadding,
+                            bottom = maxOf(AppDimens.spaceSm, navBarsBottom),
                         ),
                         modifier = Modifier.fillMaxSize(),
                     ) {
@@ -178,6 +223,7 @@ private fun ReminderRow(
 ) {
     val type = SubscriptionReminderType.fromRawOrDefault(reminder.remindType)
     val unread = reminder.isRead == 0
+    val unreadDotDesc = stringResource(R.string.subscription_reminder_unread_dot)
     // 统一走 GroupCard（规范 §3.1 唯一卡片画法：softCardShadow + 1dp 描边 + 20dp 卡内边距）
     GroupCard(
         modifier = Modifier
@@ -209,13 +255,18 @@ private fun ReminderRow(
                 Text(
                     text = reminder.subscriptionName,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = if (unread) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textTertiary,
+                    // 已读弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（§10 红线；audit-16 #2）
+                    color = if (unread) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 Text(
-                    text = stringResource(R.string.subscription_reminder_date_format, reminder.remindDate.orEmpty()),
+                    // remindDate 空值兜底「—」（subscription_value_none 惯例），禁止格式串留洞（audit-16 #9）
+                    text = stringResource(
+                        R.string.subscription_reminder_date_format,
+                        reminder.remindDate ?: stringResource(R.string.subscription_value_none),
+                    ),
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary,
                 )
@@ -231,19 +282,27 @@ private fun ReminderRow(
                         SubscriptionReminderType.RENEW -> AppColors.colorScheme.warningContainer
                         SubscriptionReminderType.TRIAL_END -> AppColors.colorScheme.iconContainerPink
                     },
+                    // RENEW 与共享件 statusChipContent(PAUSED) 同源裁定：onWarningContainer 成对令牌
+                    // （浅 #92400E 6.47:1）；ongoingInk 压 warningContainer 仅 2.51:1，禁作 12sp 标签色（audit-16 #1）
                     contentColor = when (type) {
-                        SubscriptionReminderType.RENEW -> AppColors.colorScheme.ongoingInk
+                        SubscriptionReminderType.RENEW -> AppColors.colorScheme.onWarningContainer
                         SubscriptionReminderType.TRIAL_END -> AppColors.colorScheme.dangerInk
                     },
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 if (unread) {
-                    StatusDot(color = AppColors.colorScheme.danger)
+                    // 未读差异不能只靠颜色点：红点补读屏描述（DESIGN-SPEC §8/§10；audit-16 #6），
+                    // 已读卡由下方「已读」文本标签承担同一对语义
+                    StatusDot(
+                        color = AppColors.colorScheme.danger,
+                        modifier = Modifier.semantics { contentDescription = unreadDotDesc },
+                    )
                 } else {
                     Text(
                         text = stringResource(R.string.subscription_reminder_read_tag),
                         style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.colorScheme.textTertiary,
+                        // 「已读」为可读状态标签，与主文案同口径收敛 textSecondary（audit-16 #3）
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 }
             }

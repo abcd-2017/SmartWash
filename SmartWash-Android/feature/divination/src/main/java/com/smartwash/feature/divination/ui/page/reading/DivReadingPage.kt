@@ -152,36 +152,52 @@ fun DivReadingPage(
                         is RequestState.Loading -> StreamingReadingContent(state.streamText)
 
                         is RequestState.Error -> {
-                            // error 帧 message 优先（服务端分流/限额/降级文案），无则用兜底资源；
-                            // 428 未配置（2026-11-11 平台零兜底）附「去配置」引导直达设置页弹层
-                            val context = LocalContext.current
-                            DivCard(Modifier.padding(horizontal = 20.dp)) {
-                                Column(
-                                    Modifier.padding(vertical = 24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                ) {
-                                    Text(
-                                        text = readingState.getMessage(context),
-                                        fontSize = 12.sp,
-                                        lineHeight = 16.sp,
-                                        color = c.textTertiary,
-                                        textAlign = TextAlign.Center,
-                                    )
-                                    if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
-                                        Spacer(Modifier.height(12.dp))
+                            // audit-23 #7：错误态不再把已逐段上屏的解读整体替换为错误卡——
+                            // 保留已流出的部分解读（含未完成段，去水波），错误卡叠加在流式内容之后
+                            //（水平边距由各卡自带：StreamingReadingContent 内 h20 / 错误卡 h20，避免叠加）
+                            Column {
+                                StreamingReadingContent(state.streamText, inProgress = false)
+                                // error 帧 message 优先（服务端分流/限额/降级文案），无则用兜底资源
+                                val context = LocalContext.current
+                                DivCard(Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                                    Column(
+                                        Modifier.padding(horizontal = 14.dp, vertical = 24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                    ) {
                                         Text(
-                                            text = stringResource(R.string.div_reading_go_config),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = c.goldText,
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(AppDimens.radiusFull))
-                                                .background(c.gold14)
-                                                .pressable(onClick = {
-                                                    navController.navigate(UserRoute.Setting(openApiConfig = true))
-                                                })
-                                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                                            // audit-23 #11：错误说明是可读正文，走 secondary 槽位
+                                            text = readingState.getMessage(context),
+                                            fontSize = 12.sp,
+                                            lineHeight = 16.sp,
+                                            color = c.textSecondary,
+                                            textAlign = TextAlign.Center,
                                         )
+                                        if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
+                                            // PR #91：428 未配置——去设置页配置模型（唯一出路）
+                                            Spacer(Modifier.height(16.dp))
+                                            Text(
+                                                text = stringResource(R.string.div_reading_go_config),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = c.goldText,
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(AppDimens.radiusFull))
+                                                    .background(c.gold14)
+                                                    .pressable(onClick = {
+                                                        navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                                    })
+                                                    .padding(horizontal = 24.dp, vertical = 10.dp),
+                                            )
+                                        } else {
+                                            // audit-23 #8：错误态出路——「重新推演」重入 SSE（§3.6 双要素）
+                                            Spacer(Modifier.height(16.dp))
+                                            DivGoldButton(
+                                                text = stringResource(R.string.div_reading_retry),
+                                                soft = true,
+                                                modifier = Modifier.fillMaxWidth(),
+                                                onClick = viewModel::retryInterpret,
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -271,22 +287,32 @@ private fun FeedbackRow(
                     color = c.textSecondary,
                 )
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // audit-23 #6（P0）：视觉圆点 28dp 保持画板口径，触控热区外扩至 48dp（§2.3 触控红线，
+                // 参照 DivSectionTitle 尾链「热区在外、视觉在内」做法）；热区间距 8dp（相邻热区不重叠）
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..5).forEach { rating ->
                         Box(
                             modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(c.gold14)
-                                .border(BorderStroke(1.dp, c.hair), CircleShape)
+                                .size(48.dp)
                                 .then(if (submitting) Modifier else Modifier.pressable(onClick = { onRating(rating) })),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = rating.toString(),
-                                fontSize = 12.sp,
-                                color = c.goldText,
-                            )
+                            // audit-23 #14：提交中圆点降至 38% 透明度（§3.1 禁用口径），不再只是摘除按压反馈
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .graphicsLayer { alpha = if (submitting) 0.38f else 1f }
+                                    .clip(CircleShape)
+                                    .background(c.gold14)
+                                    .border(BorderStroke(1.dp, c.hair), CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = rating.toString(),
+                                    fontSize = 12.sp,
+                                    color = c.goldText,
+                                )
+                            }
                         }
                     }
                 }
@@ -325,10 +351,13 @@ private fun readingSealText(record: com.smartwash.feature.divination.database.Di
     }
 }
 
-/** Loading 态流式正文：无增量先出「正在推演」卡；有增量按 `## ` 前缀切段逐卡上屏 + 尾部生成中段 */
+/** Loading 态流式正文：无增量先出「正在推演」卡；有增量按 `## ` 前缀切段逐卡上屏 + 尾部生成中段。
+ *  inProgress=false（错误态，audit-23 #7）：保留已切段内容与未完成段呈现，但不带水波指示、
+ *  无增量时不渲染「正在推演」兜底卡。 */
 @Composable
-private fun StreamingReadingContent(streamText: String) {
+private fun StreamingReadingContent(streamText: String, inProgress: Boolean = true) {
     if (streamText.isBlank()) {
+        if (!inProgress) return
         DivCard(Modifier.padding(horizontal = 20.dp)) {
             Column(
                 Modifier.padding(vertical = 24.dp),
@@ -355,6 +384,8 @@ private fun StreamingReadingContent(streamText: String) {
         }
         streaming.action?.let { ActionCard(it) }
         streaming.pending?.let { pending ->
+            // 错误态未完成段若没有任何增量文字，不渲染空卡
+            if (!inProgress && pending.content.isBlank() && pending.title.isBlank()) return@let
             DivCard(Modifier.padding(vertical = 6.dp)) {
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
                     if (pending.title.isNotBlank()) {
@@ -366,10 +397,14 @@ private fun StreamingReadingContent(streamText: String) {
                         Spacer(Modifier.height(8.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        WaveIcon(isLoading = true, tint = c.gold, size = 12.dp)
-                        Spacer(Modifier.width(6.dp))
+                        if (inProgress) {
+                            WaveIcon(isLoading = true, tint = c.gold, size = 12.dp)
+                            Spacer(Modifier.width(6.dp))
+                        }
                         Text(
-                            text = pending.content.ifBlank { stringResource(R.string.div_reading_loading) },
+                            text = pending.content.ifBlank {
+                                if (inProgress) stringResource(R.string.div_reading_loading) else ""
+                            },
                             fontSize = 12.sp,
                             lineHeight = 16.sp,
                             color = c.textPrimary,
@@ -381,7 +416,7 @@ private fun StreamingReadingContent(streamText: String) {
     }
 }
 
-/** 「一句话断语」卡（四段之首：卡题金衬线同章节卡，正文 12sp；画板章节卡同款容器） */
+/** 「一句话断语」卡（四段之首：卡题金衬线同章节卡，正文 14/20（audit-23 #9）；画板章节卡同款容器） */
 @Composable
 private fun ReadingSummaryCard(summary: String) {
     val c = DivColors.current
@@ -394,9 +429,14 @@ private fun ReadingSummaryCard(summary: String) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = buildDivRichText(summary),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                // audit-23 #9：卡正文升 14/20（v0.4 §2.2 正文下限）；#10：行内 code/链接主题着色
+                text = buildDivRichText(
+                    summary,
+                    codeBackground = c.gold14,
+                    linkColor = c.goldText,
+                ),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
                 color = c.textPrimary,
             )
         }
@@ -406,7 +446,8 @@ private fun ReadingSummaryCard(summary: String) {
 /** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8；
  *  卡高画板 152/152/120 —— 设计文件两卡正文同两行而卡高不一致，按条目定档 minHeight 120，
  *  内容不足时留白沉底、超出自适应）；首屏逐项淡入（无位移），reduced motion 退化为纯淡入。
- *  正文经 buildDivRichText 支持 **加粗** 与 `- ` 列表（issue #78）。*/
+ *  正文经 buildDivRichText 支持 **加粗** / `- ` 列表 / 行内 `code` / 链接 / 标题降级 / 代码块
+ *  （issue #78 + audit-23 #10 最小闭环）。*/
 @Composable
 private fun ReadingSectionCard(
     section: DivReadingSection,
@@ -441,9 +482,14 @@ private fun ReadingSectionCard(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = buildDivRichText(section.content),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                // audit-23 #9：卡正文升 14/20（v0.4 §2.2 正文下限）；#10：行内 code/链接主题着色
+                text = buildDivRichText(
+                    section.content,
+                    codeBackground = c.gold14,
+                    linkColor = c.goldText,
+                ),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
                 color = c.textPrimary,
             )
         }
@@ -463,9 +509,14 @@ private fun ActionCard(action: String) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = buildDivRichText(action),
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
+                // audit-23 #9：卡正文升 14/20（v0.4 §2.2 正文下限）；#10：行内 code/链接主题着色
+                text = buildDivRichText(
+                    action,
+                    codeBackground = c.gold14,
+                    linkColor = c.goldText,
+                ),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
                 color = c.textPrimary,
             )
         }

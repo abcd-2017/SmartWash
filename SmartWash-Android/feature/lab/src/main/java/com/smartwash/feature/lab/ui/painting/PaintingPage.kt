@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -134,7 +135,9 @@ fun PaintingPage(
         modifier = Modifier
             .fillMaxSize()
             .background(scheme.background)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            // edge-to-edge 下滚动内容底部避让系统手势区（对齐同模块页脚处理）
+            .navigationBarsPadding(),
     ) {
         PageHeader(
             title = stringResource(R.string.lab_painting_title),
@@ -146,7 +149,8 @@ fun PaintingPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = AppDimens.pagePadding)
-                .padding(top = AppDimens.spaceXs)
+                // hero 顶距与下方信息卡区块间距（32）对齐节奏（原 8 上紧下松）
+                .padding(top = AppDimens.spaceXl)
                 .aspectRatio(0.75f)
                 .clip(RoundedCornerShape(AppDimens.radiusXl))
                 .background(palette.paper)
@@ -240,7 +244,8 @@ fun PaintingPage(
             Text(
                 text = stringResource(R.string.lab_painting_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.textTertiary,
+                // 可读正文禁止 textTertiary（§10 红线：白卡 2.25:1 / 深色卡 4.25:1 均不达 4.5）
+                color = scheme.textSecondary,
             )
         }
     }

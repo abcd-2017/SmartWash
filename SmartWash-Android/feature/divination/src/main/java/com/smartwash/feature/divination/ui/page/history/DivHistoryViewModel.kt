@@ -38,10 +38,15 @@ class DivHistoryViewModel @Inject constructor(
     val uiState: StateFlow<DivHistoryUiState> = _filter.map { DivHistoryUiState(filter = it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DivHistoryUiState())
 
-    val records: StateFlow<List<DivRecordEntity>> =
+    /**
+     * 卦历记录三态（audit-08 #3）：初值 null = Room 首帧未到（加载中，UI 渲染同形骨架），
+     * emptyList = 数据库真空（空态），非空 = 列表——原先以 emptyList() 作初值，
+     * 「未加载」与「真空」不可区分，有记录用户每次进页先闪空态再经 Crossfade 切列表。
+     */
+    val records: StateFlow<List<DivRecordEntity>?> =
         combine(repository.observeAll(), _filter) { all, filter ->
             if (filter == null) all else all.filter { it.method == filter.id }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         viewModelScope.launch { repository.syncServerLinks() }

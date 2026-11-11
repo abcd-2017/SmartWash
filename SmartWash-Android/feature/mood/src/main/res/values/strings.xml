@@ -50,6 +50,7 @@
     <string name="mood_week_sun">日</string>
     <string name="mood_calendar_recorded_days_format">本月记录 %1$d 天</string>
     <string name="mood_calendar_day_empty_hint">灰格 = 无记录，点色块看当天</string>
+    <string name="mood_calendar_grid_desc_format">%1$d月心情月历，本月记录 %2$d 天</string>
     <string name="mood_day_date_pattern">M月d日</string>
     <string name="mood_day_dialog_level_format">心情： %1$s</string>
     <string name="mood_day_dialog_word_empty">这天没有留下词</string>

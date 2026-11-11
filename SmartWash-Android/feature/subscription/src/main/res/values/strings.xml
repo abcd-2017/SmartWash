@@ -152,6 +152,7 @@
     <string name="subscription_reminder_type_renew">续费提醒</string>
     <string name="subscription_reminder_type_trial_end">试用截止</string>
     <string name="subscription_reminder_date_format">应提醒 %1$s</string>
+    <string name="subscription_reminder_unread_dot">未读提醒</string>
     <string name="subscription_reminder_read_tag">已读</string>
 
     <!-- ==================== 日期弹窗 ==================== -->

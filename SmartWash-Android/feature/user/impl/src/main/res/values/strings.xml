@@ -210,7 +210,7 @@
 
     <!-- 钱包流水（GET /web/auth/user/transactions；金额符号端上按 type 重算，绝对值展示） -->
     <string name="wallet_transactions">钱包流水</string>
-    <string name="no_wallet_transactions">暂无钱包流水</string>
+    <string name="no_wallet_transactions">还没有流水，去充值或下单一笔试试</string>
     <string name="wallet_load_failed">流水加载失败</string>
     <string name="wallet_append_failed">加载更多失败，点击重试</string>
     <string name="transaction_payment">消费</string>

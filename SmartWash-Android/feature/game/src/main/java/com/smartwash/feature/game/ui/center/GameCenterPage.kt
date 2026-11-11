@@ -3,6 +3,7 @@ package com.smartwash.feature.game.ui.center
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
@@ -14,14 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import android.widget.Toast
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.SportsEsports
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,7 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +51,7 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
+import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.game.GameCategory
@@ -66,8 +66,8 @@ private const val GRID_COLUMNS = 2
 /** 封面宽高比（设计稿封面 800×450 横版；服务端上传与本地兜底同一比例） */
 private const val GAME_CARD_ASPECT_RATIO = 16f / 9f
 
-/** 网格卡片间距（方案 §六 明确 8dp：touch-spacing 网格密排，取间距令牌 spaceXs） */
-private val GRID_SPACING = AppDimens.spaceXs
+/** 网格卡片间距（cardSpacing 16dp：§2.3 卡片间距档，同时满足 SoftShadow「相邻卡片间距 ≥ 12dp」防阴影叠画） */
+private val GRID_SPACING = AppDimens.cardSpacing
 
 /**
  * 游戏中心页（方案 §六）：PageHeader + 分类筛选 chips（本地过滤）+ 两列网格卡片。
@@ -105,10 +105,12 @@ fun GameCenterPage(
         when {
             // 首刷失败：说明发生了什么 + 重试（规范 §3.6 错误态）
             listState is RequestState.Error -> {
+                // 文案消费状态携带的 resId（单一事实源：VM 按错误类型区分文案时页面自动跟随）
+                val error = listState as RequestState.Error
                 EmptyState(
-                    // EmptyState 的 icon 为占位参数不渲染（组件只出滚筒圆母题）
-                    icon = Icons.Rounded.SportsEsports,
-                    message = stringResource(R.string.game_error_load),
+                    // EmptyState 的 icon 为占位参数不渲染（组件只出滚筒圆母题）；Filled 变体对齐 GameConstant
+                    icon = Icons.Default.Apps,
+                    message = stringResource(error.messageResId),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = AppDimens.pagePadding),
@@ -128,7 +130,8 @@ fun GameCenterPage(
             // 空态：全量空（后端未上传/未上架）与筛选无命中分别给文案
             games.isEmpty() -> {
                 EmptyState(
-                    icon = Icons.Rounded.SportsEsports,
+                    // 占位参数不渲染；Filled 变体对齐 GameConstant 游戏卡图标组
+                    icon = Icons.Default.Apps,
                     message = if (selectedCategory == null) {
                         stringResource(R.string.game_empty_message)
                     } else {
@@ -195,7 +198,7 @@ private fun categoryChipLabel(category: GameCategory): String = when (category) 
 /**
  * 游戏网格（两列，行切分语言对齐工作台 LazyColumn + chunked）：行 key 由 gameKey
  * 拼接（稳定；行数前缀防不同切分的拼接碰撞），奇数末行补位保持两列。
- * 间距 8dp（GRID_SPACING = spaceXs，方案 §六 touch-spacing）。
+ * 间距 16dp（GRID_SPACING = cardSpacing，§2.3 卡片间距 + SoftShadow ≥12dp 不叠画）。
  */
 @Composable
 private fun GameGrid(
@@ -206,7 +209,8 @@ private fun GameGrid(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
-            top = AppDimens.spaceXs,
+            // 顶部 ≥12dp：首行卡片阴影越出卡边 12dp，LazyColumn 会裁切边界外内容，需留容身空间
+            top = AppDimens.spaceSm,
             bottom = AppDimens.spaceXl,
         ),
     ) {
@@ -248,8 +252,9 @@ private fun GameGrid(
  * - 有封面（服务端 MinIO 直链优先，缺失回退本地自绘兜底）：封面与文字分区 — 16:9 封面
  *   独立占卡顶（随卡片圆角裁切），文字区白底置于封面下方（标题 + 两行描述），文字永不遮图
  *   （2026-11-07 用户反馈调整：原「底部渐变遮罩压白字」构图遮挡封面细节，弃用）；
- *   badge 白胶囊叠封面右上（surface 底 + textPrimary 字），任意封面底色下可读。
- * - 无封面：原回退卡 — 44dp 图标色块（六色浅底 + 对应前景色，圆角 16dp 方案 §六）
+ *   badge 白胶囊叠封面右上（surface 底 + textPrimary 字 + 1dp outline 描边），任意封面底色下可读；
+ *   服务端封面加载失败经 Coil error 态回退本地自绘封面（无本地资产退占位灰）。
+ * - 无封面：原回退卡 — IconBox 图标容器（六色浅底 + 对应前景色，44/12/24 v0.4 §3.2 主容器档）
  *   + 标题 + 描述两行截断。
  * 整卡 pressable（scale 0.97 / 80-150ms 档，transform-only，reduced motion 降级透明度）；
  * a11y：contentDescription = title + description，封面为装饰图不出语义。
@@ -297,6 +302,10 @@ private fun GameCard(
                                 .fillMaxWidth()
                                 .aspectRatio(GAME_CARD_ASPECT_RATIO),
                             contentScale = ContentScale.Crop,
+                            // 加载失败兜底（Coil error 态）：回退本地自绘封面，「服务端优先、本地兜底」闭环；
+                            // 无本地资产时退 surfaceVariant 占位色，不再呈现永久死灰块
+                            error = localCover?.let { painterResource(it) }
+                                ?: ColorPainter(scheme.surfaceVariant),
                         )
                     } else {
                         localCover?.let { coverRes ->
@@ -319,16 +328,19 @@ private fun GameCard(
                                 .align(Alignment.TopEnd)
                                 .padding(AppDimens.spaceSm)
                                 .background(scheme.surface, RoundedCornerShape(AppDimens.radiusFull))
-                                .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
+                                // 1dp outline 描边与卡片描边同语言：封面接近白色时胶囊轮廓不消失
+                                .border(
+                                    BorderStroke(1.dp, scheme.outline),
+                                    RoundedCornerShape(AppDimens.radiusFull),
+                                )
+                                .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
                         )
                     }
                 }
-                // 文字区：封面下方独立白底，文字不遮图
+                // 文字区：封面下方独立白底，文字不遮图；内边距对齐 §2.3 卡片内边距
+                // （cardPadding 20dp，与无封面卡同一令牌语言，消除同页 20/12 两套并存）
                 Column(
-                    modifier = Modifier.padding(
-                        horizontal = AppDimens.spaceSm,
-                        vertical = AppDimens.spaceXs,
-                    )
+                    modifier = Modifier.padding(AppDimens.cardPadding)
                 ) {
                     Text(
                         text = game.title,
@@ -351,21 +363,13 @@ private fun GameCard(
             }
         } else {
             Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
-                // 图标色块：44dp 容器（v0.4 §3.2 主容器档）+ 24dp 图标，圆角取 16dp（方案 §六）
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(AppDimens.radiusLg))
-                        .background(containerColor),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = game.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = iconTint,
-                    )
-                }
+                // 图标容器：IconBox 默认档 = 44dp 容器 / 12dp 圆角（iconContainerRadius）/ 24dp 图标
+                // （v0.4 §3.2 图标容器·主；原手搓 Box 误用 radiusLg 16dp，收敛到组件默认档）
+                IconBox(
+                    icon = game.icon,
+                    containerColor = containerColor,
+                    iconTint = iconTint,
+                )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Text(
                     text = game.title,
@@ -382,16 +386,18 @@ private fun GameCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                // badge 角标（无封面构图）：主色浅底/主色文字胶囊（语言对齐工作台 ToolTile）
+                // badge 角标（无封面构图）：主色浅底/深绿小字胶囊（语言对齐工作台 ToolTile）。
+                // 文字色取 textGreenOnTint（§10 对比度红线：primary 品牌绿在 primaryLight 浅底
+                // 小字号下仅 ≈3.3:1 不达 AA，textGreenOnTint ≈6.4:1 达标，深浅两主题均已定档）
                 if (!game.badge.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = game.badge,
                         style = MaterialTheme.typography.labelSmall,
-                        color = scheme.primary,
+                        color = scheme.textGreenOnTint,
                         modifier = Modifier
                             .background(scheme.primaryLight, RoundedCornerShape(AppDimens.radiusFull))
-                            .padding(horizontal = AppDimens.spaceSm, vertical = 2.dp)
+                            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.space2xs)
                     )
                 }
             }
@@ -400,7 +406,7 @@ private fun GameCard(
 }
 
 /**
- * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实内容一致；行距同真实网格 8dp，
+ * 加载骨架（规范 §3.6：骨架屏替代转圈，形状与真实内容一致；行距同真实网格 16dp（GRID_SPACING），
  * 微光扫过经 SkeletonBlock，reduced motion 自动退化为静态浅灰块）。
  * 骨架与封面主导真实卡同构：16:9 封面块（顶角圆角）+ 下方标题/描述文字条块。
  */
@@ -430,14 +436,16 @@ private fun GameGridSkeleton(modifier: Modifier = Modifier) {
                         SkeletonBlock(
                             modifier = Modifier
                                 .fillMaxWidth(0.65f)
-                                .height(14.dp),
+                                // 对齐真实标题行高（bodyMedium 14sp → 20sp 行高，spaceLg 档）
+                                .height(AppDimens.spaceLg),
                             shape = RoundedCornerShape(AppDimens.radiusSmall),
                         )
                         Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                         SkeletonBlock(
                             modifier = Modifier
                                 .fillMaxWidth(0.9f)
-                                .height(11.dp),
+                                // 对齐真实描述行高（labelSmall 12sp → 16sp 行高，spaceMd 档）
+                                .height(AppDimens.spaceMd),
                             shape = RoundedCornerShape(AppDimens.radiusSmall),
                         )
                     }

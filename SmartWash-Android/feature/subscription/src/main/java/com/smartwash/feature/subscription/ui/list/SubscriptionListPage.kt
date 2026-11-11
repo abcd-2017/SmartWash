@@ -45,6 +45,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -165,6 +167,8 @@ fun SubscriptionListPage(
                             color = AppColors.colorScheme.primaryDark,
                         )
                     }
+                    // 相邻触控目标间距 ≥8dp（DESIGN-SPEC §3）：两个 pressable 热区边界原先彼此贴合
+                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                     Box(
                         modifier = Modifier
                             .pressable(onClick = { navController.navigateToSubscriptionEdit(-1L) })
@@ -264,12 +268,12 @@ fun SubscriptionListPage(
                                 }
                                 is LoadState.Error -> {
                                     item(key = "append_error") {
-                                        // 44dp 最小热区（规范 §2.3），重试文字居中
+                                        // 48dp 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48dp，错误态唯一出路），重试文字居中
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .pressable(onClick = { pagingItems.retry() })
-                                                .heightIn(min = 44.dp)
+                                                .heightIn(min = 48.dp)
                                                 .padding(vertical = AppDimens.spaceSm),
                                             contentAlignment = Alignment.Center,
                                         ) {
@@ -374,22 +378,32 @@ private fun SubscriptionCard(
                         Text(
                             text = vo.name,
                             style = AppTextStyles.CardTitle,
-                            color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
+                            // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
+                            color = if (terminal) AppColors.colorScheme.textSecondary else AppColors.colorScheme.textPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
-                        // 未读提醒红点（规范 §3.5 状态色点：异常/提醒 = danger）
+                        // 未读提醒红点（规范 §3.5 状态色点：异常/提醒 = danger）。
+                        // 补语义文案（DESIGN-SPEC §10 颜色不是唯一信息载体）：
+                        // 读屏朗读「N 条未读提醒」，消费此前零引用的 subscription_unread_reminders_format
                         if (vo.unreadReminderCount > 0) {
                             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-                            StatusDot(color = AppColors.colorScheme.danger)
+                            val unreadText = stringResource(
+                                R.string.subscription_unread_reminders_format,
+                                vo.unreadReminderCount,
+                            )
+                            StatusDot(
+                                color = AppColors.colorScheme.danger,
+                                modifier = Modifier.semantics { contentDescription = unreadText },
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = cycleDescription(cycleType, vo.cycleInterval),
                         style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                        color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textSecondary,
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
@@ -400,7 +414,7 @@ private fun SubscriptionCard(
                 Text(
                     text = stringResource(R.string.subscription_amount_per_period, SubscriptionRules.formatAmount(vo.amount)),
                     style = AppTextStyles.AmountMedium,
-                    color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.primaryDark,
+                    color = if (terminal) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primaryDark,
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 TrialBadge(vo = vo)
@@ -439,7 +453,9 @@ private fun TrialBadge(vo: SubscriptionVo) {
     SubscriptionTagChip(
         text = text,
         containerColor = if (urgent) AppColors.colorScheme.iconContainerPink else AppColors.colorScheme.warningContainer,
-        contentColor = if (urgent) AppColors.colorScheme.dangerInk else AppColors.colorScheme.ongoingInk,
+        // 非紧急分支换 onWarningContainer（容器/内容成对令牌，on warningContainer 6.47:1）：
+        // ongoingInk v0.4 与 ongoing 同值 #D98A26，压橙浅底仅 2.52:1，不达正文红线（§10）
+        contentColor = if (urgent) AppColors.colorScheme.dangerInk else AppColors.colorScheme.onWarningContainer,
         // 天数为动态数字，开 tnum 防跳动（规范 §2.2）
         style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
     )
@@ -451,12 +467,21 @@ private fun TrialBadge(vo: SubscriptionVo) {
  * 续费周期进度环（44dp · 4dp 描边）：进度 = 已消耗天数 / 当期总天数（真实派生数据驱动，
  * 弹簧过渡 + reduced motion 自动降级）。逾期转 danger，临近（≤3 天）转 ongoing，
  * 暂停弱化为 textTertiary，终态与不可解析数据不渲染。环心为距续费天数（tnum）。
+ * 环线与环心文字拆色：环线走图形口径，环心 12sp 数字走文字级达标令牌（§10 ≥4.5:1）。
  */
 @Composable
 private fun RenewProgressRing(vo: SubscriptionVo, status: SubscriptionStatus) {
     if (status.isTerminal) return
     val cycleType = SubscriptionCycleType.fromRaw(vo.cycleType)
-    val fraction = remember(vo.subscriptionId, vo.nextRenewDate, vo.daysUntilRenew) {
+    // remember key 覆盖 renewProgressFraction 全部四个数据入参（+id 隔离条目）：
+    // 改计费周期而续费日恰好不变时进度也要重算
+    val fraction = remember(
+        vo.subscriptionId,
+        vo.cycleType,
+        vo.cycleInterval,
+        vo.nextRenewDate,
+        vo.daysUntilRenew,
+    ) {
         SubscriptionRules.renewProgressFraction(cycleType, vo.cycleInterval, vo.nextRenewDate, vo.daysUntilRenew)
     } ?: return
     val daysLeft = vo.daysUntilRenew ?: return
@@ -466,6 +491,14 @@ private fun RenewProgressRing(vo: SubscriptionVo, status: SubscriptionStatus) {
         daysLeft < 0 -> AppColors.colorScheme.danger
         daysLeft <= 3 -> AppColors.colorScheme.ongoing
         else -> AppColors.colorScheme.primary
+    }
+    // 环心是 12sp 可读数字（§10 正文 ≥4.5:1），与环线（图形 3:1 口径）拆档：
+    // 环线保持 ringColor 不变，文字用文字级达标令牌（按状态同色相映射）
+    val centerTextColor = when {
+        status == SubscriptionStatus.PAUSED -> AppColors.colorScheme.textSecondary
+        daysLeft < 0 -> AppColors.colorScheme.dangerInk
+        daysLeft <= 3 -> AppColors.colorScheme.onWarningContainer
+        else -> AppColors.colorScheme.textGreen
     }
     // 进度由真实数据驱动的一次性过渡（规范 §7 位移动画一律弹簧；reduced motion 降级 180ms）
     val progress by animateFloatAsState(
@@ -499,7 +532,7 @@ private fun RenewProgressRing(vo: SubscriptionVo, status: SubscriptionStatus) {
         Text(
             text = stringResource(R.string.subscription_renew_days_compact, kotlin.math.abs(daysLeft)),
             style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-            color = ringColor,
+            color = centerTextColor,
             maxLines = 1,
         )
     }
@@ -539,7 +572,9 @@ private fun statusChipContainer(status: SubscriptionStatus): Color = when (statu
 
 @Composable
 private fun statusChipContent(status: SubscriptionStatus): Color = when (status) {
-    SubscriptionStatus.PAUSED -> AppColors.colorScheme.ongoingInk
+    // PAUSED：onWarningContainer 与 warningContainer 成对（6.47:1）；ongoingInk 压橙浅底仅 2.52:1（§10 红线）
+    SubscriptionStatus.PAUSED -> AppColors.colorScheme.onWarningContainer
     SubscriptionStatus.CANCELED -> AppColors.colorScheme.dangerInk
-    else -> AppColors.colorScheme.textTertiary
+    // FINISHED（else）：textSecondary on surfaceVariant 4.51:1；textTertiary 1.98:1 禁作可读标签（DESIGN-SPEC §10）
+    else -> AppColors.colorScheme.textSecondary
 }

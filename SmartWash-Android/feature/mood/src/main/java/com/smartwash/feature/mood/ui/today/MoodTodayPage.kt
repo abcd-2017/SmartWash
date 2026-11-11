@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -163,7 +164,9 @@ private fun MoodTodayContent(
                     MoodSmallAction(
                         text = stringResource(R.string.mood_action_retry),
                         onClick = onRetryCalendar,
-                        contentColor = AppColors.colorScheme.primary,
+                        // 小号绿字走 textGreenOnTint 深档（审查报告 #3：primary #2D9B6A 在
+                        // surfaceVariant 浅底仅 3.08:1 跌破红线；2026-11-06 评审 R17/R18 专档）
+                        contentColor = AppColors.colorScheme.textGreenOnTint,
                     )
                 }
             }
@@ -202,8 +205,10 @@ private fun MoodTodayContent(
                 } else {
                     stringResource(R.string.mood_today_hint)
                 },
-                style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textTertiary,
+                // 本页核心状态反馈行（审查报告 #2①）：textTertiary 仅限禁用/装饰（§10 红线），
+                // 改 textSecondary（on 白卡 4.9:1）；并按报告建议配 500 字重（captionStrong 档）强化
+                style = MaterialTheme.typography.labelMedium,
+                color = AppColors.colorScheme.textSecondary,
             )
             // 保存失败：内联错误（13sp error 色，保留后端 message——含 code=201 业务提示）
             if (saveState is RequestState.Error) {
@@ -220,7 +225,8 @@ private fun MoodTodayContent(
         GroupCard {
             Text(
                 text = stringResource(R.string.mood_word_section_title),
-                style = MaterialTheme.typography.bodyLarge,
+                // 卡内区块标题 = CardTitle 档 18/600（审查报告 #19，bodyLarge 是正文档）
+                style = AppTextStyles.CardTitle,
                 color = AppColors.colorScheme.textPrimary,
             )
             Row(
@@ -244,7 +250,8 @@ private fun MoodTodayContent(
         GroupCard {
             Text(
                 text = stringResource(R.string.mood_note_section_title),
-                style = MaterialTheme.typography.bodyLarge,
+                // 卡内区块标题 = CardTitle 档 18/600（审查报告 #19，bodyLarge 是正文档）
+                style = AppTextStyles.CardTitle,
                 color = AppColors.colorScheme.textPrimary,
             )
             OutlinedTextField(
@@ -266,7 +273,9 @@ private fun MoodTodayContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = AppDimens.spaceSm)
-                    .height(48.dp),
+                    // min 高度 48dp、放开上限（审查报告 #21②）：130% 字体缩放下 16sp 正文
+                    // + 内边距逼近容器上限有裁切风险
+                    .heightIn(min = 48.dp),
                 // 规范 §3.7 输入档 14dp
                 shape = RoundedCornerShape(AppDimens.inputRadius),
                 colors = moodTextFieldColors(),

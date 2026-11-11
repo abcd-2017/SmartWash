@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,7 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,7 +39,7 @@ import com.smartwash.common.ui.components.AppCard
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.PageHeader
-import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
@@ -49,7 +52,11 @@ import com.smartwash.feature.review.network.ReviewCardVo
 import com.smartwash.feature.review.ui.DueTypeChip
 import com.smartwash.feature.review.ui.ReviewTagChip
 import com.smartwash.feature.review.ui.navigateToReviewStudy
+import java.time.Duration
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /**
  * 今日队列页：顶部「今日 N 张」计数条（数据大字锚点 + 到期/新卡分解 + 开始复习 CTA）+
@@ -94,19 +101,21 @@ fun ReviewQueuePage(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 when (val loadState = state.loadState) {
-                    // 首刷加载：骨架屏占位（禁止转圈，规范 §3.6）
+                    // 首刷加载：骨架屏占位（形状对齐 QueueCard，禁止转圈，规范 §3.6）
                     RequestState.Loading, RequestState.Idle -> {
-                        SkeletonList(modifier = Modifier.fillMaxSize(), rows = 5)
+                        QueueSkeleton(modifier = Modifier.fillMaxSize())
                     }
                     // 首刷失败：说明 + 重试按钮
                     is RequestState.Error -> {
                         EmptyState(
                             icon = Icons.Rounded.School,
                             message = loadState.getMessage(context),
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = AppDimens.pagePadding),
                             action = {
+                                // 本屏唯一主行动：48dp 胶囊主按钮（DESIGN-SPEC §3 触控 ≥48dp / §4 单一主行动，矩阵 #9）
                                 AppButton(
-                                    small = true,
                                     text = stringResource(R.string.review_action_retry),
                                     onClick = { viewModel.load() },
                                 )
@@ -120,10 +129,12 @@ fun ReviewQueuePage(
                             EmptyState(
                                 icon = Icons.Rounded.School,
                                 message = stringResource(R.string.review_queue_empty_message),
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = AppDimens.pagePadding),
                                 action = {
+                                    // 本屏唯一主行动：48dp 胶囊主按钮（DESIGN-SPEC §3 触控 ≥48dp / §4 单一主行动，矩阵 #9）
                                     AppButton(
-                                        small = true,
                                         text = stringResource(R.string.review_queue_empty_action),
                                         onClick = { navController.navigate(ReviewRoute.Materials) },
                                     )
@@ -155,6 +166,16 @@ private fun QueueContent(
     onStartStudy: () -> Unit,
     onCardClick: (ReviewCardVo) -> Unit,
 ) {
+    // 页面级时钟（分钟粒度，对齐分钟边界滴答）：页面停留时「N 分钟后到期」随时间推进不失真，
+    // 全部卡片同一 now 基准（审查矩阵 #8；数据变更仍经下拉刷新/savedStateHandle 重拉）
+    val now by produceState(initialValue = LocalDateTime.now(), key1 = Unit) {
+        while (isActive) {
+            val current = LocalDateTime.now()
+            val nextMinute = current.truncatedTo(ChronoUnit.MINUTES).plusMinutes(1)
+            delay(Duration.between(current, nextMinute).toMillis() + 1)
+            value = LocalDateTime.now()
+        }
+    }
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
         contentPadding = PaddingValues(
@@ -188,6 +209,7 @@ private fun QueueContent(
             QueueCard(
                 card = card,
                 materialTitle = materialTitles[card.materialId],
+                now = now,
                 onClick = { onCardClick(card) },
             )
         }
@@ -202,12 +224,17 @@ private fun QueueContent(
 private fun QueueCard(
     card: ReviewCardVo,
     materialTitle: String?,
+    now: LocalDateTime,
     onClick: () -> Unit,
 ) {
-    val now = remember { LocalDateTime.now() }
     val dueText = ReviewFormat.dueTextOf(card.dueAt, now)
     AppCard(modifier = Modifier.pressable(onClick = onClick)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // 卡内容包卡内边距 20dp：AppCard 无默认内边距，遗漏会让文本贴 16dp 圆角切字
+        // （规范 §3.1 卡内边距 / 审查矩阵 #1，与 ReviewStudyPage 卡面画法一致）
+        Row(
+            modifier = Modifier.padding(AppDimens.cardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = card.question,
@@ -231,7 +258,9 @@ private fun QueueCard(
             Text(
                 text = dueDisplayText(dueText),
                 style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                color = AppColors.colorScheme.textTertiary,
+                // 到期时间是队列核心决策信息（非占位/装饰文本）：textTertiary 浅 2.25 / 深 4.25:1
+                // 双模式均破 4.5:1 红线，改 textSecondary（审查矩阵 #2）
+                color = AppColors.colorScheme.textSecondary,
             )
         }
     }
@@ -248,4 +277,74 @@ private fun dueDisplayText(dueText: ReviewFormat.DueText): String = when (dueTex
     is ReviewFormat.DueText.InDays ->
         stringResource(R.string.review_due_in_days, dueText.days)
     ReviewFormat.DueText.Unknown -> ""
+}
+
+/**
+ * 队列页首刷骨架 — 形状对齐真实 QueueCard：两行问题文本块 + chips 胶囊行 + 右侧到期时间小块
+ * （SkeletonList 的「40dp 左圆块 + 两行文本」是带图标容器的行结构，QueueCard 为无图标的全宽卡，
+ * 骨架形状须与真实内容一致 — 规范 §3.6 / 审查矩阵 #7）。
+ * 微光扫过与 reduced motion 静态灰降级由 SkeletonBlock（rememberSkeletonBrush）承担。
+ */
+@Composable
+private fun QueueSkeleton(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(
+            horizontal = AppDimens.pagePadding,
+            vertical = AppDimens.spaceXs,
+        ),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
+    ) {
+        repeat(5) { QueueCardSkeletonRow() }
+    }
+}
+
+/**
+ * 单条队列卡骨架行 — 结构复刻 QueueCard（卡内边距 20dp + 左侧文本列 + 右侧到期小块）。
+ * 块高复用 AppDimens 既有档位对齐真实文本度量：titleSmall 行高 20sp → spaceLg(20dp)、
+ * labelSmall chip 高 16sp 行高 + 8dp 纵向内边距 → spaceXl(24dp)、到期小字行高 16sp → spaceMd(16dp)，
+ * 不新增任何硬编码尺寸。
+ */
+@Composable
+private fun QueueCardSkeletonRow() {
+    AppCard {
+        Row(
+            modifier = Modifier.padding(AppDimens.cardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(AppDimens.spaceLg),
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                SkeletonBlock(
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(AppDimens.spaceLg),
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceXs))
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXxs)) {
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.26f)
+                            .height(AppDimens.spaceXl),
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
+                    )
+                    SkeletonBlock(
+                        modifier = Modifier
+                            .fillMaxWidth(0.2f)
+                            .height(AppDimens.spaceXl),
+                        shape = RoundedCornerShape(AppDimens.radiusFull),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+            SkeletonBlock(
+                modifier = Modifier
+                    .fillMaxWidth(0.14f)
+                    .height(AppDimens.spaceMd),
+            )
+        }
+    }
 }

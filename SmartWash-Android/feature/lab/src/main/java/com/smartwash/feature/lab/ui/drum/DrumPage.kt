@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -130,7 +131,9 @@ fun DrumPage(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppDimens.pagePadding)
-                .padding(bottom = AppDimens.sectionSpacing),
+                .padding(bottom = AppDimens.sectionSpacing)
+                // edge-to-edge 下滚动内容底部避让系统手势区（对齐同模块页脚处理）
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
         ) {
             ControlCard(
@@ -366,15 +369,18 @@ private fun PresetSection(onApply: (DrumPreset) -> Unit) {
             DrumPreset.entries.forEach { preset ->
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(AppDimens.radiusFull))
-                        .background(scheme.surfaceVariant)
-                        .border(1.dp, scheme.outline, RoundedCornerShape(AppDimens.radiusFull))
+                        // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉胶囊高不变，
+                        // 命中区 32+16=48（§2.3 触控热区 ≥48dp）
                         .pressable(
                             onClick = {
                                 view.performHaptic(HapticEffect.SELECTION)
                                 onApply(preset)
                             },
                         )
+                        .padding(vertical = AppDimens.spaceXs)
+                        .clip(RoundedCornerShape(AppDimens.radiusFull))
+                        .background(scheme.surfaceVariant)
+                        .border(1.dp, scheme.outline, RoundedCornerShape(AppDimens.radiusFull))
                         .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
                 ) {
                     Text(
@@ -426,8 +432,8 @@ private fun StepGridCard(
                 .fillMaxWidth()
                 .padding(AppDimens.cardPadding),
         ) {
-            // 声部标签列（固定，不随步进横滚）
-            Column {
+            // 声部标签列（固定，不随步进横滚；行间距与步进区 8dp 网格同步对齐）
+            Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
                 DrumVoice.entries.forEach { voice ->
                     Box(
                         modifier = Modifier
@@ -446,14 +452,16 @@ private fun StepGridCard(
                 }
             }
             Spacer(modifier = Modifier.width(AppDimens.spaceXs))
-            // 步进区（横滚）
+            // 步进区（横滚）：行/列间距按 8dp 网格（相邻触控目标间距 ≥8dp，
+            // 原格内 1dp padding 形成的 2dp 缝隙过低）
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .horizontalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
             ) {
                 DrumVoice.entries.forEach { voice ->
-                    Row {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs)) {
                         for (step in 0 until DRUM_STEP_COUNT) {
                             StepCell(
                                 voice = voice,
@@ -493,10 +501,11 @@ private fun StepCell(
     onToggle: (Int, Int) -> Unit,
 ) {
     val scheme = AppColors.colorScheme
+    // 空格上的播放头不再染 primarySoft（对空格底仅 1.02/1.07:1 不可辨），
+    // 改由上方 primary 描边环承担指示，底色保持空格原色
     val color = when {
         active && isCurrent -> scheme.water
         active -> scheme.primary
-        isCurrent -> scheme.primarySoft
         step % 4 == 0 -> scheme.outline
         else -> scheme.surfaceVariant
     }
@@ -514,17 +523,32 @@ private fun StepCell(
     }
     Box(
         modifier = Modifier
+            // pressable 前置 + 视觉格外 padding 外扩触控热区：视觉格 24×40 不变，
+            // 命中区抬到 48×48（原 24×40 且相邻缝仅 2dp，§2.3 触控热区 + 相邻目标间距）
+            .pressable(
+                onClick = { onToggle(voice.ordinal, step) },
+                debounce = false,
+            )
+            .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceXxs)
             .size(width = CELL_WIDTH, height = ROW_HEIGHT)
-            .padding(1.dp)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
             }
             .clip(RoundedCornerShape(AppDimens.radiusSmall))
             .background(color)
-            .pressable(
-                onClick = { onToggle(voice.ordinal, step) },
-                debounce = false,
+            // 播放头落在空格上：底色与空格同板，加 primary 描边环指示（对空格双板
+            // 3.07/7.03:1 达图形 3:1；描边静态保留，reduced motion 关放大动画后仍可辨）
+            .then(
+                if (isCurrent && !active) {
+                    Modifier.border(
+                        2.dp,
+                        scheme.primary,
+                        RoundedCornerShape(AppDimens.radiusSmall),
+                    )
+                } else {
+                    Modifier
+                },
             )
             .semantics {
                 contentDescription = "$voiceName $stepName"

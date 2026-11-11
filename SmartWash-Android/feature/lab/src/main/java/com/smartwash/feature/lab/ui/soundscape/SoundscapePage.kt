@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -181,7 +182,9 @@ fun SoundscapePage(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = AppDimens.pagePadding)
-                .padding(bottom = AppDimens.sectionSpacing),
+                .padding(bottom = AppDimens.sectionSpacing)
+                // edge-to-edge 下滚动内容底部避让系统手势区（对齐同模块页脚处理）
+                .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
         ) {
             HeroCard(
@@ -250,7 +253,9 @@ private fun HeroCard(
                         Text(
                             text = presetLabel(activePreset),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = scheme.onPrimary.copy(alpha = 0.85f),
+                            // hero 渐变底上的副标题 14sp 可读正文：85% alpha 合成后仅 2.96:1/3.21:1，
+                            // 去 alpha 折扣对齐 hero 白字既有口径（§10 对比度红线）
+                            color = scheme.onPrimary,
                         )
                     }
                 }
@@ -361,6 +366,10 @@ private fun PresetSection(
                 val selected = preset == activePreset
                 Box(
                     modifier = Modifier
+                        // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉胶囊高不变，
+                        // 命中区 32+16=48（§2.3 触控热区 ≥48dp）
+                        .pressable(onClick = { onApply(preset) })
+                        .padding(vertical = AppDimens.spaceXs)
                         .clip(RoundedCornerShape(AppDimens.radiusFull))
                         .background(
                             if (selected) scheme.primary else scheme.surfaceVariant,
@@ -376,7 +385,6 @@ private fun PresetSection(
                                 )
                             },
                         )
-                        .pressable(onClick = { onApply(preset) })
                         .padding(
                             horizontal = AppDimens.spaceMd,
                             vertical = AppDimens.spaceXs,
@@ -537,7 +545,8 @@ private fun ChannelRow(
                     onVolumeChange = onVolumeChange,
                     modifier = Modifier
                         .weight(1f)
-                        .height(32.dp),
+                        // 48dp 触控下限（原 32dp 滑杆拇指命中率不足；轨道仍 4dp 居中）
+                        .height(48.dp),
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
                 Text(
@@ -571,6 +580,10 @@ private fun SoundToggle(
     }
     Box(
         modifier = Modifier
+            // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉胶囊 48×28 不变，
+            // 命中区抬到 48×52（§2.3 触控热区 ≥48dp，28dp 高直接点按拇指命中率过低）
+            .pressable(onClick = onCheckedChange)
+            .padding(vertical = AppDimens.spaceSm)
             .size(width = 48.dp, height = 28.dp)
             .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(if (checked) scheme.primary else scheme.surfaceVariant)
@@ -579,7 +592,6 @@ private fun SoundToggle(
                 if (checked) scheme.primary else scheme.outline,
                 RoundedCornerShape(AppDimens.radiusFull),
             )
-            .pressable(onClick = onCheckedChange)
             .semantics {
                 contentDescription = label
                 stateDescription = if (checked) onText else offText
@@ -698,6 +710,14 @@ private fun TimerCard(
                 Box(
                     modifier = Modifier
                         .weight(1f)
+                        // pressable 前置 + 视觉区外 padding 外扩触控热区：视觉 36dp 小按钮档
+                        // 不变，可用态命中区 36+16=52（§2.3 触控热区 ≥48dp）；禁用态无
+                        // pressable，外扩区不可点，语义保留
+                        .then(
+                            if (enabled) Modifier.pressable(onClick = { onSelect(minutes) })
+                            else Modifier,
+                        )
+                        .padding(vertical = AppDimens.spaceXs)
                         .height(36.dp)
                         .clip(shape)
                         .background(
@@ -705,10 +725,6 @@ private fun TimerCard(
                         )
                         .then(
                             if (selected) Modifier.border(1.dp, scheme.primary, shape)
-                            else Modifier,
-                        )
-                        .then(
-                            if (enabled) Modifier.pressable(onClick = { onSelect(minutes) })
                             else Modifier,
                         )
                         .semantics {
@@ -752,7 +768,8 @@ private fun TimerCard(
             Text(
                 text = stringResource(R.string.lab_soundscape_timer_hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.textTertiary,
+                // 可读正文禁止 textTertiary（§10 红线：白卡 2.25:1 / 深色卡 4.25:1 均不达 4.5）
+                color = scheme.textSecondary,
             )
         }
     }

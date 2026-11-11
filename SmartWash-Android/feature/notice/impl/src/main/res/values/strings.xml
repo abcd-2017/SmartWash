@@ -27,7 +27,11 @@
     <string name="notice_load_more_failed">加载失败，点击重试</string>
 
     <!-- 空态 / 错误态（说明发生了什么 + 怎么解决，规范 §3.6） -->
-    <string name="notice_inbox_empty">暂无消息</string>
+    <string name="notice_inbox_empty">暂无消息，有新通知会第一时间送达</string>
     <string name="notice_load_failed">消息加载失败，请检查网络后重试</string>
     <string name="notice_action_retry">重试</string>
+
+    <!-- 未读/已读读屏状态（规范 §10：颜色不是唯一信息载体——色点纯装饰，状态经标题 stateDescription 传达） -->
+    <string name="notice_state_unread">未读</string>
+    <string name="notice_state_read">已读</string>
 </resources>

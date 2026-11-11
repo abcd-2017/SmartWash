@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -273,6 +274,8 @@ fun StarMapPage(
                 nightVision = state.nightVision,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    // edge-to-edge 下信息卡避让系统手势区（BottomCenter 紧贴屏底最易被压住）
+                    .navigationBarsPadding()
                     .padding(horizontal = AppDimens.pagePadding)
                     .padding(bottom = AppDimens.spaceXl),
             )
@@ -345,10 +348,13 @@ private fun NightVisionToggle(
     )
     Box(
         modifier = Modifier
+            // pressable 前置 + 视觉容器外 padding 外扩触控热区：36dp 次容器档视觉不变，
+            // 命中区 36+16=52（§3.2 此类开关须保证 48dp 热区）
+            .pressable(onClick = onToggle)
+            .padding(AppDimens.spaceXs)
             .size(36.dp)
             .clip(RoundedCornerShape(AppDimens.radiusMd))
             .background(DarkIconContainerPurple)
-            .pressable(onClick = onToggle)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {

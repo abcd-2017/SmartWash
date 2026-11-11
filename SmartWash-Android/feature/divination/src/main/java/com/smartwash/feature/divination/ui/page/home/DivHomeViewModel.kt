@@ -46,6 +46,12 @@ class DivHomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DivHomeUiState())
     val uiState: StateFlow<DivHomeUiState> = _uiState.asStateFlow()
 
+    private val _signSaving = MutableStateFlow(false)
+
+    /** 今日一签保存中（audit-11 #6）：点击→导航前链路（本地建档 + GET /today 服务端关联）的
+     *  轻量 loading 反馈，true 期间页面禁用重复点击；业务链路不变（建档 → 关联 → onSaved 导航） */
+    val signSaving: StateFlow<Boolean> = _signSaving.asStateFlow()
+
     /** 案卷：Room 卦历近三条 */
     val recentRecords: StateFlow<List<DivRecordEntity>> = repository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -74,15 +80,22 @@ class DivHomeViewModel @Inject constructor(
         }
     }
 
-    /** 今日一签入库（本地同日去重 + 服务端 /today 幂等关联），返回卦历记录 id 供跳转卦盘复盘 */
+    /** 今日一签入库（本地同日去重 + 服务端 /today 幂等关联），返回卦历记录 id 供跳转卦盘复盘；
+     *  保存中（audit-11 #6）忽略重复点击，链路结束（含异常）后复位 loading 态 */
     fun ensureTodaySignSaved(onSaved: (Long) -> Unit) {
+        if (_signSaving.value) return
+        _signSaving.value = true
         viewModelScope.launch {
-            val (id, _) = repository.todaySign(
-                question = "今日一签",
-                category = DivCategory.OTHER.id,
-            )
-            repository.linkTodaySign(id)
-            onSaved(id)
+            try {
+                val (id, _) = repository.todaySign(
+                    question = "今日一签",
+                    category = DivCategory.OTHER.id,
+                )
+                repository.linkTodaySign(id)
+                onSaved(id)
+            } finally {
+                _signSaving.value = false
+            }
         }
     }
 }

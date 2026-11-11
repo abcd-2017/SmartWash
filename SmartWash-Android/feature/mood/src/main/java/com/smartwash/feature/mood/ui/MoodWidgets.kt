@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +48,9 @@ import com.smartwash.feature.mood.R
  * 不引入新交互组件（规范 §7）。
  */
 
+/** 触控热区下限（DESIGN-SPEC §3：可交互元素 ≥48×48dp；44dp 为废弃旧口径，审查报告 #4） */
+private val MinTouchSize = 48.dp
+
 /** 五个心情色块行（等宽横向铺满）——今日记录页的视觉锚点，一次点按即存 */
 @Composable
 fun MoodLevelRow(
@@ -56,7 +60,9 @@ fun MoodLevelRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+        // 间距取 spaceXs(8)：360dp 基准屏上 spaceSm(12) 会让五等分块宽 ≈44.8dp 跌破
+        // 48dp 触控红线（审查报告 #4①），缩到 8dp 释放 16dp 后块宽恰为 48dp
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceXs),
     ) {
         MoodLevel.entries.forEach { level ->
             MoodLevelBlock(
@@ -93,9 +99,14 @@ private fun MoodLevelBlock(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
+                // 读屏语义（审查报告 #6）：可点击的是色块 Box，把心情名挂到点击节点上，
+                // TalkBack 读「暴雨，双击即可激活」而非五个无名节点
+                .semantics { contentDescription = label }
                 .pressable(onClick = onClick, debounce = false)
-                .background(color, RoundedCornerShape(AppDimens.radiusLg))
-                .border(2.dp, borderColor, RoundedCornerShape(AppDimens.radiusLg)),
+                // 色块是卡内嵌套块，圆角取 radiusMd 档（审查报告 #14：规范档位表 radiusInner 在
+                // AppDimens 的实现名为 radiusMd「分组背景、图标容器、内嵌套块」，radiusLg 是卡片档）
+                .background(color, RoundedCornerShape(AppDimens.radiusMd))
+                .border(2.dp, borderColor, RoundedCornerShape(AppDimens.radiusMd)),
         )
         Text(
             text = label,
@@ -108,7 +119,7 @@ private fun MoodLevelBlock(
 }
 
 /**
- * 词 chip（"累/顺/静/燥/燃"等，可选一个，再点取消）：选中 = 品牌底白字，未选中 = 白底描边。
+ * 词 chip（"累/顺/静/燥/燃"等，可选一个，再点取消）：选中 = 浅绿容器底深绿字，未选中 = 白底描边。
  * 模式对齐 toolbox 的 ToolboxSelectableChip（不跨域引用 impl，模块内最小复制）。
  */
 @Composable
@@ -118,20 +129,24 @@ fun MoodWordChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 选中态（审查报告 #8）：12sp 小字压品牌绿底白字仅 3.50:1 不过 AA——按 §10「小号文字
+    // 表达品牌感改用浅绿容器底」改 primaryContainer/onPrimaryContainer 成对令牌
+    // （浅色 ≈12:1，深色两值对调后同样达标）
     val containerColor = selectedColor(
-        if (selected) AppColors.colorScheme.primary else MaterialTheme.colorScheme.surface
+        if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
     )
     val contentColor = selectedColor(
-        // onPrimary 令牌（浅白/深绿）：深色模式下品牌绿提亮，白字对比度不足
-        if (selected) AppColors.colorScheme.onPrimary else AppColors.colorScheme.textSecondary
+        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else AppColors.colorScheme.textSecondary
     )
     val borderColor = selectedColor(
         if (selected) Color.Transparent else AppColors.colorScheme.outline
     )
-    // 视觉高保持 labelMedium + 6dp 纵向内边距（约 28dp），外层 Box 撑到 44dp 满足触控热区，视觉不突变
+    // 视觉高保持 labelMedium + 6dp 纵向内边距（约 28dp）；外层 Box 热区撑到 48×48
+    // （DESIGN-SPEC §3 触控红线，审查报告 #4②），内容居中、视觉尺寸不变
     Box(
         modifier = modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = MinTouchSize)
+            .widthIn(min = MinTouchSize)
             .pressable(onClick = onClick, debounce = false),
         contentAlignment = Alignment.Center,
     ) {

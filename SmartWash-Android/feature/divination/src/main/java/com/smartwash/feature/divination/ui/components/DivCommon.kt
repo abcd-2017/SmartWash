@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -243,7 +244,10 @@ fun DivPageHeader(
     }
 }
 
-/** 章节标题（衬线 + 字距），如「案 卷」「起卦方式」 */
+/** 章节标题（衬线 + 字距），如「案 卷」「起卦方式」；
+ *  可点击尾链（如「卦历 ›」，常为页面级唯一入口）触控热区 ≥48dp（规范 §2.3 / DESIGN-SPEC §3 触控红线，
+ *  audit-11 #2：裸 Text 仅约 16dp 高）——热区在组件内统一扩展，全部消费点一并达标；
+ *  可点击时行垂直内边距让位给 48dp 热区（0），标题/尾注仍垂直居中，视觉节奏几乎不变 */
 @Composable
 fun DivSectionTitle(
     title: String,
@@ -256,7 +260,8 @@ fun DivSectionTitle(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            // 可点击尾链时垂直内边距为 0：48dp 热区自身即行高，标题在热区内垂直居中
+            .padding(horizontal = 20.dp, vertical = if (onTailClick != null) 0.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -267,16 +272,26 @@ fun DivSectionTitle(
         if (tail != null) {
             Spacer(Modifier.weight(1f))
             // 画板口径：可点击尾注为链接墨色（宣纸侧全墨），纯信息尾注降为次要灰
-            Text(
-                text = tail,
-                fontSize = 12.sp,
-                color = if (onTailClick != null) c.textTertiary else c.textSecondary,
-                modifier = if (onTailClick != null) {
-                    Modifier.pressable(onClick = debouncedTailClick)
-                } else {
-                    Modifier
-                },
-            )
+            if (onTailClick != null) {
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .pressable(onClick = debouncedTailClick),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = tail,
+                        fontSize = 12.sp,
+                        color = c.textTertiary,
+                    )
+                }
+            } else {
+                Text(
+                    text = tail,
+                    fontSize = 12.sp,
+                    color = c.textSecondary,
+                )
+            }
         }
     }
 }
@@ -329,7 +344,8 @@ fun DivGoldButton(
             text = text,
             style = divSerif(fontSize, FontWeight.SemiBold, 3.sp),
             color = when {
-                !enabled -> c.goldText.copy(alpha = 0.7f)
+                // 禁用态 38% 透明度（§3.1 禁用口径，audit-23 #4——原 goldText@70% 压 14% 金底 3.79:1 口径偏差）
+                !enabled -> c.onGold.copy(alpha = 0.38f)
                 // soft 口径（解读画板）：玄墨金字 / 宣纸墨字，即主题感知 goldText
                 soft -> c.goldText
                 else -> c.onGold

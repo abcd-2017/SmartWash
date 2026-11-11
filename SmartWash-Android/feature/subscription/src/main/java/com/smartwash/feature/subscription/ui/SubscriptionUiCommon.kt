@@ -101,11 +101,11 @@ internal fun SubscriptionSelectableChip(
     val borderColor = selectedColor(
         if (selected) Color.Transparent else AppColors.colorScheme.outline
     )
-    // 外层 44dp 最小热区（规范 §2.3 触控热区 ≥44dp），胶囊本体居中，视觉高度不变
+    // 外层 48dp 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48dp），胶囊本体居中，视觉高度不变
     Box(
         modifier = modifier
             .pressable(onClick = onClick, debounce = false)
-            .heightIn(min = 44.dp),
+            .heightIn(min = 48.dp),
         contentAlignment = Alignment.Center,
     ) {
         Surface(
@@ -203,13 +203,17 @@ internal fun SubscriptionToggle(
         label = "subscriptionToggleThumb",
     )
     val trackColor = selectedColor(
-        if (checked) AppColors.colorScheme.primary else AppColors.colorScheme.textTertiary
+        // 未选中轨道从装饰档 textTertiary 收敛 textSecondary（audit-14 #7）：
+        // #A9AEA9 on 白卡 2.25:1 低于图形控件 3:1 非文本对比下限（DESIGN-SPEC §10），
+        // thumb 白色（surface）在 textSecondary 轨道上辨识度足够
+        if (checked) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary
     )
-    // 外层 44dp 最小热区（规范 §2.3），24dp 轨道居中，视觉尺寸不变
+    // 外层 48dp 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48dp，与 SelectableChip 同口径），
+    // 24dp 轨道居中，视觉尺寸不变
     Box(
         modifier = modifier
             .pressable(onClick = { onCheckedChange(!checked) }, debounce = false)
-            .heightIn(min = 44.dp),
+            .heightIn(min = 48.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -240,6 +244,29 @@ internal fun statusText(status: SubscriptionStatus): String = stringResource(
         SubscriptionStatus.FINISHED -> R.string.subscription_status_finished
     }
 )
+
+/**
+ * 状态 chip 底色映射（2026-11-11 列表页 statusChipContainer 裁定口径，详情页同源消费）：
+ * PAUSED = warningContainer（橙警示浅底）/ CANCELED = iconContainerPink / 其余（含终态）= surfaceVariant
+ */
+@Composable
+internal fun statusChipContainer(status: SubscriptionStatus): Color = when (status) {
+    SubscriptionStatus.PAUSED -> AppColors.colorScheme.warningContainer
+    SubscriptionStatus.CANCELED -> AppColors.colorScheme.iconContainerPink
+    else -> AppColors.colorScheme.surfaceVariant
+}
+
+/**
+ * 状态 chip 文字色（与 [statusChipContainer] 成对令牌）：PAUSED = onWarningContainer（6.47:1）/
+ * CANCELED = dangerInk / 其余（含终态）= textSecondary（on surfaceVariant 4.51:1）。
+ * textTertiary 1.98:1 禁作可读标签（DESIGN-SPEC §10）；图标前景令牌不得拼作 12sp 文字色
+ */
+@Composable
+internal fun statusChipContent(status: SubscriptionStatus): Color = when (status) {
+    SubscriptionStatus.PAUSED -> AppColors.colorScheme.onWarningContainer
+    SubscriptionStatus.CANCELED -> AppColors.colorScheme.dangerInk
+    else -> AppColors.colorScheme.textSecondary
+}
 
 /** 周期描述：月/年 × 间隔（1 期收敛为「每月/每年」） */
 @Composable
@@ -277,11 +304,12 @@ internal fun renewRelativeText(vo: com.smartwash.feature.subscription.network.Su
     }
 }
 
-/** 续费相对描述配色（已逾期 dangerInk / 今日 ongoingInk / 其余次文本；终态弱化） */
+/** 续费相对描述配色（已逾期 dangerInk / 今日 ongoingInk / 其余次文本；终态弱化至 textSecondary） */
 @Composable
 internal fun renewRelativeColor(vo: com.smartwash.feature.subscription.network.SubscriptionVo): Color {
     val status = SubscriptionStatus.fromRawOrDefault(vo.status)
-    if (status.isTerminal) return AppColors.colorScheme.textTertiary
+    // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
+    if (status.isTerminal) return AppColors.colorScheme.textSecondary
     return when {
         (vo.daysUntilRenew ?: 1) < 0 -> AppColors.colorScheme.dangerInk
         (vo.daysUntilRenew ?: 1) == 0 -> AppColors.colorScheme.ongoingInk

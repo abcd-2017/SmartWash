@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -28,7 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,6 +82,10 @@ fun ShortCodeCreatePage(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // 底部避让导航条（audit-17 #3）：三键导航下提交按钮完整可见可点；
+            // navigationBarsPadding 先消费 navBars，imePadding 只补剩余——
+            // 组合即 max(ime, navBars) 语义，键盘弹出时不与导航条高度双重叠加
+            .navigationBarsPadding()
             .imePadding()
     ) {
         PageHeader(
@@ -111,6 +117,8 @@ fun ShortCodeCreatePage(
                     },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     singleLine = true,
+                    // URL 输入补 Uri 键盘（「/」「.com」便捷键，audit-17 #11）
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
@@ -121,8 +129,9 @@ fun ShortCodeCreatePage(
                 Text(
                     text = stringResource(R.string.toolbox_target_helper),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textTertiary,
-                    modifier = Modifier.padding(top = 6.dp),
+                    // helper 为用户必读说明文字：textTertiary(≈2.3:1) 破 §10 红线，收敛 textSecondary（audit-17 #1）
+                    color = AppColors.colorScheme.textSecondary,
+                    modifier = Modifier.padding(top = AppDimens.spaceXxs),
                 )
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -137,6 +146,9 @@ fun ShortCodeCreatePage(
                             text = stringResource(R.string.toolbox_custom_code_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textTertiary,
+                            // 对齐目标链接框：字体放大 130% 时 hint 不折行、不破 48dp 固定高（audit-17 #10）
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     },
                     textStyle = MaterialTheme.typography.bodyLarge,
@@ -171,8 +183,9 @@ fun ShortCodeCreatePage(
                         else R.string.toolbox_visibility_private_desc
                     ),
                     style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.colorScheme.textTertiary,
-                    modifier = Modifier.padding(top = 6.dp),
+                    // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
+                    color = AppColors.colorScheme.textSecondary,
+                    modifier = Modifier.padding(top = AppDimens.spaceXxs),
                 )
 
                 Spacer(modifier = Modifier.height(AppDimens.spaceLg))
@@ -226,13 +239,12 @@ fun ShortCodeCreatePage(
     }
 }
 
-/** 表单字段标签（13sp 次文本，规范 §3.4 副文案层级） */
+/** 表单字段标签（12sp/500，labelMedium 档；13sp 夹档已被 v0.4 字阶覆写作废，labelMedium 自带 500 不再冗余覆盖） */
 @Composable
 private fun FormLabel(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.Medium,
         color = AppColors.colorScheme.textSecondary,
         modifier = Modifier.padding(bottom = AppDimens.spaceXs),
     )

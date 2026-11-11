@@ -46,6 +46,10 @@ class DeliveryCreateViewModel @Inject constructor(
     private val _createState = MutableStateFlow<RequestState>(RequestState.Idle)
     val createState = _createState.asStateFlow()
 
+    /** 进入密码端侧校验错误（audit-07 P1-4：挂到密码字段本身，与网络类错误分流） */
+    private val _passwordError = MutableStateFlow(false)
+    val passwordError = _passwordError.asStateFlow()
+
     /** 已创建会话（非 null 即页面切换为会话信息态） */
     private val _session = MutableStateFlow<DeliverySessionVo?>(null)
     val session = _session.asStateFlow()
@@ -63,6 +67,8 @@ class DeliveryCreateViewModel @Inject constructor(
     fun updatePassword(value: String) {
         // 超上限直接截断不报错（与 PasswordInput 既有惯例一致），提交时校验下限
         _form.value = _form.value.copy(password = value.take(DeliveryRules.MAX_PASSWORD_LENGTH))
+        // 输入即清除字段错误（规范 §3.7：输入中不报错）
+        _passwordError.value = false
     }
 
     /** 创建投递会话；可选密码 4-64 位端侧前置校验（后端 BCrypt 存储、不回传） */
@@ -70,8 +76,10 @@ class DeliveryCreateViewModel @Inject constructor(
         if (_createState.value is RequestState.Loading) return
         val f = _form.value
         val password = f.password.trim()
+        // 密码校验错误走 passwordError 显示在字段正下方；createState 只承载网络/业务错误
+        _passwordError.value = false
         if (password.isNotEmpty() && !DeliveryRules.isValidPassword(password)) {
-            _createState.value = RequestState.Error(R.string.toolbox_delivery_error_invalid_password)
+            _passwordError.value = true
             return
         }
         viewModelScope.launch {
@@ -130,6 +138,7 @@ class DeliveryCreateViewModel @Inject constructor(
         _form.value = FormState()
         _createState.value = RequestState.Idle
         _closeState.value = RequestState.Idle
+        _passwordError.value = false
     }
 
     fun resetCloseState() {

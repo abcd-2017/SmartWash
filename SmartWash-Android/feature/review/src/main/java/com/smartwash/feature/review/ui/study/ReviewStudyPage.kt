@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +55,7 @@ import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
+import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.performHaptic
 import com.smartwash.feature.review.R
@@ -118,10 +120,11 @@ fun ReviewStudyPage(
                         message = loadState.getMessage(context),
                         modifier = Modifier.fillMaxSize(),
                         action = {
+                            // 错误态唯一主行动：48dp 全宽主按钮，与完成态返回按钮口径一致（审查矩阵 #6）
                             AppButton(
-                                small = true,
                                 text = stringResource(R.string.review_action_retry),
                                 onClick = { viewModel.load() },
+                                modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
                             )
                         },
                     )
@@ -135,7 +138,6 @@ fun ReviewStudyPage(
                         StudyContent(
                             state = state,
                             currentCard = current,
-                            materialTitle = state.materialTitles[current.materialId],
                             reduceMotion = reduceMotion,
                             onFlip = {
                                 view.performHaptic(HapticEffect.LIGHT)
@@ -150,11 +152,13 @@ fun ReviewStudyPage(
     }
 }
 
+/** 评分排退出时长 — 动效语言「退出 ≈ 进入的 60–70%」：进入 DURATION_CARD_MS(300) → 180ms（审查矩阵 #2） */
+private val RATING_ROW_EXIT_MS = DURATION_CARD_MS * 6 / 10
+
 @Composable
 private fun StudyContent(
     state: ReviewStudyViewModel.StudyState,
     currentCard: ReviewCardVo,
-    materialTitle: String?,
     reduceMotion: Boolean,
     onFlip: () -> Unit,
     onRate: (ReviewRating) -> Unit,
@@ -168,9 +172,11 @@ private fun StudyContent(
     val expandSpec: FiniteAnimationSpec<IntSize> =
         if (reduceMotion) tween(CROSSFADE_ALT_MS) else enterTween(DURATION_CARD_MS)
 
+    // 评分排为固定 CTA 性质：navigationBarsPadding 避开 3 键导航系统栏（审查矩阵 #4）
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .padding(horizontal = AppDimens.pagePadding)
             .padding(bottom = AppDimens.spaceLg),
     ) {
@@ -190,9 +196,11 @@ private fun StudyContent(
             fraction = if (state.total > 0) state.doneCount.toFloat() / state.total else 0f,
         )
 
-        // 卡面 —— 每屏唯一锚点；内容切换（翻面/下一张）统一走 AnimatedContent 淡入淡出
+        // 卡面 —— 每屏唯一锚点；内容切换（翻面/下一张）统一走 AnimatedContent 淡入淡出。
+        // targetState 必须携带卡片本体，content 只按传入 state 渲染（官方契约）：闭包捕获外层
+        // currentCard 会让退出侧用新卡数据渲染，评分换卡的交叉淡变中出现内容闪变（审查矩阵 #3）
         AnimatedContent(
-            targetState = currentCard.id to state.flipped,
+            targetState = currentCard to state.flipped,
             transitionSpec = {
                 val enter = if (reduceMotion) {
                     fadeIn(fadeSpec)
@@ -210,22 +218,28 @@ private fun StudyContent(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-        ) { (cardId, flipped) ->
+        ) { (card, flipped) ->
             CardFace(
-                card = currentCard,
-                materialTitle = materialTitle,
+                card = card,
+                materialTitle = state.materialTitles[card.materialId],
                 flipped = flipped,
                 onFlip = onFlip,
             )
         }
 
-        // 评分按钮排：翻面后展开（reduced motion 降级纯淡入，无位移/缩放）
+        // 评分按钮排：翻面后展开；显式定制退出（默认 spring 收缩既不符「退出 ≈ 进入的 60–70%」
+        // 时长层级，reduced motion 翻回正面时也仍会播放弹簧收缩——审查矩阵 #2）
         AnimatedVisibility(
             visible = state.flipped,
             enter = if (reduceMotion) {
                 fadeIn(tween(CROSSFADE_ALT_MS))
             } else {
                 fadeIn(enterTween(DURATION_CARD_MS)) + expandVertically(expandSpec)
+            },
+            exit = if (reduceMotion) {
+                fadeOut(tween(CROSSFADE_ALT_MS))
+            } else {
+                fadeOut(exitTween(RATING_ROW_EXIT_MS))
             },
         ) {
             Column {
@@ -288,14 +302,16 @@ private fun CardFace(
                     Text(
                         text = stringResource(R.string.review_study_question_hint),
                         style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.colorScheme.textTertiary,
+                        // 引导操作的可读正文（非装饰）：textTertiary 双主题均低于 4.5:1 红线（审查矩阵 #1）
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 } else {
                     Text(
                         text = card.question,
                         style = MaterialTheme.typography.bodyMedium,
                         color = AppColors.colorScheme.textSecondary,
-                        maxLines = 2,
+                        // 背面放宽到 4 行便于长问题回看全文（审查矩阵 #10），答案仍为锚点层级
+                        maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
@@ -322,6 +338,7 @@ private fun CompletedContent(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .navigationBarsPadding()
             .padding(horizontal = AppDimens.pagePadding),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,

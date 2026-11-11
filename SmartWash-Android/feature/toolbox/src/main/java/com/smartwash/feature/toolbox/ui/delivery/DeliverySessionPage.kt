@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -113,7 +114,8 @@ fun DeliverySessionPage(
     // 会话失效（过期/关闭/占用达上限）：提示后立即退出
     LaunchedEffect(sessionGone) {
         sessionGone?.let {
-            Toast.makeText(context, it.message ?: context.getString(it.resId), Toast.LENGTH_SHORT).show()
+            // 失效类提示用 LONG（≈3.5s，规范 §8 Toast 3-5s；audit-07 P2-1）
+            Toast.makeText(context, it.message ?: context.getString(it.resId), Toast.LENGTH_LONG).show()
             viewModel.consumeSessionGone()
             navController.popBackStack()
         }
@@ -127,7 +129,8 @@ fun DeliverySessionPage(
                 navController.popBackStack()
             }
             is RequestState.Error -> {
-                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                // 错误类提示用 LONG（≈3.5s，规范 §8 Toast 3-5s；成功提示保持 SHORT）
+                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_LONG).show()
                 viewModel.resetCloseState()
             }
             else -> {}
@@ -154,7 +157,8 @@ fun DeliverySessionPage(
                 DeliveryCountdownText(
                     expireAt = session?.expireAt,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.colorScheme.ongoingInk,
+                    // 常态色不用 ongoingInk（页面底 2.54:1 / 白卡 2.76:1 违反 §10 红线，audit-07 P0-1）
+                    color = AppColors.colorScheme.onWarningContainer,
                     modifier = Modifier.padding(horizontal = AppDimens.spaceXs),
                 )
             },
@@ -297,7 +301,8 @@ private fun SessionStrip(
                         stringResource(R.string.toolbox_delivery_url_fallback)
                     },
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textTertiary,
+                    // URL 是二维码扫不出来时的唯一手动入口，可读内容不用 textTertiary（audit-07 P0-4）
+                    color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -415,7 +420,8 @@ private fun DeliveryItemRow(
                         )
                     } ?: time,
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textTertiary,
+                    // 时间·大小为可读元信息，不用 textTertiary（audit-07 P0-4）
+                    color = AppColors.colorScheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -451,10 +457,12 @@ private fun DeliveryItemRow(
                     } else {
                         AppColors.colorScheme.warningContainer
                     },
+                    // 功能色浅底 + 成对文字色（规范 §5）：#D98A26 on warningContainer 仅 2.51:1
+                    // 违反 §10 红线（audit-07 P0-2），改用成对的 onWarningContainer（两主题 ≥6.4:1）
                     contentColor = if (taken) {
                         AppColors.colorScheme.textTertiary
                     } else {
-                        AppColors.colorScheme.ongoingInk
+                        AppColors.colorScheme.onWarningContainer
                     },
                 )
             }
@@ -484,7 +492,14 @@ private fun DeliverySendArea(
         color = AppColors.colorScheme.surface,
         shadowElevation = AppElevation.level1,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        // 规范 §4：底部固定输入条必须避开手势条（audit-07 P1-3，与 OrderDetailPage/PickupPage
+        // 底栏同款：Surface 延伸到导航栏后方，内容整体上移）；键盘弹出时 ime 已在根布局消费，
+        // 导航栏内边距按轴钳制不会叠加
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+        ) {
             HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
             Column(
                 modifier = Modifier
@@ -496,7 +511,8 @@ private fun DeliverySendArea(
                         Text(
                             text = stringResource(R.string.toolbox_delivery_sending),
                             style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textTertiary,
+                            // 传输状态为可读内容，不用 textTertiary（audit-07 P0-4）
+                            color = AppColors.colorScheme.textSecondary,
                         )
                     }
                     is RequestState.Error -> {
@@ -518,7 +534,8 @@ private fun DeliverySendArea(
                     contentDescription = stringResource(R.string.toolbox_delivery_pick_image),
                     onClick = onPickImage,
                 )
-                Spacer(modifier = Modifier.width(AppDimens.spaceXxs))
+                // 相邻触控目标间距 ≥8dp（规范 §3，audit-07 P1-1：4dp 拇指误触率高）
+                Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                 PickerIconButton(
                     icon = Icons.Rounded.AttachFile,
                     contentDescription = stringResource(R.string.toolbox_delivery_pick_file),

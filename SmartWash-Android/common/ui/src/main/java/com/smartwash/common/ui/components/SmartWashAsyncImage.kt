@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
@@ -22,12 +23,15 @@ import com.smartwash.common.utils.LocalReduceMotion
  * @param url 网络图直链（MinIO 公网读）
  * @param modifier 尺寸/形状约束（由调用方给 16:9 等）
  * @param contentScale 裁切方式，默认 Crop（卡片头图）
+ * @param error 加载失败态 painter（可选；默认 null = 维持旧行为，失败时仅显 modifier 的
+ *   surfaceVariant 底）。业务侧可传本地兜底图（painterResource）实现「服务端优先、本地兜底」闭环
  */
 @Composable
 fun SmartWashAsyncImage(
     url: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    error: Painter? = null,
 ) {
     val scheme = AppColors.colorScheme
     val reduceMotion = LocalReduceMotion.current
@@ -43,6 +47,7 @@ fun SmartWashAsyncImage(
         contentDescription = null,
         modifier = modifier.background(scheme.surfaceVariant),
         placeholder = ColorPainter(scheme.surfaceVariant),
+        error = error,
         contentScale = contentScale,
     )
 }

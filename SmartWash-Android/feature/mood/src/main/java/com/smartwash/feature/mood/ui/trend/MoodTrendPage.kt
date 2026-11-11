@@ -150,7 +150,8 @@ private fun MoodTrendContent(
             GroupCard {
                 Text(
                     text = stringResource(R.string.mood_trend_distribution_title),
-                    style = MaterialTheme.typography.bodyLarge,
+                    // 卡内区块标题 = CardTitle 档 18/600（审查报告 #19，bodyLarge 是正文档）
+                    style = AppTextStyles.CardTitle,
                     color = AppColors.colorScheme.textPrimary,
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))

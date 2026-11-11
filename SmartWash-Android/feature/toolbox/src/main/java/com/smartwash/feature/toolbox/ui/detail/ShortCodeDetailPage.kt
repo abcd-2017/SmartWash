@@ -7,7 +7,6 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,9 +21,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,11 +47,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -63,11 +64,13 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.smartwash.common.ui.components.AppButton
 import com.smartwash.common.ui.components.AppButtonVariant
+import com.smartwash.common.ui.components.DialogAction
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.InfoRow
 import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.components.SkeletonList
+import com.smartwash.common.ui.components.dialogEnterMotion
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
@@ -76,13 +79,10 @@ import com.smartwash.common.ui.theme.StatusDot
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.LocalReduceMotion
-import com.smartwash.common.utils.defaultSpring
 import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.generateQrCodeBitmap
 import com.smartwash.common.utils.model.RequestState
-import com.smartwash.common.utils.motionSpec
-import com.smartwash.common.utils.pressTween
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.ToolboxConstant
@@ -205,6 +205,10 @@ fun ShortCodeDetailPage(
         }
     }
 
+    // 底部避让手势条（与列表页已修口径同式）：本页是无底栏独立路由，
+    // 末张明细卡不得贴/压手势条区域
+    val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -233,8 +237,10 @@ fun ShortCodeDetailPage(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = AppDimens.pagePadding,
-                vertical = AppDimens.spaceSm,
+                start = AppDimens.pagePadding,
+                top = AppDimens.spaceSm,
+                end = AppDimens.pagePadding,
+                bottom = AppDimens.spaceSm + navBarsBottom,
             ),
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -269,7 +275,9 @@ fun ShortCodeDetailPage(
                             if (isPublic) R.string.toolbox_visibility_public_value
                             else R.string.toolbox_visibility_private_value
                         ),
-                        valueColor = if (isPublic) AppColors.colorScheme.success else AppColors.colorScheme.ongoingInk,
+                        // 12sp 小字语义色走深档（对比度红线 §10）：公开=textGreen(#177A4C ≈5.1:1)、
+                        // 私有=onWarningContainer(#92400E)；success(3.49:1)/ongoingInk(2.76:1) 作小字不达标
+                        valueColor = if (isPublic) AppColors.colorScheme.textGreen else AppColors.colorScheme.onWarningContainer,
                     )
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_clicks),
@@ -281,10 +289,13 @@ fun ShortCodeDetailPage(
                         label = stringResource(R.string.toolbox_label_created),
                         value = ShortCodeRules.formatDisplayDateTime(vo.createdAt)
                             .ifBlank { stringResource(R.string.toolbox_value_none) },
+                        valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     )
                     val (expiryText, expiryColor) = when (expiryState) {
                         is ShortCodeRules.ExpiryState.Permanent ->
-                            stringResource(R.string.toolbox_expiry_permanent) to AppColors.colorScheme.success
+                            // 「永久」12sp 小字绿用 textGreen 深档（success #2D9B6A 3.49:1 不达标，§10；
+                            // 域内 2026-11-06 既有口径，同页点击数行已用对）
+                            stringResource(R.string.toolbox_expiry_permanent) to AppColors.colorScheme.textGreen
                         is ShortCodeRules.ExpiryState.Expired ->
                             stringResource(R.string.toolbox_expiry_expired) to AppColors.colorScheme.dangerInk
                         is ShortCodeRules.ExpiryState.Active ->
@@ -296,6 +307,7 @@ fun ShortCodeDetailPage(
                     InfoRow(
                         label = stringResource(R.string.toolbox_label_expiry),
                         value = expiryText,
+                        valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                         valueColor = expiryColor,
                     )
                     if (!vo.target.isNullOrBlank()) {
@@ -318,8 +330,12 @@ fun ShortCodeDetailPage(
                     Box(
                         modifier = Modifier
                             .align(Alignment.End)
+                            // 热区外扩至 48dp（触控红线 ≥48，对齐列表页已修口径）：
+                            // 原 vertical 4×2 + labelMedium 行高 16 仅 24dp；视觉字号与位置不变
+                            .defaultMinSize(minHeight = 48.dp)
                             .pressable(onClick = { showRenewDialog = true })
-                            .padding(vertical = AppDimens.spaceXxs)
+                            .padding(vertical = AppDimens.spaceXxs),
+                        contentAlignment = Alignment.Center,
                     ) {
                         // 行内文字动作 — 13sp 非规范档收敛为 captionStrong 12/500（规范 §2 迁移表 13→12）
                         Text(
@@ -384,7 +400,9 @@ fun ShortCodeDetailPage(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .pressable(onClick = { statsItems.retry() })
-                                    .padding(vertical = AppDimens.spaceXs),
+                                    // 热区 48dp（触控红线）：16×2 + 行高 16，与列表页同位置已修口径一致
+                                    //（原 8×2 = 32 不达标）
+                                    .padding(vertical = AppDimens.spaceMd),
                             )
                         }
                         // 首刷 / 从未完成过加载：骨架而非空态（见会话门控注释）
@@ -399,7 +417,9 @@ fun ShortCodeDetailPage(
                             Text(
                                 text = stringResource(R.string.toolbox_stats_empty),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = AppColors.colorScheme.textTertiary,
+                                // 空态属可读状态正文：textTertiary ≈2.3:1 不达标（DESIGN-SPEC §10），
+                                // 与同页骨架/错误分支一致降档改 textSecondary
+                                color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = AppDimens.spaceMd),
@@ -425,15 +445,18 @@ fun ShortCodeDetailPage(
                                         .height(14.dp)
                                 )
                             }
+                            // 已有数据时补拉失败：整行可点重试（48dp 热区，与首刷失败分支及列表页
+                            // append 分支行为对齐——规范 §3.6 错误态须给重试入口），文案含解决指引
                             if (statsRefreshState is LoadState.Error && statsItems.itemCount > 0) {
                                 Text(
-                                    text = stringResource(R.string.toolbox_stats_error_load),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = stringResource(R.string.toolbox_stats_error_retry),
+                                    style = MaterialTheme.typography.labelMedium,
                                     color = AppColors.colorScheme.dangerInk,
+                                    textAlign = TextAlign.Center,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = AppDimens.spaceXs),
-                                    textAlign = TextAlign.Center,
+                                        .pressable(onClick = { statsItems.retry() })
+                                        .padding(vertical = AppDimens.spaceMd),
                                 )
                             }
                         }
@@ -548,7 +571,8 @@ private fun QrCard(
             Text(
                 text = stringResource(R.string.toolbox_private_open_hint),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.ongoingInk,
+                // 12sp 可读小字橙语义走 onWarningContainer 深档（ongoingInk #D98A26 仅 2.76:1，§10 红线）
+                color = AppColors.colorScheme.onWarningContainer,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -593,29 +617,32 @@ private fun StatRow(stats: ShortCodeStatsVo) {
             )
             Spacer(modifier = Modifier.weight(1f))
             ToolboxTagChip(
-                text = stats.ipHash.orEmpty().ifEmpty { "—" },
+                text = stats.ipHash.orEmpty().ifEmpty { stringResource(R.string.toolbox_value_none) },
                 containerColor = AppColors.colorScheme.surfaceVariant,
-                contentColor = AppColors.colorScheme.textTertiary,
+                // chip 内 IP 哈希是用户可读数据值：textTertiary on surfaceVariant(#EFF1EE) ≈2.0:1
+                // 不达标（§10 红线），改 textSecondary
+                contentColor = AppColors.colorScheme.textSecondary,
             )
         }
         if (!stats.userAgent.isNullOrBlank()) {
             Text(
                 text = stats.userAgent,
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.textTertiary,
+                // UA 是访问记录数据值而非装饰角标：textTertiary ≈2.3:1 不达标（§10），改 textSecondary
+                color = AppColors.colorScheme.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp, start = AppDimens.spaceXxs + 8.dp),
+                modifier = Modifier.padding(top = AppDimens.space2xs, start = AppDimens.spaceSm),
             )
         }
         if (!stats.referer.isNullOrBlank()) {
             Text(
                 text = stats.referer,
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp, start = AppDimens.spaceXxs + 8.dp),
+                modifier = Modifier.padding(top = AppDimens.space2xs, start = AppDimens.spaceSm),
             )
         }
     }
@@ -634,11 +661,10 @@ private fun RenewDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         androidx.compose.material3.Surface(
-            // 统一弹窗入场（与公共 AppConfirmDialog 同规格）；公共 helper 为 common:ui 内部私有，
-            // 故本文件复制等价实现
+            // 统一弹窗入场动效（公共 helper：AppComponents.dialogEnterMotion，与 AppConfirmDialog 同规格）
             modifier = Modifier.dialogEnterMotion(),
             shape = RoundedCornerShape(AppDimens.radiusLg),
-            color = MaterialTheme.colorScheme.surface,
+            color = AppColors.colorScheme.surface,
             shadowElevation = AppElevation.floatLayer,
         ) {
             Column {
@@ -650,7 +676,7 @@ private fun RenewDialog(
                     Text(
                         text = stringResource(R.string.toolbox_renew_title),
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = AppColors.colorScheme.textPrimary,
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceMd))
                     ToolboxExpiryPresetRow(
@@ -710,62 +736,6 @@ private fun RenewDialog(
                 }
             }
         }
-    }
-}
-
-/** 弹窗底部动作区（透明度按压反馈，模式对齐 AppComponents.DialogAction） */
-@Composable
-private fun DialogAction(
-    text: String,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    // 禁用态透明度 0ms 硬切 → 按压档 tween（reduced motion 经 motionSpec 降级 180ms）
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (enabled) 1f else 0.5f,
-        animationSpec = motionSpec(pressTween()),
-        label = "dialogActionAlpha"
-    )
-    Box(
-        modifier = modifier
-            .height(48.dp)
-            // 禁用态不得挂 clickable：此前无条件 pressable，loading 期间仍可重复提交续期
-            .then(
-                if (enabled) Modifier.pressable(onClick = onClick, alphaFactor = 0.5f, debounce = false)
-                else Modifier
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            color = color.copy(alpha = contentAlpha),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-        )
-    }
-}
-
-/**
- * 弹窗入场动效 — 与公共 `AppConfirmDialog` 同规格：scale 0.92 → 1 + alpha 0 → 1 一次性入场；
- * reduced motion 由 [motionSpec] 自动降级为 180ms 纯淡入（缩放归零）。
- * 公共 helper 是 common:ui 模块内部私有实现，故在此复制等价实现。
- */
-private fun Modifier.dialogEnterMotion(): Modifier = composed {
-    var entered by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { entered = true }
-    val progress by animateFloatAsState(
-        targetValue = if (entered) 1f else 0f,
-        animationSpec = motionSpec(defaultSpring()),
-        label = "renewDialogEnter"
-    )
-    val reduceMotion = LocalReduceMotion.current
-    this.graphicsLayer {
-        alpha = progress
-        val scale = if (reduceMotion) 1f else 0.92f + 0.08f * progress
-        scaleX = scale
-        scaleY = scale
     }
 }
 

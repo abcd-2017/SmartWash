@@ -1,7 +1,9 @@
 package com.smartwash.common.ui.components
 
 import android.graphics.BlurMaskFilter
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
@@ -10,9 +12,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * 规范 §2.4 卡片阴影色：CSS `rgba(20,40,30,0.05)`（5% 不透明度 + 20,40,30 绿调）。
+ * 规范 §2.4 卡片阴影色（浅色档）：CSS `rgba(20,40,30,0.05)`（5% 不透明度 + 20,40,30 绿调）。
  */
 val CardShadowColor = Color(0x0D14281E)
+
+/**
+ * 规范 §6.5 深色模式卡片阴影色（深色档）：CSS `rgba(0,0,0,0.28)`，
+ * 28% × 255 ≈ 71 → ARGB alpha `0x47`，纯黑基底即 `0x47000000`。
+ * 仅供 [.softCardShadow] 在深色主题下对默认浅色档自动切换（见其主题分支说明）。
+ */
+val DarkCardShadowColor = Color(0x47000000)
 
 /**
  * 柔和卡片阴影 — 规范 §2.4 卡片档 `0 2px 12px rgba(20,40,30,.05)` 的 Compose 等价实现。
@@ -22,6 +31,12 @@ val CardShadowColor = Color(0x0D14281E)
  * CSS box-shadow 的可见边缘峰值是 50%（模糊后的阶跃边缘），即本实现卡边外峰值 ≈ 2.5%，
  * 与鸿蒙端 ArkUI `.shadow(radius=12, color=rgba(20,40,30,0.05), offsetY=2)` 渲染一致。
  * Paint/BlurMaskFilter 在 [drawWithCache] 中按尺寸缓存，每帧只做一次模糊绘制。
+ *
+ * **深色模式（规范 §6.5）**：浅色档 [CardShadowColor]（5% 绿调）在深色页底 #141614 上不可辨，
+ * 暗色下卡片层级只剩 1dp 描边（审计 2026-11-11 发现②）。深色主题下默认档自动切换为
+ * §6.5 深色档 [DarkCardShadowColor] `rgba(0,0,0,.28)`；调用方显式传入 [color]（如浮层档 10%）
+ * 时不覆盖，规范仅对卡片档定义了深色变体。主题判定走 `isSystemInDarkTheme()`，与
+ * `SmartWashAndroidTheme` / 观象台子主题同源；玄墨深色卡按 §2.4 豁免阴影，不受本分支影响。
  *
  * **为什么不用 elevation**：Compose 的 elevation 阴影是系统固定的硬边几何形。真机像素采样实测
  * `AppElevation.level1 = 1dp` 时：模糊仅延伸 1.5–2dp（CSS 是 12dp，差 6–8 倍）、峰值 Δ28（约 12% 黑）
@@ -45,7 +60,8 @@ val CardShadowColor = Color(0x0D14281E)
  * hero、深色卡按规范 §2.4 豁免阴影，不应调用本修饰符。
  *
  * @param cornerRadius 卡片圆角（与卡面 shape 保持一致，默认 16dp = radiusLg）
- * @param color 阴影色（默认规范 §2.4 卡片档，自带 5% alpha；浮层档可传 10% 等价色）
+ * @param color 阴影色（默认规范 §2.4 卡片档，自带 5% alpha；浮层档可传 10% 等价色；
+ *   深色模式下默认档自动切换为 §6.5 深色档 [DarkCardShadowColor]，显式传色不覆盖）
  * @param offsetY 向下偏移（CSS 的 2px）
  * @param blur 模糊半径（CSS blur 口径，框架内部 σ≈blur/2）
  */
@@ -54,22 +70,28 @@ fun Modifier.softCardShadow(
     color: Color = CardShadowColor,
     offsetY: Dp = 2.dp,
     blur: Dp = 12.dp,
-): Modifier = drawWithCache {
-    val blurPx = blur.toPx()
-    val oy = offsetY.toPx()
-    if (blurPx > 0f && size.width > 0f && size.height > 0f) {
-        val shadowPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color.toArgb()
-            maskFilter = BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL)
+): Modifier = composed {
+    // §6.5 主题分支：仅当调用方沿用默认浅色档（未显式传色）时随主题切换，
+    // 显式传入的色值（如浮层档）不覆盖。浅色模式下 effectiveColor == color，视觉零变化。
+    val effectiveColor =
+        if (isSystemInDarkTheme() && color == CardShadowColor) DarkCardShadowColor else color
+    drawWithCache {
+        val blurPx = blur.toPx()
+        val oy = offsetY.toPx()
+        if (blurPx > 0f && size.width > 0f && size.height > 0f) {
+            val shadowPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                this.color = effectiveColor.toArgb()
+                maskFilter = BlurMaskFilter(blurPx, BlurMaskFilter.Blur.NORMAL)
+            }
+            val radius = cornerRadius.toPx()
+            onDrawBehind {
+                // 阴影形 = 卡面矩形整体下移 offsetY（CSS 0 2px 口径），内半圈被不透明卡面盖住
+                drawContext.canvas.nativeCanvas.drawRoundRect(
+                    0f, oy, size.width, oy + size.height, radius, radius, shadowPaint,
+                )
+            }
+        } else {
+            onDrawBehind { }
         }
-        val radius = cornerRadius.toPx()
-        onDrawBehind {
-            // 阴影形 = 卡面矩形整体下移 offsetY（CSS 0 2px 口径），内半圈被不透明卡面盖住
-            drawContext.canvas.nativeCanvas.drawRoundRect(
-                0f, oy, size.width, oy + size.height, radius, radius, shadowPaint,
-            )
-        }
-    } else {
-        onDrawBehind { }
     }
 }

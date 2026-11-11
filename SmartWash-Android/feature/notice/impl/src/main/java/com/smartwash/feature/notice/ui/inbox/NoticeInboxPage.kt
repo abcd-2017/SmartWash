@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -225,6 +230,7 @@ private fun NoticeList(
         EmptyState(
             // EmptyState 只渲染滚筒圆母题（§3.2 禁裸图标着色）：icon 不渲染，仅占位
             icon = Icons.Default.Notifications,
+            // 引导式文案（§3.6）：本页无自然行动去处（等新消息送达即可），故省略行动按钮
             message = stringResource(R.string.notice_inbox_empty),
             modifier = Modifier
                 .fillMaxSize()
@@ -238,16 +244,21 @@ private fun NoticeList(
         onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
     ) {
+        // 列表底部避让手势条/三键导航（规范 §4：底部预留导航高度 + 余量）——末卡与
+        // 「加载更多」footer 可完整滚出系统栏之下；无导航条设备回落纯 24dp 底距
+        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = AppDimens.pagePadding,
-                end = AppDimens.pagePadding,
                 top = AppDimens.spaceXs,
-                bottom = AppDimens.spaceXl,
+                end = AppDimens.pagePadding,
+                bottom = navBarsBottom + AppDimens.spaceXl,
             ),
         ) {
-            items(notices, key = { it.safeId }) { notice ->
+            // key 叠加 createdAt 兜底：后端异常返回多条 id=null 时 safeId 同为 0L，
+            // 纯 safeId 会 duplicate key 崩溃（审查19 P2-17）
+            items(notices, key = { "notice_${it.safeId}_${it.createdAt}" }) { notice ->
                 NoticeCard(
                     notice = notice,
                     onClick = { onNoticeClick(notice) },
@@ -285,8 +296,8 @@ private fun NoticeList(
 
 /**
  * 通知卡片（GroupCard 唯一画法 + pressable 整卡按压）：
- * 顶行 = 类型 tag（语义色胶囊）+ 相对时间；主体 = 未读圆点 + 标题（未读主色加粗 /
- * 已读次文本灰化）+ 内容摘要（两行省略）。
+ * 顶行 = 类型 tag（语义色胶囊）+ 未读圆点 + 相对时间；主体 = 标题（未读主色加粗 /
+ * 已读次文本灰化）+ 内容摘要（两行省略）。色点不占标题行缩进，未读/已读标题左缘恒对齐。
  */
 @Composable
 private fun NoticeCard(
@@ -296,6 +307,10 @@ private fun NoticeCard(
 ) {
     val type = NoticeType.from(notice.safeType)
     val timeParts = remember(notice.createdAt) { noticeTimeParts(notice.createdAt) }
+    // 未读/已读读屏状态（规范 §10：颜色不是唯一信息载体）：色点纯装饰无语义，
+    // 状态经标题 stateDescription 传达（审查19 P1-6）
+    val unreadStateLabel = stringResource(R.string.notice_state_unread)
+    val readStateLabel = stringResource(R.string.notice_state_read)
     GroupCard(
         modifier = modifier
             .fillMaxWidth()
@@ -305,18 +320,8 @@ private fun NoticeCard(
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             NoticeTypeTag(type)
             Spacer(modifier = Modifier.weight(1f))
-            if (timeParts != null) {
-                Text(
-                    text = noticeTimeLabel(timeParts),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary,
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
-        Row(verticalAlignment = Alignment.CenterVertically) {
             if (notice.isUnread) {
-                // 未读状态色点（规范 §3.5：8dp 圆点，提醒语义取粉/异常色）
+                // 未读状态色点（规范 §3.5：8dp 圆点，提醒语义取粉/异常色；语义归属待产品裁决，见 P2-12）
                 Box(
                     modifier = Modifier
                         .size(8.dp)
@@ -325,33 +330,44 @@ private fun NoticeCard(
                 )
                 Spacer(modifier = Modifier.width(AppDimens.spaceXs))
             }
-            Text(
-                text = notice.safeTitle,
-                style = if (notice.isUnread) {
-                    MaterialTheme.typography.titleSmall
-                } else {
-                    MaterialTheme.typography.bodyMedium
-                },
-                color = if (notice.isUnread) {
-                    AppColors.colorScheme.textPrimary
-                } else {
-                    AppColors.colorScheme.textSecondary
-                },
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            if (timeParts != null) {
+                Text(
+                    text = noticeTimeLabel(timeParts),
+                    style = MaterialTheme.typography.bodySmall,
+                    // 时间戳是信息性元数据，弱灰 textTertiary on 白仅 2.25:1 触红线（审查19 P1-4）
+                    color = AppColors.colorScheme.textSecondary,
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
+        Text(
+            text = notice.safeTitle,
+            style = if (notice.isUnread) {
+                MaterialTheme.typography.titleSmall
+            } else {
+                MaterialTheme.typography.bodyMedium
+            },
+            color = if (notice.isUnread) {
+                AppColors.colorScheme.textPrimary
+            } else {
+                AppColors.colorScheme.textSecondary
+            },
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    stateDescription = if (notice.isUnread) unreadStateLabel else readStateLabel
+                },
+        )
         if (notice.safeContent.isNotBlank()) {
             Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
             Text(
                 text = notice.safeContent,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (notice.isUnread) {
-                    AppColors.colorScheme.textSecondary
-                } else {
-                    AppColors.colorScheme.textTertiary
-                },
+                // 摘要正文是核心可读内容：已读原 textTertiary on 白 2.25:1 触红线（审查19 P0-1），
+                // 两态统一 textSecondary（4.90:1），层级靠标题字重/颜色区分
+                color = AppColors.colorScheme.textSecondary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -364,7 +380,10 @@ private fun NoticeCard(
 private fun NoticeTypeTag(type: NoticeType) {
     val (container, foreground) = when (type) {
         NoticeType.SYSTEM ->
-            AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.iconForegroundOrange
+            // 前景用文字级深档 onWarningContainer：iconForegroundOrange 是图标档（非文字 3:1
+            // 豁免），作 12sp 文字色 on 橙浅底仅 2.50:1 触红线（审查19 P0-2；浅色 #92400E on
+            // #FDF3E7 ≈6.6:1，深色 #ECB36A on #332917 达标）
+            AppColors.colorScheme.iconContainerOrange to AppColors.colorScheme.onWarningContainer
         NoticeType.ANNOUNCEMENT ->
             AppColors.colorScheme.iconContainerBlue to AppColors.colorScheme.iconForegroundBlue
         NoticeType.UNKNOWN ->
@@ -374,7 +393,8 @@ private fun NoticeTypeTag(type: NoticeType) {
         modifier = Modifier
             .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(container)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            // 间距走令牌：spaceXs=8 / space2xs=2（DESIGN-SPEC §3 允许值集内的组件内微间距档）
+            .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.space2xs),
         contentAlignment = Alignment.Center,
     ) {
         Text(

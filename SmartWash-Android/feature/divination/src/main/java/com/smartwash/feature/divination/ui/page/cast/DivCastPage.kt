@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,8 +92,10 @@ fun DivCastPage(
     val faces = listOf(facesMask and 1 != 0, facesMask and 2 != 0, facesMask and 4 != 0)
     val tossCount = state.lines.size + (if (pendingYao != null) 1 else 0)
 
+    // 返回确认（audit-22 #5）：原条件 `tossCount in 1..5 || tossing` 漏掉六掷完成、尚未入库的态，
+    // 完整未保存的卦被静默丢弃——补 isComplete && !saving（saving 期间入库已在途，放行退出）
     BackHandler(enabled = true) {
-        if (tossCount in 1..5 || state.tossing) {
+        if (tossCount in 1..5 || state.tossing || (viewModel.isComplete() && !state.saving)) {
             showQuitDialog = true
         } else {
             navController.popBackStack()
@@ -124,6 +127,8 @@ fun DivCastPage(
                 )
                 Text(
                     text = stringResource(R.string.div_cast_progress, tossCount.coerceAtMost(6)),
+                    // 掷数为数量文案，衬线数字宽度不稳，开 tnum 防逐掷跳动（audit-22 #14）
+                    style = TextStyle(fontFeatureSettings = "tnum"),
                     fontSize = 12.sp,
                     letterSpacing = 3.sp,
                     lineHeight = 16.sp,
@@ -153,8 +158,16 @@ fun DivCastPage(
                 // 画板：铜钱底到节点区顶间距 48
                 Spacer(Modifier.height(48.dp))
 
-                // 子午线：六节点，自上爻(顶)到初爻(底)；中列（120dp）中心即全屏中心
-                val positions = listOf("上爻", "五爻", "四爻", "三爻", "二爻", "初爻")
+                // 子午线：六节点，自上爻(顶)到初爻(底)；中列（120dp）中心即全屏中心。
+                // 爻位名迁 strings.xml（audit-22 #7）：_6=上爻 … _1=初爻
+                val positions = listOf(
+                    R.string.div_yao_position_6,
+                    R.string.div_yao_position_5,
+                    R.string.div_yao_position_4,
+                    R.string.div_yao_position_3,
+                    R.string.div_yao_position_2,
+                    R.string.div_yao_position_1,
+                )
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -175,23 +188,24 @@ fun DivCastPage(
                             .align(Alignment.Center)
                             .fillMaxWidth()
                     ) {
-                        positions.forEachIndexed { displayIndex, posLabel ->
+                        positions.forEachIndexed { displayIndex, posRes ->
                             // displayIndex 0=上爻(index5) … 5=初爻(index0)
                             val lineIndex = 5 - displayIndex
                             val committed = state.lines.getOrNull(lineIndex)
                             val isPending = pendingYao != null && lineIndex == state.lines.size
                             val yaoCode = committed ?: (if (isPending) pendingYao?.code else null)
                             MeridianNode(
-                                positionLabel = posLabel,
+                                positionLabel = stringResource(posRes),
                                 // 修复⑥：爻线改由 MeridianNode 内部图形绘制（48dp 等宽条/双段），
                                 // 不再经文本字形（"▅▅▅▅▅▅"/"▅▅  ▅▅"）——空格宽≠块宽致阴爻不对称
                                 yaoCode = yaoCode,
+                                // 爻名迁 strings.xml（audit-22 #7）
                                 nameLabel = yaoCode?.let {
                                     when (it) {
-                                        1 -> "少阳"
-                                        2 -> "少阴"
-                                        3 -> "老阳 · 动"
-                                        else -> "老阴 · 动"
+                                        1 -> stringResource(R.string.div_yao_name_shao_yang)
+                                        2 -> stringResource(R.string.div_yao_name_shao_yin)
+                                        3 -> stringResource(R.string.div_yao_name_lao_yang_moving)
+                                        else -> stringResource(R.string.div_yao_name_lao_yin_moving)
                                     }
                                 },
                                 isMoving = yaoCode != null && yaoCode > 2,
@@ -207,15 +221,18 @@ fun DivCastPage(
 
             // 掷爻 / 成卦
             DivGoldButton(
-                text = if (viewModel.isComplete()) {
-                    stringResource(R.string.div_cast_done)
-                } else {
-                    stringResource(R.string.div_cast_toss)
+                // 入库中切「装 卦 中…」loading 指示（规范 §3.1，audit-22 #15 与问卦页 #4 同修法）
+                text = when {
+                    state.saving -> stringResource(R.string.div_cast_saving)
+                    viewModel.isComplete() -> stringResource(R.string.div_cast_done)
+                    else -> stringResource(R.string.div_cast_toss)
                 },
                 // 画板 .btn.gold：48 高 + 胶囊 + 文字 15/600（取组件默认，不再单侧覆盖）
                 enabled = !state.tossing && !state.saving && pendingYao == null,
+                // audit-22 #16：横边距 76 在 320dp 窄屏按钮宽仅 168dp，130% 字体缩放下
+                // 「成 卦 · 进入卦盘」必换行——放宽到页边距档 24
                 modifier = Modifier
-                    .padding(horizontal = 76.dp, vertical = 14.dp)
+                    .padding(horizontal = 24.dp, vertical = 14.dp)
                     .fillMaxWidth(),
                 onClick = {
                     if (viewModel.isComplete()) {
@@ -240,7 +257,12 @@ fun DivCastPage(
 
         if (showQuitDialog) {
             AppConfirmDialog(
-                message = stringResource(R.string.div_cast_quit_body),
+                // 六掷完成态区分文案（audit-22 #5）：与「爻盘未满」的进行中口径分开提示
+                message = if (viewModel.isComplete()) {
+                    stringResource(R.string.div_cast_quit_done_body)
+                } else {
+                    stringResource(R.string.div_cast_quit_body)
+                },
                 title = stringResource(R.string.div_cast_quit_title),
                 onConfirm = {
                     showQuitDialog = false

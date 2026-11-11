@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,6 +60,7 @@ import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.ui.theme.IconBox
+import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.pressable
 import com.smartwash.feature.toolbox.R
 import com.smartwash.feature.toolbox.ToolboxRoute
@@ -124,7 +128,8 @@ fun ToolboxListPage(
             }
         }
         if (refreshState is LoadState.Error) {
-            Toast.makeText(context, context.getString(R.string.toolbox_error_load), Toast.LENGTH_SHORT).show()
+            // 错误类提示用 LONG（规范 §8 Toast 3–5s），成功类（复制）保留 SHORT
+            Toast.makeText(context, context.getString(R.string.toolbox_error_load), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -202,11 +207,16 @@ fun ToolboxListPage(
                         )
                     }
                     else -> {
+                        // 列表底部避让手势条/三键导航（规范 §4：底部预留导航高度 + 16dp）——
+                        // 内容可滚入系统栏之下，末卡与 append footer 可完整滚出；无导航条设备回落 16dp
+                        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
                             contentPadding = PaddingValues(
-                                horizontal = AppDimens.pagePadding,
-                                vertical = AppDimens.spaceXs,
+                                start = AppDimens.pagePadding,
+                                top = AppDimens.spaceXs,
+                                end = AppDimens.pagePadding,
+                                bottom = AppDimens.spaceMd + navBarsBottom,
                             ),
                             modifier = Modifier.fillMaxSize(),
                         ) {
@@ -247,7 +257,9 @@ fun ToolboxListPage(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .pressable(onClick = { pagingItems.retry() })
-                                                .padding(vertical = AppDimens.spaceSm),
+                                                // 分页失败唯一显式重试入口：vertical 16 × 2 + 行高 16 = 48dp 热区
+                                                //（触控红线 ≥48，原 12×2 = 40 不达标）
+                                                .padding(vertical = AppDimens.spaceMd),
                                             textAlign = TextAlign.Center,
                                         )
                                     }
@@ -302,13 +314,17 @@ private fun ShortCodeCard(
     val now = remember { LocalDateTime.now() }
     val expiryState = ShortCodeRules.expiryStateOf(vo.expireAt, now)
     val isPublic = ShortCodeRules.isPublicVisibility(vo.isPublic)
+    // reduced motion 降级（规范 §8）：动效关闭时不挂 sharedElement，转场退化为壳层
+    // 已按 reduceMotion 降级的普通页面过渡（壳层 shellEnter/ExitTransition 先例），
+    // 避免同一次导航里两套转场一套降级、一套不降级
+    val reduceMotion = LocalReduceMotion.current
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             // 一镜到底：列表卡与详情页信息卡共享边界，导航时平滑展开（2026-11-01）
             .then(
-                if (animatedVisibilityScope != null && sharedTransitionScope != null) {
+                if (!reduceMotion && animatedVisibilityScope != null && sharedTransitionScope != null) {
                     with(sharedTransitionScope) {
                         Modifier.sharedElement(
                             rememberSharedContentState(key = "shortcode-card-${vo.id}"),
@@ -392,19 +408,20 @@ private fun ShortCodeCard(
             // 有效期独占整行（修复⑦）：与短码列左对齐——短码列 x = 卡内边距 20 + 图标盒 36 +
             // 间距 12 = 68dp（自卡片边缘），本行已在外层 20dp 内边距 Column 内，故补 48dp。
             // 独占整行不再与 chips 竞争宽度，任何屏宽都完整可读。
-            // 画板实测：常态 caption 12/400（textSecondary），过期态 captionStrong 12/500（error）
+            // 画板实测：常态 caption 12/400（textSecondary），过期态 captionStrong 12/500（error）；
+            // 时间戳开 tnum（与同卡短码/点击数口径一致，数字等宽便于纵向扫描）
             val (expiryText, expiryColor, expiryStyle) = when (expiryState) {
                 is ShortCodeRules.ExpiryState.Permanent ->
                     Triple(
                         stringResource(R.string.toolbox_expiry_permanent),
                         AppColors.colorScheme.textSecondary,
-                        MaterialTheme.typography.bodySmall,
+                        MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     )
                 is ShortCodeRules.ExpiryState.Expired ->
                     Triple(
                         stringResource(R.string.toolbox_expiry_expired),
                         AppColors.colorScheme.dangerInk,
-                        MaterialTheme.typography.labelSmall,
+                        MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
                     )
                 is ShortCodeRules.ExpiryState.Active ->
                     Triple(
@@ -413,7 +430,7 @@ private fun ShortCodeCard(
                             ShortCodeRules.formatDisplayDateTime(vo.expireAt),
                         ),
                         AppColors.colorScheme.textSecondary,
-                        MaterialTheme.typography.bodySmall,
+                        MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     )
             }
             Text(

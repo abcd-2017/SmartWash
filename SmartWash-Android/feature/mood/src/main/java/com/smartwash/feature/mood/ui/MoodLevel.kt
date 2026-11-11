@@ -3,10 +3,17 @@ package com.smartwash.feature.mood.ui
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import com.smartwash.common.ui.theme.AppColors
+import com.smartwash.common.ui.theme.Danger
+import com.smartwash.common.ui.theme.Ongoing
+import com.smartwash.common.ui.theme.Primary
+import com.smartwash.common.ui.theme.TextTertiary
+import com.smartwash.common.ui.theme.Water
 import com.smartwash.feature.mood.MoodConstant
 import com.smartwash.feature.mood.R
+import java.util.Locale
 
 /**
  * 心情等级词典 —— 端上五色块的单一事实来源（服务端只存 level + color 快照）。
@@ -17,18 +24,20 @@ import com.smartwash.feature.mood.R
  *
  * [snapshotHex] 是提交给后端的 color 快照（#RRGGBB，浅色主题令牌基准值）：
  * 契约约定「color 为提交时快照，后续端上调整词典颜色不会改写历史」，
- * 用固定值保证同一心情的快照稳定；界面着色仍走 [color] 的主题感知 Token。
+ * 界面着色仍走 [color] 的主题感知 Token。基准值经 [snapshotHexOf] 引用 Color.kt
+ * 同名浅色令牌常量（审查报告 #12：不重复字面量，保证与令牌单一事实源，杜绝静默漂移），
+ * 生成值不变（#A8435A/#A9AEA9/#4A9FD4/#D98A26/#2D9B6A），历史快照契约不受影响。
  */
 enum class MoodLevel(
     val value: Int,
     @StringRes val labelRes: Int,
     val snapshotHex: String,
 ) {
-    RAINSTORM(1, R.string.mood_level_rainstorm, "#A8435A"),
-    OVERCAST(2, R.string.mood_level_overcast, "#A9AEA9"),
-    CLOUDY(3, R.string.mood_level_cloudy, "#4A9FD4"),
-    SUNNY(4, R.string.mood_level_sunny, "#D98A26"),
-    SHINING(5, R.string.mood_level_shining, "#2D9B6A"),
+    RAINSTORM(1, R.string.mood_level_rainstorm, snapshotHexOf(Danger)),
+    OVERCAST(2, R.string.mood_level_overcast, snapshotHexOf(TextTertiary)),
+    CLOUDY(3, R.string.mood_level_cloudy, snapshotHexOf(Water)),
+    SUNNY(4, R.string.mood_level_sunny, snapshotHexOf(Ongoing)),
+    SHINING(5, R.string.mood_level_shining, snapshotHexOf(Primary)),
     ;
 
     companion object {
@@ -76,3 +85,10 @@ fun parseSnapshotColor(hex: String?, level: Int): Color {
  */
 fun moodSnapshotHex(level: Int): String =
     MoodLevel.fromValue(level)?.snapshotHex ?: MoodLevel.SHINING.snapshotHex
+
+/**
+ * 令牌 Color → 快照契约 hex（#RRGGBB 大写）。仅引用 Color.kt 浅色主题常量
+ * （审查报告 #12：快照基准与令牌单源，值与原字面量一致）。
+ */
+private fun snapshotHexOf(color: Color): String =
+    String.format(Locale.US, "#%06X", color.toArgb() and 0xFFFFFF)

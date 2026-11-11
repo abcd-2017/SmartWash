@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,8 +61,10 @@ import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.pressable
+import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.feature.user.impl.R
 import com.smartwash.feature.user.impl.network.vo.user.TransactionVo
+import java.util.Locale
 
 /**
  * 钱包流水页四态（参照 :feature:payment 充值记录页范式）：
@@ -205,52 +210,62 @@ fun WalletTransactionsPage(
                 modifier = Modifier.fillMaxSize()
             ) { state ->
                 when (state) {
-                    WalletListState.Content -> LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = AppDimens.pagePadding),
-                        // 卡间距 16dp（规范 §2.3）
-                        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
-                    ) {
-                        items(
-                            count = transactions.itemCount,
-                            // 契约无唯一 id：内容复合键（append 时身份不随索引漂移，见键表构建注释）
-                            key = { index -> itemKeys.getOrElse(index) { "tx-idx-$index" } }
-                        ) { index ->
-                            val transaction = transactions[index]
-                            if (transaction != null) {
-                                TransactionCard(transaction)
+                    WalletListState.Content -> {
+                        // 列表底部避让手势条/三键导航（DESIGN-SPEC §4：底部预留导航高度 + 16dp）——
+                        // 内容可滚入系统栏之下，末卡与 append footer 可完整滚出；无导航条设备回落 16dp
+                        val navBarsBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = AppDimens.pagePadding,
+                                top = AppDimens.spaceXs,
+                                end = AppDimens.pagePadding,
+                                bottom = AppDimens.spaceMd + navBarsBottom,
+                            ),
+                            // 卡间距 16dp（规范 §2.3）
+                            verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing)
+                        ) {
+                            items(
+                                count = transactions.itemCount,
+                                // 契约无唯一 id：内容复合键（append 时身份不随索引漂移，见键表构建注释）
+                                key = { index -> itemKeys.getOrElse(index) { "tx-idx-$index" } }
+                            ) { index ->
+                                val transaction = transactions[index]
+                                if (transaction != null) {
+                                    TransactionCard(transaction)
+                                }
                             }
-                        }
 
-                        transactions.apply {
-                            // 尾部：append 加载中 → 转圈（reduced motion 降级静态三点灰）；
-                            // append 失败 → 错误行点击重试
-                            when (val appendState = loadState.append) {
-                                is LoadState.Loading -> item(key = "append_loading_footer") {
-                                    if (LocalReduceMotion.current) {
-                                        LoadingDots(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    } else {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                                .wrapContentWidth(Alignment.CenterHorizontally),
-                                            color = AppColors.colorScheme.primary,
-                                            strokeWidth = 2.dp
+                            transactions.apply {
+                                // 尾部：append 加载中 → 转圈（reduced motion 降级静态三点灰）；
+                                // append 失败 → 错误行点击重试
+                                when (val appendState = loadState.append) {
+                                    is LoadState.Loading -> item(key = "append_loading_footer") {
+                                        if (LocalReduceMotion.current) {
+                                            LoadingDots(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(AppDimens.spaceMd)
+                                            )
+                                        } else {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(AppDimens.spaceMd)
+                                                    .wrapContentWidth(Alignment.CenterHorizontally),
+                                                color = AppColors.colorScheme.primary,
+                                                strokeWidth = 2.dp
+                                            )
+                                        }
+                                    }
+                                    is LoadState.Error -> item(key = "append_error_footer") {
+                                        AppendErrorFooter(
+                                            message = appendState.error.message,
+                                            onRetry = { transactions.retry() }
                                         )
                                     }
+                                    else -> {}
                                 }
-                                is LoadState.Error -> item(key = "append_error_footer") {
-                                    AppendErrorFooter(
-                                        message = appendState.error.message,
-                                        onRetry = { transactions.retry() }
-                                    )
-                                }
-                                else -> {}
                             }
                         }
                     }
@@ -274,6 +289,14 @@ fun WalletTransactionsPage(
                         icon = Icons.Default.AccountBalanceWallet,
                         message = stringResource(R.string.no_wallet_transactions),
                         modifier = Modifier.fillMaxSize(),
+                        // 空态三件套（规范 §3.6）：母题 + 引导文案 + 行动按钮——「去充值」给下一步出路
+                        action = {
+                            AppButton(
+                                small = true,
+                                text = stringResource(R.string.go_recharge),
+                                onClick = { navController.navigate(PaymentRoute.Recharge) },
+                            )
+                        }
                     )
 
                     WalletListState.Loading -> LoadingState(modifier = Modifier.fillMaxSize())
@@ -285,15 +308,16 @@ fun WalletTransactionsPage(
 
 /**
  * 分页尾部「加载更多失败」错误行 — 整行可点重试（对齐充值记录页 AppendErrorFooter）。
- * 规范 §7：自绘 pressable 无 ripple，热区 ≥44dp。
+ * 规范 §7：自绘 pressable 无 ripple，热区 ≥48dp（DESIGN-SPEC §3，原 44dp 仅达旧下限）。
  */
 @Composable
 private fun AppendErrorFooter(message: String?, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp)
-            .pressable(onClick = onRetry),
+            .heightIn(min = 48.dp)
+            .pressable(onClick = onRetry)
+            .padding(vertical = AppDimens.spaceXs),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -357,15 +381,16 @@ private fun TransactionCard(transaction: TransactionVo) {
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = transaction.description?.takeIf { it.isNotBlank() }
                         ?: stringResource(if (isRecharge) R.string.recharge else R.string.transaction_payment),
-                    style = MaterialTheme.typography.bodyMedium,
+                    // 列表行主文案：body 14/20/400 §3.4 特许须配 500 → titleSmall（14/20/500）
+                    style = MaterialTheme.typography.titleSmall,
                     color = AppColors.colorScheme.textPrimary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                 Text(
                     text = formatTransactionTime(transaction.transactionTime.orEmpty()),
                     style = MaterialTheme.typography.bodySmall,
@@ -374,7 +399,7 @@ private fun TransactionCard(transaction: TransactionVo) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
             // 右列：金额 + 状态文案（对齐鸿蒙端 WalletTransactions 行结构）
             Column(horizontalAlignment = Alignment.End) {
                 // 金额：端上按 type 重算符号 + 绝对值展示（防服务端负数与端上前缀双符号）
@@ -384,7 +409,8 @@ private fun TransactionCard(transaction: TransactionVo) {
                         // 金额缺失不造 0 元假数据，退化为描述占位
                         stringResource(if (isRecharge) R.string.recharge else R.string.transaction_payment)
                     } else {
-                        val formatted = String.format("%.2f", amount)
+                        // 显式 Locale：逗号小数 locale（de/fr）下 "%.2f" 会渲染 "12,50"，跨设备不一致
+                        val formatted = String.format(Locale.CHINA, "%.2f", amount)
                         stringResource(
                             if (isRecharge) R.string.wallet_amount_in_format
                             else R.string.wallet_amount_out_format,
@@ -410,11 +436,13 @@ private fun TransactionCard(transaction: TransactionVo) {
                     else -> transaction.status
                 }
                 statusText?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.colorScheme.textTertiary,
+                        // 状态是决策所需可读信息（成功/失败），textSecondary 达标
+                        //（浅 5.12:1 / 深 7.29:1）；textTertiary 浅色 2.25:1 击穿 §10 红线
+                        color = AppColors.colorScheme.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

@@ -123,12 +123,8 @@ fun MaterialListPage(
             viewModel.consumeAddCardSuccess()
         }
     }
-    // 加载更多失败：复位（列表保留，可再次点击重试）
-    LaunchedEffect(state.loadMoreState) {
-        if (state.loadMoreState is RequestState.Error) {
-            viewModel.consumeLoadMoreError()
-        }
-    }
+    // 加载更多失败不再立即消费：错误态由 LoadMoreRow 内联展示，行本身即重试入口，
+    // 消费时机后移到用户点击重试（loadMore 覆盖状态）或离开页面（审查矩阵 #5）
 
     Box(
         modifier = Modifier
@@ -140,11 +136,11 @@ fun MaterialListPage(
                 title = stringResource(R.string.review_material_title),
                 onBack = { navController.navigateUp() },
                 actions = {
-                    // 文字按钮 — §3.3 规格 13sp/600 主色，热区 ≥44dp
+                    // 文字按钮 — §3.3 规格 13sp/600 主色，热区 ≥48dp（审查矩阵 #8）
                     Box(
                         modifier = Modifier
                             .pressable(onClick = { viewModel.toggleCreateForm() })
-                            .heightIn(min = 44.dp)
+                            .heightIn(min = 48.dp)
                             .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm),
                     ) {
                         Text(
@@ -220,20 +216,13 @@ private fun MaterialListContent(
     onShowAddCard: (Long) -> Unit,
 ) {
     val reduceMotion = LocalReduceMotion.current
-    // 展开动效规格：reduced motion → CrossfadeAlt 180ms 纯淡入淡出，无位移（规范 §8）。
-    // 淡入淡出消费 Float 规格，expand/shrink 消费 IntSize 规格，两组分开。
+    // 展开动效规格：reduced motion → 仅 CrossfadeAlt 180ms 纯淡入淡出，expand/shrink 位移
+    // 整体归零（规范 §8，审查矩阵 #7）；正常路径淡入淡出消费 Float 规格、expand/shrink 消费
+    // IntSize 规格，两组分开——展开/收缩只在非 reduce 分支拼接。
     val fadeEnter = if (reduceMotion) tween<Float>(CROSSFADE_ALT_MS) else enterTween(DURATION_CARD_MS)
-    val expandEnter = if (reduceMotion) {
-        tween<IntSize>(CROSSFADE_ALT_MS)
-    } else {
-        enterTween<IntSize>(DURATION_CARD_MS)
-    }
     val fadeExit = if (reduceMotion) tween<Float>(CROSSFADE_ALT_MS) else exitTween(DURATION_CARD_MS)
-    val expandExit = if (reduceMotion) {
-        tween<IntSize>(CROSSFADE_ALT_MS)
-    } else {
-        exitTween<IntSize>(DURATION_CARD_MS)
-    }
+    val expandEnter = enterTween<IntSize>(DURATION_CARD_MS)
+    val expandExit = exitTween<IntSize>(DURATION_CARD_MS)
     val now = remember { LocalDateTime.now() }
 
     LazyColumn(
@@ -248,8 +237,16 @@ private fun MaterialListContent(
         item(key = "material_create_form") {
             AnimatedVisibility(
                 visible = state.createFormVisible,
-                enter = fadeIn(fadeEnter) + expandVertically(expandEnter),
-                exit = fadeOut(fadeExit) + shrinkVertically(expandExit),
+                enter = if (reduceMotion) {
+                    fadeIn(fadeEnter)
+                } else {
+                    fadeIn(fadeEnter) + expandVertically(expandEnter)
+                },
+                exit = if (reduceMotion) {
+                    fadeOut(fadeExit)
+                } else {
+                    fadeOut(fadeExit) + shrinkVertically(expandExit)
+                },
             ) {
                 CreateMaterialForm(
                     title = state.formTitle,
@@ -301,7 +298,7 @@ private fun MaterialListContent(
             if (state.materialsHasMore) {
                 item(key = "material_load_more") {
                     LoadMoreRow(
-                        loading = state.loadMoreState is RequestState.Loading,
+                        loadMoreState = state.loadMoreState,
                         onClick = onLoadMore,
                     )
                 }
@@ -339,7 +336,8 @@ private fun CreateMaterialForm(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                // 固定高度改弹性下限：130% 字体缩放时文字不被裁切（审查矩阵 #15）
+                .heightIn(min = 48.dp),
             shape = RoundedCornerShape(AppDimens.inputRadius),
             colors = tokenTextFieldColors(),
         )
@@ -407,11 +405,16 @@ private fun MaterialCard(
     onRetryCards: () -> Unit,
     onShowAddCard: () -> Unit,
 ) {
+    val reduceMotion = LocalReduceMotion.current
     AppCard {
-        Column {
+        // 卡内容包卡内边距 20dp：AppCard 无默认内边距，遗漏会让文本贴 16dp 圆角切字
+        // （规范 §3.1 卡内边距 / 审查矩阵 #1，与队列页 QueueCard 画法一致）
+        Column(modifier = Modifier.padding(AppDimens.cardPadding)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.pressable(onClick = onToggleExpand),
+                modifier = Modifier
+                    .pressable(onClick = onToggleExpand)
+                    .heightIn(min = 48.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -425,7 +428,8 @@ private fun MaterialCard(
                     Text(
                         text = ReviewFormat.createdDateOf(material.createdAt, "—"),
                         style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                        color = AppColors.colorScheme.textTertiary,
+                        // 创建日期是可读信息（非装饰角标）：textTertiary 双主题均破 4.5:1（审查矩阵 #2）
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 }
                 Text(
@@ -450,8 +454,16 @@ private fun MaterialCard(
 
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(fadeEnter) + expandVertically(expandEnter),
-                exit = fadeOut(fadeExit) + shrinkVertically(expandExit),
+                enter = if (reduceMotion) {
+                    fadeIn(fadeEnter)
+                } else {
+                    fadeIn(fadeEnter) + expandVertically(expandEnter)
+                },
+                exit = if (reduceMotion) {
+                    fadeOut(fadeExit)
+                } else {
+                    fadeOut(fadeExit) + shrinkVertically(expandExit)
+                },
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
@@ -468,7 +480,7 @@ private fun MaterialCard(
                         Box(
                             modifier = Modifier
                                 .pressable(onClick = onShowAddCard)
-                                .heightIn(min = 44.dp)
+                                .heightIn(min = 48.dp)
                                 .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -530,7 +542,7 @@ private fun ExpandedCardsContent(
                 Box(
                     modifier = Modifier
                         .pressable(onClick = onRetryCards)
-                        .heightIn(min = 44.dp)
+                        .heightIn(min = 48.dp)
                         .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -548,7 +560,8 @@ private fun ExpandedCardsContent(
                 Text(
                     text = stringResource(R.string.review_material_cards_empty),
                     style = MaterialTheme.typography.bodySmall,
-                    color = AppColors.colorScheme.textTertiary,
+                    // 引导性正文（非装饰角标）：textTertiary 双主题均破 4.5:1（审查矩阵 #3）
+                    color = AppColors.colorScheme.textSecondary,
                     modifier = Modifier.padding(vertical = AppDimens.spaceSm),
                 )
             } else {
@@ -564,7 +577,7 @@ private fun ExpandedCardsContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 44.dp)
+                            .heightIn(min = 48.dp)
                             .pressable(onClick = onLoadMoreCards),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -606,30 +619,46 @@ private fun CardRow(card: ReviewCardVo, now: LocalDateTime) {
     }
 }
 
-/** 加载更多行：加载中骨架块 / 静态文字按钮（异常回落由 loadMore 重试承担） */
+/**
+ * 加载更多行：加载中骨架块 / 错误文案内联展示（行本身即重试入口，错误不再静默——审查矩阵 #5）/
+ * 静态文字按钮。错误文案沿用展开区错误行的 dangerInk 口径，点击整行走 [onClick] 重试。
+ */
 @Composable
-private fun LoadMoreRow(loading: Boolean, onClick: () -> Unit) {
+private fun LoadMoreRow(loadMoreState: RequestState, onClick: () -> Unit) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 44.dp)
-            .then(if (loading) Modifier else Modifier.pressable(onClick = onClick))
+            .heightIn(min = 48.dp)
+            .then(if (loadMoreState is RequestState.Loading) Modifier else Modifier.pressable(onClick = onClick))
             .padding(vertical = AppDimens.spaceSm),
         contentAlignment = Alignment.Center,
     ) {
-        if (loading) {
-            SkeletonBlock(
-                modifier = Modifier
-                    .widthIn(min = 120.dp)
-                    .height(14.dp)
-            )
-        } else {
-            Text(
-                text = stringResource(R.string.review_material_load_more),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = AppColors.colorScheme.textGreen,
-            )
+        when (loadMoreState) {
+            RequestState.Loading -> {
+                SkeletonBlock(
+                    modifier = Modifier
+                        .widthIn(min = 120.dp)
+                        .height(14.dp)
+                )
+            }
+            is RequestState.Error -> {
+                Text(
+                    text = loadMoreState.getMessage(context),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.dangerInk,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            else -> {
+                Text(
+                    text = stringResource(R.string.review_material_load_more),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AppColors.colorScheme.textGreen,
+                )
+            }
         }
     }
 }
@@ -678,7 +707,8 @@ private fun ReviewCardEditDialog(
                         Text(
                             text = materialTitle,
                             style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textTertiary,
+                            // 可读上下文信息（非装饰）：textTertiary 双主题均破 4.5:1（审查矩阵 #4）
+                            color = AppColors.colorScheme.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )

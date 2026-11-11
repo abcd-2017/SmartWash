@@ -244,8 +244,11 @@ fun MeridianNode(
     modifier: Modifier = Modifier,
 ) {
     val c = DivColors.current
-    // 动爻金强调：玄墨亮金（goldHi）、宣纸反转为墨（goldText）——画板双板口径
-    val movingColor = if (c.isDark) c.goldHi else c.goldText
+    // 动爻强调：玄墨亮金（goldHi，画板金强调口径）；宣纸侧改平涂深朱（sealDeep #A63A30）——
+    // audit-22 #6：原宣纸 goldText=#1C1C1E 与静爻线 textPrimary 完全同色零区分，
+    // 改用画板「朱砂只出现在印章与动爻标记」语义（#A63A30 on 宣纸卡面 ≈5.8:1，线/字双达标；
+    // 亮朱 seal=#C8504A 作 12sp 字色仅 ≈4.0:1 不达标，故取 sealDeep）
+    val movingColor = if (c.isDark) c.goldHi else c.sealDeep
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -314,8 +317,9 @@ fun MeridianNode(
             if (done && nameLabel != null) {
                 Text(
                     text = nameLabel,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
+                    // audit-22 #20：玄墨仪式文本衬线——与左轨爻位名 divSerif 对齐
+                    //（原默认无衬线与爻位名同排混排）
+                    style = divSerif(12.sp, FontWeight.Normal, 0.sp, 16.sp),
                     color = if (isMoving) movingColor else c.textSecondary,
                     maxLines = 1,
                     modifier = Modifier.padding(start = 10.dp),
