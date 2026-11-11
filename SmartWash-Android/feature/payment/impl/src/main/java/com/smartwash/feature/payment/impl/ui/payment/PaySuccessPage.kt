@@ -48,6 +48,7 @@ import androidx.navigation.NavHostController
 import com.smartwash.feature.payment.impl.R
 import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.common.ui.components.AppButton
+import java.util.Locale
 import com.smartwash.common.ui.components.LocalCoverArt
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.components.EmptyState
@@ -244,7 +245,7 @@ fun PaySuccessPage(
                                 InfoRow(
                                     stringResource(R.string.payment_amount),
                                     // 金额两位小数：Float.toString() 会把 29.9f 直出成「¥29.9」，与他页不一致
-                                    stringResource(R.string.currency_format, String.format("%.2f", orderInfo?.payPrice ?: 0f)),
+                                    stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", orderInfo?.payPrice ?: 0f)),
                                     valueStyle = infoValueStyle,
                                     rowHeight = 16.dp
                                 )

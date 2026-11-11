@@ -86,6 +86,7 @@ import com.smartwash.common.utils.pressable
 import kotlinx.coroutines.launch
 import com.smartwash.common.utils.rememberDebouncedClick
 import com.smartwash.common.utils.selectedColor
+import java.util.Locale
 
 
 @Composable
@@ -190,7 +191,7 @@ fun RechargePage(
                             color = AppColors.colorScheme.textSecondary
                         )
                         Text(
-                            text = stringResource(R.string.currency_format, String.format("%.2f", balance ?: 0f)),
+                            text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", balance ?: 0f)),
                             style = AppTextStyles.DataLarge,
                             color = AppColors.colorScheme.primaryDark
                         )
@@ -378,7 +379,7 @@ fun RechargePage(
             ) {
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.outline)
                 AppButton(
-                    text = if (selectedAmount != null) stringResource(R.string.recharge_now_format, String.format("%.2f", selectedAmount)) else stringResource(R.string.recharge_now),
+                    text = if (selectedAmount != null) stringResource(R.string.recharge_now_format, String.format(Locale.CHINA, "%.2f", selectedAmount)) else stringResource(R.string.recharge_now),
                     // 校验前置到按钮点击（2026-11-05 修复②）：任一校验不过 → 置错误态并自动滚到
                     // 出错区块（错误文案原渲染在视口外，用户「点了没反应」）；全部通过才弹确认框
                     onClick = {
@@ -549,16 +550,16 @@ private fun RechargeSummaryLine(selectedAmount: Float?, isCustom: Boolean) {
     Text(
         text = buildAnnotatedString {
             append(
-                stringResource(R.string.recharge_summary_prefix, String.format("%.2f", amount))
+                stringResource(R.string.recharge_summary_prefix, String.format(Locale.CHINA, "%.2f", amount))
             )
             withStyle(
                 SpanStyle(fontWeight = FontWeight.Bold, color = AppColors.colorScheme.textGreen)
             ) {
-                append(stringResource(R.string.currency_format, String.format("%.2f", total)))
+                append(stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", total)))
             }
             if (bonus > 0f) {
                 append(
-                    stringResource(R.string.recharge_summary_bonus, String.format("%.2f", bonus))
+                    stringResource(R.string.recharge_summary_bonus, String.format(Locale.CHINA, "%.2f", bonus))
                 )
             }
         },
