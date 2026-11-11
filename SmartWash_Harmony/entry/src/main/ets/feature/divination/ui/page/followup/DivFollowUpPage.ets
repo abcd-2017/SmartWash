@@ -36,10 +36,13 @@ export function DivFollowUpBuilder() {
   DivFollowUpPage()
 }
 
-/** 聊天气泡视图（用户实金底右对齐 / 回复卡面左对齐；新气泡首帧 120ms 淡入） */
+/** 聊天气泡视图（用户实金底右对齐 / 回复卡面左对齐；正文 14/20；新气泡首帧 120ms 淡入；
+ *  muted=中断保留的未完成回复，正文灰显） */
 @ComponentV2
 struct ChatBubbleView {
   @Param turn: DivMessage = { role: 'user', content: '' }
+  // 中断保留的未完成回复：正文降为次级色灰显（对齐安卓 audit-23 #18，compare-15 #50）
+  @Param muted: boolean = false
   @Local alpha: number = 0
 
   aboutToAppear(): void {
@@ -58,10 +61,12 @@ struct ChatBubbleView {
         Column() {
           DivSerifText({
             text: this.turn.content,
-            textSize: 12,
+            // 气泡正文 14/20（对齐安卓 audit-23 #21，compare-15 #47）
+            textSize: 14,
             weight: 400,
             spacing: 0,
-            color: DivPalette.onGold
+            color: DivPalette.onGold,
+            lineHeight: 20
           })
         }
         .constraintSize({ maxWidth: 220 })
@@ -83,10 +88,12 @@ struct ChatBubbleView {
         Column() {
           DivSerifText({
             text: this.turn.content,
-            textSize: 12,
+            // 气泡正文 14/20（对齐安卓 audit-23 #21，compare-15 #47）；中断态灰显
+            textSize: 14,
             weight: 400,
             spacing: 0,
-            color: DivPalette.textPrimary
+            color: this.muted ? DivPalette.textSecondary : DivPalette.textPrimary,
+            lineHeight: 20
           })
         }
         .constraintSize({ maxWidth: 240 })
@@ -100,7 +107,8 @@ struct ChatBubbleView {
         .backgroundColor(DivPalette.surface)
         // 回复气泡 = 卡面：1px 发丝描边 + level1 轻阴影（宣纸侧）
         .shadow({
-          radius: DesignElevation.LEVEL_1,
+          // 回复气泡卡面阴影 blur 12（对齐安卓 softCardShadow，compare-15 #52）
+          radius: DesignElevation.CARD_SHADOW_RADIUS,
           color: DesignColor.SHADOW_COLOR_CARD,
           offsetX: 0,
           offsetY: 2
@@ -126,6 +134,8 @@ struct DivFollowUpPage {
   @Local streamingReply: string = ''
   /** 本轮流式错误文案（非空时尾部显示错误行） */
   @Local streamingError: string = ''
+  /** 流式中断标记（失败时保留已流出的部分回复并灰显，对齐安卓 audit-23 #18） */
+  @Local streamInterrupted: boolean = false
   /** 本轮 error 帧业务码（428 未配置模型时错误行追加「去配置」入口；其余码不显示） */
   @Local streamingErrorCode: number = 0
   private scroller: Scroller = new Scroller()
@@ -209,6 +219,7 @@ struct DivFollowUpPage {
     this.sending = true
     this.streamingReply = ''
     this.streamingError = ''
+    this.streamInterrupted = false
     this.streamingErrorCode = 0
     try {
       const serverId = await this.ensureServerRecordId(record)
@@ -237,6 +248,7 @@ struct DivFollowUpPage {
         onSseError: (code: number, message: string): void => {
           this.streamingErrorCode = code
           this.streamingError = message
+          this.streamInterrupted = true
           this.sending = false
           logger.warn('divFollowUpPage', `追问 error 帧 serverRecordId=${serverId} code=${code}`)
         },
@@ -244,6 +256,7 @@ struct DivFollowUpPage {
           // 传输层失败非业务 error 帧：清业务码，不显示「去配置」入口
           this.streamingErrorCode = 0
           this.streamingError = message
+          this.streamInterrupted = true
           this.sending = false
           logger.warn('divFollowUpPage', `追问通道失败 serverRecordId=${serverId}: ${message}`)
         }
@@ -251,6 +264,7 @@ struct DivFollowUpPage {
     } catch (err) {
       this.streamingErrorCode = 0
       this.streamingError = '追问通道不可用，请稍后重试'
+      this.streamInterrupted = true
       this.sending = false
       logger.error('divFollowUpPage', `追问发起异常 localId=${record.id}, ` +
         `${err instanceof Error ? err.message : ''}`)
@@ -260,6 +274,31 @@ struct DivFollowUpPage {
   /** 428（未配置解读模型）：错误行追加「去配置」入口，跳设置页（鸿蒙端不自动弹层） */
   private goModelSetting(): void {
     pathStack.pushPathByName(RouteNames.SETTING, null)
+  }
+
+  /**
+   * 重试最近一次失败的追问（对齐安卓 retryLast，compare-15 #49）：
+   * 移除失败的 user 轮后以其原文重发，避免同文案轮次重复堆叠。
+   */
+  private retryLast(): void {
+    if (this.sending) {
+      return
+    }
+    const history = this.history
+    if (history.length === 0) {
+      return
+    }
+    const last = history[history.length - 1]
+    if (last.role !== 'user') {
+      return
+    }
+    this.history = history.slice(0, history.length - 1)
+    this.historyLength = this.history.length
+    this.streamingReply = ''
+    this.streamingError = ''
+    this.streamInterrupted = false
+    this.input = last.content
+    this.send()
   }
 
   /**
@@ -295,8 +334,12 @@ struct DivFollowUpPage {
           .borderRadius(12)
           .border({ width: 1, color: DivPalette.line })
           .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
-          .fontSize(14)
+          // 输入正文 16/24（对齐安卓 audit-23 #17，compare-15 #48）
+          .fontSize(16)
+          .lineHeight(24)
           .fontColor(DivPalette.textPrimary)
+          // 占位走 textSecondary（对齐安卓 audit-23 #16）
+          .placeholderColor(DivPalette.textSecondary)
           .caretColor(DivPalette.gold)
           .onChange((value: string) => {
             this.input = value
@@ -389,16 +432,34 @@ struct DivFollowUpPage {
                 }
               }
 
+              // key 用追加序号（history 只追加不删除，index 稳定）：原 content+role 键在
+              // 同会话出现相同文案轮次会 Duplicate key 崩溃（对齐安卓 "h$index"，compare-15 #53）
               ForEach(this.history, (turn: DivMessage, index: number) => {
                 ListItem() {
                   this.ChatBubble(turn)
                 }
-              }, (turn: DivMessage, index: number) => `${index}-${turn.role}-${turn.content}`)
+              }, (turn: DivMessage, index: number) => `h${index}`)
 
-              if (this.sending && this.streamingReply.length > 0) {
-                // 流式回复气泡（assistant 样式，delta 渐进出字；done 后并入聊天流）
+              if (this.streamingReply.length > 0) {
+                // 流式回复气泡（assistant 样式，delta 渐进出字；中断态保留已流出内容并灰显）
                 ListItem() {
-                  ChatBubbleView({ turn: { role: 'assistant', content: this.streamingReply } })
+                  Column() {
+                    ChatBubbleView({
+                      turn: { role: 'assistant', content: this.streamingReply },
+                      muted: this.streamInterrupted
+                    })
+                    if (this.streamInterrupted) {
+                      // 「生成中断」标记（对齐安卓 audit-23 #18，compare-15 #50）
+                      DivSerifText({
+                        text: DivText.followupInterrupted,
+                        textSize: 12,
+                        weight: 400,
+                        spacing: 0,
+                        color: DivPalette.textSecondary
+                      })
+                        .padding({ left: 4, top: 4 })
+                    }
+                  }
                 }
               } else if (this.sending) {
                 ListItem() {
@@ -421,21 +482,18 @@ struct DivFollowUpPage {
 
               if (this.streamingError.length > 0) {
                 ListItem() {
-                  Column({ space: 8 }) {
-                    Row() {
-                      DivSerifText({
-                        text: this.streamingError,
-                        textSize: 12,
-                        weight: 400,
-                        spacing: 0,
-                        color: DivPalette.textTertiary,
-                        textAlign: TextAlign.Center
-                      })
-                    }
-                    .width('100%')
-                    .justifyContent(FlexAlign.Center)
-                    // 428（未配置解读模型）：错误行下追加「去配置」入口直达设置页
+                  Column() {
+                    DivSerifText({
+                      text: this.streamingError,
+                      textSize: 12,
+                      weight: 400,
+                      spacing: 0,
+                      // 错误正文走 secondary 槽位（对齐安卓 audit-23 #20，compare-15 #51）
+                      color: DivPalette.textSecondary,
+                      textAlign: TextAlign.Center
+                    })
                     if (this.streamingErrorCode === 428) {
+                      // PR #91：428（未配置解读模型）——去配置入口直达设置页
                       DivGoldButton({
                         text: DivText.readingGoConfig,
                         soft: true,
@@ -445,6 +503,24 @@ struct DivFollowUpPage {
                         onAction: () => {
                           this.goModelSetting()
                         }
+                      })
+                    } else {
+                      // 48dp 热区重试文字按钮（对齐安卓 retryLast，compare-15 #49）
+                      Row() {
+                        DivSerifText({
+                          text: DivText.followupRetry,
+                          textSize: 14,
+                          weight: 500,
+                          spacing: 0,
+                          color: DivPalette.goldText,
+                          textAlign: TextAlign.Center
+                        })
+                      }
+                      .height(48)
+                      .padding({ left: 16, right: 16 })
+                      .justifyContent(FlexAlign.Center)
+                      .onClick(() => {
+                        this.retryLast()
                       })
                     }
                   }

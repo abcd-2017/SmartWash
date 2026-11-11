@@ -31,7 +31,8 @@ import {
   DivSeal,
   DivSectionTitle,
   DivSerifText,
-  DivText
+  DivText,
+  DIV_PAGE_PADDING
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { DesignDimens, DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
@@ -327,7 +328,8 @@ struct DivAskPage {
     Column() {
       Column().height(48)
 
-      DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 26 })
+      // 安全印章印文 22（对齐安卓 DivAskPage.kt:341，compare-15 #10）
+      DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 22 })
 
       Column().height(DesignDimens.SPACE_LG)
 
@@ -424,7 +426,9 @@ struct DivAskPage {
                   .width('100%')
                   .backgroundColor(Color.Transparent)
                   .caretColor(DivPalette.gold)
-                  .fontSize(14)
+                  // 输入正文 16/24（对齐安卓 DivAskPage.kt:121，compare-15 #2）
+                  .fontSize(16)
+                  .lineHeight(24)
                   .fontColor(DivPalette.textPrimary)
                   .fontFamily('serif')
                   .placeholderColor(DivPalette.textSecondary)
@@ -434,11 +438,12 @@ struct DivAskPage {
                   })
               }
               .width('100%')
-              .padding(DesignDimens.CARD_PADDING)
+              // 问题卡内边距 14（对齐安卓 DivAskPage.kt:94，compare-15 #13）
+              .padding(14)
             }
           }
           .width('100%')
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 2. 所问领域（自动识别 / 手动选择）
           DivSectionTitle({
@@ -458,7 +463,7 @@ struct DivAskPage {
                 })
               }, (item: [string, string]) => item[0])
             }
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
@@ -530,20 +535,20 @@ struct DivAskPage {
         }
           }
           .width('100%')
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 卡片间距统一 CARD_SPACING（16）
           Column().height(DesignDimens.CARD_SPACING)
 
-          // 4. 开始
+          // 4. 开始（saving 防重 + 文案切「推演中…」，对齐安卓 DivAskPage.kt:220-225，compare-15 #4）
           DivGoldButton({
-            text: DivText.askGo,
-            isEnabled: this.question.trim().length > 0,
+            text: this.saving ? DivText.askCasting : DivText.askGo,
+            isEnabled: this.question.trim().length > 0 && !this.saving,
             onAction: () => {
               this.onGo()
             }
           })
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 5. 页脚安全提示
           DivFooterNote({ text: DivText.askSafetyHint })
@@ -574,7 +579,8 @@ struct ManualOption {
     Column() {
       DivSerifText({
         text: this.label,
-        textSize: 10,
+        // 字号 10→12（v0.4 字阶最小档，对齐安卓 audit-22 #2）
+        textSize: 12,
         weight: 400,
         spacing: 0,
         // 选中项文字取语义金（goldText：宣纸侧墨色，对齐安卓 c.goldText 口径）
@@ -582,7 +588,9 @@ struct ManualOption {
         textAlign: TextAlign.Center
       })
     }
-    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+    // 触控热区 ≥48dp（对齐安卓 audit-22 #1：原 ≈21dp 误触率高）
+    .constraintSize({ minWidth: 48, minHeight: 48 })
+    .padding({ left: 8, right: 8, top: 8, bottom: 8 })
     .borderRadius(10)
     .backgroundColor(this.selected ? DivPalette.gold14 : Color.Transparent)
     .border({
@@ -629,51 +637,65 @@ struct ManualLinesDialog {
     // 外层留白容器：customStyle 弹窗内容铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
       Column() {
-        DivSerifText({
-          text: DivText.manualTitle,
-          textSize: 15,
-          weight: 600,
-          spacing: 3,
-          color: DivPalette.textPrimary
-        })
-          .margin({ bottom: 12 })
+        // 48dp 选项 × 6 行总高可超弹窗可视高度：内容区纵向滚动（对齐安卓 audit-22 #1）
+        Scroll() {
+          Column() {
+            DivSerifText({
+              text: DivText.manualTitle,
+              textSize: 15,
+              weight: 600,
+              spacing: 3,
+              color: DivPalette.textPrimary
+            })
+              .margin({ bottom: 12 })
 
-      ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
-        Row() {
-          DivSerifText({
-            text: DivText.lineNames[index],
-            textSize: 12,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textSecondary
-          })
-            .width(40)
+            ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
+              Row() {
+                DivSerifText({
+                  text: DivText.lineNames[index],
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textSecondary
+                })
+                  // 爻位名列宽 32（对齐安卓，给右侧 4×48dp 选项让宽）
+                  .width(32)
 
-          Row({ space: 6 }) {
-            ForEach([1, 2, 3, 4], (code: number) => {
-              ManualOption({
-                label: DivText.manualOptionLabels[code - 1],
-                selected: this.lines[index] === code,
-                onAction: () => {
-                  const next = this.lines.slice()
-                  next[index] = code
-                  this.lines = next
+                Row({ space: 8 }) {
+                  ForEach([1, 2, 3, 4], (code: number) => {
+                    ManualOption({
+                      label: DivText.manualOptionLabels[code - 1],
+                      selected: this.lines[index] === code,
+                      onAction: () => {
+                        const next = this.lines.slice()
+                        next[index] = code
+                        this.lines = next
+                      }
+                    })
+                      .layoutWeight(1)
+                  }, (code: number) => code.toString())
                 }
-              })
-            }, (code: number) => code.toString())
+                .layoutWeight(1)
+              }
+              .width('100%')
+              .padding({ top: 4, bottom: 4 })
+              .alignItems(VerticalAlign.Center)
+            }, (index: number) => index.toString())
+
+            Column().height(DesignDimens.SPACE_MD)
           }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
         }
         .width('100%')
-        .padding({ top: 4, bottom: 4 })
-        .alignItems(VerticalAlign.Center)
-      }, (index: number) => index.toString())
+        .align(Alignment.TopStart)
+        .scrollBar(BarState.Off)
 
-      Column().height(DesignDimens.SPACE_MD)
-
+        // 装卦按钮置于滚动区外，常显可点（对齐安卓通栏主行动口径）
         DivGoldButton({
           text: DivText.manualConfirm,
-          btnHeight: 42,
-          fontSize: 13,
+          btnHeight: 52,
+          fontSize: 15,
           onAction: () => {
             this.onConfirm(this.lines)
             this.controller.close()
@@ -695,7 +717,8 @@ struct ManualLinesDialog {
     }
     .width('100%')
     .justifyContent(FlexAlign.Center)
-    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
+    // 弹窗左右留白 16（对齐安卓 DivAskPage.kt:401，compare-15 #3/#12）
+    .padding({ left: 16, right: 16 })
   }
 }
 
@@ -759,7 +782,8 @@ struct NumbersDialog {
 
         DivSerifText({
           text: DivText.numbersHint,
-          textSize: 11,
+          // 报数提示 11→12（对齐安卓 12sp，compare-15 #8）
+          textSize: 12,
           weight: 400,
           spacing: 0,
           color: DivPalette.textTertiary
@@ -825,8 +849,8 @@ struct NumbersDialog {
         DivGoldButton({
           text: DivText.manualConfirm,
           isEnabled: this.isValid(),
-          btnHeight: 42,
-          fontSize: 13,
+          btnHeight: 52,
+          fontSize: 15,
           onAction: () => {
             this.onConfirm(Number(this.first), Number(this.second))
             this.controller.close()

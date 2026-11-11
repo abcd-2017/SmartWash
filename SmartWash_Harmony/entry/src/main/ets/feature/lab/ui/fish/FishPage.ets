@@ -231,11 +231,17 @@ export struct FishPage {
   /** reduced motion 播放/暂停开关 */
   @Builder
   PlayToggleButton() {
-    Row() {
+    Row({ space: DesignDimens.SPACE_XS }) {
+      SymbolGlyph(this.playing ? $r('sys.symbol.pause') : $r('sys.symbol.play'))
+        .fontSize(20)
+        .fontColor([DesignColor.PRIMARY])
+
       Text(this.playing ? FishText.pause : FishText.play)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontColor(DesignColor.TEXT_PRIMARY)
     }
+    // 视觉胶囊不变，热区抬到 48dp 下限（对齐安卓 sizeIn(minHeight=48)）
+    .constraintSize({ minHeight: 48 })
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
       top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
     .borderRadius(DesignDimens.RADIUS_MD)
@@ -268,6 +274,8 @@ export struct FishPage {
             .height('100%')
             .borderRadius(DesignDimens.CARD_RADIUS)
             .clip(true)
+            .borderWidth(1)
+            .borderColor(DesignColor.OUTLINE)
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
             })
@@ -281,8 +289,9 @@ export struct FishPage {
           if (this.hintVisible) {
             Column() {
               Text(FishText.hint)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.ON_PRIMARY_SOFT)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.TEXT_GREEN)
                 .backgroundColor(DesignColor.SURFACE)
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)

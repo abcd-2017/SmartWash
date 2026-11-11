@@ -561,6 +561,7 @@ export struct PaintingPage {
               .borderRadius(DesignDimens.RADIUS_XL)
               .clip(true)
               .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .accessibilityDescription('今日一画水墨山水')
               .onAreaChange((oldValue: Area, newValue: Area) => {
                 this.onCanvasAreaChange(oldValue, newValue)
               })
@@ -590,7 +591,7 @@ export struct PaintingPage {
                 // 保存到相册：安全控件（点击即临时授权，无需权限弹窗）
                 SaveButton()
                   .width(132)
-                  .height(44)
+                  .height(48)
                   .onClick((event: ClickEvent, result: SaveButtonOnClickResult) => {
                     if (result === SaveButtonOnClickResult.SUCCESS) {
                       this.performSave()
@@ -607,7 +608,7 @@ export struct PaintingPage {
               Row() {
                 Text(PaintingText.backToday)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.PRIMARY)
+                  .fontColor(DesignColor.TEXT_GREEN)
                   .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM,
                     top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                   .visibility(this.isToday ? Visibility.None : Visibility.Visible)
@@ -623,21 +624,26 @@ export struct PaintingPage {
                 TextInput({ placeholder: PaintingText.seedPlaceholder, text: this.seedInput })
                   .type(InputType.Number)
                   .layoutWeight(1)
-                  .height(40)
+                  .height(48)
                   .fontSize(DesignFontSize.BODY_SMALL)
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .backgroundColor(DesignColor.SURFACE_VARIANT)
                   .onChange((value: string) => {
                     this.seedInput = value
                   })
-                Text(PaintingText.applySeed)
-                  .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.PRIMARY)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
-                  .onClick(() => {
-                    this.confirmSeedInput()
-                  })
+                // 「应用」文字热区外扩到 48（对齐安卓 48dp 下限）
+                Column() {
+                  Text(PaintingText.applySeed)
+                    .fontSize(DesignFontSize.BODY_SMALL)
+                    .fontColor(DesignColor.TEXT_GREEN)
+                    .fontWeight(DesignFontWeight.SEMI_BOLD)
+                    .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+                }
+                .constraintSize({ minHeight: 48 })
+                .justifyContent(FlexAlign.Center)
+                .onClick(() => {
+                  this.confirmSeedInput()
+                })
               }
               .width('100%')
               .margin({ top: DesignDimens.SPACE_XS })
@@ -645,7 +651,7 @@ export struct PaintingPage {
 
               Text(PaintingText.hint)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
                 .margin({ top: DesignDimens.SPACE_XS })
             }
             .width('100%')
@@ -655,11 +661,17 @@ export struct PaintingPage {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .borderWidth(1)
             .borderColor(DesignColor.OUTLINE)
+            .shadow({
+              radius: 12,
+              color: DesignColor.SHADOW_COLOR_CARD,
+              offsetX: 0,
+              offsetY: 2
+            })
             .alignItems(HorizontalAlign.Start)
           }
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-            top: DesignDimens.SPACE_XS, bottom: DesignDimens.SECTION_SPACING })
+            top: DesignDimens.SPACE_XL, bottom: DesignDimens.SECTION_SPACING })
         }
         .width('100%')
         .layoutWeight(1)

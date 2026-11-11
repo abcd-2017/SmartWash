@@ -21,7 +21,7 @@ import { getValue, setValue } from '../../../../utils/StorageUtil'
 import { logger } from '../../../../utils/Logger'
 import { AbsenceBucket, PetAction, PetEngine, PetInteractResult, PetSnapshot, PetStage,
   PetStageTable, PetState, petStateIsTimed } from '../../core/PetEngine'
-import { LabHaptic } from '../../core/LabCommon'
+import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
 /** 页面文案（对齐安卓 strings_pet.xml） */
 class PetText {
@@ -80,6 +80,7 @@ export struct PetPage {
   // 反应动画与进化动画起点（0 = 未进行）
   private reactionStartMs: number = 0
   private evolveStartMs: number = 0
+  private reduceMotion: boolean = labReduceMotion()
 
   aboutToAppear(): void {
     this.tickTimerId = setInterval(() => {
@@ -145,8 +146,11 @@ export struct PetPage {
     this.snapshot = result.snapshot
     if (result.evolved) {
       this.evolveGeneration += 1
-      this.evolveStartMs = Date.now()
-      this.startAnimLoop()
+      // reduced motion：进化直接切终态，不播放放大回弹（规范 §8）
+      if (!this.reduceMotion) {
+        this.evolveStartMs = Date.now()
+        this.startAnimLoop()
+      }
       LabHaptic.success()
     } else if (action === PetAction.PET) {
       LabHaptic.light()
@@ -154,8 +158,11 @@ export struct PetPage {
       LabHaptic.selection()
     }
     if (petStateIsTimed(this.snapshot.state)) {
-      this.reactionStartMs = Date.now()
-      this.startAnimLoop()
+      // reduced motion：仅用户主动「玩耍」保留一次轻弹跳，其余反应静帧
+      if (!this.reduceMotion || this.snapshot.state === PetState.PLAYING) {
+        this.reactionStartMs = Date.now()
+        this.startAnimLoop()
+      }
     }
     this.persist()
   }
@@ -226,6 +233,27 @@ export struct PetPage {
     }
   }
 
+  /** 状态名（无障碍描述用，对齐安卓 strings_pet.xml） */
+  private stateLabel(state: PetState): string {
+    switch (state) {
+      case PetState.HAPPY:
+        return '开心'
+      case PetState.EATING:
+        return '吃东西'
+      case PetState.PLAYING:
+        return '玩耍中'
+      case PetState.SLEEPING:
+        return '睡着了'
+      default:
+        return '发呆中'
+    }
+  }
+
+  /** 精灵画布无障碍描述：进化阶段 + 当前状态 */
+  private petCanvasDescription(): string {
+    return `泡泡精灵，${this.stageLabel(this.snapshot.stage)}，${this.stateLabel(this.snapshot.state)}`
+  }
+
   // ---------- 精灵绘制（对齐安卓 drawPet / drawStageAccessory / drawFace） ----------
 
   /** 阶段体型系数（进化可见：小泡泡最小、彩虹泡泡最大） */
@@ -262,7 +290,7 @@ export struct PetPage {
       }
     }
     let evolveScale: number = 1
-    if (this.evolveStartMs > 0) {
+    if (this.evolveStartMs > 0 && !this.reduceMotion) {
       const p: number = (now - this.evolveStartMs) / EVOLVE_MS
       if (p >= 0 && p < 1) {
         evolveScale = 1 + 0.28 * Math.sin(p * Math.PI)
@@ -278,7 +306,9 @@ export struct PetPage {
       scaleX = 1 + 0.10 * pulse
       scaleY = 1 - 0.12 * pulse
     } else if (state === PetState.PLAYING) {
-      transY = -28 * pulse
+      // reduced motion 下降幅减半（对齐安卓 reduceMotion 分支）
+      // 注：ArkTS 严格模式禁止对三元表达式直接加一元负号（arkts-no-polymorphic-unops），负值内联
+      transY = (this.reduceMotion ? -10 : -28) * pulse
     }
 
     // 水面圆底盘（托住精灵，强化「住在洗衣机里」的意象）
@@ -460,8 +490,11 @@ export struct PetPage {
       this.reactionStartMs = 0
     } else if (petStateIsTimed(this.snapshot.state) && this.reactionStartMs <= 0) {
       // 限时态由 interact 启动反应动画；此处兜底（如恢复装载路径）
-      this.reactionStartMs = Date.now()
-      this.startAnimLoop()
+      // reduced motion：仅「玩耍」保留一次轻弹跳
+      if (!this.reduceMotion || this.snapshot.state === PetState.PLAYING) {
+        this.reactionStartMs = Date.now()
+        this.startAnimLoop()
+      }
     }
     this.drawPet()
   }
@@ -491,6 +524,7 @@ export struct PetPage {
                 Canvas(this.ctx)
                   .width(PET_CANVAS_SIZE)
                   .height(PET_CANVAS_SIZE)
+                  .accessibilityDescription(this.petCanvasDescription())
                   .onClick(() => {
                     this.interact(PetAction.PET)
                   })
@@ -507,7 +541,8 @@ export struct PetPage {
 
               Text(`互动 ${this.snapshot.interactionCount} 次`)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.TEXT_SECONDARY)
                 .fontFeature(DesignFontFeature.TNUM)
                 .margin({ top: DesignDimens.SPACE_MD })
             }
@@ -517,6 +552,12 @@ export struct PetPage {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .borderWidth(1)
             .borderColor(DesignColor.OUTLINE)
+            .shadow({
+              radius: 12,
+              color: DesignColor.SHADOW_COLOR_CARD,
+              offsetX: 0,
+              offsetY: 2
+            })
             .alignItems(HorizontalAlign.Center)
 
             Row({ space: DesignDimens.CARD_SPACING }) {
@@ -551,7 +592,7 @@ export struct PetPage {
           }
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-            top: DesignDimens.SPACE_SM, bottom: DesignDimens.SECTION_SPACING })
+            top: DesignDimens.SPACE_MD, bottom: DesignDimens.SECTION_SPACING })
         }
         .width('100%')
         .layoutWeight(1)

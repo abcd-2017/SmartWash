@@ -48,8 +48,8 @@ const WEEK_LABELS: Array<string> = [
   MoodText.mood_week_sun
 ]
 
-/** 单元格槽位高（对齐安卓 CELL_HEIGHT 44） */
-const CELL_SLOT_HEIGHT: number = 44
+/** 单元格槽位高（对齐安卓 CELL_HEIGHT 48：44 跌破 §3 触控红线，打卡主路径格高提档） */
+const CELL_SLOT_HEIGHT: number = 48
 
 @Builder
 export function MoodCalendarBuilder() {
@@ -231,11 +231,12 @@ struct MoodCalendarPage {
             AppCard() {
               Column() {
                 // ---------- 周表头（周一起始） ----------
+                // 功能性列标签（对齐安卓审查 #2③）：textTertiary 仅限禁用/装饰（§10 红线）
                 Row() {
                   ForEach(WEEK_LABELS, (label: string) => {
                     Text(label)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_TERTIARY)
+                      .fontColor(DesignColor.TEXT_SECONDARY)
                       .textAlign(TextAlign.Center)
                       .layoutWeight(1)
                   }, (label: string) => label)
@@ -244,6 +245,8 @@ struct MoodCalendarPage {
                 .margin({ bottom: DesignDimens.SPACE_XS })
 
                 // ---------- 7×N 热图网格 ----------
+                // 水平 gap 4（SPACE_XXS）对齐安卓格间节奏（审查 #17）；垂直节奏由 MoodDayCell
+                // 槽位（48）内上下余量各 4 承担，rowsGap 显式 0
                 Grid() {
                   ForEach(this.cells, (cell: MoodCalendarCell, index: number) => {
                     GridItem() {
@@ -269,6 +272,8 @@ struct MoodCalendarPage {
                   }, (cell: MoodCalendarCell, index: number) => `${index}`)
                 }
                 .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
+                .columnsGap(DesignDimens.SPACE_XXS)
+                .rowsGap(0)
                 .width('100%')
                 .height(Math.ceil(this.cells.length / 7) * CELL_SLOT_HEIGHT)
               }
@@ -277,14 +282,16 @@ struct MoodCalendarPage {
             }
 
             // ---------- 统计与图例说明 ----------
+            // 两行均 = caption 12 档（对齐安卓 bodySmall 12/400，报告 #39 口径映射）；
+            // 图例为功能性说明（对齐安卓审查 #2②）：textTertiary 仅限禁用/装饰（§10 红线）
             Column() {
               Text(moodRecordedDaysFormat(this.dayRecords.size))
-                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontSize(DesignFontSize.CAPTION)
                 .fontColor(DesignColor.TEXT_SECONDARY)
 
               Text(MoodText.mood_calendar_day_empty_hint)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.TEXT_SECONDARY)
                 .margin({ top: DesignDimens.SPACE_XXS })
             }
             .width('100%')

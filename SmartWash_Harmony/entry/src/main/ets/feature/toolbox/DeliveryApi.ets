@@ -254,7 +254,10 @@ export class DeliveryText {
   static readonly toolbox_delivery_qr_desc: string = "投递会话二维码"
   static readonly toolbox_delivery_countdown_prefix: string = "剩余 "
   static readonly toolbox_delivery_duration_label: string = "有效期"
-  static readonly toolbox_delivery_duration_desc: string = "时间内有效，到期自动失效"
+  /** 有效期说明带时长（对齐安卓 strings.xml「%1$d 分钟时间内有效，到期自动失效」，compare-07 #26） */
+  static durationDesc(minutes: number): string {
+    return `${minutes} 分钟时间内有效，到期自动失效`
+  }
   static readonly toolbox_delivery_password_label: string = "进入密码（可选）"
   static readonly toolbox_delivery_password_hint: string = "4-64 位"
   static readonly toolbox_delivery_password_helper: string = "电脑端进入时需输入，留空则无需密码"

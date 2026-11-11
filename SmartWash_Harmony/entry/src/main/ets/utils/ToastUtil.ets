@@ -7,8 +7,11 @@ import { promptAction } from '@kit.ArkUI'
  *
  * @param message 后端返回的提示文案，可能为 undefined/null
  * @param fallback 兜底文案，message 缺失时展示
+ * @param duration 显示时长 ms，默认 1500（系统默认短时长）；错误类提示按规范 §8 传 3500
+ *                 （对齐安卓 Toast.LENGTH_LONG，3–5s），成功类保持默认
  */
-export function showToastSafety(message: string | null | undefined, fallback: string = "操作失败"): void {
+export function showToastSafety(message: string | null | undefined, fallback: string = "操作失败",
+  duration: number = 1500): void {
   const text = message ?? ""
-  promptAction.showToast({ message: text.length > 0 ? text : fallback })
+  promptAction.showToast({ message: text.length > 0 ? text : fallback, duration: duration })
 }

@@ -107,6 +107,8 @@ export class ToolboxText {
   static readonly toolbox_empty_message: string = "还没有短链，创建一个吧"
   static readonly toolbox_empty_action: string = "新建短链"
   static readonly toolbox_error_load: string = "短链加载失败"
+  // 网络异常/401 拒绝等传输层失败（原硬编码在列表页 catch 分支，收敛入表便于跨端文案核对）
+  static readonly toolbox_error_network: string = "网络异常，请稍后重试"
   static readonly toolbox_action_retry: string = "重试"
   static readonly toolbox_type_short_link: string = "短链"
   static readonly toolbox_visibility_public_value: string = "公开"
@@ -165,6 +167,8 @@ export class ToolboxText {
   static readonly toolbox_stats_title: string = "访问明细"
   static readonly toolbox_stats_empty: string = "暂无访问记录"
   static readonly toolbox_stats_error_load: string = "访问明细加载失败"
+  /** 已有数据补拉失败 footer（含解决指引，对齐安卓 toolbox_stats_error_retry） */
+  static readonly toolbox_stats_error_retry: string = "加载失败，点击重试"
 }
 
 

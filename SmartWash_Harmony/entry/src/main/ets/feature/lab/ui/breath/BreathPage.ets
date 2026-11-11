@@ -9,6 +9,7 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, AppPillTabRow, PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
 /** 呼吸相位类型 */
@@ -79,6 +80,13 @@ const BASE_RADIUS_RATIO: number = 0.32
 
 /** 吸气满相放大倍数 */
 const SCALE_INHALED: number = 1.4
+
+/**
+ * 圆心文字底衬的平台占比（径向渐变 0~该值内为纯色平台，之后渐隐至透明）。
+ * 呼吸圆中心为纯 water 色，深色板上 textPrimary 对 water 仅 1.99:1，文字不可读；
+ * 以 waterSoft 中心晕把文字区背景固定到可控色（双板通用，无需主题分支）。
+ */
+const TEXT_PLATE_SOLID_RATIO: number = 0.75
 
 /** 状态机节拍（ms） */
 const TICK_MS: number = 50
@@ -244,6 +252,18 @@ export struct BreathPage {
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     ctx.fill()
+    // 圆心文字底衬（水色晕）：呼吸圆后叠加同尺寸 waterSoft 径向渐变，
+    // 0→0.75 纯色平台、1→全透明，把文字区背景固定到 waterSoft（深浅板均达标）
+    const plateSoft: string = toColorString(DesignColor.WATER_SOFT)
+    const plateTransparent: string = toColorString(DesignColor.WATER_SOFT & 0xFFFFFF)
+    const plate: CanvasGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR)
+    plate.addColorStop(0, plateSoft)
+    plate.addColorStop(TEXT_PLATE_SOLID_RATIO, plateSoft)
+    plate.addColorStop(1, plateTransparent)
+    ctx.fillStyle = plate
+    ctx.beginPath()
+    ctx.arc(cx, cy, baseR, 0, Math.PI * 2, false)
+    ctx.fill()
   }
 
   /** 相位文案 */
@@ -301,7 +321,7 @@ export struct BreathPage {
     }
     .width('100%')
     .height('100%')
-    .padding({ bottom: DesignDimens.SPACE_XL })
+    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XL })
   }
 
   /** 引导态 */
@@ -325,8 +345,8 @@ export struct BreathPage {
             .fontColor(DesignColor.TEXT_PRIMARY)
 
           Text(this.countdownText())
-            .fontSize(DesignFontSize.DATA_LARGE)
-            .fontWeight(DesignFontWeight.BOLD)
+            .fontSize(DesignFontSize.STATUS_LARGE)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontColor(DesignColor.TEXT_PRIMARY)
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
@@ -337,7 +357,8 @@ export struct BreathPage {
       .height(RING_SIZE)
 
       Text(this.cyclesText())
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor(DesignColor.TEXT_SECONDARY)
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_MD })
@@ -377,6 +398,11 @@ export struct BreathPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 DesignColor 静态令牌直读点
+      // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
+      // 相位状态机节拍器（setInterval onTick）保持在宿主之外，页面组件本体不在子树内）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: BreathText.title })
 
@@ -397,6 +423,7 @@ export struct BreathPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

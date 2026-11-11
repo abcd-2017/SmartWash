@@ -6,9 +6,10 @@
  * reduced motion 下直接消失态（触觉保留）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, toColorString } from '../../../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight, toColorString } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
 /** 单个泡泡：网格坐标 + 大小档 */
@@ -48,8 +49,8 @@ const ROW_ASPECT: number = 0.92
 /** 泡泡半径占格内基准半径的比例 */
 const FILL_RATIO: number = 0.78
 
-/** 命中容差（相对半径） */
-const HIT_TOLERANCE: number = 1.15
+/** 命中容差（相对半径）：1.3 使常规屏最小泡有效命中直径达 ≈48dp 触控下限（对齐安卓） */
+const HIT_TOLERANCE: number = 1.3
 
 /** 高光偏移（相对半径） */
 const HIGHLIGHT_SHIFT: number = 0.35
@@ -275,15 +276,20 @@ export struct BubbleWrapPage {
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，画布 onReady 重绘与 DesignColor 静态令牌直读点
+      // 重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
+      // 戳破动画帧循环 startAnimLoop 保持在宿主之外，页面组件本体不在子树内）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: BubbleText.title })
 
         Text(this.poppedText())
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .fontFeature(DesignFontFeature.TNUM)
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-            top: DesignDimens.SPACE_XS })
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
 
         Stack() {
           Canvas(this.ctx)
@@ -318,6 +324,7 @@ export struct BubbleWrapPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

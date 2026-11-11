@@ -16,7 +16,7 @@
 //   点日期按钮经 onPickDate 把「选中回填回调」交给父组件，父组件在日期弹窗确定时回调本弹窗，
 //   更新内部 @State（可见回填）并经 onDatePicked 回写父组件（供 doRenew 读取）。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
+import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../constant/DesignSystem'
 import { ExpiryPreset } from './ShortCodeRules'
 import { ToolboxText } from './api'
 import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
@@ -41,6 +41,8 @@ export struct RenewPresetChip {
       // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
       .fontWeight(DesignFontWeight.SEMI_BOLD)
       .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+      // chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2，与创建页 chip 同款）
+      .fontFeature(DesignFontFeature.TNUM)
       .padding({ left: 16, right: 16, top: 17, bottom: 17 })
       .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
       .borderWidth(1)
@@ -200,7 +202,8 @@ export struct ToolboxRenewDialog {
             .layoutWeight(1)
             .height(48)
             .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.PRIMARY)
+            // 确认键小字绿走 TEXT_GREEN 深档（PRIMARY 3.4:1 不达标，§10，对齐安卓 DialogAction）
+            .fontColor(DesignColor.TEXT_GREEN)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)

@@ -24,6 +24,10 @@ export class DivText {
   static readonly signSeal: string = '签'
   static readonly signCardTitle: string = '今日一签 · %s'
   static readonly signCardSource: string = '梅花时间卦'
+  // 保存中尾缀（audit-11 #6 / compare-10 #1，安卓 div_sign_saving：保存中禁点期间的轻量 loading 反馈）
+  static readonly signSaving: string = '…'
+  // 案卷空态行动按钮（audit-11 #5 / compare-10 #2，安卓 div_home_ledger_go_ask：跳问卦，与「卦历 ›」双出口）
+  static readonly ledgerGoAsk: string = '去起卦'
   static readonly methodLiuyaoName: string = '六爻'
   static readonly methodLiuyaoDesc: string = '摇铜钱问一事\n装卦最全 · 应期可推'
   static readonly methodLiuyaoUseFor: string = '日常决疑 · 具体事件'
@@ -70,6 +74,8 @@ export class DivText {
   static readonly castMethodNowKe: string = '立即起课'
   static readonly castMethodNowKeSub: string = '月将加时 · 四课三传'
   static readonly askGo: string = '静 心 · 起 卦'
+  // 提交中尾缀（对齐安卓 div_ask_casting：排盘入库期间的轻量 loading 反馈）
+  static readonly askCasting: string = '推演中…'
   static readonly askSafetyHint: string = '涉及医疗 / 安全等问题请寻求现实帮助'
   static readonly manualTitle: string = '直接输入爻值'
   static readonly manualConfirm: string = '装 卦'
@@ -90,8 +96,8 @@ export class DivText {
   static readonly chartTitle: string = '卦盘'
   static readonly chartLoading: string = '正在起盘…'
   static readonly chartMissing: string = '未找到卦盘记录'
-  static readonly chartInterpret: string = '求 解 读'
-  static readonly chartSaved: string = '已存入卦历'
+  static readonly chartInterpret: string = '解 读'
+  static readonly chartSaved: string = '已 保 存'
   static readonly chartBuilding: string = '正在建档…'
   static readonly chartBuildFailed: string = '解读建档失败，请稍后重试'
   // 观星台零兜底拦截文案（求解读前置检查；无平台默认模型，未配置一律引导去设置页）
@@ -117,7 +123,7 @@ export class DivText {
   static readonly readingEndseal: string = '观'
   static readonly disclaimerReading: string =
     '本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。'
-  static readonly feedbackTitle: string = '解读反馈'
+  static readonly feedbackTitle: string = '应验反馈'
   static readonly ratingLabel: string = '解读评分'
   static readonly outcomeLabel: string = '应验回填'
   static readonly outcomeYing: string = '应验'
@@ -134,6 +140,8 @@ export class DivText {
   static readonly followupSend: string = '发 送'
   static readonly followupEmpty: string = '还没有追问，输入你的问题吧'
   static readonly followupThinking: string = '正在推演…'
+  static readonly followupInterrupted: string = '生成中断'
+  static readonly followupRetry: string = '重 试'
   static readonly followupFooter: string = '—— 继续追问将沿用本卦盘推演 ——'
 
   // 摇卦页
@@ -143,9 +151,19 @@ export class DivText {
   static readonly castDone: string = '成 卦 · 进入卦盘'
   static readonly castQuitTitle: string = '丢弃本次摇卦？'
   static readonly castQuitBody: string = '爻盘未满六掷，离开将丢弃本次摇卦结果。'
+  // 六掷完成未入库态的弃局文案（对齐安卓 div_cast_quit_done_body）
+  static readonly castQuitDoneBody: string = '卦已摇成，离开将不入卦历。'
+  // 成卦入库中尾缀（对齐安卓 div_cast_saving）
+  static readonly castSaving: string = '装 卦 中…'
 }
 
-/** 观象台子主题色快捷访问（避免每处写 DivColor.XXX，语义与安卓 DivColors.current 对齐） */
+/** 观象台子主题色快捷访问（避免每处写 DivColor.XXX，语义与安卓 DivColors.current 对齐）
+ *
+ * TODO(主题断层，compare-08 #12)：当前全部取 *_LIGHT 固定宣纸，而应用已随系统深浅色
+ * （EntryAbility 问题 17 写 AppStorage('darkMode')），系统深色下清氧域转暗、观象台域仍亮。
+ * 待办：本类改为读取 darkMode 的取值函数（或消费侧 @Computed 按 *_DARK/*_LIGHT 分支），
+ * DivinationScreen 渐变双分支（玄墨中段停靠 0.55 / 宣纸 0.50），对齐安卓
+ * DivinationScreen.kt isSystemInDarkTheme() 双主题；属域级重构，另起专项。 */
 export class DivPalette {
   static readonly textPrimary: number = DivColor.TEXT_PRIMARY_LIGHT
   static readonly textSecondary: number = DivColor.TEXT_SECONDARY_LIGHT
@@ -175,6 +193,9 @@ export class DivPalette {
   static readonly goldGradientStart: number = 0xFFD4B878
   static readonly goldGradientEnd: number = 0xFFC9A961
 }
+
+// 画板：观象台域页面水平边距 20（compare-08 #10；勿改全局 DesignDimens.PAGE_PADDING=24，清氧域仍用 24）
+export const DIV_PAGE_PADDING: number = 20
 
 
 /** 六神顺序（对齐安卓 LiuYaoRow 的 listOf("青龙","朱雀","勾陈","螣蛇","白虎","玄武")） */
@@ -260,6 +281,8 @@ export struct DivSerifText {
   @Param overflow: TextOverflow = TextOverflow.Ellipsis
   // 行盒高度（vp）：0 = 不限制（字号自适应，默认）；>0 时要显式对齐安卓默认行高差（如六爻行 24）
   @Param lineHeight: number = 0
+  // OpenType 特性（如 'tnum' 等宽数字）：空串 = 不设置（Text 默认值）
+  @Param fontFeature: string = ''
   build() {
     if (this.maxLines > 0) {
       Text(this.text)
@@ -272,6 +295,7 @@ export struct DivSerifText {
         .maxLines(this.maxLines)
         .textOverflow({ overflow: this.overflow })
         .lineHeight(this.lineHeight)
+        .fontFeature(this.fontFeature)
     } else {
       Text(this.text)
         .fontSize(this.textSize)
@@ -281,6 +305,7 @@ export struct DivSerifText {
         .fontFamily('serif')
         .textAlign(this.textAlign)
         .lineHeight(this.lineHeight)
+        .fontFeature(this.fontFeature)
     }
   }
 }
@@ -366,7 +391,8 @@ export struct MethodGlyph {
     this.ctx.clearRect(0, 0, size, size)
     this.ctx.lineCap = 'round'
     this.ctx.lineJoin = 'round'
-    this.ctx.lineWidth = 2 * unit
+    // 造型规范 §4.2「2dp 描边」：固定 2vp 与牌尺寸解耦（compare-10 #11：原 2*unit 随 34/40 牌放大 40-65%）
+    this.ctx.lineWidth = 2
     this.ctx.strokeStyle = this.tint
 
     if (this.method === 'liuyao') {
@@ -545,7 +571,8 @@ export struct DivPageHeader {
         }
         .width(this.alignStart ? '100%' : 'auto')
         .justifyContent(this.alignStart ? FlexAlign.Start : FlexAlign.Center)
-        .padding(this.alignStart ? { left: DesignDimens.PAGE_PADDING } : {})
+        // 画板：alignStart 左对齐 x20（compare-08 #10，观象台域边距口径；DivHistoryPage 消费）
+        .padding(this.alignStart ? { left: DIV_PAGE_PADDING } : {})
         .align(Alignment.Center)
         .alignItems(VerticalAlign.Center)
         .hitTestBehavior(HitTestMode.None)
@@ -565,7 +592,8 @@ export struct DivPageHeader {
           }
           .width('100%')
           .justifyContent(FlexAlign.End)
-          .padding({ right: DesignDimens.PAGE_PADDING })
+          // 画板：观象台域页头尾注右缘 20（DIV_PAGE_PADDING，compare-15 #55）
+          .padding({ right: DIV_PAGE_PADDING })
           .align(Alignment.Center)
           .hitTestBehavior(HitTestMode.None)
         }
@@ -577,7 +605,7 @@ export struct DivPageHeader {
           }
           .width('100%')
           .justifyContent(FlexAlign.End)
-          .padding({ right: DesignDimens.PAGE_PADDING })
+          .padding({ right: DIV_PAGE_PADDING })
           .align(Alignment.Center)
           .hitTestBehavior(HitTestMode.None)
         }
@@ -621,36 +649,35 @@ export struct DivSectionTitle {
       Blank()
 
       if (this.tail.length > 0) {
-        DivSerifText({
-          text: this.tail,
-          textSize: 12,
-          weight: 400,
-          spacing: 0,
+        // 非仪式文本：普通 Text 无衬线无字距（compare-10 #21，对齐安卓 DivCommon.kt:283 尾链默认字体）
+        Text(this.tail)
+          .fontSize(12)
           // 可点击尾注为链接墨色（宣纸侧全墨），纯信息尾注降为次要灰
-          color: this.tailClickable ? DivPalette.textTertiary : DivPalette.textSecondary,
-          textAlign: TextAlign.End
-        })
-        // 尾注热区 31×16vp → 补 padding 到 ≥48vp（文字行盒 16 + 上下 16，左右各 12）
-        .padding({ left: 12, right: 12, top: 16, bottom: 16 })
-        .onClick(() => {
-          if (this.tailClickable) {
-            const now = Date.now()
-            if (now - this.lastTailTs < 600) {
-              return
+          .fontColor(this.tailClickable ? DivPalette.textTertiary : DivPalette.textSecondary)
+          .textAlign(TextAlign.End)
+          // 尾注热区 31×16vp → 补 padding 到 ≥48vp（文字行盒 16 + 上下 16，左右各 12）
+          .padding({ left: 12, right: 12, top: 16, bottom: 16 })
+          .onClick(() => {
+            if (this.tailClickable) {
+              const now = Date.now()
+              if (now - this.lastTailTs < 600) {
+                return
+              }
+              this.lastTailTs = now
+              DivHaptic.selection()
+              this.onTailClick()
             }
-            this.lastTailTs = now
-            DivHaptic.selection()
-            this.onTailClick()
-          }
-        })
+          })
       }
     }
     .width('100%')
     .padding({
-      left: DesignDimens.PAGE_PADDING,
-      right: DesignDimens.PAGE_PADDING,
-      top: DesignDimens.SPACE_XS,
-      bottom: DesignDimens.SPACE_XS
+      // 画板：观象台域章节标题左右 20（compare-08 #10 / compare-10 #16）
+      left: DIV_PAGE_PADDING,
+      right: DIV_PAGE_PADDING,
+      // 可点击尾链时垂直内边距让位给 48vp 热区（热区自身即行高，compare-10 #20 对齐安卓 onTailClick != null → vertical 0）
+      top: this.tailClickable ? 0 : DesignDimens.SPACE_XS,
+      bottom: this.tailClickable ? 0 : DesignDimens.SPACE_XS
     })
     .alignItems(VerticalAlign.Center)
   }
@@ -678,8 +705,8 @@ export struct DivGoldButton {
         textSize: this.fontSize,
         weight: 600,
         spacing: 3,
-        // 禁用=金 70%；soft=主题感知文字金（宣纸墨 / 玄墨金）；常态=金底墨字
-        color: !this.isEnabled ? 0xB31C1C1E : (this.soft ? DivPalette.goldText : DivPalette.onGold),
+        // 禁用=墨 38%（对齐安卓 onGold @38%，compare-15 #58）；soft=主题感知文字金（宣纸墨 / 玄墨金）；常态=金底墨字
+        color: !this.isEnabled ? 0x61151412 : (this.soft ? DivPalette.goldText : DivPalette.onGold),
         textAlign: TextAlign.Center
       })
     }
@@ -716,7 +743,7 @@ export struct DivGoldButton {
   }
 }
 
-// ========== 发丝线卡片：surface 底 + 1px 渐变金线描边（135°：亮→隐→亮）+ 宣纸侧 level1 轻阴影 ==========
+// ========== 发丝线卡片：surface 底 + 1px 金发丝描边（默认 hair）+ 宣纸侧 0 2 12 轻阴影 ==========
 
 @ComponentV2
 export struct DivCard {
@@ -736,17 +763,21 @@ export struct DivCard {
     .width('100%')
     .backgroundColor(this.bgColor ?? DivPalette.surface)
     .borderRadius(16)
-    // 规范 §2.4 / §3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)，安卓 v0.4 取 AppElevation.level1。
-    // 观象台侧把「白底 + OUTLINE」换成「宣纸 surface + 金线」，阴影取值不变。
+    // 规范 §2.4 / §3.1 卡片唯一画法 = 1px 描边 + 0 2px 12px rgba(20,40,30,.05)：
+    // blur 12 取专用令牌 CARD_SHADOW_RADIUS（compare-08 #18：原误用 LEVEL_1=1 近乎硬边，
+    // 对齐安卓 softCardShadow blur 12dp），色与 offsetY 2 不变。
+    // 观象台侧把「白底 + OUTLINE」换成「宣纸 surface + 金发丝」，阴影取值不变。
     // §2.4「玄墨深色卡不加投影」豁免：观象台当前固定宣纸浅卡（DivPalette 全取 *_LIGHT），本组件无深色卡消费方；
     // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
     .shadow({
-      radius: DesignElevation.LEVEL_1,
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
       color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
     })
-    .border({ width: 1, color: this.lineColor ?? DivPalette.goldLine, radius: 16 })
+    // 描边默认 12% 金发丝 hair（画板「卡面与背景同色仅靠发丝线区隔」口径，compare-08 #7：
+    // 原 goldLine 32% 金偏重、发丝观感丢失；显式传 lineColor 的调用点不受影响）
+    .border({ width: 1, color: this.lineColor ?? DivPalette.hair, radius: 16 })
     .enabled(this.clickable)
     // 规范 §7：不使用 Material ripple（原 .stateEffect() 非通用属性，实测编译报错），按压反馈由 scale 0.97 承载
     // （对齐安卓 DivCard 的 pressable：indication = null + scaleFactor 0.97）
@@ -805,8 +836,9 @@ export struct DivCategoryChip {
     .height(48)
     .padding({ left: this.horizontalPadding, right: this.horizontalPadding })
     .borderRadius(999)
-    .backgroundColor(this.selected ? DivPalette.gold14 : DivPalette.surface)
-    .border({ width: 1, color: this.selected ? DivPalette.goldLine : DivPalette.goldLine })
+    // 选中底宣纸实底金（对齐安卓 c.gold #8F7233，compare-15 #6）；字色仍取 goldText 墨字
+    .backgroundColor(this.selected ? DivPalette.gold : DivPalette.surface)
+    .border({ width: 1, color: this.selected ? DivPalette.gold : DivPalette.goldLine })
     // 底色/描边/字色 200ms 过渡（隐式动画）
     .animation({ duration: 200 })
     .onClick(() => {
@@ -882,17 +914,16 @@ export struct DivFooterNote {
   @Param text: string = ''
 
   build() {
-    DivSerifText({
-      text: this.text,
-      textSize: 12,
-      weight: 400,
-      spacing: 1,
-      color: DivPalette.textTertiary,
-      textAlign: TextAlign.Center
-    })
+    // 非仪式文本：普通 Text 无衬线无字距（compare-10 #21，对齐安卓 DivFooterNote 12sp textTertiary 默认字体）
+    Text(this.text)
+      .fontSize(12)
+      .fontColor(DivPalette.textTertiary)
+      .textAlign(TextAlign.Center)
+      // 画板：脚注左右 20（compare-08 #10，观象台域边距口径）
       .padding({
-        left: DesignDimens.PAGE_PADDING,
-        right: DesignDimens.PAGE_PADDING,
+        left: DIV_PAGE_PADDING,
+        right: DIV_PAGE_PADDING,
+        // 脚注上下已取 SPACE_XS=8（对齐安卓 DivFooterNote padding top/bottom 8，compare-15 #56 核对一致）
         top: DesignDimens.SPACE_XS,
         bottom: DesignDimens.SPACE_XS
       })
@@ -1018,26 +1049,29 @@ export struct CompassDial {
     this.ctx.rotate(spin * Math.PI / 180)
     this.ctx.translate(-cx, -cy)
 
-    // 外环：50% 鎏金实线（安卓 c.gold.copy(alpha = 0.5f)）
+    // 外环：50% 鎏金实线（安卓 c.gold.copy(alpha = 0.5f)，宣纸侧合成 0x808F7233；
+    // compare-10 #9：原硬编码玄墨金 0x80C9A961 在宣纸侧偏亮）
     this.ctx.lineCap = 'round'
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = 0x80C9A961
+    this.ctx.strokeStyle = 0x808F7233
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, radius, 0, Math.PI * 2, false)
     this.ctx.stroke()
 
-    // 内虚线环：12% 金发丝（安卓 c.hair）
+    // 内虚线环：12% 金发丝（安卓 c.hair）；安卓 dashPathEffect(6f,10f) 为 px 单位（3x 屏 ≈2/3.3dp），
+    // 此处 vp 单位取 [2, 3.3] 对齐 3x 密度观感（compare-10 #9，需真机目视校准后定值）
     this.ctx.lineWidth = 1
     this.ctx.strokeStyle = DivPalette.hair
-    this.ctx.setLineDash([6, 10])
+    this.ctx.setLineDash([2, 3.3])
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2, false)
     this.ctx.stroke()
     this.ctx.setLineDash([])
 
-    // 十二支环文（画板：r=0.92、12sp、金/墨 70%）
+    // 十二支环文（画板：r=0.92、12sp、金/墨 75%——0.70 玄墨侧 ≈4.35:1 破 §10 正文 4.5 红线，
+    // audit-11 #3 / compare-10 #7 提至 0.75 双主题达标）
     this.ctx.font = `${12 * size / 104}px serif`
-    this.ctx.fillStyle = 0xB31C1C1E
+    this.ctx.fillStyle = 0xBF1C1C1E
     for (let index = 0; index < ZHI_LABELS.length; index++) {
       const angle: number = (index * 30 - 90) * Math.PI / 180
       const posX: number = cx + radius * 0.92 * Math.cos(angle)
@@ -1047,8 +1081,8 @@ export struct CompassDial {
     }
     this.ctx.restore()
 
-    // 中宫「卜」（不随罗盘旋转，画板 22sp 衬线半粗、主题金）
-    this.ctx.font = `${22 * size / 104}px serif`
+    // 中宫「卜」（不随罗盘旋转，画板 22sp 衬线半粗、主题金；compare-10 #8 补 600 字重对齐安卓 SemiBold）
+    this.ctx.font = `600 ${22 * size / 104}px serif`
     this.ctx.fillStyle = DivPalette.goldText
     const dial = this.ctx.measureText(this.dialText)
     this.ctx.fillText(this.dialText, cx - dial.width / 2, cy + dial.actualBoundingBoxAscent / 2)

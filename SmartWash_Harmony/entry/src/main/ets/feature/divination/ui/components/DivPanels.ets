@@ -308,10 +308,11 @@ export struct DivMiniCard {
       Column() {
         DivSerifText({
           text: this.label,
-          textSize: 9.5,
+          // 迷你卡标签 12sp 次级色（对齐安卓 PanComponents.kt:270，compare-15 #25）
+          textSize: 12,
           weight: 400,
           spacing: 2,
-          color: DivPalette.textTertiary
+          color: DivPalette.textSecondary
         })
         this.content()
       }

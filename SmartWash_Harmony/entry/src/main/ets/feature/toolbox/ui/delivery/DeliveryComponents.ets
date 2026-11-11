@@ -120,7 +120,8 @@ export struct DeliveryItemRow {
 
         Text(this.metaText())
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          // 时间·大小为可读元信息，不用 textTertiary（compare-07 #5，对齐安卓 textSecondary）
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -140,7 +141,9 @@ export struct DeliveryItemRow {
         DeliveryTagChip({
           text: this.isTaken() ? DeliveryText.toolbox_delivery_state_taken : DeliveryText.toolbox_delivery_state_pending,
           containerColor: this.isTaken() ? DesignColor.SURFACE_VARIANT : DesignColor.WARNING_CONTAINER,
-          contentColor: this.isTaken() ? DesignColor.TEXT_TERTIARY : DesignColor.ONGOING_INK
+          // 功能色浅底 + 成对文字色（规范 §5）：#D98A26 on warningContainer 仅 2.51:1 违反 §10 红线
+          //（compare-07 #3，对齐安卓 onWarningContainer）
+          contentColor: this.isTaken() ? DesignColor.TEXT_TERTIARY : DesignColor.ON_WARNING_CONTAINER
         })
         .margin({ top: DesignDimens.SPACE_XXS })
       }

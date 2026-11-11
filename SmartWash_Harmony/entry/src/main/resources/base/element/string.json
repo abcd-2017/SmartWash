@@ -43,6 +43,10 @@
     {
       "name": "pickup_reminder_content_suffix",
       "value": "请及时到寄存柜取件，超时可能占用公共筒位"
+    },
+    {
+      "name": "game_empty_message",
+      "value": "游戏整理中，先去洗件衣服吧"
     }
   ]
 }

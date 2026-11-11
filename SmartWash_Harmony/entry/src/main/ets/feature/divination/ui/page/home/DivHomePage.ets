@@ -17,6 +17,7 @@ import { encodeChartJson } from '../../../data/DivChartCodec'
 import { getDivToday } from '../../../network/DivinationApi'
 import {
   CompassDial,
+  DIV_PAGE_PADDING,
   DivCard,
   DivFooterNote,
   DivHaptic,
@@ -45,14 +46,15 @@ const METHOD_LABELS: Record<string, string> = {
 }
 
 /**
- * 四术玉牌元数据（对齐安卓 JadeEntryTile：术名 + 一句话定位 + 推荐 tag，无 useFor 行）。
- * 安卓 strings.xml 虽保留 div_method_*_use_for 键，但 JadeEntryTile 不消费，故本端同步删除该行。
+ * 四术玉牌元数据（对齐安卓 JadeEntryTile：术名 + 一句话定位 + 适用场景 + 推荐 tag）。
+ * compare-10 #4 修正误判：安卓 JadeEntryTile 实际消费 div_method_*_use_for 渲染第三行
+ * （DivHomePage.kt:393-399，desc 之下、tag 之上），本端同步补 useFor 行。
  */
-const TILE_LIST: Array<[string, string, string, string]> = [
-  ['liuyao', DivText.methodLiuyaoName, DivText.methodLiuyaoDesc, DivText.methodLiuyaoTag],
-  ['meihua', DivText.methodMeihuaName, DivText.methodMeihuaDesc, ''],
-  ['qimen', DivText.methodQimenName, DivText.methodQimenDesc, ''],
-  ['liuren', DivText.methodLiurenName, DivText.methodLiurenDesc, ''],
+const TILE_LIST: Array<[string, string, string, string, string]> = [
+  ['liuyao', DivText.methodLiuyaoName, DivText.methodLiuyaoDesc, DivText.methodLiuyaoUseFor, DivText.methodLiuyaoTag],
+  ['meihua', DivText.methodMeihuaName, DivText.methodMeihuaDesc, DivText.methodMeihuaUseFor, ''],
+  ['qimen', DivText.methodQimenName, DivText.methodQimenDesc, DivText.methodQimenUseFor, ''],
+  ['liuren', DivText.methodLiurenName, DivText.methodLiurenDesc, DivText.methodLiurenUseFor, ''],
 ]
 
 @Builder
@@ -72,6 +74,8 @@ struct DivHomePage {
   @Local serverTodayId: number = 0
   // 玉牌按压缩放态（pressScale 0.97）+ 点击节流防抖（对齐安卓 rememberDebouncedClick）
   @Local pressedKey: string = ''
+  // 今日一签保存中（compare-10 #1 对齐安卓 signSaving 三件套：保存中禁点 + 尾缀「…」+ 同步置位防连点）
+  @Local signSaving: boolean = false
   private debouncer: Debouncer = new Debouncer()
 
   async aboutToAppear(): Promise<void> {
@@ -159,6 +163,23 @@ struct DivHomePage {
     pathStack.pushPathByName(RouteNames.DIV_CHART, chartParam)
   }
 
+  /**
+   * 今日一签点击入口（compare-10 #1 对齐安卓 DivHomeViewModel.ensureTodaySignSaved 的 signSaving 保护）：
+   * 同步置位 signSaving 兜住连点（DivCard clickable 同步禁点为第一道），链路结束（含异常）finally 复位；
+   * 保存期间尾缀换「…」（DivText.signSaving）作轻量 loading 反馈，业务链路不变。
+   */
+  private async saveTodaySign(): Promise<void> {
+    if (this.signSaving) {
+      return
+    }
+    this.signSaving = true
+    try {
+      await this.ensureTodaySignSaved()
+    } finally {
+      this.signSaving = false
+    }
+  }
+
   /** 日期 MM-dd（对齐安卓 SimpleDateFormat("MM-dd")） */
   private formatMonthDay(castAt: number): string {
     const d = new Date(castAt)
@@ -180,8 +201,8 @@ struct DivHomePage {
   }
 
   /** 四术玉牌分行（对齐安卓 methods.chunked(2)） */
-  private buildRows(): Array<Array<[string, string, string, string]>> {
-    const rows: Array<Array<[string, string, string, string]>> = []
+  private buildRows(): Array<Array<[string, string, string, string, string]>> {
+    const rows: Array<Array<[string, string, string, string, string]>> = []
     for (let i = 0; i < TILE_LIST.length; i += 2) {
       rows.push(TILE_LIST.slice(i, i + 2))
     }
@@ -192,33 +213,30 @@ struct DivHomePage {
   @Builder
   LedgerRow(record: DivRecordRow) {
     Row() {
-      DivSerifText({
-        text: this.formatMonthDay(record.castAt),
-        textSize: 12,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textTertiary
-      })
-        .width(44)
+      // 非仪式文本：普通 Text 无衬线无字距（compare-10 #21）；minWidth 44 让 130% 字体缩放自然加宽不截断（#23）
+      Text(this.formatMonthDay(record.castAt))
+        .fontSize(12)
+        .fontColor(DivPalette.textTertiary)
+        .constraintSize({ minWidth: 44 })
 
-      // 术数色点：对齐安卓恒色口径（不再按术数分色）；改动点按本批次裁决取 goldText
+      Column().width(4)
+
+      // 术数色点 8dp 档（规范 §3.5，compare-10 #3：7dp 墨 → 8dp 金，对齐安卓 audit-11 #17）
       Column()
-        .width(7)
-        .height(7)
-        .borderRadius(3.5)
-        .backgroundColor(DivPalette.goldText)
+        .width(8)
+        .height(8)
+        .borderRadius(4)
+        .backgroundColor(DivPalette.gold)
 
       Column().width(12)
 
-      DivSerifText({
-        text: record.question,
-        textSize: 12,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textPrimary,
-        maxLines: 1,
-        overflow: TextOverflow.Ellipsis
-      })
+      // 摘要：caption 档 12/16，普通 Text 无衬线（compare-10 #21/#22）
+      Text(record.question)
+        .fontSize(12)
+        .lineHeight(16)
+        .fontColor(DivPalette.textPrimary)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
 
       Column().width(8)
@@ -238,23 +256,30 @@ struct DivHomePage {
   }
 
   /**
-   * 四术玉牌：竖排术名 + 一句话定位 + 推荐标（点击防抖 + pressScale + 触感）。
-   * 对齐安卓 JadeEntryTile：无 useFor 行，tag 位固定 16 高随内容流。
-   * 自绘卡（非 DivCard）：按规范 §2.4/§3.1 补 1px 金线描边同款的 level1 轻阴影，玄墨侧同 DivCard 豁免。
+   * 四术玉牌：竖排术名 + 一句话定位 + 适用场景 + 推荐标（点击防抖 + pressScale + 触感）。
+   * 对齐安卓 JadeEntryTile：desc 下补 useFor 第三行（compare-10 #4 修正「安卓不消费」误判），
+   * tag 位固定 16 高随内容流。
+   * 自绘卡（非 DivCard）：按规范 §2.4/§3.1 补 blur 12 轻阴影（compare-10 #12），玄墨侧同 DivCard 豁免。
    */
   @Builder
-  JadeTile(method: string, name: string, desc: string, tag: string) {
+  JadeTile(method: string, name: string, desc: string, useFor: string, tag: string) {
     // 六爻为首选术：鎏金渐变描边 + 推荐 tag + glyph 40；其余 12% 发丝描边 + glyph 34
     Column() {
       Column() {
         Row() {
           MethodGlyph({ method: method, sizeValue: this.isFeatured(tag) ? 40 : 34, tint: DivPalette.gold })
           Blank()
-          // 竖排术名（画板：18/600、行距 26、右上内缩 2）
+          // 竖排术名（画板：18/600、行距 26、右上内缩 2；compare-10 #6 行距 26 由行盒承担，去逐字 margin）
           Column() {
             ForEach(name.split(''), (ch: string, index: number) => {
-              DivSerifText({ text: ch, textSize: 18, weight: 600, spacing: 0, color: DivPalette.textPrimary })
-                .margin({ bottom: 8 })
+              DivSerifText({
+                text: ch,
+                textSize: 18,
+                weight: 600,
+                spacing: 0,
+                color: DivPalette.textPrimary,
+                lineHeight: 26
+              })
             }, (ch: string, index: number) => index.toString())
           }
           .alignItems(HorizontalAlign.End)
@@ -264,26 +289,36 @@ struct DivHomePage {
 
         Column().height(8)
 
-        // 一句话定位（两行）
+        // 一句话定位（compare-10 #24 去 maxLines：130% 字体/窄屏折行随内容撑开，不截断省略）
         DivSerifText({
           text: desc,
           textSize: 12,
           weight: 400,
           spacing: 0,
+          color: DivPalette.textSecondary
+        })
+        Column().height(4)
+        // 适用场景第三行（compare-10 #4：12/16 次要灰，desc 之下、tag 之上，对齐安卓 DivHomePage.kt:393-399）
+        DivSerifText({
+          text: useFor,
+          textSize: 12,
+          weight: 400,
+          spacing: 0,
           color: DivPalette.textSecondary,
-          maxLines: 2,
-          overflow: TextOverflow.Ellipsis
+          lineHeight: 16
         })
         Column().height(6)
         // tag 位固定高度：四牌同构（无 tag 留空，同一行两牌行高一致）
         Column() {
           if (tag.length > 0) {
+            // captionStrong 档 12/16/500（compare-10 #5：11sp「角标」档已作废，行内小字一律 12sp）
             DivSerifText({
               text: tag,
-              textSize: 11,
-              weight: 400,
+              textSize: 12,
+              weight: 500,
               spacing: 2,
-              color: DivPalette.goldText
+              color: DivPalette.goldText,
+              lineHeight: 16
             })
               .opacity(0.75)
           }
@@ -293,22 +328,27 @@ struct DivHomePage {
       .width('100%')
       .borderRadius(15)
       .backgroundColor(DivPalette.surface)
+      // compare-10 #10：featured 内层四周 margin 1 露出外层渐变描边线（外 radius 16 / 内 radius 15 不变）
+      .margin(this.isFeatured(tag)
+        ? { left: 1, right: 1, top: 1, bottom: 1 }
+        : { left: 0, right: 0, top: 0, bottom: 0 })
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
     }
     .width('100%')
     // 牌高由内容撑开（min 148 兜底），窄屏/大字号折行不裁切、不叠压
     .constraintSize({ minHeight: 148 })
     .borderRadius(16)
-    // 渐变描边（135°）：六爻 goldLine→goldHair，其余 12% 发丝
-    .linearGradient({
-      angle: 135,
-      colors: this.isFeatured(tag)
-        ? [[DivPalette.goldLine, 0.0], [DivPalette.goldHair, 1.0]]
-        : [[DivPalette.hair, 0.0], [DivPalette.hair, 1.0]]
-    })
-    // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + level1 轻阴影（宣纸侧；安卓 JadeTile 同此）
+    // compare-10 #10 描边画法修复：featured 外层渐变当底、内层缩进 1 露线（原内层贴边直边段不可见）；
+    // 次牌去渐变、直改 12% 发丝描边（对齐安卓 border(1.dp, c.hair) 全周连续）
+    .border(this.isFeatured(tag)
+      ? { width: 0, color: Color.Transparent }
+      : { width: 1, color: DivPalette.hair })
+    .linearGradient(this.isFeatured(tag)
+      ? { angle: 135, colors: [[DivPalette.goldLine, 0.0], [DivPalette.goldHair, 1.0]] }
+      : { angle: 135, colors: [[Color.Transparent, 0.0], [Color.Transparent, 1.0]] })
+    // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + blur 12 轻阴影（compare-10 #12 对齐安卓 softCardShadow）
     .shadow({
-      radius: DesignElevation.LEVEL_1,
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
       color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
       offsetY: 2
@@ -335,8 +375,9 @@ struct DivHomePage {
     NavDestination() {
       // 观象台首页为全屏画布页：整页扩展到系统安全区外（页头不再额外避让，避免双重避让）
       DivinationScreen({ immersive: true }) {
-        // 1. 干支天象头
+        // 1. 干支天象头（compare-10 #19：状态栏下留 12，对齐安卓 statusBarsPadding + padding(top = 12.dp)）
         TianXiangHeader({ text: this.tianXiang.length > 0 ? this.tianXiang : '—' })
+          .margin({ top: 12 })
 
         // 2. 衬线标题 + 旬空副行（左对齐：安卓 Column 默认 TopStart；ArkUI Column 默认 Center 会居中）
         Column() {
@@ -360,7 +401,7 @@ struct DivHomePage {
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
         // 3. 罗盘（画板 104dp）
         Column() {
@@ -370,35 +411,35 @@ struct DivHomePage {
         .padding({ top: 8, bottom: 12 })
         .alignItems(HorizontalAlign.Center)
 
-        // 4. 四术玉牌 2×2（卡间距统一 CARD_SPACING）
-        Column({ space: DesignDimens.CARD_SPACING }) {
-          ForEach(this.buildRows(), (row: Array<[string, string, string, string]>, rowIndex: number) => {
-            Row({ space: DesignDimens.CARD_SPACING }) {
-              ForEach(row, (item: [string, string, string, string]) => {
+        // 4. 四术玉牌 2×2（网格间距 12：画板 14，令牌网格收敛 12，对齐安卓 DivHomePage.kt:143）
+        Column({ space: 12 }) {
+          ForEach(this.buildRows(), (row: Array<[string, string, string, string, string]>, rowIndex: number) => {
+            Row({ space: 12 }) {
+              ForEach(row, (item: [string, string, string, string, string]) => {
                 Column() {
-                  this.JadeTile(item[0], item[1], item[2], item[3])
+                  this.JadeTile(item[0], item[1], item[2], item[3], item[4])
                 }
                 .layoutWeight(1)
-              }, (item: [string, string, string, string]) => item[0])
+              }, (item: [string, string, string, string, string]) => item[0])
               if (row.length === 1) {
                 Column()
                   .layoutWeight(1)
               }
             }
             .width('100%')
-          }, (row: Array<[string, string, string, string]>, index: number) => index.toString())
+          }, (row: Array<[string, string, string, string, string]>, index: number) => index.toString())
         }
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
-        // 5. 今日一签卡（无签数据时不显示）
+        // 5. 今日一签卡（无签数据时不显示；保存中禁点 + 尾缀「…」，compare-10 #1）
         if (this.hasTodaySign) {
           Column() {
           DivCard({
-            clickable: true,
-            lineColor: DivPalette.goldHair,
+            clickable: !this.signSaving,
+            lineColor: DivPalette.hair,
             onAction: () => {
-              this.ensureTodaySignSaved()
+              this.saveTodaySign()
             }
           }) {
             Row() {
@@ -412,19 +453,23 @@ struct DivHomePage {
                   spacing: 4,
                   color: DivPalette.textPrimary
                 })
-                DivSerifText({
-                  text: `${this.todaySignSub} —— ${DivText.signCardSource}`,
-                  textSize: 12,
-                  weight: 400,
-                  spacing: 1,
-                  color: DivPalette.textSecondary
-                })
+                // 非仪式文本：普通 Text 无衬线无字距（compare-10 #21），caption 12/16（#22）
+                Text(`${this.todaySignSub} —— ${DivText.signCardSource}`)
+                  .fontSize(12)
+                  .lineHeight(16)
+                  .fontColor(DivPalette.textSecondary)
                   .margin({ top: 4 })
               }
               .layoutWeight(1)
               .alignItems(HorizontalAlign.Start)
 
-              DivSerifText({ text: '›', textSize: 16, weight: 400, spacing: 0, color: DivPalette.goldText })
+              DivSerifText({
+                text: this.signSaving ? DivText.signSaving : '›',
+                textSize: 16,
+                weight: 400,
+                spacing: 0,
+                color: DivPalette.goldText
+              })
                 .opacity(0.6)
             }
             .width('100%')
@@ -433,10 +478,10 @@ struct DivHomePage {
           }
           }
           .width('100%')
-          // 卡外边距：横向统一 PAGE_PADDING，纵向 SPACE_SM（12）
+          // 卡外边距：横向观象台域统一 20（compare-10 #16），纵向 SPACE_SM（12）
           .padding({
-            left: DesignDimens.PAGE_PADDING,
-            right: DesignDimens.PAGE_PADDING,
+            left: DIV_PAGE_PADDING,
+            right: DIV_PAGE_PADDING,
             top: DesignDimens.SPACE_SM,
             bottom: DesignDimens.SPACE_SM
           })
@@ -455,7 +500,7 @@ struct DivHomePage {
         })
 
         Column() {
-          DivCard({ lineColor: DivPalette.goldHair }) {
+          DivCard({ lineColor: DivPalette.hair }) {
             // 空态与记录列表交叉淡入淡出（对齐安卓 Crossfade，避免 0ms 硬切）
             Stack() {
               // 空态层
@@ -469,7 +514,32 @@ struct DivHomePage {
                     color: DivPalette.textTertiary
                   })
                     .width('100%')
-                    .padding({ top: 18, bottom: 18 })
+                    .padding({ top: 18 })
+
+                  // 空态行动按钮（compare-10 #2 对齐安卓 audit-11 #5）：48 热区文字按钮跳问卦
+                  // （默认六爻 = 推荐首选术），与「卦历 ›」尾链双出口
+                  Column() {
+                    DivSerifText({
+                      text: DivText.ledgerGoAsk,
+                      textSize: 12,
+                      weight: 600,
+                      spacing: 2,
+                      color: DivPalette.goldText
+                    })
+                  }
+                  .width('100%')
+                  .constraintSize({ minHeight: 48 })
+                  .margin({ top: 4 })
+                  .alignItems(HorizontalAlign.Start)
+                  .justifyContent(FlexAlign.Center)
+                  .onClick(() => {
+                    DivHaptic.light()
+                    this.debouncer.throttle(() => {
+                      pathStack.pushPathByName(RouteNames.DIV_ASK, 'liuyao')
+                    }, 600)
+                  })
+
+                  Column().height(18)
                 }
               }
               .width('100%')
@@ -486,7 +556,7 @@ struct DivHomePage {
                   if (index !== 2 && index !== this.records.length - 1) {
                     Divider()
                       .strokeWidth(0.5)
-                      .color(DivPalette.goldHair)
+                      .color(DivPalette.hair)
                   }
                 }, (record: DivRecordRow) => record.id.toString())
               }
@@ -495,17 +565,12 @@ struct DivHomePage {
               .animation({ duration: 180, curve: Curve.EaseInOut })
             }
             .width('100%')
-            // 案卷卡内层左右 CARD_PADDING 对称（原缺 right 导致内容贴卡片右边界）
-            .padding({
-              left: DesignDimens.CARD_PADDING,
-              right: DesignDimens.CARD_PADDING,
-              top: DesignDimens.SPACE_XXS,
-              bottom: DesignDimens.SPACE_XXS
-            })
+            // 案卷卡内层：左右 14、纵向 0（行自带 vertical 12；compare-10 #18 对齐安卓 padding(horizontal = 14.dp)）
+            .padding({ left: 14, right: 14 })
           }
         }
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
         // 7. 页脚免责声明
         DivFooterNote({ text: DivText.disclaimerFooter })

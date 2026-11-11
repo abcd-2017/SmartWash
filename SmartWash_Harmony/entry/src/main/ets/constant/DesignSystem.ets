@@ -101,6 +101,18 @@ export class DesignColor {
   static TEXT_SECONDARY: number = 0xFF6B6E73 // 次文本
   static TEXT_TERTIARY: number = 0xFFA9AEA9  // 弱文本
 
+  // 文字绿深档（对齐 Android Color.kt TextGreen/TextGreenOnTint，2026-11-06 设计规范评审 R17/R18/R22）
+  // 背景：PRIMARY #2D9B6A on 白仅 3.5:1、PRIMARY_DARK #1E8C5C on 白 4.23:1，均不足 AA 4.5:1——
+  // 两者仅可用于「图形/底色」语义，小号绿字必须改用本档。仅用于「文字」语义（正文/按钮文字），
+  // 图标与图形着色仍走 PRIMARY/PRIMARY_DARK：
+  //   TEXT_GREEN         —— 白/SURFACE 浅底上的小号绿字（#177A4C on #FFFFFF ≈5.1:1，达 AA）
+  //   TEXT_GREEN_ON_TINT —— tinted 浅底（SURFACE_VARIANT/PRIMARY_CONTAINER/WARNING_CONTAINER 等）
+  //                         上的小号绿字（#146841 on #F0FBF4 ≈6.4:1、on #EFF1EE ≈6.0:1，达 AA）
+  // 深色两档同为 #5BC894（深色主色提亮档 DARK_PRIMARY 同值，on 深色底达标）。
+  // ≥18fp 绿字按大字 3:1 豁免规则，不改用本档。
+  static TEXT_GREEN: number = 0xFF177A4C
+  static TEXT_GREEN_ON_TINT: number = 0xFF146841
+
   // 分隔线
   static DIVIDER: number = 0xFFEFF1EE
 
@@ -182,6 +194,11 @@ export class DesignColor {
   static readonly DARK_TEXT_SECONDARY: number = 0xFFA9AEA9
   static readonly DARK_TEXT_TERTIARY: number = 0xFF7E837D
 
+  // 文字绿深档（深色版）——对齐 Android Color.kt DarkTextGreen/DarkTextGreenOnTint（同值 #5BC894，
+  // 深色底上均达 AA），随 applyDesignTheme 与浅色档成对切换
+  static readonly DARK_TEXT_GREEN: number = 0xFF5BC894
+  static readonly DARK_TEXT_GREEN_ON_TINT: number = 0xFF5BC894
+
   static readonly DARK_DIVIDER: number = 0xFF262A27
 
   static readonly DARK_WATER: number = 0xFF5FAEE0
@@ -259,15 +276,28 @@ export class DesignColor {
   static SERVICE_SHOES_LIGHT: number = 0xFFFEF2F2
 
   // ========== 阴影色（规范 §2.4 全应用仅两档，替代组件内散落的写死色） ==========
-  // 字符串类型：shadow.color 接受 ResourceColor，rgba() 直译设计稿 CSS 值
-  static readonly SHADOW_COLOR_CARD: string = 'rgba(20, 40, 30, 0.05)'   // 卡片档
+  // 字符串类型：shadow.color 接受 ResourceColor，rgba() 直译设计稿 CSS 值。
+  // 卡片档带深色变体（对齐 Android SoftShadow.kt DarkCardShadowColor 0x47000000 = rgba(0,0,0,0.28)，
+  // 规范 §6.5）：浅色档 5% 绿调在深色页底 #141614 上不可辨，深色下卡片层级只剩 1px 描边，
+  // 随 applyDesignTheme 自动切换；浮层档规范仅定义浅色档（安卓 SoftShadow 显式传色不覆盖
+  // 深色分支），深浅同值。注：SHADOW_COLOR_CARD 为可回写字段（非 readonly），供主题切换回写。
+  static SHADOW_COLOR_CARD: string = 'rgba(20, 40, 30, 0.05)'   // 卡片档（深色自动切 DARK_SHADOW_COLOR_CARD）
+  static readonly DARK_SHADOW_COLOR_CARD: string = 'rgba(0, 0, 0, 0.28)' // 卡片档深色变体（§6.5）
   static readonly SHADOW_COLOR_FLOAT: string = 'rgba(20, 40, 30, 0.10)'  // 浮层/弹窗档
 
-  // ========== Hero 卡对角黑纱（对齐安卓 StatusHeroCard scrim：左上黑 20% → 右下透明） ==========
-  // 白字 on 品牌绿渐变实测 3.72:1（<4.5），叠纱后文字区对比度 ≥5.1:1；
-  // 纱为纯黑透明层，深浅色同值（未定义 DARK_ 变体）。
+  // ========== Hero 卡对角黑纱与恒定渐变端 ==========
+  // 纱为纯黑层，深浅色同值（未定义 DARK_ 变体）。
   // 透明端在渐变 stop 上用 Color.Transparent（数值 0x00000000 会被当作不透明黑）。
-  static readonly SCRIM_BLACK_20: number = 0x33000000  // 黑 20%
+  static readonly SCRIM_BLACK_20: number = 0x33000000  // 黑 20%（纱浅端）
+  // U-101 终版口径（对齐安卓 PointsPage/IndexPage 修后实现，audit-20 #1）：纱终点改黑 35%
+  // （同对角线 20%→35%，非透明端），浅板 5.13–8.10:1 / 深板 4.62–5.13:1，正文全部达标
+  static readonly SCRIM_BLACK_35: number = 0x59000000  // 黑 35%（纱深端）
+  // 连签进度条轨道恒定黑 18%（audit-20 #13：白 30% 轨道在深板亮端与白填充仅 ~1.6:1 近乎隐形）
+  static readonly SCRIM_BLACK_18: number = 0x2E000000
+  // Hero 品牌渐变起点恒定值（对齐安卓 AppDesign.kt heroGradientStart 恒定 #2D9B6A）：
+  // 不走 applyDesignTheme 回写——若引用 PRIMARY，深色下回写 #5BC894 会令渐变两端塌缩成纯色；
+  // 渐变终点仍用 PRIMARY_DARK（深色自动 #5BC894，与安卓深色 heroGradientEnd 一致）
+  static readonly HERO_GRADIENT_START: number = 0xFF2D9B6A
   // 弹窗/对话框点击遮罩（NavDestination DIALOG 模式整页蒙层）：黑 50%，深浅色同值（遮罩语义不随主题）
   static readonly SCRIM_BLACK_50: number = 0x80000000
   // 图片上沉浸层（封面底部压暗渐变，对齐安卓 ImageScrim 深浅共用语义）：黑 55% 深端 + 全透明端
@@ -280,7 +310,7 @@ export class DesignColor {
 /**
  * 应用深浅色主题（问题17）：EntryAbility 在冷启动与系统色模式变更时调用。
  * 令牌字段为可变静态值，调用后页面 rebuild 读取即得新色值；
- * 未定义 DARK_ 变体的令牌（GLASS 文字类/品牌色/服务类型色/阴影色等）深浅色同值，不在此列出。
+ * 未定义 DARK_ 变体的令牌（GLASS 文字类/品牌色/服务类型色/阴影浮层档等）深浅色同值，不在此列出。
  * 注意：静态字段变更本身不驱动 UI 刷新——栈内页面经 view/common/ThemeRefresh
  * 订阅 darkMode 触发子树重建后，重读本函数回写的新值。
  */
@@ -330,6 +360,8 @@ export function applyDesignTheme(dark: boolean): void {
   DesignColor.TEXT_PRIMARY = dark ? DesignColor.DARK_TEXT_PRIMARY : 0xFF1C1C1E
   DesignColor.TEXT_SECONDARY = dark ? DesignColor.DARK_TEXT_SECONDARY : 0xFF6B6E73 // 次文本
   DesignColor.TEXT_TERTIARY = dark ? DesignColor.DARK_TEXT_TERTIARY : 0xFFA9AEA9  // 弱文本
+  DesignColor.TEXT_GREEN = dark ? DesignColor.DARK_TEXT_GREEN : 0xFF177A4C
+  DesignColor.TEXT_GREEN_ON_TINT = dark ? DesignColor.DARK_TEXT_GREEN_ON_TINT : 0xFF146841
   DesignColor.DIVIDER = dark ? DesignColor.DARK_DIVIDER : 0xFFEFF1EE
   DesignColor.WATER = dark ? DesignColor.DARK_WATER : 0xFF4A9FD4
   DesignColor.WATER_SOFT = dark ? DesignColor.DARK_WATER_SOFT : 0xFFDCEFF7     // 水色浅底容器
@@ -354,6 +386,8 @@ export function applyDesignTheme(dark: boolean): void {
   DesignColor.GLASS_BORDER_SUBTLE = dark ? DesignColor.DARK_GLASS_BORDER_SUBTLE : 0x2EFFFFFF
   DesignColor.GLASS_BORDER = dark ? DesignColor.DARK_GLASS_BORDER : 0x33FFFFFF
   DesignColor.GLASS_INPUT = dark ? DesignColor.DARK_GLASS_INPUT : 0x4DFFFFFF
+  // 阴影卡片档深色变体（§6.5；浮层档规范未定义深色变体，不回写）
+  DesignColor.SHADOW_COLOR_CARD = dark ? DesignColor.DARK_SHADOW_COLOR_CARD : 'rgba(20, 40, 30, 0.05)'
 }
 // ========== 设计 Token ==========
 

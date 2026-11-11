@@ -22,13 +22,13 @@ import {
   pageMaterials,
   reviewCardStateFromCode
 } from '../api'
-import { AppButton, EmptyState } from '../../../view/common/AppComponents'
+import { AppButton, AppButtonVariant, EmptyState } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
 
 // ==================== 静态标签 chip ====================
 
-/** 静态标签 chip —— 胶囊（radiusFull）+ caption 12/500，用于条目上的资料/状态标注 */
+/** 静态标签 chip —— 胶囊（radiusFull）+ caption 12/500 + 行高 16，纵向内边距 4 对齐安卓 chip 高 24（跨端矩阵 #14/#15） */
 @ComponentV2
 export struct ReviewTagChip {
   @Param text: string = ''
@@ -40,7 +40,13 @@ export struct ReviewTagChip {
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(this.contentColor)
-      .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+      .lineHeight(DesignFontSize.CAPTION + 4)
+      .padding({
+        left: DesignDimens.SPACE_XS,
+        right: DesignDimens.SPACE_XS,
+        top: DesignDimens.SPACE_XXS,
+        bottom: DesignDimens.SPACE_XXS
+      })
       .backgroundColor(this.containerColor)
       .borderRadius(DesignDimens.RADIUS_FULL)
   }
@@ -79,7 +85,9 @@ export struct DueTypeChip {
       ReviewTagChip({
         text: this.isDaily() ? ReviewText.review_due_badge_daily : ReviewText.review_due_badge_minute,
         containerColor: this.isDaily() ? DesignColor.ICON_CONTAINER_BLUE : DesignColor.WARNING_CONTAINER,
-        contentColor: this.isDaily() ? DesignColor.ICON_FOREGROUND_BLUE : DesignColor.WARNING
+        // 分钟级角标小字：WARNING 橙 on WARNING_CONTAINER 浅色仅 2.51:1 破线（跨端矩阵 #2），
+        // 改成对 ink 档 ON_WARNING_CONTAINER（浅 #92400E ≈5.9:1 / 深 #ECB36A ≈7.6:1，双主题达标）
+        contentColor: this.isDaily() ? DesignColor.ICON_FOREGROUND_BLUE : DesignColor.ON_WARNING_CONTAINER
       })
     }
   }
@@ -101,17 +109,39 @@ export struct CardStateChip {
 
 // ==================== 评分按钮 / 进度条 ====================
 
-/** 评分按钮容器色（Anki 惯例红/橙/绿/蓝，全部取语义令牌；主题切换自动跟随） */
+/** 评分按钮禁用态透明度（规范 §3.1：禁用 = 内容 38% 透明度，M3 口径） */
+const RATING_DISABLED_ALPHA: number = 0.38
+
+/**
+ * 评分按钮容器色 — 各语义色浅底容器档（粉=Again / 橙=Hard / 绿=Good / 蓝=Easy）。
+ * 原语义实底 + ON_PRIMARY 白字在浅色模式低于 4.5:1 红线（HARD 2.76:1 / EASY 2.92:1 /
+ * GOOD 3.49:1，跨端矩阵 #3），对齐安卓改「语义浅底 + ink 深字」成对令牌；
+ * 主题切换自动跟随（深色取各令牌 Dark 档，applyDesignTheme 已回写双主题）。
+ */
 export function reviewRatingColor(rating: ReviewRating): number {
   switch (rating) {
     case ReviewRating.AGAIN:
-      return DesignColor.DANGER
+      return DesignColor.ICON_CONTAINER_PINK
     case ReviewRating.HARD:
-      return DesignColor.ONGOING
+      return DesignColor.WARNING_CONTAINER
     case ReviewRating.GOOD:
-      return DesignColor.PRIMARY
+      return DesignColor.ICON_CONTAINER_GREEN
     default:
-      return DesignColor.WATER
+      return DesignColor.WATER_SOFT
+  }
+}
+
+/** 评分按钮文字色 — 与容器成对的 ink 深字档（浅色最低 5.1:1 / 深色最低 6.5:1，均达 AA） */
+export function reviewRatingContentColor(rating: ReviewRating): number {
+  switch (rating) {
+    case ReviewRating.AGAIN:
+      return DesignColor.DANGER_INK
+    case ReviewRating.HARD:
+      return DesignColor.ON_WARNING_CONTAINER
+    case ReviewRating.GOOD:
+      return DesignColor.TEXT_GREEN_ON_TINT
+    default:
+      return DesignColor.TEXT_PRIMARY
   }
 }
 
@@ -144,9 +174,12 @@ export function reviewRatingSemanticLabel(rating: ReviewRating): string {
 }
 
 /**
- * 四档评分按钮 — 高 48vp / 胶囊圆角 / 实色语义底 / onPrimary 文字。
- * 两行文案：Anki 英文惯例名（button 15/600）+ 中文语义（caption 12）。
- * 提交中整排禁用降透明度（对齐安卓 RatingButton enabled=false）。
+ * 四档评分按钮 — 胶囊圆角（radiusFull），两行文案：Anki 英文惯例名（button 15/600）+ 中文语义（caption 12）。
+ * 配色「语义浅底 + ink 深字」成对令牌（见 reviewRatingColor / reviewRatingContentColor，跨端矩阵 #3）。
+ * 高度 minHeight 48 随内容弹性增高：系统字体放大 130%+ 时不裁切两行文案
+ * （对齐安卓 heightIn(min=48)，跨端矩阵 #6）。
+ * 提交中整排禁用 = 内容 38% 透明度（规范 §3.1 M3 口径，跨端矩阵 #7），
+ * 且 .enabled 暴露禁用态（读屏可感知，onClick 内拦截保留作双保险）。
  */
 @ComponentV2
 export struct RatingButton {
@@ -161,18 +194,19 @@ export struct RatingButton {
       Text(reviewRatingLabel(this.rating))
         .fontSize(DesignFontSize.BUTTON)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.ON_PRIMARY)
+        .fontColor(reviewRatingContentColor(this.rating))
         .textAlign(TextAlign.Center)
       Text(reviewRatingSemanticLabel(this.rating))
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.ON_PRIMARY)
+        .fontColor(reviewRatingContentColor(this.rating))
         .textAlign(TextAlign.Center)
     }
     .width('100%')
-    .height(48)
+    .constraintSize({ minHeight: 48 })
     .borderRadius(DesignDimens.RADIUS_FULL)
     .backgroundColor(reviewRatingColor(this.rating))
-    .opacity(this.isEnabled ? 1 : 0.5)
+    .opacity(this.isEnabled ? 1 : RATING_DISABLED_ALPHA)
+    .enabled(this.isEnabled)
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
     .onClick(() => {
@@ -185,7 +219,9 @@ export struct RatingButton {
 
 /**
  * 细进度条（复习页进度意象）：surfaceVariant 槽 + primary 填充。
- * 宽度百分比 + animation 过渡（对齐安卓弹簧过渡的等价降级）。
+ * 宽度百分比 + 弹簧过渡（MotionTiming.SPRING 从当前值起动画、可中断，
+ * 对齐安卓 animateFloatAsState(defaultSpring)，跨端矩阵 #16；
+ * reduce-motion 全局基建缺失为跨端裁决项，此处不单独处理 — 矩阵 #17）。
  */
 @ComponentV2
 export struct StudyProgressBar {
@@ -202,7 +238,7 @@ export struct StudyProgressBar {
         .width(`${Math.min(100, Math.max(0, this.fraction * 100))}%`)
         .height(4)
         .backgroundColor(DesignColor.PRIMARY)
-        .animation({ duration: 220, curve: Curve.EaseInOut })
+        .animation({ curve: MotionTiming.SPRING })
     }
     .width('100%')
     .height(4)
@@ -247,11 +283,13 @@ export struct ReviewPageHeader {
       Blank()
 
       if (this.actionText.length > 0) {
+        // 文字按钮档 §3.3：13/600 + TEXT_GREEN + 热区 ≥48（对齐安卓 PageHeader actions，M7）
         Text(this.actionText)
-          .fontSize(DesignFontSize.PAGE_HEADER)
+          .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(DesignColor.TEXT_GREEN)
           .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+          .constraintSize({ minHeight: 48 })
           .onClick(() => {
             this.onAction()
           })
@@ -279,14 +317,17 @@ export struct ReviewErrorState {
     Column() {
       EmptyState({ message: this.message }) {
         Column() {
+          // 48vp 主按钮档（默认档）：本屏唯一主行动，触控 ≥48 对齐安卓空·错态 AppButton（跨端矩阵 #10）
+          // 水平内缩 PAGE_PADDING：错误态按钮不通栏贴屏边（对齐安卓 AppButton padding(horizontal=pagePadding)，S11）
           AppButton({
-            small: true,
             text: ReviewText.review_action_retry,
             click: (): void => {
               this.onRetry()
             }
           })
         }
+        .width('100%')
+        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         .margin({ top: DesignDimens.SPACE_MD })
       }
     }
@@ -385,9 +426,10 @@ export struct ReviewCardDialog {
               .fontColor(DesignColor.TEXT_PRIMARY)
 
             if (this.materialTitle.length > 0) {
+              // 可读上下文信息（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（M3）
               Text(this.materialTitle)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontColor(DesignColor.TEXT_SECONDARY)
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .margin({ top: DesignDimens.SPACE_XXS })
@@ -395,7 +437,8 @@ export struct ReviewCardDialog {
 
             Column() {
               this.FormLabel(ReviewText.review_card_dialog_question_label)
-              TextInput({ text: this.question, placeholder: ReviewText.review_card_dialog_question_hint })
+              // 多行 TextArea：单行 TextInput 内长文本无法换行回看（对齐安卓 minLines=2，M9）
+              TextArea({ text: this.question, placeholder: ReviewText.review_card_dialog_question_hint })
                 .fontSize(DesignFontSize.BODY)
                 .backgroundColor(DesignColor.SURFACE_VARIANT)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
@@ -404,7 +447,7 @@ export struct ReviewCardDialog {
                 .placeholderColor(DesignColor.TEXT_TERTIARY)
                 .placeholderFont({ size: DesignFontSize.BODY })
                 .maxLength(1000)
-                .height(96)
+                .constraintSize({ minHeight: 48 })
                 .onChange((value: string) => {
                   this.question = value
                 })
@@ -415,7 +458,8 @@ export struct ReviewCardDialog {
 
             Column() {
               this.FormLabel(ReviewText.review_card_dialog_answer_label)
-              TextInput({ text: this.answer, placeholder: ReviewText.review_card_dialog_answer_hint })
+              // 多行 TextArea（对齐安卓 minLines=3，M9）
+              TextArea({ text: this.answer, placeholder: ReviewText.review_card_dialog_answer_hint })
                 .fontSize(DesignFontSize.BODY)
                 .backgroundColor(DesignColor.SURFACE_VARIANT)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
@@ -424,7 +468,7 @@ export struct ReviewCardDialog {
                 .placeholderColor(DesignColor.TEXT_TERTIARY)
                 .placeholderFont({ size: DesignFontSize.BODY })
                 .maxLength(2000)
-                .height(120)
+                .constraintSize({ minHeight: 72 })
                 .onChange((value: string) => {
                   this.answer = value
                 })
@@ -435,7 +479,8 @@ export struct ReviewCardDialog {
 
             if (this.errorMessage.length > 0) {
               Text(this.errorMessage)
-                .fontSize(DesignFontSize.BODY_SMALL)
+                .fontSize(DesignFontSize.CAPTION)
+                .lineHeight(DesignFontSize.CAPTION + 4)
                 .fontColor(DesignColor.ERROR)
                 .margin({ top: DesignDimens.SPACE_SM })
             }
@@ -453,46 +498,35 @@ export struct ReviewCardDialog {
         .align(Alignment.TopStart)
         .scrollBar(BarState.Off)
 
-        Divider()
-          .strokeWidth(0.5)
-          .color(DesignColor.DIVIDER)
-          .width('100%')
-
-        Row() {
-          Button(ReviewText.review_dialog_action_cancel)
-            .type(ButtonType.Normal)
-            .layoutWeight(1)
-            .height(48)
-            .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-            .fontSize(DesignFontSize.BODY)
-            .borderRadius(0)
-            .onClick(() => {
+        // 按钮行改 AppButton 胶囊 CTA 口径（取消=次按钮 / 确认=主按钮，对齐安卓弹窗按钮行，M10）；
+        // 确认提交中由 AppButton 内嵌 LoadingProgress + 禁点（规范 §3.1，M20）
+        Row({ space: DesignDimens.SPACE_SM }) {
+          AppButton({
+            text: ReviewText.review_dialog_action_cancel,
+            variant: AppButtonVariant.SECONDARY,
+            isEnabled: !this.submitting,
+            click: (): void => {
               this.controller.close()
-            })
-
-          Divider()
-            .vertical(true)
-            .color(DesignColor.DIVIDER)
-            .strokeWidth(0.5)
-            .height(48)
-
-          Button(ReviewText.review_dialog_action_confirm)
-            .type(ButtonType.Normal)
+            }
+          })
             .layoutWeight(1)
-            .height(48)
-            .backgroundColor(Color.Transparent)
-            .fontColor(DesignColor.PRIMARY)
-            .fontSize(DesignFontSize.BODY)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .borderRadius(0)
-            .enabled(!this.submitting)
-            .opacity(this.submitting ? 0.5 : 1)
-            .onClick(() => {
+
+          AppButton({
+            text: ReviewText.review_dialog_action_confirm,
+            loading: this.submitting,
+            click: (): void => {
               this.handleConfirm()
-            })
+            }
+          })
+            .layoutWeight(1)
         }
         .width('100%')
+        .padding({
+          left: DesignDimens.SPACE_LG,
+          right: DesignDimens.SPACE_LG,
+          top: DesignDimens.SPACE_MD,
+          bottom: DesignDimens.SPACE_MD
+        })
       }
       .width('100%')
       .backgroundColor(DesignColor.SURFACE)
@@ -529,9 +563,12 @@ export function reviewIsNewCard(card: ReviewCardVo): boolean {
 /**
  * 到期时刻 → 展示文案（新卡不显示到期，语义由「新卡」角标承担）：
  * 已到期 / N 分钟后到期 / N 小时后到期 / N 天后到期；缺失/非法返回空串。
+ * now 为可选时钟基准：队列页传入页面级分钟粒度 ticker 的 now，保证全部卡片同一基准、
+ * 随停留时间推进（对齐安卓 produceState ticker，跨端矩阵 #4）；缺省回落 Date.now()，
+ * 既有调用点（Study/Material 两页）签名兼容不受影响。
  * 契约约定复习/到期判断以服务端时刻为准，客户端本地时钟仅做展示换算。
  */
-export function reviewDueTextOf(dueAt: string | null | undefined): string {
+export function reviewDueTextOf(dueAt: string | null | undefined, now?: number): string {
   if (dueAt === null || dueAt === undefined || dueAt.length < 10) {
     return ''
   }
@@ -539,7 +576,8 @@ export function reviewDueTextOf(dueAt: string | null | undefined): string {
   if (Number.isNaN(due.getTime())) {
     return ''
   }
-  const diffMs = due.getTime() - Date.now()
+  const nowMs: number = now ?? Date.now()
+  const diffMs = due.getTime() - nowMs
   if (diffMs < 60_000) {
     return ReviewText.review_due_now
   }

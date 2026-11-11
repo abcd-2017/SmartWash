@@ -199,6 +199,17 @@ export interface WorkbenchBlock {
   kind: WorkbenchBlockKind
   /** 区块标题（kind=SECTION 用，其余空串） */
   title: string
+  /**
+   * Section 折块流水号（kind=SECTION 用）：同名分组在 A→B→A 序列下重现时递增，
+   * key 永不重复（对齐安卓 WorkbenchBlock.Section.ordinal，2026-11-11 审查 #5）。
+   * 非 SECTION 块恒 0。
+   */
+  ordinal: number
+  /**
+   * 前一块 kind（首块为 null）：渲染层间距责任模型按前置块判定顶距
+   * （对齐安卓 blocks.getOrNull(index - 1)；@Builder 内不便回查数组，折块时随块携带）。
+   */
+  prevKind: WorkbenchBlockKind | null
   /** 公告/通栏单卡（kind=NOTICE/WIDE 用，其余取 tools[0] 占位，渲染时按 kind 分派） */
   tool: WorkbenchTool
   /** 两列小卡行 / 列表行组（kind=TILE_ROW/ROW_GROUP 用，其余空数组） */
@@ -208,28 +219,44 @@ export interface WorkbenchBlock {
 /**
  * 按 sort 序折块（对齐安卓 List<WorkbenchTool>.toBlocks）：sectionTitle 与前一 entry 不同 →
  * 插区块标题（并打断连续归并链，不同分组的 row/tile 各自成组）；随后按 layout 流式归并。
+ * Section 维护折块流水号 ordinal（A→B→A 同名分组序列下 key 永不重复，审查 #5）；
+ * 每块携带 prevKind（前一块 kind）供渲染层间距责任模型按前置块判定顶距（审查 #2/#3/#4）。
  */
 export function buildWorkbenchBlocks(tools: Array<WorkbenchTool>): Array<WorkbenchBlock> {
   const blocks: WorkbenchBlock[] = []
   let currentSection: string = ''
+  let sectionOrdinal: number = 0
+  let prevKind: WorkbenchBlockKind | null = null
   tools.forEach((tool: WorkbenchTool): void => {
     if (tool.sectionTitle.length > 0 && tool.sectionTitle !== currentSection) {
-      blocks.push({ kind: WorkbenchBlockKind.SECTION, title: tool.sectionTitle, tool: tool, tools: [] })
+      blocks.push({
+        kind: WorkbenchBlockKind.SECTION,
+        title: tool.sectionTitle,
+        ordinal: sectionOrdinal,
+        prevKind: prevKind,
+        tool: tool,
+        tools: []
+      })
+      sectionOrdinal++
       currentSection = tool.sectionTitle
+      prevKind = WorkbenchBlockKind.SECTION
     }
     switch (tool.layout) {
       case WorkbenchLayout.NOTICE:
-        blocks.push({ kind: WorkbenchBlockKind.NOTICE, title: '', tool: tool, tools: [] })
+        blocks.push({ kind: WorkbenchBlockKind.NOTICE, title: '', ordinal: 0, prevKind: prevKind, tool: tool, tools: [] })
+        prevKind = WorkbenchBlockKind.NOTICE
         break
       case WorkbenchLayout.WIDE:
-        blocks.push({ kind: WorkbenchBlockKind.WIDE, title: '', tool: tool, tools: [] })
+        blocks.push({ kind: WorkbenchBlockKind.WIDE, title: '', ordinal: 0, prevKind: prevKind, tool: tool, tools: [] })
+        prevKind = WorkbenchBlockKind.WIDE
         break
       case WorkbenchLayout.ROW: {
         const last = blocks.length > 0 ? blocks[blocks.length - 1] : null
         if (last !== null && last.kind === WorkbenchBlockKind.ROW_GROUP) {
           last.tools.push(tool)
         } else {
-          blocks.push({ kind: WorkbenchBlockKind.ROW_GROUP, title: '', tool: tool, tools: [tool] })
+          blocks.push({ kind: WorkbenchBlockKind.ROW_GROUP, title: '', ordinal: 0, prevKind: prevKind, tool: tool, tools: [tool] })
+          prevKind = WorkbenchBlockKind.ROW_GROUP
         }
         break
       }
@@ -239,7 +266,8 @@ export function buildWorkbenchBlocks(tools: Array<WorkbenchTool>): Array<Workben
         if (last !== null && last.kind === WorkbenchBlockKind.TILE_ROW && last.tools.length < 2) {
           last.tools.push(tool)
         } else {
-          blocks.push({ kind: WorkbenchBlockKind.TILE_ROW, title: '', tool: tool, tools: [tool] })
+          blocks.push({ kind: WorkbenchBlockKind.TILE_ROW, title: '', ordinal: 0, prevKind: prevKind, tool: tool, tools: [tool] })
+          prevKind = WorkbenchBlockKind.TILE_ROW
         }
         break
       }

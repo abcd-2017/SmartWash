@@ -503,6 +503,8 @@ export class SubscriptionText {
   static readonly subscription_reminder_type_trial_end: string = "试用截止"
   static readonly subscription_reminder_date_format: string = "应提醒 %s"
   static readonly subscription_reminder_read_tag: string = "已读"
+  /** 未读红点读屏描述（颜色不是唯一信息载体，§10；对齐安卓 subscription_reminder_unread_dot） */
+  static readonly subscription_reminder_unread_dot: string = "未读提醒"
 
   // 日期弹窗
   static readonly subscription_date_confirm: string = "确定"

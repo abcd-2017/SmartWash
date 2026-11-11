@@ -16,7 +16,7 @@
 import { createDivRecord, buildCreateRecordForm, submitDivFeedback } from '../../../network/DivinationApi'
 import { interpretMarkdown, isLlmMock } from '../../../data/DivLlmRepository'
 import { DivMdDoc, DivMdSection, parseDivMarkdown } from '../../../data/DivMarkdown'
-import { chartNameOf } from '../../../data/DivChartReader'
+import { chartNameOf, readLiuYaoChart } from '../../../data/DivChartReader'
 import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
   DivCard,
@@ -58,8 +58,9 @@ export function DivReadingBuilder() {
   DivReadingPage()
 }
 
-/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、标题→正文 8）；
- *  正文经 DivRichText 渲染（**加粗** / `- ` 列表），首卡淡入由外层统一控制 */
+/** 解读章节卡（画板：surface 底 + 1px 12% 金发丝线、r16、内边距 14、minHeight 120、标题→正文 8）；
+ *  正文经 DivRichText 渲染（**加粗** / `- ` 列表 / 行内 code / 链接 / 标题降级 / 代码块），
+ *  首卡淡入由外层统一控制 */
 @ComponentV2
 struct ReadingSectionCard {
   @Param section: DivMdSection | null = null
@@ -80,12 +81,15 @@ struct ReadingSectionCard {
           }
           DivRichText({
             lines: this.section.lines,
-            textSize: 12,
+            // 正文 14/20（对齐安卓 audit-23 #9，compare-15 #34）
+            textSize: 14,
             color: DivPalette.textPrimary
           })
         }
         .width('100%')
-        .padding(DesignDimens.CARD_PADDING)
+        // 章节卡内边距 14 + minHeight 120（对齐安卓 DivReadingPage.kt:436-438，compare-15 #44）
+        .padding(14)
+        .constraintSize({ minHeight: 120 })
         .margin({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       }
     }
@@ -107,6 +111,8 @@ struct DivReadingPage {
   @Local interpretationId: number = 0
   /** error 态用户文案（error 帧各码映射 / 传输失败兜底） */
   @Local errorText: string = DivText.readingError
+  /** 反馈已提交态（提交成功后展示「反馈已提交」，不再重复评分） */
+  @Local feedbackSubmitted: boolean = false
   /** error 帧业务码（428 未配置模型时错误态追加「去配置」入口；其余码不显示） */
   @Local errorCode: number = 0
   /** 反馈面板展开态 */
@@ -147,19 +153,27 @@ struct DivReadingPage {
     }
   }
 
-  /** 盘面卦名（读库解码；失败回退术数名） */
+  /** 盘面卦名（读库解码；失败回退术数名）。六爻取本卦名（非「本卦 之 变卦」组合名） */
   private resolveName(row: DivRecordRow): string {
     const chartJson = decodeBundle(decodeBundleFromJson(row.chartJson))
+    if (row.method === 'liuyao') {
+      try {
+        return readLiuYaoChart(chartJson).name
+      } catch (err) {
+        logger.warn('divReadingPage', `卦名解码失败，回退术数名 method=${row.method}, ` +
+          `${err instanceof Error ? err.message : ''}`)
+      }
+    }
     return chartNameOf(row.method, chartJson)
   }
 
-  /** 页头卦印文字（对齐安卓 readingSealText：六爻取卦名首字 / 梅 / 奇 / 壬） */
+  /** 页头卦印文字（对齐安卓 readingSealText：六爻/梅花取卦名末字，兜底「六」/「梅」，compare-15 #24） */
   private resolveSeal(method: string, name: string): string {
     if (method === 'liuyao') {
-      return name.length > 0 ? name.charAt(0) : '卦'
+      return name.length > 0 ? name.charAt(name.length - 1) : '六'
     }
     if (method === 'meihua') {
-      return '梅'
+      return name.length > 0 ? name.charAt(name.length - 1) : '梅'
     }
     if (method === 'qimen') {
       return '奇'
@@ -271,7 +285,7 @@ struct DivReadingPage {
     this.interpretationId = 0
     this.errorCode = 0
     this.errorText = DivText.readingError
-    this.feedbackOpen = false
+    this.feedbackSubmitted = false
     this.rating = 0
     this.outcome = 0
   }
@@ -302,7 +316,7 @@ struct DivReadingPage {
       })
       if (resp.code === 200) {
         showToastSafety(DivText.feedbackDone)
-        this.feedbackOpen = false
+        this.feedbackSubmitted = true
         logger.info('divReadingPage', `反馈提交成功 serverRecordId=${record.serverRecordId} ` +
           `interpretationId=${this.interpretationId} rating=${this.rating} outcome=${this.outcome}`)
       } else {
@@ -328,72 +342,105 @@ struct DivReadingPage {
           color: DivPalette.goldText
         })
 
-        DivSerifText({
-          text: DivText.ratingLabel,
-          textSize: 12,
-          weight: 400,
-          spacing: 0,
-          color: DivPalette.textSecondary
-        })
-        Row({ space: 8 }) {
-          ForEach(DivText.ratingScores, (label: string, index: number) => {
+        if (this.feedbackSubmitted) {
+          DivSerifText({
+            text: DivText.feedbackDone,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textSecondary
+          })
+        } else {
+          DivSerifText({
+            text: DivText.ratingLabel,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textSecondary
+          })
+          // 5 档鎏金圆点评分：视觉 28vp + 48vp 热区 + 14% 金底 + 发丝描边（对齐安卓 audit-23 #6，compare-15 #36）
+          Row({ space: 8 }) {
+            ForEach([1, 2, 3, 4, 5], (score: number) => {
+              Column() {
+                Column() {
+                  DivSerifText({
+                    text: `${score}`,
+                    textSize: 12,
+                    weight: 400,
+                    spacing: 0,
+                    color: DivPalette.goldText,
+                    textAlign: TextAlign.Center
+                  })
+                }
+                .width(28)
+                .height(28)
+                .borderRadius(14)
+                .backgroundColor(DivPalette.gold14)
+                .border({ width: 1, color: DivPalette.hair })
+                // 提交中整体降至 38%（对齐安卓 audit-23 #14）
+                .opacity(this.submittingFeedback ? 0.38 : 1)
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
+              }
+              .width(48)
+              .height(48)
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
+              .onClick(() => {
+                if (!this.submittingFeedback) {
+                  this.rating = score
+                }
+              })
+            }, (score: number) => `rating-${score}`)
+          }
+          .width('100%')
+
+          DivSerifText({
+            text: DivText.outcomeLabel,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textSecondary
+          })
+          Row({ space: 8 }) {
             DivCategoryChip({
-              text: label,
-              selected: this.rating === index + 1,
+              text: DivText.outcomeYing,
+              selected: this.outcome === 1,
               horizontalPadding: 14,
               onAction: () => {
-                this.rating = index + 1
+                this.outcome = 1
               }
             })
-          }, (label: string, index: number) => `rating-${index}-${this.rating === index + 1}`)
-        }
-        .width('100%')
-
-        DivSerifText({
-          text: DivText.outcomeLabel,
-          textSize: 12,
-          weight: 400,
-          spacing: 0,
-          color: DivPalette.textSecondary
-        })
-        Row({ space: 8 }) {
-          DivCategoryChip({
-            text: DivText.outcomeYing,
-            selected: this.outcome === 1,
-            horizontalPadding: 14,
-            onAction: () => {
-              this.outcome = 1
-            }
-          })
-          DivCategoryChip({
-            text: DivText.outcomeWei,
-            selected: this.outcome === 2,
-            horizontalPadding: 14,
-            onAction: () => {
-              this.outcome = 2
-            }
-          })
-          DivCategoryChip({
-            text: DivText.outcomeNan,
-            selected: this.outcome === 3,
-            horizontalPadding: 14,
-            onAction: () => {
-              this.outcome = 3
-            }
-          })
-        }
-        .width('100%')
-
-        DivGoldButton({
-          text: DivText.feedbackSubmit,
-          soft: true,
-          btnHeight: 36,
-          fontSize: 12,
-          isEnabled: this.canSubmitFeedback(),
-          onAction: () => {
-            this.submitFeedback()
+            DivCategoryChip({
+              text: DivText.outcomeWei,
+              selected: this.outcome === 2,
+              horizontalPadding: 14,
+              onAction: () => {
+                this.outcome = 2
+              }
+            })
+            DivCategoryChip({
+              text: DivText.outcomeNan,
+              selected: this.outcome === 3,
+              horizontalPadding: 14,
+              onAction: () => {
+                this.outcome = 3
+              }
+            })
           }
-        })
+          .width('100%')
+
+          DivGoldButton({
+            text: DivText.feedbackSubmit,
+            soft: true,
+            btnHeight: 36,
+            fontSize: 12,
+            isEnabled: this.canSubmitFeedback(),
+            onAction: () => {
+              this.submitFeedback()
+            }
+          })
+        }
       }
       .width('100%')
       .padding(DesignDimens.CARD_PADDING)
@@ -426,7 +473,8 @@ struct DivReadingPage {
         } else if (this.record === null) {
           DivSerifText({
             text: DivText.chartMissing,
-            textSize: 13,
+            // 空态 12sp（对齐安卓 12sp，compare-15 #45）
+            textSize: 12,
             weight: 400,
             spacing: 0,
             color: DivPalette.textTertiary,
@@ -463,7 +511,8 @@ struct DivReadingPage {
                     textSize: 12,
                     weight: 400,
                     spacing: 0,
-                    color: DivPalette.textTertiary,
+                    // 错误说明走 secondary 槽位（对齐安卓 audit-23 #11，compare-15 #37）
+                    color: DivPalette.textSecondary,
                     textAlign: TextAlign.Center
                   })
                   // 428（未配置解读模型）：追加「去配置」入口直达设置页
@@ -482,8 +531,9 @@ struct DivReadingPage {
                   DivGoldButton({
                     text: DivText.readingRetry,
                     soft: true,
-                    btnHeight: 36,
-                    fontSize: 12,
+                    // 重试按钮 52/15（对齐安卓 DivGoldButton 默认，compare-15 #40）
+                    btnHeight: 52,
+                    fontSize: 15,
                     isEnabled: true,
                     onAction: () => {
                       this.startReading()
@@ -525,7 +575,8 @@ struct DivReadingPage {
                       textSize: 12,
                       weight: 400,
                       spacing: 0,
-                      color: DivPalette.textTertiary,
+                      // 错误说明走 secondary 槽位（对齐安卓 audit-23 #11，compare-15 #37）
+                      color: DivPalette.textSecondary,
                       textAlign: TextAlign.Center
                     })
                     if (this.errorCode === 428) {
@@ -543,8 +594,9 @@ struct DivReadingPage {
                     DivGoldButton({
                       text: DivText.readingRetry,
                       soft: true,
-                      btnHeight: 36,
-                      fontSize: 12,
+                      // 重试按钮 52/15（对齐安卓 DivGoldButton 默认，compare-15 #40）
+                      btnHeight: 52,
+                      fontSize: 15,
                       isEnabled: true,
                       onAction: () => {
                         this.startReading()
@@ -558,32 +610,22 @@ struct DivReadingPage {
               }
               .width('100%')
 
-              // 反馈区（真连 done 后显示入口 / 面板）
+              // 反馈区直显（对齐安卓 FeedbackRow 无入口按钮，compare-15 #36）
               if (this.readingState === 'success' && this.interpretationId > 0) {
-                if (this.feedbackOpen) {
+                Column() {
                   this.FeedbackPanel()
-                } else {
-                  DivGoldButton({
-                    text: DivText.feedbackTitle,
-                    soft: true,
-                    btnHeight: 36,
-                    fontSize: 12,
-                    isEnabled: true,
-                    onAction: () => {
-                      this.feedbackOpen = true
-                    }
-                  })
-                    .padding({ top: DesignDimens.SPACE_SM })
                 }
+                .width('100%')
+                .padding({ top: DesignDimens.SPACE_SM })
               }
             }
 
-            // 主行动：单按钮「继续追问」（对齐安卓 soft 44 高 13 号通栏；画板「分享」暂无实现，不落占位）
+            // 主行动：单按钮「继续追问」（对齐安卓 soft 52 高 15 号通栏，compare-15 #41；画板「分享」暂无实现，不落占位）
             DivGoldButton({
               text: DivText.readingFollowup,
               soft: true,
-              btnHeight: 44,
-              fontSize: 13,
+              btnHeight: 52,
+              fontSize: 15,
               isEnabled: this.record !== null,
               onAction: () => {
                 const id = this.record?.id ?? 0

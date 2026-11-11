@@ -35,6 +35,8 @@ export struct SubscriptionPageHeader {
   @Param showBack: boolean = true
   @Param action1Text: string = ''
   @Param action2Text: string = ''
+  /** 动作 2 语义色（默认主色；危险动作传 DANGER_INK，对齐安卓页头「删除」dangerInk） */
+  @Param action2Color: number = DesignColor.PRIMARY_DARK
   @Event onAction1: () => void = () => {
   }
   @Event onAction2: () => void = () => {
@@ -66,19 +68,22 @@ export struct SubscriptionPageHeader {
 
       if (this.action1Text.length > 0) {
         Text(this.action1Text)
-          .fontSize(DesignFontSize.PAGE_HEADER)
+          // 文字按钮 13sp/600 规格经 v0.4 字阶迁移落 labelMedium 12（对齐安卓 audit-15 #14）
+          .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DesignColor.PRIMARY_DARK)
           .padding({ left: 12, right: 12, top: 12, bottom: 12 })
+          // 相邻触控目标间距 ≥8（DESIGN-SPEC §3）：两个动作热区边界原先彼此贴合
+          .margin({ right: DesignDimens.SPACE_XS })
           .onClick(() => {
             this.onAction1()
           })
       }
       if (this.action2Text.length > 0) {
         Text(this.action2Text)
-          .fontSize(DesignFontSize.PAGE_HEADER)
+          .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(this.action2Color)
           .padding({ left: 12, right: 12, top: 12, bottom: 12 })
           .onClick(() => {
             this.onAction2()
@@ -108,7 +113,12 @@ export struct SubscriptionTagChip {
       .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(this.contentColor)
       .fontFeature(DesignFontFeature.TNUM)
-      .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+      .padding({
+        left: DesignDimens.SPACE_XS,
+        right: DesignDimens.SPACE_XS,
+        top: DesignDimens.SPACE_XXS,
+        bottom: DesignDimens.SPACE_XXS
+      })
       .backgroundColor(this.containerColor)
       .borderRadius(DesignDimens.RADIUS_FULL)
   }
@@ -126,21 +136,35 @@ export struct SubscriptionSelectableChip {
   }
 
   build() {
-    Text(this.text)
-      .fontSize(DesignFontSize.CAPTION)
-      .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 14, bottom: 14 })
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .border({
-        width: 1,
-        color: this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE
-      })
-      .animation(MotionTiming.ENTER)
-      .onClick(() => {
-        this.onSelect()
-      })
+    // 双层结构对齐安卓：外层 48 最小热区（DESIGN-SPEC §3 触控目标 ≥48），onClick 上移容器；
+    // 内层胶囊纵向 padding 8（视觉高 ≈32，对齐安卓 16/8 胶囊）
+    Column() {
+      Text(this.text)
+        .fontSize(DesignFontSize.CAPTION)
+        // 字重统一 SemiBold：字重随选中切换会让文字宽度跳变，兄弟 chip 连续位移观感更差
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+        .padding({
+          left: DesignDimens.SPACE_MD,
+          right: DesignDimens.SPACE_MD,
+          top: DesignDimens.SPACE_XS,
+          bottom: DesignDimens.SPACE_XS
+        })
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
+        // 描边常驻 1dp、选中切换在 outline ↔ 透明间过渡（对齐安卓，选中不再多一层同色描边）
+        .border({
+          width: 1,
+          color: this.selected ? Color.Transparent : DesignColor.OUTLINE
+        })
+        .animation(MotionTiming.ENTER)
+    }
+    .constraintSize({ minHeight: 48 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .onClick(() => {
+      this.onSelect()
+    })
   }
 }
 
@@ -155,21 +179,30 @@ export struct SubscriptionToggle {
   }
 
   build() {
-    Row() {
-      Column()
-        .width(20)
-        .height(20)
-        .borderRadius(10)
-        .backgroundColor(DesignColor.SURFACE)
-        .margin({ left: this.checked ? 22 : 2 })
+    // 双层结构对齐安卓（audit-14 #7）：外层 48 最小热区（DESIGN-SPEC §3 触控目标 ≥48×48），
+    // onClick 上移外层，24 轨道居中视觉尺寸不变（同 SelectableChip 已修写法）
+    Column() {
+      Row() {
+        Column()
+          .width(20)
+          .height(20)
+          .borderRadius(10)
+          .backgroundColor(DesignColor.SURFACE)
+          .margin({ left: this.checked ? 22 : 2 })
+      }
+      .width(44)
+      .height(24)
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      // 未选中轨道从装饰档 textTertiary 收敛 textSecondary（#A9AEA9 on 白 2.25:1 低于
+      // 图形控件 3:1 非文本对比下限，DESIGN-SPEC §10；thumb 白色在次文本色轨道上辨识足够）
+      .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+      .justifyContent(FlexAlign.Start)
+      .alignItems(VerticalAlign.Center)
+      .animation(MotionTiming.ENTER)
     }
-    .width(44)
-    .height(24)
-    .borderRadius(DesignDimens.RADIUS_FULL)
-    .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY)
-    .justifyContent(FlexAlign.Start)
-    .alignItems(VerticalAlign.Center)
-    .animation(MotionTiming.ENTER)
+    .constraintSize({ minHeight: 48 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
     .onClick(() => {
       this.onChange(!this.checked)
     })
@@ -178,8 +211,12 @@ export struct SubscriptionToggle {
 
 /**
  * 续费周期进度环（44vp · 4vp 描边）：进度 = 已消耗天数 / 当期总天数。
- * 环心为距续费天数（tnum）；颜色由调用方按状态/逾期语义给定。
- * Canvas 只绘制一次（静态表达），数据变化经 @Param 触发重绘。
+ * 环心为距续费天数（tnum，文案接线 subscription_renew_days_compact）。
+ * 环线与环心文字拆色（对齐安卓 2026-11-11 修复）：环线走图形口径（ringColor），
+ * 环心 12fp 数字走文字级达标令牌（centerTextColor，§10 ≥4.5:1）。
+ * 数据变化经 @Monitor 触发重绘（修复 ForEach 同 key 复用时弧线停留旧值）；
+ * fraction 以 220ms easeOut 逐帧插值过渡（ArkUI Canvas 无逐帧弹簧直驱，端限制近似，
+ * 时长对齐 MotionTiming 弹簧收敛档），颜色变化立即重绘。
  */
 @ComponentV2
 export struct RenewProgressRing {
@@ -187,10 +224,54 @@ export struct RenewProgressRing {
   @Param daysLeft: number = 0
   @Param ringColor: number = DesignColor.PRIMARY
   @Param trackColor: number = DesignColor.OUTLINE
+  @Param centerTextColor: number = DesignColor.TEXT_GREEN
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
+  /** 弧线插值显示值（@Param fraction 不可变，逐帧过渡经此字段重绘） */
+  private displayedFraction: number = 0
+  /** 过渡帧定时器（新动画前/组件销毁时必须清理） */
+  private animTimer: number = -1
 
   aboutToAppear(): void {
+    this.displayedFraction = this.fraction
     this.drawRing()
+  }
+
+  aboutToDisappear(): void {
+    this.clearAnimTimer()
+  }
+
+  /** @Param 数据变化：重绘弧线（fraction 走插值过渡，颜色跳变重绘） */
+  @Monitor('fraction', 'ringColor', 'trackColor')
+  onRingDataChange(): void {
+    this.startFractionTransition()
+  }
+
+  private clearAnimTimer(): void {
+    if (this.animTimer !== -1) {
+      clearInterval(this.animTimer)
+      this.animTimer = -1
+    }
+  }
+
+  /** fraction 220ms easeOut 插值逐帧重绘；颜色等非进度变化（delta 为 0）直接重绘 */
+  private startFractionTransition(): void {
+    this.clearAnimTimer()
+    const from: number = this.displayedFraction
+    const delta: number = this.fraction - from
+    if (delta === 0) {
+      this.drawRing()
+      return
+    }
+    const start: number = Date.now()
+    const duration: number = 220
+    this.animTimer = setInterval(() => {
+      const t: number = Math.min(1, (Date.now() - start) / duration)
+      this.displayedFraction = from + delta * (1 - Math.pow(1 - t, 3))
+      this.drawRing()
+      if (t >= 1) {
+        this.clearAnimTimer()
+      }
+    }, 16)
   }
 
   private drawRing(): void {
@@ -199,7 +280,7 @@ export struct RenewProgressRing {
     const radius: number = (size - stroke) / 2
     const cx: number = size / 2
     const cy: number = size / 2
-    const clamped: number = Math.min(1, Math.max(0, this.fraction))
+    const clamped: number = Math.min(1, Math.max(0, this.displayedFraction))
 
     this.ctx.clearRect(0, 0, size, size)
     this.ctx.lineCap = 'round'
@@ -226,10 +307,10 @@ export struct RenewProgressRing {
           this.drawRing()
         })
 
-      Text(`${Math.abs(this.daysLeft)}天`)
+      Text(subscriptionFormat(SubscriptionText.subscription_renew_days_compact, Math.abs(this.daysLeft)))
         .fontSize(DesignFontSize.CAPTION)
-        .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(this.ringColor)
+        .fontWeight(DesignFontWeight.MEDIUM)
+        .fontColor(this.centerTextColor)
         .fontFeature(DesignFontFeature.TNUM)
     }
     .width(44)
@@ -255,6 +336,8 @@ export struct SubscriptionSectionTitle {
 export struct SubscriptionStatusDot {
   @Param color: number = DesignColor.DANGER
   @Param sizeValue: number = 8
+  /** 读屏语义文案（空串 = 无语义）：如「N 条未读提醒」（§10 颜色不是唯一信息载体） */
+  @Param accessibilityLabel: string = ''
 
   build() {
     Column()
@@ -262,6 +345,7 @@ export struct SubscriptionStatusDot {
       .height(this.sizeValue)
       .borderRadius(this.sizeValue / 2)
       .backgroundColor(this.color)
+      .accessibilityText(this.accessibilityLabel)
   }
 }
 
@@ -444,11 +528,12 @@ export function subscriptionRenewRelativeText(vo: SubscriptionVo): string {
   return `${base} · ${subscriptionFormat(SubscriptionText.subscription_renew_in_days_format, daysLeft)}`
 }
 
-/** 续费相对描述配色（已逾期 dangerInk / 今日 ongoingInk / 其余次文本；终态弱化） */
+/** 续费相对描述配色（已逾期 dangerInk / 今日 ongoingInk / 其余次文本；终态弱化止步 textSecondary） */
 export function subscriptionRenewRelativeColor(vo: SubscriptionVo): number {
   const status = subscriptionStatusFromRawOrDefault(vo.status)
+  // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
   if (subscriptionStatusIsTerminal(status)) {
-    return DesignColor.TEXT_TERTIARY
+    return DesignColor.TEXT_SECONDARY
   }
   const daysLeft = vo.daysUntilRenew ?? 1
   if (daysLeft < 0) {
@@ -474,6 +559,26 @@ export function subscriptionRenewRingColor(vo: SubscriptionVo): number {
     return DesignColor.ONGOING
   }
   return DesignColor.PRIMARY
+}
+
+/**
+ * 进度环环心文字色（环线/环心拆色，对齐安卓 2026-11-11 修复）：环线走图形口径（subscriptionRenewRingColor），
+ * 环心 12fp 数字走文字级达标令牌（§10 ≥4.5:1）——按状态同色相映射：
+ * 暂停 textSecondary / 逾期 dangerInk / 临近（≤3 天）onWarningContainer / 常态 textGreen。
+ */
+export function subscriptionRenewCenterTextColor(vo: SubscriptionVo): number {
+  const status = subscriptionStatusFromRawOrDefault(vo.status)
+  if (status === SubscriptionStatus.PAUSED) {
+    return DesignColor.TEXT_SECONDARY
+  }
+  const daysLeft = vo.daysUntilRenew ?? 0
+  if (daysLeft < 0) {
+    return DesignColor.DANGER_INK
+  }
+  if (daysLeft <= 3) {
+    return DesignColor.ON_WARNING_CONTAINER
+  }
+  return DesignColor.TEXT_GREEN
 }
 
 /** 进度环填充度（不可解析返回 null，UI 隐藏环） */
@@ -536,15 +641,17 @@ export function subscriptionStatusChipContainer(status: SubscriptionStatus): num
   }
 }
 
-/** 状态 chip 文字色 */
+/** 状态 chip 文字色（对齐安卓 statusChipContent 2026-11-11 修复值） */
 export function subscriptionStatusChipContent(status: SubscriptionStatus): number {
   switch (status) {
+    // PAUSED：onWarningContainer 与 warningContainer 成对（6.47:1）；ongoingInk 压橙浅底仅 2.52:1（§10 红线）
     case SubscriptionStatus.PAUSED:
-      return DesignColor.ONGOING_INK
+      return DesignColor.ON_WARNING_CONTAINER
     case SubscriptionStatus.CANCELED:
       return DesignColor.DANGER_INK
+    // FINISHED（default）：textSecondary on surfaceVariant 4.51:1；textTertiary 禁作可读标签（DESIGN-SPEC §10）
     default:
-      return DesignColor.TEXT_TERTIARY
+      return DesignColor.TEXT_SECONDARY
   }
 }
 
@@ -587,7 +694,9 @@ export function subscriptionReminderChipContainer(type: SubscriptionReminderType
 export function subscriptionReminderChipContent(type: SubscriptionReminderType): number {
   return type === SubscriptionReminderType.TRIAL_END
     ? DesignColor.DANGER_INK
-    : DesignColor.ONGOING_INK
+    // RENEW 与 statusChipContent(PAUSED) 同源裁定：onWarningContainer 成对令牌
+    // （浅 #92400E 6.47:1）；ongoingInk 压 warningContainer 仅 2.51:1，禁作 12sp 标签色（§10）
+    : DesignColor.ON_WARNING_CONTAINER
 }
 
 /** 试用倒计时角标文案（无试用/已过期返回空串，UI 不渲染） */
@@ -609,7 +718,9 @@ export function subscriptionTrialBadgeColors(vo: SubscriptionVo): SubscriptionBa
   }
   return daysLeft <= 3
     ? { container: DesignColor.ICON_CONTAINER_PINK, content: DesignColor.DANGER_INK }
-    : { container: DesignColor.WARNING_CONTAINER, content: DesignColor.ONGOING_INK }
+    // 非紧急分支换 onWarningContainer（容器/内容成对令牌，6.47:1）：
+    // ongoingInk v0.4 与 ongoing 同值 #D98A26，压橙浅底仅 2.52:1，不达正文红线（§10）
+    : { container: DesignColor.WARNING_CONTAINER, content: DesignColor.ON_WARNING_CONTAINER }
 }
 
 /** 每期金额展示（¥xx.xx/期） */

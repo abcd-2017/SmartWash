@@ -7,8 +7,11 @@
 // 开一扇通往玄墨世界的窗，浅色模式下同款深色，见 WorkbenchPage.kt:185-186），
 // 与清氧亮色体系语义不同，混入会污染两套令牌，故单独成文件。
 //
-// 鸿蒙决策 D1：当前固定亮色模式（EntryAbility setColorMode COLOR_MODE_LIGHT），
-// 故两套令牌均保留，玄墨（Dark）为工作台特色卡与观象台深色页实际消费方。
+// 主题现状（compare-08 #12 更新，原「决策 D1 固定亮色」注释已过时）：应用已随系统深浅色
+// （EntryAbility 问题 17，AppStorage('darkMode') 驱动清氧 DesignColor 回写），但观象台域
+// （DivPalette / DivinationScreen）仍固定消费 *_LIGHT 宣纸令牌，*_DARK 玄墨档在观象台域
+// 零消费——系统深色下域级主题断层。玄墨接入为域级重构待办，见 DivPalette TODO 与
+// docs/review/2026-11-11/compare-08-div-history.md #12。
 
 import { DesignColor } from './DesignSystem'
 
@@ -17,8 +20,8 @@ import { DesignColor } from './DesignSystem'
  *
  * 单一事实来源：玄墨/宣纸中「与清氧基础调色板同值」的条目一律引用 DesignColor，
  * 不再重复字面量（对齐安卓 Color.kt:223-266 —— DivTextSecondaryDark / DivTextTertiaryDark
- * 取基础 textTertiary，DivTextPrimaryLight / DivTextTertiaryLight 取基础 textPrimary，
- * DivTextSecondaryLight 取基础 textSecondary）。
+ * 取基础 textTertiary，DivTextPrimaryLight / DivTextTertiaryLight 取基础 textPrimary；
+ * DivTextSecondaryLight 原取基础 textSecondary，2026-11-06 安卓 R21 独立改值 0xFF5A5E5A，鸿蒙同步）。
  */
 export class DivColor {
   // ========== 深色 · 玄墨（主推）==========
@@ -45,7 +48,7 @@ export class DivColor {
   static readonly SURFACE_LIGHT: number = 0xFFF8F3E7
   static readonly SURFACE_2_LIGHT: number = 0xFFF1ECDD
   static readonly TEXT_PRIMARY_LIGHT: number = DesignColor.TEXT_PRIMARY   // = 安卓 DivTextPrimaryLight 0xFF1C1C1E（墨）
-  static readonly TEXT_SECONDARY_LIGHT: number = DesignColor.TEXT_SECONDARY  // = 安卓 DivTextSecondaryLight 0xFF6B6E73
+  static readonly TEXT_SECONDARY_LIGHT: number = 0xFF5A5E5A  // = 安卓 DivTextSecondaryLight 0xFF5A5E5A（2026-11-06 R21：旧值 #6B6E73 on 宣纸 ≈4.0-4.39:1 不足 AA，compare-08 #3）
   static readonly TEXT_TERTIARY_LIGHT: number = DesignColor.TEXT_PRIMARY  // = 安卓 DivTextTertiaryLight 0xFF1C1C1E（元信息保持全墨保证对比 §10）
   static readonly GOLD_LIGHT: number = 0xFF8F7233         // 文字级暗金
   static readonly GOLD_HI_LIGHT: number = 0xFF6E5626

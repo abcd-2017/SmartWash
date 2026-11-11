@@ -208,7 +208,9 @@ struct MoodTrendPage {
                 MoodSmallAction({
                   text: MoodText.mood_trend_empty_action,
                   containerColor: DesignColor.PRIMARY_LIGHT,
-                  contentColor: DesignColor.PRIMARY,
+                  // 行动绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #27：PRIMARY on
+                  // PRIMARY_LIGHT 仅 3.29:1 跌破 AA；#146841 on #F0FBF4 6.41:1 达标）
+                  contentColor: DesignColor.TEXT_GREEN_ON_TINT,
                   onAction: (): void => {
                     pathStack.pushPathByName(RouteNames.MOOD_TODAY, null)
                   }

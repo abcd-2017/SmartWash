@@ -9,6 +9,7 @@
 import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, AppButtonVariant, PageHeader } from '../../../../view/common/AppComponents'
+import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import {
   DRUM_MAX_BPM,
   DRUM_MIN_BPM,
@@ -308,7 +309,8 @@ export struct DrumPage {
       Row() {
         Column() {
           Text(DrumText.bpmLabel)
-            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.TEXT_SECONDARY)
 
           Text(this.bpm.toString())
@@ -320,17 +322,17 @@ export struct DrumPage {
         .alignItems(HorizontalAlign.Start)
 
         Blank()
+          .layoutWeight(1)
 
-        Column() {
-          AppButton({
-            text: this.playing ? DrumText.stop : DrumText.play,
-            variant: this.playing ? AppButtonVariant.SECONDARY : AppButtonVariant.PRIMARY,
-            click: () => {
-              this.togglePlay()
-            }
-          })
-        }
-        .layoutWeight(1)
+        // 行内播放控件（非页面 CTA）：小按钮档 36dp/r12、按内容宽（对齐安卓 small=true）
+        AppButton({
+          text: this.playing ? DrumText.stop : DrumText.play,
+          variant: this.playing ? AppButtonVariant.SECONDARY : AppButtonVariant.PRIMARY,
+          small: true,
+          click: () => {
+            this.togglePlay()
+          }
+        })
         .margin({ left: DesignDimens.SPACE_MD })
       }
       .width('100%')
@@ -352,7 +354,8 @@ export struct DrumPage {
         })
 
       Text(DrumText.patternLabel)
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontWeight(DesignFontWeight.MEDIUM)
         .fontColor(DesignColor.TEXT_SECONDARY)
         .margin({ top: DesignDimens.SPACE_MD })
 
@@ -406,19 +409,24 @@ export struct DrumPage {
       Scroll() {
         Row() {
           ForEach(DRUM_PRESETS, (preset: DrumPreset, index: number) => {
-            Text(this.presetLabel(index))
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
-                top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
-              .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
-              .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
-              .margin({ right: DesignDimens.SPACE_XS })
-              .onClick(() => {
-                this.applyPreset(preset)
-              })
+            // 外层补 padding 外扩热区到 48，视觉胶囊不变（对齐安卓 pressable 前置）
+            Column() {
+              Text(this.presetLabel(index))
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(DesignColor.TEXT_PRIMARY)
+                .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
+                  top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+                .borderRadius(DesignDimens.RADIUS_FULL)
+                .backgroundColor(DesignColor.SURFACE_VARIANT)
+                .borderWidth(1)
+                .borderColor(DesignColor.OUTLINE)
+            }
+            .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+            .margin({ right: DesignDimens.SPACE_XS })
+            .onClick(() => {
+              this.applyPreset(preset)
+            })
           }, (preset: DrumPreset, index: number) => index.toString())
         }
         .padding({ right: DesignDimens.PAGE_PADDING })
@@ -436,24 +444,27 @@ export struct DrumPage {
   @Builder
   StepGridCard() {
     Row() {
-      // 声部标签列
-      Column() {
+      // 声部标签列（行距与步进区对齐：48 高 + 8 间距，文字垂直居中）
+      Column({ space: DesignDimens.SPACE_XS }) {
         ForEach(this.voiceIndices(), (voice: number) => {
-          Text(this.voiceLabel(voice))
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_SECONDARY)
-            .width(CELL_LABEL_WIDTH)
-            .height(ROW_HEIGHT)
-            .textAlign(TextAlign.End)
-            .maxLines(1)
+          Column() {
+            Text(this.voiceLabel(voice))
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_SECONDARY)
+              .width(CELL_LABEL_WIDTH)
+              .maxLines(1)
+              .textAlign(TextAlign.End)
+          }
+          .height(48)
+          .justifyContent(FlexAlign.Center)
         }, (voice: number) => voice.toString())
       }
 
-      // 步进区（横滚）
+      // 步进区（横滚）：行/列间距 8（相邻触控目标间距 ≥8dp）
       Scroll() {
-        Column() {
+        Column({ space: DesignDimens.SPACE_XS }) {
           ForEach(this.voiceIndices(), (voice: number) => {
-            Row() {
+            Row({ space: DesignDimens.SPACE_XS }) {
               ForEach(this.stepIndices(), (step: number) => {
                 this.StepCell(voice, step)
               }, (step: number) => step.toString())
@@ -508,31 +519,66 @@ export struct DrumPage {
     if (active) {
       return DesignColor.PRIMARY
     }
-    if (isCurrent) {
-      return DesignColor.PRIMARY_SOFT
-    }
+    // 空格播放头不再染 primarySoft（对空格底仅 1.02/1.07:1 不可辨），
+    // 底色保持空格原色，由 primary 描边环承担指示
     if (step % 4 === 0) {
       return DesignColor.OUTLINE
     }
     return DesignColor.SURFACE_VARIANT
   }
 
-  /** 单个步进格 */
+  private stepCellActive(voice: number, step: number): boolean {
+    const pattern: DrumPattern | undefined = this.patterns[this.activePattern]
+    return pattern !== undefined && pattern.isEnabled(voice, step)
+  }
+
+  /** 空格播放头描边环（2vp primary，静态保留，reduced motion 下仍可辨） */
+  private stepCellBorderWidth(voice: number, step: number): number {
+    return step === this.currentStep && !this.stepCellActive(voice, step) ? 2 : 0
+  }
+
+  /** 播放头落点格放大倍数（reduced motion 关闭，保留颜色态与描边环） */
+  private stepCellScale(voice: number, step: number): number {
+    return step === this.currentStep && !this.reduceMotion ? 1.06 : 1
+  }
+
+  private stepCellDescription(voice: number, step: number): string {
+    return `${this.voiceLabel(voice)} 第 ${step + 1} 步`
+  }
+
+  /** 单个步进格：外层补 padding 把命中区外扩到 48×48，视觉格 24×40 不变 */
   @Builder
   StepCell(voice: number, step: number) {
-    Column()
-      .width(CELL_WIDTH)
-      .height(ROW_HEIGHT)
-      .margin(1)
-      .borderRadius(DesignDimens.RADIUS_SMALL)
-      .backgroundColor(this.stepCellColor(voice, step))
-      .onClick(() => {
-        this.toggleStep(voice, step)
-      })
+    Column() {
+      // scale 单独包一层：避免 animation 把步进格背景色变化也动画掉
+      Column() {
+        Column()
+          .width(CELL_WIDTH)
+          .height(ROW_HEIGHT)
+          .borderRadius(DesignDimens.RADIUS_SMALL)
+          .backgroundColor(this.stepCellColor(voice, step))
+          .borderWidth(this.stepCellBorderWidth(voice, step))
+          .borderColor(DesignColor.PRIMARY)
+      }
+      .scale({ x: this.stepCellScale(voice, step), y: this.stepCellScale(voice, step) })
+      .animation({ duration: 200, curve: Curve.EaseOut })
+    }
+    .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM,
+      top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
+    .accessibilityText(this.stepCellDescription(voice, step))
+    .accessibilitySelected(this.stepCellActive(voice, step))
+    .onClick(() => {
+      this.toggleStep(voice, step)
+    })
   }
 
   build() {
     NavDestination() {
+      // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
+      // 色模式翻转时 if 双分支重建子树，滑杆画布 onAreaChange/onReady 重绘与 DesignColor
+      // 静态令牌直读点重读新值（静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets；
+      // 音频引擎（aboutToAppear 初始化 + setStepListener）保持在宿主之外，页面组件本体不在子树内）
+      ThemeRefreshV2() {
       Column() {
         PageHeader({ title: DrumText.title })
 
@@ -555,6 +601,7 @@ export struct DrumPage {
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .backgroundColor(DesignColor.BACKGROUND)
+      }
     }
     .hideTitleBar(true)
   }

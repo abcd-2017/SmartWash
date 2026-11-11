@@ -169,7 +169,7 @@ export enum AppButtonVariant {
  * 统一按钮（DESIGN.md §3.3）— 自绘实现，业务层一律经本组件消费，禁止裸写可点击按钮：
  * 主 = 48vp 高 / 胶囊（radiusFull）/ 135° primary→primaryDark 渐变底 / onPrimary 文字 15sp·600·tnum；
  * 次 = 同尺寸 surfaceVariant 底 + 主文本色（「退出登录」等经 contentColor 换语义色，容器不变）；
- * 文字 = 主色 13sp·600 无底无框，最小触控 44。
+ * 文字 = textGreen 13sp·600 无底无框，最小触控 48。
  *
  * 2026-11-03 对齐 DESIGN.md：旧 52dp + 14dp 圆角作废，改 48dp 高胶囊；
  * 按钮文字由 18sp 改 15sp/600，并开 tnum（内嵌金额文案数字不跳）。
@@ -177,6 +177,8 @@ export enum AppButtonVariant {
  * solid=true：主按钮改用纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）。
  * disabled/loading：整钮降透明度 0.5 + 禁点（对齐安卓禁用降透明，替代旧灰底 TEXT_TERTIARY）；
  * spinner 色随文字色，浅底次按钮上不再出现不可见的白圈。
+ * 2026-11-11 对齐安卓审查：TEXT 变体文字 primary→textGreen（primary 绿字在页面底
+ * 仅 3.22:1 触红线），最小触控 44→48（对齐安卓 heightIn(min=48)）。
  */
 @ComponentV2
 export struct AppButton {
@@ -198,7 +200,7 @@ export struct AppButton {
     return this.isEnabled && !this.loading
   }
 
-  /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=primary */
+  /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=textGreen */
   private contentTint(): number {
     if (this.variant === AppButtonVariant.PRIMARY) {
       return DesignColor.ON_PRIMARY
@@ -206,7 +208,8 @@ export struct AppButton {
     if (this.variant === AppButtonVariant.SECONDARY) {
       return this.contentColor ?? DesignColor.TEXT_PRIMARY
     }
-    return DesignColor.PRIMARY
+    // TEXT 变体：primary 绿字在页面底仅 3.22:1 触红线，改文字级 TEXT_GREEN（深色档随主题回写）
+    return DesignColor.TEXT_GREEN
   }
 
   private triggerClick(): void {
@@ -238,7 +241,8 @@ export struct AppButton {
         }
       }
       .justifyContent(FlexAlign.Center)
-      .constraintSize({ minWidth: 44, minHeight: 44 })
+      // 最小触控 48（对齐安卓 heightIn(min = 48)）；widthIn(min=44) 保留
+      .constraintSize({ minWidth: 44, minHeight: 48 })
       .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
       .opacity(this.isActive() ? 1 : 0.5)
       .onClick(() => {
@@ -639,6 +643,38 @@ export struct SkeletonList {
 export struct LoadingState {
   build() {
     SkeletonList({ rows: 4 })
+  }
+}
+
+// ========== LoadingDots 静态三点加载占位（对齐安卓 AppComponents.kt LoadingDots） ==========
+
+/**
+ * 静态三点灰 — 分页尾态「加载中」占位（§8：取消无限旋转，保留「还在加载」的可读性）。
+ * 非动效组件：本身不含任何动画；5vp 圆点 ×3 / outline 色 / 点距 6。
+ * 分页 footer 共用（对齐安卓「分页 footer 共用，禁止页面内再复制等价实现」口径）。
+ */
+@ComponentV2
+export struct LoadingDots {
+  build() {
+    Row({ space: 6 }) {
+      Column()
+        .width(5)
+        .height(5)
+        .borderRadius(2.5)
+        .backgroundColor(DesignColor.OUTLINE)
+      Column()
+        .width(5)
+        .height(5)
+        .borderRadius(2.5)
+        .backgroundColor(DesignColor.OUTLINE)
+      Column()
+        .width(5)
+        .height(5)
+        .borderRadius(2.5)
+        .backgroundColor(DesignColor.OUTLINE)
+    }
+    .justifyContent(FlexAlign.Center)
+    .alignItems(VerticalAlign.Center)
   }
 }
 

@@ -21,7 +21,7 @@ import {
   reviewIsNewCard,
   reviewLoadMaterialTitles
 } from './ReviewUiCommon'
-import { AppButton, AppCard, EmptyState, SkeletonList } from '../../../view/common/AppComponents'
+import { AppButton, AppCard, EmptyState, SkeletonBlock } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { REVIEW_TICK_KEY } from '../../../utils/RefreshSignal'
@@ -44,11 +44,27 @@ struct ReviewQueuePage {
   @State isLoadingFirst: boolean = true
   @State isFirstError: boolean = false
   @State isRefreshing: boolean = false
+  // 分钟粒度时钟基准：全部队列卡共用同一 now，「N 分钟后到期」随页面停留推进
+  // （对齐安卓 produceState 分钟级 ticker，跨端矩阵 #4）
+  @State now: number = Date.now()
+  /** 到期时钟定时器 id（aboutToDisappear 必须清理，鸿蒙红线） */
+  private dueTickerId: number = -1
   // 跨页刷新信号（自增 tick）：资料页建资料/建卡、复习页评分成功后 bump
   @StorageLink(REVIEW_TICK_KEY) @Watch('onReviewTick') reviewTick: number = 0
 
   async aboutToAppear(): Promise<void> {
+    // 每 30s 推进一次时钟基准，驱动全部 QueueCard 的到期文案重算
+    this.dueTickerId = setInterval(() => {
+      this.now = Date.now()
+    }, 30_000)
     await this.load()
+  }
+
+  aboutToDisappear(): void {
+    if (this.dueTickerId !== -1) {
+      clearInterval(this.dueTickerId)
+      this.dueTickerId = -1
+    }
   }
 
   /** 消费复习变更 tick：重拉队列（自增保证每次变更都触发） */
@@ -134,7 +150,7 @@ struct ReviewQueuePage {
         ReviewPageHeader({ title: ReviewText.review_queue_title })
 
         if (this.isLoadingFirst) {
-          SkeletonList({ rows: 5 })
+          QueueSkeleton()
             .width('100%')
             .layoutWeight(1)
         } else if (this.isFirstError && this.queue === null) {
@@ -152,8 +168,8 @@ struct ReviewQueuePage {
             Column() {
               EmptyState({ message: ReviewText.review_queue_empty_message }) {
                 Column() {
+                  // 48vp 主按钮档（默认档）：本屏唯一主行动，触控 ≥48 对齐安卓空态 AppButton（跨端矩阵 #10）
                   AppButton({
-                    small: true,
                     text: ReviewText.review_queue_empty_action,
                     click: (): void => {
                       this.goMaterials()
@@ -205,6 +221,7 @@ struct ReviewQueuePage {
                     QueueCard({
                       card: card,
                       materialTitle: this.materialTitleOf(card),
+                      now: this.now,
                       onCardClick: (): void => {
                         this.startStudyFrom(card.id ?? -1)
                       }
@@ -245,6 +262,8 @@ struct ReviewQueuePage {
 struct QueueCard {
   @Require @Param card: ReviewCardVo
   @Param materialTitle: string = ''
+  /** 页面级分钟时钟基准（父页 ticker 每 30s 推进，全部卡片同一 now） */
+  @Param now: number = 0
   @Event onCardClick: () => void = () => {
   }
 
@@ -256,6 +275,7 @@ struct QueueCard {
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.TEXT_PRIMARY)
+            .lineHeight(DesignFontSize.BODY_SMALL + 6)
             .maxLines(2)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -276,9 +296,14 @@ struct QueueCard {
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
 
-        Text(reviewDueTextOf(this.card.dueAt))
+        // 到期时间是 FSRS 队列核心决策信息，用次文本档：TEXT_TERTIARY on 白卡
+        // 浅色仅 2.25:1 破线（跨端矩阵 #1），TEXT_SECONDARY 浅色 4.9:1 达标；
+        // 12/500 + 行高 16 对齐安卓 labelSmall（跨端矩阵 #15）
+        Text(reviewDueTextOf(this.card.dueAt, this.now))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
+          .lineHeight(DesignFontSize.CAPTION + 4)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ left: DesignDimens.SPACE_SM })
       }
@@ -294,6 +319,72 @@ struct QueueCard {
     .alignItems(HorizontalAlign.Start)
     .onClick(() => {
       this.onCardClick()
+    })
+  }
+}
+
+/**
+ * 队列页首刷骨架 — 形状对齐真实 QueueCard：卡内边距 20（AppCard 默认档，不重复加 padding）+
+ * 全宽问题文本块两行 + chips 胶囊行（26%/20%）+ 右侧到期小块 14%
+ * （通用 SkeletonList 是「40dp 左圆块 + 两行文本」的带图标行结构，与无图标全宽 QueueCard
+ * 形状不符 — 对齐安卓 QueueSkeleton，跨端矩阵 #5）。
+ * 微光扫过由 SkeletonBlock 承担（reduce-motion 静态灰降级为全局裁决项，矩阵 #17）。
+ */
+@ComponentV2
+struct QueueSkeleton {
+  @Param rows: number = 5
+
+  /** ForEach 数据源（ArkTS 不支持在 build 内构造数组，收敛到方法） */
+  private rowKeys(): number[] {
+    const keys: number[] = []
+    for (let i = 0; i < this.rows; i++) {
+      keys.push(i)
+    }
+    return keys
+  }
+
+  build() {
+    Column({ space: DesignDimens.CARD_SPACING }) {
+      ForEach(this.rowKeys(), (row: number) => {
+        AppCard() {
+          Row() {
+            Column() {
+              SkeletonBlock()
+                .width('90%')
+                .height(DesignDimens.SPACE_LG)
+              SkeletonBlock()
+                .width('60%')
+                .height(DesignDimens.SPACE_LG)
+                .margin({ top: DesignDimens.SPACE_XS })
+              Row({ space: DesignDimens.SPACE_XXS }) {
+                SkeletonBlock({ blockRadius: DesignDimens.RADIUS_FULL })
+                  .width('26%')
+                  .height(DesignDimens.SPACE_XL)
+                SkeletonBlock({ blockRadius: DesignDimens.RADIUS_FULL })
+                  .width('20%')
+                  .height(DesignDimens.SPACE_XL)
+              }
+              .margin({ top: DesignDimens.SPACE_XS })
+            }
+            .alignItems(HorizontalAlign.Start)
+            .layoutWeight(1)
+
+            SkeletonBlock()
+              .width('14%')
+              .height(DesignDimens.SPACE_MD)
+              .margin({ left: DesignDimens.SPACE_SM })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+        }
+      }, (row: number) => row.toString())
+    }
+    .width('100%')
+    .padding({
+      left: DesignDimens.PAGE_PADDING,
+      right: DesignDimens.PAGE_PADDING,
+      top: DesignDimens.SPACE_XS,
+      bottom: DesignDimens.SPACE_XS
     })
   }
 }

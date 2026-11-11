@@ -253,7 +253,9 @@ struct MoodTodayPage {
 
                       MoodSmallAction({
                         text: MoodText.mood_action_retry,
-                        contentColor: DesignColor.PRIMARY,
+                        // 小号绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #3：PRIMARY on
+                        // SURFACE_VARIANT 浅底仅 3.08:1 跌破 AA；深色随主题切 #5BC894）
+                        contentColor: DesignColor.TEXT_GREEN_ON_TINT,
                         onAction: (): void => {
                           this.load()
                         }
@@ -292,14 +294,18 @@ struct MoodTodayPage {
                     }
                   })
 
+                  // 本页核心状态反馈行（对齐安卓审查 #2①：textTertiary 仅限禁用/装饰）——
+                  // caption 12/500 + textSecondary（on 白卡 4.9:1）
                   Text(this.hasRecord ? MoodText.mood_today_recorded : MoodText.mood_today_hint)
-                    .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.TEXT_TERTIARY)
+                    .fontSize(DesignFontSize.CAPTION)
+                    .fontWeight(DesignFontWeight.MEDIUM)
+                    .fontColor(DesignColor.TEXT_SECONDARY)
                     .margin({ top: DesignDimens.SPACE_SM })
 
                   if (this.saveError.length > 0) {
+                    // 错误行 = caption 12 档（对齐安卓 bodySmall 12/400，报告 #39 口径映射）
                     Text(this.saveError)
-                      .fontSize(DesignFontSize.BODY_SMALL)
+                      .fontSize(DesignFontSize.CAPTION)
                       .fontColor(DesignColor.ERROR)
                       .margin({ top: DesignDimens.SPACE_XS })
                   }
@@ -311,8 +317,9 @@ struct MoodTodayPage {
               // ---------- 词 chips（可选，选中一个，再点取消） ----------
               AppCard() {
                 Column() {
+                  // 卡内区块标题 = 卡片标题档 18（对齐安卓审查 #19：CardTitle，BODY 16 是正文档）
                   Text(MoodText.mood_word_section_title)
-                    .fontSize(DesignFontSize.BODY)
+                    .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
                     .fontColor(DesignColor.TEXT_PRIMARY)
 
@@ -337,8 +344,9 @@ struct MoodTodayPage {
               // ---------- 一句话（可选） ----------
               AppCard() {
                 Column() {
+                  // 卡内区块标题 = 卡片标题档 18（对齐安卓审查 #19，同词卡区块标题）
                   Text(MoodText.mood_note_section_title)
-                    .fontSize(DesignFontSize.BODY)
+                    .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
                     .fontColor(DesignColor.TEXT_PRIMARY)
 

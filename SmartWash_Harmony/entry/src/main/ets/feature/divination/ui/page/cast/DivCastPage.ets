@@ -87,6 +87,8 @@ struct DivCastPage {
   @Local faces: boolean[] = [true, true, true]
   // 掷币动画进度（0→1，420ms；setInterval 驱动 Canvas 逐帧重绘）
   @Local progress: number = 0
+  // 弃局确认文案（六掷完成未入库态区分，对齐安卓 div_cast_quit_done_body，compare-15 #14/#19）
+  @Local quitMessage: string = DivText.castQuitBody
 
   private tosser: CoinTosser = new CoinTosser()
   private coinCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
@@ -98,7 +100,7 @@ struct DivCastPage {
   private quitDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
       title: DivText.castQuitTitle,
-      message: DivText.castQuitBody,
+      message: this.quitMessage,
       // 文案对齐安卓 AppConfirmDialog 默认「确定/取消」（鸿蒙组件默认「确认」，此处显式覆盖）
       confirmText: '确定',
       cancelText: '取消',
@@ -453,7 +455,8 @@ struct DivCastPage {
               .width(YAO_LINE_WIDTH)
               .height(YAO_LINE_HEIGHT)
               .borderRadius(1)
-              .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+              // 动爻强调：宣纸侧平涂深朱 sealDeep #A63A30（对齐安卓 CoinAndMeridian.kt:251，compare-15 #15）
+              .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
           } else {
             // 阴爻：两条 20×6 + 8 中缝（合计 48，关于中列中心对称）
             Row({ space: YAO_YIN_SEGMENT_GAP }) {
@@ -461,12 +464,12 @@ struct DivCastPage {
                 .width(YAO_YIN_SEGMENT_WIDTH)
                 .height(YAO_LINE_HEIGHT)
                 .borderRadius(1)
-                .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+                .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
               Column()
                 .width(YAO_YIN_SEGMENT_WIDTH)
                 .height(YAO_LINE_HEIGHT)
                 .borderRadius(1)
-                .backgroundColor(data.isMoving ? DivPalette.goldText : DivPalette.textPrimary)
+                .backgroundColor(data.isMoving ? DivPalette.sealDeep : DivPalette.textPrimary)
             }
           }
         } else {
@@ -492,7 +495,7 @@ struct DivCastPage {
             textSize: 12,
             weight: 400,
             spacing: 0,
-            color: data.isMoving ? DivPalette.goldText : DivPalette.textSecondary,
+            color: data.isMoving ? DivPalette.sealDeep : DivPalette.textSecondary,
             maxLines: 1
           })
             .layoutWeight(1)
@@ -525,8 +528,8 @@ struct DivCastPage {
                 color: DivPalette.textSecondary,
                 textAlign: TextAlign.Center
               })
-                // 标题顶距统一 8（8pt 网格档位，替代 magic number 10）
-                .margin({ top: DesignDimens.SPACE_XS })
+                // 标题顶距 10（对齐安卓 statusBarsPadding + padding top 10，compare-15 #21）
+                .margin({ top: 10 })
 
               DivSerifText({
                 text: `第 ${Math.min(this.tossCount(), 6)} 掷 · 共 6 掷`,
@@ -534,7 +537,9 @@ struct DivCastPage {
                 weight: 400,
                 spacing: 3,
                 color: DivPalette.goldText,
-                textAlign: TextAlign.Center
+                textAlign: TextAlign.Center,
+                // 掷数为数量文案，开 tnum 防逐掷跳动（对齐安卓 audit-22 #14，compare-15 #20）
+                fontFeature: 'tnum'
               })
                 .opacity(0.75)
                 // 进度区上下间距收敛到 8 的倍数（8 / 16）
@@ -602,16 +607,17 @@ struct DivCastPage {
 
           // 4. 掷爻 / 成卦（固定贴底）
           DivGoldButton({
-            text: this.isComplete() ? DivText.castDone : DivText.castToss,
+            // 入库中切「装 卦 中…」（对齐安卓 DivCastPage.kt:225-229，compare-15 #18）
+            text: this.saving ? DivText.castSaving : (this.isComplete() ? DivText.castDone : DivText.castToss),
             isEnabled: !this.tossing && !this.saving && this.pendingYao === null,
             onAction: () => {
               this.onMainButtonClick()
             }
           })
-            // 按钮横向留白对齐安卓 DivCastPage 的 padding(horizontal = 76.dp)
+            // 按钮横向留白 24（对齐安卓 padding horizontal 24；原 76 在 320dp 窄屏必换行，compare-15 #16）
             .padding({
-              left: 76,
-              right: 76,
+              left: 24,
+              right: 24,
               top: 14,
               bottom: 14
             })
@@ -622,9 +628,11 @@ struct DivCastPage {
     }
     .hideTitleBar(true)
     .onBackPressed(() => {
-      // 已掷 1..5 爻或动画中 → 弃局确认；否则直接返回（对齐安卓 BackHandler）
+      // 已掷 1..5 爻 / 动画中 / 六掷完成未入库 → 弃局确认；否则直接返回（对齐安卓 BackHandler）。
+      // 补 isComplete && !saving（compare-15 #14）：原条件漏掉完整未保存的卦，按返回静默丢卦。
       const tossCount = this.tossCount()
-      if ((tossCount >= 1 && tossCount <= 5) || this.tossing) {
+      if ((tossCount >= 1 && tossCount <= 5) || this.tossing || (this.isComplete() && !this.saving)) {
+        this.quitMessage = this.isComplete() ? DivText.castQuitDoneBody : DivText.castQuitBody
         this.quitDialogController.open()
         return true
       }

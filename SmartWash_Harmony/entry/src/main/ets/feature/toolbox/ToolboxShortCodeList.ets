@@ -3,6 +3,8 @@
 // 分页：鸿蒙无 Paging 3 等价物，按 02 文档结论用 PagingController 手动 loadMore（每页 10，无人工延时）。
 // 四态：首刷 loading / 首刷失败重试 / 空态 / 列表 + 尾部（加载中/失败重试）。
 // 刷新：创建/续期/删除成功回列表后由变更信号（ToolboxChangeSignal）重拉，等价安卓 savedStateHandle CHANGED_KEY。
+// 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：刷新中不清空旧数据、空态仅在
+// 「非刷新中且列表为空」时展示、下拉指示器保持到本轮加载返回再复位。
 // 条目点击进详情：全量字段随路由携带（详情页不再请求）。
 // 卡片右列含「复制短链」描边按钮（对齐安卓 CopyPillButton）。
 
@@ -45,6 +47,9 @@ struct ToolboxShortCodeList {
   @State isLoadingFirst: boolean = true
   @State isFirstError: boolean = false
   @State isRefreshing: boolean = false
+  // 刷新会话门控（对齐安卓 refreshSession）：下拉刷新/变更信号回列表期间为真，
+  // 空态分支被门控（走骨架），会话在本轮加载返回后结束
+  @State refreshingSession: boolean = false
   @State isLoadingMore: boolean = false
   // 追加加载失败态（对齐安卓 append Error → footer 文字重试）；重试经 paging.retry() 重拉同一页
   @State appendError: boolean = false
@@ -78,6 +83,14 @@ struct ToolboxShortCodeList {
         const records: Array<ShortCodeVo> = res.data.records
         if (records.length === 0) {
           logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
+          if (page === 1) {
+            // 首页空结果 = 真实空（首刷本就为空 / 刷新会话后服务器已无数据）：清空旧数据，
+            // 会话结束后由真实空态分支呈现（对齐安卓 Paging invalidate 空结果语义）
+            this.list = []
+            this.isFirstError = false
+            this.appendError = false
+            return false
+          }
           if (this.list.length > 0) {
             showToastSafety("没有更多数据了")
           }
@@ -97,35 +110,46 @@ struct ToolboxShortCodeList {
         // 首刷失败：说明 + 重试（规范 §3.6 错误态），并 toast 提示（对齐安卓 refresh Error toast）
         logger.warn(TAG, `短链首刷失败 page=1 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isFirstError = true
-        showToastSafety(res.message, ToolboxText.toolbox_error_load)
+        // 错误类提示统一资源文案 + 长时长 3500（对齐安卓 Toast.LENGTH_LONG，规范 §8 错误 3–5s）
+        showToastSafety(ToolboxText.toolbox_error_load, ToolboxText.toolbox_error_load, 3500)
         return false
       }
       // 追加失败：置失败态并 reject（分页器记失败页不封底，footer 重试重拉同一页，页码不推进）
       logger.warn(TAG, `短链追加失败 page=${page} code=${res.code ?? 0} msg=${res.message ?? ''}`)
       this.appendError = true
-      showToastSafety(res.message, ToolboxText.toolbox_error_load)
+      showToastSafety(ToolboxText.toolbox_error_load, ToolboxText.toolbox_error_load, 3500)
       throw new Error(ToolboxText.toolbox_error_load)
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）；
       // 首刷则进错误态，避免 isLoadingFirst 卡死永久骨架
       if (page === 1) {
         this.isFirstError = true
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(ToolboxText.toolbox_error_network, ToolboxText.toolbox_error_network, 3500)
         return false
       }
       this.appendError = true
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(ToolboxText.toolbox_error_network, ToolboxText.toolbox_error_network, 3500)
       throw new Error(ToolboxText.toolbox_error_load)
     }
   }
 
-  /** 整列表重置重拉（下拉刷新 + 变更信号回列表刷新共用） */
+  /**
+   * 整列表重置重拉（下拉刷新 + 变更信号回列表刷新共用）。
+   * 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：开启会话后不清空旧数据、
+   * 空态分支被门控（走骨架），下拉指示器保持到本轮加载返回（有数据/封底/失败）再复位，
+   * 杜绝「清空后、新数据未返回」帧闪「还没有短链」空态。
+   */
   refreshList(): void {
-    this.isRefreshing = false
+    this.refreshingSession = true
     this.appendError = false
     this.paging.reset()
-    this.list = []
-    this.fetchPage(1)
+    this.fetchPage(1).then(() => {
+      this.isRefreshing = false
+      this.refreshingSession = false
+    }).catch(() => {
+      this.isRefreshing = false
+      this.refreshingSession = false
+    })
   }
 
   /** 列表 → 详情：9 个基础字段随路由携带（对齐安卓 navigateToShortCodeDetail） */
@@ -191,11 +215,12 @@ struct ToolboxShortCodeList {
       ? DesignFontWeight.MEDIUM : DesignFontWeight.NORMAL
   }
 
-  /** 静态标签 chip（对齐安卓 ToolboxTagChip：胶囊 + labelSmall 12） */
+  /** 静态标签 chip（对齐安卓 ToolboxTagChip：胶囊 + labelSmall 12/500 captionStrong 档） */
   @Builder
   TagChip(text: string, containerColor: number, contentColor: number) {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
+      .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(contentColor)
       .padding({ left: 8, right: 8, top: 2, bottom: 2 })
       .backgroundColor(containerColor)
@@ -204,7 +229,9 @@ struct ToolboxShortCodeList {
 
   /**
    * 复制描边按钮 — 对齐安卓 CopyPillButton：视觉胶囊（透明底 + 1px outline +
-   * captionStrong 12/500 primaryDark），外扩 4/8 热区至 60×48 满足 48dp 触控红线。
+   * captionStrong 12/500 textGreen），外扩 4/8 热区至 60×48 满足 48dp 触控红线。
+   * 字色走 TEXT_GREEN 文字绿档（浅 #177A4C on 白 5.35:1 达 AA；PRIMARY_DARK 4.23:1 为红线，
+   * 对齐安卓 2026-11-06 评审 R18）。
    */
   @Builder
   CopyPillButton(text: string, vo: ShortCodeVo) {
@@ -212,7 +239,7 @@ struct ToolboxShortCodeList {
       Text(text)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.PRIMARY_DARK)
+        .fontColor(DesignColor.TEXT_GREEN)
         .padding({ left: 14, right: 14, top: 8, bottom: 8 })
         .border({ width: 1, color: DesignColor.OUTLINE })
         .borderRadius(DesignDimens.RADIUS_FULL)
@@ -294,20 +321,24 @@ struct ToolboxShortCodeList {
               this.TagChip(ToolboxText.toolbox_visibility_public_value,
                 DesignColor.PRIMARY_CONTAINER, DesignColor.ON_PRIMARY_CONTAINER)
             } else {
-              // 私有 = warningContainer/warning（对齐安卓）
+              // 私有 = warningContainer 底 + onWarningContainer 字（对齐安卓配对字色）——
+              // 前景误用主档橙 WARNING（浅 #D98A26/橙底 2.52:1 触红线），改 ON_WARNING_CONTAINER
+              // （浅 #92400E 6.47:1 / 深 #ECB36A 7.63:1 均达标）
               this.TagChip(ToolboxText.toolbox_visibility_private_value,
-                DesignColor.WARNING_CONTAINER, DesignColor.WARNING)
+                DesignColor.WARNING_CONTAINER, DesignColor.ON_WARNING_CONTAINER)
             }
           }
-          .margin({ top: DesignDimens.SPACE_XS })
+          .margin({ top: DesignDimens.SPACE_XXS })
 
           // 有效期独占一行（对齐安卓重设计）：长文本「有效期至 yyyy-MM-dd HH:mm」不再与
           // chips 同行竞争宽度——原布局中该文本在右列，窄屏会把「公开/私有」chip 挤压换行；
-          // maxLines(1)+ellipsis 兜底极端窄屏，完整到期时间在详情页可见
+          // maxLines(1)+ellipsis 兜底极端窄屏，完整到期时间在详情页可见。
+          // 时间戳开 tnum（对齐安卓 audit-09 P2-6：与同卡短码/点击数口径一致，多卡纵向扫描日期对齐）
           Text(this.expiryTextOf(vo))
             .fontSize(DesignFontSize.CAPTION)
             .fontColor(this.expiryColorOf(vo))
             .fontWeight(this.expiryWeightOf(vo))
+            .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .margin({ top: DesignDimens.SPACE_XS })
@@ -346,13 +377,15 @@ struct ToolboxShortCodeList {
     .padding({ left: DesignDimens.CARD_PADDING, top: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, bottom: DesignDimens.SPACE_SM })
     .backgroundColor(DesignColor.SURFACE)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
+    // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + 卡片阴影档（§2.4：0 2px 12px）——
+    // blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1（1vp 模糊不可见，与 AppCard 统一口径）；
+    // 阴影色随主题切深色档 rgba(0,0,0,0.28)
     .border({ width: 1, color: DesignColor.OUTLINE })
     .shadow({
-      radius: DesignElevation.LEVEL_1,
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
       color: DesignColor.SHADOW_COLOR_CARD,
       offsetX: 0,
-      offsetY: 2
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
     // 按压反馈（对齐安卓 pressable scale 0.97）
     .scale({
@@ -422,7 +455,14 @@ struct ToolboxShortCodeList {
             .layoutWeight(1)
         } else if (this.isFirstError && this.list.length === 0) {
           this.Placeholder(ToolboxText.toolbox_error_load, ToolboxText.toolbox_action_retry, true)
-        } else if (this.list.length === 0) {
+        } else if (this.list.length === 0 && this.refreshingSession) {
+          // 刷新会话清空帧（对齐安卓 2026-11-06 门控）：会话未结束前空列表走骨架——
+          // 覆盖「变更信号在空列表上发起的刷新」等窗口，杜绝闪「还没有短链」空态
+          SkeletonList({ rows: 5 })
+            .width('100%')
+            .layoutWeight(1)
+        } else if (this.list.length === 0 && !this.refreshingSession) {
+          // 真实空态：仅「非刷新中且列表为空」时可达
           this.Placeholder(ToolboxText.toolbox_empty_message, ToolboxText.toolbox_empty_action, false)
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
@@ -449,10 +489,25 @@ struct ToolboxShortCodeList {
                 } else if (this.appendError) {
                   Text(ToolboxText.toolbox_error_load)
                     .fontSize(DesignFontSize.CAPTION)
+                    .fontWeight(DesignFontWeight.MEDIUM)
                     .fontColor(DesignColor.DANGER_INK)
                     .width('100%')
                     .textAlign(TextAlign.Center)
-                    .padding({ top: 12, bottom: 12 })
+                    // 分页失败唯一显式重试入口：上下 16 × 2 + 行高 16 = 48vp 热区
+                    //（触控红线 ≥48，原 12×2 = 40 不达标；对齐安卓 audit-09 P0-1）
+                    .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
+                    // 按压反馈（对齐安卓 pressable scale 0.97，套用本页卡片同款模式）
+                    .scale({
+                      x: this.pressedKey === 'append-retry' ? 0.97 : 1,
+                      y: this.pressedKey === 'append-retry' ? 0.97 : 1
+                    })
+                    .onTouch((event: TouchEvent) => {
+                      if (event.type === TouchType.Down) {
+                        this.pressedKey = 'append-retry'
+                      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+                        this.pressedKey = ''
+                      }
+                    })
                     .onClick(() => {
                       this.paging.retry()
                     })
@@ -461,9 +516,16 @@ struct ToolboxShortCodeList {
             }
             .width('100%')
             .height('100%')
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 + safeBottomVp() })
+            // 底部避让手势条：取安全区与 spaceXl(24) 较大值（对齐 GameCenterPage 修后写法，
+            // 安卓 contentPadding bottom = spaceMd 16 + navigationBars）
+            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_XL) })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
+              // 刷新会话期间不触发触底追加：旧数据仍在展示而页码已重置，避免并发拉页把
+              // 旧分页的第 2 页错插进新列表（原先靠「刷新即清空列表」间接触发该守卫）
+              if (this.refreshingSession) {
+                return
+              }
               this.paging.onScrollIndex(end, this.list.length)
             })
             .onScrollFrameBegin((offset: number) => {

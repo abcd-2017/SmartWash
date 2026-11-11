@@ -488,12 +488,15 @@ struct ToolboxShortCodeDetail {
     Column() {
       InfoRow({ label: ToolboxText.toolbox_label_code, value: this.param?.code ?? "", valueColor: DesignColor.TEXT_PRIMARY, valueTnum: true })
       InfoRow({ label: ToolboxText.toolbox_label_type, value: ToolboxText.toolbox_type_short_link, valueColor: DesignColor.TEXT_PRIMARY, valueTnum: false })
-      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? DesignColor.SUCCESS : DesignColor.ONGOING_INK, valueTnum: false })
-      InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: DesignColor.PRIMARY, valueTnum: true })
+      // 12fp 小字语义色走深档（对比度红线 §10）：公开=TEXT_GREEN（≈5.1:1）、私有=ON_WARNING_CONTAINER；
+      // success(3.4:1)/ongoingInk(2.76:1) 作小字不达标（audit-18）
+      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? DesignColor.TEXT_GREEN : DesignColor.ON_WARNING_CONTAINER, valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: DesignColor.TEXT_GREEN, valueTnum: true })
       InfoRow({ label: ToolboxText.toolbox_label_created, value: this.displayCreated(), valueColor: DesignColor.TEXT_PRIMARY, valueTnum: true })
 
       if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.PERMANENT) {
-        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_permanent, valueColor: DesignColor.SUCCESS, valueTnum: false })
+        // 「永久」12fp 小字绿用 TEXT_GREEN 深档（success 3.4:1 不达标，§10，audit-18）
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_permanent, valueColor: DesignColor.TEXT_GREEN, valueTnum: false })
       } else if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.ACTIVE) {
         InfoRow({ label: ToolboxText.toolbox_label_expiry, value: toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), valueColor: DesignColor.TEXT_SECONDARY, valueTnum: true })
       } else {
@@ -517,23 +520,29 @@ struct ToolboxShortCodeDetail {
 
       Row() {
         Blank()
-        // 字重对齐安卓 labelMedium 12/500（原 600）
-        Text(ToolboxText.toolbox_action_renew)
-          .fontSize(DesignFontSize.CAPTION)
-          .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.PRIMARY)
-          .padding({ top: 4, bottom: 4 })
-          .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
-          .onTouch((event: TouchEvent) => {
-            if (event.type === TouchType.Down) {
-              this.pressedKey = 'renew'
-            } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-              this.pressedKey = ''
-            }
-          })
-          .onClick(() => {
-            this.openRenewDialog()
-          })
+        // 热区外扩至 48（触控红线 ≥48，对齐安卓 defaultMinSize(minHeight=48)，audit-18）：
+        // 原 vertical 4×2 + 行高仅 24；外层容器承接点击，内层文字视觉字号与位置不变
+        Column() {
+          // 字重对齐安卓 labelMedium 12/500（原 600）；行内文字动作小字绿走 TEXT_GREEN（§10）
+          Text(ToolboxText.toolbox_action_renew)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(DesignColor.TEXT_GREEN)
+        }
+        .constraintSize({ minWidth: 48, minHeight: 48 })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .scale({ x: this.pressedKey === 'renew' ? 0.97 : 1, y: this.pressedKey === 'renew' ? 0.97 : 1 })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = 'renew'
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = ''
+          }
+        })
+        .onClick(() => {
+          this.openRenewDialog()
+        })
       }
       .width('100%')
       .margin({ top: DesignDimens.SPACE_XS })
@@ -629,7 +638,8 @@ struct ToolboxShortCodeDetail {
       if (!this.isPublicCode()) {
         Text(ToolboxText.toolbox_private_open_hint)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.ONGOING_INK)
+          // 私有码提示为用户必读正文：ongoingInk 压白 2.76:1 不达标，改 onWarningContainer（§10，audit-18）
+          .fontColor(DesignColor.ON_WARNING_CONTAINER)
           .textAlign(TextAlign.Center)
           .width('100%')
           .margin({ top: DesignDimens.SPACE_XS })
@@ -690,9 +700,12 @@ struct ToolboxShortCodeDetail {
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ left: DesignDimens.SPACE_XS })
         Blank()
+        // chip 内 IP 哈希是用户可读数据值：textTertiary 压 surfaceVariant ≈1.98:1 不达标（§10 红线），
+        // 改 textSecondary + MEDIUM（对齐安卓 ToolboxTagChip labelSmall 12/500，audit-18）
         Text(stat.ipHash ?? "—")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .padding({ left: 8, right: 8, top: 2, bottom: 2 })
           .backgroundColor(DesignColor.SURFACE_VARIANT)
           .borderRadius(DesignDimens.RADIUS_FULL)
@@ -703,7 +716,9 @@ struct ToolboxShortCodeDetail {
       if ((stat.userAgent ?? "").length > 0) {
         Text(stat.userAgent ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          // UA 是访问记录数据值而非装饰角标：textTertiary ≈2.3:1 不达标（§10），改 textSecondary（audit-18）
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -712,7 +727,8 @@ struct ToolboxShortCodeDetail {
       if ((stat.referer ?? "").length > 0) {
         Text(stat.referer ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -806,22 +822,24 @@ struct ToolboxShortCodeDetail {
                   .width('100%')
                   .textAlign(TextAlign.Center)
                   .padding({ top: 8 })
+                // 重试热区 48（对齐安卓 padding vertical spaceMd，audit-18：原 8×2 = 32 不达标）
                 Text(ToolboxText.toolbox_action_retry)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontColor(DesignColor.PRIMARY)
                   .width('100%')
                   .textAlign(TextAlign.Center)
-                  .padding({ top: 8 })
+                  .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
                   .onClick(() => {
                     this.statsPaging.reset()
                     this.fetchStats(1)
                   })
               } else if (this.statsList.length === 0) {
-                // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）
+                // 字号对齐安卓 bodyMedium 14sp（原 BODY 16fp）；空态属可读状态正文：
+                // textTertiary ≈2.3:1 不达标（§10），与同页骨架/错误分支一致降档 textSecondary（audit-18）
                 Text(ToolboxText.toolbox_stats_empty)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.TEXT_TERTIARY)
+                  .fontColor(DesignColor.TEXT_SECONDARY)
                   .width('100%')
                   .textAlign(TextAlign.Center)
                   .padding({ top: 16, bottom: 16 })
@@ -841,13 +859,14 @@ struct ToolboxShortCodeDetail {
                     .height(14)
                 }
                 if (this.statsAppendError || this.statsError) {
-                  // footer 内联错误可重试（对齐安卓 statsRefresh Error + itemCount > 0）
-                  Text(ToolboxText.toolbox_stats_error_load)
+                  // footer 内联错误可重试（对齐安卓 statsRefresh Error + itemCount > 0）：
+                  // 已有数据补拉失败用含解决指引的独立文案（audit-18）；热区 48（16×2 + 行高）
+                  Text(ToolboxText.toolbox_stats_error_retry)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontColor(DesignColor.DANGER_INK)
                     .width('100%')
                     .textAlign(TextAlign.Center)
-                    .padding({ top: 8, bottom: 8 })
+                    .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
                     .onClick(() => {
                       if (this.statsError) {
                         this.statsPaging.reset()

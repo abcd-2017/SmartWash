@@ -21,7 +21,7 @@ import {
   SoundChannel,
   SoundscapeEngine,
 } from '../../core/SoundscapeEngine'
-import { LabHaptic } from '../../core/LabCommon'
+import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
 /** 页面文案（对齐安卓 strings_soundscape.xml） */
 class SoundscapeText {
@@ -145,6 +145,7 @@ export struct SoundscapePage {
   private barsTimerId: number = -1
   /** 定时到点是否已进入淡出段（只触发一次） */
   private fadeStarted: boolean = false
+  private reduceMotion: boolean = labReduceMotion()
 
   aboutToAppear(): void {
     const list: SoundChannelUi[] = []
@@ -295,7 +296,8 @@ export struct SoundscapePage {
   // ==================== 条形动画 ====================
 
   private startBars(): void {
-    if (this.barsTimerId !== -1) {
+    // reduced motion：条形静止（规范 §8：取消无限动画，保留状态可读性）
+    if (this.reduceMotion || this.barsTimerId !== -1) {
       return
     }
     this.barsTimerId = setInterval(() => {
@@ -500,13 +502,13 @@ export struct SoundscapePage {
         Column() {
           Text(this.playing ? SoundscapeText.playing : SoundscapeText.stopped)
             .fontSize(DesignFontSize.HEADLINE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontWeight(DesignFontWeight.BOLD)
             .fontColor(DesignColor.ON_PRIMARY)
 
           if (this.activePresetIndex >= 0) {
             Text(PRESETS[this.activePresetIndex].label)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.GLASS_TEXT_ACTIVE)
+              .fontColor(DesignColor.ON_PRIMARY)
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -523,31 +525,35 @@ export struct SoundscapePage {
       .width('100%')
       .alignItems(VerticalAlign.Center)
 
-      Row() {
-        Text(this.playing ? SoundscapeText.stop : SoundscapeText.play)
-          .fontSize(DesignFontSize.BUTTON)
-          .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+      // 白胶囊 CTA：外层左右各留 24dp，胶囊居中（对齐安卓标准宽度胶囊）
+      Column() {
+        Row() {
+          Text(this.playing ? SoundscapeText.stop : SoundscapeText.play)
+            .fontSize(DesignFontSize.BUTTON)
+            .fontWeight(DesignFontWeight.SEMI_BOLD)
+            .fontColor(DesignColor.PRIMARY_DARK)
+        }
+        .width('100%')
+        .height(48)
+        .justifyContent(FlexAlign.Center)
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        .backgroundColor(DesignColor.ON_PRIMARY)
+        .onClick(() => {
+          this.togglePlay()
+        })
       }
       .width('100%')
-      .height(48)
-      .justifyContent(FlexAlign.Center)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(DesignColor.ON_PRIMARY)
+      .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
       .margin({ top: DesignDimens.SPACE_MD })
-      .onClick(() => {
-        this.togglePlay()
-      })
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .borderRadius(DesignDimens.CARD_RADIUS)
+    .borderRadius(DesignDimens.RADIUS_XL)
     .linearGradient({
       angle: 135,
       colors: [
-        [DesignColor.AUTH_GRADIENT_TOP, 0],
-        [DesignColor.AUTH_GRADIENT_MID, 0.5],
-        [DesignColor.AUTH_GRADIENT_BOTTOM, 1],
+        [DesignColor.HERO_GRADIENT_START, 0],
+        [DesignColor.PRIMARY_DARK, 1],
       ],
     })
   }
@@ -564,22 +570,26 @@ export struct SoundscapePage {
       Scroll() {
         Row() {
           ForEach(PRESETS, (preset: SoundscapePresetSpec, index: number) => {
-            Text(preset.label)
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(this.activePresetIndex === index ? DesignColor.ON_PRIMARY
-                : DesignColor.TEXT_PRIMARY)
-              .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
-                top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
-              .borderRadius(DesignDimens.RADIUS_FULL)
-              .backgroundColor(this.activePresetIndex === index ? DesignColor.PRIMARY
-                : DesignColor.SURFACE_VARIANT)
-              .borderWidth(1)
-              .borderColor(this.activePresetIndex === index ? DesignColor.PRIMARY
-                : DesignColor.OUTLINE)
-              .margin({ right: DesignDimens.SPACE_XS })
-              .onClick(() => {
-                this.applyPreset(index)
-              })
+            // 外层补 padding 外扩热区到 48，视觉胶囊不变（对齐安卓 pressable 前置）
+            Column() {
+              Text(preset.label)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(this.activePresetIndex === index ? DesignColor.ON_PRIMARY
+                  : DesignColor.TEXT_PRIMARY)
+                .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
+                  top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+                .borderRadius(DesignDimens.RADIUS_FULL)
+                .backgroundColor(this.activePresetIndex === index ? DesignColor.PRIMARY
+                  : DesignColor.SURFACE_VARIANT)
+                .borderWidth(1)
+                .borderColor(this.activePresetIndex === index ? DesignColor.PRIMARY
+                  : DesignColor.OUTLINE)
+            }
+            .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+            .margin({ right: DesignDimens.SPACE_XS })
+            .onClick(() => {
+              this.applyPreset(index)
+            })
           }, (preset: SoundscapePresetSpec, index: number) => `${preset.label}_${index}`)
         }
         .padding({ right: DesignDimens.PAGE_PADDING })
@@ -662,20 +672,25 @@ export struct SoundscapePage {
 
       Row({ space: DesignDimens.SPACE_XS }) {
         ForEach(TIMER_OPTIONS, (minutes: number) => {
+          // 外层补 padding 外扩热区到 52，视觉 36 档不变；禁用态经 enabled 暴露读屏语义
           Column() {
-            Text(this.timerOptionLabel(minutes))
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(this.timerOptionColor(minutes))
+            Column() {
+              Text(this.timerOptionLabel(minutes))
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(this.timerOptionColor(minutes))
+            }
+            .height(36)
+            .justifyContent(FlexAlign.Center)
+            .borderRadius(DesignDimens.RADIUS_MD)
+            .backgroundColor(minutes === this.timerMinutes ? DesignColor.PRIMARY_SOFT
+              : DesignColor.SURFACE_VARIANT)
+            .borderWidth(1)
+            .borderColor(minutes === this.timerMinutes ? DesignColor.PRIMARY
+              : Color.Transparent)
           }
           .layoutWeight(1)
-          .height(36)
-          .justifyContent(FlexAlign.Center)
-          .borderRadius(DesignDimens.RADIUS_MD)
-          .backgroundColor(minutes === this.timerMinutes ? DesignColor.PRIMARY_SOFT
-            : DesignColor.SURFACE_VARIANT)
-          .borderWidth(1)
-          .borderColor(minutes === this.timerMinutes ? DesignColor.PRIMARY
-            : Color.Transparent)
+          .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+          .enabled(this.playing || minutes === 0)
           .onClick(() => {
             if (this.playing || minutes === 0) {
               this.selectTimer(minutes)
@@ -689,13 +704,14 @@ export struct SoundscapePage {
       if (this.timerMinutes > 0) {
         Text(this.timerRemainingLabel())
           .fontSize(DesignFontSize.CAPTION)
+          .fontWeight(DesignFontWeight.MEDIUM)
           .fontColor(DesignColor.TEXT_SECONDARY)
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: DesignDimens.SPACE_SM })
       } else if (!this.playing) {
         Text(SoundscapeText.timerHint)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontColor(DesignColor.TEXT_SECONDARY)
           .margin({ top: DesignDimens.SPACE_XS })
       }
     }
@@ -788,6 +804,7 @@ struct ChannelRow {
 
           Text(this.ui.volume.toString())
             .fontSize(DesignFontSize.CAPTION)
+            .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(DesignColor.TEXT_SECONDARY)
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ left: DesignDimens.SPACE_SM })
@@ -814,31 +831,39 @@ struct SoundToggle {
   }
 
   build() {
-    Stack({ alignContent: Alignment.Start }) {
-      Column() {
-        Circle()
-          .width(20)
-          .height(20)
-          .fill(DesignColor.SURFACE)
-          .stroke(DesignColor.OUTLINE)
-          .strokeWidth(1)
-          .translate({ x: this.checked ? 20 : 0 })
-          .animation({ duration: 180, curve: Curve.EaseInOut })
+    // 外层补 padding 外扩热区到 48×52，视觉胶囊 48×28 不变（对齐安卓 pressable 前置）
+    Column() {
+      Stack({ alignContent: Alignment.Start }) {
+        Column() {
+          Circle()
+            .width(20)
+            .height(20)
+            .fill(DesignColor.SURFACE)
+            .stroke(DesignColor.OUTLINE)
+            .strokeWidth(1)
+            .translate({ x: this.checked ? 20 : 0 })
+            .animation({ duration: 180, curve: Curve.EaseInOut })
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Start)
+        .padding({ left: 4 })
       }
-      .width('100%')
-      .height('100%')
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Start)
-      .padding({ left: 4 })
+      .width(48)
+      .height(28)
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.SURFACE_VARIANT)
+      .borderWidth(1)
+      .borderColor(this.checked ? DesignColor.PRIMARY : DesignColor.OUTLINE)
     }
     .width(48)
-    .height(28)
-    .borderRadius(DesignDimens.RADIUS_FULL)
-    .backgroundColor(this.checked ? DesignColor.PRIMARY : DesignColor.SURFACE_VARIANT)
-    .borderWidth(1)
-    .borderColor(this.checked ? DesignColor.PRIMARY : DesignColor.OUTLINE)
+    .constraintSize({ minHeight: 52 })
+    .justifyContent(FlexAlign.Center)
+    .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
     .accessibilityText(this.checked ? `${this.accessibilityLabel}，${SoundscapeText.onLabel}`
       : `${this.accessibilityLabel}，${SoundscapeText.offLabel}`)
+    .accessibilityChecked(this.checked)
     .onClick(() => {
       this.onChange()
     })
@@ -862,7 +887,7 @@ struct VolumeSlider {
   build() {
     Canvas(this.ctx)
       .width('100%')
-      .height(32)
+      .height(48)
       .onAreaChange((oldValue: Area, newValue: Area) => {
         this.sliderWidth = Number(newValue.width)
         this.draw()
@@ -887,7 +912,7 @@ struct VolumeSlider {
     if (width <= 0) {
       return
     }
-    const height: number = 32
+    const height: number = 48
     const trackHeight: number = 4
     const trackY: number = height / 2
     const fraction: number = Math.min(1, Math.max(0, this.volume / 100))

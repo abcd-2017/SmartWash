@@ -60,9 +60,14 @@ export class NoticeText {
   static readonly notice_load_more_failed: string = '加载失败，点击重试'
 
   // 空态 / 错误态（说明发生了什么 + 怎么解决，规范 §3.6）
-  static readonly notice_inbox_empty: string = '暂无消息'
+  static readonly notice_inbox_empty: string = '暂无消息，有新通知会第一时间送达'
   static readonly notice_load_failed: string = '消息加载失败，请检查网络后重试'
   static readonly notice_action_retry: string = '重试'
+
+  // 读屏状态（对齐安卓 strings.xml notice_state_unread/read：未读色点纯装饰，
+  // 颜色不是唯一信息载体，规范 §10）
+  static readonly notice_state_unread: string = '未读'
+  static readonly notice_state_read: string = '已读'
 }
 
 /** 类型 → 展示文案 */

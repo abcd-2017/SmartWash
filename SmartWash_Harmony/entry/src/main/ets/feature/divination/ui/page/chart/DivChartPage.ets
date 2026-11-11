@@ -35,7 +35,8 @@ import {
   DivPalette,
   DivSerifText,
   DivText,
-  DivWaveIcon
+  DivWaveIcon,
+  DIV_PAGE_PADDING
 } from '../../components/DivComponents'
 import { DivMiniCard, LiurenCourses, LiurenPan, LiuYaoPan, MeiHuaTripleCards, QimenGrid } from '../../components/DivPanels'
 import { DivinationScreen } from '../../DivinationScreen'
@@ -132,7 +133,8 @@ struct DivChartPage {
   private sealText(): string {
     if (this.method === 'liuyao') {
       const name = this.liuYao?.name ?? ''
-      return name.length > 0 ? name.charAt(0) : '卦'
+      // 六爻取本卦名末字（对齐安卓 divSealText takeLast(1)，compare-15 #24）
+      return name.length > 0 ? name.charAt(name.length - 1) : '六'
     }
     if (this.method === 'meihua') {
       const name = this.meiHua?.benName ?? ''
@@ -340,28 +342,6 @@ struct DivChartPage {
 
   // ========== 渲染 ==========
 
-  @Builder
-  MissingState() {
-    Column() {
-      DivPageHeader({
-        title: DivText.chartTitle,
-        onBack: () => {
-          pathStack.pop()
-        }
-      })
-      DivSerifText({
-        text: DivText.chartMissing,
-        textSize: 12,
-        weight: 400,
-        spacing: 0,
-        color: DivPalette.textTertiary,
-        textAlign: TextAlign.Center
-      })
-        .padding({ top: 80 })
-    }
-    .width('100%')
-  }
-
   /** 用神说明副行（含旺衰·爻位；无则空串） */
   private yongShenExtraText(): string {
     const facts = this.liuYaoFacts
@@ -394,10 +374,12 @@ struct DivChartPage {
           if (this.yongShenExtraText().length > 0) {
             DivSerifText({
               text: this.yongShenExtraText(),
-              textSize: 12,
+              // 迷你卡注释正文 14/20（对齐安卓 audit-23 #3，compare-15 #26）
+              textSize: 14,
               weight: 400,
               spacing: 0,
-              color: DivPalette.textSecondary
+              color: DivPalette.textSecondary,
+              lineHeight: 20
             })
               .margin({ top: 4 })
           }
@@ -409,17 +391,19 @@ struct DivChartPage {
         DivMiniCard({ label: DivText.liuyaoFacts }) {
           DivSerifText({
             text: this.factsText(),
-            textSize: 12,
+            // 迷你卡事实正文 14/20（对齐安卓 audit-23 #3，compare-15 #26）
+            textSize: 14,
             weight: 400,
             spacing: 0,
-            color: DivPalette.textPrimary
+            color: DivPalette.textPrimary,
+            lineHeight: 20
           })
         }
       }
       .layoutWeight(1)
     }
     .width('100%')
-    .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+    .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
   }
 
   @Builder
@@ -441,7 +425,9 @@ struct DivChartPage {
               textSize: 12,
               weight: 400,
               spacing: 0,
-              color: DivPalette.textPrimary
+              color: DivPalette.textPrimary,
+              // 体用卡正文行高 20（对齐安卓 DivChartPage.kt:223-225，compare-15 #33）
+              lineHeight: 20
             })
               .margin({ top: 4 })
           }
@@ -455,7 +441,7 @@ struct DivChartPage {
         }
       }
       .width('100%')
-      .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+      .margin({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
     }
   }
 
@@ -474,10 +460,12 @@ struct DivChartPage {
             })
             DivSerifText({
               text: this.qimenYongshenSub(),
-              textSize: 12,
+              // 值符值使正文 14/20（对齐安卓 audit-23 #3，compare-15 #26）
+              textSize: 14,
               weight: 400,
               spacing: 0,
-              color: DivPalette.textSecondary
+              color: DivPalette.textSecondary,
+              lineHeight: 20
             })
               .margin({ top: 4 })
           }
@@ -488,17 +476,19 @@ struct DivChartPage {
           DivMiniCard({ label: DivText.qimenFacts }) {
             DivSerifText({
               text: this.qimenFactsText(),
-              textSize: 12,
+              // 宫位事实正文 14/20（对齐安卓 audit-23 #3，compare-15 #26）
+              textSize: 14,
               weight: 400,
               spacing: 0,
-              color: DivPalette.textPrimary
+              color: DivPalette.textPrimary,
+              lineHeight: 20
             })
           }
         }
         .layoutWeight(1)
       }
       .width('100%')
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+      .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
     }
   }
 
@@ -513,7 +503,7 @@ struct DivChartPage {
         color: DivPalette.textTertiary,
         textAlign: TextAlign.Center
       })
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+        .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
         .margin({ top: DesignDimens.SPACE_XS })
     }
   }
@@ -579,8 +569,21 @@ struct DivChartPage {
     NavDestination() {
       // 卦盘为全屏画布页：整页扩展到系统安全区外（页头不再额外避让，避免双重避让）
       DivinationScreen({ immersive: true }) {
+        // 页头外提到 loading/missing/主分支之外（对齐安卓 DivChartPage.kt:62-99，compare-15 #23）：
+        // 加载/缺失期间保留返回出口；标题与卦印待数据就绪后回落纯文字
+        DivPageHeader({
+          title: this.record !== null && this.hasChart() ? this.titleText() : DivText.chartTitle,
+          seal: this.record !== null && this.hasChart() ? this.sealText() : '',
+          // 画板（卦盘双板一致）：平涂深朱印 radius 8 印文 14/700；长卦名标题字距 2
+          flatSeal: true,
+          titleSpacing: 2,
+          onBack: () => {
+            pathStack.pop()
+          }
+        })
+
         if (this.loading) {
-          // loading 态无页头（对齐安卓）：金色水波指示 + 文字 12
+          // 金色水波指示 + 文字 12（页头已由上方统一提供）
           Column() {
             Row() {
               DivWaveIcon({ sizeValue: 18, tint: DivPalette.gold })
@@ -599,19 +602,16 @@ struct DivChartPage {
           .padding({ top: 120 })
           .alignItems(HorizontalAlign.Center)
         } else if (this.record === null || !this.hasChart()) {
-          this.MissingState()
-        } else {
-          DivPageHeader({
-            title: this.titleText(),
-            seal: this.sealText(),
-            // 画板（卦盘双板一致）：平涂深朱印 radius 8 印文 14/700；长卦名标题字距 2
-            flatSeal: true,
-            titleSpacing: 2,
-            onBack: () => {
-              pathStack.pop()
-            }
+          DivSerifText({
+            text: DivText.chartMissing,
+            textSize: 12,
+            weight: 400,
+            spacing: 0,
+            color: DivPalette.textTertiary,
+            textAlign: TextAlign.Center
           })
-
+            .padding({ top: 80 })
+        } else {
           // 干支/口径声明行（画板：12/16 字距 2 居中，主题金 75%）
           DivSerifText({
             text: this.declarationText(),
@@ -623,8 +623,8 @@ struct DivChartPage {
           })
             .opacity(0.75)
             .padding({
-              left: DesignDimens.PAGE_PADDING,
-              right: DesignDimens.PAGE_PADDING,
+              left: DIV_PAGE_PADDING,
+              right: DIV_PAGE_PADDING,
               top: DesignDimens.SPACE_XXS,
               bottom: DesignDimens.SPACE_XXS
             })
@@ -654,12 +654,12 @@ struct DivChartPage {
             this.LiuYaoCards()
           } else if (this.meiHua !== null) {
             MeiHuaTripleCards({ chart: this.meiHua })
-              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+              .margin({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
             Column().height(DesignDimens.SPACE_SM)
             this.MeiHuaTiyongCard()
           } else if (this.qimen !== null) {
             QimenGrid({ chart: this.qimen })
-              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+              .margin({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
             Column().height(DesignDimens.SPACE_SM)
             this.QimenCards()
           } else if (this.liuren !== null) {
@@ -670,20 +670,20 @@ struct DivChartPage {
             .alignItems(HorizontalAlign.Center)
             Column().height(DesignDimens.SPACE_SM)
             LiurenCourses({ chart: this.liuren })
-              .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+              .margin({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
             this.LiurenFooter()
           }
 
           Column().height(DesignDimens.SPACE_MD)
 
-          // 底部双按钮（36 高小胶囊 + 12 号字 + 间距 12 + 左右 PAGE_PADDING 对称留白）
-          Row({ space: 12 }) {
+          // 底部双按钮（对齐安卓 DivGoldButton 默认 52/r14/15sp，卡距 8，compare-15 #28）
+          Row({ space: 8 }) {
             Column() {
               DivGoldButton({
                 text: this.building ? DivText.chartBuilding : DivText.chartInterpret,
                 isEnabled: !this.building,
-                btnHeight: 36,
-                fontSize: 12,
+                btnHeight: 52,
+                fontSize: 15,
                 onAction: () => {
                   this.startInterpret()
                 }
@@ -694,8 +694,8 @@ struct DivChartPage {
               DivGoldButton({
                 text: DivText.chartSaved,
                 isEnabled: false,
-                btnHeight: 36,
-                fontSize: 12,
+                btnHeight: 52,
+                fontSize: 15,
                 onAction: () => {
                 }
               })
@@ -703,8 +703,8 @@ struct DivChartPage {
             .layoutWeight(1)
           }
           .width('100%')
-          // 底部按钮行左右对称（统一 PAGE_PADDING，替代 16/20 不对称留白）
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          // 底部按钮行左右对称（统一 DIV_PAGE_PADDING 20）
+          .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           DivFooterNote({ text: DivText.disclaimerFooter })
         }

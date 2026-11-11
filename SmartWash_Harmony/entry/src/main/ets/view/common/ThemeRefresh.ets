@@ -36,11 +36,18 @@ export struct ThemeRefresh {
   }
 
   build() {
-    if (this.branch === true) {
-      this.content()
-    } else {
-      this.content()
+    // key 强制分支切换时整棵子树销毁重建：ArkUI 对内容相同的 if 双分支会复用组件树，
+    // 导致第一次切换无响应、第二次才显示上一次的目标值（用户反馈「切换反了」的根因）。
+    Stack() {
+      if (this.branch === true) {
+        this.content()
+      } else {
+        this.content()
+      }
     }
+    .width('100%')
+    .height('100%')
+    .key(this.branch ? 'theme-branch-true' : 'theme-branch-false')
   }
 }
 
@@ -60,10 +67,17 @@ export struct ThemeRefreshV2 {
   }
 
   build() {
-    if (this.branch === true) {
-      this.content()
-    } else {
-      this.content()
+    // key 强制分支切换时整棵子树销毁重建（同 V1 版注释：ArkUI 对相同内容的双分支会复用，
+    // 导致第一次切换无响应、第二次才显示上一次的目标值）
+    Stack() {
+      if (this.branch === true) {
+        this.content()
+      } else {
+        this.content()
+      }
     }
+    .width('100%')
+    .height('100%')
+    .key(this.branch ? 'theme-branch-true' : 'theme-branch-false')
   }
 }

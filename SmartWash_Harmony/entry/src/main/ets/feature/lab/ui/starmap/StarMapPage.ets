@@ -19,7 +19,7 @@ import { pathStack } from '../../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { CelestialKind, ProjectedStar, StarMapEngine } from '../../core/StarMapEngine'
-import { LabHaptic } from '../../core/LabCommon'
+import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
 
 /** 页面文案（对齐安卓 strings_starmap.xml） */
 class StarMapText {
@@ -83,6 +83,7 @@ export struct StarMapPage {
   private canvasHeight: number = 0
   private timerId: number = -1
   private hintTimerId: number = -1
+  private reduceMotion: boolean = labReduceMotion()
 
   /** 无传感器降级矩阵（正北、仰角 45°） */
   private readonly fallbackMatrix: number[] = StarMapEngine.fallbackRotationMatrix()
@@ -225,7 +226,8 @@ export struct StarMapPage {
   }
 
   private scheduleHintHide(): void {
-    if (this.hintTimerId !== -1) {
+    // reduced motion：提示常显，取消淡出（规范 §8）
+    if (this.reduceMotion || this.hintTimerId !== -1) {
       return
     }
     this.hintTimerId = setTimeout(() => {
@@ -269,7 +271,9 @@ export struct StarMapPage {
         color = DesignColor.DARK_WATER
       }
       const phase: number = starHash(star.name) / 255 * Math.PI * 2
-      const twinkleFactor: number = 0.82 + 0.18 * Math.sin(twinkle * Math.PI * 2 + phase)
+      // reduced motion：星点常亮（规范 §8：取消闪烁）
+      const twinkleFactor: number = this.reduceMotion
+        ? 1 : 0.82 + 0.18 * Math.sin(twinkle * Math.PI * 2 + phase)
       const alpha: number = Math.min(1, Math.max(0, star.alpha * twinkleFactor))
 
       ctx.globalAlpha = alpha
@@ -407,6 +411,7 @@ export struct StarMapPage {
           .borderWidth(1)
           .borderColor(DesignColor.DARK_OUTLINE)
           .alignItems(VerticalAlign.Center)
+          .align(Alignment.Bottom)
           .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
             bottom: DesignDimens.SPACE_XL + safeBottomVp() })
         }
@@ -453,18 +458,22 @@ export struct StarMapPage {
 
       Blank()
 
+      // 外层补 padding 外扩热区到 52，36 视觉容器不变（对齐安卓 pressable 前置）
       Column() {
-        SymbolGlyph($r('sys.symbol.moon'))
-          .fontSize(20)
-          .fontColor([this.nightVision ? DesignColor.DARK_ERROR
-            : DesignColor.DARK_ICON_FOREGROUND_PURPLE])
+        Column() {
+          SymbolGlyph($r('sys.symbol.moon'))
+            .fontSize(20)
+            .fontColor([this.nightVision ? DesignColor.DARK_ERROR
+              : DesignColor.DARK_ICON_FOREGROUND_PURPLE])
+        }
+        .width(36)
+        .height(36)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .borderRadius(DesignDimens.RADIUS_MD)
+        .backgroundColor(DesignColor.DARK_ICON_CONTAINER_PURPLE)
       }
-      .width(36)
-      .height(36)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(DesignColor.DARK_ICON_CONTAINER_PURPLE)
+      .padding(DesignDimens.SPACE_XS)
       .accessibilityText(StarMapText.nightVision)
       .onClick(() => {
         this.toggleNightVision()
@@ -482,6 +491,7 @@ export struct StarMapPage {
   HintPill(text: string, nightVision: boolean) {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
+      .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(nightVision ? DesignColor.DARK_ERROR : DesignColor.DARK_TEXT_SECONDARY)
       .backgroundColor(rgbaOf(DesignColor.DARK_SURFACE, 0.85))
       .borderRadius(DesignDimens.RADIUS_FULL)

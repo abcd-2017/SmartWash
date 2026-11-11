@@ -64,7 +64,8 @@ export struct NoticePageHeader {
           this.onReadAll()
         }
       })
-        .margin({ left: DesignDimens.SPACE_XS })
+        // 未读数与「全部已读」间距 12（对齐安卓 Spacer(width = spaceSm)）
+        .margin({ left: DesignDimens.SPACE_SM })
     }
     .width('100%')
     .height(56)
