@@ -16,6 +16,7 @@
 import { streamFollowUp, streamInterpret } from '../network/DivinationApi'
 import { DivSseCallbacks } from '../network/DivSseClient'
 import { logger } from '../../../utils/Logger'
+import { resString } from '../../../utils/ResourceString'
 
 /**
  * ★ Mock 回退开关：true = 不发网络，返回内置模板解读（回归 #80 之前的行为）；
@@ -46,29 +47,29 @@ export interface DivLlmCallbacks {
 }
 
 /** 428 固定文案（用户未配置解读模型；观星台零兜底，无平台默认模型可回落） */
-export const SSE_ERROR_UNCONFIGURED: string = '尚未配置解读模型，请先到设置中配置'
+export function SSE_ERROR_UNCONFIGURED(): string { return resString('div_llm_repository_1') }
 
 /** error 帧业务码 → 用户可见文案（对齐后端 LlmErrorMapping 的下发语义） */
 function sseErrorText(code: number, serverMessage: string): string {
   if (code === 428) {
     // 用户未配置解读模型：观星台零兜底（无平台默认模型），固定文案 + 页面「去配置」入口
-    return SSE_ERROR_UNCONFIGURED
+    return SSE_ERROR_UNCONFIGURED()
   }
   if (code === 403) {
     // 双语义：安全分流拒绝（如医疗/安全类问题引导）或平台总开关关闭（「观星台 AI 解读
     // 暂未开放，请联系管理员」）——两种语义服务端 message 均已明确，原样透传展示
-    return serverMessage.length > 0 ? serverMessage : '该问题不适合以卜筮作答，请寻求现实帮助'
+    return serverMessage.length > 0 ? serverMessage : resString('div_llm_repository_2')
   }
   if (code === 429) {
-    return '今日解读次数已达上限，请明日再来'
+    return resString('div_error_rate_limited')
   }
   if (code === 503) {
-    return '解读服务暂不可用，请稍后再试'
+    return resString('div_llm_repository_3')
   }
   if (code === 404) {
-    return '卦例不存在，请返回重新起卦'
+    return resString('div_llm_repository_4')
   }
-  return serverMessage.length > 0 ? serverMessage : '解读暂不可用，请稍后重试'
+  return serverMessage.length > 0 ? serverMessage : resString('div_reading_error')
 }
 
 /** delta 累积器（SSE 会话内全文累积） */
@@ -121,14 +122,14 @@ function delay(ms: number): Promise<void> {
 // ========== Mock 文本（回归开关用；与 #80 之前同模板，重排为四段 Markdown） ==========
 
 const MOCK_DISCLAIMER: string =
-  '观象台为传统术数排盘与文化解读工具，结果仅供娱乐与文化研究参考，不构成任何决策依据。'
+  resString('div_llm_repository_5')
 
 /** Mock 解读正文（四段固定标题 + 免责行，与真连同构） */
 function buildMockReadingMarkdown(method: string, question: string): string {
-  const methodName = method === 'liuyao' ? '六爻'
-    : method === 'meihua' ? '梅花易数'
-      : method === 'qimen' ? '奇门遁甲' : '大六壬'
-  const q = question.trim().length > 0 ? question.trim() : '所问之事'
+  const methodName = method === 'liuyao' ? resString('div_method_liuyao_name')
+    : method === 'meihua' ? resString('div_llm_repository_6')
+      : method === 'qimen' ? resString('div_llm_repository_7') : resString('div_llm_repository_8')
+  const q = question.trim().length > 0 ? question.trim() : resString('div_llm_repository_9')
   return `## 一句话断语\n` +
     `${methodName}起卦，问「${q}」。盘面已分体用，所问之事**有可为之机**，唯节奏待时。\n\n` +
     `## 盘面要点\n` +
@@ -147,8 +148,8 @@ function buildMockReadingMarkdown(method: string, question: string): string {
 /** Mock 追问回复（沿用 #80 之前模板） */
 function buildMockFollowUpReply(turn: number): string {
   return turn <= 2
-    ? '已沿用你所起的这一卦继续推演。盘面未变，变化的只是你追问的切口——说得更具体些，我可以就那一处细论。'
-    : '这一卦的推演已趋完整。若想换一个角度，可以重新起卦；同一卦象反复追问，信息增量有限。'
+    ? resString('div_llm_repository_10')
+    : resString('div_llm_repository_11')
 }
 
 /** Mock 模式：把整文按自然段切成小段，逐段回调累积全文，模拟流式节奏 */

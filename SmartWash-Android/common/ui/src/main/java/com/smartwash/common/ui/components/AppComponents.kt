@@ -99,6 +99,7 @@ import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.exitTween
 import com.smartwash.common.utils.motionSpec
 import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressTween
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.rememberDebouncedClick
 
@@ -373,14 +374,17 @@ fun AppButton(
     if (variant == AppButtonVariant.TEXT) {
         // 文字色 0ms 硬切 → 弹簧过渡；reduced motion 自动降级 180ms（规范 7.8）
         val textColor by animateColorAsState(
-            targetValue = AppColors.colorScheme.primary.copy(alpha = if (active) 1f else 0.5f),
+            // 文字语义绿走 textGreen 深档（Color.kt 2026-11-06 R17 裁定）：primary #2D9B6A 作
+            // 13sp 文字色 on 页面底仅 3.22:1 触红线；textGreen 浅色 5.1:1 / 深色 ≈8.9:1 达 AA
+            targetValue = AppColors.colorScheme.textGreen.copy(alpha = if (active) 1f else 0.5f),
             animationSpec = motionSpec(defaultSpring()),
             label = "appButtonText"
         )
         Box(
             modifier = modifier
                 .then(if (active) Modifier.pressable(onClick = debouncedOnClick) else Modifier)
-                .heightIn(min = 44.dp)
+                // 触控热区 ≥48dp（DESIGN-SPEC §3）：原 44dp 仅达 ui-design-spec §2.3 下限
+                .heightIn(min = 48.dp)
                 // 最小宽度占位：loading 的 14dp spinner 不会把按钮压窄，消除宽度收缩抖动
                 .widthIn(min = 44.dp)
                 .padding(horizontal = AppDimens.spaceSm),
@@ -800,6 +804,9 @@ fun AppTabBar(
  * 不使用 Material 按钮：其胶囊形 state layer 会浮在弹窗白底上，与贴边的
  * 矩形分区不重叠。
  *
+ * [enabled] = false 时禁用：不挂 pressable 且文字降透明度（loading 期间防重复提交），
+ * 透明度切换经 [motionSpec] 自动降级 reduced motion（2026-11-11 回填自 toolbox 续期弹窗）。
+ *
  * 公开给壳层更新弹窗复用（下载完成/失败弹窗同款分区按钮），禁止再内联复制。
  */
 @Composable
@@ -808,16 +815,27 @@ fun DialogAction(
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
+    // 禁用态透明度 0ms 硬切 → 按压档 tween（reduced motion 经 motionSpec 降级 180ms）
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.5f,
+        animationSpec = motionSpec(pressTween()),
+        label = "dialogActionAlpha"
+    )
     Box(
         modifier = modifier
             .height(48.dp)
-            .pressable(onClick = onClick, alphaFactor = 0.5f),
+            // 禁用态不得挂 clickable：loading 期间仍可触发会重复提交
+            .then(
+                if (enabled) Modifier.pressable(onClick = onClick, alphaFactor = 0.5f)
+                else Modifier
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            color = color,
+            color = color.copy(alpha = contentAlpha),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
         )

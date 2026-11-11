@@ -2,10 +2,13 @@ package com.smartwash.feature.review.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +42,7 @@ import com.smartwash.feature.review.network.ReviewCardVo
 
 /**
  * 复习模块共享小件：静态标签 chip（资料/状态/到期类型角标）、卡片状态角标、
- * 复习页细进度条与四档评分按钮（Anki 红/橙/绿/蓝惯例，色值全部取设计令牌）。
+ * 复习页细进度条与四档评分按钮（Anki 红/橙/绿/蓝惯例，语义浅底 + ink 深字成对令牌）。
  * 均组合 pressable/令牌实现，不引入 M3 交互组件（规范 §7）。
  */
 
@@ -98,7 +102,9 @@ internal fun DueTypeChip(card: ReviewCardVo, modifier: Modifier = Modifier) {
         contentColor = if (isDaily) {
             AppColors.colorScheme.iconForegroundBlue
         } else {
-            AppColors.colorScheme.warning
+            // 分钟级角标小字：warning 橙 on warningContainer 浅色仅 2.51:1 破线（审查矩阵 #3），
+            // 改成对 ink 档 onWarningContainer（浅 #92400E ≈5.9:1 / 深 #ECB36A ≈7.6:1，双主题达标）
+            AppColors.colorScheme.onWarningContainer
         },
         modifier = modifier,
     )
@@ -116,19 +122,41 @@ internal fun CardStateChip(card: ReviewCardVo, modifier: Modifier = Modifier) {
     )
 }
 
-/** 评分按钮容器色（Anki 惯例红/橙/绿/蓝，全部取语义令牌；主题切换自动跟随） */
+/**
+ * 评分按钮配色 — 容器取各语义色「浅底容器」档、文字取对应 ink 深字档
+ * （规范 §2.1「语义色浅底 + ink 深字」成对令牌）。原语义实底 + onPrimary 白字在浅色模式
+ * 低于 4.5:1 红线（HARD 2.76:1 / EASY 2.92:1，审查矩阵 #4；GOOD 3.5:1 与主按钮同口径、
+ * AGAIN 达标）；改浅底 + ink 后浅色最低 5.1:1、深色最低 6.5:1，两主题同步核算均达标。
+ * 主题切换自动跟随（深色取各令牌的 Dark 档）。
+ */
+
+/** 评分按钮禁用态透明度（规范 §3.1：禁用 = 内容 38% 透明度，M3 口径） */
+private const val RATING_DISABLED_ALPHA = 0.38f
+
+/** 评分按钮容器色 — 各语义色浅底容器档（粉=Again / 橙=Hard / 绿=Good / 蓝=Easy） */
 @Composable
-internal fun ratingColor(rating: ReviewRating): Color = when (rating) {
-    ReviewRating.AGAIN -> AppColors.colorScheme.danger
-    ReviewRating.HARD -> AppColors.colorScheme.ongoing
-    ReviewRating.GOOD -> AppColors.colorScheme.primary
-    ReviewRating.EASY -> AppColors.colorScheme.water
+internal fun ratingContainerColor(rating: ReviewRating): Color = when (rating) {
+    ReviewRating.AGAIN -> AppColors.colorScheme.iconContainerPink
+    ReviewRating.HARD -> AppColors.colorScheme.warningContainer
+    ReviewRating.GOOD -> AppColors.colorScheme.iconContainerGreen
+    ReviewRating.EASY -> AppColors.colorScheme.waterSoft
+}
+
+/** 评分按钮文字色 — 与容器成对的 ink 深字档（浅色最低 5.1:1 / 深色最低 6.5:1，均达 AA） */
+@Composable
+internal fun ratingContentColor(rating: ReviewRating): Color = when (rating) {
+    ReviewRating.AGAIN -> AppColors.colorScheme.dangerInk
+    ReviewRating.HARD -> AppColors.colorScheme.onWarningContainer
+    ReviewRating.GOOD -> AppColors.colorScheme.textGreenOnTint
+    ReviewRating.EASY -> AppColors.colorScheme.textPrimary
 }
 
 /**
- * 四档评分按钮 — 规格（§3.3 主按钮口径）：高 48dp / 胶囊圆角（radiusFull）/ 实色语义底 / onPrimary 文字。
- * 两行文案：Anki 英文惯例名（15sp/600）+ 中文语义（caption 12sp）。
- * 按压反馈 scale 0.97（pressable 内置 indication=null）；提交中整排禁用降透明度。
+ * 四档评分按钮（Anki 红/橙/绿/蓝惯例，配色见 [ratingContainerColor]/[ratingContentColor]）：
+ * 48dp 胶囊（radiusFull），两行文案 = Anki 英文惯例名（15sp/600）+ 中文语义（caption 12sp）。
+ * 高度 heightIn(min) 随内容弹性增高：系统字体放大 130%+ 时不裁切两行文案（规范 §8，矩阵 #5）。
+ * 按压反馈 scale 0.97（pressable 内置 indication=null）；提交中整排禁用 = 内容 38% 透明度
+ * （规范 §3.1，矩阵 #6），且保留 clickable(enabled=false) 向语义树暴露 Disabled 状态。
  */
 @Composable
 internal fun RatingButton(
@@ -138,7 +166,11 @@ internal fun RatingButton(
     modifier: Modifier = Modifier,
 ) {
     val view = currentView()
-    val containerColor = ratingColor(rating).copy(alpha = if (enabled) 1f else 0.5f)
+    val interactionSource = remember { MutableInteractionSource() }
+    val containerColor =
+        ratingContainerColor(rating).copy(alpha = if (enabled) 1f else RATING_DISABLED_ALPHA)
+    val contentColor =
+        ratingContentColor(rating).copy(alpha = if (enabled) 1f else RATING_DISABLED_ALPHA)
     Box(
         modifier = modifier
             .then(
@@ -149,10 +181,16 @@ internal fun RatingButton(
                         onClick()
                     })
                 } else {
-                    Modifier
+                    // 禁用态保留 clickable（enabled=false）：语义树暴露 Disabled（规范 §3.1/§8，矩阵 #6）
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = false,
+                        onClick = {},
+                    )
                 }
             )
-            .height(48.dp)
+            .heightIn(min = 48.dp)
             .background(containerColor, RoundedCornerShape(AppDimens.radiusFull)),
         contentAlignment = Alignment.Center,
     ) {
@@ -161,18 +199,21 @@ internal fun RatingButton(
                 text = stringResource(rating.labelRes),
                 style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp),
                 fontWeight = FontWeight.SemiBold,
-                color = AppColors.colorScheme.onPrimary,
+                color = contentColor,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = stringResource(rating.semanticRes),
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.colorScheme.onPrimary,
+                color = contentColor,
                 textAlign = TextAlign.Center,
             )
         }
     }
 }
+
+/** 细进度条高度（AppDimens 无对应档位，沿用既有细进度条规格沉淀为组件局部常量 — 审查矩阵 #11） */
+private val ProgressBarHeight = 4.dp
 
 /**
  * 细进度条（复习页进度意象）：surfaceVariant 槽 + primary 填充。
@@ -193,14 +234,14 @@ internal fun StudyProgressBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(4.dp)
+            .height(ProgressBarHeight)
             .clip(RoundedCornerShape(AppDimens.radiusFull))
             .background(AppColors.colorScheme.surfaceVariant),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(fillFraction)
-                .height(4.dp)
+                .height(ProgressBarHeight)
                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                 .background(AppColors.colorScheme.primary),
         )

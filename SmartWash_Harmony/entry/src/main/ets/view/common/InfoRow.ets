@@ -6,13 +6,14 @@
 //
 // 行高 40vp（二级紧凑档，行间 0；12sp 字号在 40vp 行内上下留白约 12vp，比例协调）。
 
-import { DesignColor, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
+import { resColor } from '../../utils/ResourceColor'
 
 @ComponentV2
 export struct InfoRow {
   @Param label: string = ''
   @Param value: string = ''
-  @Param valueColor: number = DesignColor.TEXT_PRIMARY
+  @Param valueColor: number = resColor('TEXT_PRIMARY')
   @Param valueSize: number = DesignFontSize.CAPTION
   @Param valueWeight: number = DesignFontWeight.NORMAL
   @Param valueTnum: boolean = false
@@ -23,7 +24,7 @@ export struct InfoRow {
     Row() {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .width(this.labelWidth > 0 ? this.labelWidth : 'auto')
 
       Text(this.value)

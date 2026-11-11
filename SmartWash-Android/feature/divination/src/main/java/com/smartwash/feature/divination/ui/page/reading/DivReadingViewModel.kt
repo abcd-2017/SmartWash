@@ -99,6 +99,13 @@ class DivReadingViewModel @Inject constructor(
         }
     }
 
+    /** 重新推演（audit-23 #8：错误态重试出路——错误卡「重 新 推 演」按钮重入 interpret 重走 SSE） */
+    fun retryInterpret() {
+        val record = _uiState.value.record ?: return
+        if (_uiState.value.readingState is RequestState.Loading) return
+        viewModelScope.launch { interpret(record, _uiState.value.bundle) }
+    }
+
     /**
      * 「返回自动继续」：428 未配置（NEED_CONFIG）错误态下用户跳设置页配好模型，
      * 返回本页（ON_RESUME）时自动重试解读，无需手动点重试。

@@ -15,6 +15,7 @@
 import { BaseResponse } from '../../network/BaseResponse'
 import { httpUtil } from '../../network/HttpUtil'
 import { FormData, Type } from '@ohos/axios'
+import { resString } from '../../utils/ResourceString'
 
 // ==================== 常量 ====================
 
@@ -250,71 +251,74 @@ export function remainingSeconds(expireAt: string | null): number | null {
 // ==================== 文案（逐一对齐安卓 strings.xml 的 toolbox_delivery_* 资源） ====================
 
 export class DeliveryText {
-  static readonly toolbox_delivery_title: string = "设备投递"
-  static readonly toolbox_delivery_qr_desc: string = "投递会话二维码"
-  static readonly toolbox_delivery_countdown_prefix: string = "剩余 "
-  static readonly toolbox_delivery_duration_label: string = "有效期"
-  static readonly toolbox_delivery_duration_desc: string = "时间内有效，到期自动失效"
-  static readonly toolbox_delivery_password_label: string = "进入密码（可选）"
-  static readonly toolbox_delivery_password_hint: string = "4-64 位"
-  static readonly toolbox_delivery_password_helper: string = "电脑端进入时需输入，留空则无需密码"
-  static readonly toolbox_delivery_privacy_notice: string = "内容经服务器中转，服务器可见明文；条目取走即焚毁，会话到期自动回收"
-  static readonly toolbox_delivery_submit_create: string = "创建投递"
-  static readonly toolbox_delivery_error_invalid_password: string = "密码须为 4-64 位"
-  static readonly toolbox_delivery_error_create: string = "创建失败，请重试"
-  static readonly toolbox_delivery_code_label: string = "投递码"
-  static readonly toolbox_delivery_session_expired: string = "已失效"
-  static readonly toolbox_delivery_has_password: string = "需密码"
-  static readonly toolbox_delivery_action_copy_link: string = "复制链接"
-  static readonly toolbox_delivery_action_open_session: string = "进入会话"
-  static readonly toolbox_delivery_action_close: string = "关闭会话"
-  static readonly toolbox_delivery_action_recreate: string = "重新发起"
-  static readonly toolbox_delivery_toast_close_success: string = "会话已关闭"
-  static readonly toolbox_delivery_toast_link_copied: string = "链接已复制"
-  static readonly toolbox_delivery_error_close: string = "关闭失败，请重试"
-  static readonly toolbox_delivery_session_title: string = "设备投递"
-  static readonly toolbox_delivery_url_fallback: string = "电脑浏览器打开本链接进入"
-  static readonly toolbox_delivery_action_close_session: string = "关闭"
-  static readonly toolbox_delivery_confirm_close_title: string = "关闭投递会话"
-  static readonly toolbox_delivery_confirm_close_message: string = "关闭后投递码立即失效且条目不可再取，确定关闭？"
-  static readonly toolbox_delivery_empty_message: string = "还没有条目，等对端进入后互传"
-  static readonly toolbox_delivery_poll_error: string = "条目同步失败，正在自动重试"
-  static readonly toolbox_delivery_error_load: string = "条目加载失败"
-  static readonly toolbox_delivery_action_retry: string = "重试"
-  static readonly toolbox_delivery_direction_out: string = "发出"
-  static readonly toolbox_delivery_direction_in: string = "收到"
-  static readonly toolbox_delivery_kind_text: string = "文本"
-  static readonly toolbox_delivery_kind_image: string = "图片"
-  static readonly toolbox_delivery_kind_file: string = "文件"
-  static readonly toolbox_delivery_state_pending: string = "待取走"
-  static readonly toolbox_delivery_state_taken: string = "已取走"
-  static readonly toolbox_delivery_toast_code_copied: string = "投递码已复制"
-  static readonly toolbox_delivery_sending: string = "正在传输…"
-  static readonly toolbox_delivery_send_hint: string = "输入要投递的文本…"
-  static readonly toolbox_delivery_action_send: string = "发送"
-  static readonly toolbox_delivery_pick_image: string = "选图片"
-  static readonly toolbox_delivery_pick_file: string = "选文件"
-  static readonly toolbox_delivery_error_send: string = "发送失败，请重试"
-  static readonly toolbox_delivery_error_file_too_large: string = "文件超过 20MB 上限"
-  static readonly toolbox_delivery_error_text_too_long: string = "文本超过 10 万字符上限"
-  static readonly toolbox_delivery_error_text_empty: string = "请输入要投递的文本"
-  static readonly toolbox_delivery_session_gone_toast: string = "投递会话不存在或已失效"
-  static readonly toolbox_delivery_item_taken_toast: string = "条目已被取走"
-  static readonly toolbox_delivery_action_copy_take: string = "复制并取走"
-  static readonly toolbox_delivery_action_take: string = "取走"
-  static readonly toolbox_delivery_toast_copy_success: string = "文本已复制，条目已焚毁"
-  static readonly toolbox_delivery_preview_error: string = "内容读取失败"
-  static readonly toolbox_delivery_confirm_take_title: string = "取走条目"
-  static readonly toolbox_delivery_confirm_take_message: string = "取走后条目立即焚毁且不可恢复，确定取走？"
+  static get toolbox_delivery_title(): string { return resString('toolbox_delivery_title') }
+  static get toolbox_delivery_qr_desc(): string { return resString('toolbox_delivery_qr_desc') }
+  static get toolbox_delivery_countdown_prefix(): string { return resString('delivery_text_toolbox_delivery_countdown_prefix') }
+  static get toolbox_delivery_duration_label(): string { return resString('toolbox_expiry_label') }
+  /** 有效期说明带时长（对齐安卓 strings.xml「%1$d 分钟时间内有效，到期自动失效」，compare-07 #26） */
+  static durationDesc(minutes: number): string {
+    return `${minutes} 分钟时间内有效，到期自动失效`
+  }
+  static get toolbox_delivery_password_label(): string { return resString('toolbox_delivery_password_label') }
+  static get toolbox_delivery_password_hint(): string { return resString('toolbox_delivery_password_hint') }
+  static get toolbox_delivery_password_helper(): string { return resString('toolbox_delivery_password_helper') }
+  static get toolbox_delivery_privacy_notice(): string { return resString('toolbox_delivery_privacy_notice') }
+  static get toolbox_delivery_submit_create(): string { return resString('toolbox_delivery_submit_create') }
+  static get toolbox_delivery_error_invalid_password(): string { return resString('toolbox_delivery_error_invalid_password') }
+  static get toolbox_delivery_error_create(): string { return resString('toolbox_delivery_error_create') }
+  static get toolbox_delivery_code_label(): string { return resString('toolbox_delivery_code_label') }
+  static get toolbox_delivery_session_expired(): string { return resString('toolbox_delivery_session_expired') }
+  static get toolbox_delivery_has_password(): string { return resString('toolbox_delivery_has_password') }
+  static get toolbox_delivery_action_copy_link(): string { return resString('toolbox_delivery_action_copy_link') }
+  static get toolbox_delivery_action_open_session(): string { return resString('toolbox_delivery_action_open_session') }
+  static get toolbox_delivery_action_close(): string { return resString('toolbox_delivery_action_close') }
+  static get toolbox_delivery_action_recreate(): string { return resString('toolbox_delivery_action_recreate') }
+  static get toolbox_delivery_toast_close_success(): string { return resString('toolbox_delivery_toast_close_success') }
+  static get toolbox_delivery_toast_link_copied(): string { return resString('toolbox_delivery_toast_link_copied') }
+  static get toolbox_delivery_error_close(): string { return resString('toolbox_delivery_error_close') }
+  static get toolbox_delivery_session_title(): string { return resString('toolbox_delivery_title') }
+  static get toolbox_delivery_url_fallback(): string { return resString('toolbox_delivery_url_fallback') }
+  static get toolbox_delivery_action_close_session(): string { return resString('toolbox_delivery_action_close_session') }
+  static get toolbox_delivery_confirm_close_title(): string { return resString('toolbox_delivery_confirm_close_title') }
+  static get toolbox_delivery_confirm_close_message(): string { return resString('toolbox_delivery_confirm_close_message') }
+  static get toolbox_delivery_empty_message(): string { return resString('toolbox_delivery_empty_message') }
+  static get toolbox_delivery_poll_error(): string { return resString('toolbox_delivery_poll_error') }
+  static get toolbox_delivery_error_load(): string { return resString('toolbox_delivery_error_load') }
+  static get toolbox_delivery_action_retry(): string { return resString('toolbox_action_retry') }
+  static get toolbox_delivery_direction_out(): string { return resString('toolbox_delivery_direction_out') }
+  static get toolbox_delivery_direction_in(): string { return resString('toolbox_delivery_direction_in') }
+  static get toolbox_delivery_kind_text(): string { return resString('toolbox_delivery_kind_text') }
+  static get toolbox_delivery_kind_image(): string { return resString('toolbox_delivery_kind_image') }
+  static get toolbox_delivery_kind_file(): string { return resString('toolbox_delivery_kind_file') }
+  static get toolbox_delivery_state_pending(): string { return resString('toolbox_delivery_state_pending') }
+  static get toolbox_delivery_state_taken(): string { return resString('toolbox_delivery_state_taken') }
+  static get toolbox_delivery_toast_code_copied(): string { return resString('toolbox_delivery_toast_code_copied') }
+  static get toolbox_delivery_sending(): string { return resString('toolbox_delivery_sending') }
+  static get toolbox_delivery_send_hint(): string { return resString('toolbox_delivery_send_hint') }
+  static get toolbox_delivery_action_send(): string { return resString('toolbox_delivery_action_send') }
+  static get toolbox_delivery_pick_image(): string { return resString('toolbox_delivery_pick_image') }
+  static get toolbox_delivery_pick_file(): string { return resString('toolbox_delivery_pick_file') }
+  static get toolbox_delivery_error_send(): string { return resString('toolbox_delivery_error_send') }
+  static get toolbox_delivery_error_file_too_large(): string { return resString('toolbox_delivery_error_file_too_large') }
+  static get toolbox_delivery_error_text_too_long(): string { return resString('toolbox_delivery_error_text_too_long') }
+  static get toolbox_delivery_error_text_empty(): string { return resString('toolbox_delivery_error_text_empty') }
+  static get toolbox_delivery_session_gone_toast(): string { return resString('toolbox_delivery_session_gone_toast') }
+  static get toolbox_delivery_item_taken_toast(): string { return resString('toolbox_delivery_item_taken_toast') }
+  static get toolbox_delivery_action_copy_take(): string { return resString('toolbox_delivery_action_copy_take') }
+  static get toolbox_delivery_action_take(): string { return resString('delivery_text_toolbox_delivery_action_take') }
+  static get toolbox_delivery_toast_copy_success(): string { return resString('toolbox_delivery_toast_copy_success') }
+  static get toolbox_delivery_preview_error(): string { return resString('toolbox_delivery_preview_error') }
+  static get toolbox_delivery_confirm_take_title(): string { return resString('delivery_text_toolbox_delivery_confirm_take_title') }
+  static get toolbox_delivery_confirm_take_message(): string { return resString('delivery_text_toolbox_delivery_confirm_take_message') }
 }
 
 /** 有效期 chip 文案（10/30 分钟走「%d 分钟」，60/120 走「1 小时 / 2 小时」） */
 export function durationChipText(minutes: number): string {
   if (minutes === 60) {
-    return "1 小时"
+    return resString('toolbox_delivery_duration_60m')
   }
   if (minutes === 120) {
-    return "2 小时"
+    return resString('toolbox_delivery_duration_120m')
   }
   return `${minutes} 分钟`
 }

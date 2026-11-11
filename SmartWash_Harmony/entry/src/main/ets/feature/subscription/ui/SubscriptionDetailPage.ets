@@ -9,7 +9,7 @@
 
 import { common, Want } from '@kit.AbilityKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BaseResponse } from '../../../network/BaseResponse'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -32,10 +32,11 @@ import {
   resumeSubscription,
   subscriptionCycleTypeFromRaw
 } from '../api'
-import { formatAmount } from '../logic/SubscriptionRules'
+import { formatAmount, formatDate } from '../logic/SubscriptionRules'
 import {
   SubscriptionPageHeader,
   SubscriptionSectionTitle,
+  SubscriptionStatusDot,
   SubscriptionTagChip,
   subscriptionAmountText,
   subscriptionCopyText,
@@ -43,9 +44,8 @@ import {
   subscriptionFormat,
   subscriptionRenewRelativeColor,
   subscriptionRenewRelativeText,
-  subscriptionStatusContainerColor,
-  subscriptionStatusIcon,
-  subscriptionStatusIconColor,
+  subscriptionStatusChipContainer,
+  subscriptionStatusChipContent,
   subscriptionStatusOf,
   subscriptionStatusText
 } from './SubscriptionUiCommon'
@@ -58,6 +58,7 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 import { InfoRow } from '../../../view/common/InfoRow'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionDetailPage'
@@ -455,10 +456,15 @@ struct SubscriptionDetailPage {
     return usage?.usageDate ?? ''
   }
 
+  /** 打卡日期是否今天（yyyy-MM-dd 字符串直比，与 formatDate 同构，免时区解析偏差） */
+  private isUsageToday(usageDate: string): boolean {
+    return usageDate === formatDate(new Date())
+  }
+
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -466,6 +472,8 @@ struct SubscriptionDetailPage {
           title: SubscriptionText.subscription_detail_title,
           action1Text: this.isTerminal() ? '' : SubscriptionText.subscription_action_edit,
           action2Text: SubscriptionText.subscription_action_delete,
+          // 「删除」危险语义走 dangerInk（规范 §4，对齐安卓页头 audit-15 #14）；编辑保持主色
+          action2Color: resColor('DANGER_INK'),
           onAction1: (): void => {
             pathStack.pushPathByName(RouteNames.SUBSCRIPTION_EDIT, this.subscriptionId)
           },
@@ -497,36 +505,39 @@ struct SubscriptionDetailPage {
           .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
         } else {
-          Scroll() {
-            Column({ space: DesignDimens.CARD_SPACING }) {
+          // 整页 List 虚拟化（DESIGN-SPEC §8，audit-15 #11）：各卡/打卡行拆 ListItem，
+          // 打卡行铺平为独立项（key=usageId）承接复用；触底加载复用既有 PagingController
+          List({ space: DesignDimens.CARD_SPACING }) {
               // ---------- 续费信息卡 ----------
+              ListItem() {
               Column() {
                 Row() {
+                  // 概念头图标恒定泛订阅语义（对齐安卓 Autorenew + teal 对，不随状态四变）
                   IconBox({
-                    icon: subscriptionStatusIcon(this.status()),
+                    icon: $r('sys.symbol.clock_arrow_2_circlepath'),
                     sizeValue: 44,
                     iconSize: 24,
-                    containerColor: subscriptionStatusContainerColor(this.status()),
-                    iconColor: subscriptionStatusIconColor(this.status())
+                    containerColor: resColor('ICON_CONTAINER_TEAL'),
+                    iconColor: resColor('ICON_FOREGROUND_TEAL')
                   })
 
                   Text(this.detail?.name ?? '')
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_PRIMARY)
+                    // 终态弱化止步 textSecondary（on 白卡 4.90:1）：textTertiary 2.25:1 禁作可读正文（§10）
+                    .fontColor(this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY'))
                     .maxLines(2)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .layoutWeight(1)
                     .margin({ left: DesignDimens.SPACE_SM })
 
+                  // 状态标签与列表页成对令牌同源（audit-15 #1/#2）：图标前景令牌不得拼作 12sp 文字色
+                  // （iconForegroundTeal on iconContainerTeal 仅 3.1:1）；终态覆写分支删除——
+                  // 成对函数已内含 CANCELED/FINISHED 的正确值
                   SubscriptionTagChip({
                     text: subscriptionStatusText(this.status()),
-                    containerColor: this.isTerminal()
-                      ? DesignColor.SURFACE_VARIANT
-                      : subscriptionStatusContainerColor(this.status()),
-                    contentColor: this.isTerminal()
-                      ? DesignColor.TEXT_TERTIARY
-                      : subscriptionStatusIconColor(this.status())
+                    containerColor: subscriptionStatusChipContainer(this.status()),
+                    contentColor: subscriptionStatusChipContent(this.status())
                   })
                 }
                 .width('100%')
@@ -536,8 +547,9 @@ struct SubscriptionDetailPage {
                     labelWidth: 88,
 label: SubscriptionText.subscription_detail_amount,
                   value: subscriptionAmountText(this.detail?.amount ?? 0),
-                  valueColor: this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK,
-                  valueWeight: DesignFontWeight.SEMI_BOLD,
+                  // 金额是本卡核心数据：终态弱化止步 textSecondary（与 renewRelativeColor 终态档一致）；
+                  // 非终态小字绿走 TEXT_GREEN 唯一达标档（PRIMARY_DARK 4.23:1 属按压/大字口径，§10）
+                  valueColor: this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('TEXT_GREEN'),
                 })
                 InfoRow({
                     labelWidth: 88,
@@ -550,7 +562,7 @@ label: SubscriptionText.subscription_detail_cycle,
                     labelWidth: 88,
 label: SubscriptionText.subscription_detail_next_renew,
                   value: this.detail !== null ? subscriptionRenewRelativeText(this.detail) : '',
-                  valueColor: this.detail !== null ? subscriptionRenewRelativeColor(this.detail) : DesignColor.TEXT_PRIMARY,
+                  valueColor: this.detail !== null ? subscriptionRenewRelativeColor(this.detail) : resColor('TEXT_PRIMARY'),
                 })
                 InfoRow({
                     labelWidth: 88,
@@ -582,26 +594,29 @@ label: SubscriptionText.subscription_detail_note,
                 if (this.isTerminal()) {
                   Text(SubscriptionText.subscription_terminal_readonly)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.TEXT_TERTIARY)
+                    // 终态只读提示是可读正文：textSecondary 达标（audit-15 #5）
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .margin({ top: DesignDimens.SPACE_XS })
                 }
               }
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .shadow({
                 radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: DesignElevation.CARD_SHADOW_OFFSET
               })
+              }
 
               // ---------- 状态操作（按当前状态显隐；终态只读） ----------
               if (!this.isTerminal()) {
+                ListItem() {
                 Column({ space: DesignDimens.SPACE_SM }) {
                   Row({ space: DesignDimens.SPACE_SM }) {
                     AppButton({
@@ -630,7 +645,7 @@ label: SubscriptionText.subscription_detail_note,
                   AppButton({
                     text: SubscriptionText.subscription_action_cancel_sub,
                     variant: AppButtonVariant.SECONDARY,
-                    contentColor: DesignColor.DANGER_INK,
+                    contentColor: resColor('DANGER_INK'),
                     isEnabled: !this.isTransitioning,
                     click: (): void => {
                       this.showCancelDialog()
@@ -638,9 +653,11 @@ label: SubscriptionText.subscription_detail_note,
                   })
                 }
                 .width('100%')
+                }
               }
 
               // ---------- 近 90 天使用统计 ----------
+              ListItem() {
               Column() {
                 SubscriptionSectionTitle({ text: SubscriptionText.subscription_stats_title })
                   .margin({ bottom: DesignDimens.SPACE_XS })
@@ -650,14 +667,15 @@ label: SubscriptionText.subscription_detail_note,
                 } else if (this.isStatsError) {
                   Text(SubscriptionText.subscription_stats_error)
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
+                  // 重试 48 热区（对齐安卓 heightIn(min=48)，16×2 + 行高 16）；小字绿走 TEXT_GREEN（§10）
                   Text(SubscriptionText.subscription_action_retry)
                     .fontSize(DesignFontSize.BUTTON_TEXT)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.PRIMARY)
+                    .fontColor(resColor('TEXT_GREEN'))
                     .textAlign(TextAlign.Center)
                     .width('100%')
-                    .padding({ top: 12, bottom: 12 })
+                    .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
                     .onClick(() => {
                       this.loadStats()
                     })
@@ -668,7 +686,8 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                       this.statsItem?.usageCount90d ?? 0),
                     value: subscriptionFormat(SubscriptionText.subscription_stats_monthly_format,
                       formatAmount(this.statsItem?.monthlyNormalized ?? 0)),
-                    valueColor: DesignColor.PRIMARY_DARK,
+                    // 12fp 小字绿唯一达标档（audit-15 #4）
+                    valueColor: resColor('TEXT_GREEN'),
                     valueWeight: DesignFontWeight.SEMI_BOLD,
                     })
                   Text(this.statsItem !== null && this.statsItem.perUseCost !== null
@@ -676,9 +695,10 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                       formatAmount(this.statsItem.perUseCost ?? 0))
                     : SubscriptionText.subscription_stats_per_use_none)
                     .fontSize(DesignFontSize.BODY_SMALL)
+                    // 占位语义空值提示统一收敛 textSecondary（audit-15 #15）
                     .fontColor(this.statsItem !== null && this.statsItem.perUseCost !== null
-                      ? DesignColor.TEXT_PRIMARY
-                      : DesignColor.TEXT_TERTIARY)
+                      ? resColor('TEXT_PRIMARY')
+                      : resColor('TEXT_SECONDARY'))
                     .fontFeature(DesignFontFeature.TNUM)
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_XS })
@@ -687,18 +707,20 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .shadow({
                 radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: DesignElevation.CARD_SHADOW_OFFSET
               })
+              }
 
-              // ---------- 使用打卡 ----------
+              // ---------- 使用打卡（卡头：标题 + 打卡按钮 + 非数据态块；数据行铺平见下） ----------
+              ListItem() {
               Column() {
                 SubscriptionSectionTitle({ text: SubscriptionText.subscription_usage_title })
                   .margin({ bottom: DesignDimens.SPACE_XS })
@@ -719,90 +741,132 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                 } else if (this.isUsageFirstError && this.usageList.length === 0) {
                   Text(SubscriptionText.subscription_usage_error_load)
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
+                  // 重试 48 热区（对齐安卓 heightIn(min=48)）；小字绿走 TEXT_GREEN（§10）
                   Text(SubscriptionText.subscription_action_retry)
                     .fontSize(DesignFontSize.BUTTON_TEXT)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(DesignColor.PRIMARY)
+                    .fontColor(resColor('TEXT_GREEN'))
                     .textAlign(TextAlign.Center)
                     .width('100%')
-                    .padding({ top: 12, bottom: 12 })
+                    .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
                     .onClick(() => {
                       this.resetUsages()
                     })
                 } else if (this.usageList.length === 0) {
+                  // 空态文案是引导下一步的正文：textSecondary 达标（audit-15 #7）
                   Text(SubscriptionText.subscription_usage_empty)
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(DesignColor.TEXT_TERTIARY)
+                    .fontColor(resColor('TEXT_SECONDARY'))
                     .textAlign(TextAlign.Center)
                     .width('100%')
                     .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-                } else {
-                  ForEach(this.usageList, (log: UsageLogVo, index: number) => {
-                    Column() {
-                      if (index > 0) {
-                        Divider()
-                          .color(DesignColor.HAIRLINE)
-                          .strokeWidth(0.5)
-                      }
-                      Row() {
-                        Text(log.usageDate ?? '')
-                          .fontSize(DesignFontSize.BODY_SMALL)
-                          .fontColor(DesignColor.TEXT_PRIMARY)
-                          .fontFeature(DesignFontFeature.TNUM)
-                          .layoutWeight(1)
+                }
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Start)
+              .padding(DesignDimens.CARD_PADDING)
+              .backgroundColor(resColor('SURFACE'))
+              .borderRadius(DesignDimens.CARD_RADIUS)
+              .borderWidth(1)
+              .borderColor(resColor('OUTLINE'))
+              .shadow({
+                radius: DesignElevation.CARD_SHADOW_RADIUS,
+                color: resColor('SHADOW_COLOR_CARD'),
+                offsetX: 0,
+                offsetY: DesignElevation.CARD_SHADOW_OFFSET
+              })
+              }
 
-                        if (!this.isTerminal()) {
+              // ---------- 使用记录行（铺平为独立 ListItem 承接虚拟化，DESIGN-SPEC §8，audit-15 #11） ----------
+              ForEach(this.usageList, (log: UsageLogVo, index: number) => {
+                ListItem() {
+                  Column() {
+                    if (index > 0) {
+                      Divider()
+                        .color(resColor('HAIRLINE'))
+                        .strokeWidth(0.5)
+                    }
+                    Row() {
+                      // 「今天」标亮三件套（对齐安卓 audit-15 #6/#19）：
+                      // 状态点（今天 primary/平日 water）+ 日期 textGreen+SemiBold + 「今天」chip
+                      SubscriptionStatusDot({
+                        color: this.isUsageToday(log.usageDate ?? '')
+                          ? resColor('PRIMARY')
+                          : resColor('WATER')
+                      })
+
+                      Text(log.usageDate ?? '')
+                        .fontSize(DesignFontSize.BODY_SMALL)
+                        .fontWeight(DesignFontWeight.SEMI_BOLD)
+                        // 字重统一 SemiBold 防宽度跳变（安卓同款口径），「今天」标亮交给颜色 + chip
+                        .fontColor(this.isUsageToday(log.usageDate ?? '')
+                          ? resColor('TEXT_GREEN')
+                          : resColor('TEXT_PRIMARY'))
+                        .fontFeature(DesignFontFeature.TNUM)
+                        .margin({ left: DesignDimens.SPACE_XS })
+
+                      if (this.isUsageToday(log.usageDate ?? '')) {
+                        // chip 文字用 textGreenOnTint（iconForegroundGreen 压绿浅底仅 3.3:1，§10）
+                        SubscriptionTagChip({
+                          text: SubscriptionText.subscription_usage_today,
+                          containerColor: resColor('ICON_CONTAINER_GREEN'),
+                          contentColor: resColor('TEXT_GREEN_ON_TINT')
+                        })
+                          .margin({ left: DesignDimens.SPACE_XS })
+                      }
+
+                      Blank()
+
+                      if (!this.isTerminal()) {
+                        // 48×48 最小热区（DESIGN-SPEC §3），文字居中，视觉位置不变
+                        Column() {
                           Text(SubscriptionText.subscription_usage_undo)
                             .fontSize(DesignFontSize.BUTTON_TEXT)
                             .fontWeight(DesignFontWeight.SEMI_BOLD)
-                            .fontColor(DesignColor.DANGER_INK)
-                            .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 12, bottom: 12 })
-                            .onClick(() => {
-                              this.showUndoDialog(log.usageId)
-                            })
+                            .fontColor(resColor('DANGER_INK'))
                         }
+                        .constraintSize({ minWidth: 48, minHeight: 48 })
+                        .justifyContent(FlexAlign.Center)
+                        .alignItems(HorizontalAlign.Center)
+                        .onClick(() => {
+                          this.showUndoDialog(log.usageId)
+                        })
                       }
-                      .width('100%')
-                      .alignItems(VerticalAlign.Center)
-                      .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
                     }
                     .width('100%')
-                  }, (log: UsageLogVo) => `${log.usageId}`)
+                    .alignItems(VerticalAlign.Center)
+                  }
+                  .width('100%')
+                  .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
+                }
+              }, (log: UsageLogVo) => `${log.usageId}`)
 
-                  if (this.isLoadingMoreUsage) {
+              if (this.usageList.length > 0) {
+                if (this.isLoadingMoreUsage) {
+                  ListItem() {
                     SkeletonBlock()
                       .width('100%')
                       .height(14)
                       .margin({ top: DesignDimens.SPACE_XS })
-                  } else if (this.usageAppendError) {
+                  }
+                } else if (this.usageAppendError) {
+                  ListItem() {
                     Text(SubscriptionText.subscription_usage_error_load)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.DANGER_INK)
+                      .fontColor(resColor('DANGER_INK'))
                       .width('100%')
                       .textAlign(TextAlign.Center)
-                      .padding({ top: 12, bottom: 12 })
+                      .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
                       .onClick(() => {
                         this.paging.retry()
                       })
                   }
                 }
               }
-              .width('100%')
-              .alignItems(HorizontalAlign.Start)
-              .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
-              .borderRadius(DesignDimens.CARD_RADIUS)
-              .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
-              .shadow({
-                radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: DesignColor.SHADOW_COLOR_CARD,
-                offsetX: 0,
-                offsetY: DesignElevation.CARD_SHADOW_OFFSET
-              })
 
               // ---------- 取消路径（折叠卡） ----------
+              ListItem() {
               Column() {
                 Row() {
                   SubscriptionSectionTitle({ text: SubscriptionText.subscription_cancel_path_title })
@@ -814,8 +878,8 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                       : $r('sys.symbol.chevron_down'),
                     sizeValue: 32,
                     iconSize: 20,
-                    containerColor: DesignColor.ICON_CONTAINER_ORANGE,
-                    iconColor: DesignColor.ICON_FOREGROUND_ORANGE
+                    containerColor: resColor('ICON_CONTAINER_ORANGE'),
+                    iconColor: resColor('ICON_FOREGROUND_ORANGE')
                   })
                 }
                 .width('100%')
@@ -829,55 +893,69 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
                   Column() {
                     if ((this.detail?.cancelUrl ?? '').length === 0 &&
                       (this.detail?.cancelSteps ?? '').length === 0) {
+                      // 空态文案是引导正文：textSecondary 达标（audit-15 #8）
                       Text(SubscriptionText.subscription_cancel_path_empty)
                         .fontSize(DesignFontSize.BODY_SMALL)
-                        .fontColor(DesignColor.TEXT_TERTIARY)
+                        .fontColor(resColor('TEXT_SECONDARY'))
                     } else {
                       if ((this.detail?.cancelUrl ?? '').length > 0) {
+                        // 小标签 labelMedium 12/500、URL 值 bodySmall 12（对齐安卓 audit-15 字阶）
                         Text(SubscriptionText.subscription_cancel_path_url)
-                          .fontSize(DesignFontSize.BUTTON_TEXT)
-                          .fontColor(DesignColor.TEXT_SECONDARY)
+                          .fontSize(DesignFontSize.CAPTION)
+                          .fontWeight(DesignFontWeight.MEDIUM)
+                          .fontColor(resColor('TEXT_SECONDARY'))
                         Text(this.detail?.cancelUrl ?? '')
-                          .fontSize(DesignFontSize.BODY_SMALL)
-                          .fontColor(DesignColor.TEXT_PRIMARY)
+                          .fontSize(DesignFontSize.CAPTION)
+                          .fontColor(resColor('TEXT_PRIMARY'))
                           .fontFeature(DesignFontFeature.TNUM)
                           .maxLines(3)
                           .textOverflow({ overflow: TextOverflow.Ellipsis })
                           .width('100%')
                           .margin({ top: DesignDimens.SPACE_XXS })
+                        // 行内动作 48×48 最小热区（DESIGN-SPEC §3），文字居中；小字绿走 TEXT_GREEN（§10）
                         Row({ space: DesignDimens.SPACE_MD }) {
-                          Text(SubscriptionText.subscription_action_open_browser)
-                            .fontSize(DesignFontSize.BUTTON_TEXT)
-                            .fontWeight(DesignFontWeight.SEMI_BOLD)
-                            .fontColor(DesignColor.PRIMARY)
-                            .padding({ top: 14, bottom: 14 })
-                            .onClick(() => {
-                              this.openInBrowser(this.detail?.cancelUrl ?? '')
-                            })
-                          Text(SubscriptionText.subscription_action_copy)
-                            .fontSize(DesignFontSize.BUTTON_TEXT)
-                            .fontWeight(DesignFontWeight.SEMI_BOLD)
-                            .fontColor(DesignColor.PRIMARY)
-                            .padding({ top: 14, bottom: 14 })
-                            .onClick(() => {
-                              this.copyCancelUrl(this.detail?.cancelUrl ?? '')
-                            })
+                          Column() {
+                            Text(SubscriptionText.subscription_action_open_browser)
+                              .fontSize(DesignFontSize.BUTTON_TEXT)
+                              .fontWeight(DesignFontWeight.SEMI_BOLD)
+                              .fontColor(resColor('TEXT_GREEN'))
+                          }
+                          .constraintSize({ minWidth: 48, minHeight: 48 })
+                          .justifyContent(FlexAlign.Center)
+                          .alignItems(HorizontalAlign.Center)
+                          .onClick(() => {
+                            this.openInBrowser(this.detail?.cancelUrl ?? '')
+                          })
+                          Column() {
+                            Text(SubscriptionText.subscription_action_copy)
+                              .fontSize(DesignFontSize.BUTTON_TEXT)
+                              .fontWeight(DesignFontWeight.SEMI_BOLD)
+                              .fontColor(resColor('TEXT_GREEN'))
+                          }
+                          .constraintSize({ minWidth: 48, minHeight: 48 })
+                          .justifyContent(FlexAlign.Center)
+                          .alignItems(HorizontalAlign.Center)
+                          .onClick(() => {
+                            this.copyCancelUrl(this.detail?.cancelUrl ?? '')
+                          })
                         }
                         .margin({ top: DesignDimens.SPACE_XS })
                       }
                       if ((this.detail?.cancelSteps ?? '').length > 0) {
                         if ((this.detail?.cancelUrl ?? '').length > 0) {
                           Divider()
-                            .color(DesignColor.HAIRLINE)
+                            .color(resColor('HAIRLINE'))
                             .strokeWidth(0.5)
                             .margin({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
                         }
                         Text(SubscriptionText.subscription_cancel_path_steps)
-                          .fontSize(DesignFontSize.BUTTON_TEXT)
-                          .fontColor(DesignColor.TEXT_SECONDARY)
+                          .fontSize(DesignFontSize.CAPTION)
+                          .fontWeight(DesignFontWeight.MEDIUM)
+                          .fontColor(resColor('TEXT_SECONDARY'))
+                        // steps 值保持 14（安卓 bodyMedium ✓）
                         Text(this.detail?.cancelSteps ?? '')
                           .fontSize(DesignFontSize.BODY_SMALL)
-                          .fontColor(DesignColor.TEXT_PRIMARY)
+                          .fontColor(resColor('TEXT_PRIMARY'))
                           .width('100%')
                           .margin({ top: DesignDimens.SPACE_XXS })
                       }
@@ -892,36 +970,45 @@ label: subscriptionFormat(SubscriptionText.subscription_stats_usage_format,
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .shadow({
                 radius: DesignElevation.CARD_SHADOW_RADIUS,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: DesignElevation.CARD_SHADOW_OFFSET
               })
-            }
-            .width('100%')
-            .padding({
-              left: DesignDimens.PAGE_PADDING,
-              right: DesignDimens.PAGE_PADDING,
-              top: DesignDimens.SPACE_SM,
-              bottom: DesignDimens.SPACE_LG + safeBottomVp()
-            })
-            .alignItems(HorizontalAlign.Start)
+              }
           }
           .width('100%')
-          .align(Alignment.TopStart)
+          .layoutWeight(1)
           .scrollBar(BarState.Off)
+          .padding({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_SM,
+            // 底部余量对齐安卓 bottom = max(spaceSm, navigationBars)：insets + 12
+            bottom: DesignDimens.SPACE_SM + safeBottomVp()
+          })
+          .divider({ strokeWidth: 0, color: Color.Transparent })
+          .onScrollIndex((start: number, end: number) => {
+            // 触底加载下一页打卡（复用既有 PagingController）：固定项 = 信息卡 + 统计卡 +
+            // 打卡卡头 + 取消路径卡 = 4（非终态另含状态操作项，endIndex 峰值判定仍成立）
+            this.paging.onScrollIndex(end, 4 + this.usageList.length)
+          })
+          .onScrollFrameBegin((offset: number) => {
+            this.paging.onScrollFrameBegin(offset)
+            return { offsetRemain: offset }
+          })
         }
       }
       .width('100%')
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

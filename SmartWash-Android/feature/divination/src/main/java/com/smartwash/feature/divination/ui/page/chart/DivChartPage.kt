@@ -67,6 +67,26 @@ fun DivChartPage(
     DivinationScreen {
         // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让声明行/事实卡在浅色系统下不可见）
         val c = DivColors.current
+        // audit-23 #1：页头提到 loading/missing/主内容三态之外——加载与缺失期间也保留返回出口
+        // （此前 loading 分支整页无返回按钮，仅靠系统手势兜底）；盘面数据就绪前标题/卦印回落
+        // 「卦盘」纯文字，与解读页「页头常驻 + 下方三态」同构
+        val headerMethod = record?.let { DivMethod.fromId(it.method) }
+        DivPageHeader(
+            title = if (headerMethod != null && bundle != null) {
+                divTitleText(headerMethod, bundle)
+            } else {
+                stringResource(R.string.div_chart_title)
+            },
+            onBack = { navController.popBackStack() },
+            seal = if (headerMethod != null && bundle != null) {
+                divSealText(headerMethod, bundle.liuyao?.name, bundle.meihua?.benName)
+            } else {
+                null
+            },
+            // 画板（卦盘双板一致）：平涂深朱印 radius 8 印文 14/700；长卦名标题字距 2
+            flatSeal = true,
+            titleSpacing = 2.sp,
+        )
         if (state.loading) {
             Spacer(Modifier.height(120.dp))
             Row(
@@ -86,7 +106,6 @@ fun DivChartPage(
             return@DivinationScreen
         }
         if (record == null || bundle == null) {
-            DivPageHeader(title = stringResource(R.string.div_chart_title), onBack = { navController.popBackStack() })
             Text(
                 text = stringResource(R.string.div_chart_missing),
                 fontSize = 12.sp,
@@ -100,16 +119,6 @@ fun DivChartPage(
         }
 
         val method = DivMethod.fromId(record.method)
-        val sealText = divSealText(method, bundle.liuyao?.name, bundle.meihua?.benName)
-
-        DivPageHeader(
-            title = divTitleText(method, bundle),
-            onBack = { navController.popBackStack() },
-            seal = sealText,
-            // 画板（卦盘双板一致）：平涂深朱印 radius 8 印文 14/700；长卦名标题字距 2
-            flatSeal = true,
-            titleSpacing = 2.sp,
-        )
 
         // 统一干支/口径声明行（画板：12/16 字距 2 居中，玄墨金 75% / 宣纸墨 75%）
         Text(
@@ -158,8 +167,9 @@ fun DivChartPage(
                         facts?.yongShenNote?.let {
                             Text(
                                 text = it,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
+                                // audit-23 #3：迷你卡注释正文升 14/20（v0.4 §2.2 正文下限，caption 12 仅辅助）
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
                                 color = c.textSecondary,
                                 modifier = Modifier.padding(top = 4.dp),
                             )
@@ -169,8 +179,8 @@ fun DivChartPage(
                             if (pos != null) {
                                 Text(
                                     text = "${f.strength[pos]} · ${listOf("初", "二", "三", "四", "五", "上")[pos - 1]}爻",
-                                    fontSize = 12.sp,
-                                    lineHeight = 16.sp,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp,
                                     color = c.textSecondary,
                                     modifier = Modifier.padding(top = 4.dp),
                                 )
@@ -191,7 +201,7 @@ fun DivChartPage(
                                     if (isEmpty()) append("未见动变冲空之象")
                                 }
                             },
-                            fontSize = 12.sp,
+                            fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = c.textPrimary,
                         )
@@ -243,8 +253,8 @@ fun DivChartPage(
                         )
                         Text(
                             text = "值符${chart.zhiFuXing}落${gongName(chart.zhiFuLuoGong)} · 值使${chart.zhiShiMen}落${gongName(chart.zhiShiGong)}",
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
                             color = c.textSecondary,
                             modifier = Modifier.padding(top = 4.dp),
                         )
@@ -255,7 +265,8 @@ fun DivChartPage(
                                 append("空亡${chart.kongWangZhi.joinToString("")}落${chart.kongWangGong.joinToString("、") { gongName(it) }}\n")
                                 append("驿马${chart.maZhi}在${gongName(chart.maGong)}")
                             },
-                            fontSize = 12.sp,
+                            // audit-23 #3：迷你卡事实正文升 14/20
+                            fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = c.textPrimary,
                         )

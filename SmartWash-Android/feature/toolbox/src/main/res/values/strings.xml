@@ -74,6 +74,7 @@
     <string name="toolbox_stats_title">访问明细</string>
     <string name="toolbox_stats_empty">暂无访问记录</string>
     <string name="toolbox_stats_error_load">访问明细加载失败</string>
+    <string name="toolbox_stats_error_retry">加载失败，点击重试</string>
 
     <!-- ==================== 设备投递 · 通用 ==================== -->
     <string name="toolbox_delivery_title">设备投递</string>
@@ -82,7 +83,7 @@
 
     <!-- ==================== 设备投递 · 发起页表单 ==================== -->
     <string name="toolbox_delivery_duration_label">有效期</string>
-    <string name="toolbox_delivery_duration_desc">时间内有效，到期自动失效</string>
+    <string name="toolbox_delivery_duration_desc">%1$d 分钟时间内有效，到期自动失效</string>
     <string name="toolbox_delivery_duration_minutes_format">%1$d 分钟</string>
     <string name="toolbox_delivery_duration_60m">1 小时</string>
     <string name="toolbox_delivery_duration_120m">2 小时</string>

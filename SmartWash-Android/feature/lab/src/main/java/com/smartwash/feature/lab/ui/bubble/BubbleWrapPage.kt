@@ -69,8 +69,12 @@ private const val ROW_ASPECT = 0.92f
 /** 泡泡半径占格内基准半径的比例（留缝形成网格感） */
 private const val FILL_RATIO = 0.78f
 
-/** 命中容差（相对半径）：手指触点略偏出圆缘仍算戳中 */
-private const val HIT_TOLERANCE = 1.15f
+/**
+ * 命中容差（相对半径）：手指触点略偏出圆缘仍算戳中。
+ * 1.3 使常规屏（cellH≈48dp）最小泡的有效命中直径达 ≈48dp 触控下限；
+ * 检测先按所在格定位单泡，容差外溢仅与邻泡边缘极小重叠，无误触。
+ */
+private const val HIT_TOLERANCE = 1.3f
 
 /** 高光偏移（相对半径）：径向渐变圆心左上偏移制造凸起感 */
 private const val HIGHLIGHT_SHIFT = 0.35f

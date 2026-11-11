@@ -12,7 +12,8 @@
     <string name="game_category_board">桌版</string>
 
     <!-- ==================== 三态（骨架屏为组件无文案） ==================== -->
-    <string name="game_empty_message">游戏架还空着，去后台上传几个</string>
+    <!-- 全量空态面向 C 端用户给可执行的引导（「去后台上传」是运营视角，普通用户不可执行） -->
+    <string name="game_empty_message">游戏整理中，先去洗件衣服吧</string>
     <!-- 分类筛选无命中（与全量空态区分，避免误导用户去后台上传） -->
     <string name="game_empty_category">该分类暂无游戏，看看全部吧</string>
     <string name="game_error_load">游戏加载失败，请检查网络后重试</string>

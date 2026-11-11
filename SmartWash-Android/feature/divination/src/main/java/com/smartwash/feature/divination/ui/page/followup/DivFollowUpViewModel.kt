@@ -27,6 +27,8 @@ data class DivFollowUpUiState(
     val history: List<DivFollowUpTurn> = emptyList(),
     /** 当前流式回复（delta 增量累积；null=无进行中回复，空串=已发起尚无增量） */
     val streamingReply: String? = null,
+    /** 流中断（Failure/异常）但已流出的部分回复保留呈现（audit-23 #18：中断不清空，气泡灰显 + 中断标记） */
+    val streamInterrupted: Boolean = false,
     val followUpState: RequestState = RequestState.Idle,
     /** 最近一次失败原因（2026-11-11：NEED_CONFIG 时错误行附「去配置」引导；成功置空） */
     val errorReason: DivStreamEvent.Failure.Reason? = null,
@@ -85,6 +87,7 @@ class DivFollowUpViewModel @Inject constructor(
                 record = record,
                 history = newHistory,
                 streamingReply = "",
+                streamInterrupted = false,
                 followUpState = RequestState.Loading,
                 errorReason = null,
             )
@@ -95,8 +98,11 @@ class DivFollowUpViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 AppLogger.error(TAG, "DivFollowUpViewModel.send: ${e.message}", e)
+                // audit-23 #18：中断不清空已流出的部分回复（无增量才置空），标记中断态供页面灰显
+                val partial = _uiState.value.streamingReply.orEmpty()
                 _uiState.value = _uiState.value.copy(
-                    streamingReply = null,
+                    streamingReply = partial.takeIf { it.isNotBlank() },
+                    streamInterrupted = partial.isNotBlank(),
                     followUpState = RequestState.Error(
                         messageResId = R.string.div_reading_error,
                         message = e.message,
@@ -104,6 +110,22 @@ class DivFollowUpViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /** 重试最近一次失败的追问（audit-23 #18：错误态重试出路——移除失败轮次后原样重发） */
+    fun retryLast() {
+        val st = _uiState.value
+        if (st.followUpState !is RequestState.Error) return
+        val lastUserIdx = st.history.indexOfLast { it.role == "user" }
+        if (lastUserIdx < 0) return
+        val question = st.history[lastUserIdx].content
+        _uiState.value = st.copy(
+            history = st.history.subList(0, lastUserIdx).toList(),
+            streamingReply = null,
+            streamInterrupted = false,
+            followUpState = RequestState.Idle,
+        )
+        send(question)
     }
 
     private fun onStreamEvent(event: DivStreamEvent) {
@@ -119,6 +141,7 @@ class DivFollowUpViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     history = _uiState.value.history + DivFollowUpTurn(role = "assistant", content = reply),
                     streamingReply = null,
+                    streamInterrupted = false,
                     followUpState = RequestState.Success,
                 )
                 AppLogger.info(TAG, "追问回复成功 recordId=$recordId interpretationId=${event.interpretationId}")
@@ -130,8 +153,11 @@ class DivFollowUpViewModel @Inject constructor(
                     return
                 }
                 AppLogger.warn(TAG, "追问失败 recordId=$recordId reason=${event.reason} msg=${event.message}")
+                // audit-23 #18：中断不清空已流出的部分回复（无增量才置空），标记中断态供页面灰显
+                val partial = _uiState.value.streamingReply.orEmpty()
                 _uiState.value = _uiState.value.copy(
-                    streamingReply = null,
+                    streamingReply = partial.takeIf { it.isNotBlank() },
+                    streamInterrupted = partial.isNotBlank(),
                     followUpState = RequestState.Error(
                         messageResId = event.messageResId,
                         message = event.message,

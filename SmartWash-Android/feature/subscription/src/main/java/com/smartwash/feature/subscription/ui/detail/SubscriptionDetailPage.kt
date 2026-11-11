@@ -16,12 +16,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Autorenew
@@ -41,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -86,6 +90,8 @@ import com.smartwash.feature.subscription.ui.navigateToSubscriptionEdit
 import com.smartwash.feature.subscription.ui.notifySubscriptionChanged
 import com.smartwash.feature.subscription.ui.renewRelativeColor
 import com.smartwash.feature.subscription.ui.renewRelativeText
+import com.smartwash.feature.subscription.ui.statusChipContainer
+import com.smartwash.feature.subscription.ui.statusChipContent
 import com.smartwash.feature.subscription.ui.statusText
 import java.time.LocalDate
 
@@ -244,23 +250,34 @@ fun SubscriptionDetailPage(
                         Box(
                             modifier = Modifier
                                 .pressable(onClick = { navController.navigateToSubscriptionEdit(vo.subscriptionId) })
+                                // 页头文字动作 48×48 热区（DESIGN-SPEC §3）
+                                .heightIn(min = 48.dp)
+                                .widthIn(min = 48.dp)
                                 .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
                         ) {
                             Text(
                                 text = stringResource(R.string.subscription_action_edit),
-                                style = MaterialTheme.typography.titleMedium,
+                                // 文字按钮 13sp/600 规格（§3.3）经 v0.4 字阶迁移落 labelMedium 12sp（audit-15 #14）
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
                                 color = AppColors.colorScheme.primaryDark,
                             )
                         }
                     }
                     Box(
                         modifier = Modifier
-                            .pressable(onClick = { showDeleteDialog = true })
+                            .pressable(onClick = {
+                                // 删除请求进行中禁用入口，防重复提交（audit-15 #12）
+                                if (deleteState !is RequestState.Loading) showDeleteDialog = true
+                            })
+                            .heightIn(min = 48.dp)
+                            .widthIn(min = 48.dp)
                             .padding(horizontal = AppDimens.spaceSm, vertical = AppDimens.spaceSm)
                     ) {
                         Text(
                             text = stringResource(R.string.subscription_action_delete),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
                             color = AppColors.colorScheme.dangerInk,
                         )
                     }
@@ -308,7 +325,8 @@ fun SubscriptionDetailPage(
                         onCancelPathExpandedChange = { cancelPathExpanded = it },
                         onShowCancelDialog = { showCancelDialog = true },
                         onShowFinishDialog = { showFinishDialog = true },
-                        onShowUndoDialog = { pendingUndoId = it },
+                        // 撤销请求进行中禁用行内入口，防重复提交（audit-15 #12）
+                        onShowUndoDialog = { if (undoState !is RequestState.Loading) pendingUndoId = it },
                         onOpenUrl = { com.smartwash.feature.subscription.ui.edit.openInBrowser(context, it) },
                         onCopyUrl = {
                             copyToClipboard(context, it)
@@ -376,7 +394,8 @@ fun SubscriptionDetailPage(
     }
 }
 
-private const val Toast_LENGTH = android.widget.Toast.LENGTH_SHORT
+/** 反馈时长统一 LENGTH_LONG（DESIGN-SPEC §8 反馈要求 Toast 3–5s；audit-15 #22） */
+private const val Toast_LENGTH = android.widget.Toast.LENGTH_LONG
 
 @Composable
 private fun DetailContent(
@@ -403,17 +422,25 @@ private fun DetailContent(
     val terminal = status.isTerminal
     val cycleType = com.smartwash.feature.subscription.SubscriptionCycleType.fromRaw(vo.cycleType)
 
+    // 底部避让导航条：contentPadding.bottom 取 max(spaceSm, navigationBars insets)，
+    // edge-to-edge 下手势条不再横穿「取消路径」卡（DESIGN-SPEC §4；audit-15 #9）
+    val navBarBottomDp = with(LocalDensity.current) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    // 卡间距由各卡 item 自身 bottom padding 承担（原 verticalArrangement.spacedBy 移除）：
+    // 使用记录行铺平为独立 items（虚拟化）后行间距由行内 padding 控制，行间不再被卡间距撑开（audit-15 #11）
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(AppDimens.cardSpacing),
         contentPadding = PaddingValues(
-            horizontal = AppDimens.pagePadding,
-            vertical = AppDimens.spaceSm,
+            start = AppDimens.pagePadding,
+            top = AppDimens.spaceSm,
+            end = AppDimens.pagePadding,
+            bottom = maxOf(AppDimens.spaceSm, navBarBottomDp),
         ),
         modifier = Modifier.fillMaxSize(),
     ) {
         // ---------- 续费信息卡 ----------
         item(key = "info") {
-            GroupCard {
+            GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 // 卡顶泛订阅概念头图（本地自绘；服务端头图字段落地前先展示本地资产）
                 Image(
                     painter = painterResource(LocalCoverArt.subscriptionDetailHeader),
@@ -435,15 +462,18 @@ private fun DetailContent(
                     Text(
                         text = vo.name,
                         style = AppTextStyles.CardTitle,
-                        color = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textPrimary,
+                        // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
+                        color = if (terminal) AppColors.colorScheme.textSecondary else AppColors.colorScheme.textPrimary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                     SubscriptionTagChip(
                         text = statusText(status),
-                        containerColor = if (terminal) AppColors.colorScheme.surfaceVariant else AppColors.colorScheme.iconContainerTeal,
-                        contentColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.iconForegroundTeal,
+                        // 状态标签与列表页 statusChipContainer/Content 成对令牌同源（audit-15 #1/#2）：
+                        // 图标前景令牌不得拼作 12sp 文字色（iconForegroundTeal on iconContainerTeal 仅 3.1:1）
+                        containerColor = statusChipContainer(status),
+                        contentColor = statusChipContent(status),
                     )
                 }
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
@@ -451,7 +481,8 @@ private fun DetailContent(
                     label = stringResource(R.string.subscription_detail_amount),
                     value = stringResource(R.string.subscription_amount_per_period, SubscriptionRules.formatAmount(vo.amount)),
                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                    valueColor = if (terminal) AppColors.colorScheme.textTertiary else AppColors.colorScheme.textGreen,
+                    // 金额是本卡核心数据：终态弱化止步 textSecondary（与 renewRelativeColor 终态档一致，audit-15 #4）
+                    valueColor = if (terminal) AppColors.colorScheme.textSecondary else AppColors.colorScheme.textGreen,
                 )
                 InfoRow(
                     label = stringResource(R.string.subscription_detail_cycle),
@@ -486,7 +517,8 @@ private fun DetailContent(
                     valueStyle = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                 )
                 if (!vo.note.isNullOrBlank()) {
-                    InfoRow(
+                    // 备注是自由长文本：InfoRow 固定 40dp 行高会溢出重叠（audit-15 #10），改自由高度多行
+                    MultilineInfoRow(
                         label = stringResource(R.string.subscription_detail_note),
                         value = vo.note.orEmpty(),
                     )
@@ -495,7 +527,8 @@ private fun DetailContent(
                     Text(
                         text = stringResource(R.string.subscription_terminal_readonly),
                         style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.colorScheme.textTertiary,
+                        // 终态只读提示是可读正文：textSecondary 达标（audit-15 #5）
+                        color = AppColors.colorScheme.textSecondary,
                         modifier = Modifier.padding(top = AppDimens.spaceXs),
                     )
                 }
@@ -505,7 +538,10 @@ private fun DetailContent(
         // ---------- 状态操作（按当前状态显隐；终态只读） ----------
         if (!terminal) {
             item(key = "actions") {
-                Column(verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
+                Column(
+                    modifier = Modifier.padding(bottom = AppDimens.cardSpacing),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceSm),
+                ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceSm)) {
                         AppButton(
                             text = stringResource(
@@ -541,7 +577,7 @@ private fun DetailContent(
 
         // ---------- 近 90 天使用统计 ----------
         item(key = "stats") {
-            GroupCard {
+            GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 Text(
                     text = stringResource(R.string.subscription_stats_title),
                     style = AppTextStyles.SectionTitle,
@@ -558,12 +594,12 @@ private fun DetailContent(
                             style = MaterialTheme.typography.bodyMedium,
                             color = AppColors.colorScheme.textSecondary,
                         )
-                        // 44dp 最小热区（规范 §2.3），重试文字居中
+                        // 48×48 最小热区（DESIGN-SPEC §3），重试文字居中
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .pressable(onClick = viewModel::loadStats)
-                                .heightIn(min = 44.dp)
+                                .heightIn(min = 48.dp)
                                 .padding(vertical = AppDimens.spaceXs),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -591,7 +627,8 @@ private fun DetailContent(
                                 stringResource(R.string.subscription_stats_per_use_none)
                             },
                             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-                            color = if (perUse != null) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textTertiary,
+                            // 占位语义空值提示统一收敛 textSecondary（audit-15 #15，与 #7/#8 同口径）
+                            color = if (perUse != null) AppColors.colorScheme.textPrimary else AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(vertical = AppDimens.spaceSm),
                         )
                     }
@@ -599,9 +636,9 @@ private fun DetailContent(
             }
         }
 
-        // ---------- 使用打卡 ----------
+        // ---------- 使用打卡（卡头：标题 + 打卡按钮 + 非数据态块；数据行铺平为 items，见下） ----------
         item(key = "usage") {
-            GroupCard {
+            GroupCard(modifier = Modifier.padding(bottom = AppDimens.cardSpacing)) {
                 Text(
                     text = stringResource(R.string.subscription_usage_title),
                     style = AppTextStyles.SectionTitle,
@@ -616,13 +653,53 @@ private fun DetailContent(
                     )
                     Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 }
-                UsageListBlock(
+                UsageListStatusBlock(
                     usageItems = usageItems,
-                    terminal = terminal,
-                    onUndo = onShowUndoDialog,
                     refreshSession = usageRefreshSession,
                     everLoaded = usageEverLoaded,
                 )
+            }
+        }
+
+        // ---------- 使用记录行（铺平虚拟化 + 稳定 key=usageId：DESIGN-SPEC §8 列表必须虚拟化，audit-15 #11） ----------
+        val usageCount = usageItems.itemCount
+        if (usageCount > 0) {
+            val appendLoading = usageItems.loadState.append is LoadState.Loading
+            items(
+                count = usageCount,
+                key = { index -> usageItems[index]?.usageId ?: -1L - index },
+            ) { index ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (index > 0) {
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = AppColors.colorScheme.hairline,
+                        )
+                    }
+                    usageItems[index]?.let { log ->
+                        UsageRow(
+                            log = log,
+                            terminal = terminal,
+                            onUndo = onShowUndoDialog,
+                        )
+                    }
+                    // 末行（且无 append footer 时）与下一卡之间承接原卡间距
+                    if (index == usageCount - 1 && !appendLoading) {
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                    }
+                }
+            }
+            if (appendLoading) {
+                item(key = "usage_footer") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        com.smartwash.common.ui.components.SkeletonBlock(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(14.dp)
+                        )
+                        Spacer(modifier = Modifier.height(AppDimens.cardSpacing))
+                    }
+                }
             }
         }
 
@@ -640,12 +717,41 @@ private fun DetailContent(
     }
 }
 
-/** 打卡列表块：分页（首刷骨架/失败重试/空态）+ 行内撤销入口（终态只读隐藏） */
+/**
+ * 自由高度信息行（备注等长文本变体，audit-15 #10）：InfoRow 固定 40dp 行高会溢出重叠，
+ * 此处 label + 多行 value 两列布局，字号/配色与 InfoRow 一致（bodySmall caption + textSecondary 标签）
+ */
 @Composable
-private fun UsageListBlock(
+private fun MultilineInfoRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = AppDimens.spaceXxs),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.colorScheme.textSecondary,
+        )
+        Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** 打卡列表非数据态块：首刷失败重试 / 骨架 / 真实空态；数据态已铺平为 LazyColumn items（见 DetailContent，audit-15 #11） */
+@Composable
+private fun UsageListStatusBlock(
     usageItems: androidx.paging.compose.LazyPagingItems<UsageLogVo>,
-    terminal: Boolean,
-    onUndo: (Long) -> Unit,
     refreshSession: Boolean,
     everLoaded: Boolean,
 ) {
@@ -659,12 +765,12 @@ private fun UsageListBlock(
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppColors.colorScheme.textSecondary,
                 )
-                // 44dp 最小热区（规范 §2.3），重试文字居中
+                // 48×48 最小热区（DESIGN-SPEC §3），重试文字居中
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .pressable(onClick = { usageItems.retry() })
-                        .heightIn(min = 44.dp)
+                        .heightIn(min = 48.dp)
                         .padding(vertical = AppDimens.spaceXs),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -685,43 +791,16 @@ private fun UsageListBlock(
         }
         // 走到这里必为 session=false && everLoaded=true（会话门控保证），语义=真实空结果
         usageItems.itemCount == 0 && refreshState is LoadState.NotLoading -> {
+            // 空态文案是引导下一步的正文：textSecondary 达标（audit-15 #7）
             Text(
                 text = stringResource(R.string.subscription_usage_empty),
                 style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = AppDimens.spaceMd),
             )
-        }
-        else -> {
-            Column {
-                usageItems.itemCount.let { count ->
-                    repeat(count) { index ->
-                        if (index > 0) {
-                            HorizontalDivider(
-                                thickness = 0.5.dp,
-                                color = AppColors.colorScheme.hairline,
-                            )
-                        }
-                        usageItems[index]?.let { log ->
-                            UsageRow(
-                                log = log,
-                                terminal = terminal,
-                                onUndo = onUndo,
-                            )
-                        }
-                    }
-                }
-                if (usageItems.loadState.append is LoadState.Loading) {
-                    com.smartwash.common.ui.components.SkeletonBlock(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(14.dp)
-                    )
-                }
-            }
         }
     }
 }
@@ -747,7 +826,8 @@ private fun UsageRow(
         Text(
             text = log.usageDate.orEmpty(),
             style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
-            fontWeight = if (isToday) FontWeight.SemiBold else FontWeight.Medium,
+            // 字重统一 SemiBold 防宽度跳变（AppTabBar 既定口径），「今天」标亮交给颜色 + chip（audit-15 #19）
+            fontWeight = FontWeight.SemiBold,
             color = if (isToday) AppColors.colorScheme.textGreen else AppColors.colorScheme.textPrimary,
         )
         if (isToday) {
@@ -755,16 +835,19 @@ private fun UsageRow(
             SubscriptionTagChip(
                 text = stringResource(R.string.subscription_usage_today),
                 containerColor = AppColors.colorScheme.iconContainerGreen,
-                contentColor = AppColors.colorScheme.iconForegroundGreen,
+                // 图标前景令牌不得拼作 12sp 文字色（iconForegroundGreen on iconContainerGreen 3.3:1），
+                // 小号绿字走 textGreenOnTint（Color.kt R17 裁定，audit-15 #6）
+                contentColor = AppColors.colorScheme.textGreenOnTint,
             )
         }
         Spacer(modifier = Modifier.weight(1f))
         if (!terminal) {
-            // 44dp 最小热区（规范 §2.3），文字居中
+            // 48×48 最小热区（DESIGN-SPEC §3），文字居中
             Box(
                 modifier = Modifier
                     .pressable(onClick = { onUndo(log.usageId) })
-                    .heightIn(min = 44.dp)
+                    .heightIn(min = 48.dp)
+                    .widthIn(min = 48.dp)
                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
                 contentAlignment = Alignment.Center,
             ) {
@@ -831,7 +914,8 @@ private fun CancelPathCard(
                     Text(
                         text = stringResource(R.string.subscription_cancel_path_empty),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColors.colorScheme.textTertiary,
+                        // 空态文案是引导正文：textSecondary 达标（audit-15 #8）
+                        color = AppColors.colorScheme.textSecondary,
                     )
                 } else {
                     if (!cancelUrl.isNullOrBlank()) {
@@ -849,11 +933,12 @@ private fun CancelPathCard(
                             modifier = Modifier.padding(top = AppDimens.spaceXxs),
                         )
                         Row(modifier = Modifier.padding(top = AppDimens.spaceXs)) {
-                            // 44dp 最小热区（规范 §2.3），文字居中
+                            // 48×48 最小热区（DESIGN-SPEC §3），两动作相邻间距保持 ≥8dp，文字居中
                             Box(
                                 modifier = Modifier
                                     .pressable(onClick = { onOpenUrl(cancelUrl) })
-                                    .heightIn(min = 44.dp)
+                                    .heightIn(min = 48.dp)
+                                    .widthIn(min = 48.dp)
                                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -865,11 +950,12 @@ private fun CancelPathCard(
                                 )
                             }
                             Spacer(modifier = Modifier.width(AppDimens.spaceMd))
-                            // 44dp 最小热区（规范 §2.3），文字居中
+                            // 48×48 最小热区（DESIGN-SPEC §3），文字居中
                             Box(
                                 modifier = Modifier
                                     .pressable(onClick = { onCopyUrl(cancelUrl) })
-                                    .heightIn(min = 44.dp)
+                                    .heightIn(min = 48.dp)
+                                    .widthIn(min = 48.dp)
                                     .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXxs),
                                 contentAlignment = Alignment.Center,
                             ) {

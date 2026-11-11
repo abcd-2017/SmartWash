@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -145,6 +147,9 @@ fun SubscriptionEditPage(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = AppDimens.pagePadding)
                         .padding(top = AppDimens.spaceSm, bottom = AppDimens.spaceLg)
+                        // 底部避让手势条/三键导航栏（DESIGN-SPEC §4）：提交按钮底距 = spaceLg + 导航栏，
+                        // 与外层 imePadding 键盘避让叠加不冲突（audit-14 #2）
+                        .navigationBarsPadding()
                 ) {
                     GroupCard {
                         // ---------- 名称 ----------
@@ -228,10 +233,13 @@ fun SubscriptionEditPage(
                             shape = RoundedCornerShape(AppDimens.inputRadius),
                             colors = tokenTextFieldColors(),
                         )
+                        // helper 是指导用户填写的可读正文：装饰档 textTertiary #A9AEA9 仅 2.25:1
+                        // 踩对比度红线（DESIGN-SPEC §10），12sp 弱化下限为 textSecondary（4.9:1）。
+                        // 本页四段 helper（间隔期数/自动续费/提醒天数/取消网址）同口径（audit-14 #1）
                         Text(
                             text = stringResource(R.string.subscription_form_interval_helper),
                             style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textTertiary,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
 
@@ -260,11 +268,12 @@ fun SubscriptionEditPage(
                             )
                             if (form.trialEndDate != null) {
                                 Spacer(modifier = Modifier.width(AppDimens.spaceSm))
-                                // 44dp 最小热区（规范 §2.3），文字居中
+                                // 48×48 最小热区（DESIGN-SPEC §3，与 SelectableChip 同口径），文字居中
                                 Box(
                                     modifier = Modifier
                                         .pressable(onClick = { viewModel.updateTrialEndDate(null) })
-                                        .heightIn(min = 44.dp)
+                                        .heightIn(min = 48.dp)
+                                        .widthIn(min = 48.dp)
                                         .padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.spaceXs),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -291,7 +300,7 @@ fun SubscriptionEditPage(
                                 Text(
                                     text = stringResource(R.string.subscription_form_auto_renew_helper),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = AppColors.colorScheme.textTertiary,
+                                    color = AppColors.colorScheme.textSecondary,
                                 )
                             }
                             SubscriptionToggle(
@@ -319,7 +328,7 @@ fun SubscriptionEditPage(
                         Text(
                             text = stringResource(R.string.subscription_form_remind_helper),
                             style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textTertiary,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
 
@@ -350,7 +359,7 @@ fun SubscriptionEditPage(
                         Text(
                             text = stringResource(R.string.subscription_form_cancel_url_helper),
                             style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.colorScheme.textTertiary,
+                            color = AppColors.colorScheme.textSecondary,
                             modifier = Modifier.padding(top = AppDimens.spaceXs),
                         )
                         if (form.cancelUrl.isNotBlank()) {
@@ -466,7 +475,7 @@ fun SubscriptionEditPage(
     }
 }
 
-/** 表单字段标签（13sp 次文本层级，模式对齐 ShortCodeCreatePage.FormLabel） */
+/** 表单字段标签（captionStrong 12sp 次文本层级，模式对齐 ShortCodeCreatePage.FormLabel；v0.4 字阶 13→12） */
 @Composable
 private fun FormLabel(text: String) {
     Text(
@@ -481,11 +490,13 @@ private fun FormLabel(text: String) {
 /** 行内文字动作（13→12sp captionStrong 收敛档，主色） */
 @Composable
 private fun InlineTextAction(text: String, onClick: () -> Unit) {
-    // 44dp 最小热区（规范 §2.3），文字居中
+    // 48×48 最小热区（DESIGN-SPEC §3，与 SelectableChip 同口径），
+    // 两动作横向并排时命中区不再粘连（相邻间距保持 ≥8dp），文字居中
     Box(
         modifier = Modifier
             .pressable(onClick = onClick)
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
+            .widthIn(min = 48.dp)
             .padding(vertical = AppDimens.spaceXxs),
         contentAlignment = Alignment.Center,
     ) {

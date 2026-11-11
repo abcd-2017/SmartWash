@@ -1,6 +1,6 @@
 import { HttpStatusCode } from "@ohos/axios"
 import { RouteNames } from "../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { bindCampus, unBindCampus } from "../network/api/UserApi"
 import { BaseResponse } from "../network/BaseResponse"
 import { UserInfoVo } from "../network/vo/UserInfoVo"
@@ -9,6 +9,8 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function BingCampusCardAlertBuilder() {
@@ -57,9 +59,9 @@ struct BingCampusCardAlert {
   /** 输入框描边色：错误 > 聚焦 > 常规（对齐安卓 OutlinedTextField 三态） */
   private inputBorderColor(): number {
     if (this.errorMessage !== "") {
-      return DesignColor.ERROR
+      return resColor('ERROR')
     }
-    return this.isFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE
+    return this.isFocused ? resColor('PRIMARY') : resColor('OUTLINE')
   }
 
   /** 确认绑定/解绑（防重：请求进行中忽略后续点击） */
@@ -69,7 +71,7 @@ struct BingCampusCardAlert {
       return
     }
     if (this.isBingFlag && this.campusCard === "") {
-      this.errorMessage = "校园卡号不能为空"
+      this.errorMessage = resString('campus_card_empty')
       return
     }
     this.errorMessage = ""
@@ -83,7 +85,7 @@ struct BingCampusCardAlert {
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住提示，避免 res 未赋值时解引用崩溃
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('bing_campus_card_alert_1'))
       return
     } finally {
       this.submitting = false
@@ -94,9 +96,9 @@ struct BingCampusCardAlert {
       logger.info('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}成功`)
       this.inputController.stopEditing()
       pathStack.pop()
-      showToastSafety(this.isBingFlag ? "绑定成功" : "解绑成功")
+      showToastSafety(this.isBingFlag ? resString('bind_success') : resString('unbind_success'))
     } else {
-      showToastSafety(res?.message ?? "", this.isBingFlag ? "绑定失败，请重试" : "解绑失败，请重试")
+      showToastSafety(res?.message ?? "", this.isBingFlag ? resString('bing_campus_card_alert_2') : resString('bing_campus_card_alert_3'))
       logger.warn('bingCampusCardAlert', `校园卡${this.isBingFlag ? "绑定" : "解绑"}被拒绝 code=${res.code} message=${res.message ?? ""}`)
     }
   }
@@ -104,27 +106,27 @@ struct BingCampusCardAlert {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Center }) {
         Column() {
           // 标题（对齐安卓 AppComponents.kt:961-965 headlineMedium 22/600）
-          Text(`${this.isBingFlag ? "绑定校园卡" : "解绑校园卡"}`)
+          Text(`${this.isBingFlag ? resString('bind_campus_card') : resString('unbind_campus_card')}`)
             .fontSize(DesignFontSize.STATUS_LARGE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .margin({ bottom: 16 })
 
           if (this.isBingFlag) {
             // 输入框（对齐安卓 OutlinedTextField r14 + 聚焦 primary 描边 + 16sp）
-            TextInput({ text: this.campusCard, placeholder: "请输入校园卡号", controller: this.inputController })
+            TextInput({ text: this.campusCard, placeholder: resString('input_campus_card'), controller: this.inputController })
               .width("100%")
               .height(48)
               .type(InputType.Number)
               .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .placeholderColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .placeholderColor(resColor('TEXT_SECONDARY'))
               .placeholderFont({ size: DesignFontSize.BODY })
               .backgroundColor(Color.Transparent)
               .borderRadius(DesignDimens.INPUT_RADIUS)
@@ -150,22 +152,22 @@ struct BingCampusCardAlert {
             if (this.errorMessage !== "") {
               Text(this.errorMessage)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.ERROR)
+                .fontColor(resColor('ERROR'))
                 .alignSelf(ItemAlign.Start)
                 .margin({ top: 4 })
             }
           } else {
-            Text("确定要解绑当前绑定的校园卡吗？")
+            Text($r('app.string.confirm_unbind_question'))
               .fontSize(DesignFontSize.BODY)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
           }
 
           // 按钮行（对齐安卓 DialogAction：48dp 热区，左右贴合边缘）
           Row() {
             Row() {
-              Text("取消")
+              Text($r('app.string.cancel'))
                 .fontSize(DesignFontSize.BODY)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
             }
             .layoutWeight(1)
             .height(48)
@@ -177,15 +179,15 @@ struct BingCampusCardAlert {
 
             Divider()
               .vertical(true)
-              .color(DesignColor.DIVIDER)
+              .color(resColor('DIVIDER'))
               .strokeWidth(0.5)
               .height(48)
 
             Row() {
-              Text(this.isBingFlag ? "确认" : "确认解绑")
+              Text(this.isBingFlag ? resString('confirm') : resString('confirm_unbind'))
                 .fontSize(DesignFontSize.BODY)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(this.isBingFlag ? DesignColor.PRIMARY : DesignColor.DANGER_INK)
+                .fontColor(this.isBingFlag ? resColor('PRIMARY') : resColor('DANGER_INK'))
             }
             .layoutWeight(1)
             .height(48)
@@ -200,12 +202,12 @@ struct BingCampusCardAlert {
         }
         .width("80%")
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 20, bottom: 20 })
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
         // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
         .shadow({
           radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-          color: DesignColor.SHADOW_COLOR_FLOAT,
+          color: resColor('SHADOW_COLOR_FLOAT'),
           offsetX: 0,
           offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
         })
@@ -223,7 +225,7 @@ struct BingCampusCardAlert {
       pathStack.pop()
     })
     // 点击遮罩（DIALOG 蒙层）：令牌化（深浅色同值，遮罩语义不随主题）
-    .backgroundColor(DesignColor.SCRIM_BLACK_50)
+    .backgroundColor(resColor('SCRIM_BLACK_50'))
     .hideTitleBar(true)
     .mode(NavDestinationMode.DIALOG)
   }

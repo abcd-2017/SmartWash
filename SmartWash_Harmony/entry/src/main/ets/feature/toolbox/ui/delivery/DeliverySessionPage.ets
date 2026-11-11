@@ -14,14 +14,7 @@ import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit'
 import { HttpStatusCode } from '@ohos/axios'
 import { RouteNames } from '../../../../constant/RouteNames'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontFeature,
-  DesignFontWeight
-} from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import {
   AddDeliveryTextForm,
   closeDeliverySession,
@@ -51,6 +44,8 @@ import { getStringParam, pathStack } from '../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../../view/common/ThemeRefresh'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'deliverySession'
@@ -89,7 +84,7 @@ struct DeliverySessionPage {
       title: DeliveryText.toolbox_delivery_confirm_close_title,
       message: DeliveryText.toolbox_delivery_confirm_close_message,
       confirmText: DeliveryText.toolbox_delivery_action_close,
-      cancelText: '取消',
+      cancelText: resString('cancel'),
       isDanger: true,
       onConfirm: () => {
         this.closeSession()
@@ -371,12 +366,16 @@ struct DeliverySessionPage {
   /** 文本预览弹窗：正文 + 「复制并取走」（对齐安卓 PreviewState.TextReady） */
   private openTextPreview(item: DeliveryItemVo, text: string): void {
     const itemId = item.id ?? 0
+    // 短期止血（compare-07 #12）：AppConfirmDialog 无滚动块，超长正文撑破弹窗——预览截断展示，
+    // 上限对齐安卓滚动块 260vp（≈12 行正文）；「复制并取走」以认领响应正文为准，不受截断影响
+    const previewLimit = 400
+    const previewText = text.length > previewLimit ? `${text.substring(0, previewLimit)}…` : text
     const controller: CustomDialogController = new CustomDialogController({
       builder: AppConfirmDialog({
         title: DeliveryText.toolbox_delivery_kind_text,
-        message: text.length > 0 ? text : DeliveryText.toolbox_delivery_preview_error,
+        message: previewText.length > 0 ? previewText : DeliveryText.toolbox_delivery_preview_error,
         confirmText: DeliveryText.toolbox_delivery_action_copy_take,
-        cancelText: '关闭',
+        cancelText: resString('lab_soundscape_timer_off'),
         onConfirm: () => {
           this.copyTextAndTake(itemId, text)
         },
@@ -399,7 +398,7 @@ struct DeliverySessionPage {
         title: DeliveryText.toolbox_delivery_confirm_take_title,
         message: DeliveryText.toolbox_delivery_confirm_take_message,
         confirmText: DeliveryText.toolbox_delivery_action_take,
-        cancelText: '取消',
+        cancelText: resString('cancel'),
         onConfirm: () => {
           this.takeItem(itemId)
         },
@@ -519,7 +518,7 @@ struct DeliverySessionPage {
     })
   }
 
-  /** 页头倒计时文案（轮询驱动刷新，秒级精度可接受） */
+  /** 页头倒计时文案（轮询驱动刷新，秒级精度可接受）；归零仍显示「剩余 00:00」对齐安卓（compare-07 #27） */
   private headerCountdown(): string {
     const session = this.session
     if (session === null) {
@@ -529,8 +528,17 @@ struct DeliverySessionPage {
     if (remain === null) {
       return ''
     }
-    return remain <= 0 ? DeliveryText.toolbox_delivery_session_expired
-      : `${DeliveryText.toolbox_delivery_countdown_prefix}${formatRemaining(remain)}`
+    return `${DeliveryText.toolbox_delivery_countdown_prefix}${formatRemaining(remain)}`
+  }
+
+  /** 倒计时紧迫态（≤60s 切 dangerInk，两档逻辑对齐安卓 DeliveryCountdown.kt，compare-07 #2） */
+  private isCountdownUrgent(): boolean {
+    const session = this.session
+    if (session === null) {
+      return false
+    }
+    const remain = remainingSeconds(session.expireAt ?? null)
+    return remain !== null && remain <= 60
   }
 
   /** 会话信息条（对齐安卓 SessionStrip） */
@@ -541,27 +549,28 @@ struct DeliverySessionPage {
         Column() {
             SymbolGlyph($r('sys.symbol.computer'))
             .fontSize(20)
-            .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+            .fontColor([resColor('ICON_FOREGROUND_BLUE')])
         }
         .width(36)
         .height(36)
         .borderRadius(DesignDimens.RADIUS_MD)
-        .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+        .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
 
         Column() {
           Text(this.session?.code ?? '')
-            .fontSize(DesignFontSize.CARD_TITLE)
-            .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontSize(DesignFontSize.BODY)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
           Text((this.session?.enterUrl ?? '').length > 0 ? (this.session?.enterUrl ?? '')
             : DeliveryText.toolbox_delivery_url_fallback)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            // URL 是二维码扫不出来时的唯一手动入口，可读内容不用 textTertiary（compare-07 #5）
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -569,29 +578,34 @@ struct DeliverySessionPage {
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
         .margin({ left: DesignDimens.SPACE_SM })
+        // 复制热区收敛到投递码/URL 列：整卡 onClick 会冒泡——点「关闭」会先复制再弹确认
+        //（compare-07 #9，对齐安卓 weight(1f) + heightIn(min 44)）
+        .constraintSize({ minHeight: 44 })
+        .onClick(() => {
+          this.copyCode()
+        })
 
         Text(DeliveryText.toolbox_delivery_action_close_session)
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.DANGER_INK)
-          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 12, bottom: 12 })
+          .fontColor(resColor('DANGER_INK'))
+          .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
           .onClick(() => {
+            // ArkUI onClick 走手势竞争、内层优先消费，无需显式阻断冒泡（compare-07 #9；
+            // ClickEvent 无 stopPropagation 成员，SDK 17 编译核实）
             this.closeDialogController.open()
           })
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
-      .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.SPACE_SM, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
-      .onClick(() => {
-        this.copyCode()
-      })
+      .padding(DesignDimens.CARD_PADDING)
     }
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -600,7 +614,7 @@ struct DeliverySessionPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -613,13 +627,16 @@ struct DeliverySessionPage {
           Text(DeliveryText.toolbox_delivery_session_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
 
           Blank()
 
+          // 倒计时常态色不用 ongoingInk（页面底 2.54:1 / 白卡 2.76:1 违反 §10 红线，compare-07 #1），
+          // ≤60s 切 dangerInk 紧迫档（#2，对齐安卓 DeliveryCountdown.kt 两档逻辑）
           Text(this.headerCountdown())
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.ONGOING_INK)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(this.isCountdownUrgent() ? resColor('DANGER_INK') : resColor('ON_WARNING_CONTAINER'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ right: DesignDimens.SPACE_XS })
         }
@@ -633,25 +650,29 @@ struct DeliverySessionPage {
           this.SessionStrip()
         }
         .width('100%')
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .border({ width: 1, color: DesignColor.OUTLINE })
+        .border({ width: 1, color: resColor('OUTLINE') })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
         .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
 
-        // 轮询失败横幅（列表非空时）
+        // 轮询失败横幅（列表非空时）：左对齐 + 页留白（对齐安卓，compare-07 #22）
         if (this.pollFailed && this.items.length > 0) {
           Text(DeliveryText.toolbox_delivery_poll_error)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.DANGER_INK)
+            .fontColor(resColor('DANGER_INK'))
             .width('100%')
-            .textAlign(TextAlign.Center)
-            .padding({ top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: DesignDimens.SPACE_XXS,
+              bottom: DesignDimens.SPACE_XXS
+            })
         }
 
         // 内容区：首刷骨架 / 首刷失败重试 / 空态 / 条目流
@@ -686,88 +707,140 @@ struct DeliverySessionPage {
           .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
         } else {
-          List() {
-            ForEach(this.items, (item: DeliveryItemVo) => {
-              ListItem() {
-                DeliveryItemRow({
-                  item: item,
-                  onRowClick: () => {
-                    this.openItem(item)
+          // 条目流包白卡容器（compare-07 #7，对齐安卓 GroupCard：白底 + 描边 + 卡片阴影 + 卡内水平 20）
+          Column() {
+            List() {
+              ForEach(this.items, (item: DeliveryItemVo, index: number) => {
+                ListItem() {
+                  Column() {
+                    DeliveryItemRow({
+                      item: item,
+                      onRowClick: () => {
+                        this.openItem(item)
+                      }
+                    })
+                    if (index < this.items.length - 1) {
+                      // 卡内发丝线随图标缩进：32 图标容器 + 12 间距（安卓 divider start=44，compare-07 #23；
+                      // ArkUI List.divider 不支持行内缩进，改为行间手绘近似）
+                      Divider()
+                        .strokeWidth(0.5)
+                        .color(resColor('HAIRLINE'))
+                        .margin({ left: DesignDimens.SPACE_XXL + DesignDimens.SPACE_SM })
+                    }
                   }
-                })
-              }
-            }, (item: DeliveryItemVo) => `${item.id ?? 0}`)
+                }
+              }, (item: DeliveryItemVo) => `${item.id ?? 0}`)
+            }
+            .width('100%')
+            .layoutWeight(1)
           }
           .width('100%')
           .layoutWeight(1)
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-          .divider({ strokeWidth: 0.5, color: DesignColor.HAIRLINE })
+          .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+          .backgroundColor(resColor('SURFACE'))
+          .borderRadius(DesignDimens.CARD_RADIUS)
+          .border({ width: 1, color: resColor('OUTLINE') })
+          .shadow({
+            radius: DesignElevation.LEVEL_1,
+            color: resColor('SHADOW_COLOR_CARD'),
+            offsetX: 0,
+            offsetY: 2
+          })
+          .margin({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_XS,
+            bottom: DesignDimens.SPACE_XS
+          })
         }
 
         // ---------- 发送区（浮层：顶线 + 选取入口 + 文本输入 + 发送） ----------
         Column() {
           Divider()
-            .color(DesignColor.HAIRLINE)
+            .color(resColor('HAIRLINE'))
             .strokeWidth(0.5)
 
           if (this.sending) {
             Text(DeliveryText.toolbox_delivery_sending)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_TERTIARY)
+              // 传输状态为可读内容，不用 textTertiary（compare-07 #5）
+              .fontColor(resColor('TEXT_SECONDARY'))
               .width('100%')
-              .padding({ top: DesignDimens.SPACE_XS })
+              // 状态行独立留白：横向 24 不贴屏幕左缘（compare-07 #8，对齐安卓 horizontal pagePadding）
+              .padding({
+                left: DesignDimens.PAGE_PADDING,
+                right: DesignDimens.PAGE_PADDING,
+                top: DesignDimens.SPACE_SM,
+                bottom: DesignDimens.SPACE_XXS
+              })
           } else if (this.sendError.length > 0) {
             Text(this.sendError)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.ERROR)
+              .fontColor(resColor('ERROR'))
               .width('100%')
-              .padding({ top: DesignDimens.SPACE_XS })
+              .padding({
+                left: DesignDimens.PAGE_PADDING,
+                right: DesignDimens.PAGE_PADDING,
+                top: DesignDimens.SPACE_SM,
+                bottom: DesignDimens.SPACE_XXS
+              })
           }
 
           Row() {
-            // 选图片（44vp 热区 + 36vp 图标容器）
+            // 选图片：44vp 热区容器外包 36vp 视觉块（热区与视觉分离，对齐安卓 PickerIconButton，compare-07 #11）
             Column() {
-              SymbolGlyph($r('sys.symbol.shutter_photo'))
-                .fontSize(20)
-                .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+              Column() {
+                SymbolGlyph($r('sys.symbol.shutter_photo'))
+                  .fontSize(20)
+                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
+              }
+              .width(36)
+              .height(36)
+              .borderRadius(DesignDimens.RADIUS_MD)
+              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
             }
-            .width(36)
-            .height(36)
-            .borderRadius(DesignDimens.RADIUS_MD)
-            .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+            .width(44)
+            .height(44)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .onClick(() => {
               this.pickImage()
             })
-            .padding({ top: 4, bottom: 4 })
 
+            // 相邻触控目标间距 ≥8（规范 §3，compare-07 #10）
             Column() {
-              SymbolGlyph($r('sys.symbol.doc'))
-                .fontSize(20)
-                .fontColor([DesignColor.ICON_FOREGROUND_BLUE])
+              Column() {
+                SymbolGlyph($r('sys.symbol.doc'))
+                  .fontSize(20)
+                  .fontColor([resColor('ICON_FOREGROUND_BLUE')])
+              }
+              .width(36)
+              .height(36)
+              .borderRadius(DesignDimens.RADIUS_MD)
+              .backgroundColor(resColor('ICON_CONTAINER_BLUE'))
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
             }
-            .width(36)
-            .height(36)
-            .borderRadius(DesignDimens.RADIUS_MD)
-            .backgroundColor(DesignColor.ICON_CONTAINER_BLUE)
+            .width(44)
+            .height(44)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .onClick(() => {
               this.pickFile()
             })
-            .padding({ top: 4, bottom: 4 })
-            .margin({ left: DesignDimens.SPACE_XXS })
+            .margin({ left: DesignDimens.SPACE_XS })
 
             TextInput({ text: this.draft, placeholder: DeliveryText.toolbox_delivery_send_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .borderRadius(DesignDimens.INPUT_RADIUS)
               .borderWidth(1)
-              .borderColor(this.draftFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
-              .placeholderFont({ size: DesignFontSize.BODY_SMALL })
+              .borderColor(this.draftFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
+              .placeholderFont({ size: DesignFontSize.CAPTION })
               .layoutWeight(1)
               .margin({ left: DesignDimens.SPACE_XS })
               .onFocus(() => {
@@ -787,12 +860,12 @@ struct DeliverySessionPage {
             Column() {
               SymbolGlyph($r('sys.symbol.paperplane_fill'))
                 .fontSize(20)
-                .fontColor([DesignColor.ON_PRIMARY])
+                .fontColor([resColor('ON_PRIMARY')])
             }
             .width(44)
             .height(44)
             .borderRadius(22)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .opacity(this.draft.trim().length > 0 && !this.sending ? 1 : 0.5)
@@ -808,10 +881,10 @@ struct DeliverySessionPage {
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_SM + safeBottomVp() })
         }
         .width('100%')
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -819,7 +892,7 @@ struct DeliverySessionPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

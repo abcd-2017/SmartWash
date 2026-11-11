@@ -12,7 +12,7 @@
 // - 无页面级定时器（无轮询），无需 aboutToDisappear 清理。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { NOTICE_PAGE_SIZE, getNotices, getUnreadCount, markNoticeRead, readAllNotices } from '../../../network/api/NoticeApi'
 import { NoticeVo } from '../../../network/vo/NoticeVo'
@@ -25,7 +25,7 @@ import {
   noticeTypeText
 } from '../../../utils/NoticeLogic'
 import { NoticeErrorState, NoticePageHeader, NoticeTagChip } from './NoticeUiCommon'
-import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, SkeletonBlock, SkeletonList } from '../../../view/common/AppComponents'
+import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, LoadingDots, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { PagingController } from '../../../utils/PagingUtil'
 import { pathStack } from '../../../utils/PathStackUtil'
@@ -35,6 +35,7 @@ import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
 import { handleDeepLink } from '../../../utils/deeplink/DeepLinkHandler'
 import { WebPageParam } from '../../../pages/WebPage'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'noticeInboxPage'
@@ -307,7 +308,7 @@ struct NoticeInboxPage {
         })
 
         if (this.isLoadingFirst) {
-          SkeletonList({ rows: 5 })
+          SkeletonList({ rows: 4 })
             .width('100%')
             .layoutWeight(1)
         } else if (this.isFirstError && this.list.length === 0) {
@@ -340,35 +341,45 @@ struct NoticeInboxPage {
                     }
                   })
                 }
-              }, (vo: NoticeVo) => `${vo.id}`)
+                // 卡片间距 16（对齐安卓 cardSpacing）：零间距时相邻卡片描边/阴影相贴、列表不可扫读
+                .margin({ bottom: DesignDimens.CARD_SPACING })
+              }, (vo: NoticeVo) => `notice_${vo.id}_${vo.createdAt}`)
+              // key 叠加 createdAt 兜底：后端异常返回多条 id=null 时 id 同为 0，
+              // 纯 id 作 key 会复用渲染异常（对齐安卓 key 修复）
 
-              // 尾部：加载中骨架 / 失败重试（对齐安卓 append LoadState）
+              // 尾部：加载中三点 / 失败重试（对齐安卓 append LoadState：LoadingDots /
+              // SECONDARY 小按钮；触底自动加载口径保留，仅补齐形态，纵向 16 对齐安卓 spaceMd）
               ListItem() {
-                if (this.isLoadingMore) {
-                  Row() {
-                    SkeletonBlock()
-                      .width(120)
-                      .height(14)
-                  }
-                  .width('100%')
-                  .padding({ top: 12, bottom: 12 })
-                  .justifyContent(FlexAlign.Center)
-                } else if (this.appendError) {
-                  Text(NoticeText.notice_load_more_failed)
-                    .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.DANGER_INK)
-                    .width('100%')
-                    .textAlign(TextAlign.Center)
-                    .padding({ top: 12, bottom: 12 })
-                    .onClick(() => {
-                      this.paging.retry()
+                Column() {
+                  if (this.isLoadingMore) {
+                    LoadingDots()
+                  } else if (this.appendError) {
+                    AppButton({
+                      small: true,
+                      text: NoticeText.notice_load_more_failed,
+                      variant: AppButtonVariant.SECONDARY,
+                      click: (): void => {
+                        this.paging.retry()
+                      }
                     })
+                  }
                 }
+                .width('100%')
+                .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
+                .justifyContent(FlexAlign.Center)
+                .alignItems(HorizontalAlign.Center)
               }
             }
             .width('100%')
             .height('100%')
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 8 + safeBottomVp() })
+            // 底部避让手势条/三键导航 + spaceXl(24) 余量（对齐安卓 navBarsBottom + spaceXl）；
+            // top 8 对齐安卓 spaceXs
+            .padding({
+              left: DesignDimens.PAGE_PADDING,
+              right: DesignDimens.PAGE_PADDING,
+              top: 8,
+              bottom: safeBottomVp() + DesignDimens.SPACE_XL
+            })
             .divider({ strokeWidth: 0, color: Color.Transparent })
             .onScrollIndex((start: number, end: number) => {
               this.paging.onScrollIndex(end, this.list.length)
@@ -387,7 +398,7 @@ struct NoticeInboxPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -398,8 +409,9 @@ struct NoticeInboxPage {
 
 /**
  * 通知卡片（规范 §3.1 唯一卡片画法 + 整卡点击）：
- * 顶行 = 类型 tag（语义色胶囊）+ 相对时间；主体 = 未读圆点 + 标题（未读主色加粗 /
- * 已读次文本灰化）+ 内容摘要（两行省略）。
+ * 顶行 = 类型 tag（语义色胶囊）+ 未读圆点 + 相对时间；主体 = 标题（未读主色 500 /
+ * 已读次文本 400，同字号 14）+ 内容摘要（两行省略）。色点不占标题行缩进，
+ * 未读/已读标题左缘恒对齐（对齐安卓）。
  */
 @ComponentV2
 struct NoticeCard {
@@ -416,12 +428,14 @@ struct NoticeCard {
   private tagColors(): NoticeTagColors {
     const type = this.type()
     if (type === NoticeType.SYSTEM) {
-      return { container: DesignColor.ICON_CONTAINER_ORANGE, content: DesignColor.ICON_FOREGROUND_ORANGE }
+      // 文字级深档 onWarningContainer：iconForegroundOrange 是图标档（非文字 3:1 豁免），
+      // 作 12fp 文字色 on 橙浅底仅 2.50:1 触红线（对齐安卓 SYSTEM tag 修复，深色档随主题回写）
+      return { container: resColor('ICON_CONTAINER_ORANGE'), content: resColor('ON_WARNING_CONTAINER') }
     }
     if (type === NoticeType.ANNOUNCEMENT) {
-      return { container: DesignColor.ICON_CONTAINER_BLUE, content: DesignColor.ICON_FOREGROUND_BLUE }
+      return { container: resColor('ICON_CONTAINER_BLUE'), content: resColor('ICON_FOREGROUND_BLUE') }
     }
-    return { container: DesignColor.SURFACE_VARIANT, content: DesignColor.TEXT_SECONDARY }
+    return { container: resColor('SURFACE_VARIANT'), content: resColor('TEXT_SECONDARY') }
   }
 
   /** 相对时间文案（解析失败返回空串，UI 隐藏时间） */
@@ -441,10 +455,23 @@ struct NoticeCard {
 
         Blank()
 
+        if (!this.vo.isRead) {
+          // 未读状态色点（规范 §3.5：8vp 圆点，提醒语义取粉/异常色）：挪顶行不占标题缩进，
+          // 未读/已读标题左缘恒对齐（对齐安卓）；纯装饰无读屏语义，状态经标题无障碍描述传达
+          Column()
+            .width(8)
+            .height(8)
+            .borderRadius(4)
+            .backgroundColor(resColor('ICON_FOREGROUND_PINK'))
+            .margin({ right: DesignDimens.SPACE_XS })
+        }
+
         if (this.timeLabel().length > 0) {
           Text(this.timeLabel())
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            // 时间戳是信息性元数据：textTertiary on 白 2.25:1 触红线，对齐安卓改 textSecondary
+            .fontColor(resColor('TEXT_SECONDARY'))
+            // tnum 防日期/时分抖动：鸿蒙增强（安卓时间戳未开 tnum），有意保留
             .fontFeature(DesignFontFeature.TNUM)
         }
       }
@@ -452,32 +479,28 @@ struct NoticeCard {
       .alignItems(VerticalAlign.Center)
 
       Row() {
-        if (!this.vo.isRead) {
-          // 未读状态色点（规范 §3.5：8vp 圆点，提醒语义取粉/异常色）
-          Column()
-            .width(8)
-            .height(8)
-            .borderRadius(4)
-            .backgroundColor(DesignColor.ICON_FOREGROUND_PINK)
-            .margin({ right: DesignDimens.SPACE_XS })
-        }
-
         Text(this.vo.title)
-          .fontSize(this.vo.isRead ? DesignFontSize.BODY_SMALL : DesignFontSize.CARD_TITLE)
-          .fontWeight(this.vo.isRead ? DesignFontWeight.NORMAL : DesignFontWeight.SEMI_BOLD)
-          .fontColor(this.vo.isRead ? DesignColor.TEXT_SECONDARY : DesignColor.TEXT_PRIMARY)
+          // 未读/已读同字号 14（字阶八档无夹档），层级靠字重 500/400 与颜色区分（对齐安卓 titleSmall/bodyMedium）
+          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontWeight(this.vo.isRead ? DesignFontWeight.NORMAL : DesignFontWeight.MEDIUM)
+          .fontColor(this.vo.isRead ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
+          // 读屏状态描述（规范 §10：颜色不是唯一信息载体）：描述在标题内容之后朗读，
+          // 对齐安卓标题 stateDescription
+          .accessibilityDescription(this.vo.isRead ? NoticeText.notice_state_read : NoticeText.notice_state_unread)
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
       .margin({ top: DesignDimens.SPACE_SM })
 
-      if (this.vo.content.length > 0) {
+      if (this.vo.content.trim().length > 0) {
         Text(this.vo.content)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(this.vo.isRead ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_SECONDARY)
+          // 摘要正文是核心可读内容：已读 textTertiary on 白 2.25:1 触红线，两态统一
+          // TEXT_SECONDARY（4.90:1，对齐安卓），层级靠标题字重/颜色区分
+          .fontColor(resColor('TEXT_SECONDARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -487,13 +510,13 @@ struct NoticeCard {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

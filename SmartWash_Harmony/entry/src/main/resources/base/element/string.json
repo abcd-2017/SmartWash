@@ -1,6 +1,5070 @@
 {
   "string": [
     {
+      "name": "cancelled",
+      "value": "已取消"
+    },
+    {
+      "name": "order_status_refunded",
+      "value": "已退款"
+    },
+    {
+      "name": "pending_payment",
+      "value": "待支付"
+    },
+    {
+      "name": "pending_shipment",
+      "value": "待寄件"
+    },
+    {
+      "name": "order_status_received",
+      "value": "已收取"
+    },
+    {
+      "name": "step_washing",
+      "value": "清洗中"
+    },
+    {
+      "name": "order_status_dried",
+      "value": "已烘干"
+    },
+    {
+      "name": "order_status_in_delivery",
+      "value": "配送中"
+    },
+    {
+      "name": "step_pickup",
+      "value": "待取件"
+    },
+    {
+      "name": "completed",
+      "value": "已完成"
+    },
+    {
+      "name": "order_status_all",
+      "value": "全部订单"
+    },
+    {
+      "name": "div_chart_reader_1",
+      "value": "卦盘字段缺失: siZhu"
+    },
+    {
+      "name": "div_chart_reader_2",
+      "value": "六爻行缺 yao 字段"
+    },
+    {
+      "name": "div_method_liuyao_name",
+      "value": "六爻"
+    },
+    {
+      "name": "div_method_meihua_name",
+      "value": "梅花"
+    },
+    {
+      "name": "div_method_qimen_name",
+      "value": "奇门"
+    },
+    {
+      "name": "div_method_liuren_name",
+      "value": "六壬"
+    },
+    {
+      "name": "div_chart_reader_3",
+      "value": "奇门遁甲"
+    },
+    {
+      "name": "div_chart_reader_4",
+      "value": "大六壬"
+    },
+    {
+      "name": "div_llm_repository_1",
+      "value": "尚未配置解读模型，请先到设置中配置"
+    },
+    {
+      "name": "div_llm_repository_2",
+      "value": "该问题不适合以卜筮作答，请寻求现实帮助"
+    },
+    {
+      "name": "div_error_rate_limited",
+      "value": "今日解读次数已达上限，请明日再来"
+    },
+    {
+      "name": "div_llm_repository_3",
+      "value": "解读服务暂不可用，请稍后再试"
+    },
+    {
+      "name": "div_llm_repository_4",
+      "value": "卦例不存在，请返回重新起卦"
+    },
+    {
+      "name": "div_reading_error",
+      "value": "解读暂不可用，请稍后重试"
+    },
+    {
+      "name": "div_llm_repository_5",
+      "value": "观象台为传统术数排盘与文化解读工具，结果仅供娱乐与文化研究参考，不构成任何决策依据。"
+    },
+    {
+      "name": "div_llm_repository_6",
+      "value": "梅花易数"
+    },
+    {
+      "name": "div_llm_repository_7",
+      "value": "奇门遁甲"
+    },
+    {
+      "name": "div_llm_repository_8",
+      "value": "大六壬"
+    },
+    {
+      "name": "div_llm_repository_9",
+      "value": "所问之事"
+    },
+    {
+      "name": "div_llm_repository_10",
+      "value": "已沿用你所起的这一卦继续推演。盘面未变，变化的只是你追问的切口——说得更具体些，我可以就那一处细论。"
+    },
+    {
+      "name": "div_llm_repository_11",
+      "value": "这一卦的推演已趋完整。若想换一个角度，可以重新起卦；同一卦象反复追问，信息增量有限。"
+    },
+    {
+      "name": "div_markdown_1",
+      "value": "免责声明："
+    },
+    {
+      "name": "div_markdown_2",
+      "value": "免责声明:"
+    },
+    {
+      "name": "divination_api_1",
+      "value": "未记所问"
+    },
+    {
+      "name": "div_sse_client_1",
+      "value": "登录失效，请重新登录！"
+    },
+    {
+      "name": "div_sse_client_2",
+      "value": "解读推流中断，请重试"
+    },
+    {
+      "name": "div_sse_client_3",
+      "value": "解读服务暂不可用，请稍后再试"
+    },
+    {
+      "name": "div_sse_client_4",
+      "value": "解读服务异常，请稍后再试"
+    },
+    {
+      "name": "div_sse_client_5",
+      "value": "SSE 数据块处理异常"
+    },
+    {
+      "name": "div_sse_client_6",
+      "value": "登录失效"
+    },
+    {
+      "name": "div_title",
+      "value": "观象台"
+    },
+    {
+      "name": "div_text_home_xun_kong_format",
+      "value": "旬空 %s"
+    },
+    {
+      "name": "div_home_ledger",
+      "value": "案 卷"
+    },
+    {
+      "name": "div_home_ledger_more",
+      "value": "卦历 ›"
+    },
+    {
+      "name": "div_disclaimer_footer",
+      "value": "内容基于玄学体系生成，仅供文化参考 · 不构成决策建议"
+    },
+    {
+      "name": "div_sign_seal",
+      "value": "签"
+    },
+    {
+      "name": "div_text_sign_card_title",
+      "value": "今日一签 · %s"
+    },
+    {
+      "name": "div_sign_card_source",
+      "value": "梅花时间卦"
+    },
+    {
+      "name": "div_home_ledger_go_ask",
+      "value": "去起卦"
+    },
+    {
+      "name": "div_method_liuyao_desc",
+      "value": "摇铜钱问一事\\n装卦最全 · 应期可推"
+    },
+    {
+      "name": "div_method_liuyao_use_for",
+      "value": "日常决疑 · 具体事件"
+    },
+    {
+      "name": "div_method_liuyao_tag",
+      "value": "推 荐"
+    },
+    {
+      "name": "div_method_meihua_desc",
+      "value": "时间数字起卦\\n体用生克 · 快占一事"
+    },
+    {
+      "name": "div_method_meihua_use_for",
+      "value": "见物占数 · 随机应变"
+    },
+    {
+      "name": "div_method_qimen_desc",
+      "value": "九宫排局\\n择时择方 · 趋避有道"
+    },
+    {
+      "name": "div_method_qimen_use_for",
+      "value": "趋吉避凶 · 方位选择"
+    },
+    {
+      "name": "div_method_liuren_desc",
+      "value": "月将加时 · 三传定机\\n人事占验最精"
+    },
+    {
+      "name": "div_method_liuren_use_for",
+      "value": "精细推算 · 复杂事务"
+    },
+    {
+      "name": "div_history_empty",
+      "value": "案卷尚空，且去起一卦"
+    },
+    {
+      "name": "div_history_title",
+      "value": "卦历 · 案卷"
+    },
+    {
+      "name": "div_history_note",
+      "value": "复盘沿用原盘原时刻 · 不因当前日期重算"
+    },
+    {
+      "name": "div_filter_all",
+      "value": "全部"
+    },
+    {
+      "name": "div_text_history_synced",
+      "value": "已建档"
+    },
+    {
+      "name": "div_ask_title",
+      "value": "心中所问"
+    },
+    {
+      "name": "div_ask_hint",
+      "value": "默念所问之事，一事一占"
+    },
+    {
+      "name": "div_question_example",
+      "value": "例：未来三个月能否找到合适工作？"
+    },
+    {
+      "name": "div_ask_category_label",
+      "value": "所问领域"
+    },
+    {
+      "name": "div_ask_category_auto",
+      "value": "自动识别，可修改"
+    },
+    {
+      "name": "div_ask_category_manual",
+      "value": "已手动选择"
+    },
+    {
+      "name": "div_category_career",
+      "value": "事业"
+    },
+    {
+      "name": "div_category_wealth",
+      "value": "财运"
+    },
+    {
+      "name": "div_category_love",
+      "value": "感情"
+    },
+    {
+      "name": "div_category_study",
+      "value": "学业"
+    },
+    {
+      "name": "div_category_travel",
+      "value": "出行"
+    },
+    {
+      "name": "div_category_other",
+      "value": "其他"
+    },
+    {
+      "name": "div_ask_cast_method_label",
+      "value": "起卦方式"
+    },
+    {
+      "name": "div_cast_method_shake",
+      "value": "静心摇卦"
+    },
+    {
+      "name": "div_cast_method_shake_sub",
+      "value": "三枚铜钱 · 六掷成卦"
+    },
+    {
+      "name": "div_cast_method_lines",
+      "value": "直接输入爻值"
+    },
+    {
+      "name": "div_cast_method_lines_sub",
+      "value": "逐爻录入单拆重交"
+    },
+    {
+      "name": "div_cast_method_time_sub",
+      "value": "以此时此刻起卦"
+    },
+    {
+      "name": "div_cast_method_number",
+      "value": "随口报数"
+    },
+    {
+      "name": "div_cast_method_number_sub",
+      "value": "心中默念两数"
+    },
+    {
+      "name": "div_cast_method_now_ju",
+      "value": "立即起局"
+    },
+    {
+      "name": "div_cast_method_now_ju_sub",
+      "value": "按当前时辰拆补转盘"
+    },
+    {
+      "name": "div_cast_method_now_ke",
+      "value": "立即起课"
+    },
+    {
+      "name": "div_cast_method_now_ke_sub",
+      "value": "月将加时 · 四课三传"
+    },
+    {
+      "name": "div_ask_go",
+      "value": "静 心 · 起 卦"
+    },
+    {
+      "name": "div_ask_casting",
+      "value": "推演中…"
+    },
+    {
+      "name": "div_ask_safety_hint",
+      "value": "涉及医疗 / 安全等问题请寻求现实帮助"
+    },
+    {
+      "name": "div_manual_confirm",
+      "value": "装 卦"
+    },
+    {
+      "name": "div_numbers_hint",
+      "value": "心中默念两个 1–999 的数"
+    },
+    {
+      "name": "div_yao_position_1",
+      "value": "初爻"
+    },
+    {
+      "name": "div_yao_position_2",
+      "value": "二爻"
+    },
+    {
+      "name": "div_yao_position_3",
+      "value": "三爻"
+    },
+    {
+      "name": "div_yao_position_4",
+      "value": "四爻"
+    },
+    {
+      "name": "div_yao_position_5",
+      "value": "五爻"
+    },
+    {
+      "name": "div_yao_position_6",
+      "value": "上爻"
+    },
+    {
+      "name": "div_manual_option_yang",
+      "value": "单 · 阳"
+    },
+    {
+      "name": "div_manual_option_yin",
+      "value": "拆 · 阴"
+    },
+    {
+      "name": "div_manual_option_lao_yang",
+      "value": "重 ○ 动"
+    },
+    {
+      "name": "div_manual_option_lao_yin",
+      "value": "交 × 动"
+    },
+    {
+      "name": "div_safety_seal",
+      "value": "止"
+    },
+    {
+      "name": "div_safety_title",
+      "value": "这个问题，请寻求现实帮助"
+    },
+    {
+      "name": "div_components_1",
+      "value": "医疗与身心健康请咨询医生或专业机构；涉及人身安全请立即联系警方（110）或校园保卫处；"
+    },
+    {
+      "name": "div_components_2",
+      "value": "寻找失踪亲友请报警处理。占卜不适用于这些问题。"
+    },
+    {
+      "name": "div_safety_back",
+      "value": "我知道了 · 返回"
+    },
+    {
+      "name": "div_chart_title",
+      "value": "卦盘"
+    },
+    {
+      "name": "div_chart_loading",
+      "value": "正在起盘…"
+    },
+    {
+      "name": "div_chart_missing",
+      "value": "未找到卦盘记录"
+    },
+    {
+      "name": "div_chart_interpret",
+      "value": "解 读"
+    },
+    {
+      "name": "div_chart_saved",
+      "value": "已 保 存"
+    },
+    {
+      "name": "div_text_chart_building",
+      "value": "正在建档…"
+    },
+    {
+      "name": "div_error_create_record",
+      "value": "解读建档失败，请稍后重试"
+    },
+    {
+      "name": "div_interpret_platform_disabled",
+      "value": "观星台 AI 解读暂未开放"
+    },
+    {
+      "name": "div_interpret_need_config",
+      "value": "请先配置解读模型"
+    },
+    {
+      "name": "div_text_chart_config_check_failed",
+      "value": "解读配置获取失败，请稍后重试"
+    },
+    {
+      "name": "div_liuyao_yongshen",
+      "value": "用神"
+    },
+    {
+      "name": "div_liuyao_facts",
+      "value": "规则事实"
+    },
+    {
+      "name": "div_meihua_tiyong",
+      "value": "体用生克（规则层）"
+    },
+    {
+      "name": "div_qimen_yongshen",
+      "value": "用神宫"
+    },
+    {
+      "name": "div_qimen_facts",
+      "value": "宫位事实"
+    },
+    {
+      "name": "div_reading_action",
+      "value": "总结与行动"
+    },
+    {
+      "name": "div_reading_followup",
+      "value": "继 续 追 问"
+    },
+    {
+      "name": "div_reading_share",
+      "value": "分 享"
+    },
+    {
+      "name": "div_reading_loading",
+      "value": "正在推演解读…"
+    },
+    {
+      "name": "div_text_reading_retry",
+      "value": "重 新 解 读"
+    },
+    {
+      "name": "div_text_reading_go_config",
+      "value": "去 配 置 模 型"
+    },
+    {
+      "name": "div_reading_endseal",
+      "value": "观"
+    },
+    {
+      "name": "div_disclaimer_reading",
+      "value": "本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。"
+    },
+    {
+      "name": "div_feedback_title",
+      "value": "应验反馈"
+    },
+    {
+      "name": "div_text_rating_label",
+      "value": "解读评分"
+    },
+    {
+      "name": "div_text_outcome_label",
+      "value": "应验回填"
+    },
+    {
+      "name": "div_text_outcome_ying",
+      "value": "应验"
+    },
+    {
+      "name": "div_text_outcome_wei",
+      "value": "未验"
+    },
+    {
+      "name": "div_text_outcome_nan",
+      "value": "难说"
+    },
+    {
+      "name": "div_text_feedback_submit",
+      "value": "提 交 反 馈"
+    },
+    {
+      "name": "div_feedback_done",
+      "value": "反馈已提交"
+    },
+    {
+      "name": "mood_week_mon",
+      "value": "一"
+    },
+    {
+      "name": "mood_week_tue",
+      "value": "二"
+    },
+    {
+      "name": "mood_week_wed",
+      "value": "三"
+    },
+    {
+      "name": "mood_week_thu",
+      "value": "四"
+    },
+    {
+      "name": "mood_week_fri",
+      "value": "五"
+    },
+    {
+      "name": "div_followup_title",
+      "value": "继续追问"
+    },
+    {
+      "name": "div_followup_subtitle",
+      "value": "沿用原盘 · 不重算"
+    },
+    {
+      "name": "div_followup_input_hint",
+      "value": "基于本卦继续追问…"
+    },
+    {
+      "name": "div_followup_send",
+      "value": "发 送"
+    },
+    {
+      "name": "div_followup_empty",
+      "value": "还没有追问，输入你的问题吧"
+    },
+    {
+      "name": "div_followup_thinking",
+      "value": "正在推演…"
+    },
+    {
+      "name": "div_followup_interrupted",
+      "value": "生成中断"
+    },
+    {
+      "name": "div_followup_retry",
+      "value": "重 试"
+    },
+    {
+      "name": "div_followup_footer",
+      "value": "—— 继续追问将沿用本卦盘推演 ——"
+    },
+    {
+      "name": "div_cast_title",
+      "value": "静 心 · 问 事"
+    },
+    {
+      "name": "div_text_cast_progress",
+      "value": "第 %d 掷 · 共 6 掷"
+    },
+    {
+      "name": "div_cast_toss",
+      "value": "掷 爻"
+    },
+    {
+      "name": "div_cast_done",
+      "value": "成 卦 · 进入卦盘"
+    },
+    {
+      "name": "div_cast_quit_title",
+      "value": "丢弃本次摇卦？"
+    },
+    {
+      "name": "div_cast_quit_body",
+      "value": "爻盘未满六掷，离开将丢弃本次摇卦结果。"
+    },
+    {
+      "name": "div_cast_quit_done_body",
+      "value": "卦已摇成，离开将不入卦历。"
+    },
+    {
+      "name": "div_cast_saving",
+      "value": "装 卦 中…"
+    },
+    {
+      "name": "div_components_3",
+      "value": "青龙"
+    },
+    {
+      "name": "div_components_4",
+      "value": "朱雀"
+    },
+    {
+      "name": "div_components_5",
+      "value": "勾陈"
+    },
+    {
+      "name": "div_components_6",
+      "value": "螣蛇"
+    },
+    {
+      "name": "div_components_7",
+      "value": "白虎"
+    },
+    {
+      "name": "div_components_8",
+      "value": "玄武"
+    },
+    {
+      "name": "div_components_9",
+      "value": "子"
+    },
+    {
+      "name": "div_components_10",
+      "value": "丑"
+    },
+    {
+      "name": "div_components_11",
+      "value": "寅"
+    },
+    {
+      "name": "div_components_12",
+      "value": "卯"
+    },
+    {
+      "name": "div_components_13",
+      "value": "辰"
+    },
+    {
+      "name": "div_components_14",
+      "value": "巳"
+    },
+    {
+      "name": "div_components_15",
+      "value": "午"
+    },
+    {
+      "name": "div_components_16",
+      "value": "未"
+    },
+    {
+      "name": "div_components_17",
+      "value": "申"
+    },
+    {
+      "name": "div_components_18",
+      "value": "酉"
+    },
+    {
+      "name": "div_components_19",
+      "value": "戌"
+    },
+    {
+      "name": "div_components_20",
+      "value": "亥"
+    },
+    {
+      "name": "div_components_21",
+      "value": "卜"
+    },
+    {
+      "name": "div_panels_1",
+      "value": "初传"
+    },
+    {
+      "name": "div_panels_2",
+      "value": "中传"
+    },
+    {
+      "name": "div_panels_3",
+      "value": "末传"
+    },
+    {
+      "name": "div_panels_4",
+      "value": "坎一"
+    },
+    {
+      "name": "div_panels_5",
+      "value": "坤二"
+    },
+    {
+      "name": "div_panels_6",
+      "value": "震三"
+    },
+    {
+      "name": "div_panels_7",
+      "value": "巽四"
+    },
+    {
+      "name": "div_panels_8",
+      "value": "中五"
+    },
+    {
+      "name": "div_panels_9",
+      "value": "乾六"
+    },
+    {
+      "name": "div_panels_10",
+      "value": "兑七"
+    },
+    {
+      "name": "div_panels_11",
+      "value": "艮八"
+    },
+    {
+      "name": "div_panels_12",
+      "value": "离九"
+    },
+    {
+      "name": "div_panels_13",
+      "value": "本卦 · 体"
+    },
+    {
+      "name": "div_panels_14",
+      "value": "互卦 · 过程"
+    },
+    {
+      "name": "div_panels_15",
+      "value": "变卦 · 结局"
+    },
+    {
+      "name": "div_panels_16",
+      "value": "空亡"
+    },
+    {
+      "name": "div_panels_17",
+      "value": "驿马"
+    },
+    {
+      "name": "div_panels_18",
+      "value": "二 · 五"
+    },
+    {
+      "name": "div_panels_19",
+      "value": "寄 坤 二 宫"
+    },
+    {
+      "name": "div_panels_20",
+      "value": "子"
+    },
+    {
+      "name": "div_panels_21",
+      "value": "丑"
+    },
+    {
+      "name": "div_panels_22",
+      "value": "寅"
+    },
+    {
+      "name": "div_panels_23",
+      "value": "卯"
+    },
+    {
+      "name": "div_panels_24",
+      "value": "辰"
+    },
+    {
+      "name": "div_panels_25",
+      "value": "巳"
+    },
+    {
+      "name": "div_panels_26",
+      "value": "午"
+    },
+    {
+      "name": "div_panels_27",
+      "value": "未"
+    },
+    {
+      "name": "div_panels_28",
+      "value": "申"
+    },
+    {
+      "name": "div_panels_29",
+      "value": "酉"
+    },
+    {
+      "name": "div_panels_30",
+      "value": "戌"
+    },
+    {
+      "name": "div_panels_31",
+      "value": "亥"
+    },
+    {
+      "name": "div_ask_page_1",
+      "value": "病"
+    },
+    {
+      "name": "div_ask_page_2",
+      "value": "癌"
+    },
+    {
+      "name": "div_ask_page_3",
+      "value": "瘤"
+    },
+    {
+      "name": "div_ask_page_4",
+      "value": "医"
+    },
+    {
+      "name": "div_ask_page_5",
+      "value": "药"
+    },
+    {
+      "name": "div_ask_page_6",
+      "value": "手术"
+    },
+    {
+      "name": "div_ask_page_7",
+      "value": "诊断"
+    },
+    {
+      "name": "div_ask_page_8",
+      "value": "抑郁"
+    },
+    {
+      "name": "div_ask_page_9",
+      "value": "怀孕"
+    },
+    {
+      "name": "div_ask_page_10",
+      "value": "妊"
+    },
+    {
+      "name": "div_ask_page_11",
+      "value": "死"
+    },
+    {
+      "name": "div_ask_page_12",
+      "value": "自杀"
+    },
+    {
+      "name": "div_ask_page_13",
+      "value": "轻生"
+    },
+    {
+      "name": "div_ask_page_14",
+      "value": "寿命"
+    },
+    {
+      "name": "div_ask_page_15",
+      "value": "阳寿"
+    },
+    {
+      "name": "div_ask_page_16",
+      "value": "胎儿"
+    },
+    {
+      "name": "div_ask_page_17",
+      "value": "性别"
+    },
+    {
+      "name": "div_ask_page_18",
+      "value": "男孩"
+    },
+    {
+      "name": "div_ask_page_19",
+      "value": "女孩"
+    },
+    {
+      "name": "div_ask_page_20",
+      "value": "失踪"
+    },
+    {
+      "name": "div_ask_page_21",
+      "value": "走失"
+    },
+    {
+      "name": "div_ask_page_22",
+      "value": "寻人"
+    },
+    {
+      "name": "div_ask_page_23",
+      "value": "工作"
+    },
+    {
+      "name": "div_ask_page_24",
+      "value": "面试"
+    },
+    {
+      "name": "div_ask_page_25",
+      "value": "升职"
+    },
+    {
+      "name": "div_ask_page_26",
+      "value": "跳槽"
+    },
+    {
+      "name": "div_ask_page_27",
+      "value": "岗位"
+    },
+    {
+      "name": "div_ask_page_28",
+      "value": "实习"
+    },
+    {
+      "name": "div_ask_page_29",
+      "value": "转正"
+    },
+    {
+      "name": "div_ask_page_30",
+      "value": "财"
+    },
+    {
+      "name": "div_ask_page_31",
+      "value": "钱"
+    },
+    {
+      "name": "div_ask_page_32",
+      "value": "收入"
+    },
+    {
+      "name": "div_ask_page_33",
+      "value": "工资"
+    },
+    {
+      "name": "div_ask_page_34",
+      "value": "回款"
+    },
+    {
+      "name": "div_ask_page_35",
+      "value": "生意"
+    },
+    {
+      "name": "div_ask_page_36",
+      "value": "投资"
+    },
+    {
+      "name": "div_ask_page_37",
+      "value": "欠"
+    },
+    {
+      "name": "div_ask_page_38",
+      "value": "借款"
+    },
+    {
+      "name": "div_ask_page_39",
+      "value": "恋"
+    },
+    {
+      "name": "div_ask_page_40",
+      "value": "婚"
+    },
+    {
+      "name": "div_ask_page_41",
+      "value": "表白"
+    },
+    {
+      "name": "div_ask_page_42",
+      "value": "对象"
+    },
+    {
+      "name": "div_ask_page_43",
+      "value": "心动"
+    },
+    {
+      "name": "div_ask_page_44",
+      "value": "分手"
+    },
+    {
+      "name": "div_ask_page_45",
+      "value": "复合"
+    },
+    {
+      "name": "div_ask_page_46",
+      "value": "学"
+    },
+    {
+      "name": "div_ask_page_47",
+      "value": "考试"
+    },
+    {
+      "name": "div_ask_page_48",
+      "value": "考研"
+    },
+    {
+      "name": "div_ask_page_49",
+      "value": "绩点"
+    },
+    {
+      "name": "div_ask_page_50",
+      "value": "论文"
+    },
+    {
+      "name": "div_ask_page_51",
+      "value": "毕业"
+    },
+    {
+      "name": "div_ask_page_52",
+      "value": "保研"
+    },
+    {
+      "name": "div_ask_page_53",
+      "value": "四六级"
+    },
+    {
+      "name": "div_ask_page_54",
+      "value": "考证"
+    },
+    {
+      "name": "div_ask_page_55",
+      "value": "旅行"
+    },
+    {
+      "name": "div_ask_page_56",
+      "value": "搬家"
+    },
+    {
+      "name": "div_ask_page_57",
+      "value": "出差"
+    },
+    {
+      "name": "div_ask_page_58",
+      "value": "车票"
+    },
+    {
+      "name": "div_ask_page_59",
+      "value": "远行"
+    },
+    {
+      "name": "div_ask_page_60",
+      "value": "返校"
+    },
+    {
+      "name": "div_ask_page_61",
+      "value": "起局失败，请稍后重试"
+    },
+    {
+      "name": "div_ask_page_62",
+      "value": "起课暂不支持，敬请期待"
+    },
+    {
+      "name": "div_ask_page_63",
+      "value": "起卦失败，请稍后重试"
+    },
+    {
+      "name": "div_method_tail_liuyao",
+      "value": "六爻 · 摇卦"
+    },
+    {
+      "name": "div_method_tail_meihua",
+      "value": "梅花 · 心易"
+    },
+    {
+      "name": "div_method_tail_qimen",
+      "value": "奇门 · 起局"
+    },
+    {
+      "name": "div_method_tail_liuren",
+      "value": "六壬 · 起课"
+    },
+    {
+      "name": "subscription_date_confirm",
+      "value": "确定"
+    },
+    {
+      "name": "cancel",
+      "value": "取消"
+    },
+    {
+      "name": "div_cast_page_1",
+      "value": "成卦失败，请稍后重试"
+    },
+    {
+      "name": "div_cast_page_2",
+      "value": "乾隆"
+    },
+    {
+      "name": "div_cast_page_3",
+      "value": "通宝"
+    },
+    {
+      "name": "div_yao_name_shao_yang",
+      "value": "少阳"
+    },
+    {
+      "name": "div_yao_name_shao_yin",
+      "value": "少阴"
+    },
+    {
+      "name": "div_yao_name_lao_yang_moving",
+      "value": "老阳 · 动"
+    },
+    {
+      "name": "div_yao_name_lao_yin_moving",
+      "value": "老阴 · 动"
+    },
+    {
+      "name": "div_chart_page_1",
+      "value": "初"
+    },
+    {
+      "name": "div_chart_page_2",
+      "value": "上"
+    },
+    {
+      "name": "div_chart_page_3",
+      "value": "坎一"
+    },
+    {
+      "name": "div_chart_page_4",
+      "value": "坤二"
+    },
+    {
+      "name": "div_chart_page_5",
+      "value": "震三"
+    },
+    {
+      "name": "div_chart_page_6",
+      "value": "巽四"
+    },
+    {
+      "name": "div_chart_page_7",
+      "value": "中五"
+    },
+    {
+      "name": "div_chart_page_8",
+      "value": "乾六"
+    },
+    {
+      "name": "div_chart_page_9",
+      "value": "兑七"
+    },
+    {
+      "name": "div_chart_page_10",
+      "value": "艮八"
+    },
+    {
+      "name": "div_chart_page_11",
+      "value": "离九"
+    },
+    {
+      "name": "div_seal_liuyao",
+      "value": "六"
+    },
+    {
+      "name": "div_seal_meihua",
+      "value": "梅"
+    },
+    {
+      "name": "div_seal_qimen",
+      "value": "奇"
+    },
+    {
+      "name": "div_seal_liuren",
+      "value": "壬"
+    },
+    {
+      "name": "div_chart_page_12",
+      "value": "奇门遁甲"
+    },
+    {
+      "name": "div_chart_page_13",
+      "value": "大六壬"
+    },
+    {
+      "name": "div_chart_page_14",
+      "value": "昼占"
+    },
+    {
+      "name": "div_chart_page_15",
+      "value": "夜占"
+    },
+    {
+      "name": "div_chart_page_16",
+      "value": "未见动变冲空之象"
+    },
+    {
+      "name": "div_chart_page_17",
+      "value": "七"
+    },
+    {
+      "name": "div_chart_page_18",
+      "value": "八"
+    },
+    {
+      "name": "div_chart_page_19",
+      "value": "九"
+    },
+    {
+      "name": "div_follow_up_page_1",
+      "value": "追问通道不可用，请稍后重试"
+    },
+    {
+      "name": "div_history_page_1",
+      "value": "空"
+    },
+    {
+      "name": "div_home_page_1",
+      "value": "今日一签"
+    },
+    {
+      "name": "div_home_page_2",
+      "value": "卜"
+    },
+    {
+      "name": "game_center_title",
+      "value": "游戏中心"
+    },
+    {
+      "name": "game_category_all",
+      "value": "全部"
+    },
+    {
+      "name": "game_empty_category",
+      "value": "该分类暂无游戏，看看全部吧"
+    },
+    {
+      "name": "game_error_load",
+      "value": "游戏加载失败，请检查网络后重试"
+    },
+    {
+      "name": "game_action_retry",
+      "value": "重试"
+    },
+    {
+      "name": "game_unavailable",
+      "value": "游戏暂未开放，请稍后再试"
+    },
+    {
+      "name": "game_category_puzzle",
+      "value": "益智"
+    },
+    {
+      "name": "game_category_arcade",
+      "value": "街机"
+    },
+    {
+      "name": "game_category_word",
+      "value": "文字"
+    },
+    {
+      "name": "game_category_board",
+      "value": "桌版"
+    },
+    {
+      "name": "lab_toy_bubble_wrap",
+      "value": "泡泡纸"
+    },
+    {
+      "name": "lab_toy_bubble_wrap_desc",
+      "value": "一戳一个，噼里啪啦"
+    },
+    {
+      "name": "lab_toy_breath",
+      "value": "呼吸引导"
+    },
+    {
+      "name": "lab_toy_breath_desc",
+      "value": "跟着圆环，一呼一吸"
+    },
+    {
+      "name": "lab_toy_fish",
+      "value": "指尖鱼群"
+    },
+    {
+      "name": "lab_toy_fish_desc",
+      "value": "鱼群随指尖游走"
+    },
+    {
+      "name": "lab_toy_sand",
+      "value": "落沙实验室"
+    },
+    {
+      "name": "lab_toy_sand_desc",
+      "value": "倒水撒沙，看元素互相反应"
+    },
+    {
+      "name": "lab_toy_fluid",
+      "value": "指尖流体"
+    },
+    {
+      "name": "lab_toy_fluid_desc",
+      "value": "手指划过，搅出彩色漩涡"
+    },
+    {
+      "name": "lab_toy_drum",
+      "value": "滚筒节拍机"
+    },
+    {
+      "name": "lab_toy_drum_desc",
+      "value": "8 音色 × 16 步，排出洗衣节奏"
+    },
+    {
+      "name": "lab_toy_painting",
+      "value": "今日一画"
+    },
+    {
+      "name": "lab_toy_painting_desc",
+      "value": "每天一幅水墨山水"
+    },
+    {
+      "name": "lab_toy_soundscape",
+      "value": "声景混音器"
+    },
+    {
+      "name": "lab_toy_soundscape_desc",
+      "value": "雨声风声，自由叠混"
+    },
+    {
+      "name": "lab_toy_pet",
+      "value": "泡泡精灵"
+    },
+    {
+      "name": "lab_toy_pet_desc",
+      "value": "养一只住在洗衣机里的泡泡精灵"
+    },
+    {
+      "name": "lab_toy_star_map",
+      "value": "掌上星图"
+    },
+    {
+      "name": "lab_toy_star_map_desc",
+      "value": "举起手机，看头顶的星空"
+    },
+    {
+      "name": "lab_title",
+      "value": "解压实验舱"
+    },
+    {
+      "name": "lab_text_error_load",
+      "value": "入口配置加载失败，请重试"
+    },
+    {
+      "name": "retry",
+      "value": "重试"
+    },
+    {
+      "name": "lab_text_empty_message",
+      "value": "实验舱还空着，去看看别的吧"
+    },
+    {
+      "name": "lab_breath_mode_sleep",
+      "value": "4-7-8 睡眠"
+    },
+    {
+      "name": "lab_breath_mode_box",
+      "value": "4-4-4-4 专注"
+    },
+    {
+      "name": "lab_breath_mode_sleep_hint",
+      "value": "吸 4 秒 · 屏 7 秒 · 呼 8 秒"
+    },
+    {
+      "name": "lab_breath_mode_box_hint",
+      "value": "四相位各 4 秒"
+    },
+    {
+      "name": "lab_breath_start",
+      "value": "开始"
+    },
+    {
+      "name": "lab_breath_pause",
+      "value": "暂停"
+    },
+    {
+      "name": "lab_breath_resume",
+      "value": "继续"
+    },
+    {
+      "name": "lab_breath_stop",
+      "value": "停止"
+    },
+    {
+      "name": "lab_breath_phase_inhale",
+      "value": "吸气"
+    },
+    {
+      "name": "lab_breath_phase_hold",
+      "value": "屏息"
+    },
+    {
+      "name": "lab_breath_phase_exhale",
+      "value": "呼气"
+    },
+    {
+      "name": "lab_breath_phase_keep",
+      "value": "保持"
+    },
+    {
+      "name": "breath_text_cycles_format",
+      "value": "已完成 %d 轮"
+    },
+    {
+      "name": "bubble_text_popped_format",
+      "value": "已戳 %d / %d"
+    },
+    {
+      "name": "lab_bubble_reset",
+      "value": "再铺一张"
+    },
+    {
+      "name": "lab_drum_pattern_label",
+      "value": "节奏型"
+    },
+    {
+      "name": "lab_drum_presets_label",
+      "value": "预设节奏"
+    },
+    {
+      "name": "lab_fish_play",
+      "value": "播放"
+    },
+    {
+      "name": "lab_drum_preset_basic",
+      "value": "基础四四"
+    },
+    {
+      "name": "lab_drum_preset_groove",
+      "value": "律动"
+    },
+    {
+      "name": "lab_drum_preset_breakbeat",
+      "value": "碎拍"
+    },
+    {
+      "name": "lab_drum_preset_latin",
+      "value": "拉丁"
+    },
+    {
+      "name": "lab_drum_preset_robot",
+      "value": "机械"
+    },
+    {
+      "name": "lab_drum_preset_laundry",
+      "value": "洗衣节奏"
+    },
+    {
+      "name": "lab_drum_voice_kick",
+      "value": "底鼓"
+    },
+    {
+      "name": "lab_drum_voice_snare",
+      "value": "军鼓"
+    },
+    {
+      "name": "lab_drum_voice_hihat",
+      "value": "踩镲"
+    },
+    {
+      "name": "lab_drum_voice_clap",
+      "value": "拍手"
+    },
+    {
+      "name": "lab_drum_voice_tom",
+      "value": "通鼓"
+    },
+    {
+      "name": "lab_drum_voice_cowbell",
+      "value": "牛铃"
+    },
+    {
+      "name": "lab_drum_voice_rim",
+      "value": "边击"
+    },
+    {
+      "name": "lab_drum_voice_cymbal",
+      "value": "镲片"
+    },
+    {
+      "name": "lab_fish_hint",
+      "value": "按住吸引 · 长按驱散 · 双击炸开"
+    },
+    {
+      "name": "lab_fluid_preset_oxygen",
+      "value": "清氧水色"
+    },
+    {
+      "name": "lab_fluid_preset_foam",
+      "value": "泡沫白"
+    },
+    {
+      "name": "lab_fluid_preset_sand",
+      "value": "落沙暖色"
+    },
+    {
+      "name": "lab_fluid_reset",
+      "value": "清空重来"
+    },
+    {
+      "name": "lab_fluid_unsupported",
+      "value": "当前设备不支持流体渲染"
+    },
+    {
+      "name": "painting_text_seed_format",
+      "value": "种子 "
+    },
+    {
+      "name": "painting_text_today_suffix",
+      "value": " · 今日"
+    },
+    {
+      "name": "lab_painting_random_label",
+      "value": "随机种子"
+    },
+    {
+      "name": "lab_painting_hint",
+      "value": "同一数字种子，生成同一幅山水"
+    },
+    {
+      "name": "lab_painting_random",
+      "value": "换一张"
+    },
+    {
+      "name": "lab_painting_back_today",
+      "value": "回到今日"
+    },
+    {
+      "name": "painting_text_apply_seed",
+      "value": "应用"
+    },
+    {
+      "name": "lab_painting_seed_label",
+      "value": "种子数字"
+    },
+    {
+      "name": "lab_painting_seed_invalid",
+      "value": "请输入有效的数字种子"
+    },
+    {
+      "name": "lab_painting_save_success",
+      "value": "已保存到相册"
+    },
+    {
+      "name": "lab_painting_save_failed",
+      "value": "保存失败，请重试"
+    },
+    {
+      "name": "painting_page_1",
+      "value": "今日一画水墨山水"
+    },
+    {
+      "name": "lab_pet_stage_bubble",
+      "value": "小泡泡"
+    },
+    {
+      "name": "lab_pet_stage_foam",
+      "value": "泡沫精灵"
+    },
+    {
+      "name": "lab_pet_stage_rainbow",
+      "value": "彩虹泡泡"
+    },
+    {
+      "name": "lab_pet_absence_first",
+      "value": "这是你们第一次见面"
+    },
+    {
+      "name": "lab_pet_absence_just_now",
+      "value": "它刚见过你"
+    },
+    {
+      "name": "lab_pet_absence_short",
+      "value": "它想你了"
+    },
+    {
+      "name": "lab_pet_absence_long",
+      "value": "它一直在等你"
+    },
+    {
+      "name": "lab_pet_absence_very_long",
+      "value": "它等了你很久很久"
+    },
+    {
+      "name": "lab_pet_feed",
+      "value": "喂食"
+    },
+    {
+      "name": "lab_pet_play",
+      "value": "玩耍"
+    },
+    {
+      "name": "lab_pet_pet_hint",
+      "value": "点它一下，摸摸它"
+    },
+    {
+      "name": "lab_pet_state_happy",
+      "value": "开心"
+    },
+    {
+      "name": "lab_pet_state_eating",
+      "value": "吃东西"
+    },
+    {
+      "name": "lab_pet_state_playing",
+      "value": "玩耍中"
+    },
+    {
+      "name": "lab_pet_state_sleeping",
+      "value": "睡着了"
+    },
+    {
+      "name": "lab_pet_state_idle",
+      "value": "发呆中"
+    },
+    {
+      "name": "lab_sand_hint",
+      "value": "拖动手指涂抹，看元素互相反应"
+    },
+    {
+      "name": "sand_text_current_format",
+      "value": "当前：%s"
+    },
+    {
+      "name": "lab_sand_clear",
+      "value": "清除"
+    },
+    {
+      "name": "lab_sand_element_empty",
+      "value": "橡皮"
+    },
+    {
+      "name": "lab_sand_element_sand",
+      "value": "沙"
+    },
+    {
+      "name": "lab_sand_element_water",
+      "value": "水"
+    },
+    {
+      "name": "lab_sand_element_detergent",
+      "value": "洗衣粉"
+    },
+    {
+      "name": "lab_sand_element_foam",
+      "value": "泡沫"
+    },
+    {
+      "name": "lab_sand_element_stain",
+      "value": "污渍"
+    },
+    {
+      "name": "lab_sand_element_fabric",
+      "value": "织物"
+    },
+    {
+      "name": "lab_sand_element_fire",
+      "value": "火"
+    },
+    {
+      "name": "lab_sand_element_steam",
+      "value": "蒸汽"
+    },
+    {
+      "name": "lab_soundscape_playing",
+      "value": "正在播放"
+    },
+    {
+      "name": "lab_soundscape_stopped",
+      "value": "已停止"
+    },
+    {
+      "name": "lab_soundscape_presets_label",
+      "value": "预设场景"
+    },
+    {
+      "name": "lab_soundscape_preset_study",
+      "value": "自习室"
+    },
+    {
+      "name": "lab_soundscape_preset_sleep",
+      "value": "睡前"
+    },
+    {
+      "name": "lab_soundscape_preset_dorm",
+      "value": "宿舍夜"
+    },
+    {
+      "name": "lab_soundscape_preset_campfire",
+      "value": "篝火夜话"
+    },
+    {
+      "name": "lab_soundscape_preset_ocean",
+      "value": "海边"
+    },
+    {
+      "name": "lab_soundscape_group_noise",
+      "value": "底噪"
+    },
+    {
+      "name": "lab_soundscape_group_nature",
+      "value": "自然"
+    },
+    {
+      "name": "lab_soundscape_group_indoor",
+      "value": "室内"
+    },
+    {
+      "name": "lab_soundscape_channel_white",
+      "value": "白噪音"
+    },
+    {
+      "name": "lab_soundscape_channel_pink",
+      "value": "粉噪音"
+    },
+    {
+      "name": "lab_soundscape_channel_brown",
+      "value": "棕噪音"
+    },
+    {
+      "name": "lab_soundscape_channel_rain",
+      "value": "雨声"
+    },
+    {
+      "name": "lab_soundscape_channel_wind",
+      "value": "风声"
+    },
+    {
+      "name": "lab_soundscape_channel_ocean",
+      "value": "海浪"
+    },
+    {
+      "name": "lab_soundscape_channel_campfire",
+      "value": "篝火"
+    },
+    {
+      "name": "lab_soundscape_channel_page",
+      "value": "翻书"
+    },
+    {
+      "name": "lab_soundscape_channel_keyboard",
+      "value": "键盘"
+    },
+    {
+      "name": "lab_soundscape_channel_murmur",
+      "value": "远处交谈"
+    },
+    {
+      "name": "lab_soundscape_timer_label",
+      "value": "睡眠定时"
+    },
+    {
+      "name": "lab_soundscape_timer_off",
+      "value": "关闭"
+    },
+    {
+      "name": "lab_soundscape_timer_hint",
+      "value": "先开始播放，再设定定时器"
+    },
+    {
+      "name": "soundscape_text_volume_label",
+      "value": "音量"
+    },
+    {
+      "name": "lab_drum_cell_on",
+      "value": "已开启"
+    },
+    {
+      "name": "lab_drum_cell_off",
+      "value": "已关闭"
+    },
+    {
+      "name": "lab_star_map_hint",
+      "value": "转动手机环顾夜空"
+    },
+    {
+      "name": "lab_star_map_sensor_unavailable",
+      "value": "传感器不可用，已切换为静态星空"
+    },
+    {
+      "name": "lab_star_map_night_vision",
+      "value": "夜视模式"
+    },
+    {
+      "name": "star_map_text_magnitude_prefix",
+      "value": "星等"
+    },
+    {
+      "name": "lab_star_map_back",
+      "value": "返回"
+    },
+    {
+      "name": "mood_title",
+      "value": "情绪气象站"
+    },
+    {
+      "name": "mood_calendar_title",
+      "value": "月历热图"
+    },
+    {
+      "name": "mood_trend_title",
+      "value": "月度趋势"
+    },
+    {
+      "name": "mood_action_calendar",
+      "value": "月历"
+    },
+    {
+      "name": "mood_action_trend",
+      "value": "趋势"
+    },
+    {
+      "name": "mood_level_rainstorm",
+      "value": "暴雨"
+    },
+    {
+      "name": "mood_level_overcast",
+      "value": "阴"
+    },
+    {
+      "name": "mood_level_cloudy",
+      "value": "多云"
+    },
+    {
+      "name": "mood_level_sunny",
+      "value": "晴"
+    },
+    {
+      "name": "mood_level_shining",
+      "value": "大晴"
+    },
+    {
+      "name": "mood_today_question",
+      "value": "今天心情如何？"
+    },
+    {
+      "name": "mood_today_hint",
+      "value": "点一个色块即记录，随时可覆盖"
+    },
+    {
+      "name": "mood_today_recorded",
+      "value": "今天已记录 · 换个心情可覆盖"
+    },
+    {
+      "name": "mood_word_section_title",
+      "value": "一个词（可选）"
+    },
+    {
+      "name": "mood_note_section_title",
+      "value": "一句话（可选）"
+    },
+    {
+      "name": "mood_note_hint",
+      "value": "写下今天的一句话…"
+    },
+    {
+      "name": "mood_error_load",
+      "value": "心情记录加载失败"
+    },
+    {
+      "name": "mood_error_save",
+      "value": "保存失败，请重试"
+    },
+    {
+      "name": "mood_action_retry",
+      "value": "重试"
+    },
+    {
+      "name": "mood_word_tired",
+      "value": "累"
+    },
+    {
+      "name": "mood_word_smooth",
+      "value": "顺"
+    },
+    {
+      "name": "mood_word_quiet",
+      "value": "静"
+    },
+    {
+      "name": "mood_word_restless",
+      "value": "燥"
+    },
+    {
+      "name": "mood_word_burning",
+      "value": "燃"
+    },
+    {
+      "name": "mood_prev_month",
+      "value": "上一个月"
+    },
+    {
+      "name": "mood_next_month",
+      "value": "下一个月"
+    },
+    {
+      "name": "mood_week_sat",
+      "value": "六"
+    },
+    {
+      "name": "mood_week_sun",
+      "value": "日"
+    },
+    {
+      "name": "mood_calendar_day_empty_hint",
+      "value": "灰格 = 无记录，点色块看当天"
+    },
+    {
+      "name": "mood_day_dialog_word_empty",
+      "value": "这天没有留下词"
+    },
+    {
+      "name": "mood_trend_stats_days",
+      "value": "记录天数"
+    },
+    {
+      "name": "mood_trend_stats_average",
+      "value": "月均值"
+    },
+    {
+      "name": "mood_trend_distribution_title",
+      "value": "等级分布"
+    },
+    {
+      "name": "mood_trend_days_unit",
+      "value": "天"
+    },
+    {
+      "name": "mood_trend_empty_message",
+      "value": "本月还没有记录"
+    },
+    {
+      "name": "mood_trend_empty_action",
+      "value": "去记录今天"
+    },
+    {
+      "name": "mood_trend_error_load",
+      "value": "趋势数据加载失败"
+    },
+    {
+      "name": "mood_calendar_page_1",
+      "value": "月历加载失败"
+    },
+    {
+      "name": "mood_widgets_1",
+      "value": "星期日"
+    },
+    {
+      "name": "mood_widgets_2",
+      "value": "星期一"
+    },
+    {
+      "name": "mood_widgets_3",
+      "value": "星期二"
+    },
+    {
+      "name": "mood_widgets_4",
+      "value": "星期三"
+    },
+    {
+      "name": "mood_widgets_5",
+      "value": "星期四"
+    },
+    {
+      "name": "mood_widgets_6",
+      "value": "星期五"
+    },
+    {
+      "name": "mood_widgets_7",
+      "value": "星期六"
+    },
+    {
+      "name": "back",
+      "value": "返回"
+    },
+    {
+      "name": "review_queue_title",
+      "value": "今日复习"
+    },
+    {
+      "name": "review_study_title",
+      "value": "复习"
+    },
+    {
+      "name": "review_material_title",
+      "value": "复习资料"
+    },
+    {
+      "name": "review_text_review_queue_count_format",
+      "value": "今日 %d 张"
+    },
+    {
+      "name": "review_text_review_queue_breakdown_format",
+      "value": "到期 %d 张 · 新卡 %d 张"
+    },
+    {
+      "name": "review_queue_action_start",
+      "value": "开始复习"
+    },
+    {
+      "name": "review_queue_empty_message",
+      "value": "今日没有需要复习的卡片，先去资料页建卡吧"
+    },
+    {
+      "name": "review_queue_empty_action",
+      "value": "去资料页建卡"
+    },
+    {
+      "name": "review_card_new",
+      "value": "新卡"
+    },
+    {
+      "name": "review_due_badge_minute",
+      "value": "分钟级"
+    },
+    {
+      "name": "review_due_badge_daily",
+      "value": "天级"
+    },
+    {
+      "name": "review_due_now",
+      "value": "已到期"
+    },
+    {
+      "name": "review_text_review_due_in_minutes",
+      "value": "%d 分钟后到期"
+    },
+    {
+      "name": "review_text_review_due_in_hours",
+      "value": "%d 小时后到期"
+    },
+    {
+      "name": "review_text_review_due_in_days",
+      "value": "%d 天后到期"
+    },
+    {
+      "name": "review_material_chip_none",
+      "value": "未归资料"
+    },
+    {
+      "name": "review_state_learning",
+      "value": "学习中"
+    },
+    {
+      "name": "review_state_review",
+      "value": "复习中"
+    },
+    {
+      "name": "review_state_relearning",
+      "value": "重学中"
+    },
+    {
+      "name": "review_text_review_study_progress_format",
+      "value": "第 %d / %d 张"
+    },
+    {
+      "name": "review_study_question_hint",
+      "value": "点击卡片查看答案"
+    },
+    {
+      "name": "review_study_answer_label",
+      "value": "答案"
+    },
+    {
+      "name": "review_rating_again_semantic",
+      "value": "想不起来"
+    },
+    {
+      "name": "review_rating_hard_semantic",
+      "value": "有点费劲"
+    },
+    {
+      "name": "review_rating_good_semantic",
+      "value": "正常想起"
+    },
+    {
+      "name": "review_rating_easy_semantic",
+      "value": "轻松秒答"
+    },
+    {
+      "name": "review_study_completed_message",
+      "value": "今日复习完成，休息一下吧"
+    },
+    {
+      "name": "review_action_back",
+      "value": "返 回"
+    },
+    {
+      "name": "review_error_answer",
+      "value": "评分提交失败，请重试"
+    },
+    {
+      "name": "review_material_empty",
+      "value": "还没有复习资料，粘贴一段文本开始建卡吧"
+    },
+    {
+      "name": "review_material_action_new",
+      "value": "新建"
+    },
+    {
+      "name": "review_material_form_title_label",
+      "value": "资料标题"
+    },
+    {
+      "name": "review_material_form_title_hint",
+      "value": "例如：操作系统期中考点"
+    },
+    {
+      "name": "review_material_form_raw_label",
+      "value": "原文粘贴（可选）"
+    },
+    {
+      "name": "review_material_form_raw_hint",
+      "value": "粘贴教材或笔记原文，便于回顾上下文"
+    },
+    {
+      "name": "review_material_action_create",
+      "value": "创建资料"
+    },
+    {
+      "name": "review_toast_material_created",
+      "value": "资料已创建"
+    },
+    {
+      "name": "review_material_expand",
+      "value": "展开"
+    },
+    {
+      "name": "review_material_collapse",
+      "value": "收起"
+    },
+    {
+      "name": "review_text_review_material_cards_header_format",
+      "value": "问答卡（%d）"
+    },
+    {
+      "name": "review_material_add_card",
+      "value": "添加卡片"
+    },
+    {
+      "name": "review_material_cards_empty",
+      "value": "还没有卡片，添加第一张吧"
+    },
+    {
+      "name": "review_material_load_more",
+      "value": "加载更多"
+    },
+    {
+      "name": "review_error_load_more",
+      "value": "加载更多失败，点击重试"
+    },
+    {
+      "name": "review_card_dialog_title",
+      "value": "添加问答卡"
+    },
+    {
+      "name": "review_card_dialog_question_label",
+      "value": "问题"
+    },
+    {
+      "name": "review_card_dialog_question_hint",
+      "value": "例如：进程与线程的区别？"
+    },
+    {
+      "name": "review_card_dialog_answer_hint",
+      "value": "例如：进程是资源分配单位，线程是调度单位"
+    },
+    {
+      "name": "review_dialog_action_confirm",
+      "value": "确认"
+    },
+    {
+      "name": "review_dialog_action_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "review_toast_card_created",
+      "value": "卡片已创建"
+    },
+    {
+      "name": "review_action_retry",
+      "value": "重试"
+    },
+    {
+      "name": "review_error_load",
+      "value": "加载失败，请重试"
+    },
+    {
+      "name": "review_error_title_required",
+      "value": "请输入资料标题"
+    },
+    {
+      "name": "review_error_title_too_long",
+      "value": "资料标题最长 100 字"
+    },
+    {
+      "name": "review_error_raw_too_long",
+      "value": "资料原文过长"
+    },
+    {
+      "name": "review_error_question_required",
+      "value": "请输入问题"
+    },
+    {
+      "name": "review_error_answer_required",
+      "value": "请输入答案"
+    },
+    {
+      "name": "review_error_question_too_long",
+      "value": "问题最长 1000 字"
+    },
+    {
+      "name": "review_error_answer_too_long",
+      "value": "答案最长 2000 字"
+    },
+    {
+      "name": "subscription_title",
+      "value": "订阅管理"
+    },
+    {
+      "name": "subscription_edit_title_new",
+      "value": "新建订阅"
+    },
+    {
+      "name": "subscription_edit_title_edit",
+      "value": "编辑订阅"
+    },
+    {
+      "name": "subscription_detail_title",
+      "value": "订阅详情"
+    },
+    {
+      "name": "subscription_reminder_title",
+      "value": "续费提醒"
+    },
+    {
+      "name": "subscription_action_new",
+      "value": "新建"
+    },
+    {
+      "name": "subscription_action_reminders",
+      "value": "提醒"
+    },
+    {
+      "name": "subscription_filter_all",
+      "value": "全部"
+    },
+    {
+      "name": "subscription_filter_active",
+      "value": "进行中"
+    },
+    {
+      "name": "subscription_filter_paused",
+      "value": "已暂停"
+    },
+    {
+      "name": "subscription_filter_canceled",
+      "value": "已取消"
+    },
+    {
+      "name": "subscription_filter_finished",
+      "value": "已结束"
+    },
+    {
+      "name": "subscription_empty_message",
+      "value": "还没有订阅，把正在按期扣费的服务登记进来吧"
+    },
+    {
+      "name": "subscription_error_load",
+      "value": "订阅加载失败"
+    },
+    {
+      "name": "subscription_action_retry",
+      "value": "重试"
+    },
+    {
+      "name": "subscription_text_subscription_amount_per_period",
+      "value": "¥%s/期"
+    },
+    {
+      "name": "subscription_cycle_monthly",
+      "value": "每月"
+    },
+    {
+      "name": "subscription_text_subscription_cycle_every_n_months",
+      "value": "每 %d 个月"
+    },
+    {
+      "name": "subscription_cycle_yearly",
+      "value": "每年"
+    },
+    {
+      "name": "subscription_text_subscription_cycle_every_n_years",
+      "value": "每 %d 年"
+    },
+    {
+      "name": "subscription_text_subscription_renew_date_value",
+      "value": "下次续费 %s"
+    },
+    {
+      "name": "subscription_text_subscription_renew_in_days_format",
+      "value": "%d 天后续费"
+    },
+    {
+      "name": "subscription_renew_today",
+      "value": "今日续费"
+    },
+    {
+      "name": "subscription_text_subscription_renew_overdue_format",
+      "value": "已逾期 %d 天"
+    },
+    {
+      "name": "subscription_text_subscription_renew_days_compact",
+      "value": "%d天"
+    },
+    {
+      "name": "subscription_text_subscription_trial_left_format",
+      "value": "试用剩 %d 天"
+    },
+    {
+      "name": "subscription_trial_last_day",
+      "value": "试用今日截止"
+    },
+    {
+      "name": "subscription_text_subscription_unread_reminders_format",
+      "value": "%d 条未读提醒"
+    },
+    {
+      "name": "subscription_form_name_label",
+      "value": "名称"
+    },
+    {
+      "name": "subscription_form_name_hint",
+      "value": "如 iCloud+、健身房年卡"
+    },
+    {
+      "name": "subscription_form_amount_label",
+      "value": "每期金额（元）"
+    },
+    {
+      "name": "subscription_form_cycle_label",
+      "value": "计费周期"
+    },
+    {
+      "name": "subscription_form_cycle_month",
+      "value": "月付"
+    },
+    {
+      "name": "subscription_form_cycle_year",
+      "value": "年付"
+    },
+    {
+      "name": "subscription_form_interval_label",
+      "value": "间隔期数"
+    },
+    {
+      "name": "subscription_form_interval_helper",
+      "value": "1-36，填 3 表示每 3 期扣一次"
+    },
+    {
+      "name": "subscription_form_next_renew_label",
+      "value": "下次续费日"
+    },
+    {
+      "name": "subscription_form_pick_date",
+      "value": "选择日期"
+    },
+    {
+      "name": "subscription_form_trial_label",
+      "value": "试用截止（可选）"
+    },
+    {
+      "name": "subscription_form_trial_none",
+      "value": "未设置"
+    },
+    {
+      "name": "subscription_form_trial_clear",
+      "value": "清除"
+    },
+    {
+      "name": "subscription_form_auto_renew_label",
+      "value": "自动续费"
+    },
+    {
+      "name": "subscription_form_auto_renew_helper",
+      "value": "开启后到期自动顺延续费日"
+    },
+    {
+      "name": "subscription_form_remind_label",
+      "value": "提醒提前天数"
+    },
+    {
+      "name": "subscription_form_remind_helper",
+      "value": "0-60 天，0 表示仅到期当天提醒"
+    },
+    {
+      "name": "subscription_form_cancel_url_label",
+      "value": "取消网址（可选）"
+    },
+    {
+      "name": "subscription_form_cancel_url_helper",
+      "value": "须以 http:// 或 https:// 开头"
+    },
+    {
+      "name": "subscription_action_open_browser",
+      "value": "打开"
+    },
+    {
+      "name": "subscription_action_copy",
+      "value": "复制"
+    },
+    {
+      "name": "subscription_copy_success",
+      "value": "已复制"
+    },
+    {
+      "name": "subscription_open_failed",
+      "value": "未找到可打开链接的应用"
+    },
+    {
+      "name": "subscription_form_cancel_steps_label",
+      "value": "取消步骤备忘（可选）"
+    },
+    {
+      "name": "subscription_form_cancel_steps_hint",
+      "value": "如：设置 → Apple ID → 订阅 → iCloud+ → 取消"
+    },
+    {
+      "name": "subscription_form_note_label",
+      "value": "备注（可选）"
+    },
+    {
+      "name": "subscription_form_note_hint",
+      "value": "如：与家人共享"
+    },
+    {
+      "name": "subscription_submit_create",
+      "value": "创建"
+    },
+    {
+      "name": "subscription_submit_save",
+      "value": "保存"
+    },
+    {
+      "name": "subscription_toast_create_success",
+      "value": "创建成功"
+    },
+    {
+      "name": "subscription_toast_save_success",
+      "value": "已保存"
+    },
+    {
+      "name": "subscription_error_name_required",
+      "value": "请填写订阅名称"
+    },
+    {
+      "name": "subscription_error_name_too_long",
+      "value": "名称不能超过 100 字"
+    },
+    {
+      "name": "subscription_error_amount_invalid",
+      "value": "金额须为大于 0 的数字"
+    },
+    {
+      "name": "subscription_error_next_renew_required",
+      "value": "请选择下次续费日"
+    },
+    {
+      "name": "subscription_error_interval_invalid",
+      "value": "间隔期数须为 1-36 的整数"
+    },
+    {
+      "name": "subscription_error_remind_days_invalid",
+      "value": "提醒提前天数须为 0-60 的整数"
+    },
+    {
+      "name": "subscription_error_cancel_url_invalid",
+      "value": "取消网址须以 http:// 或 https:// 开头"
+    },
+    {
+      "name": "subscription_error_cancel_steps_too_long",
+      "value": "取消步骤不能超过 1000 字"
+    },
+    {
+      "name": "subscription_error_note_too_long",
+      "value": "备注不能超过 500 字"
+    },
+    {
+      "name": "subscription_error_load_detail",
+      "value": "详情加载失败"
+    },
+    {
+      "name": "subscription_error_submit",
+      "value": "提交失败，请重试"
+    },
+    {
+      "name": "subscription_detail_amount",
+      "value": "每期金额"
+    },
+    {
+      "name": "subscription_detail_trial_end",
+      "value": "试用截止"
+    },
+    {
+      "name": "subscription_detail_auto_renew_on",
+      "value": "开启"
+    },
+    {
+      "name": "subscription_detail_auto_renew_off",
+      "value": "关闭"
+    },
+    {
+      "name": "subscription_detail_status",
+      "value": "状态"
+    },
+    {
+      "name": "subscription_detail_remind_days",
+      "value": "提前提醒"
+    },
+    {
+      "name": "subscription_text_subscription_detail_remind_days_format",
+      "value": "提前 %d 天"
+    },
+    {
+      "name": "subscription_detail_remind_days_zero",
+      "value": "仅当天提醒"
+    },
+    {
+      "name": "subscription_detail_note",
+      "value": "备注"
+    },
+    {
+      "name": "subscription_action_edit",
+      "value": "编辑"
+    },
+    {
+      "name": "subscription_action_pause",
+      "value": "暂停"
+    },
+    {
+      "name": "subscription_action_resume",
+      "value": "恢复"
+    },
+    {
+      "name": "subscription_action_cancel_sub",
+      "value": "取消订阅"
+    },
+    {
+      "name": "subscription_action_finish",
+      "value": "结束使用"
+    },
+    {
+      "name": "subscription_action_delete",
+      "value": "删除"
+    },
+    {
+      "name": "subscription_text_subscription_confirm_cancel_message",
+      "value": "取消后不再续费且不可恢复为进行中（数据保留），确定取消「%s」？"
+    },
+    {
+      "name": "subscription_text_subscription_confirm_finish_message",
+      "value": "标记为结束后该订阅只读、不可再打卡，确定结束「%s」？"
+    },
+    {
+      "name": "subscription_confirm_delete_title",
+      "value": "删除订阅"
+    },
+    {
+      "name": "subscription_text_subscription_confirm_delete_message",
+      "value": "删除将同时清空打卡记录与提醒，且不可恢复，确定删除「%s」？"
+    },
+    {
+      "name": "subscription_confirm_delete_usage_title",
+      "value": "撤销打卡"
+    },
+    {
+      "name": "subscription_text_subscription_confirm_delete_usage_message",
+      "value": "确定撤销 %s 的使用打卡？"
+    },
+    {
+      "name": "subscription_terminal_readonly",
+      "value": "订阅已结束，信息仅供查看"
+    },
+    {
+      "name": "subscription_toast_status_updated",
+      "value": "状态已更新"
+    },
+    {
+      "name": "subscription_toast_delete_success",
+      "value": "已删除"
+    },
+    {
+      "name": "subscription_detail_retry",
+      "value": "重新加载"
+    },
+    {
+      "name": "subscription_stats_title",
+      "value": "使用统计（近 90 天）"
+    },
+    {
+      "name": "subscription_text_subscription_stats_usage_format",
+      "value": "近 90 天使用 %d 次"
+    },
+    {
+      "name": "subscription_text_subscription_stats_per_use_format",
+      "value": "单次折算 ¥%s"
+    },
+    {
+      "name": "subscription_stats_per_use_none",
+      "value": "窗口内暂无使用，暂无单次成本"
+    },
+    {
+      "name": "subscription_text_subscription_stats_monthly_format",
+      "value": "月度折算 ¥%s"
+    },
+    {
+      "name": "subscription_stats_error",
+      "value": "统计加载失败"
+    },
+    {
+      "name": "subscription_usage_title",
+      "value": "使用打卡"
+    },
+    {
+      "name": "subscription_usage_check_in",
+      "value": "今日打卡"
+    },
+    {
+      "name": "subscription_usage_check_in_done",
+      "value": "已打卡"
+    },
+    {
+      "name": "subscription_usage_empty",
+      "value": "还没有使用记录，用一次打一次卡"
+    },
+    {
+      "name": "subscription_usage_error_load",
+      "value": "记录加载失败"
+    },
+    {
+      "name": "subscription_usage_undo",
+      "value": "撤销"
+    },
+    {
+      "name": "subscription_usage_today",
+      "value": "今天"
+    },
+    {
+      "name": "subscription_toast_undo_success",
+      "value": "已撤销"
+    },
+    {
+      "name": "subscription_cancel_path_title",
+      "value": "取消路径"
+    },
+    {
+      "name": "subscription_cancel_path_url",
+      "value": "取消网址"
+    },
+    {
+      "name": "subscription_cancel_path_steps",
+      "value": "取消步骤"
+    },
+    {
+      "name": "subscription_cancel_path_empty",
+      "value": "未填写取消路径"
+    },
+    {
+      "name": "subscription_reminder_filter_unread",
+      "value": "未读"
+    },
+    {
+      "name": "subscription_reminder_empty_unread",
+      "value": "没有未读提醒"
+    },
+    {
+      "name": "subscription_reminder_empty_all",
+      "value": "暂无提醒"
+    },
+    {
+      "name": "subscription_reminder_error_load",
+      "value": "提醒加载失败"
+    },
+    {
+      "name": "subscription_text_subscription_reminder_date_format",
+      "value": "应提醒 %s"
+    },
+    {
+      "name": "subscription_reminder_read_tag",
+      "value": "已读"
+    },
+    {
+      "name": "subscription_reminder_unread_dot",
+      "value": "未读提醒"
+    },
+    {
+      "name": "subscription_date_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "toolbox_title",
+      "value": "短链管理"
+    },
+    {
+      "name": "toolbox_create_title",
+      "value": "新建短链"
+    },
+    {
+      "name": "toolbox_detail_title",
+      "value": "短链详情"
+    },
+    {
+      "name": "toolbox_action_new",
+      "value": "新建"
+    },
+    {
+      "name": "toolbox_empty_message",
+      "value": "还没有短链，创建一个吧"
+    },
+    {
+      "name": "toolbox_error_load",
+      "value": "短链加载失败"
+    },
+    {
+      "name": "toolbox_text_toolbox_error_network",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "toolbox_action_retry",
+      "value": "重试"
+    },
+    {
+      "name": "toolbox_type_short_link",
+      "value": "短链"
+    },
+    {
+      "name": "toolbox_visibility_public_value",
+      "value": "公开"
+    },
+    {
+      "name": "toolbox_visibility_private_value",
+      "value": "私有"
+    },
+    {
+      "name": "toolbox_expiry_permanent",
+      "value": "永久有效"
+    },
+    {
+      "name": "toolbox_expiry_expired",
+      "value": "已过期"
+    },
+    {
+      "name": "toolbox_text_toolbox_expiry_until_format",
+      "value": "有效期至 %s"
+    },
+    {
+      "name": "toolbox_text_toolbox_clicks_unit",
+      "value": "次点击"
+    },
+    {
+      "name": "toolbox_target_label",
+      "value": "目标链接"
+    },
+    {
+      "name": "toolbox_target_helper",
+      "value": "必填，以 http:// 或 https:// 开头"
+    },
+    {
+      "name": "toolbox_custom_code_label",
+      "value": "自定义短码（可选）"
+    },
+    {
+      "name": "toolbox_custom_code_hint",
+      "value": "4-16 位字母数字或 -_"
+    },
+    {
+      "name": "toolbox_visibility_label",
+      "value": "可见性"
+    },
+    {
+      "name": "toolbox_visibility_public_desc",
+      "value": "任何人可经短链跳转"
+    },
+    {
+      "name": "toolbox_visibility_private_desc",
+      "value": "仅自己可解析打开"
+    },
+    {
+      "name": "toolbox_expiry_label",
+      "value": "有效期"
+    },
+    {
+      "name": "toolbox_expiry_preset_permanent",
+      "value": "永久"
+    },
+    {
+      "name": "toolbox_expiry_preset_7d",
+      "value": "7 天"
+    },
+    {
+      "name": "toolbox_expiry_preset_30d",
+      "value": "30 天"
+    },
+    {
+      "name": "toolbox_expiry_preset_custom",
+      "value": "自定义"
+    },
+    {
+      "name": "toolbox_expiry_custom_pick",
+      "value": "选择过期日期"
+    },
+    {
+      "name": "toolbox_date_confirm",
+      "value": "确定"
+    },
+    {
+      "name": "toolbox_date_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "toolbox_submit_create",
+      "value": "创建"
+    },
+    {
+      "name": "toolbox_toast_create_success",
+      "value": "创建成功"
+    },
+    {
+      "name": "toolbox_error_invalid_target",
+      "value": "目标链接须以 http:// 或 https:// 开头"
+    },
+    {
+      "name": "toolbox_error_invalid_custom_code",
+      "value": "短码须为 4-16 位字母数字或 -_"
+    },
+    {
+      "name": "toolbox_error_custom_date_required",
+      "value": "请先选择过期日期"
+    },
+    {
+      "name": "toolbox_error_submit",
+      "value": "提交失败，请重试"
+    },
+    {
+      "name": "toolbox_label_code",
+      "value": "短码"
+    },
+    {
+      "name": "toolbox_label_type",
+      "value": "类型"
+    },
+    {
+      "name": "toolbox_label_clicks",
+      "value": "点击次数"
+    },
+    {
+      "name": "toolbox_label_created",
+      "value": "创建时间"
+    },
+    {
+      "name": "toolbox_action_renew",
+      "value": "修改有效期"
+    },
+    {
+      "name": "toolbox_action_delete",
+      "value": "删除"
+    },
+    {
+      "name": "toolbox_confirm_delete_title",
+      "value": "删除短链"
+    },
+    {
+      "name": "toolbox_qr_section_title",
+      "value": "扫码访问"
+    },
+    {
+      "name": "toolbox_private_open_hint",
+      "value": "私有短码将经服务器解析后打开（计入一次点击）"
+    },
+    {
+      "name": "toolbox_text_toolbox_action_copy",
+      "value": "复制短链"
+    },
+    {
+      "name": "toolbox_action_open",
+      "value": "打开链接"
+    },
+    {
+      "name": "toolbox_copy_success",
+      "value": "短链已复制"
+    },
+    {
+      "name": "toolbox_text_toolbox_copy_failed",
+      "value": "复制失败，请重试"
+    },
+    {
+      "name": "toolbox_open_failed",
+      "value": "未找到可打开链接的应用"
+    },
+    {
+      "name": "toolbox_resolve_failed",
+      "value": "解析失败，请重试"
+    },
+    {
+      "name": "toolbox_toast_renew_success",
+      "value": "有效期已更新"
+    },
+    {
+      "name": "toolbox_toast_delete_success",
+      "value": "已删除"
+    },
+    {
+      "name": "toolbox_text_toolbox_qr_loading",
+      "value": "二维码生成中"
+    },
+    {
+      "name": "toolbox_text_toolbox_qr_failed",
+      "value": "二维码生成失败，点击重试"
+    },
+    {
+      "name": "toolbox_stats_title",
+      "value": "访问明细"
+    },
+    {
+      "name": "toolbox_stats_empty",
+      "value": "暂无访问记录"
+    },
+    {
+      "name": "toolbox_stats_error_load",
+      "value": "访问明细加载失败"
+    },
+    {
+      "name": "toolbox_stats_error_retry",
+      "value": "加载失败，点击重试"
+    },
+    {
+      "name": "toolbox_delivery_title",
+      "value": "设备投递"
+    },
+    {
+      "name": "toolbox_delivery_qr_desc",
+      "value": "投递会话二维码"
+    },
+    {
+      "name": "delivery_text_toolbox_delivery_countdown_prefix",
+      "value": "剩余 "
+    },
+    {
+      "name": "toolbox_delivery_password_label",
+      "value": "进入密码（可选）"
+    },
+    {
+      "name": "toolbox_delivery_password_hint",
+      "value": "4-64 位"
+    },
+    {
+      "name": "toolbox_delivery_password_helper",
+      "value": "电脑端进入时需输入，留空则无需密码"
+    },
+    {
+      "name": "toolbox_delivery_privacy_notice",
+      "value": "内容经服务器中转，服务器可见明文；条目取走即焚毁，会话到期自动回收"
+    },
+    {
+      "name": "toolbox_delivery_submit_create",
+      "value": "创建投递"
+    },
+    {
+      "name": "toolbox_delivery_error_invalid_password",
+      "value": "密码须为 4-64 位"
+    },
+    {
+      "name": "toolbox_delivery_error_create",
+      "value": "创建失败，请重试"
+    },
+    {
+      "name": "toolbox_delivery_code_label",
+      "value": "投递码"
+    },
+    {
+      "name": "toolbox_delivery_session_expired",
+      "value": "已失效"
+    },
+    {
+      "name": "toolbox_delivery_has_password",
+      "value": "需密码"
+    },
+    {
+      "name": "toolbox_delivery_action_copy_link",
+      "value": "复制链接"
+    },
+    {
+      "name": "toolbox_delivery_action_open_session",
+      "value": "进入会话"
+    },
+    {
+      "name": "toolbox_delivery_action_close",
+      "value": "关闭会话"
+    },
+    {
+      "name": "toolbox_delivery_action_recreate",
+      "value": "重新发起"
+    },
+    {
+      "name": "toolbox_delivery_toast_close_success",
+      "value": "会话已关闭"
+    },
+    {
+      "name": "toolbox_delivery_toast_link_copied",
+      "value": "链接已复制"
+    },
+    {
+      "name": "toolbox_delivery_error_close",
+      "value": "关闭失败，请重试"
+    },
+    {
+      "name": "toolbox_delivery_url_fallback",
+      "value": "电脑浏览器打开本链接进入"
+    },
+    {
+      "name": "toolbox_delivery_action_close_session",
+      "value": "关闭"
+    },
+    {
+      "name": "toolbox_delivery_confirm_close_title",
+      "value": "关闭投递会话"
+    },
+    {
+      "name": "toolbox_delivery_confirm_close_message",
+      "value": "关闭后投递码立即失效且条目不可再取，确定关闭？"
+    },
+    {
+      "name": "toolbox_delivery_empty_message",
+      "value": "还没有条目，等对端进入后互传"
+    },
+    {
+      "name": "toolbox_delivery_poll_error",
+      "value": "条目同步失败，正在自动重试"
+    },
+    {
+      "name": "toolbox_delivery_error_load",
+      "value": "条目加载失败"
+    },
+    {
+      "name": "toolbox_delivery_direction_out",
+      "value": "发出"
+    },
+    {
+      "name": "toolbox_delivery_direction_in",
+      "value": "收到"
+    },
+    {
+      "name": "toolbox_delivery_kind_text",
+      "value": "文本"
+    },
+    {
+      "name": "toolbox_delivery_kind_image",
+      "value": "图片"
+    },
+    {
+      "name": "toolbox_delivery_kind_file",
+      "value": "文件"
+    },
+    {
+      "name": "toolbox_delivery_state_pending",
+      "value": "待取走"
+    },
+    {
+      "name": "toolbox_delivery_state_taken",
+      "value": "已取走"
+    },
+    {
+      "name": "toolbox_delivery_toast_code_copied",
+      "value": "投递码已复制"
+    },
+    {
+      "name": "toolbox_delivery_sending",
+      "value": "正在传输…"
+    },
+    {
+      "name": "toolbox_delivery_send_hint",
+      "value": "输入要投递的文本…"
+    },
+    {
+      "name": "toolbox_delivery_action_send",
+      "value": "发送"
+    },
+    {
+      "name": "toolbox_delivery_pick_image",
+      "value": "选图片"
+    },
+    {
+      "name": "toolbox_delivery_pick_file",
+      "value": "选文件"
+    },
+    {
+      "name": "toolbox_delivery_error_send",
+      "value": "发送失败，请重试"
+    },
+    {
+      "name": "toolbox_delivery_error_file_too_large",
+      "value": "文件超过 20MB 上限"
+    },
+    {
+      "name": "toolbox_delivery_error_text_too_long",
+      "value": "文本超过 10 万字符上限"
+    },
+    {
+      "name": "toolbox_delivery_error_text_empty",
+      "value": "请输入要投递的文本"
+    },
+    {
+      "name": "toolbox_delivery_session_gone_toast",
+      "value": "投递会话不存在或已失效"
+    },
+    {
+      "name": "toolbox_delivery_item_taken_toast",
+      "value": "条目已被取走"
+    },
+    {
+      "name": "toolbox_delivery_action_copy_take",
+      "value": "复制并取走"
+    },
+    {
+      "name": "delivery_text_toolbox_delivery_action_take",
+      "value": "取走"
+    },
+    {
+      "name": "toolbox_delivery_toast_copy_success",
+      "value": "文本已复制，条目已焚毁"
+    },
+    {
+      "name": "toolbox_delivery_preview_error",
+      "value": "内容读取失败"
+    },
+    {
+      "name": "delivery_text_toolbox_delivery_confirm_take_title",
+      "value": "取走条目"
+    },
+    {
+      "name": "delivery_text_toolbox_delivery_confirm_take_message",
+      "value": "取走后条目立即焚毁且不可恢复，确定取走？"
+    },
+    {
+      "name": "toolbox_delivery_duration_60m",
+      "value": "1 小时"
+    },
+    {
+      "name": "toolbox_delivery_duration_120m",
+      "value": "2 小时"
+    },
+    {
+      "name": "toolbox_date_picker_dialog_1",
+      "value": "过期日期不能早于今天"
+    },
+    {
+      "name": "toolbox_short_code_detail_1",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "toolbox_short_code_list_1",
+      "value": "没有更多数据了"
+    },
+    {
+      "name": "hide_password",
+      "value": "隐藏密码"
+    },
+    {
+      "name": "show_password",
+      "value": "显示密码"
+    },
+    {
+      "name": "workbench_title",
+      "value": "工作台"
+    },
+    {
+      "name": "workbench_subtitle",
+      "value": "小工具，慢慢加"
+    },
+    {
+      "name": "workbench_divination_name",
+      "value": "观象台"
+    },
+    {
+      "name": "workbench_divination_subtitle",
+      "value": "六爻 · 梅花 · 奇门 · 大六壬"
+    },
+    {
+      "name": "workbench_all_tools",
+      "value": "全部工具"
+    },
+    {
+      "name": "workbench_text_workbench_tool_calendar",
+      "value": "洗衣黄历"
+    },
+    {
+      "name": "workbench_text_workbench_tool_calendar_desc",
+      "value": "今天宜洗什么颜色"
+    },
+    {
+      "name": "workbench_text_workbench_tool_stain",
+      "value": "渍迹识别"
+    },
+    {
+      "name": "workbench_text_workbench_tool_stain_desc",
+      "value": "拍照认污渍类型"
+    },
+    {
+      "name": "workbench_text_workbench_tool_fabric",
+      "value": "面料百科"
+    },
+    {
+      "name": "workbench_text_workbench_tool_fabric_desc",
+      "value": "什么面料怎么洗"
+    },
+    {
+      "name": "ai_task_recharge",
+      "value": "费用估算"
+    },
+    {
+      "name": "workbench_text_workbench_tool_estimate_desc",
+      "value": "洗之前先算个账"
+    },
+    {
+      "name": "workbench_text_workbench_tool_history",
+      "value": "我的卦历"
+    },
+    {
+      "name": "workbench_text_workbench_tool_history_desc",
+      "value": "起过的卦都在这里"
+    },
+    {
+      "name": "workbench_text_workbench_tool_ai",
+      "value": "AI 助手"
+    },
+    {
+      "name": "workbench_text_workbench_tool_ai_desc",
+      "value": "洗护问题随口问"
+    },
+    {
+      "name": "workbench_text_workbench_tool_short_code_desc",
+      "value": "生成并管理跳转短链"
+    },
+    {
+      "name": "workbench_footer",
+      "value": "工具会陆续加进来"
+    },
+    {
+      "name": "workbench_coming_soon",
+      "value": "功能建设中，敬请期待"
+    },
+    {
+      "name": "workbench_entries_error",
+      "value": "工具列表加载失败，请检查网络后重试"
+    },
+    {
+      "name": "workbench_entries_empty",
+      "value": "工具还在准备中，稍后再来看看"
+    },
+    {
+      "name": "workbench_retry",
+      "value": "重试"
+    },
+    {
+      "name": "workbench_search_hint",
+      "value": "搜索工具"
+    },
+    {
+      "name": "workbench_search_empty",
+      "value": "没有找到相关工具，换个关键词试试"
+    },
+    {
+      "name": "workbench_recent_title",
+      "value": "最近使用"
+    },
+    {
+      "name": "workbench_notice_dismiss",
+      "value": "关闭公告"
+    },
+    {
+      "name": "axios_1",
+      "value": "release 构建必须在 entry/build-profile.json5 buildOptionSet[release]"
+    },
+    {
+      "name": "axios_2",
+      "value": ".arkOptions.buildProfileFields 注入生产 HTTPS 域名后重新出包"
+    },
+    {
+      "name": "axios_3",
+      "value": "登录失效，请重新登录！"
+    },
+    {
+      "name": "axios_4",
+      "value": "请先登录"
+    },
+    {
+      "name": "axios_5",
+      "value": "未登录"
+    },
+    {
+      "name": "axios_6",
+      "value": "请求超时！请您稍后重试"
+    },
+    {
+      "name": "axios_7",
+      "value": "网络错误！请您稍后重试"
+    },
+    {
+      "name": "error_network_fail",
+      "value": "请求失败"
+    },
+    {
+      "name": "error_unknown",
+      "value": "未知错误"
+    },
+    {
+      "name": "add_school_1",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "error_student_id_registered",
+      "value": "该学号已注册"
+    },
+    {
+      "name": "modify_success",
+      "value": "修改成功"
+    },
+    {
+      "name": "add_school_2",
+      "value": "学校信息保存失败"
+    },
+    {
+      "name": "complete_info",
+      "value": "完善信息"
+    },
+    {
+      "name": "fill_school_info",
+      "value": "请填写您的学校信息"
+    },
+    {
+      "name": "search_school",
+      "value": "搜索学校"
+    },
+    {
+      "name": "please_select_school",
+      "value": "请选择学校"
+    },
+    {
+      "name": "student_id",
+      "value": "学号"
+    },
+    {
+      "name": "invalid_student_id",
+      "value": "请输入正确的学号"
+    },
+    {
+      "name": "school_info_locked_hint",
+      "value": "学校信息提交后不可自行修改，如需变更请联系管理员"
+    },
+    {
+      "name": "confirm",
+      "value": "确认"
+    },
+    {
+      "name": "ai_workbench_title",
+      "value": "智能助手"
+    },
+    {
+      "name": "ai_quick_tasks",
+      "value": "快捷任务"
+    },
+    {
+      "name": "ai_task_choose_package",
+      "value": "洗护咨询"
+    },
+    {
+      "name": "ai_task_check_order",
+      "value": "订单查询"
+    },
+    {
+      "name": "service_coupon",
+      "value": "优惠券"
+    },
+    {
+      "name": "ai_recent_work",
+      "value": "最近工作"
+    },
+    {
+      "name": "ai_empty_recent",
+      "value": "还没有对话记录，从上面选一个任务开始"
+    },
+    {
+      "name": "ai_start_asking",
+      "value": "开始提问"
+    },
+    {
+      "name": "ai_input_placeholder",
+      "value": "有什么可以帮你的？"
+    },
+    {
+      "name": "ai_send",
+      "value": "发送"
+    },
+    {
+      "name": "ai_work_page_1",
+      "value": "AI 能力正在接入中，当前为界面预览"
+    },
+    {
+      "name": "campus_card_empty",
+      "value": "校园卡号不能为空"
+    },
+    {
+      "name": "bing_campus_card_alert_1",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "bind_success",
+      "value": "绑定成功"
+    },
+    {
+      "name": "unbind_success",
+      "value": "解绑成功"
+    },
+    {
+      "name": "bing_campus_card_alert_2",
+      "value": "绑定失败，请重试"
+    },
+    {
+      "name": "bing_campus_card_alert_3",
+      "value": "解绑失败，请重试"
+    },
+    {
+      "name": "bind_campus_card",
+      "value": "绑定校园卡"
+    },
+    {
+      "name": "unbind_campus_card",
+      "value": "解绑校园卡"
+    },
+    {
+      "name": "input_campus_card",
+      "value": "请输入校园卡号"
+    },
+    {
+      "name": "confirm_unbind_question",
+      "value": "确定要解绑当前绑定的校园卡吗？"
+    },
+    {
+      "name": "confirm_unbind",
+      "value": "确认解绑"
+    },
+    {
+      "name": "change_password_1",
+      "value": "密码修改成功，请重新登录"
+    },
+    {
+      "name": "change_password_2",
+      "value": "密码修改失败"
+    },
+    {
+      "name": "change_password_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "change_password",
+      "value": "修改密码"
+    },
+    {
+      "name": "old_password",
+      "value": "原密码"
+    },
+    {
+      "name": "error_old_password_empty",
+      "value": "请输入原密码"
+    },
+    {
+      "name": "invalid_password",
+      "value": "密码必须为6-16位"
+    },
+    {
+      "name": "reset_new_password",
+      "value": "新密码"
+    },
+    {
+      "name": "change_password_4",
+      "value": "6-16位新密码"
+    },
+    {
+      "name": "confirm_new_password",
+      "value": "确认新密码"
+    },
+    {
+      "name": "change_password_5",
+      "value": "请再次输入新密码"
+    },
+    {
+      "name": "change_password_6",
+      "value": "两次输入的新密码不一致"
+    },
+    {
+      "name": "confirm_change_password",
+      "value": "确认修改"
+    },
+    {
+      "name": "coming_soon_1",
+      "value": "功能建设中"
+    },
+    {
+      "name": "coming_soon_2",
+      "value": "该功能正在开发中，敬请期待"
+    },
+    {
+      "name": "coupon_1",
+      "value": "可用"
+    },
+    {
+      "name": "claimed_coupons",
+      "value": "已领取"
+    },
+    {
+      "name": "historical_coupons",
+      "value": "历史"
+    },
+    {
+      "name": "coupon_load_failed",
+      "value": "优惠券加载失败"
+    },
+    {
+      "name": "coupon_2",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "claim_success",
+      "value": "领取成功"
+    },
+    {
+      "name": "coupon_3",
+      "value": "领取失败，请稍后重试"
+    },
+    {
+      "name": "no_coupons_available",
+      "value": "暂无优惠券"
+    },
+    {
+      "name": "no_historical_coupons",
+      "value": "暂无使用优惠券"
+    },
+    {
+      "name": "no_threshold",
+      "value": "无门槛"
+    },
+    {
+      "name": "claim_now",
+      "value": "立即领取"
+    },
+    {
+      "name": "used",
+      "value": "已使用"
+    },
+    {
+      "name": "expired",
+      "value": "已过期"
+    },
+    {
+      "name": "tab_home",
+      "value": "首页"
+    },
+    {
+      "name": "tab_service",
+      "value": "服务"
+    },
+    {
+      "name": "tab_workbench",
+      "value": "工作台"
+    },
+    {
+      "name": "tab_mine",
+      "value": "我的"
+    },
+    {
+      "name": "please_select_package",
+      "value": "请选择套餐"
+    },
+    {
+      "name": "change_school_contact_service",
+      "value": "更换学校信息请联系客服！"
+    },
+    {
+      "name": "laundry_1",
+      "value": "用户信息加载失败"
+    },
+    {
+      "name": "laundry_2",
+      "value": "套餐加载失败"
+    },
+    {
+      "name": "laundry_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "laundry_4",
+      "value": "下单失败，请稍后重试"
+    },
+    {
+      "name": "book_locker",
+      "value": "预约寄存"
+    },
+    {
+      "name": "delivery_locker",
+      "value": "投递柜"
+    },
+    {
+      "name": "change",
+      "value": "更换"
+    },
+    {
+      "name": "laundry_package",
+      "value": "洗护套餐"
+    },
+    {
+      "name": "confirm_booking",
+      "value": "确认预约"
+    },
+    {
+      "name": "login_1",
+      "value": "登录失败，请稍后重试"
+    },
+    {
+      "name": "login_success",
+      "value": "登录成功"
+    },
+    {
+      "name": "brand_name",
+      "value": "智能洗衣"
+    },
+    {
+      "name": "brand_subtitle",
+      "value": "智慧校园 · 轻松洗衣"
+    },
+    {
+      "name": "phone_number",
+      "value": "手机号"
+    },
+    {
+      "name": "invalid_phone",
+      "value": "请输入正确的手机号"
+    },
+    {
+      "name": "password",
+      "value": "密码"
+    },
+    {
+      "name": "forgot_password",
+      "value": "忘记密码？"
+    },
+    {
+      "name": "login_button",
+      "value": "登 录"
+    },
+    {
+      "name": "no_account",
+      "value": "没有账号？"
+    },
+    {
+      "name": "register_now",
+      "value": "立即注册"
+    },
+    {
+      "name": "order_detail_1",
+      "value": "订单信息加载失败"
+    },
+    {
+      "name": "order_detail_2",
+      "value": "订单详情加载失败"
+    },
+    {
+      "name": "order_detail_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "please_pay_soon",
+      "value": "请尽快支付"
+    },
+    {
+      "name": "please_ship_soon",
+      "value": "请尽快去寄件"
+    },
+    {
+      "name": "received_hint",
+      "value": "衣物已收取，即将清洗"
+    },
+    {
+      "name": "washing_in_progress_hint",
+      "value": "衣物正在清洗，完成后将通知您取件"
+    },
+    {
+      "name": "dried_hint",
+      "value": "衣物已烘干，即将配送"
+    },
+    {
+      "name": "in_delivery_hint",
+      "value": "衣物配送中，请留意取件通知"
+    },
+    {
+      "name": "clothes_in_locker",
+      "value": "衣物已到寄存柜"
+    },
+    {
+      "name": "order_detail_4",
+      "value": "订单已完成"
+    },
+    {
+      "name": "refunded_hint",
+      "value": "订单已退款"
+    },
+    {
+      "name": "progress_timeline",
+      "value": "进度时间线"
+    },
+    {
+      "name": "order_info",
+      "value": "订单信息"
+    },
+    {
+      "name": "order_number",
+      "value": "订单编号"
+    },
+    {
+      "name": "package_type",
+      "value": "套餐类型"
+    },
+    {
+      "name": "price",
+      "value": "价格"
+    },
+    {
+      "name": "actual_payment",
+      "value": "实付款"
+    },
+    {
+      "name": "school_name",
+      "value": "学校名称"
+    },
+    {
+      "name": "address",
+      "value": "地址"
+    },
+    {
+      "name": "contact_service",
+      "value": "联系客服"
+    },
+    {
+      "name": "contact_service_unavailable",
+      "value": "客服暂未开通，请稍后再试"
+    },
+    {
+      "name": "view_pickup_code",
+      "value": "查看取件码"
+    },
+    {
+      "name": "no_pickup_code",
+      "value": "暂无取件码，请稍后再试"
+    },
+    {
+      "name": "order_detail",
+      "value": "订单详情"
+    },
+    {
+      "name": "copy_success",
+      "value": "取件码已复制"
+    },
+    {
+      "name": "order_detail_5",
+      "value": "复制失败"
+    },
+    {
+      "name": "pickup_code",
+      "value": "取件码"
+    },
+    {
+      "name": "copy_pickup_code",
+      "value": "复制取件码"
+    },
+    {
+      "name": "confirm_cancel_order",
+      "value": "确定要取消订单？"
+    },
+    {
+      "name": "order_list_1",
+      "value": "没有更多数据了"
+    },
+    {
+      "name": "order_list_2",
+      "value": "订单加载失败"
+    },
+    {
+      "name": "order_list_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "cancel_success",
+      "value": "取消成功"
+    },
+    {
+      "name": "order_list_4",
+      "value": "取消失败，订单状态可能已变更"
+    },
+    {
+      "name": "my_orders",
+      "value": "我的订单"
+    },
+    {
+      "name": "home_hero_no_order",
+      "value": "暂无订单"
+    },
+    {
+      "name": "confirm_pay_question",
+      "value": "确定要支付？"
+    },
+    {
+      "name": "insufficient_balance",
+      "value": "余额不足"
+    },
+    {
+      "name": "insufficient_balance_tip",
+      "value": "当前余额不足，请先充值"
+    },
+    {
+      "name": "go_recharge",
+      "value": "去充值"
+    },
+    {
+      "name": "payment_1",
+      "value": "订单信息加载失败"
+    },
+    {
+      "name": "payment_2",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "payment_3",
+      "value": "用户信息加载失败"
+    },
+    {
+      "name": "payment_4",
+      "value": "优惠券试算失败"
+    },
+    {
+      "name": "payment_5",
+      "value": "支付失败，请稍后重试"
+    },
+    {
+      "name": "payment",
+      "value": "支付"
+    },
+    {
+      "name": "select_coupon",
+      "value": "选择优惠券"
+    },
+    {
+      "name": "go_claim",
+      "value": "去领取"
+    },
+    {
+      "name": "do_not_use_coupon",
+      "value": "不使用优惠券"
+    },
+    {
+      "name": "do_not_use_coupon_tip",
+      "value": "按订单原价支付"
+    },
+    {
+      "name": "amount_due",
+      "value": "应付金额"
+    },
+    {
+      "name": "service_type",
+      "value": "服务类型"
+    },
+    {
+      "name": "estimated_completion_time",
+      "value": "预计完成"
+    },
+    {
+      "name": "within_24_hours",
+      "value": "24小时内"
+    },
+    {
+      "name": "payment_method",
+      "value": "支付方式"
+    },
+    {
+      "name": "balance_payment",
+      "value": "余额支付"
+    },
+    {
+      "name": "do_not_use",
+      "value": "不使用"
+    },
+    {
+      "name": "payment_success_1",
+      "value": "订单信息加载失败"
+    },
+    {
+      "name": "payment_success_2",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "pay_success",
+      "value": "支付成功"
+    },
+    {
+      "name": "thanks_for_using",
+      "value": "感谢使用智慧洗衣"
+    },
+    {
+      "name": "payment_amount",
+      "value": "支付金额"
+    },
+    {
+      "name": "order_time",
+      "value": "下单时间"
+    },
+    {
+      "name": "locker_info",
+      "value": "寄存柜信息"
+    },
+    {
+      "name": "locker_process_tip",
+      "value": "寄存柜将在24小时内处理您的订单"
+    },
+    {
+      "name": "go_ship_now",
+      "value": "立即寄件"
+    },
+    {
+      "name": "back_home",
+      "value": "返回首页"
+    },
+    {
+      "name": "pay_success_load_failed",
+      "value": "加载失败，请重试"
+    },
+    {
+      "name": "tip",
+      "value": "提示"
+    },
+    {
+      "name": "permission_management_1",
+      "value": "通知权限未开启，是否前往系统设置开启？"
+    },
+    {
+      "name": "permission_management_2",
+      "value": "去设置"
+    },
+    {
+      "name": "permission_management_3",
+      "value": "无法打开系统设置"
+    },
+    {
+      "name": "permission_management",
+      "value": "权限管理"
+    },
+    {
+      "name": "general",
+      "value": "通用"
+    },
+    {
+      "name": "permission_notification",
+      "value": "通知权限"
+    },
+    {
+      "name": "permission_management_4",
+      "value": "接收订单进度、投递与系统通知提醒"
+    },
+    {
+      "name": "permission_internet",
+      "value": "网络访问"
+    },
+    {
+      "name": "permission_internet_desc",
+      "value": "与服务端同步订单、余额与洗衣项目（安装即授予）"
+    },
+    {
+      "name": "permission_footer",
+      "value": "权限仅用于上述功能所需的最小场景；拒绝某项权限只会影响对应功能，不影响应用正常使用。"
+    },
+    {
+      "name": "permission_granted",
+      "value": "已授权"
+    },
+    {
+      "name": "permission_action_request",
+      "value": "去授权"
+    },
+    {
+      "name": "pick_up_1",
+      "value": "没有更多数据了"
+    },
+    {
+      "name": "pick_up_2",
+      "value": "取件订单加载失败"
+    },
+    {
+      "name": "pick_up_3",
+      "value": "复制失败"
+    },
+    {
+      "name": "service_pickup",
+      "value": "取件"
+    },
+    {
+      "name": "no_pickup_orders",
+      "value": "暂无可取订单"
+    },
+    {
+      "name": "pickup_delivery_1",
+      "value": "订单信息加载失败"
+    },
+    {
+      "name": "pickup_delivery_2",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "pickup_delivery_3",
+      "value": "取件码生成失败"
+    },
+    {
+      "name": "delivery_type",
+      "value": "寄件"
+    },
+    {
+      "name": "pickup_delivery_4",
+      "value": "操作成功"
+    },
+    {
+      "name": "pickup_delivery_5",
+      "value": "操作失败，订单状态可能已变更"
+    },
+    {
+      "name": "loading",
+      "value": "加载中…"
+    },
+    {
+      "name": "pickup_delivery_6",
+      "value": "二维码生成失败"
+    },
+    {
+      "name": "pickup_delivery_7",
+      "value": "暂无二维码"
+    },
+    {
+      "name": "pickup_delivery_8",
+      "value": "点击重试"
+    },
+    {
+      "name": "notes",
+      "value": "注意事项"
+    },
+    {
+      "name": "pickup_delivery_9",
+      "value": "• 请确保在30分钟内完成操作\\n"
+    },
+    {
+      "name": "pickup_delivery_10",
+      "value": "• 如遇问题请联系客服\\n"
+    },
+    {
+      "name": "pickup_delivery_11",
+      "value": "• 请勿将贵重物品放入寄存柜"
+    },
+    {
+      "name": "delivery_code",
+      "value": "寄件码"
+    },
+    {
+      "name": "locker_number_label",
+      "value": "寄存柜柜号"
+    },
+    {
+      "name": "operation_guide",
+      "value": "操作指引"
+    },
+    {
+      "name": "wait_and_take_clothes",
+      "value": "等待柜门打开，取出衣物"
+    },
+    {
+      "name": "wait_and_put_clothes",
+      "value": "等待柜门打开，放入衣物"
+    },
+    {
+      "name": "confirm_picked_up",
+      "value": "确认已取件"
+    },
+    {
+      "name": "confirm_delivered",
+      "value": "确认已寄件"
+    },
+    {
+      "name": "confirm_taken_clothes",
+      "value": "确认已取出衣服"
+    },
+    {
+      "name": "confirm_put_clothes",
+      "value": "确认已将衣服放入寄存柜"
+    },
+    {
+      "name": "points_title",
+      "value": "签到有礼"
+    },
+    {
+      "name": "points_balance_label",
+      "value": "当前积分"
+    },
+    {
+      "name": "points_text_total_earned_format",
+      "value": "累计获得 {0} 积分"
+    },
+    {
+      "name": "points_sign_in",
+      "value": "签到"
+    },
+    {
+      "name": "points_signed_today",
+      "value": "已签到"
+    },
+    {
+      "name": "points_text_sign_in_success",
+      "value": "签到成功 +{0} 积分"
+    },
+    {
+      "name": "points_sign_in_already",
+      "value": "今日已签到，明天再来吧"
+    },
+    {
+      "name": "points_text_sign_in_fail",
+      "value": "签到失败"
+    },
+    {
+      "name": "points_leaderboard_title",
+      "value": "本月排行榜"
+    },
+    {
+      "name": "points_leaderboard_load_failed",
+      "value": "排行榜加载失败，请检查网络后重试"
+    },
+    {
+      "name": "points_leaderboard_empty",
+      "value": "本月还没有人上榜，签到赢积分"
+    },
+    {
+      "name": "points_text_my_rank_format",
+      "value": "我的排名 #{0} · {1} 积分"
+    },
+    {
+      "name": "points_my_rank_none",
+      "value": "本月暂未上榜，签到赢积分"
+    },
+    {
+      "name": "points_ledger_title",
+      "value": "积分明细"
+    },
+    {
+      "name": "points_ledger_empty",
+      "value": "暂无积分记录，签到得积分"
+    },
+    {
+      "name": "points_load_failed",
+      "value": "积分信息加载失败"
+    },
+    {
+      "name": "points_unit",
+      "value": "积分"
+    },
+    {
+      "name": "select_or_input_amount",
+      "value": "请选择或输入充值金额"
+    },
+    {
+      "name": "custom",
+      "value": "自定义"
+    },
+    {
+      "name": "custom_amount_placeholder",
+      "value": "输入自定义金额"
+    },
+    {
+      "name": "confirm_recharge_question",
+      "value": "是否确认充值？"
+    },
+    {
+      "name": "recharge_now",
+      "value": "立即充值"
+    },
+    {
+      "name": "select_payment_method",
+      "value": "请选择充值方式"
+    },
+    {
+      "name": "recharge_amount_empty",
+      "value": "请输入充值金额"
+    },
+    {
+      "name": "recharge_amount_invalid_format",
+      "value": "金额格式不正确，最多支持两位小数"
+    },
+    {
+      "name": "recharge_amount_not_positive",
+      "value": "充值金额必须大于 0 元"
+    },
+    {
+      "name": "recharge_1",
+      "value": "未选"
+    },
+    {
+      "name": "recharge_2",
+      "value": "已选"
+    },
+    {
+      "name": "recharge_success",
+      "value": "充值成功"
+    },
+    {
+      "name": "error_recharge_failed",
+      "value": "充值失败"
+    },
+    {
+      "name": "service_recharge",
+      "value": "充值"
+    },
+    {
+      "name": "recharge_record",
+      "value": "充值记录"
+    },
+    {
+      "name": "account_balance_label",
+      "value": "账户余额"
+    },
+    {
+      "name": "recharge_amount",
+      "value": "充值金额"
+    },
+    {
+      "name": "custom_amount",
+      "value": "自定义金额"
+    },
+    {
+      "name": "weixin_pay",
+      "value": "微信支付"
+    },
+    {
+      "name": "alipay",
+      "value": "支付宝"
+    },
+    {
+      "name": "recharge_record_1",
+      "value": "没有更多数据了"
+    },
+    {
+      "name": "recharge_record_2",
+      "value": "充值记录加载失败"
+    },
+    {
+      "name": "recharge_record_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "no_recharge_records",
+      "value": "暂无充值记录"
+    },
+    {
+      "name": "captcha_sent",
+      "value": "验证码已发送，请查看短信"
+    },
+    {
+      "name": "error_get_captcha_failed",
+      "value": "验证码获取失败"
+    },
+    {
+      "name": "register",
+      "value": "注 册"
+    },
+    {
+      "name": "create_account",
+      "value": "创建账号"
+    },
+    {
+      "name": "start_laundry_journey",
+      "value": "开启智能洗衣之旅"
+    },
+    {
+      "name": "verification_code",
+      "value": "验证码"
+    },
+    {
+      "name": "get_verification_code",
+      "value": "获取验证码"
+    },
+    {
+      "name": "invalid_verification_code",
+      "value": "请输入正确的验证码"
+    },
+    {
+      "name": "password_hint_register",
+      "value": "设置密码"
+    },
+    {
+      "name": "has_account",
+      "value": "已有账号？"
+    },
+    {
+      "name": "login_now",
+      "value": "立即登录"
+    },
+    {
+      "name": "register_success",
+      "value": "注册成功"
+    },
+    {
+      "name": "register_1",
+      "value": "注册失败，请稍后重试"
+    },
+    {
+      "name": "register_2",
+      "value": "注册失败"
+    },
+    {
+      "name": "reset_password",
+      "value": "重置密码"
+    },
+    {
+      "name": "reset_password_1",
+      "value": "找回账号密码"
+    },
+    {
+      "name": "reset_password_2",
+      "value": "输入注册手机号，通过短信验证码设置新密码"
+    },
+    {
+      "name": "reset_password_3",
+      "value": "设置新密码"
+    },
+    {
+      "name": "reset_password_4",
+      "value": "想起密码了？"
+    },
+    {
+      "name": "reset_password_5",
+      "value": "返回登录"
+    },
+    {
+      "name": "reset_password_6",
+      "value": "密码重置成功，请使用新密码登录"
+    },
+    {
+      "name": "reset_password_7",
+      "value": "密码重置失败"
+    },
+    {
+      "name": "setting_1",
+      "value": "本应用收集的信息与用途：\\n\\n"
+    },
+    {
+      "name": "setting_2",
+      "value": "· 手机号与学号：仅用于账号注册、登录与校内身份识别；\\n"
+    },
+    {
+      "name": "setting_3",
+      "value": "· 学校与校园卡信息：用于寄存柜投递、取件与计费；\\n"
+    },
+    {
+      "name": "setting_4",
+      "value": "· 订单与余额数据：用于洗衣服务履约，余额仅存于平台账户；\\n"
+    },
+    {
+      "name": "setting_5",
+      "value": "· 观象台占卜记录：默认保存在本机数据库，解读请求经平台网关转发大模型，不含个人身份信息；\\n"
+    },
+    {
+      "name": "setting_6",
+      "value": "· 设备标识与崩溃日志：仅用于问题排查与热更新。\\n\\n"
+    },
+    {
+      "name": "setting_7",
+      "value": "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\\n\\n"
+    },
+    {
+      "name": "setting_8",
+      "value": "免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。"
+    },
+    {
+      "name": "setting_9",
+      "value": "API Key 经平台网关加密存储，仅用于后端转发解读请求；解读由你配置的模型完成，费用经你自己的 API Key 计费；"
+    },
+    {
+      "name": "setting_10",
+      "value": "可从平台模型目录选择，也可接入自定义 OpenAI 兼容端点。"
+    },
+    {
+      "name": "setting_11",
+      "value": "未配置，解读前请先配置模型"
+    },
+    {
+      "name": "setting_12",
+      "value": "删除后需重新配置模型才能使用 AI 解读，已保存的密钥将从服务端清除。"
+    },
+    {
+      "name": "api_config_mode_catalog",
+      "value": "平台模型目录"
+    },
+    {
+      "name": "api_config_mode_custom",
+      "value": "自定义接入"
+    },
+    {
+      "name": "api_config_catalog_step_vendor",
+      "value": "第一步：选择厂商"
+    },
+    {
+      "name": "setting_13",
+      "value": "选择厂商后进入下一步，仅显示该厂商的模型"
+    },
+    {
+      "name": "setting_14",
+      "value": "第二步：选择模型"
+    },
+    {
+      "name": "setting_15",
+      "value": "当前厂商："
+    },
+    {
+      "name": "api_config_catalog_back",
+      "value": "上一步"
+    },
+    {
+      "name": "setting_16",
+      "value": "请先选择厂商与模型"
+    },
+    {
+      "name": "confirm_logout",
+      "value": "是否要退出登录？"
+    },
+    {
+      "name": "about_smartwash",
+      "value": "关于 SmartWash"
+    },
+    {
+      "name": "privacy_disclaimer",
+      "value": "隐私与免责声明"
+    },
+    {
+      "name": "api_config_confirm_delete_title",
+      "value": "删除解读模型配置？"
+    },
+    {
+      "name": "new_version_available",
+      "value": "发现新版本"
+    },
+    {
+      "name": "setting_17",
+      "value": "无法打开系统设置"
+    },
+    {
+      "name": "already_latest",
+      "value": "当前已是最新版本"
+    },
+    {
+      "name": "update_check_failed",
+      "value": "检查更新失败"
+    },
+    {
+      "name": "setting_18",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "api_config_error_base_url_empty",
+      "value": "请输入接入点地址"
+    },
+    {
+      "name": "api_config_error_base_url_https",
+      "value": "接入点必须以 https:// 开头"
+    },
+    {
+      "name": "api_config_error_model_empty",
+      "value": "请输入模型名称"
+    },
+    {
+      "name": "api_config_error_key_empty",
+      "value": "请输入 API Key"
+    },
+    {
+      "name": "api_config_test_ok",
+      "value": "连通性正常，可保存使用"
+    },
+    {
+      "name": "setting_19",
+      "value": "连通性测试未通过，请检查接入点、模型名称与 API Key"
+    },
+    {
+      "name": "setting_20",
+      "value": "测试失败"
+    },
+    {
+      "name": "api_config_save_success",
+      "value": "保存成功，解读将使用你的模型"
+    },
+    {
+      "name": "setting_21",
+      "value": "保存失败"
+    },
+    {
+      "name": "api_config_delete_success",
+      "value": "已删除配置"
+    },
+    {
+      "name": "setting_22",
+      "value": "删除失败"
+    },
+    {
+      "name": "setting_23",
+      "value": "模型目录加载失败，点击重试"
+    },
+    {
+      "name": "setting_24",
+      "value": "模型目录加载中…"
+    },
+    {
+      "name": "setting_25",
+      "value": "暂无平台模型目录，可切换自定义接入"
+    },
+    {
+      "name": "setting_26",
+      "value": "使用中"
+    },
+    {
+      "name": "api_config_title",
+      "value": "解读模型"
+    },
+    {
+      "name": "api_config_mode_label",
+      "value": "选择模式"
+    },
+    {
+      "name": "setting_27",
+      "value": "接入点与模型名由平台目录提供，无需填写"
+    },
+    {
+      "name": "api_config_base_url_label",
+      "value": "接入点地址"
+    },
+    {
+      "name": "setting_28",
+      "value": "支持任意 OpenAI 兼容接入点，需 HTTPS"
+    },
+    {
+      "name": "api_config_model_label",
+      "value": "模型名称"
+    },
+    {
+      "name": "api_config_model_hint",
+      "value": "如 deepseek-chat"
+    },
+    {
+      "name": "setting_29",
+      "value": "收起平台模型目录"
+    },
+    {
+      "name": "setting_30",
+      "value": "从平台模型目录选择"
+    },
+    {
+      "name": "setting_31",
+      "value": "暂无平台模型目录"
+    },
+    {
+      "name": "api_config_key_hint_edit",
+      "value": "重新输入 API Key"
+    },
+    {
+      "name": "api_config_key_hint_new",
+      "value": "输入 API Key"
+    },
+    {
+      "name": "api_config_key_hide",
+      "value": "隐藏 API Key"
+    },
+    {
+      "name": "api_config_key_show",
+      "value": "显示 API Key"
+    },
+    {
+      "name": "setting_32",
+      "value": "Key 仅提交后端加密存储，端上不保存；已配置时更换任何字段都需重新输入 Key"
+    },
+    {
+      "name": "api_config_test",
+      "value": "测试连接"
+    },
+    {
+      "name": "api_config_delete",
+      "value": "删除配置"
+    },
+    {
+      "name": "settings",
+      "value": "设置"
+    },
+    {
+      "name": "push_notification",
+      "value": "消息通知"
+    },
+    {
+      "name": "permission_denied",
+      "value": "未授权"
+    },
+    {
+      "name": "haptic_feedback",
+      "value": "触感反馈"
+    },
+    {
+      "name": "setting_33",
+      "value": "取件提醒"
+    },
+    {
+      "name": "check_update",
+      "value": "检查更新"
+    },
+    {
+      "name": "logout",
+      "value": "退出登录"
+    },
+    {
+      "name": "api_config_verified",
+      "value": "已验证"
+    },
+    {
+      "name": "transaction_status_success",
+      "value": "成功"
+    },
+    {
+      "name": "wallet_transactions_1",
+      "value": "钱包流水加载失败"
+    },
+    {
+      "name": "wallet_transactions_2",
+      "value": "加载更多失败"
+    },
+    {
+      "name": "wallet_transactions_3",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "wallet_transactions",
+      "value": "钱包流水"
+    },
+    {
+      "name": "record_append_failed",
+      "value": "加载更多失败，点击重试"
+    },
+    {
+      "name": "wallet_load_failed",
+      "value": "流水加载失败"
+    },
+    {
+      "name": "no_wallet_transactions",
+      "value": "还没有流水，去充值或下单一笔试试"
+    },
+    {
+      "name": "webview_default_title",
+      "value": "详情页"
+    },
+    {
+      "name": "webview_error_url_unsupported",
+      "value": "仅支持打开网页链接"
+    },
+    {
+      "name": "webview_error_load",
+      "value": "页面加载失败，请检查网络后重试"
+    },
+    {
+      "name": "check_status_1",
+      "value": "请求失败！请您稍后重试"
+    },
+    {
+      "name": "check_status_2",
+      "value": "登录失效！请您重新登录"
+    },
+    {
+      "name": "check_status_3",
+      "value": "当前账号无权限访问！"
+    },
+    {
+      "name": "check_status_4",
+      "value": "你所访问的资源不存在！"
+    },
+    {
+      "name": "check_status_5",
+      "value": "请求方式错误！请您稍后重试"
+    },
+    {
+      "name": "check_status_6",
+      "value": "请求超时！请您稍后重试"
+    },
+    {
+      "name": "check_status_7",
+      "value": "服务异常！"
+    },
+    {
+      "name": "check_status_8",
+      "value": "网关错误！"
+    },
+    {
+      "name": "check_status_9",
+      "value": "服务不可用！"
+    },
+    {
+      "name": "check_status_10",
+      "value": "网关超时！"
+    },
+    {
+      "name": "check_status_11",
+      "value": "请求失败！"
+    },
+    {
+      "name": "notice_title",
+      "value": "消息中心"
+    },
+    {
+      "name": "notice_unread_count_format",
+      "value": "%d 条未读"
+    },
+    {
+      "name": "notice_read_all",
+      "value": "全部已读"
+    },
+    {
+      "name": "notice_read_all_confirm_title",
+      "value": "全部标为已读？"
+    },
+    {
+      "name": "notice_read_all_confirm_message",
+      "value": "将所有消息标记为已读，该操作不可撤销。"
+    },
+    {
+      "name": "notice_read_all_success",
+      "value": "已全部标记为已读"
+    },
+    {
+      "name": "notice_text_notice_read_all_failed",
+      "value": "操作失败，请重试"
+    },
+    {
+      "name": "notice_type_system",
+      "value": "系统通知"
+    },
+    {
+      "name": "notice_type_announcement",
+      "value": "运营公告"
+    },
+    {
+      "name": "notice_type_unknown",
+      "value": "通知"
+    },
+    {
+      "name": "notice_time_today_format",
+      "value": "今天 %s"
+    },
+    {
+      "name": "notice_time_yesterday_format",
+      "value": "昨天 %s"
+    },
+    {
+      "name": "notice_text_notice_time_this_year_format",
+      "value": "%d月%d日"
+    },
+    {
+      "name": "notice_load_more",
+      "value": "加载更多"
+    },
+    {
+      "name": "notice_load_more_failed",
+      "value": "加载失败，点击重试"
+    },
+    {
+      "name": "notice_inbox_empty",
+      "value": "暂无消息，有新通知会第一时间送达"
+    },
+    {
+      "name": "notice_load_failed",
+      "value": "消息加载失败，请检查网络后重试"
+    },
+    {
+      "name": "notice_state_unread",
+      "value": "未读"
+    },
+    {
+      "name": "notice_state_read",
+      "value": "已读"
+    },
+    {
+      "name": "points_reason_sign_in",
+      "value": "每日签到"
+    },
+    {
+      "name": "points_reason_streak_bonus",
+      "value": "连签奖励"
+    },
+    {
+      "name": "points_reason_unknown",
+      "value": "积分变动"
+    },
+    {
+      "name": "reminder_logic_1",
+      "value": "衣物已洗好"
+    },
+    {
+      "name": "reminder_logic_2",
+      "value": "请及时到寄存柜取件，超时可能占用公共筒位"
+    },
+    {
+      "name": "error_operation_failed",
+      "value": "操作失败"
+    },
+    {
+      "name": "deeplink_unsupported",
+      "value": "暂不支持该链接"
+    },
+    {
+      "name": "deep_link_handler_1",
+      "value": "是"
+    },
+    {
+      "name": "deep_link_handler_2",
+      "value": "否"
+    },
+    {
+      "name": "deep_link_handler_3",
+      "value": "（合法属端上未注册能力缺口，仍按暂不支持提示）"
+    },
+    {
+      "name": "step_received",
+      "value": "已接单"
+    },
+    {
+      "name": "step_dried",
+      "value": "烘干中"
+    },
+    {
+      "name": "home_hero_no_order_hint",
+      "value": "从下方快捷服务开始预约"
+    },
+    {
+      "name": "service_booking",
+      "value": "预约洗衣"
+    },
+    {
+      "name": "index_page_1",
+      "value": "用户信息加载失败"
+    },
+    {
+      "name": "index_page_2",
+      "value": "订单状态刷新失败"
+    },
+    {
+      "name": "home_available_coupons",
+      "value": "可用优惠券"
+    },
+    {
+      "name": "home_total_orders",
+      "value": "累计订单"
+    },
+    {
+      "name": "service_tips",
+      "value": "服务时间 07:00 – 22:00 · 节假日正常营业"
+    },
+    {
+      "name": "laundry_service",
+      "value": "洗衣服务"
+    },
+    {
+      "name": "in_progress_orders",
+      "value": "进行中订单"
+    },
+    {
+      "name": "view_all",
+      "value": "查看全部 ›"
+    },
+    {
+      "name": "no_ongoing_orders",
+      "value": "暂无进行中的订单"
+    },
+    {
+      "name": "go_pay",
+      "value": "去支付"
+    },
+    {
+      "name": "cancel_order",
+      "value": "取消订单"
+    },
+    {
+      "name": "go_ship",
+      "value": "去寄件"
+    },
+    {
+      "name": "go_pickup",
+      "value": "去取件"
+    },
+    {
+      "name": "service_1",
+      "value": "套餐加载失败"
+    },
+    {
+      "name": "service_2",
+      "value": "网络异常，请稍后重试"
+    },
+    {
+      "name": "service_3",
+      "value": "干"
+    },
+    {
+      "name": "service_4",
+      "value": "精"
+    },
+    {
+      "name": "service_5",
+      "value": "护理"
+    },
+    {
+      "name": "service_6",
+      "value": "奢"
+    },
+    {
+      "name": "service_7",
+      "value": "熨"
+    },
+    {
+      "name": "service_8",
+      "value": "洗"
+    },
+    {
+      "name": "service_9",
+      "value": "标准"
+    },
+    {
+      "name": "user_info_1",
+      "value": "用户信息加载失败"
+    },
+    {
+      "name": "user_info_2",
+      "value": "头像上传成功"
+    },
+    {
+      "name": "avatar_upload_failed",
+      "value": "头像上传失败"
+    },
+    {
+      "name": "wallet_balance",
+      "value": "钱包余额"
+    },
+    {
+      "name": "campus_card",
+      "value": "校园卡"
+    },
+    {
+      "name": "bound",
+      "value": "已绑定"
+    },
+    {
+      "name": "not_bound",
+      "value": "未绑定"
+    },
+    {
+      "name": "shipping_address",
+      "value": "收货地址"
+    },
+    {
+      "name": "shipping_address_unavailable",
+      "value": "收货地址功能暂未开放"
+    },
+    {
+      "name": "app_components_1",
+      "value": "暂无数据"
+    },
+    {
+      "name": "widget_form_store_1",
+      "value": "写入"
+    },
+    {
+      "name": "widget_form_store_2",
+      "value": "读取"
+    },
+    {
+      "name": "widget_form_store_3",
+      "value": "注销"
+    },
+    {
+      "name": "widget_order_model_1",
+      "value": "暂无进行中的洗衣单"
+    },
+    {
+      "name": "widget_order_model_2",
+      "value": "点击查看订单"
+    },
+    {
+      "name": "widget_order_model_3",
+      "value": "正在加载…"
+    },
+    {
+      "name": "widget_card_1",
+      "value": "正在加载…"
+    },
+    {
+      "name": "widget_card_2",
+      "value": "订单摘要"
+    },
+    {
+      "name": "widget_card_3",
+      "value": "查看详情 ›"
+    },
+    {
+      "name": "widget_card_4",
+      "value": "洗衣进度"
+    },
+    {
       "name": "module_desc",
       "value": "module description"
     },
@@ -43,6 +5107,10 @@
     {
       "name": "pickup_reminder_content_suffix",
       "value": "请及时到寄存柜取件，超时可能占用公共筒位"
+    },
+    {
+      "name": "game_empty_message",
+      "value": "游戏整理中，先去洗件衣服吧"
     }
   ]
 }

@@ -209,7 +209,8 @@ object AppDimens {
     val inputRadius = 14.dp
     val iconContainerRadius = 12.dp
     val bottomBarHeight = 68.dp
-    // 间距 token（8pt 网格）
+    // 间距 token（8pt 网格；space2xs = 2dp 为 DESIGN-SPEC §3 允许值集内的组件内微间距档，如 badge 胶囊纵向 padding）
+    val space2xs = 2.dp
     val spaceXxs = 4.dp
     val spaceXs = 8.dp
     val spaceSm = 12.dp

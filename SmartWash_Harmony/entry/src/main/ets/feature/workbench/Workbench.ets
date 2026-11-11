@@ -13,7 +13,7 @@
 import { BizCode } from "../../network/HttpUtil"
 import { WorkbenchEntryVo, getWorkbenchEntries } from "../../network/api/workbench"
 import { RouteNames } from "../../constant/RouteNames"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from "../../constant/DesignSystem"
 import { DivColor } from "../../constant/DivTheme"
 import { pathStack } from "../../utils/PathStackUtil"
 import { showToastSafety } from "../../utils/ToastUtil"
@@ -21,11 +21,13 @@ import { getValue, setValue } from "../../utils/StorageUtil"
 import { handleDeepLink } from "../../utils/deeplink/DeepLinkHandler"
 import { logger } from "../../utils/Logger"
 import { BusinessError } from "@kit.BasicServicesKit"
-import { KeyboardAvoidMode } from "@kit.ArkUI"
+import { KeyboardAvoidMode, LengthMetrics } from "@kit.ArkUI"
+import { ValueType } from "@kit.ArkData"
 import { safeBottomVp, safeTopVp } from "../../utils/SafeArea"
 import { parse, DeepLinkKind } from "../../utils/deeplink/DeepLinkParser"
 import { lookup } from "../../utils/deeplink/DeepLinkRegistry"
 import { AppButton, AppButtonVariant, EmptyState, IconBox, SkeletonBlock } from "../../view/common/AppComponents"
+import { resColor } from '../../utils/ResourceColor'
 import {
   WorkbenchBlock,
   WorkbenchBlockKind,
@@ -43,6 +45,11 @@ const COMPASS_SIZE: number = 64
 
 // 骨架卡高度（vp）：对齐安卓骨架 SkeletonBlock 148dp，形状与真实网格一致
 const SKELETON_TILE_HEIGHT: number = 148
+
+// 逐项错峰入场（对齐安卓 StaggerIn：间隔 40ms × 6 上限 + 单项 150ms 淡入，§7 总预算 400ms 内）
+const STAGGER_INTERVAL_MS: number = 40
+const STAGGER_MAX_INDEX: number = 6
+const STAGGER_ENTER_MS: number = 150
 
 // 最近使用保留条数（对齐安卓 WorkbenchViewModel.RECENT_MAX）
 const RECENT_MAX: number = 6
@@ -70,6 +77,9 @@ export struct Workbench {
   // 最近使用 entryKey（本地记忆，新的在前）+ 已关闭公告 entryKey 集合
   @Local recentKeys: string[] = []
   @Local dismissedKeys: string[] = []
+  // 按压反馈 key（对齐安卓 pressable scale 0.97；项目口径同 OrderCard/Service：
+  // @Local + onTouch(Down/Up/Cancel) + scale 0.97 + 100ms 属性动画，stateEffect 非通用属性）
+  @Local pressedKey: string = ''
   // 画布上下文：64vp 罗盘画布，开启抗锯齿
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
 
@@ -130,13 +140,25 @@ export struct Workbench {
   /** 回读本地记忆：最近使用 + 已关闭公告（逗号连接存储） */
   private async loadLocalState(): Promise<void> {
     try {
-      const recent = (await getValue(KEY_RECENT_ENTRIES, '') ?? '') as string
-      this.recentKeys = recent.split(',').filter((k: string) => k.length > 0)
-      const dismissed = (await getValue(KEY_DISMISSED_NOTICES, '') ?? '') as string
-      this.dismissedKeys = dismissed.split(',').filter((k: string) => k.length > 0)
+      const recent = await getValue(KEY_RECENT_ENTRIES, '')
+      // preferences.ValueType 含 bigint，与 ValuesBucket.ValueType 不兼容——先收窄 string
+      this.recentKeys = this.splitLocalKeys(typeof recent === 'string' ? recent : null)
+      const dismissed = await getValue(KEY_DISMISSED_NOTICES, '')
+      this.dismissedKeys = this.splitLocalKeys(typeof dismissed === 'string' ? dismissed : null)
     } catch (err) {
       // 本地记忆读取失败不阻塞主流程（等同无记忆）
     }
+  }
+
+  /**
+   * string → string[] 安全收窄（替代 as 强转，严格模式）：逗号分隔 key 列表，
+   * 非字符串值按无记忆处理。
+   */
+  private splitLocalKeys(value: string | null): string[] {
+    if (typeof value === 'string' && value.length > 0) {
+      return value.split(',').filter((k: string) => k.length > 0)
+    }
+    return []
   }
 
   /**
@@ -237,13 +259,14 @@ export struct Workbench {
 
   /** 最近使用 = 本地记忆 key 按序映射回当次下发列表（已下线的入口自动消失） */
   private recentTools(): WorkbenchTool[] {
-    return this.recentKeys
-      .map((key: string): WorkbenchTool | null => {
-        const hit = this.tools.find((tool: WorkbenchTool): boolean => tool.entryKey === key)
-        return hit !== undefined ? hit : null
-      })
-      .filter((tool: WorkbenchTool | null): boolean => tool !== null)
-      .map((tool: WorkbenchTool | null): WorkbenchTool => tool as WorkbenchTool)
+    const result: WorkbenchTool[] = []
+    this.recentKeys.forEach((key: string): void => {
+      const hit = this.tools.find((tool: WorkbenchTool): boolean => tool.entryKey === key)
+      if (hit !== undefined) {
+        result.push(hit)
+      }
+    })
+    return result
   }
 
   /** 工具两列分行（搜索态平铺用，对齐安卓 chunked(2)） */
@@ -255,57 +278,61 @@ export struct Workbench {
     return rows
   }
 
-  /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
+  /** 图标容器浅底色（后端 color 白名单 → 资源色 ICON_CONTAINER_*，未知兜底 GREEN） */
   private containerColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
       case WorkbenchTint.BLUE:
-        return DesignColor.ICON_CONTAINER_BLUE
+        return resColor('ICON_CONTAINER_BLUE')
       case WorkbenchTint.ORANGE:
-        return DesignColor.ICON_CONTAINER_ORANGE
+        return resColor('ICON_CONTAINER_ORANGE')
       case WorkbenchTint.PINK:
-        return DesignColor.ICON_CONTAINER_PINK
+        return resColor('ICON_CONTAINER_PINK')
       case WorkbenchTint.TEAL:
-        return DesignColor.ICON_CONTAINER_TEAL
+        return resColor('ICON_CONTAINER_TEAL')
       case WorkbenchTint.PURPLE:
-        return DesignColor.ICON_CONTAINER_PURPLE
+        return resColor('ICON_CONTAINER_PURPLE')
       default:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
     }
   }
 
-  /** 图标前景色（后端 color 白名单 → DesignColor.ICON_FOREGROUND_*，未知兜底 GREEN） */
+  /** 图标前景色（后端 color 白名单 → 资源色 ICON_FOREGROUND_*，未知兜底 GREEN） */
   private iconColor(tint: WorkbenchTint): number {
     switch (tint) {
       case WorkbenchTint.GREEN:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
       case WorkbenchTint.BLUE:
-        return DesignColor.ICON_FOREGROUND_BLUE
+        return resColor('ICON_FOREGROUND_BLUE')
       case WorkbenchTint.ORANGE:
-        return DesignColor.ICON_FOREGROUND_ORANGE
+        return resColor('ICON_FOREGROUND_ORANGE')
       case WorkbenchTint.PINK:
-        return DesignColor.ICON_FOREGROUND_PINK
+        return resColor('ICON_FOREGROUND_PINK')
       case WorkbenchTint.TEAL:
-        return DesignColor.ICON_FOREGROUND_TEAL
+        return resColor('ICON_FOREGROUND_TEAL')
       case WorkbenchTint.PURPLE:
-        return DesignColor.ICON_FOREGROUND_PURPLE
+        return resColor('ICON_FOREGROUND_PURPLE')
       default:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
     }
   }
 
-  /** 卡片白卡统一描边/阴影（规范 §2.4：1px OUTLINE + level1） */
+  /**
+   * 卡片白卡统一描边/阴影（规范 §2.4：1px OUTLINE + 卡片阴影档 0 2px 12px）。
+   * blur 取 CARD_SHADOW_RADIUS(12)——LEVEL_1 是海拔档位号（1vp）非阴影几何值，
+   * 1vp 模糊肉眼不可见（与 AppCard 统一口径）；阴影色随主题切深色档 rgba(0,0,0,0.28)。
+   */
   @Styles
   cardChrome() {
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
     .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
-      offsetY: 2
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
   }
 
@@ -365,7 +392,7 @@ export struct Workbench {
     Text(title)
       .fontSize(DesignFontSize.SECTION_TITLE)
       .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(DesignColor.TEXT_PRIMARY)
+      .fontColor(resColor('TEXT_PRIMARY'))
       .width('100%')
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
       .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
@@ -436,10 +463,11 @@ export struct Workbench {
    * 观象台玄墨特色卡（设计稿 darkcard3）：清氧页面里开一扇通往玄墨世界的窗。
    * 深色自带分层不加投影；皮肤取 DivColors 玄墨暗色令牌，浅深模式同款
    * （设计稿深色副本对此卡无覆盖，故浅色模式下仍为深色卡）。
+   * 内部节奏：罗盘→文字→箭头统一 16（Row space spaceMd，对齐安卓 spacedBy）。
    */
   @Builder
   DivinationEntryCard() {
-    Row() {
+    Row({ space: DesignDimens.SPACE_MD }) {
       this.CompassCanvas()
 
       Column() {
@@ -448,18 +476,19 @@ export struct Workbench {
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontColor(DivColor.TEXT_PRIMARY_DARK)
+        // 副标题与标题同色（宣纸主文本），弱层级靠字号 12/字重 400（对齐安卓 DivTextPrimaryDark）
         Text(WorkbenchText.workbench_divination_subtitle)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DivColor.TEXT_SECONDARY_DARK)
+          .fontColor(DivColor.TEXT_PRIMARY_DARK)
           .margin({ top: DesignDimens.SPACE_XS })
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
 
-      // 32dp 圆形描边箭头（金线令牌 30%）
+      // 32dp 圆形描边箭头（金线令牌 30%）；内 chevron 20 对齐安卓 icon 20dp
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_right'))
-          .fontSize(16)
+          .fontSize(20)
           .fontColor([DivColor.GOLD_DARK])
       }
       .width(32)
@@ -474,11 +503,26 @@ export struct Workbench {
     .padding(DesignDimens.CARD_PADDING)
     // 圆角对齐安卓 radiusLg 16（卡片唯一档，原 20 不在规范五档内）
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DivColor.GOLD_LINE_DARK })
-    // 设计稿渐变 140deg #26241F→#1E1D1B 55%→#191713；140deg ≈ 左上→右下（ArkUI RightBottom）
+    // 描边 = 主题 outline（2026-11-05 P07 画板复裁弃鎏金，对齐安卓 1px 实线随主题换色）
+    .border({ width: 1, color: resColor('OUTLINE') })
+    // 渐变三段色标 0 / 0.55 / 1 = 规范 §1.5 divination.ink：#201D18→#1A1917@55%→#151412
+    //（对齐安卓 DivBgTop/Mid/BottomDark；140deg ≈ 左上→右下，ArkUI RightBottom）
     .linearGradient({
       direction: GradientDirection.RightBottom,
-      colors: [[DivColor.SURFACE_2_DARK, 0.0], [DivColor.SURFACE_DARK, 0.55], [DivColor.BG_MID_DARK, 1.0]]
+      colors: [[DivColor.BG_TOP_DARK, 0.0], [DivColor.BG_MID_DARK, 0.55], [DivColor.BG_BOTTOM_DARK, 1.0]]
+    })
+    // 按压反馈（对齐安卓 pressable scale 0.97）
+    .scale({
+      x: this.pressedKey === 'divination' ? 0.97 : 1,
+      y: this.pressedKey === 'divination' ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = 'divination'
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
     })
     .onClick(() => {
       this.onDivinationCardClick()
@@ -497,42 +541,50 @@ export struct Workbench {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(DesignColor.SURFACE_VARIANT)
+    .backgroundColor(resColor('SURFACE_VARIANT'))
   }
 
   /**
-   * 公告条（type=notice）：SUCCESS_CONTAINER 浅绿底 + 白色小图标容器 + 可选跳转箭头 + 48vp 关闭钮。
+   * 公告条（type=notice）：PRIMARY_SOFT 浅绿底（对齐安卓 scheme.primarySoft，非 SUCCESS_CONTAINER）
+   * + 白色小图标容器 + 可选跳转箭头 + 48vp 关闭钮；内部节奏统一 12（Row space spaceSm）。
+   * 文案 56vp 固定行高内单行省略（对齐安卓 maxLines=1，长文案不再折行裁切）。
    * target 为空 = 纯文案公告（整条不可点）；关闭即从列表过滤并落 Preferences。
    */
   @Builder
   NoticeBar(tool: WorkbenchTool) {
-    Row() {
+    Row({ space: DesignDimens.SPACE_SM }) {
       // 图标仍在容器里（§3.2）：白色小容器浮在浅绿条上，分层清晰
       IconBox({
         icon: tool.icon,
         sizeValue: 32,
         iconSize: 20,
-        containerColor: DesignColor.SURFACE,
-        iconColor: DesignColor.PRIMARY
+        containerColor: resColor('SURFACE'),
+        iconColor: resColor('PRIMARY')
       })
 
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.ON_SUCCESS_CONTAINER)
+        .fontColor(resColor('ON_PRIMARY_SOFT'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
         .layoutWeight(1)
 
       if (tool.target.length > 0) {
+        // alpha 0.7 对齐安卓 onPrimarySoft.copy(alpha = 0.7)
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(16)
-          .fontColor([DesignColor.ON_SUCCESS_CONTAINER])
+          .fontColor([resColor('ON_PRIMARY_SOFT')])
+          .opacity(0.7)
       }
 
       // 关闭钮：48vp 方形热区（行高 56 内余量充足）
       Column() {
+        // alpha 0.8 对齐安卓（原 0.6 对比不足，0.8 合成后约 7:1）
         SymbolGlyph($r('sys.symbol.xmark'))
           .fontSize(16)
-          .fontColor([DesignColor.ON_SUCCESS_CONTAINER])
+          .fontColor([resColor('ON_PRIMARY_SOFT')])
+          .opacity(0.8)
       }
       .width(48)
       .height(48)
@@ -547,16 +599,29 @@ export struct Workbench {
     .alignItems(VerticalAlign.Center)
     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(DesignColor.SUCCESS_CONTAINER)
+    .backgroundColor(resColor('PRIMARY_SOFT'))
+    // 按压反馈仅整条可点时生效（对齐安卓 pressable 条件包裹）
+    .scale({
+      x: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? 0.97 : 1,
+      y: tool.target.length > 0 && this.pressedKey === `notice_${tool.entryKey}` ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `notice_${tool.entryKey}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
-      // 整条可点 = 有跳转目标时（内层关闭钮点击事件优先消费）
+      // 整条可点 = 有跳转目标时（内层关闭钮点击经手势竞争优先消费，不触发整条）
       if (tool.target.length > 0) {
         this.onToolClick(tool)
       }
     })
   }
 
-  /** 通栏横卡（type=wide）：可选配图（16:9 顶部通铺）+ 图标容器行 + 右箭头 */
+  /** 通栏横卡（type=wide）：可选配图（16:9 顶部通铺）+ 图标容器行 + 右箭头；行内节奏统一 16（Row space spaceMd） */
   @Builder
   WideCard(tool: WorkbenchTool) {
     Column() {
@@ -567,7 +632,7 @@ export struct Workbench {
         .width('100%')
         .aspectRatio(1.78)
       }
-      Row() {
+      Row({ space: DesignDimens.SPACE_MD }) {
         IconBox({
           icon: tool.icon,
           containerColor: this.containerColor(tool.tint),
@@ -578,21 +643,21 @@ export struct Workbench {
           Text(tool.title)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
           if (tool.description.length > 0) {
             Text(tool.description)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
-        .margin({ left: DesignDimens.SPACE_MD })
 
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
       }
       .width('100%')
       .alignItems(VerticalAlign.Center)
@@ -601,20 +666,63 @@ export struct Workbench {
     .width('100%')
     .clip(true)
     .cardChrome()
+    .scale({
+      x: this.pressedKey === `wide_${tool.entryKey}` ? 0.97 : 1,
+      y: this.pressedKey === `wide_${tool.entryKey}` ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `wide_${tool.entryKey}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.onToolClick(tool)
     })
   }
 
-  /** 两列小卡行（连续 tile 归并产物；奇数个末位补空保持网格） */
+  /**
+   * 两列小卡行（连续 tile 归并产物；奇数个末位补空保持网格）。
+   * 等高机制（对齐安卓 IntrinsicSize.Min + fillMaxHeight，2026-11-11 审查 #4 镜像）：
+   * Flex alignItems=ItemAlign.Stretch 使同行两卡拉伸至行高（行高取内容较高卡），
+   * 短卡底部自动补齐；描述自身限两行截断从源头杜绝超长文案拉高卡片（ToolTile 内）。
+   * topSpacing：间距责任模型由调用方按前置块判定（观象台卡→tile 32、Section 后 0 等）；
+   * enterDelay：逐项错峰入场延迟。
+   */
   @Builder
-  TileRowContent(row: WorkbenchTool[]) {
-    Row({ space: DesignDimens.CARD_SPACING }) {
+  TileRowContent(row: WorkbenchTool[], topSpacing: number, enterDelay: number) {
+    Flex({
+      direction: FlexDirection.Row,
+      alignItems: ItemAlign.Stretch,
+      space: { main: LengthMetrics.vp(DesignDimens.CARD_SPACING) }
+    }) {
       ForEach(row, (tool: WorkbenchTool) => {
         Column() {
           this.ToolTile(tool)
         }
         .layoutWeight(1)
+        // 卡片 chrome + 按压交互放 Flex 直接子项：ItemAlign.Stretch 拉伸本列后
+        // 白卡/描边/阴影随之铺满行高实现等高（ToolTile 根不设 height('100%')，
+        // 否则行高↔子项高度循环解析回退为整屏高度——真机回归发现的撑满屏 bug）
+        .cardChrome()
+        .clip(true)
+        .scale({
+          x: this.pressedKey === `tile_${tool.entryKey}` ? 0.97 : 1,
+          y: this.pressedKey === `tile_${tool.entryKey}` ? 0.97 : 1
+        })
+        .animation({ duration: 100, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedKey = `tile_${tool.entryKey}`
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedKey = ''
+          }
+        })
+        .onClick(() => {
+          this.onToolClick(tool)
+        })
       }, (tool: WorkbenchTool) => tool.entryKey)
       // 奇数个末位补位，保持两列网格
       if (row.length === 1) {
@@ -627,8 +735,14 @@ export struct Workbench {
     .padding({
       left: DesignDimens.PAGE_PADDING,
       right: DesignDimens.PAGE_PADDING,
+      top: topSpacing,
       bottom: DesignDimens.CARD_SPACING
     })
+    .transition(TransitionEffect.OPACITY.animation({
+      duration: STAGGER_ENTER_MS,
+      delay: enterDelay,
+      curve: Curve.Friction
+    }))
   }
 
   /** 列表行：36vp 次级图标容器 + 14/500 主文案 + 角标 + 箭头（行高 56，规范 §3.4） */
@@ -646,7 +760,7 @@ export struct Workbench {
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .layoutWeight(1)
         .margin({ left: DesignDimens.SPACE_SM })
 
@@ -656,8 +770,8 @@ export struct Workbench {
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(resColor('TEXT_PRIMARY'))
+          .backgroundColor(resColor('PRIMARY_LIGHT'))
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
             left: DesignDimens.SPACE_SM,
@@ -669,13 +783,25 @@ export struct Workbench {
 
       SymbolGlyph($r('sys.symbol.chevron_right'))
         .fontSize(16)
-        .fontColor([DesignColor.TEXT_TERTIARY])
-        .margin({ left: DesignDimens.SPACE_XS })
+        .fontColor([resColor('TEXT_TERTIARY')])
+        .margin({ left: DesignDimens.SPACE_SM })
     }
     .width('100%')
     .height(56)
     .alignItems(VerticalAlign.Center)
     .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
+    .scale({
+      x: this.pressedKey === `row_${tool.entryKey}` ? 0.97 : 1,
+      y: this.pressedKey === `row_${tool.entryKey}` ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `row_${tool.entryKey}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.onToolClick(tool)
     })
@@ -689,7 +815,7 @@ export struct Workbench {
         if (index > 0) {
           // 发丝线只出现在同一容器内部（§1.3/§3.4）
           Divider()
-            .color(DesignColor.HAIRLINE)
+            .color(resColor('HAIRLINE'))
             .strokeWidth(0.5)
             .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
@@ -702,8 +828,11 @@ export struct Workbench {
   }
 
   /**
-   * 工具卡（type=tile，设计稿 tile3）：白卡 1px OUTLINE 描边 + level1 阴影 + 圆角 16
+   * 工具卡（type=tile，设计稿 tile3）：白卡 1px OUTLINE 描边 + 卡片阴影 + 圆角 16
    * + 可选配图（顶部 96vp 通铺，图卡不再叠图标容器）+ 44vp 语义图标容器 + 标题 + 描述；
+   * 标题 14/500、描述 12/500（对齐安卓审查 #11 字重统一）；描述限两行省略（审查 #4B，
+   * 超长描述不再无限拉高卡片）。卡片 chrome 与按压交互由 TileRowContent 的直接
+   * Column 承载（Flex Stretch 等高），本 Builder 只渲染内容。
    * 右上角 badge 角标（清氧小胶囊）。描述为空不渲染占位行（卡内节奏不因空文案错位）。
    */
   @Builder
@@ -728,18 +857,23 @@ export struct Workbench {
 
             Text(tool.title)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .margin({ top: DesignDimens.SPACE_SM })
           } else {
             Text(tool.title)
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(resColor('TEXT_PRIMARY'))
           }
 
           if (tool.description.length > 0) {
             Text(tool.description)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              .fontColor(resColor('TEXT_SECONDARY'))
+              .maxLines(2)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -749,8 +883,6 @@ export struct Workbench {
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
-      .borderRadius(DesignDimens.CARD_RADIUS)
-      .backgroundColor(DesignColor.SURFACE)
 
       // badge 角标（服务端下发文案）：清氧小胶囊 — radiusFull + 主色浅底（caption 档）
       // U-104：文字对齐安卓 labelSmall 12/500 + textPrimary #1C1C1E（原 #2D9B6A on #F0FBF4 仅 3.30:1）
@@ -758,8 +890,8 @@ export struct Workbench {
         Text(tool.badge)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.TEXT_PRIMARY)
-          .backgroundColor(DesignColor.PRIMARY_LIGHT)
+          .fontColor(resColor('TEXT_PRIMARY'))
+          .backgroundColor(resColor('PRIMARY_LIGHT'))
           .borderRadius(DesignDimens.RADIUS_FULL)
           .padding({
             left: DesignDimens.SPACE_SM,
@@ -771,14 +903,13 @@ export struct Workbench {
       }
     }
     .width('100%')
-    .clip(true)
-    .cardChrome()
-    .onClick(() => {
-      this.onToolClick(tool)
-    })
   }
 
-  /** 最近使用 chip：白胶囊 + 32vp 小图标容器，整颗 48vp 高热区 */
+  /**
+   * 最近使用 chip：白胶囊 + 32vp 小图标容器，整颗 48vp 高热区。
+   * 自带 margin left 移除（P1-9：原与行 space 12 叠加成 36），
+   * 左页边距由横滑行 padding left 24 承担、chip 间 12 由行 space 承担。
+   */
   @Builder
   RecentChip(tool: WorkbenchTool) {
     Row() {
@@ -793,7 +924,7 @@ export struct Workbench {
       Text(tool.title)
         .fontSize(DesignFontSize.BODY_SMALL)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .margin({ left: DesignDimens.SPACE_SM })
     }
     .alignItems(VerticalAlign.Center)
@@ -804,9 +935,20 @@ export struct Workbench {
       bottom: DesignDimens.SPACE_XS
     })
     .borderRadius(DesignDimens.RADIUS_FULL)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
-    .margin({ left: DesignDimens.PAGE_PADDING })
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
+    .scale({
+      x: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1,
+      y: this.pressedKey === `chip_${tool.entryKey}` ? 0.97 : 1
+    })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedKey = `chip_${tool.entryKey}`
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedKey = ''
+      }
+    })
     .onClick(() => {
       this.onToolClick(tool)
     })
@@ -816,15 +958,17 @@ export struct Workbench {
   @Builder
   PageContent() {
     Column() {
-      // 1. 标题区（设计稿顶部 16）
+      // 1. 标题区（设计稿顶部 16；底部对齐安卓 spaceLg 20）
       Column() {
         Text(WorkbenchText.workbench_title)
           .fontSize(DesignFontSize.ROOT_TITLE)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(resColor('TEXT_PRIMARY'))
+        // 大标题→副标题 4（对齐安卓 spaceXxs，原 8 偏大）
         Text(WorkbenchText.workbench_subtitle)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
-          .margin({ top: DesignDimens.SPACE_XS })
+          .fontColor(resColor('TEXT_SECONDARY'))
+          .margin({ top: DesignDimens.SPACE_XXS })
       }
       .width('100%')
       .alignItems(HorizontalAlign.Start)
@@ -832,12 +976,13 @@ export struct Workbench {
         left: DesignDimens.PAGE_PADDING,
         right: DesignDimens.PAGE_PADDING,
         top: 16,
-        bottom: 16
+        bottom: DesignDimens.SPACE_LG
       })
 
       // 2. 搜索框（系统 Search 组件：自带搜索图标与清除钮；底/圆角对齐安卓 §3.7 输入框；
-      //    外层 Column 承担左右页边距——安卓 WorkbenchSearchField 的 padding(horizontal =
-      //    pagePadding)；Search 直接 margin + width('100%') 会溢出父容器被居中抵消，故外包一层）
+      //    正文/占位 16、占位色 textSecondary、光标主色显式声明（对齐安卓显式控制，审查 P2-22），
+      //    清除钮热区走系统默认属端限制；外层 Column 承担左右页边距——Search 直接 margin +
+      //    width('100%') 会溢出父容器被居中抵消，故外包一层）
       Column() {
         Search({
           value: this.searchQuery,
@@ -853,8 +998,12 @@ export struct Workbench {
           })
           .width('100%')
           .height(48)
-          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .backgroundColor(resColor('SURFACE_VARIANT'))
           .borderRadius(DesignDimens.INPUT_RADIUS)
+          .placeholderColor(resColor('TEXT_SECONDARY'))
+          .placeholderFont({ size: DesignFontSize.BODY })
+          .textFont({ size: DesignFontSize.BODY })
+          // SearchAttribute 无 caretColor 属性（SDK 17 编译核实），光标色不可自定义
           // 图标/文案内边距对齐安卓：start spaceSm / end spaceXs
           .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_XS })
       }
@@ -890,20 +1039,20 @@ export struct Workbench {
         this.WorkbenchBody()
       }
 
-      // 4. 页脚弱提示（设计稿 margin 26/10 → 24/8）
+      // 4. 页脚弱提示（对齐安卓 spaceXs 8/8；原 24/8 为旧设计稿口径未随安卓更新）
       // U-105：原 textTertiary #A9AEA9 on #F5F6F3 仅 2.08:1（正文红线 ≥4.5）；
       // 对齐安卓 labelSmall 12/500 + textSecondary #6B6E73（实测 4.72:1）
       Text(WorkbenchText.workbench_footer)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .textAlign(TextAlign.Center)
         .width('100%')
         .padding({
           left: DesignDimens.PAGE_PADDING,
           right: DesignDimens.PAGE_PADDING,
-          top: 24,
-          bottom: 8
+          top: DesignDimens.SPACE_XS,
+          bottom: DesignDimens.SPACE_XS
         })
     }
     .width('100%')
@@ -914,14 +1063,14 @@ export struct Workbench {
   @Builder
   WorkbenchBody() {
     if (this.searchQuery.trim().length > 0) {
-      // 搜索态：平铺两列（快速扫视优先，分组/类型排版让位）
+      // 搜索态：平铺两列（快速扫视优先，分组/类型排版让位）；首行顶距 24（对齐安卓 spaceXl）
       Column({ space: 0 }) {
         ForEach(this.buildRows(this.visibleTools()), (row: WorkbenchTool[], rowIndex: number) => {
-          this.TileRowContent(row)
+          this.TileRowContent(row, rowIndex === 0 ? DesignDimens.SPACE_XL : 0,
+            Math.min(rowIndex, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS)
         }, (row: WorkbenchTool[]) => `search_${row.length}_${row.length > 0 ? row[0].entryKey : ''}`)
       }
       .width('100%')
-      .margin({ top: DesignDimens.SECTION_SPACING })
     } else {
       // 最近使用（本地记忆与当次下发求交集，非空才显示）
       if (this.recentTools().length > 0) {
@@ -930,7 +1079,7 @@ export struct Workbench {
           Text(WorkbenchText.workbench_recent_title)
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           Scroll() {
@@ -938,11 +1087,13 @@ export struct Workbench {
               ForEach(this.recentTools(), (tool: WorkbenchTool) => {
                 this.RecentChip(tool)
               }, (tool: WorkbenchTool) => tool.entryKey)
-              // 行尾补右侧页边距（Scroll 裁切，contentPadding 由尾 chip margin 承担）
+              // 行尾补右侧页边距（Scroll 裁切；补位 12 + 行 space 12 = 24 对齐安卓 contentPadding）
               Column() {
               }
               .width(DesignDimens.PAGE_PADDING - DesignDimens.SPACE_SM)
             }
+            // 左页边距由行 padding 承担（chip 自带 margin 已移除，消除 chip 间 36 叠加）
+            .padding({ left: DesignDimens.PAGE_PADDING })
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
@@ -956,12 +1107,14 @@ export struct Workbench {
       }
 
       // 观象台玄墨特色卡（端上固定品牌位，不随服务端下发）
+      // 顶距：有「最近使用」按区块 32；无则取 12（设计稿 P07 搜索框底→观象台卡顶 = 12，
+      // 对齐安卓 2026-11-06 复验修复，原 0 导致卡片与搜索框紧贴）
       Column() {
         this.DivinationEntryCard()
       }
       .width('100%')
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-      .margin({ top: this.recentTools().length > 0 ? DesignDimens.SECTION_SPACING : 0 })
+      .margin({ top: this.recentTools().length > 0 ? DesignDimens.SECTION_SPACING : DesignDimens.SPACE_SM })
 
       // 类型化分区（折块渲染）；无 section_title 时显示「全部工具」总标题
       if (this.hasSections()) {
@@ -974,23 +1127,27 @@ export struct Workbench {
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           } else if (block.kind === WorkbenchBlockKind.WIDE) {
             Column() {
               this.WideCard(block.tool)
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           } else if (block.kind === WorkbenchBlockKind.TILE_ROW) {
-            this.TileRowContent(block.tools)
+            this.TileRowContent(block.tools, this.tileRowTop(block),
+              Math.min(index, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS)
           } else {
             Column() {
               this.RowGroupCard(block.tools)
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           }
         }, (block: WorkbenchBlock) => this.blockKey(block))
       } else {
@@ -998,39 +1155,81 @@ export struct Workbench {
         Text(WorkbenchText.workbench_all_tools)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
           .margin({ top: DesignDimens.SECTION_SPACING, bottom: DesignDimens.SPACE_SM })
 
-        ForEach(buildWorkbenchBlocks(this.visibleTools()), (block: WorkbenchBlock) => {
+        ForEach(buildWorkbenchBlocks(this.visibleTools()), (block: WorkbenchBlock, index: number) => {
           if (block.kind === WorkbenchBlockKind.TILE_ROW) {
-            this.TileRowContent(block.tools)
+            this.TileRowContent(block.tools, this.tileRowTop(block),
+              Math.min(index, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS)
           } else if (block.kind === WorkbenchBlockKind.ROW_GROUP) {
             Column() {
               this.RowGroupCard(block.tools)
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           } else if (block.kind === WorkbenchBlockKind.WIDE) {
             Column() {
               this.WideCard(block.tool)
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           } else if (block.kind === WorkbenchBlockKind.NOTICE) {
             Column() {
               this.NoticeBar(block.tool)
             }
             .width('100%')
             .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
-            .margin({ bottom: DesignDimens.CARD_SPACING })
+            .margin({ top: this.blockTop(block), bottom: DesignDimens.CARD_SPACING })
+            .transition(this.staggerEnter(index))
           }
         }, (block: WorkbenchBlock) => this.blockKey(block))
       }
     }
+  }
+
+  /**
+   * 逐项错峰入场（对齐安卓 StaggerIn：150ms 淡入 + 40ms×6 上限错峰）。
+   * reduced motion 降级：鸿蒙端暂无统一 reduceMotion 开关（端限制，对齐报告口径），
+   * 已选用无位移纯淡入将动效敏感影响降至最低。
+   */
+  private staggerEnter(index: number): TransitionEffect {
+    return TransitionEffect.OPACITY.animation({
+      duration: STAGGER_ENTER_MS,
+      delay: Math.min(index, STAGGER_MAX_INDEX) * STAGGER_INTERVAL_MS,
+      curve: Curve.Friction
+    })
+  }
+
+  /**
+   * 内容块顶距（间距责任模型，对齐安卓 WorkbenchPage.kt:400-410 审查 #1/#2 镜像）：
+   * notice/wide/rowgroup 按前置块判定——Section 后 = 0（标题 bottom spaceSm 12 已承担
+   * 标题→内容节奏）；无分组时「全部工具」总标题打头（bottom 12 同 Section）首块亦为 0；
+   * 其余前置（观象台卡 / 其他卡片块）自担 sectionSpacing(32)，消除 44dp 跳变。
+   */
+  private blockTop(block: WorkbenchBlock): number {
+    const afterSection = block.prevKind === WorkbenchBlockKind.SECTION
+    const afterToolsHeader = block.prevKind === null && !this.hasSections()
+    return afterSection || afterToolsHeader ? 0 : DesignDimens.SECTION_SPACING
+  }
+
+  /**
+   * tile 行顶距（对齐安卓 WorkbenchPage.kt:436-441 审查 #3/#4 镜像）：
+   * Section 后 / 连续 tile 行 / 无分组首块 = 0（标题→内容 12、行距 16 由上一块 bottom 承担）；
+   * 其余前置（观象台卡、wide/notice/rowgroup）自担 sectionSpacing(32)，
+   * 消除观象台卡→tile 0dp 贴合叠影与 48→16 跳变。
+   */
+  private tileRowTop(block: WorkbenchBlock): number {
+    const afterSection = block.prevKind === WorkbenchBlockKind.SECTION
+    const afterTileRow = block.prevKind === WorkbenchBlockKind.TILE_ROW
+    const afterToolsHeader = block.prevKind === null && !this.hasSections()
+    return afterSection || afterTileRow || afterToolsHeader ? 0 : DesignDimens.SECTION_SPACING
   }
 
   /** 是否存在分组标题（决定「全部工具」总标题显隐，对齐安卓 hasSections） */
@@ -1038,10 +1237,13 @@ export struct Workbench {
     return this.visibleTools().some((tool: WorkbenchTool): boolean => tool.sectionTitle.length > 0)
   }
 
-  /** 折块 ForEach key（对齐安卓 WorkbenchBlock.key：kind + entryKey 串接） */
+  /**
+   * 折块 ForEach key（对齐安卓 WorkbenchBlock.key）。Section 追加折块流水号 ordinal：
+   * 服务端可配 A→B→A 同名分组序列，仅凭 title 拼 key 会重复导致 ForEach 复用错乱（审查 #5）。
+   */
   private blockKey(block: WorkbenchBlock): string {
     if (block.kind === WorkbenchBlockKind.SECTION) {
-      return `section_${block.title}`
+      return `section_${block.ordinal}_${block.title}`
     }
     if (block.kind === WorkbenchBlockKind.TILE_ROW || block.kind === WorkbenchBlockKind.ROW_GROUP) {
       return `${block.kind}_${block.tools.map((tool: WorkbenchTool): string => tool.entryKey).join('-')}`
@@ -1050,7 +1252,8 @@ export struct Workbench {
   }
 
   build() {
-    Refresh({ refreshing: this.isRefreshing!! }) {
+    // 双向绑定对齐项目 Refresh 统一口径（NoticeInboxPage 等 7 处 $$this），替代非空断言
+    Refresh({ refreshing: $$this.isRefreshing }) {
       Scroll() {
         this.PageContent()
       }
@@ -1065,7 +1268,7 @@ export struct Workbench {
     })
     .width('100%')
     .height('100%')
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }
 

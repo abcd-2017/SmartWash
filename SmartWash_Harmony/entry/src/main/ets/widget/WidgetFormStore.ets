@@ -21,6 +21,7 @@
 
 import { preferences } from '@kit.ArkData'
 import { logger } from '../utils/Logger'
+import { resString } from '../utils/ResourceString'
 
 const TAG: string = 'widgetFormStore'
 
@@ -50,7 +51,7 @@ export function saveFormDimension(context: Context, formId: string, dimension: n
     store.flushSync()
   } catch (err) {
     // 登记失败：定时刷新读不到尺寸会按窄卡兜底，卡片仍有正确默认形态
-    logFailure('写入', err as Object)
+    logFailure(resString('widget_form_store_1'), err as Object)
   }
 }
 
@@ -64,7 +65,7 @@ export function dimensionOf(context: Context, formId: string): number {
     const value = store.getSync(`${KEY_DIMENSION_PREFIX}${formId}`, 0)
     return typeof value === 'number' ? value : 0
   } catch (err) {
-    logFailure('读取', err as Object)
+    logFailure(resString('widget_form_store_2'), err as Object)
     return 0
   }
 }
@@ -79,6 +80,6 @@ export function removeForm(context: Context, formId: string): void {
     store.deleteSync(`${KEY_DIMENSION_PREFIX}${formId}`)
     store.flushSync()
   } catch (err) {
-    logFailure('注销', err as Object)
+    logFailure(resString('widget_form_store_3'), err as Object)
   }
 }

@@ -21,6 +21,11 @@ import java.time.temporal.ChronoUnit
  * 会话倒计时（发起页与会话页共用）：以 expireAt 为锚点本地秒级滴答，
  * 每次轮询/重组锚点变更时重新对时；≤60s 切 dangerInk 紧迫色。
  * 数字一律 tnum（规范 §2.2：倒计时变化不左右跳）。
+ *
+ * 常态色由调用方传 onWarningContainer（audit-07 P0-1）：
+ * `ongoingInk` 经规范 v0.4 覆写并回图形橙 #D98A26，白卡上仅 2.76:1，违反 §10
+ * 「正文 ≥4.5:1」红线，不得用作正文色；onWarningContainer 浅色 #92400E on 白
+ * ≈7.1:1、深色 #ECB36A on 深卡 8.78:1，两主题达标且保留橙语义。
  */
 
 /** 剩余秒数滴答（expireAt 不可解析返回 null；归零后停在 0） */
@@ -30,7 +35,11 @@ internal fun rememberRemainingSeconds(expireAt: String?): Long? {
     return if (expire == null) {
         null
     } else {
-        produceState<Long?>(initialValue = null, key1 = expire) {
+        // 初值直接算首值（audit-07 P2-6）：null 会导致组合首帧不渲染倒计时（页头/卡内微闪）
+        produceState<Long?>(
+            initialValue = ChronoUnit.SECONDS.between(LocalDateTime.now(), expire).coerceAtLeast(0),
+            key1 = expire,
+        ) {
             while (isActive) {
                 value = ChronoUnit.SECONDS.between(LocalDateTime.now(), expire).coerceAtLeast(0)
                 if ((value ?: 0L) <= 0L) break

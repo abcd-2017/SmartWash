@@ -15,13 +15,8 @@ import { BizCode } from '../../../network/HttpUtil'
 import { RouteNames } from '../../../constant/RouteNames'
 import { logger } from '../../../utils/Logger'
 import { BusinessError } from '@kit.BasicServicesKit'
-import {
-  DesignColor,
-  DesignDimens,
-  DesignElevation,
-  DesignFontSize,
-  DesignFontWeight
-} from '../../../constant/DesignSystem'
+import { common } from '@kit.AbilityKit'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { pathStack } from '../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { Debouncer } from '../../../utils/DebounceUtil'
@@ -39,35 +34,38 @@ import {
   withUniqueKeys
 } from '../network/GameApi'
 import { ThemeRefreshV2 } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /** 网格列数（对齐安卓 GRID_COLUMNS = 2） */
 const GRID_COLUMNS: number = 2
 
-/** 网格卡片间距（对齐安卓 GRID_SPACING = spaceXs 8） */
-const GRID_SPACING: number = DesignDimens.SPACE_XS
+/** 网格卡片间距（对齐安卓 GRID_SPACING = cardSpacing 16；规范 §2.3 卡片间距档，≥12 防相邻卡片阴影叠画） */
+const GRID_SPACING: number = DesignDimens.CARD_SPACING
 
 /** 页面文案（对齐安卓 feature/game/values/strings.xml） */
 class GameText {
-  static readonly title: string = '游戏中心'
-  static readonly categoryAll: string = '全部'
-  static readonly emptyMessage: string = '游戏架还空着，去后台上传几个'
-  static readonly emptyCategory: string = '该分类暂无游戏，看看全部吧'
-  static readonly errorLoad: string = '游戏加载失败，请检查网络后重试'
-  static readonly actionRetry: string = '重试'
-  static readonly unavailable: string = '游戏暂未开放，请稍后再试'
+  static get title(): string { return resString('game_center_title') }
+  static get categoryAll(): string { return resString('game_category_all') }
+  // 全量空态文案走资源文件 game_empty_message（「游戏整理中，先去洗件衣服吧」——
+  // 安卓已认定「去后台上传」是运营视角文案，普通用户不可执行，故改面向 C 端可执行文案）
+  static get emptyCategory(): string { return resString('game_empty_category') }
+  static get errorLoad(): string { return resString('game_error_load') }
+  static get actionRetry(): string { return resString('game_action_retry') }
+  static get unavailable(): string { return resString('game_unavailable') }
 }
 
 /** 分类 chip 文案（全部之外的固定四类映射；OTHER 无 chip 无文案） */
 function categoryChipLabel(category: GameCategory): string {
   switch (category) {
     case GameCategory.PUZZLE:
-      return '益智'
+      return resString('game_category_puzzle')
     case GameCategory.ARCADE:
-      return '街机'
+      return resString('game_category_arcade')
     case GameCategory.WORD:
-      return '文字'
+      return resString('game_category_word')
     case GameCategory.BOARD:
-      return '桌版'
+      return resString('game_category_board')
     default:
       return ''
   }
@@ -171,7 +169,14 @@ struct GameGrid {
           `${index}_${row.length}_${row.length > 0 ? row[0].gameKey : ''}`)
       }
       .width('100%')
-      .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: DesignDimens.SPACE_XS, bottom: safeBottomVp() })
+      // top ≥12：首行卡片阴影越出卡边 12vp，Scroll 视口会裁边界外内容，需留容身空间（对齐安卓）；
+      // bottom 取安全区与 spaceXl 的较大值，保末行阴影呼吸（对齐安卓 contentPadding bottom spaceXl）
+      .padding({
+        left: DesignDimens.PAGE_PADDING,
+        right: DesignDimens.PAGE_PADDING,
+        top: DesignDimens.SPACE_SM,
+        bottom: Math.max(safeBottomVp(), DesignDimens.SPACE_XL)
+      })
     }
     .scrollBar(BarState.Off)
     .width('100%')
@@ -181,14 +186,14 @@ struct GameGrid {
 }
 
 /**
- * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + level1 阴影 + 圆角 16。
+ * 游戏卡（对齐安卓 GameCard）：白 surface + 1px outline 描边 + §2.4 卡片档阴影（blur 12）+ 圆角 16。
  * 两种构图按封面可用性分流：
  * - 有封面（服务端 MinIO 直链优先，加载失败回退本地 rawfile 兜底）：16:9 封面独立占卡顶
  *   （随卡片圆角裁顶角），文字区白底置于封面下方（标题 + 两行描述），文字永不遮图
  *   （2026-11-07 对齐安卓构图调整：原「底部渐变遮罩压白字」遮挡封面细节，弃用）；
  *   badge 白胶囊叠封面右上（surface 底 + textPrimary 字），任意封面底色下可读。
- * - 无封面：44vp 图标色块（六色浅底 + 对应前景色，圆角 16）+ 标题 + 描述两行截断
- *   + badge 主色浅底胶囊。
+ * - 无封面：44vp 图标色块（六色浅底 + 对应前景色，默认档圆角 12）+ 标题 + 描述两行截断
+ *   + badge 主色浅底深绿字胶囊。
  * 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖）；
  * a11y：整卡一个语义节点，contentDescription = 标题 + 描述。
  * @ComponentV2 + @Param：避免 @Builder 按值传参在列表重建时定格。
@@ -214,43 +219,43 @@ struct GameCard {
     this.debouncer.cancel()
   }
 
-  /** 图标容器浅底色（后端 color 白名单 → DesignColor.ICON_CONTAINER_*，未知兜底 GREEN） */
+  /** 图标容器浅底色（后端 color 白名单 → 资源色 ICON_CONTAINER_*，未知兜底 GREEN） */
   private containerColor(tint: GameTint): number {
     switch (tint) {
       case GameTint.GREEN:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
       case GameTint.BLUE:
-        return DesignColor.ICON_CONTAINER_BLUE
+        return resColor('ICON_CONTAINER_BLUE')
       case GameTint.ORANGE:
-        return DesignColor.ICON_CONTAINER_ORANGE
+        return resColor('ICON_CONTAINER_ORANGE')
       case GameTint.PINK:
-        return DesignColor.ICON_CONTAINER_PINK
+        return resColor('ICON_CONTAINER_PINK')
       case GameTint.TEAL:
-        return DesignColor.ICON_CONTAINER_TEAL
+        return resColor('ICON_CONTAINER_TEAL')
       case GameTint.PURPLE:
-        return DesignColor.ICON_CONTAINER_PURPLE
+        return resColor('ICON_CONTAINER_PURPLE')
       default:
-        return DesignColor.ICON_CONTAINER_GREEN
+        return resColor('ICON_CONTAINER_GREEN')
     }
   }
 
-  /** 图标前景色（后端 color 白名单 → DesignColor.ICON_FOREGROUND_*，未知兜底 GREEN） */
+  /** 图标前景色（后端 color 白名单 → 资源色 ICON_FOREGROUND_*，未知兜底 GREEN） */
   private iconColor(tint: GameTint): number {
     switch (tint) {
       case GameTint.GREEN:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
       case GameTint.BLUE:
-        return DesignColor.ICON_FOREGROUND_BLUE
+        return resColor('ICON_FOREGROUND_BLUE')
       case GameTint.ORANGE:
-        return DesignColor.ICON_FOREGROUND_ORANGE
+        return resColor('ICON_FOREGROUND_ORANGE')
       case GameTint.PINK:
-        return DesignColor.ICON_FOREGROUND_PINK
+        return resColor('ICON_FOREGROUND_PINK')
       case GameTint.TEAL:
-        return DesignColor.ICON_FOREGROUND_TEAL
+        return resColor('ICON_FOREGROUND_TEAL')
       case GameTint.PURPLE:
-        return DesignColor.ICON_FOREGROUND_PURPLE
+        return resColor('ICON_FOREGROUND_PURPLE')
       default:
-        return DesignColor.ICON_FOREGROUND_GREEN
+        return resColor('ICON_FOREGROUND_GREEN')
     }
   }
 
@@ -266,6 +271,9 @@ struct GameCard {
               .width('100%')
               .aspectRatio(1.78)
               .objectFit(ImageFit.Cover)
+              // 加载中占位底（对齐安卓 placeholder = surfaceVariant 灰档）：弱网下封面区不留白板；
+              // 深浅色档随主题切换（DARK_SURFACE_VARIANT）
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               .onError(() => {
                 this.onServerCoverError(this.game.gameKey)
               })
@@ -282,9 +290,11 @@ struct GameCard {
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .backgroundColor(DesignColor.SURFACE)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.RADIUS_FULL)
+              // 1px outline 描边与卡片描边同语言：封面接近白色时胶囊轮廓不消失（对齐安卓）
+              .border({ width: 1, color: resColor('OUTLINE') })
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
           }
@@ -297,7 +307,7 @@ struct GameCard {
         Column() {
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -305,7 +315,7 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
@@ -314,26 +324,22 @@ struct GameCard {
         }
         .width('100%')
         .alignItems(HorizontalAlign.Start)
-        .padding({
-          left: DesignDimens.SPACE_SM,
-          right: DesignDimens.SPACE_SM,
-          top: DesignDimens.SPACE_XS,
-          bottom: DesignDimens.SPACE_XS
-        })
+        // 内边距对齐 §2.3 卡片内边距 cardPadding 20（与无封面卡同一令牌语言，消除 12/8 与 20 两套并存）
+        .padding(DesignDimens.CARD_PADDING)
       } else {
-        // 图标卡：44vp 图标色块（圆角 16）+ 标题 + 描述两行 + badge 主色浅底胶囊
+        // 图标卡：44vp 图标色块（默认档圆角 12 = iconContainerRadius，v0.4 §3.2 图标容器·主）
+        // + 标题 + 描述两行 + badge 主色浅底深绿字胶囊
         Column() {
           IconBox({
             icon: this.game.icon,
             sizeValue: 44,
             iconSize: 24,
             containerColor: this.containerColor(this.game.tint),
-            iconColor: this.iconColor(this.game.tint),
-            radius: DesignDimens.CARD_RADIUS
+            iconColor: this.iconColor(this.game.tint)
           })
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -342,18 +348,20 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
               .margin({ top: DesignDimens.SPACE_XXS })
           }
           if (this.game.badge.length > 0) {
+            // badge 字色取 TEXT_GREEN_ON_TINT（规范 §10 对比度：primary 品牌绿在 primaryLight
+            // 浅底小字号下 ≈3.3:1 不达 AA，textGreenOnTint ≈6.4:1 达标，对齐安卓 textGreenOnTint）
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
-              .backgroundColor(DesignColor.PRIMARY_LIGHT)
+              .fontColor(resColor('TEXT_GREEN_ON_TINT'))
+              .backgroundColor(resColor('PRIMARY_LIGHT'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -366,13 +374,15 @@ struct GameCard {
     }
     .width('100%')
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
-    .backgroundColor(DesignColor.SURFACE)
+    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor(resColor('SURFACE'))
+    // 卡片阴影档（规范 §2.4：0 2px 12px）——blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
+    // （1vp 模糊不可见，与 AppCard 统一口径）；阴影色随主题切深色档 rgba(0,0,0,0.28)
     .shadow({
-      radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
-      offsetY: 2
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
     // 整卡按压反馈 + 连点节流（对齐安卓 pressable：scale 0.97 / 100ms + 500ms 防抖）
     .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
@@ -480,6 +490,12 @@ export struct GameCenterPage {
     return GAME_CHIP_ORDER.indexOf(selected) + 1
   }
 
+  /** 全量空态文案（走资源文件 game_empty_message，对齐安卓 strings.xml「游戏整理中，先去洗件衣服吧」） */
+  private emptyMessage(): string {
+    const context: common.Context = getContext(this)
+    return context.resourceManager.getStringSync($r('app.string.game_empty_message').id)
+  }
+
   /**
    * 分类筛选 chips 行 —— 复用公共 AppPillTabRow（对齐安卓 2026-11-01「自绘 chips 迁移到公共
    * 组件」：选中 = primary 实底 + onPrimary 字，未选中 = surface + 1px outline + textSecondary，
@@ -520,13 +536,14 @@ export struct GameCenterPage {
             .width('100%')
             .borderRadius({ topLeft: DesignDimens.CARD_RADIUS, topRight: DesignDimens.CARD_RADIUS })
             .clip(true)
+            // 文字条块高对齐真实行高（标题 14sp→20 行高 spaceLg、描述 12sp→16 行高 spaceMd，对齐安卓）
             SkeletonBlock({ blockRadius: DesignDimens.RADIUS_SMALL })
               .width('65%')
-              .height(14)
+              .height(DesignDimens.SPACE_LG)
               .margin({ top: DesignDimens.SPACE_XS })
             SkeletonBlock({ blockRadius: DesignDimens.RADIUS_SMALL })
               .width('90%')
-              .height(11)
+              .height(DesignDimens.SPACE_MD)
               .margin({ top: DesignDimens.SPACE_XXS })
           }
           .layoutWeight(1)
@@ -543,7 +560,7 @@ export struct GameCenterPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
@@ -575,7 +592,7 @@ export struct GameCenterPage {
           // 空态：全量空（后端未上传/未上架）与筛选无命中分别给文案
           Column() {
             EmptyState({
-              message: this.selectedCategory === null ? GameText.emptyMessage : GameText.emptyCategory
+              message: this.selectedCategory === null ? this.emptyMessage() : GameText.emptyCategory
             })
           }
           .width('100%')
@@ -590,7 +607,7 @@ export struct GameCenterPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

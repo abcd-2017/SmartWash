@@ -13,22 +13,23 @@
 
 import sensor from '@ohos.sensor'
 import display from '@ohos.display'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight }
-  from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { pathStack } from '../../../../utils/PathStackUtil'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { CelestialKind, ProjectedStar, StarMapEngine } from '../../core/StarMapEngine'
-import { LabHaptic } from '../../core/LabCommon'
+import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案（对齐安卓 strings_starmap.xml） */
 class StarMapText {
-  static readonly title: string = '掌上星图'
-  static readonly hint: string = '转动手机环顾夜空'
-  static readonly sensorUnavailable: string = '传感器不可用，已切换为静态星空'
-  static readonly nightVision: string = '夜视模式'
-  static readonly magnitudePrefix: string = '星等'
-  static readonly back: string = '返回'
+  static get title(): string { return resString('lab_toy_star_map') }
+  static get hint(): string { return resString('lab_star_map_hint') }
+  static get sensorUnavailable(): string { return resString('lab_star_map_sensor_unavailable') }
+  static get nightVision(): string { return resString('lab_star_map_night_vision') }
+  static get magnitudePrefix(): string { return resString('star_map_text_magnitude_prefix') }
+  static get back(): string { return resString('lab_star_map_back') }
 }
 
 /** 垂直视场角（度）：60° 接近手机主摄视野（对齐安卓 FOV_DEGREES） */
@@ -83,6 +84,7 @@ export struct StarMapPage {
   private canvasHeight: number = 0
   private timerId: number = -1
   private hintTimerId: number = -1
+  private reduceMotion: boolean = labReduceMotion()
 
   /** 无传感器降级矩阵（正北、仰角 45°） */
   private readonly fallbackMatrix: number[] = StarMapEngine.fallbackRotationMatrix()
@@ -225,7 +227,8 @@ export struct StarMapPage {
   }
 
   private scheduleHintHide(): void {
-    if (this.hintTimerId !== -1) {
+    // reduced motion：提示常显，取消淡出（规范 §8）
+    if (this.reduceMotion || this.hintTimerId !== -1) {
       return
     }
     this.hintTimerId = setTimeout(() => {
@@ -247,8 +250,8 @@ export struct StarMapPage {
 
     // 夜空底：暗色令牌纵向微渐变（上深下略亮）
     const gradient = ctx.createLinearGradient(0, 0, 0, height)
-    gradient.addColorStop(0, rgbaOf(DesignColor.DARK_BACKGROUND, 1))
-    gradient.addColorStop(1, rgbaOf(DesignColor.DARK_GROUP_BACKGROUND, 1))
+    gradient.addColorStop(0, rgbaOf(resColor('DARK_BACKGROUND'), 1))
+    gradient.addColorStop(1, rgbaOf(resColor('DARK_GROUP_BACKGROUND'), 1))
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, width, height)
 
@@ -258,18 +261,20 @@ export struct StarMapPage {
     for (let i: number = 0; i < this.projected.length; i++) {
       const star: ProjectedStar = this.projected[i]
       const isSelected: boolean = star.name === this.selectedName
-      let color: number = DesignColor.DARK_TEXT_PRIMARY
+      let color: number = resColor('DARK_TEXT_PRIMARY')
       if (this.nightVision) {
-        color = DesignColor.DARK_ERROR
+        color = resColor('DARK_ERROR')
       } else if (star.kind === CelestialKind.SUN) {
-        color = DesignColor.DARK_WARNING
+        color = resColor('DARK_WARNING')
       } else if (star.kind === CelestialKind.MOON) {
-        color = DesignColor.DARK_TEXT_SECONDARY
+        color = resColor('DARK_TEXT_SECONDARY')
       } else if (star.kind === CelestialKind.PLANET) {
-        color = DesignColor.DARK_WATER
+        color = resColor('DARK_WATER')
       }
       const phase: number = starHash(star.name) / 255 * Math.PI * 2
-      const twinkleFactor: number = 0.82 + 0.18 * Math.sin(twinkle * Math.PI * 2 + phase)
+      // reduced motion：星点常亮（规范 §8：取消闪烁）
+      const twinkleFactor: number = this.reduceMotion
+        ? 1 : 0.82 + 0.18 * Math.sin(twinkle * Math.PI * 2 + phase)
       const alpha: number = Math.min(1, Math.max(0, star.alpha * twinkleFactor))
 
       ctx.globalAlpha = alpha
@@ -291,8 +296,8 @@ export struct StarMapPage {
       if (isSelected) {
         ctx.globalAlpha = 0.95
         ctx.lineWidth = 2
-        ctx.strokeStyle = rgbaOf(this.nightVision ? DesignColor.DARK_ERROR
-          : DesignColor.DARK_WATER, 1)
+        ctx.strokeStyle = rgbaOf(this.nightVision ? resColor('DARK_ERROR')
+          : resColor('DARK_WATER'), 1)
         ctx.beginPath()
         ctx.arc(star.x, star.y, star.radiusPx + 6, 0, Math.PI * 2, false)
         ctx.stroke()
@@ -302,7 +307,7 @@ export struct StarMapPage {
 
     // 夜视模式：整体罩一层深红滤镜（保护暗适应）
     if (this.nightVision) {
-      ctx.fillStyle = rgbaOf(DesignColor.DARK_ERROR, 0.12)
+      ctx.fillStyle = rgbaOf(resColor('DARK_ERROR'), 0.12)
       ctx.fillRect(0, 0, width, height)
     }
   }
@@ -335,7 +340,7 @@ export struct StarMapPage {
 
   /** 顶栏内容色：夜视模式整体转深红 */
   private headerColor(): number {
-    return this.nightVision ? DesignColor.DARK_ERROR : DesignColor.DARK_TEXT_PRIMARY
+    return this.nightVision ? resColor('DARK_ERROR') : resColor('DARK_TEXT_PRIMARY')
   }
 
   build() {
@@ -375,15 +380,15 @@ export struct StarMapPage {
             Column() {
               SymbolGlyph($r('sys.symbol.ohos_star'))
                 .fontSize(24)
-                .fontColor([this.nightVision ? DesignColor.DARK_ERROR
-                  : DesignColor.DARK_ICON_FOREGROUND_PURPLE])
+                .fontColor([this.nightVision ? resColor('DARK_ERROR')
+                  : resColor('DARK_ICON_FOREGROUND_PURPLE')])
             }
             .width(44)
             .height(44)
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
             .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-            .backgroundColor(DesignColor.DARK_ICON_CONTAINER_PURPLE)
+            .backgroundColor(resColor('DARK_ICON_CONTAINER_PURPLE'))
 
             Column() {
               Text(this.selectedName)
@@ -393,8 +398,8 @@ export struct StarMapPage {
 
               Text(`${StarMapText.magnitudePrefix} ${this.selectedMagnitude.toFixed(1)}`)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(this.nightVision ? rgbaOf(DesignColor.DARK_ERROR, 0.8)
-                  : DesignColor.DARK_TEXT_SECONDARY)
+                .fontColor(this.nightVision ? rgbaOf(resColor('DARK_ERROR'), 0.8)
+                  : resColor('DARK_TEXT_SECONDARY'))
                 .fontFeature(DesignFontFeature.TNUM)
                 .margin({ top: DesignDimens.SPACE_XXS })
             }
@@ -403,17 +408,18 @@ export struct StarMapPage {
           }
           .padding(DesignDimens.CARD_PADDING)
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .backgroundColor(DesignColor.DARK_SURFACE)
+          .backgroundColor(resColor('DARK_SURFACE'))
           .borderWidth(1)
-          .borderColor(DesignColor.DARK_OUTLINE)
+          .borderColor(resColor('DARK_OUTLINE'))
           .alignItems(VerticalAlign.Center)
+          .align(Alignment.Bottom)
           .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
             bottom: DesignDimens.SPACE_XL + safeBottomVp() })
         }
       }
       .width('100%')
       .height('100%')
-      .backgroundColor(DesignColor.DARK_BACKGROUND)
+      .backgroundColor(resColor('DARK_BACKGROUND'))
       .alignContent(Alignment.TopStart)
       }
     }
@@ -453,18 +459,22 @@ export struct StarMapPage {
 
       Blank()
 
+      // 外层补 padding 外扩热区到 52，36 视觉容器不变（对齐安卓 pressable 前置）
       Column() {
-        SymbolGlyph($r('sys.symbol.moon'))
-          .fontSize(20)
-          .fontColor([this.nightVision ? DesignColor.DARK_ERROR
-            : DesignColor.DARK_ICON_FOREGROUND_PURPLE])
+        Column() {
+          SymbolGlyph($r('sys.symbol.moon'))
+            .fontSize(20)
+            .fontColor([this.nightVision ? resColor('DARK_ERROR')
+              : resColor('DARK_ICON_FOREGROUND_PURPLE')])
+        }
+        .width(36)
+        .height(36)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .borderRadius(DesignDimens.RADIUS_MD)
+        .backgroundColor(resColor('DARK_ICON_CONTAINER_PURPLE'))
       }
-      .width(36)
-      .height(36)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(DesignColor.DARK_ICON_CONTAINER_PURPLE)
+      .padding(DesignDimens.SPACE_XS)
       .accessibilityText(StarMapText.nightVision)
       .onClick(() => {
         this.toggleNightVision()
@@ -472,7 +482,7 @@ export struct StarMapPage {
     }
     .width('100%')
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(rgbaOf(DesignColor.DARK_BACKGROUND, 0.72))
+    .backgroundColor(rgbaOf(resColor('DARK_BACKGROUND'), 0.72))
     .padding({ left: 12, right: DesignDimens.PAGE_PADDING,
       top: safeTopVp() + 2, bottom: 6 })
   }
@@ -482,11 +492,12 @@ export struct StarMapPage {
   HintPill(text: string, nightVision: boolean) {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(nightVision ? DesignColor.DARK_ERROR : DesignColor.DARK_TEXT_SECONDARY)
-      .backgroundColor(rgbaOf(DesignColor.DARK_SURFACE, 0.85))
+      .fontWeight(DesignFontWeight.MEDIUM)
+      .fontColor(nightVision ? resColor('DARK_ERROR') : resColor('DARK_TEXT_SECONDARY'))
+      .backgroundColor(rgbaOf(resColor('DARK_SURFACE'), 0.85))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .borderWidth(1)
-      .borderColor(DesignColor.DARK_OUTLINE)
+      .borderColor(resColor('DARK_OUTLINE'))
       .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
         top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       .margin({ top: DesignDimens.SPACE_SM })

@@ -1,7 +1,7 @@
 // 情绪气象站模块内共享件 — 对齐安卓 feature/mood/ui/MoodWidgets.kt + MoodLevel.kt + MoodConstant.kt。
 //
 // 内容：
-// 1) 等级词典（端上五色块单一事实来源，颜色映射 DesignColor 既有 Token，禁自创色值）；
+// 1) 等级词典（端上五色块单一事实来源，颜色映射设计系统资源色，禁自创色值）；
 // 2) 月份/日期工具（ym 与本地日期互转、平移、月历网格计算）；
 // 3) 今日/月历/趋势三页共用组件：心情色块行、词 chip、月切换条、小按钮胶囊、
 //    错误态、分布条形、数据格、月历日格、当日详情弹窗。
@@ -9,8 +9,10 @@
 // 已知坑遵守：@Builder 不按值传状态参数（状态型组件一律 @ComponentV2 + @Param/@Event）；
 // 弹窗 onDismiss/onConfirm 先关窗再执行回调（本弹窗无导航，仍保持顺序一致）。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from '../../../constant/DesignSystem'
 import { MoodText } from '../api'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 // ==================== 等级词典 ====================
 
@@ -55,15 +57,15 @@ export function moodLevelLabel(level: number): string {
 export function moodLevelColor(level: number): number {
   switch (level) {
     case 1:
-      return DesignColor.DANGER
+      return resColor('DANGER')
     case 2:
-      return DesignColor.TEXT_TERTIARY
+      return resColor('TEXT_TERTIARY')
     case 3:
-      return DesignColor.WATER
+      return resColor('WATER')
     case 4:
-      return DesignColor.ONGOING
+      return resColor('ONGOING')
     default:
-      return DesignColor.PRIMARY
+      return resColor('PRIMARY')
   }
 }
 
@@ -183,11 +185,11 @@ export function formatDayText(dateKey: string): string {
   return `${parsed.month}月${parsed.day}日`
 }
 
-/** 今日文案（对齐安卓 mood_today_date_pattern「M月d日 EEEE」） */
+/** 今日文案（对齐安卓 mood_today_date_pattern「M月d日 EEEE」，星期用全称对齐 EEEE） */
 export function formatTodayText(): string {
   const d = new Date()
-  const weekLabels: Array<string> = ['日', '一', '二', '三', '四', '五', '六']
-  return `${d.getMonth() + 1}月${d.getDate()}日 周${weekLabels[d.getDay()]}`
+  const weekLabels: Array<string> = [resString('mood_widgets_1'), resString('mood_widgets_2'), resString('mood_widgets_3'), resString('mood_widgets_4'), resString('mood_widgets_5'), resString('mood_widgets_6'), resString('mood_widgets_7')]
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${weekLabels[d.getDay()]}`
 }
 
 // ==================== 颜色工具 ====================
@@ -205,8 +207,16 @@ export function normalizeMoodHex(hex: string | null | undefined, level: number):
   return moodSnapshotHex(level)
 }
 
-/** 快照色亮度（0..1，近似相对亮度）；用于决定格内日期数字用墨字还是表面色 */
-function moodSnapshotLuminance(hex: string): number {
+/**
+ * sRGB 通道线性化（WCAG 2.x 相对亮度公式）：c ≤ 0.03928 除 12.92，否则 ((c+0.055)/1.055)^2.4。
+ */
+function linearizeChannel(channel: number): number {
+  const c = channel / 255
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+/** '#RRGGBB' 快照色 → WCAG 相对亮度（0..1）；非法/空值经 normalizeMoodHex 兜底词典基准 hex */
+function moodHexLuminance(hex: string): number {
   const normalized = normalizeMoodHex(hex, 0)
   if (normalized.length < 7) {
     return 0
@@ -214,7 +224,22 @@ function moodSnapshotLuminance(hex: string): number {
   const r = Number.parseInt(normalized.substring(1, 3), 16)
   const g = Number.parseInt(normalized.substring(3, 5), 16)
   const b = Number.parseInt(normalized.substring(5, 7), 16)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return 0.2126 * linearizeChannel(r) + 0.7152 * linearizeChannel(g) + 0.0722 * linearizeChannel(b)
+}
+
+/** ARGB number 令牌色（资源色深浅两态值）→ WCAG 相对亮度（0..1） */
+function moodTokenLuminance(color: number): number {
+  const r = (color >>> 16) & 0xFF
+  const g = (color >>> 8) & 0xFF
+  const b = color & 0xFF
+  return 0.2126 * linearizeChannel(r) + 0.7152 * linearizeChannel(g) + 0.0722 * linearizeChannel(b)
+}
+
+/** WCAG 对比度（正文红线 ≥4.5:1）；入参为两色的相对亮度，公式 (L1+0.05)/(L2+0.05) */
+function moodContrastRatio(luminanceA: number, luminanceB: number): number {
+  const la = luminanceA + 0.05
+  const lb = luminanceB + 0.05
+  return la > lb ? la / lb : lb / la
 }
 
 // ==================== 月历格子模型 ====================
@@ -239,21 +264,25 @@ export interface MoodCalendarCell {
 @ComponentV2
 export struct MoodLevelRow {
   @Param selectedLevel: number = 0
+  @Local pressedLevel: number = 0
   @Event onSelect: (level: number) => void = () => {
   }
 
   build() {
-    Row({ space: DesignDimens.SPACE_SM }) {
+    // 间距取 SPACE_XS(8)（对齐安卓审查 #4①：360 基准屏 SPACE_SM(12) 会让五等分块宽 ≈44.8vp
+    // 跌破 48vp 触控红线，缩到 8 后块宽恰为 48）
+    Row({ space: DesignDimens.SPACE_XS }) {
       ForEach(MOOD_LEVELS, (item: MoodLevelOption) => {
         Column() {
           Column()
             .width('100%')
             .height(56)
-            .borderRadius(DesignDimens.CARD_RADIUS)
+            // 卡内嵌套块圆角取 RADIUS_MD 档（对齐安卓审查 #14：CARD_RADIUS 16 是卡片档，跳档）
+            .borderRadius(DesignDimens.RADIUS_MD)
             .backgroundColor(moodLevelColor(item.value))
             .border({
               width: this.selectedLevel === item.value ? 2 : 0,
-              color: DesignColor.TEXT_PRIMARY
+              color: resColor('TEXT_PRIMARY')
             })
 
           Text(item.label)
@@ -261,11 +290,26 @@ export struct MoodLevelRow {
             .fontWeight(this.selectedLevel === item.value
               ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
             .fontColor(this.selectedLevel === item.value
-              ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_SECONDARY)
+              ? resColor('TEXT_PRIMARY') : resColor('TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XS })
         }
         .layoutWeight(1)
         .alignItems(HorizontalAlign.Center)
+        // 按压反馈（对齐安卓 pressable scale 0.97，workbench cardChrome 同款模式）
+        .scale({
+          x: this.pressedLevel === item.value ? 0.97 : 1,
+          y: this.pressedLevel === item.value ? 0.97 : 1
+        })
+        .animation({ duration: 100, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressedLevel = item.value
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressedLevel = 0
+          }
+        })
+        // 读屏语义（对齐安卓审查 #6）：心情名挂到点击节点，读「暴雨，双击即可激活」
+        .accessibilityText(item.label)
         .onClick(() => {
           this.onSelect(item.value)
         })
@@ -277,30 +321,50 @@ export struct MoodLevelRow {
 
 /**
  * 词 chip（"累/顺/静/燥/燃"等，可选一个，再点取消）：
- * 选中 = 品牌底白字，未选中 = 白底描边（对齐安卓 MoodWordChip）。
+ * 选中 = 浅绿容器底深绿字，未选中 = 白底描边（对齐安卓 MoodWordChip）。
  */
 @ComponentV2
 export struct MoodWordChip {
   @Param text: string = ''
   @Param selected: boolean = false
+  @Local pressed: boolean = false
   // 命名避开 CustomComponent 基类内置 onClick 属性（否则类型冲突）
   @Event onChipClick: () => void = () => {
   }
 
   build() {
-    Text(this.text)
-      .fontSize(DesignFontSize.CAPTION)
-      // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
-      .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(this.selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      .padding({ left: 16, right: 16, top: 6, bottom: 6 })
-      .backgroundColor(this.selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .borderWidth(1)
-      .borderColor(this.selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .onClick(() => {
-        this.onChipClick()
-      })
+    // 外层热区撑到 48×48、内容居中（对齐安卓审查 #4②：内层 Text 视觉规格不变），
+    // onClick 从文字移到热区层
+    Column() {
+      Text(this.text)
+        .fontSize(DesignFontSize.CAPTION)
+        // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        // 选中态（对齐安卓审查 #8）：12sp 小字压品牌绿底白字仅 3.50:1 不过 AA——
+        // 改 primaryContainer/onPrimaryContainer 成对令牌（浅色 ≈12:1，深色两值对调后同样达标）
+        .fontColor(this.selected ? resColor('ON_PRIMARY_CONTAINER') : resColor('TEXT_SECONDARY'))
+        .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+        .backgroundColor(this.selected ? resColor('PRIMARY_CONTAINER') : resColor('SURFACE'))
+        .borderWidth(1)
+        .borderColor(this.selected ? resColor('PRIMARY_CONTAINER') : resColor('OUTLINE'))
+        .borderRadius(DesignDimens.RADIUS_FULL)
+    }
+    .constraintSize({ minWidth: 48, minHeight: 48 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    // 按压反馈（对齐安卓 pressable scale 0.97）
+    .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+    .animation({ duration: 100, curve: Curve.EaseOut })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    .onClick(() => {
+      this.onChipClick()
+    })
   }
 }
 
@@ -311,6 +375,7 @@ export struct MoodWordChip {
 @ComponentV2
 export struct MoodMonthSwitcher {
   @Param monthText: string = ''
+  @Local pressedSide: string = ''
   @Event onPrev: () => void = () => {
   }
   @Event onNext: () => void = () => {
@@ -320,33 +385,58 @@ export struct MoodMonthSwitcher {
     Row() {
       Column() {
         Text('‹')
-          .fontSize(24)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          // 22 = titleLarge 档（对齐安卓审查 #21：24 非字阶档位）
+          .fontSize(22)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(resColor('TEXT_SECONDARY'))
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
+      // 读屏语义（对齐安卓审查 #7/MoodMonthArrow semantics）
+      .accessibilityText(MoodText.mood_prev_month)
+      .scale({ x: this.pressedSide === 'prev' ? 0.97 : 1, y: this.pressedSide === 'prev' ? 0.97 : 1 })
+      .animation({ duration: 100, curve: Curve.EaseOut })
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedSide = 'prev'
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedSide = ''
+        }
+      })
       .onClick(() => {
         this.onPrev()
       })
 
+      // 月份文案 = 卡片标题档 18（对齐安卓审查 #20：titleMedium，BODY 16 是正文档）
       Text(this.monthText)
-        .fontSize(DesignFontSize.BODY)
+        .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .textAlign(TextAlign.Center)
         .layoutWeight(1)
 
       Column() {
         Text('›')
-          .fontSize(24)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontSize(22)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(resColor('TEXT_SECONDARY'))
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
+      .accessibilityText(MoodText.mood_next_month)
+      .scale({ x: this.pressedSide === 'next' ? 0.97 : 1, y: this.pressedSide === 'next' ? 0.97 : 1 })
+      .animation({ duration: 100, curve: Curve.EaseOut })
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressedSide = 'next'
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressedSide = ''
+        }
+      })
       .onClick(() => {
         this.onNext()
       })
@@ -363,8 +453,9 @@ export struct MoodMonthSwitcher {
 @ComponentV2
 export struct MoodSmallAction {
   @Param text: string = ''
-  @Param containerColor: number = DesignColor.SURFACE_VARIANT
-  @Param contentColor: number = DesignColor.TEXT_PRIMARY
+  @Param containerColor: number = resColor('SURFACE_VARIANT')
+  @Param contentColor: number = resColor('TEXT_PRIMARY')
+  @Local pressed: boolean = false
   // 命名避开 CustomComponent 基类内置 onClick 属性（否则类型冲突）
   @Event onAction: () => void = () => {
   }
@@ -372,13 +463,25 @@ export struct MoodSmallAction {
   build() {
     Text(this.text)
       .fontSize(DesignFontSize.CAPTION)
-      .fontWeight(DesignFontWeight.SEMI_BOLD)
+      // 字重 MEDIUM(500) 对齐安卓 labelMedium（审查 #36；36/48 视觉高之争待设计定调，
+      // 维持 48 热区口径）
+      .fontWeight(DesignFontWeight.MEDIUM)
       .fontColor(this.contentColor)
       // 垂直内边距 8 → 16 + 显式 48 高：把触控热区从 30vp 抬到 ≥48vp
       .padding({ left: 16, right: 16, top: 16, bottom: 16 })
       .height(48)
       .backgroundColor(this.containerColor)
       .borderRadius(DesignDimens.RADIUS_MD)
+      // 按压反馈（对齐安卓 pressable scale 0.97）
+      .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+      .animation({ duration: 100, curve: Curve.EaseOut })
+      .onTouch((event: TouchEvent) => {
+        if (event.type === TouchType.Down) {
+          this.pressed = true
+        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+          this.pressed = false
+        }
+      })
       .onClick(() => {
         this.onAction()
       })
@@ -391,6 +494,7 @@ export struct MoodSmallAction {
 @ComponentV2
 export struct MoodErrorState {
   @Param message: string = ''
+  @Local pressed: boolean = false
   @Event onRetry: () => void = () => {
   }
 
@@ -398,17 +502,29 @@ export struct MoodErrorState {
     Column() {
       Text(this.message)
         .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .textAlign(TextAlign.Center)
 
       Text(MoodText.mood_action_retry)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.PRIMARY)
+        // 重试绿字走深档 TEXT_GREEN（对齐安卓审查 #28：PRIMARY on SURFACE_VARIANT
+        // 浅底仅 3.08:1 跌破 AA；2026-11-06 评审 R17/R18 专档）
+        .fontColor(resColor('TEXT_GREEN'))
         .padding({ left: 16, right: 16, top: 8, bottom: 8 })
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.RADIUS_MD)
         .margin({ top: DesignDimens.SPACE_MD })
+        // 按压反馈（对齐安卓 pressable scale 0.97）
+        .scale({ x: this.pressed ? 0.97 : 1, y: this.pressed ? 0.97 : 1 })
+        .animation({ duration: 100, curve: Curve.EaseOut })
+        .onTouch((event: TouchEvent) => {
+          if (event.type === TouchType.Down) {
+            this.pressed = true
+          } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+            this.pressed = false
+          }
+        })
         .onClick(() => {
           this.onRetry()
         })
@@ -426,7 +542,7 @@ export struct MoodErrorState {
 @ComponentV2
 export struct MoodDistributionBar {
   @Param label: string = ''
-  @Param color: number = DesignColor.PRIMARY
+  @Param color: number = resColor('PRIMARY')
   @Param count: number = 0
   @Param fraction: number = 0
 
@@ -440,7 +556,7 @@ export struct MoodDistributionBar {
 
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ left: DesignDimens.SPACE_XS })
         .width(44)
 
@@ -455,13 +571,13 @@ export struct MoodDistributionBar {
       }
       .layoutWeight(1)
       .height(DesignDimens.SPACE_MD)
-      .backgroundColor(DesignColor.SURFACE_VARIANT)
+      .backgroundColor(resColor('SURFACE_VARIANT'))
       .borderRadius(DesignDimens.RADIUS_FULL)
       .align(Alignment.Start)
 
       Text(`${this.count}`)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.End)
         .margin({ left: DesignDimens.SPACE_SM })
@@ -473,7 +589,7 @@ export struct MoodDistributionBar {
 }
 
 /**
- * 数据格：标签（bodySmall）+ 数字（tnum）+ 可选单位（对齐安卓 MoodStatCell）。
+ * 数据格：标签（caption 12）+ 数字（tnum）+ 可选单位（对齐安卓 MoodStatCell）。
  * valueSize 默认 HEADLINE 28（一屏一锚点，仅月均值用大字；记录天数传 AMOUNT_MEDIUM 18）。
  */
 @ComponentV2
@@ -485,21 +601,25 @@ export struct MoodStatCell {
 
   build() {
     Column() {
+      // label = caption 12 档（对齐安卓 bodySmall 12/400，报告 #30/#39 两端口径映射）
       Text(this.label)
-        .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(resColor('TEXT_SECONDARY'))
 
       Row() {
         Text(this.value)
           .fontSize(this.valueSize)
-          .fontWeight(DesignFontWeight.BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          // 字重随 valueSize 联动（对齐安卓审查 #29：AmountMedium 18 档 SemiBold，
+          // 仅 HEADLINE 数据大字锚点用 Bold）
+          .fontWeight(this.valueSize === DesignFontSize.AMOUNT_MEDIUM
+            ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.BOLD)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .fontFeature(DesignFontFeature.TNUM)
 
         if (this.suffix.length > 0) {
           Text(this.suffix)
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ left: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
         }
       }
@@ -512,6 +632,7 @@ export struct MoodStatCell {
 /**
  * 月历单日格：圆角方块着色 + 日期数字，今日描边；无记录灰格 / 未来格更浅（对齐安卓 MoodCalendarGrid）。
  * 历史色按契约优先用 color 快照（非法值兜底词典基准 hex）。
+ * 槽位高 48vp（对齐安卓审查 #4③：44 跌破 §3 触控红线）、内格 40 + 水平 gap 4（对齐安卓审查 #17）。
  */
 @ComponentV2
 export struct MoodDayCell {
@@ -522,6 +643,7 @@ export struct MoodDayCell {
   @Param colorHex: string = ''
   @Param isToday: boolean = false
   @Param isFuture: boolean = false
+  @Local pressed: boolean = false
   @Event onSelect: (dateKey: string) => void = () => {
   }
 
@@ -530,15 +652,47 @@ export struct MoodDayCell {
     if (this.hasRecord) {
       return this.colorHex
     }
-    return this.isFuture ? DesignColor.GROUP_BACKGROUND : DesignColor.SURFACE_VARIANT
+    return this.isFuture ? resColor('GROUP_BACKGROUND') : resColor('SURFACE_VARIANT')
   }
 
-  /** 日期数字色：彩色格按亮度自适应（墨字 / 表面色），未来格更浅 */
+  /**
+   * 日期数字色：有记录格弃用亮度单阈值（对齐安卓审查 #1：单阈值在「亮底配墨字」与
+   * 「暗底配白字」间顾此失彼，浅色多云/晴/大晴、深色暴雨/阴跌破 4.5:1）——对墨字
+   * textPrimary 与卡底 surface 两候选按 WCAG 对比度实算取高者。令牌走资源限定符
+   * 随主题回写、ThemeRefresh 子树重建时重算，深浅双主题全色级达标。
+   * 无记录/未来格统一 textSecondary（对齐安卓审查 #9：未来格 textTertiary 仅 1.86:1，
+   * 过去/未来的层次由字重 Normal vs 今日 SemiBold 承担）。
+   */
   private textColor(): number {
     if (this.hasRecord) {
-      return moodSnapshotLuminance(this.colorHex) > 0.4 ? DesignColor.TEXT_PRIMARY : DesignColor.SURFACE
+      const fillLuminance = moodHexLuminance(this.colorHex)
+      const inkRatio = moodContrastRatio(moodTokenLuminance(resColor('TEXT_PRIMARY')), fillLuminance)
+      const surfaceRatio = moodContrastRatio(moodTokenLuminance(resColor('SURFACE')), fillLuminance)
+      return inkRatio >= surfaceRatio ? resColor('TEXT_PRIMARY') : resColor('SURFACE')
     }
-    return this.isFuture ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_SECONDARY
+    return resColor('TEXT_SECONDARY')
+  }
+
+  /**
+   * 描边宽（对齐安卓审查 #5/#33）：按下且可点 = 2（onPress 高亮，真实按压状态触发）；
+   * 今日 = 1.5 墨色；有记录格 = 1（静态 affordance，区分「可点开详情」与灰格）；其余 0。
+   */
+  private cellBorderWidth(): number {
+    if (this.pressed && this.hasRecord) {
+      return 2
+    }
+    if (this.isToday) {
+      return 1.5
+    }
+    return this.hasRecord ? 1 : 0
+  }
+
+  /** 描边色：按压高亮与今日描边用墨色，静态 affordance 用弱文本灰（装饰性用途） */
+  private cellBorderColor(): number {
+    if ((this.pressed && this.hasRecord) || this.isToday) {
+      return resColor('TEXT_PRIMARY')
+    }
+    return resColor('TEXT_TERTIARY')
   }
 
   build() {
@@ -551,19 +705,29 @@ export struct MoodDayCell {
           .fontFeature(DesignFontFeature.TNUM)
       }
       .width('100%')
-      .height(36)
+      // 40 = 48 槽位 − 上下 gap 4×2（对齐安卓 boxSize = cellHeight − gap×2，审查 #17）
+      .height(40)
       .borderRadius(DesignDimens.RADIUS_SMALL)
       .backgroundColor(this.fillColor())
       .border({
-        width: this.isToday ? 1.5 : 0,
-        color: DesignColor.TEXT_PRIMARY
+        width: this.cellBorderWidth(),
+        color: this.cellBorderColor()
       })
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
     }
     .width('100%')
-    .height(44)
+    .height(48)
     .justifyContent(FlexAlign.Center)
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressed = true
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressed = false
+      }
+    })
+    // 读屏语义（对齐安卓审查 #7 网格级描述的逐格落地）：有记录格读日期 + 心情名
+    .accessibilityText(this.hasRecord ? `${this.day}日 ${moodLevelLabel(this.level)}` : `${this.day}日`)
     .onClick(() => {
       if (this.hasRecord) {
         this.onSelect(this.dateKey)
@@ -603,7 +767,7 @@ export struct MoodDayDetailDialog {
         Text(this.dateText)
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
           .width('100%')
           .margin({ bottom: DesignDimens.SPACE_SM })
 
@@ -616,7 +780,7 @@ export struct MoodDayDetailDialog {
 
           Text(`心情： ${moodLevelLabel(this.level)}`)
             .fontSize(DesignFontSize.BODY)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ left: DesignDimens.SPACE_XS })
         }
         .alignItems(VerticalAlign.Center)
@@ -624,16 +788,19 @@ export struct MoodDayDetailDialog {
         Text(this.word.length > 0 ? this.word : MoodText.mood_day_dialog_word_empty)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(this.word.length > 0 ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY)
+          // 空词占位改 textSecondary（对齐安卓审查 #10：18vp 大字无装饰豁免，
+          // textTertiary on 白卡 2.26:1 不过线）
+          .fontColor(this.word.length > 0 ? resColor('TEXT_PRIMARY') : resColor('TEXT_SECONDARY'))
           .width('100%')
           .margin({ top: DesignDimens.SPACE_XS })
 
         Button(MoodText.mood_day_dialog_close)
           .type(ButtonType.Normal)
           .width('100%')
-          .height(44)
+          // 44 → 48 对齐触控红线（报告 #25：鸿蒙独有关闭按钮保留，热区提档）
+          .height(48)
           .backgroundColor(Color.Transparent)
-          .fontColor(DesignColor.PRIMARY)
+          .fontColor(resColor('PRIMARY'))
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
@@ -649,13 +816,14 @@ export struct MoodDayDetailDialog {
         left: DesignDimens.PAGE_PADDING,
         right: DesignDimens.PAGE_PADDING,
         top: 20,
-        bottom: 12
+        // bottom 12 → 20 对齐安卓弹窗纵向 20（报告 #24）
+        bottom: DesignDimens.SPACE_LG
       })
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: DesignColor.SHADOW_COLOR_FLOAT,
+        color: resColor('SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

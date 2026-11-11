@@ -6,10 +6,12 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { AppButton } from "../view/common/AppComponents"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function AddSchoolBuilder() {
@@ -198,14 +200,14 @@ struct AddSchool {
       if (checkStudentRes.code !== HttpStatusCode.Ok) {
         // 学号查重接口失败留痕（学号不落日志）
         logger.warn('addSchool', `学号查重失败，阻止提交 code=${checkStudentRes.code} message=${checkStudentRes.message ?? ""}`)
-        showToastSafety("网络异常，请稍后重试")
+        showToastSafety(resString('add_school_1'))
         return
       }
       // 后端 getUserByStudentId 返回 data = (该学号用户不存在)，true 才可提交（对齐安卓 checkStudentId）
       if (checkStudentRes.data !== true) {
         // 业务拒绝留痕：学号已被注册（学号不落日志）
         logger.warn('addSchool', '学号查重未通过（学号已注册），阻止提交')
-        showToastSafety("该学号已注册")
+        showToastSafety(resString('error_student_id_registered'))
         return
       }
       let res = await updateUserInfo({
@@ -215,7 +217,7 @@ struct AddSchool {
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功：完善学校信息留 info（仅记 schoolId 摘要）
         logger.info('addSchool', `学校信息保存成功 schoolId=${this.schoolId}`)
-        showToastSafety("修改成功")
+        showToastSafety(resString('modify_success'))
         if (pathStack.size() > 0) {
           pathStack.clear()
         }
@@ -223,7 +225,7 @@ struct AddSchool {
       } else {
         // 业务拒绝留痕：保存被拒绝（仅记 code/message 摘要）
         logger.warn('addSchool', `学校信息保存被拒绝 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "学校信息保存失败")
+        showToastSafety(res.message, resString('add_school_2'))
       }
     } finally {
       this.submitting = false
@@ -233,7 +235,7 @@ struct AddSchool {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 修复（问题4）：原 Stack 内 layoutWeight 失效 + .align(Alignment.Bottom) 只作用于自身子组件，
@@ -248,7 +250,7 @@ struct AddSchool {
                 // Hero 图标对齐安卓 Icons.Rounded.School（D25）
                 SymbolGlyph($r('sys.symbol.graduationcap'))
                   .fontSize(28)
-                  .fontColor([DesignColor.ON_PRIMARY])
+                  .fontColor([resColor('ON_PRIMARY')])
               }
               .width(64)
               .height(64)
@@ -258,16 +260,16 @@ struct AddSchool {
               .justifyContent(FlexAlign.Center)
               .alignItems(HorizontalAlign.Center)
 
-              Text("完善信息")
+              Text($r('app.string.complete_info'))
                 .fontSize(DesignFontSize.STATUS_LARGE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.ON_PRIMARY)
+                .fontColor(resColor('ON_PRIMARY'))
                 .margin({ top: 14 })
 
               // 标题→副标题间距 14dp（对齐安卓 verticalArrangement.spacedBy(14)；D19）
-              Text("请填写您的学校信息")
+              Text($r('app.string.fill_school_info'))
                 .fontSize(DesignFontSize.BODY)
-                .fontColor(DesignColor.ON_PRIMARY)
+                .fontColor(resColor('ON_PRIMARY'))
                 .margin({ top: 14 })
             }
             .width("100%")
@@ -275,7 +277,7 @@ struct AddSchool {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .linearGradient({
               angle: 135,
-              colors: [[DesignColor.PRIMARY, 0], [DesignColor.PRIMARY_DARK, 1]]
+              colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
             })
             .alignItems(HorizontalAlign.Center)
             .margin({ top: DesignDimens.SPACE_XXL })
@@ -284,9 +286,9 @@ struct AddSchool {
             // 标签→输入框间距 24dp（对齐安卓 spacedBy(16) + 输入框 padding top 8；D20）
             Column({ space: 24 }) {
               // 学校标签（12/400 textSecondary）
-              Text("搜索学校")
+              Text($r('app.string.search_school'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               // 学校输入组件（输入行 + 错误文案 + 下拉列表，紧贴输入框）
               Column() {
@@ -295,14 +297,14 @@ struct AddSchool {
                   // 前缀图标对齐安卓 Icons.Rounded.School（D25）
                   SymbolGlyph($r('sys.symbol.graduationcap'))
                     .fontSize(16)
-                    .fontColor([DesignColor.PRIMARY])
+                    .fontColor([resColor('PRIMARY')])
                     .opacity(0.5)
 
-                  TextInput({ text: this.schoolName, placeholder: "搜索学校" })
+                  TextInput({ text: this.schoolName, placeholder: resString('search_school') })
                     .type(InputType.Normal)
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
-                    .placeholderColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .placeholderColor(resColor('TEXT_SECONDARY'))
                     .backgroundColor(Color.Transparent)
                     .layoutWeight(1)
                     .margin({ left: 12 })
@@ -329,7 +331,7 @@ struct AddSchool {
                   Column() {
                     SymbolGlyph($r('sys.symbol.xmark'))
                       .fontSize(20)
-                      .fontColor([DesignColor.TEXT_SECONDARY])
+                      .fontColor([resColor('TEXT_SECONDARY')])
                   }
                   .width(48)
                   .height(48)
@@ -343,16 +345,16 @@ struct AddSchool {
                 .width("100%")
                 .height(48)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
-                .backgroundColor(DesignColor.SURFACE_VARIANT)
-                .border({ width: 1, color: this.checkSchoolId ? DesignColor.ERROR : DesignColor.OUTLINE })
+                .backgroundColor(resColor('SURFACE_VARIANT'))
+                .border({ width: 1, color: this.checkSchoolId ? resColor('ERROR') : resColor('OUTLINE') })
                 .padding({ left: 12, right: 4 })
                 .alignItems(VerticalAlign.Center)
 
                 // 错误提示：独立 Text（对齐安卓 M3 supportingText 的呈现位，紧贴输入框下缘）
                 if (this.checkSchoolId) {
-                  Text("请选择学校")
+                  Text($r('app.string.please_select_school'))
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.ERROR)
+                    .fontColor(resColor('ERROR'))
                     .width("100%")
                     .margin({ top: 4 })
                 }
@@ -366,21 +368,21 @@ struct AddSchool {
                           Row() {
                             Text(school.schoolName)
                               .fontSize(12)
-                              .fontColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_PRIMARY)
+                              .fontColor(this.schoolId === school.schoolId ? resColor('PRIMARY_DARK') : resColor('TEXT_PRIMARY'))
                               .layoutWeight(1)
                           }
                           .width("100%")
                           .height(56)
                           .padding({ left: 12, right: 12 })
                           .alignItems(VerticalAlign.Center)
-                          .backgroundColor(this.schoolId === school.schoolId ? DesignColor.PRIMARY_CONTAINER : Color.Transparent)
+                          .backgroundColor(this.schoolId === school.schoolId ? resColor('PRIMARY_CONTAINER') : Color.Transparent)
                           .animation(MotionTiming.ENTER)
                           .onClick(() => {
                             this.selectSchool(school)
                           })
 
                           Divider()
-                            .color(DesignColor.HAIRLINE)
+                            .color(resColor('HAIRLINE'))
                             .strokeWidth(0.5)
                             .margin({ left: 14, right: 14 })
                         }
@@ -391,12 +393,12 @@ struct AddSchool {
                   .width("100%")
                   // 行高 56（对齐安卓 56dp 行；原 57 多 1；D24）
                   .height(Math.min(this.schoolList.length * 56, 200))
-                  .backgroundColor(DesignColor.SURFACE)
+                  .backgroundColor(resColor('SURFACE'))
                   .borderRadius(DesignDimens.CARD_RADIUS)
-                  .border({ width: 1, color: DesignColor.OUTLINE })
+                  .border({ width: 1, color: resColor('OUTLINE') })
                   .shadow({
                     radius: DesignElevation.CARD_SHADOW_RADIUS,
-                    color: DesignColor.SHADOW_COLOR_CARD,
+                    color: resColor('SHADOW_COLOR_CARD'),
                     offsetX: 0,
                     offsetY: DesignElevation.CARD_SHADOW_OFFSET
                   })
@@ -409,9 +411,9 @@ struct AddSchool {
               .alignItems(HorizontalAlign.Start)
 
               // 学号标签
-              Text("学号")
+              Text($r('app.string.student_id'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               // 学号输入组件（输入行 + 错误文案）
               Column() {
@@ -420,15 +422,15 @@ struct AddSchool {
                   // 前缀图标对齐安卓 Icons.Rounded.Badge（D25，ID 卡语义）
                   SymbolGlyph($r('sys.symbol.person_text_rectangle'))
                     .fontSize(16)
-                    .fontColor([DesignColor.PRIMARY])
+                    .fontColor([resColor('PRIMARY')])
                     .opacity(0.5)
 
-                  TextInput({ text: this.studentId, placeholder: "学号" })
+                  TextInput({ text: this.studentId, placeholder: resString('student_id') })
                     .type(InputType.Number)
                     .maxLength(16)
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(DesignColor.TEXT_PRIMARY)
-                    .placeholderColor(DesignColor.TEXT_SECONDARY)
+                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .placeholderColor(resColor('TEXT_SECONDARY'))
                     .backgroundColor(Color.Transparent)
                     .layoutWeight(1)
                     .margin({ left: 12 })
@@ -441,16 +443,16 @@ struct AddSchool {
                 .width("100%")
                 .height(48)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
-                .backgroundColor(DesignColor.SURFACE_VARIANT)
-                .border({ width: 1, color: this.checkStudentId ? DesignColor.ERROR : DesignColor.OUTLINE })
+                .backgroundColor(resColor('SURFACE_VARIANT'))
+                .border({ width: 1, color: this.checkStudentId ? resColor('ERROR') : resColor('OUTLINE') })
                 .padding({ left: 12, right: 12 })
                 .alignItems(VerticalAlign.Center)
 
                 // 错误提示：独立 Text（对齐安卓 M3 supportingText 的呈现位，紧贴输入框下缘）
                 if (this.checkStudentId) {
-                  Text("请输入正确的学号")
+                  Text($r('app.string.invalid_student_id'))
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.ERROR)
+                    .fontColor(resColor('ERROR'))
                     .width("100%")
                     .margin({ top: 4 })
                 }
@@ -460,12 +462,12 @@ struct AddSchool {
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: DesignColor.OUTLINE })
+            .border({ width: 1, color: resColor('OUTLINE') })
             .shadow({
               radius: DesignElevation.CARD_SHADOW_RADIUS,
-              color: DesignColor.SHADOW_COLOR_CARD,
+              color: resColor('SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: DesignElevation.CARD_SHADOW_OFFSET
             })
@@ -487,14 +489,14 @@ struct AddSchool {
 
         // ===== 底部固定 CTA 栏（锁定提示常驻 + 主按钮 48 胶囊）=====
         Column() {
-          Text("学校信息提交后不可自行修改，如需变更请联系管理员")
+          Text($r('app.string.school_info_locked_hint'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .width("100%")
 
           // 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA；D22）
           AppButton({
-            text: "确认",
+            text: resString('confirm'),
             loading: this.submitting,
             isEnabled: !this.isInfoLocked,
             solid: true,
@@ -507,11 +509,11 @@ struct AddSchool {
         .width("100%")
         // CTA 栏顶部内距 0（对齐安卓 CTA Column 无 top padding；D21）
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 0, bottom: 16 + safeBottomVp() })
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

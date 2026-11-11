@@ -7,7 +7,7 @@
 // 跨页刷新：保存今日心情后 bump 情绪 tick，本页 @StorageLink + @Watch 消费重拉。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { MoodCalendarDayVo, MoodText, moodMonthCalendar, moodRecordedDaysFormat } from '../api'
 import {
@@ -33,6 +33,8 @@ import { MOOD_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
+import { resString } from '../../../utils/ResourceString'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'moodCalendarPage'
@@ -48,8 +50,8 @@ const WEEK_LABELS: Array<string> = [
   MoodText.mood_week_sun
 ]
 
-/** 单元格槽位高（对齐安卓 CELL_HEIGHT 44） */
-const CELL_SLOT_HEIGHT: number = 44
+/** 单元格槽位高（对齐安卓 CELL_HEIGHT 48：44 跌破 §3 触控红线，打卡主路径格高提档） */
+const CELL_SLOT_HEIGHT: number = 48
 
 @Builder
 export function MoodCalendarBuilder() {
@@ -91,12 +93,12 @@ struct MoodCalendarPage {
         logger.warn(TAG, `月历加载失败 ym=${ym} code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isError = true
         // 文案对齐安卓基线「月历加载失败」（勿用 mood_error_load 的「心情记录加载失败」）
-        showToastSafety(res.message, '月历加载失败')
+        showToastSafety(res.message, resString('mood_calendar_page_1'))
       }
     } catch (err) {
       logger.error(TAG, '月历加载异常', err instanceof Error ? err.message : '')
       this.isError = true
-      showToastSafety('', '月历加载失败')
+      showToastSafety('', resString('mood_calendar_page_1'))
     } finally {
       this.isLoading = false
     }
@@ -174,7 +176,7 @@ struct MoodCalendarPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -183,7 +185,7 @@ struct MoodCalendarPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.TEXT_PRIMARY])
+              .fontColor([resColor('TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -196,7 +198,7 @@ struct MoodCalendarPage {
           Text(MoodText.mood_calendar_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
         }
         .width('100%')
         .height(56)
@@ -209,7 +211,7 @@ struct MoodCalendarPage {
             .layoutWeight(1)
         } else if (this.isError) {
           MoodErrorState({
-            message: '月历加载失败',
+            message: resString('mood_calendar_page_1'),
             onRetry: (): void => {
               this.load(this.ym)
             }
@@ -231,11 +233,12 @@ struct MoodCalendarPage {
             AppCard() {
               Column() {
                 // ---------- 周表头（周一起始） ----------
+                // 功能性列标签（对齐安卓审查 #2③）：textTertiary 仅限禁用/装饰（§10 红线）
                 Row() {
                   ForEach(WEEK_LABELS, (label: string) => {
                     Text(label)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_TERTIARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .textAlign(TextAlign.Center)
                       .layoutWeight(1)
                   }, (label: string) => label)
@@ -244,6 +247,8 @@ struct MoodCalendarPage {
                 .margin({ bottom: DesignDimens.SPACE_XS })
 
                 // ---------- 7×N 热图网格 ----------
+                // 水平 gap 4（SPACE_XXS）对齐安卓格间节奏（审查 #17）；垂直节奏由 MoodDayCell
+                // 槽位（48）内上下余量各 4 承担，rowsGap 显式 0
                 Grid() {
                   ForEach(this.cells, (cell: MoodCalendarCell, index: number) => {
                     GridItem() {
@@ -269,6 +274,8 @@ struct MoodCalendarPage {
                   }, (cell: MoodCalendarCell, index: number) => `${index}`)
                 }
                 .columnsTemplate('1fr 1fr 1fr 1fr 1fr 1fr 1fr')
+                .columnsGap(DesignDimens.SPACE_XXS)
+                .rowsGap(0)
                 .width('100%')
                 .height(Math.ceil(this.cells.length / 7) * CELL_SLOT_HEIGHT)
               }
@@ -277,14 +284,16 @@ struct MoodCalendarPage {
             }
 
             // ---------- 统计与图例说明 ----------
+            // 两行均 = caption 12 档（对齐安卓 bodySmall 12/400，报告 #39 口径映射）；
+            // 图例为功能性说明（对齐安卓审查 #2②）：textTertiary 仅限禁用/装饰（§10 红线）
             Column() {
               Text(moodRecordedDaysFormat(this.dayRecords.size))
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               Text(MoodText.mood_calendar_day_empty_hint)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
             }
             .width('100%')
@@ -305,7 +314,7 @@ struct MoodCalendarPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

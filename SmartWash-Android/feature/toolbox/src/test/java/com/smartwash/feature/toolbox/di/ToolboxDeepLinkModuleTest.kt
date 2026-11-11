@@ -1,5 +1,7 @@
 package com.smartwash.feature.toolbox.di
 
+import com.smartwash.feature.toolbox.ToolboxRoute
+import kotlinx.serialization.serializer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -8,6 +10,9 @@ import org.junit.Test
  * 工具箱深链贡献者 JVM 单测（锚点）：
  * t/{code} 的 4-16 位字母数字校验（原 DeepLinkParser 内建职责迁入本模块贡献者后，
  * 边界用例随迁锚定）+ toolbox-short-code 映射 + 未登记形态返回 null。
+ *
+ * 断言对象为迁移后的类型安全路由（SmartWashRoute）；@SerialName 路由串与迁移前
+ * 字符串常量一致性单独锚定（descriptor.serialName），防止迁移回归。
  */
 class ToolboxDeepLinkModuleTest {
 
@@ -23,7 +28,7 @@ class ToolboxDeepLinkModuleTest {
     @Test
     fun `t 合法短码映射详情路由`() {
         assertEquals(
-            "ToolboxShortCodeDetail?code=ab12cd34",
+            ToolboxRoute.Detail(code = "ab12cd34"),
             tFactory.route(listOf("ab12cd34"), emptyMap())
         )
     }
@@ -31,11 +36,11 @@ class ToolboxDeepLinkModuleTest {
     @Test
     fun `t 短码 4 位下界与 16 位上界合法`() {
         assertEquals(
-            "ToolboxShortCodeDetail?code=abcd",
+            ToolboxRoute.Detail(code = "abcd"),
             tFactory.route(listOf("abcd"), emptyMap())
         )
         assertEquals(
-            "ToolboxShortCodeDetail?code=abcdefghijklmno1",
+            ToolboxRoute.Detail(code = "abcdefghijklmno1"),
             tFactory.route(listOf("abcdefghijklmno1"), emptyMap())
         )
     }
@@ -56,7 +61,7 @@ class ToolboxDeepLinkModuleTest {
     @Test
     fun `t 短码保留原始大小写`() {
         assertEquals(
-            "ToolboxShortCodeDetail?code=Ab12Cd",
+            ToolboxRoute.Detail(code = "Ab12Cd"),
             tFactory.route(listOf("Ab12Cd"), emptyMap())
         )
     }
@@ -66,11 +71,11 @@ class ToolboxDeepLinkModuleTest {
     @Test
     fun `toolbox-short-code 映射列表页且忽略参数`() {
         assertEquals(
-            "ToolboxShortCodeList",
+            ToolboxRoute.List,
             listFactory.route(emptyList(), emptyMap())
         )
         assertEquals(
-            "ToolboxShortCodeList",
+            ToolboxRoute.List,
             listFactory.route(listOf("unexpected"), mapOf("x" to "1"))
         )
     }
@@ -79,5 +84,16 @@ class ToolboxDeepLinkModuleTest {
     fun `未登记 host 不在贡献表`() {
         assertNull(contributor.routes()["web"])
         assertNull(contributor.routes()["login"])
+    }
+
+    // ---------- @SerialName 路由串锚点（与迁移前字符串常量一致） ----------
+
+    @Test
+    fun `路由串锚点与迁移前一致`() {
+        assertEquals("ToolboxShortCodeList", serializer<ToolboxRoute.List>().descriptor.serialName)
+        assertEquals("ToolboxShortCodeCreate", serializer<ToolboxRoute.Create>().descriptor.serialName)
+        assertEquals("ToolboxShortCodeDetail", serializer<ToolboxRoute.Detail>().descriptor.serialName)
+        assertEquals("ToolboxDelivery", serializer<ToolboxRoute.Delivery>().descriptor.serialName)
+        assertEquals("ToolboxDeliverySession", serializer<ToolboxRoute.DeliverySession>().descriptor.serialName)
     }
 }

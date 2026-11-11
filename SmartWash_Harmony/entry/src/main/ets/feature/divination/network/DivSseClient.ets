@@ -33,6 +33,7 @@ import { showToastSafety } from '../../../utils/ToastUtil'
 import { CommonConstants } from '../../../constant/CommonConstants'
 import { logger } from '../../../utils/Logger'
 import { clearLoginState, tryClaimUnauthorizedDebounce } from '../../../network/Axios'
+import { resString } from '../../../utils/ResourceString'
 
 /** 服务端地址（构建期注入，与 Axios.ets 同一事实源） */
 const BASE_URL: string = BuildProfile.BASE_URL
@@ -47,11 +48,11 @@ const TAG: string = 'divSseClient'
 // ========== 传输层失败文案（DivText.* 同风格常量化；network 层不反向依赖 ui 组件，故本地定义） ==========
 
 /** 登录失效（401：handleUnauthorizedLikeAxios 已同步清登录态并 toast） */
-const FAIL_UNAUTHORIZED: string = '登录失效，请重新登录！'
+function FAIL_UNAUTHORIZED(): string { return resString('div_sse_client_1') }
 /** 流已产出内容后中断 / 正常结束但未收到 done/error 终态帧 */
-const FAIL_STREAM_INTERRUPTED: string = '解读推流中断，请重试'
+function FAIL_STREAM_INTERRUPTED(): string { return resString('div_sse_client_2') }
 /** 流式与攒流通道均不可达 */
-const FAIL_SERVICE_UNAVAILABLE: string = '解读服务暂不可用，请稍后再试'
+function FAIL_SERVICE_UNAVAILABLE(): string { return resString('div_sse_client_3') }
 
 /** SSE 回调集合（onDelta 逐帧；onSseError 为业务 error 帧；onFail 为传输层失败） */
 export interface DivSseCallbacks {
@@ -109,7 +110,7 @@ function handleUnauthorizedLikeAxios(): void {
   if (!tryClaimUnauthorizedDebounce()) {
     return
   }
-  showToastSafety(FAIL_UNAUTHORIZED)
+  showToastSafety(FAIL_UNAUTHORIZED())
   clearLoginState()
 }
 
@@ -228,7 +229,7 @@ function parseErrorPayload(data: string): [number, string] | null {
     const payload = JSON.parse(data) as ErrorPayload
     const code = typeof payload.code === 'number' ? payload.code : 500
     const message = typeof payload.message === 'string' && payload.message.length > 0
-      ? payload.message : '解读服务异常，请稍后再试'
+      ? payload.message : resString('div_sse_client_4')
     return [code, message]
   } catch (err) {
     logger.warn(TAG, `error 帧解析失败: ${err instanceof Error ? err.message : ''}`)
@@ -270,7 +271,7 @@ function buildFrameHandler(cb: DivSseCallbacks, produced: SseProducedFlag): (eve
         cb.onSseError(err[0], err[1])
       } else {
         produced.any = true
-        cb.onSseError(500, '解读服务异常，请稍后再试')
+        cb.onSseError(500, resString('div_sse_client_4'))
       }
       return
     }
@@ -329,7 +330,7 @@ async function runStreamed(url: string, body: string, cb: DivSseCallbacks, produ
       parser.feed(decoder.decode(ab))
     } catch (err) {
       // 逐块处理异常：中断等待并抛错（外层视帧产出情况决定攒流重试）
-      rejectEnd(err instanceof Error ? err : new Error('SSE 数据块处理异常'))
+      rejectEnd(err instanceof Error ? err : new Error(resString('div_sse_client_5')))
     }
   })
   req.on('dataEnd', () => {
@@ -354,7 +355,7 @@ async function runStreamed(url: string, body: string, cb: DivSseCallbacks, produ
   if (code === 401) {
     req.destroy()
     handleUnauthorizedLikeAxios()
-    throw new SseTransportError('登录失效', true)
+    throw new SseTransportError(resString('div_sse_client_6'), true)
   }
   if (code !== 200) {
     req.destroy()
@@ -417,7 +418,7 @@ async function runBuffered(url: string, body: string, cb: DivSseCallbacks, produ
 
   if (code === 401) {
     handleUnauthorizedLikeAxios()
-    throw new SseTransportError('登录失效', true)
+    throw new SseTransportError(resString('div_sse_client_6'), true)
   }
   if (code !== 200) {
     throw new SseTransportError(`服务不可用（HTTP ${code}）`, false)
@@ -448,7 +449,7 @@ export async function divSsePost(path: string, question: string, cb: DivSseCallb
   const ensureTerminalFrame = (): void => {
     if (!produced.terminated) {
       logger.warn(TAG, 'SSE 流结束但未收到 done/error 终态帧，按推流中断兜底')
-      cb.onFail(FAIL_STREAM_INTERRUPTED)
+      cb.onFail(FAIL_STREAM_INTERRUPTED())
     }
   }
   try {
@@ -459,12 +460,12 @@ export async function divSsePost(path: string, question: string, cb: DivSseCallb
   } catch (err) {
     const unauthorized = err instanceof SseTransportError && err.unauthorized
     if (unauthorized) {
-      cb.onFail(FAIL_UNAUTHORIZED)
+      cb.onFail(FAIL_UNAUTHORIZED())
       return
     }
     if (produced.any) {
       logger.warn(TAG, `流式接收中断（已产出内容，不重试）: ${err instanceof Error ? err.message : ''}`)
-      cb.onFail(FAIL_STREAM_INTERRUPTED)
+      cb.onFail(FAIL_STREAM_INTERRUPTED())
       return
     }
     logger.warn(TAG, `流式通道失败，降级攒流重试: ${err instanceof Error ? err.message : ''}`)
@@ -475,10 +476,10 @@ export async function divSsePost(path: string, question: string, cb: DivSseCallb
   } catch (err) {
     const unauthorized = err instanceof SseTransportError && err.unauthorized
     if (unauthorized) {
-      cb.onFail(FAIL_UNAUTHORIZED)
+      cb.onFail(FAIL_UNAUTHORIZED())
       return
     }
     logger.error(TAG, `攒流通道亦失败: ${err instanceof Error ? err.message : ''}`)
-    cb.onFail(FAIL_SERVICE_UNAVAILABLE)
+    cb.onFail(FAIL_SERVICE_UNAVAILABLE())
   }
 }

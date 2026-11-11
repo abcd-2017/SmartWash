@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,15 +22,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Wallet
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +60,6 @@ import com.smartwash.common.ui.components.PageHeader
 import com.smartwash.common.ui.theme.IconBox
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
-import com.smartwash.common.ui.theme.AppElevation
 import com.smartwash.common.ui.theme.AppTextStyles
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.selectedColor
@@ -97,7 +93,8 @@ fun AiWorkPage(
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
+            // 区块间距 32（ui-spec §2.3，sectionSpacing 令牌；原 spaceMd 16 偏小）
+            verticalArrangement = Arrangement.spacedBy(AppDimens.sectionSpacing)
         ) {
             // 快捷任务
             item(key = "quick_tasks") {
@@ -111,11 +108,11 @@ fun AiWorkPage(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                 Column(
                     modifier = Modifier.padding(horizontal = AppDimens.pagePadding),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                     ) {
                         QuickTaskCard(
                             icon = Icons.Default.LocalLaundryService,
@@ -134,7 +131,7 @@ fun AiWorkPage(
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(AppDimens.spaceMd)
                     ) {
                         QuickTaskCard(
                             icon = Icons.Default.LocalOffer,
@@ -172,7 +169,7 @@ fun AiWorkPage(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 32.dp, bottom = 16.dp),
+                            .padding(top = 32.dp, bottom = AppDimens.spaceMd),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         // 滚筒圆空态插画 — 公共 DrumMark 母题（弱文本色，深浅主题各自可读）
@@ -186,7 +183,7 @@ fun AiWorkPage(
                             style = MaterialTheme.typography.bodySmall,
                             color = AppColors.colorScheme.textSecondary
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(AppDimens.spaceSm))
                         // 设计稿「开始提问」：radiusButton 14（画板实测非胶囊）
                         // [P08] 2026-11-05 画板复裁：按钮 84×52（原高 48 差 4）——显式 52dp 高、内容居中
                         Surface(
@@ -218,7 +215,12 @@ fun AiWorkPage(
 
         // 底部输入框（固定）——设计稿：白底条高 80（顶线 1px + 上下 16 + 输入框 48）
         Surface(
-            modifier = Modifier.fillMaxWidth().softCardShadow(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // 避让系统导航条（MainActivity edge-to-edge，规范 §4 固定 CTA 栏 WindowInsets 透传）；
+                // 与外层 imePadding 叠加语义正确：键盘弹出时 ime 高度覆盖导航条，二者取大不双重让位
+                .navigationBarsPadding()
+                .softCardShadow(),
             color = AppColors.colorScheme.surface,
             // 固定输入条是浮层（§2.4 豁免档），阴影按规范 §2.4 卡片档自绘（softCardShadow）
         ) {
@@ -233,7 +235,7 @@ fun AiWorkPage(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = AppDimens.pagePadding, vertical = 16.dp),
+                        .padding(horizontal = AppDimens.pagePadding, vertical = AppDimens.spaceMd),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // 聚焦反馈：外框颜色 primary ↔ outline 过渡（reduced motion 自动降级 180ms）
@@ -244,10 +246,12 @@ fun AiWorkPage(
                         value = inputText,
                         onValueChange = { inputText = it },
                         placeholder = {
+                            // 占位符：textSecondary + 与正文同字号 16sp（ui-spec §3.7 表单输入唯一标准，
+                            // 工作台搜索框先例；textTertiary 1.9:1 触 DESIGN-SPEC §10 可读文本红线）
                             Text(
                                 stringResource(R.string.ai_input_placeholder),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = AppColors.colorScheme.textTertiary
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = AppColors.colorScheme.textSecondary
                             )
                         },
                         modifier = Modifier
@@ -258,9 +262,11 @@ fun AiWorkPage(
                             .border(
                                 width = 1.dp,
                                 color = inputBorderColor,
-                                shape = RoundedCornerShape(AppDimens.radiusMd)
+                                // 输入框圆角 14（ui-spec §2.3 radiusButton 档含输入框，inputRadius 令牌，
+                                // 工作台搜索框先例；radiusMd 12 是图标容器/嵌套块档的误用）
+                                shape = RoundedCornerShape(AppDimens.inputRadius)
                             ),
-                        shape = RoundedCornerShape(AppDimens.radiusMd),
+                        shape = RoundedCornerShape(AppDimens.inputRadius),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = AppColors.colorScheme.surfaceVariant,
                             unfocusedContainerColor = AppColors.colorScheme.surfaceVariant,
@@ -269,7 +275,7 @@ fun AiWorkPage(
                         ),
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(AppDimens.spaceXs))
                     // 发送 — 自绘圆钮：Material IconButton 的 state layer 会在渐变圆上浮出
                     // 不贴合的涟漪（规范 §7 禁 ripple），改用 pressable（scale 0.97）
                     Box(
@@ -312,7 +318,7 @@ private fun QuickTaskCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = AppDimens.cardPadding, vertical = AppDimens.spaceMd),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(

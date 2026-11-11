@@ -11,6 +11,7 @@
 
 import { OrderStatusEnum } from '../constant/OrderStatus'
 import { jsonNum } from '../network/vo/JsonParse'
+import { resString } from '../utils/ResourceString'
 
 /** 提醒默认延迟（分钟）：订单进入待取件后 30 分钟提醒取件 */
 export const REMINDER_DELAY_MINUTES_DEFAULT: number = 30
@@ -20,14 +21,15 @@ export const REMINDER_DELAY_MINUTES_DEFAULT: number = 30
  * ReminderService.initPickupReminder 会在启动时注入资源值，注入失败（资源缺失/上下文异常）
  * 回落到本常量——保证任何情况下提醒文案可用。
  */
-export const REMINDER_TITLE_FALLBACK: string = '衣物已洗好'
-export const REMINDER_CONTENT_PREFIX_FALLBACK: string = '衣物已洗好'
-export const REMINDER_CONTENT_SUFFIX_FALLBACK: string = '请及时到寄存柜取件，超时可能占用公共筒位'
+export function REMINDER_TITLE_FALLBACK(): string { return resString('reminder_logic_1') }
+export function REMINDER_CONTENT_PREFIX_FALLBACK(): string { return resString('reminder_logic_1') }
+export function REMINDER_CONTENT_SUFFIX_FALLBACK(): string { return resString('reminder_logic_2') }
 
 // 模块级文案缓存：applyReminderStrings 注入资源值后全局生效（ReminderLogic 无 context 依赖的关键）
-let reminderTitle: string = REMINDER_TITLE_FALLBACK
-let reminderContentPrefix: string = REMINDER_CONTENT_PREFIX_FALLBACK
-let reminderContentSuffix: string = REMINDER_CONTENT_SUFFIX_FALLBACK
+// undefined 表示「未注入」，读取时回落资源文案（避免模块加载期取资源导致 context 未就绪）
+let reminderTitle: string | undefined = undefined
+let reminderContentPrefix: string | undefined = undefined
+let reminderContentSuffix: string | undefined = undefined
 
 /**
  * 注入资源文案（EntryAbility 启动时调用）。入参 trim 后为空串按未注入处理，
@@ -47,7 +49,7 @@ export function applyReminderStrings(title: string, contentPrefix: string, conte
 
 /** 提醒标题（通知栏 / 提醒中心展示） */
 export function buildReminderTitle(): string {
-  return reminderTitle
+  return reminderTitle ?? REMINDER_TITLE_FALLBACK()
 }
 
 /**
@@ -55,10 +57,12 @@ export function buildReminderTitle(): string {
  * GLOSSARY 待取件口径：订单转待取件时切换新柜子——柜号能让用户直达对应柜位。
  */
 export function buildReminderContent(lockerNumber: number | null | undefined): string {
+  const prefix: string = reminderContentPrefix ?? REMINDER_CONTENT_PREFIX_FALLBACK()
+  const suffix: string = reminderContentSuffix ?? REMINDER_CONTENT_SUFFIX_FALLBACK()
   if (lockerNumber === null || lockerNumber === undefined || lockerNumber <= 0) {
-    return `${reminderContentPrefix}，${reminderContentSuffix}。`
+    return `${prefix}，${suffix}。`
   }
-  return `${reminderContentPrefix}，已放入 ${lockerNumber} 号柜，${reminderContentSuffix}。`
+  return `${prefix}，已放入 ${lockerNumber} 号柜，${suffix}。`
 }
 
 /**

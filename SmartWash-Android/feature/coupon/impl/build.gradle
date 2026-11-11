@@ -42,4 +42,7 @@ dependencies {
     implementation libs.androidx.annotation
     // ViewModel 协程 launch / MutableStateFlow
     implementation libs.kotlinx.coroutines.android
+
+    // 券缓存降级归并锚点单测（DegradedCouponPageDataTest）
+    testImplementation libs.junit
 }

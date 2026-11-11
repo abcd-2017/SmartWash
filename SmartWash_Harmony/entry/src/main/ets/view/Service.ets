@@ -1,6 +1,6 @@
 import { AppButton, AppButtonVariant, EmptyState, LoadingState } from './common/AppComponents'
 import { HttpStatusCode } from "@ohos/axios"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getLaundryItems } from "../network/api/LaundryItemsApi"
 import { LaundryItem } from "../network/vo/LaundryItem"
 import { safeTopVp } from "../utils/SafeArea"
@@ -9,6 +9,8 @@ import { pathStack } from "../utils/PathStackUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import vibrator from '@ohos.vibrator'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 服务行图标容器配色对（对齐安卓 ServicePage.kt:300-317 serviceTileColors）。
@@ -43,12 +45,12 @@ export struct Service {
       if (res.code === HttpStatusCode.Ok) {
         this.laundryItem = res.data
       } else {
-        showToastSafety(res.message, "套餐加载失败")
+        showToastSafety(res.message, resString('service_1'))
         this.loadFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('service_2'))
       this.loadFailed = true
     } finally {
       this.isLoading = false
@@ -67,16 +69,16 @@ export struct Service {
       $r('sys.symbol.hanger_and_towels'),
       $r('sys.symbol.heat_waves')
     ]
-    if (name.includes("干")) {
+    if (name.includes(resString('service_3'))) {
       // 干洗
       return $r('sys.symbol.wind')
-    } else if (name.includes("精") || name.includes("护理") || name.includes("奢")) {
+    } else if (name.includes(resString('service_4')) || name.includes(resString('service_5')) || name.includes(resString('service_6'))) {
       // 精洗/护理/奢护（sys.symbol.hanger 不存在，SDK 5.0.5 无该符号，就近换用衣架+毛巾符号）
       return $r('sys.symbol.hanger_and_towels')
-    } else if (name.includes("熨")) {
+    } else if (name.includes(resString('service_7'))) {
       // 熨烫（sys.symbol.steam 不存在，SDK 5.0.5 无该符号，就近换用热浪符号）
       return $r('sys.symbol.heat_waves')
-    } else if (name.includes("洗") || name.includes("标准")) {
+    } else if (name.includes(resString('service_8')) || name.includes(resString('service_9'))) {
       // 标准洗衣
       return $r('sys.symbol.laundry')
     }
@@ -90,27 +92,27 @@ export struct Service {
    */
   private serviceTileColors(item: LaundryItem): ServiceTileColors {
     const name = item.itemName ?? ""
-    if (name.includes("干")) {
-      return { container: DesignColor.ICON_CONTAINER_BLUE, foreground: DesignColor.ICON_FOREGROUND_BLUE }
+    if (name.includes(resString('service_3'))) {
+      return { container: resColor('ICON_CONTAINER_BLUE'), foreground: resColor('ICON_FOREGROUND_BLUE') }
     }
-    if (name.includes("精") || name.includes("护理") || name.includes("奢")) {
-      return { container: DesignColor.ICON_CONTAINER_PURPLE, foreground: DesignColor.ICON_FOREGROUND_PURPLE }
+    if (name.includes(resString('service_4')) || name.includes(resString('service_5')) || name.includes(resString('service_6'))) {
+      return { container: resColor('ICON_CONTAINER_PURPLE'), foreground: resColor('ICON_FOREGROUND_PURPLE') }
     }
-    if (name.includes("熨")) {
-      return { container: DesignColor.ICON_CONTAINER_ORANGE, foreground: DesignColor.ICON_FOREGROUND_ORANGE }
+    if (name.includes(resString('service_7'))) {
+      return { container: resColor('ICON_CONTAINER_ORANGE'), foreground: resColor('ICON_FOREGROUND_ORANGE') }
     }
-    if (name.includes("洗") || name.includes("标准")) {
-      return { container: DesignColor.PRIMARY_LIGHT, foreground: DesignColor.PRIMARY_DARK }
+    if (name.includes(resString('service_8')) || name.includes(resString('service_9'))) {
+      return { container: resColor('PRIMARY_LIGHT'), foreground: resColor('PRIMARY_DARK') }
     }
     switch ((item.itemId ?? 0) % 4) {
       case 1:
-        return { container: DesignColor.ICON_CONTAINER_BLUE, foreground: DesignColor.ICON_FOREGROUND_BLUE }
+        return { container: resColor('ICON_CONTAINER_BLUE'), foreground: resColor('ICON_FOREGROUND_BLUE') }
       case 2:
-        return { container: DesignColor.ICON_CONTAINER_PURPLE, foreground: DesignColor.ICON_FOREGROUND_PURPLE }
+        return { container: resColor('ICON_CONTAINER_PURPLE'), foreground: resColor('ICON_FOREGROUND_PURPLE') }
       case 3:
-        return { container: DesignColor.ICON_CONTAINER_ORANGE, foreground: DesignColor.ICON_FOREGROUND_ORANGE }
+        return { container: resColor('ICON_CONTAINER_ORANGE'), foreground: resColor('ICON_FOREGROUND_ORANGE') }
       default:
-        return { container: DesignColor.PRIMARY_LIGHT, foreground: DesignColor.PRIMARY_DARK }
+        return { container: resColor('PRIMARY_LIGHT'), foreground: resColor('PRIMARY_DARK') }
     }
   }
 
@@ -148,12 +150,12 @@ export struct Service {
         Text(item.itemName)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
 
         // 描述不限行（对齐安卓 ServiceItemRow：可换行，无 maxLines/Ellipsis 约束）
         Text(item.description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .layoutWeight(1)
@@ -165,12 +167,12 @@ export struct Service {
         Text(`¥${item.basePrice?.toFixed(2)}`)
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
           .fontFeature(DesignFontFeature.TNUM)
 
         SymbolGlyph($r('sys.symbol.chevron_right'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.End)
@@ -213,20 +215,20 @@ export struct Service {
           if (index < (this.laundryItem?.length ?? 0) - 1) {
             Divider()
               .strokeWidth(1)
-              .color(DesignColor.HAIRLINE)
+              .color(resColor('HAIRLINE'))
               .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
           }
         }, (item: LaundryItem) => item.itemId?.toString())
       }
     }
     .width("100%")
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 规范 §2.4 卡片：1px OUTLINE 描边 + 0 2px 12px rgba(20,40,30,.05) 阴影（对齐安卓 v0.4）
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -241,10 +243,10 @@ export struct Service {
         Scroll(this.scroller) {
           Column() {
             // 页头（对齐安卓 ServicePage.kt:101-113 —— 洗衣服务 SectionTitle 18/600，无副标题）
-            Text("洗衣服务")
+            Text($r('app.string.laundry_service'))
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .width("100%")
               .margin({ top: 8 })
 
@@ -256,9 +258,9 @@ export struct Service {
             .margin({ top: 12 })
 
             // 底部服务提示文案（对齐安卓 service_tips）
-            Text("服务时间 07:00 – 22:00 · 节假日正常营业")
+            Text($r('app.string.service_tips'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .textAlign(TextAlign.Center)
               .width("100%")
               .margin({ top: 24 })
@@ -288,18 +290,18 @@ export struct Service {
         LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
       }
 
       // 失败态（无数据且加载失败）：EmptyState + 重试按钮，不留空白页（F3/T3）
       if (!this.isLoading && this.loadFailed && (this.laundryItem === null || this.laundryItem.length === 0)) {
         Column() {
           EmptyState({
-            message: "套餐加载失败",
+            message: resString('service_1'),
             action: () => {
               AppButton({
                 small: true,
-                text: "重试",
+                text: resString('retry'),
                 variant: AppButtonVariant.SECONDARY,
                 click: () => {
                   this.fetchItems()
@@ -311,12 +313,12 @@ export struct Service {
         }
         .width("100%")
         .height("100%")
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
         .justifyContent(FlexAlign.Center)
       }
     }
     .width("100%")
     .height("100%")
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }

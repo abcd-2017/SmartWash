@@ -8,6 +8,7 @@
  */
 
 import { PointsOverviewVo, SignInResultVo } from '../network/vo/PointsVo'
+import { resString } from '../utils/ResourceString'
 
 /** 连签奖励周期（对齐后端 points.sign-in.streak-bonus-step 默认值 7：连签第 7/14/21…天发奖励） */
 export const STREAK_BONUS_STEP: number = 7
@@ -128,15 +129,15 @@ export function formatLedgerTime(iso: string | null): string | null {
  */
 export function pointsReasonLabel(reason: string | null, reasonDesc: string | null): string {
   if (reason === 'SIGN_IN') {
-    return '每日签到'
+    return resString('points_reason_sign_in')
   }
   if (reason === 'STREAK_BONUS') {
-    return '连签奖励'
+    return resString('points_reason_streak_bonus')
   }
   if (reasonDesc !== null && reasonDesc.length > 0) {
     return reasonDesc
   }
-  return '积分变动'
+  return resString('points_reason_unknown')
 }
 
 /** 流水 delta 展示文案：正数带 + 号（+5），负数后端自带符号（-3），0 展示 0 */

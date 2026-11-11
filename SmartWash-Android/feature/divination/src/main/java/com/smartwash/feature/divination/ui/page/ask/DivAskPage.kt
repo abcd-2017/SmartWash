@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,8 +71,10 @@ fun DivAskPage(
     viewModel: DivAskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    var showLinesDialog by remember { mutableStateOf(false) }
-    var showNumbersDialog by remember { mutableStateOf(false) }
+    // 弹窗开关与内部输入状态均可持久化（audit-22 #13）：旋转/进程重建后弹窗不消失、
+    // 已选爻值与已报数字不丢（对照 DivCastPage 掷爻状态的 rememberSaveable 做法）
+    var showLinesDialog by rememberSaveable { mutableStateOf(false) }
+    var showNumbersDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(methodId) { viewModel.initMethod(methodId) }
 
@@ -100,7 +103,8 @@ fun DivAskPage(
                     value = state.question,
                     onValueChange = viewModel::onQuestionChange,
                     placeholder = {
-                        Text(stringResource(R.string.div_question_example), fontSize = 14.sp, color = c.textSecondary)
+                        // 占位符字号与正文一致（规范 §3.7）
+                        Text(stringResource(R.string.div_question_example), fontSize = 16.sp, color = c.textSecondary)
                     },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
@@ -112,7 +116,9 @@ fun DivAskPage(
                         unfocusedTextColor = c.textPrimary,
                     ),
                     minLines = 2,
-                    textStyle = divSerif(14.sp, FontWeight.Normal, 0.sp).copy(lineHeight = 20.sp),
+                    // 输入正文 16sp（规范 §3.7 输入控件标准，禁用 14sp 及以下；audit-22 #3，
+                    // 与同页 NumberField 的 16sp 口径对齐），衬线保留，行高随 bodyLarge 16/24
+                    textStyle = divSerif(16.sp, FontWeight.Normal, 0.sp).copy(lineHeight = 24.sp),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -206,11 +212,17 @@ fun DivAskPage(
             }
         }
 
-        // 主行动（画板：方式卡到按钮 24，按钮到脚注 16）
+        // 主行动（画板：方式卡到按钮 24，按钮到脚注 16 = Spacer 8 + 脚注自带 paddingTop 8）
         Spacer(Modifier.height(24.dp))
         DivGoldButton(
-            text = stringResource(R.string.div_ask_go),
-            enabled = state.question.isNotBlank(),
+            // 提交中禁用 + loading 指示（规范 §3.1 异步提交；audit-22 #4，
+            // 防止梅花/奇门/六壬提交期间重复入库）
+            text = if (state.saving) {
+                stringResource(R.string.div_ask_casting)
+            } else {
+                stringResource(R.string.div_ask_go)
+            },
+            enabled = state.question.isNotBlank() && !state.saving,
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .fillMaxWidth(),
@@ -240,7 +252,7 @@ fun DivAskPage(
             },
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         DivFooterNote(text = stringResource(R.string.div_ask_safety_hint))
 
         // 手动输入爻值弹窗（单拆重交，自初爻到上爻）
@@ -270,7 +282,7 @@ fun DivAskPage(
         DivPageHeader(
             title = stringResource(R.string.div_ask_title),
             onBack = { navController.popBackStack() },
-            tail = divMethodTail(state.method),
+            tail = stringResource(divMethodTailRes(state.method)),
         )
 
         // 高风险分流页与问事表单之间的整页替换：Crossfade 过渡，避免硬切
@@ -294,11 +306,12 @@ fun DivAskPage(
     }
 }
 
-private fun divMethodTail(method: DivMethod): String = when (method) {
-    DivMethod.LIU_YAO -> "六爻 · 摇卦"
-    DivMethod.MEI_HUA -> "梅花 · 心易"
-    DivMethod.QI_MEN -> "奇门 · 起局"
-    DivMethod.LIU_REN -> "六壬 · 起课"
+/** 四术尾注（audit-22 #7：用户可见文案一律 strings.xml） */
+private fun divMethodTailRes(method: DivMethod): Int = when (method) {
+    DivMethod.LIU_YAO -> R.string.div_method_tail_liuyao
+    DivMethod.MEI_HUA -> R.string.div_method_tail_meihua
+    DivMethod.QI_MEN -> R.string.div_method_tail_qimen
+    DivMethod.LIU_REN -> R.string.div_method_tail_liuren
 }
 
 /** 方式卡行分隔（画板：1px 12% 金发丝线，左右缩进 16） */
@@ -357,21 +370,44 @@ private fun SafetyBlockingPage(onBack: () -> Unit, onClear: () -> Unit) {
 @Composable
 private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> Unit) {
     val c = DivColors.current
-    val positionNames = listOf("初爻", "二爻", "三爻", "四爻", "五爻", "上爻")
-    val options = remember {
-        listOf(
-            1 to "单 · 阳",
-            2 to "拆 · 阴",
-            3 to "重 ○ 动",
-            4 to "交 × 动",
-        )
-    }
-    var lines by remember { mutableStateOf(listOf(1, 1, 1, 1, 1, 1)) }
+    // 爻位名与选项文案迁 strings.xml（audit-22 #7）
+    val positionNames = listOf(
+        stringResource(R.string.div_yao_position_1),
+        stringResource(R.string.div_yao_position_2),
+        stringResource(R.string.div_yao_position_3),
+        stringResource(R.string.div_yao_position_4),
+        stringResource(R.string.div_yao_position_5),
+        stringResource(R.string.div_yao_position_6),
+    )
+    val options = listOf(
+        1 to stringResource(R.string.div_manual_option_yang),
+        2 to stringResource(R.string.div_manual_option_yin),
+        3 to stringResource(R.string.div_manual_option_lao_yang),
+        4 to stringResource(R.string.div_manual_option_lao_yin),
+    )
+    // 已选爻值可持久化（audit-22 #13）：旋转/进程重建不丢
+    var lines by rememberSaveable { mutableStateOf(listOf(1, 1, 1, 1, 1, 1)) }
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        // audit-22 #1：选项热区提至 48dp 后每行内容 ≈ 爻位名 32 + 4×48 + 间距 24 = 248dp，
+        // 平台默认 Dialog 宽（≈280，含弹窗内边距 40）必溢出——自控窗口宽（水平 16 边距），
+        // 选项行内 weight 均分，320dp 窄屏每选项仍精确 ≥48dp
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
         // 与公共弹窗同一条入场动效（scale 0.92→1 + alpha，reduced motion 降级纯淡入）
-        DivCard(modifier = Modifier.dialogEnterMotion(), background = c.surface2) {
-            Column(Modifier.padding(20.dp)) {
+        DivCard(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .dialogEnterMotion(),
+            background = c.surface2,
+        ) {
+            // 48dp 选项 × 6 行总高约 +144dp，超出弹窗可视高度：内容区纵向滚动（audit-22 #1）
+            Column(
+                Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Text(
                     text = stringResource(R.string.div_manual_title),
                     style = divSerif(15.sp, FontWeight.SemiBold, 3.sp),
@@ -385,12 +421,20 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(name, fontSize = 12.sp, color = c.textSecondary, modifier = Modifier.width(40.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // 爻位名两字 12sp 宽 32 足够；320 窄屏下为右侧 4×48dp 选项让宽
+                        Text(name, fontSize = 12.sp, color = c.textSecondary, modifier = Modifier.width(32.dp))
+                        Row(
+                            Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             options.forEach { (code, label) ->
                                 val selected = lines[index] == code
                                 Box(
                                     modifier = Modifier
+                                        .weight(1f)
+                                        // 触控热区 ≥48dp（规范 §2.3 / DESIGN-SPEC §3 红线；audit-22 #1：
+                                        // 原 10sp + 8/4 padding 仅 ≈21dp，六爻手动装卦核心输入件误触率高）
+                                        .heightIn(min = 48.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (selected) c.gold14 else Color.Transparent)
                                         .border(
@@ -404,9 +448,14 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
                                             },
                                             debounce = false,
                                         )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(label, fontSize = 10.sp, color = if (selected) c.gold else c.textSecondary)
+                                    // 选中字色用文字级 goldText（audit-22 #2：原图形级 c.gold 压 15% 金底
+                                    // 宣纸侧 3.26:1 不达标；goldText 宣纸墨 12.2:1 / 玄墨金 5.26:1 双达标，
+                                    // 选中底维持 14% 金底不动——不复刻已裁定的「实底金+墨字 3.75:1」组合）；
+                                    // 字号 10→12sp 为 v0.4 字阶最小档（无 10sp 档）
+                                    Text(label, fontSize = 12.sp, color = if (selected) c.goldText else c.textSecondary)
                                 }
                             }
                         }
@@ -427,8 +476,9 @@ private fun ManualLinesDialog(onConfirm: (List<Int>) -> Unit, onDismiss: () -> U
 @Composable
 private fun NumbersDialog(onConfirm: (Int, Int) -> Unit, onDismiss: () -> Unit) {
     val c = DivColors.current
-    var first by remember { mutableStateOf("") }
-    var second by remember { mutableStateOf("") }
+    // 已报数字可持久化（audit-22 #13）：旋转/进程重建不丢
+    var first by rememberSaveable { mutableStateOf("") }
+    var second by rememberSaveable { mutableStateOf("") }
     val valid = first.toIntOrNull() in 1..999 && second.toIntOrNull() in 1..999
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {

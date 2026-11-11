@@ -19,13 +19,15 @@ import { webview } from '@kit.ArkWeb'
 import { common, Want } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
 import { RouteNames } from '../constant/RouteNames'
-import { DesignColor, DesignFontSize } from '../constant/DesignSystem'
+import { DesignFontSize } from '../constant/DesignSystem'
 import { AppButton, AppButtonVariant, EmptyState, PageHeader } from '../view/common/AppComponents'
 import { getObjectParam, pathStack } from '../utils/PathStackUtil'
 import { logger } from '../utils/Logger'
 import { safeBottomVp, safeTopVp } from '../utils/SafeArea'
 import BuildProfile from 'entry/BuildProfile'
 import { ServerConfig } from '../config/ServerConfig'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /** WebView 页路由入参（对齐安卓 ShellRoute.WEB_VIEW 的 url/title/chrome 三个 query 参数） */
 export class WebPageParam {
@@ -38,15 +40,15 @@ export class WebPageParam {
 }
 
 // 标题兜底文案（对齐安卓 webview_default_title「详情页」）
-const WEB_DEFAULT_TITLE: string = '详情页'
+function WEB_DEFAULT_TITLE(): string { return resString('webview_default_title') }
 
 // 非法链接错误态文案（对齐安卓 webview_error_url_unsupported）
-const WEB_ERROR_URL_UNSUPPORTED: string = '仅支持打开网页链接'
+function WEB_ERROR_URL_UNSUPPORTED(): string { return resString('webview_error_url_unsupported') }
 
 // 加载失败错误态文案（对齐安卓 webview_error_load）
-const WEB_ERROR_LOAD: string = '页面加载失败，请检查网络后重试'
+function WEB_ERROR_LOAD(): string { return resString('webview_error_load') }
 // 加载失败重试按钮文案（对齐安卓 webview_action_retry）
-const WEB_ACTION_RETRY: string = '重试'
+function WEB_ACTION_RETRY(): string { return resString('retry') }
 
 // ========== 游戏 H5 桥（对齐安卓 GameThemeBridge + GameChrome，问题16） ==========
 
@@ -183,7 +185,7 @@ export function WebPageBuilder() {
 @Component
 struct WebPage {
   @State url: string = ''
-  @State title: string = WEB_DEFAULT_TITLE
+  @State title: string = WEB_DEFAULT_TITLE()
   // 0-100 真实加载进度（onProgressChange 回调驱动；1-99 显示细进度条）
   @State progress: number = 0
   // 主框架加载失败标记（仅主框架错误置位，子资源失败不打断页面）
@@ -207,7 +209,7 @@ struct WebPage {
     const param = getObjectParam<WebPageParam>(RouteNames.WEB_PAGE)
     if (param !== null) {
       this.url = param.url
-      this.title = param.title.length > 0 ? param.title : WEB_DEFAULT_TITLE
+      this.title = param.title.length > 0 ? param.title : WEB_DEFAULT_TITLE()
       // chrome 初值经路由参数（避免先闪一帧原生标题栏再隐藏，对齐安卓）
       this.chromeMode = normalizeChrome(param.chrome)
     }
@@ -412,11 +414,11 @@ struct WebPage {
                 Row()
                   .width('100%')
                   .height(2)
-                  .backgroundColor(DesignColor.BACKGROUND)
+                  .backgroundColor(resColor('BACKGROUND'))
                 Row()
                   .width(`${this.progress}%`)
                   .height(2)
-                  .backgroundColor(DesignColor.PRIMARY)
+                  .backgroundColor(resColor('PRIMARY'))
               }
               .width('100%')
               .height(2)
@@ -426,10 +428,10 @@ struct WebPage {
             // 加载失败错误态：说明发生了什么 + 给重试（规范 §3.6）
             if (this.loadError) {
               Column() {
-                EmptyState({ message: WEB_ERROR_LOAD }) {
+                EmptyState({ message: WEB_ERROR_LOAD() }) {
                   AppButton({
                     small: true,
-                    text: WEB_ACTION_RETRY,
+                    text: WEB_ACTION_RETRY(),
                     variant: AppButtonVariant.TEXT,
                     click: () => {
                       this.retryLoad()
@@ -439,7 +441,7 @@ struct WebPage {
               }
               .width('100%')
               .height('100%')
-              .backgroundColor(DesignColor.BACKGROUND)
+              .backgroundColor(resColor('BACKGROUND'))
               .justifyContent(FlexAlign.Center)
             }
           }
@@ -448,7 +450,7 @@ struct WebPage {
         } else {
           // 非法链接错误态：说明发生了什么（规范 §3.6）
           Column() {
-            EmptyState({ message: WEB_ERROR_URL_UNSUPPORTED })
+            EmptyState({ message: WEB_ERROR_URL_UNSUPPORTED() })
           }
           .width('100%')
           .layoutWeight(1)
@@ -462,7 +464,7 @@ struct WebPage {
         top: this.shouldShowHeader() ? safeTopVp() : 0,
         bottom: this.shouldShowHeader() ? safeBottomVp() : 0
       })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
     }
     .hideTitleBar(true)
     .onBackPressed(() => {

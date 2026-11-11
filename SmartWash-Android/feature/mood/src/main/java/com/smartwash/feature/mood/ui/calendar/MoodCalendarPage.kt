@@ -38,6 +38,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -159,8 +161,9 @@ private fun MoodCalendarContent(
             )
             Text(
                 text = stringResource(R.string.mood_calendar_day_empty_hint),
+                // 功能性图例说明（审查报告 #2②）：textTertiary 仅限禁用/装饰（§10 红线）
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.colorScheme.textTertiary,
+                color = AppColors.colorScheme.textSecondary,
                 modifier = Modifier.padding(top = AppDimens.spaceXxs),
             )
         }
@@ -184,7 +187,8 @@ private fun MoodWeekHeader() {
             Text(
                 text = stringResource(res),
                 style = MaterialTheme.typography.labelMedium,
-                color = AppColors.colorScheme.textTertiary,
+                // 功能性列标签（审查报告 #2③）：textTertiary 仅限禁用/装饰（§10 红线）
+                color = AppColors.colorScheme.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f),
             )
@@ -193,12 +197,17 @@ private fun MoodWeekHeader() {
     Spacer(modifier = Modifier.height(AppDimens.spaceXs))
 }
 
-/** 单元格高（网格高度 = 行数 × 本值；宽度由屏宽 7 等分） */
-private val CELL_HEIGHT = 44.dp
+/**
+ * 单元格高（网格高度 = 行数 × 本值；宽度由屏宽 7 等分）。
+ * 48dp（审查报告 #4③）：44dp 跌破 DESIGN-SPEC §3 触控红线，打卡主路径格高提档。
+ */
+private val CELL_HEIGHT = 48.dp
 
 /**
  * Canvas 7×N 热图网格：每格圆角方块着色 + 日期数字，今日描边；
+ * 有记录格带静态细描边（可点 affordance，审查报告 #5）与按下高亮描边；
  * 手势按点击坐标反算格子（行/列 → 日），命中记录才回调（无记录灰格不可点）。
+ * 网格级读屏描述挂 Canvas（审查报告 #7）。
  */
 @Composable
 private fun MoodCalendarGrid(
@@ -213,10 +222,19 @@ private fun MoodCalendarGrid(
     val futureColor = AppColors.colorScheme.groupBackground
     val todayStroke = AppColors.colorScheme.textPrimary
     val dayText = AppColors.colorScheme.textSecondary
-    val futureText = AppColors.colorScheme.textTertiary
+    // 未来格数字（审查报告 #9）：textTertiary on groupBackground 浅色仅 1.86:1，改 textSecondary
+    val futureText = AppColors.colorScheme.textSecondary
     val cellInk = AppColors.colorScheme.textPrimary
     // 彩色格上的"白字"实际取 surface（浅色=白、深色=深卡底色），保证深浅主题都有对比
     val cellOnColor = MaterialTheme.colorScheme.surface
+    // 可点击格静态 affordance 描边（审查报告 #5）：装饰性用途，§10 允许 textTertiary 用于装饰
+    val clickableStroke = AppColors.colorScheme.textTertiary
+
+    // 按下的有记录格（0-based 日索引，null = 无按下）；draw 阶段读快照状态自动触发重绘
+    var pressedIndex by remember { mutableStateOf<Int?>(null) }
+
+    // 读屏语义（审查报告 #7）：Canvas 手势网格对读屏不可达，先给网格级描述兜底
+    val gridDesc = stringResource(R.string.mood_calendar_grid_desc_format, ym.monthValue, records.size)
 
     val offset = ym.atDay(1).dayOfWeek.value - 1 // 周一 = 0
     val daysInMonth = ym.lengthOfMonth()
@@ -230,15 +248,30 @@ private fun MoodCalendarGrid(
         Canvas(
             modifier = Modifier
                 .size(width = maxWidth, height = CELL_HEIGHT * rows)
+                .semantics { contentDescription = gridDesc }
                 .pointerInput(ym, records) {
-                    detectTapGestures { pos ->
-                        val col = (pos.x / cellWidthPx).toInt().coerceIn(0, 6)
-                        val row = (pos.y / cellHeightPx).toInt()
-                        val dayIndex = row * 7 + col - offset
-                        if (dayIndex in 0 until daysInMonth) {
-                            records[ym.atDay(dayIndex + 1).toString()]?.let(onDayClick)
-                        }
-                    }
+                    detectTapGestures(
+                        // 按下即高亮命中格（审查报告 #5：月历格此前无任何按压反馈）。
+                        // 静态状态描边非动画，无缩放/位移动画需要 reduced motion 降级（§8）；
+                        // finally 复位兜底 pointerInput 重启取消协程的残留高亮
+                        onPress = { pos ->
+                            dayIndexAt(pos, cellWidthPx, cellHeightPx, offset, daysInMonth)?.let { dayIndex ->
+                                if (records.containsKey(ym.atDay(dayIndex + 1).toString())) {
+                                    pressedIndex = dayIndex
+                                    try {
+                                        tryAwaitRelease()
+                                    } finally {
+                                        pressedIndex = null
+                                    }
+                                }
+                            }
+                        },
+                        onTap = { pos ->
+                            dayIndexAt(pos, cellWidthPx, cellHeightPx, offset, daysInMonth)?.let { dayIndex ->
+                                records[ym.atDay(dayIndex + 1).toString()]?.let(onDayClick)
+                            }
+                        },
+                    )
                 },
         ) {
             val gap = AppDimens.spaceXxs.toPx()
@@ -258,6 +291,26 @@ private fun MoodCalendarGrid(
                     else -> emptyColor
                 }
                 drawRoundRect(color = fill, topLeft = topLeft, size = boxSize, cornerRadius = corner)
+                if (record != null) {
+                    // 可点击格静态视觉差异（审查报告 #5）：细描边区分「可点开详情」与无记录灰格
+                    drawRoundRect(
+                        color = clickableStroke,
+                        topLeft = topLeft,
+                        size = boxSize,
+                        cornerRadius = corner,
+                        style = Stroke(width = 1.dp.toPx()),
+                    )
+                    if (index == pressedIndex) {
+                        // 按下高亮描边（真实按压状态触发，非伪造）
+                        drawRoundRect(
+                            color = todayStroke,
+                            topLeft = topLeft,
+                            size = boxSize,
+                            cornerRadius = corner,
+                            style = Stroke(width = 2.dp.toPx()),
+                        )
+                    }
+                }
                 if (date == today) {
                     drawRoundRect(
                         color = todayStroke,
@@ -267,9 +320,15 @@ private fun MoodCalendarGrid(
                         style = Stroke(width = 1.5.dp.toPx()),
                     )
                 }
-                // 日期数字：亮底配墨字、暗底配白字（按亮度自适应；历史快照色不可控下取最优可读）
+                // 日期数字（审查报告 #1）：弃用 luminance>0.4f 单阈值——单阈值在「亮底配墨字」
+                // 与「暗底配白字」间顾此失彼（浅色 3/5 色级、深色 2/5 色级跌破 4.5:1），改对
+                // 墨字与卡底色两候选按 WCAG 实算对比度取高者，双主题全色级达标
                 val numberColor = when {
-                    record != null -> if (fill.luminance() > 0.4f) cellInk else cellOnColor
+                    record != null -> if (contrastRatio(cellInk, fill) >= contrastRatio(cellOnColor, fill)) {
+                        cellInk
+                    } else {
+                        cellOnColor
+                    }
                     date.isAfter(today) -> futureText
                     else -> dayText
                 }
@@ -294,6 +353,30 @@ private fun MoodCalendarGrid(
             }
         }
     }
+}
+
+/** 点击坐标 → 日索引（0-based within month）；越界/空白格返回 null（手势命中判定统一入口） */
+private fun dayIndexAt(
+    pos: Offset,
+    cellWidthPx: Float,
+    cellHeightPx: Float,
+    offset: Int,
+    daysInMonth: Int,
+): Int? {
+    val col = (pos.x / cellWidthPx).toInt().coerceIn(0, 6)
+    val row = (pos.y / cellHeightPx).toInt()
+    val dayIndex = row * 7 + col - offset
+    return dayIndex.takeIf { it in 0 until daysInMonth }
+}
+
+/**
+ * WCAG 对比度（审查报告 #1 的实算口径）：正文判色以 ≥4.5:1 为红线，
+ * 对两个候选色（墨字 textPrimary / 卡底色 surface）取对比度高者。
+ */
+private fun contrastRatio(a: Color, b: Color): Float {
+    val la = a.luminance() + 0.05f
+    val lb = b.luminance() + 0.05f
+    return if (la > lb) la / lb else lb / la
 }
 
 /**
@@ -359,8 +442,9 @@ private fun MoodDayDetailDialog(
                     text = day.word?.takeIf { it.isNotBlank() }
                         ?: stringResource(R.string.mood_day_dialog_word_empty),
                     style = MaterialTheme.typography.titleMedium,
+                    // 空词占位（审查报告 #10）：18sp 大字号无装饰豁免，textTertiary 改 textSecondary
                     color = if (day.word.isNullOrBlank()) {
-                        AppColors.colorScheme.textTertiary
+                        AppColors.colorScheme.textSecondary
                     } else {
                         AppColors.colorScheme.textPrimary
                     },

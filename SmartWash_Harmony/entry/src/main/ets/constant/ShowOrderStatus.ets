@@ -3,6 +3,7 @@
  * 差异分析 02 §10：删除原 Enum+Map 双重定义冗余，页签文案统一由
  * getShowOrderStatusDescription 提供（对应安卓 descriptionRes 单一事实来源）。
  */
+import { resString } from '../utils/ResourceString'
 export enum ShowOrderStatusEnum {
   ALL_ORDER = "001",
   PENDING_PAYMENT = "0",
@@ -15,15 +16,15 @@ export enum ShowOrderStatusEnum {
 export function getShowOrderStatusDescription(status: string | null | undefined): string {
   switch (status) {
     case ShowOrderStatusEnum.ALL_ORDER:
-      return "全部订单"
+      return resString('order_status_all')
     case ShowOrderStatusEnum.PENDING_PAYMENT:
-      return "待支付"
+      return resString('pending_payment')
     case ShowOrderStatusEnum.PENDING_SHIPMENT:
-      return "待寄件"
+      return resString('pending_shipment')
     case ShowOrderStatusEnum.WASHING:
-      return "清洗中"
+      return resString('step_washing')
     case ShowOrderStatusEnum.READY_FOR_PICKUP:
-      return "待取件"
+      return resString('step_pickup')
     default:
       return status ?? ""
   }

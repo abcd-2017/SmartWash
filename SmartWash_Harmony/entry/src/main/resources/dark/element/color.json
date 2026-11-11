@@ -2,7 +2,295 @@
   "color": [
     {
       "name": "start_window_background",
-      "value": "#000000"
+      "value": "#FF141614"
+    },
+    {
+      "name": "PRIMARY",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "ON_PRIMARY",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "PRIMARY_CONTAINER",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "ON_PRIMARY_CONTAINER",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "PRIMARY_LIGHT",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "PRIMARY_SOFT",
+      "value": "#FF1D3229"
+    },
+    {
+      "name": "ON_PRIMARY_SOFT",
+      "value": "#FFB9E8CF"
+    },
+    {
+      "name": "PRIMARY_DARK",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "SECONDARY",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "ON_SECONDARY",
+      "value": "#FF141614"
+    },
+    {
+      "name": "SECONDARY_CONTAINER",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "ON_SECONDARY_CONTAINER",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "TERTIARY",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "ON_TERTIARY",
+      "value": "#FF141614"
+    },
+    {
+      "name": "TERTIARY_CONTAINER",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "ON_TERTIARY_CONTAINER",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "BACKGROUND",
+      "value": "#FF141614"
+    },
+    {
+      "name": "ON_BACKGROUND",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "SURFACE",
+      "value": "#FF1D201E"
+    },
+    {
+      "name": "ON_SURFACE",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "SURFACE_VARIANT",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "ON_SURFACE_VARIANT",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "GROUP_BACKGROUND",
+      "value": "#FF1A1E1B"
+    },
+    {
+      "name": "HAIRLINE",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "OUTLINE",
+      "value": "#FF2C312D"
+    },
+    {
+      "name": "OUTLINE_VARIANT",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "ERROR",
+      "value": "#FFE795A5"
+    },
+    {
+      "name": "ON_ERROR",
+      "value": "#FF141614"
+    },
+    {
+      "name": "ERROR_CONTAINER",
+      "value": "#FF3A1F28"
+    },
+    {
+      "name": "ON_ERROR_CONTAINER",
+      "value": "#FFE795A5"
+    },
+    {
+      "name": "WARNING",
+      "value": "#FFE5AC5C"
+    },
+    {
+      "name": "ON_WARNING",
+      "value": "#FF141614"
+    },
+    {
+      "name": "WARNING_CONTAINER",
+      "value": "#FF332917"
+    },
+    {
+      "name": "ON_WARNING_CONTAINER",
+      "value": "#FFECB36A"
+    },
+    {
+      "name": "ONGOING",
+      "value": "#FFE5AC5C"
+    },
+    {
+      "name": "ONGOING_INK",
+      "value": "#FFECB36A"
+    },
+    {
+      "name": "DANGER",
+      "value": "#FFE795A5"
+    },
+    {
+      "name": "DANGER_INK",
+      "value": "#FFE795A5"
+    },
+    {
+      "name": "SUCCESS",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "ON_SUCCESS",
+      "value": "#FF141614"
+    },
+    {
+      "name": "SUCCESS_CONTAINER",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "ON_SUCCESS_CONTAINER",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "TEXT_PRIMARY",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "TEXT_SECONDARY",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "TEXT_TERTIARY",
+      "value": "#FF7E837D"
+    },
+    {
+      "name": "TEXT_GREEN",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "TEXT_GREEN_ON_TINT",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "DIVIDER",
+      "value": "#FF262A27"
+    },
+    {
+      "name": "WATER",
+      "value": "#FF5FAEE0"
+    },
+    {
+      "name": "WATER_SOFT",
+      "value": "#FF1C2F3B"
+    },
+    {
+      "name": "ICON_CONTAINER_GREEN",
+      "value": "#FF1D3229"
+    },
+    {
+      "name": "ICON_CONTAINER_BLUE",
+      "value": "#FF1F2637"
+    },
+    {
+      "name": "ICON_CONTAINER_ORANGE",
+      "value": "#FF332917"
+    },
+    {
+      "name": "ICON_CONTAINER_PINK",
+      "value": "#FF341E24"
+    },
+    {
+      "name": "ICON_CONTAINER_TEAL",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "ICON_CONTAINER_PURPLE",
+      "value": "#FF272038"
+    },
+    {
+      "name": "ICON_FOREGROUND_GREEN",
+      "value": "#FF5BC894"
+    },
+    {
+      "name": "ICON_FOREGROUND_BLUE",
+      "value": "#FF85A3E8"
+    },
+    {
+      "name": "ICON_FOREGROUND_ORANGE",
+      "value": "#FFE5AC5C"
+    },
+    {
+      "name": "ICON_FOREGROUND_PINK",
+      "value": "#FFE58A9A"
+    },
+    {
+      "name": "ICON_FOREGROUND_TEAL",
+      "value": "#FF57C9A4"
+    },
+    {
+      "name": "ICON_FOREGROUND_PURPLE",
+      "value": "#FFB49CE8"
+    },
+    {
+      "name": "AUTH_GRADIENT_TOP",
+      "value": "#FF1D3229"
+    },
+    {
+      "name": "AUTH_GRADIENT_MID",
+      "value": "#FF182A22"
+    },
+    {
+      "name": "AUTH_GRADIENT_BOTTOM",
+      "value": "#FF12211B"
+    },
+    {
+      "name": "GLASS_BG_SUBTLE",
+      "value": "#2EFFFFFF"
+    },
+    {
+      "name": "GLASS_BG",
+      "value": "#40FFFFFF"
+    },
+    {
+      "name": "GLASS_BORDER_SUBTLE",
+      "value": "#47FFFFFF"
+    },
+    {
+      "name": "GLASS_BORDER",
+      "value": "#52FFFFFF"
+    },
+    {
+      "name": "GLASS_INPUT",
+      "value": "#66FFFFFF"
+    },
+    {
+      "name": "SHADOW_COLOR_CARD",
+      "value": "#47000000"
+    },
+    {
+      "name": "SHADOW_COLOR_FLOAT",
+      "value": "#1A14281E"
     }
   ]
 }

@@ -31,7 +31,8 @@ import {
   DivSeal,
   DivSectionTitle,
   DivSerifText,
-  DivText
+  DivText,
+  DIV_PAGE_PADDING
 } from '../../components/DivComponents'
 import { DivinationScreen } from '../../DivinationScreen'
 import { DesignDimens, DesignElevation, MotionTiming } from '../../../../../constant/DesignSystem'
@@ -40,6 +41,7 @@ import { pathStack, getStringParam } from '../../../../../utils/PathStackUtil'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { logger } from '../../../../../utils/Logger'
 import { DivChartParam } from '../../DivChartParam'
+import { resString } from '../../../../../utils/ResourceString'
 
 /** 六爻起卦方式 */
 const LIU_YAO_MODE_SHAKE: string = 'shake'
@@ -54,19 +56,19 @@ const MEI_HUA_MODE_NUMBERS: string = 'numbers'
  * 医疗 / 生死 / 胎儿性别 / 失踪 —— 直接分流现实求助，不排盘不解读。
  */
 const HIGH_RISK_KEYWORDS: string[] = [
-  '病', '癌', '瘤', '医', '药', '手术', '诊断', '抑郁', '怀孕', '妊',
-  '死', '自杀', '轻生', '寿命', '阳寿',
-  '胎儿', '性别', '男孩', '女孩',
-  '失踪', '走失', '寻人',
+  resString('div_ask_page_1'), resString('div_ask_page_2'), resString('div_ask_page_3'), resString('div_ask_page_4'), resString('div_ask_page_5'), resString('div_ask_page_6'), resString('div_ask_page_7'), resString('div_ask_page_8'), resString('div_ask_page_9'), resString('div_ask_page_10'),
+  resString('div_ask_page_11'), resString('div_ask_page_12'), resString('div_ask_page_13'), resString('div_ask_page_14'), resString('div_ask_page_15'),
+  resString('div_ask_page_16'), resString('div_ask_page_17'), resString('div_ask_page_18'), resString('div_ask_page_19'),
+  resString('div_ask_page_20'), resString('div_ask_page_21'), resString('div_ask_page_22'),
 ]
 
 /** 领域关键词自动预选映射（对齐安卓 DivAskViewModel.CATEGORY_KEYWORDS） */
 const CATEGORY_KEYWORDS: Array<[string, string[]]> = [
-  ['career', ['工作', '事业', 'offer', '面试', '升职', '跳槽', '岗位', '实习', '转正']],
-  ['wealth', ['财', '钱', '收入', '工资', '回款', '生意', '投资', '欠', '借款']],
-  ['love', ['感情', '恋', '婚', '表白', '对象', '心动', '分手', '复合']],
-  ['study', ['学', '考试', '考研', '绩点', '论文', '毕业', '保研', '四六级', '考证']],
-  ['travel', ['出行', '旅行', '搬家', '出差', '车票', '远行', '返校']],
+  ['career', [resString('div_ask_page_23'), resString('div_category_career'), 'offer', resString('div_ask_page_24'), resString('div_ask_page_25'), resString('div_ask_page_26'), resString('div_ask_page_27'), resString('div_ask_page_28'), resString('div_ask_page_29')]],
+  ['wealth', [resString('div_ask_page_30'), resString('div_ask_page_31'), resString('div_ask_page_32'), resString('div_ask_page_33'), resString('div_ask_page_34'), resString('div_ask_page_35'), resString('div_ask_page_36'), resString('div_ask_page_37'), resString('div_ask_page_38')]],
+  ['love', [resString('div_category_love'), resString('div_ask_page_39'), resString('div_ask_page_40'), resString('div_ask_page_41'), resString('div_ask_page_42'), resString('div_ask_page_43'), resString('div_ask_page_44'), resString('div_ask_page_45')]],
+  ['study', [resString('div_ask_page_46'), resString('div_ask_page_47'), resString('div_ask_page_48'), resString('div_ask_page_49'), resString('div_ask_page_50'), resString('div_ask_page_51'), resString('div_ask_page_52'), resString('div_ask_page_53'), resString('div_ask_page_54')]],
+  ['travel', [resString('div_category_travel'), resString('div_ask_page_55'), resString('div_ask_page_56'), resString('div_ask_page_57'), resString('div_ask_page_58'), resString('div_ask_page_59'), resString('div_ask_page_60')]],
 ]
 
 /** 所问领域 chips（对齐安卓 DivCategory.ALL） */
@@ -176,7 +178,7 @@ struct DivAskPage {
       this.saved([], DivMethod.QI_MEN.id, chart)
     } catch (err) {
       logger.error('divAskPage', '奇门起局失败', err instanceof Error ? err.message : '')
-      showToastSafety('起局失败，请稍后重试')
+      showToastSafety(resString('div_ask_page_61'))
     }
   }
 
@@ -193,7 +195,7 @@ struct DivAskPage {
       this.saved([], DivMethod.LIU_REN.id, chart)
     } catch (err) {
       // 六壬九宗门未实现宗门（伏吟/返吟/遥克等）抛异常，按 UI 口径提示「暂不支持」
-      const note = err instanceof Error && err.message.length > 0 ? err.message : '起课暂不支持，敬请期待'
+      const note = err instanceof Error && err.message.length > 0 ? err.message : resString('div_ask_page_62')
       logger.warn('divAskPage', `六壬起课受限 note=${note}`)
       showToastSafety(note)
     }
@@ -227,7 +229,7 @@ struct DivAskPage {
     } catch (err) {
       this.saving = false
       logger.error('divAskPage', '排盘入库失败', err instanceof Error ? err.message : '')
-      showToastSafety('起卦失败，请稍后重试')
+      showToastSafety(resString('div_ask_page_63'))
     }
   }
 
@@ -283,16 +285,16 @@ struct DivAskPage {
 
   private methodTail(): string {
     if (this.method === DivMethod.LIU_YAO.id) {
-      return '六爻 · 摇卦'
+      return resString('div_method_tail_liuyao')
     }
     if (this.method === DivMethod.MEI_HUA.id) {
-      return '梅花 · 心易'
+      return resString('div_method_tail_meihua')
     }
     if (this.method === DivMethod.QI_MEN.id) {
-      return '奇门 · 起局'
+      return resString('div_method_tail_qimen')
     }
     if (this.method === DivMethod.LIU_REN.id) {
-      return '六壬 · 起课'
+      return resString('div_method_tail_liuren')
     }
     return ''
   }
@@ -327,7 +329,8 @@ struct DivAskPage {
     Column() {
       Column().height(48)
 
-      DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 26 })
+      // 安全印章印文 22（对齐安卓 DivAskPage.kt:341，compare-15 #10）
+      DivSeal({ text: DivText.safetySeal, sealSize: 44, fontSize: 22 })
 
       Column().height(DesignDimens.SPACE_LG)
 
@@ -424,7 +427,9 @@ struct DivAskPage {
                   .width('100%')
                   .backgroundColor(Color.Transparent)
                   .caretColor(DivPalette.gold)
-                  .fontSize(14)
+                  // 输入正文 16/24（对齐安卓 DivAskPage.kt:121，compare-15 #2）
+                  .fontSize(16)
+                  .lineHeight(24)
                   .fontColor(DivPalette.textPrimary)
                   .fontFamily('serif')
                   .placeholderColor(DivPalette.textSecondary)
@@ -434,11 +439,12 @@ struct DivAskPage {
                   })
               }
               .width('100%')
-              .padding(DesignDimens.CARD_PADDING)
+              // 问题卡内边距 14（对齐安卓 DivAskPage.kt:94，compare-15 #13）
+              .padding(14)
             }
           }
           .width('100%')
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 2. 所问领域（自动识别 / 手动选择）
           DivSectionTitle({
@@ -458,7 +464,7 @@ struct DivAskPage {
                 })
               }, (item: [string, string]) => item[0])
             }
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
           }
           .scrollable(ScrollDirection.Horizontal)
           .scrollBar(BarState.Off)
@@ -530,20 +536,20 @@ struct DivAskPage {
         }
           }
           .width('100%')
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 卡片间距统一 CARD_SPACING（16）
           Column().height(DesignDimens.CARD_SPACING)
 
-          // 4. 开始
+          // 4. 开始（saving 防重 + 文案切「推演中…」，对齐安卓 DivAskPage.kt:220-225，compare-15 #4）
           DivGoldButton({
-            text: DivText.askGo,
-            isEnabled: this.question.trim().length > 0,
+            text: this.saving ? DivText.askCasting : DivText.askGo,
+            isEnabled: this.question.trim().length > 0 && !this.saving,
             onAction: () => {
               this.onGo()
             }
           })
-            .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+            .padding({ left: DIV_PAGE_PADDING, right: DIV_PAGE_PADDING })
 
           // 5. 页脚安全提示
           DivFooterNote({ text: DivText.askSafetyHint })
@@ -574,7 +580,8 @@ struct ManualOption {
     Column() {
       DivSerifText({
         text: this.label,
-        textSize: 10,
+        // 字号 10→12（v0.4 字阶最小档，对齐安卓 audit-22 #2）
+        textSize: 12,
         weight: 400,
         spacing: 0,
         // 选中项文字取语义金（goldText：宣纸侧墨色，对齐安卓 c.goldText 口径）
@@ -582,7 +589,9 @@ struct ManualOption {
         textAlign: TextAlign.Center
       })
     }
-    .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+    // 触控热区 ≥48dp（对齐安卓 audit-22 #1：原 ≈21dp 误触率高）
+    .constraintSize({ minWidth: 48, minHeight: 48 })
+    .padding({ left: 8, right: 8, top: 8, bottom: 8 })
     .borderRadius(10)
     .backgroundColor(this.selected ? DivPalette.gold14 : Color.Transparent)
     .border({
@@ -629,51 +638,65 @@ struct ManualLinesDialog {
     // 外层留白容器：customStyle 弹窗内容铺满屏幕宽度，卡片背景画在内层并留左右边距（问题16）
     Column() {
       Column() {
-        DivSerifText({
-          text: DivText.manualTitle,
-          textSize: 15,
-          weight: 600,
-          spacing: 3,
-          color: DivPalette.textPrimary
-        })
-          .margin({ bottom: 12 })
+        // 48dp 选项 × 6 行总高可超弹窗可视高度：内容区纵向滚动（对齐安卓 audit-22 #1）
+        Scroll() {
+          Column() {
+            DivSerifText({
+              text: DivText.manualTitle,
+              textSize: 15,
+              weight: 600,
+              spacing: 3,
+              color: DivPalette.textPrimary
+            })
+              .margin({ bottom: 12 })
 
-      ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
-        Row() {
-          DivSerifText({
-            text: DivText.lineNames[index],
-            textSize: 12,
-            weight: 400,
-            spacing: 0,
-            color: DivPalette.textSecondary
-          })
-            .width(40)
+            ForEach([0, 1, 2, 3, 4, 5], (index: number) => {
+              Row() {
+                DivSerifText({
+                  text: DivText.lineNames[index],
+                  textSize: 12,
+                  weight: 400,
+                  spacing: 0,
+                  color: DivPalette.textSecondary
+                })
+                  // 爻位名列宽 32（对齐安卓，给右侧 4×48dp 选项让宽）
+                  .width(32)
 
-          Row({ space: 6 }) {
-            ForEach([1, 2, 3, 4], (code: number) => {
-              ManualOption({
-                label: DivText.manualOptionLabels[code - 1],
-                selected: this.lines[index] === code,
-                onAction: () => {
-                  const next = this.lines.slice()
-                  next[index] = code
-                  this.lines = next
+                Row({ space: 8 }) {
+                  ForEach([1, 2, 3, 4], (code: number) => {
+                    ManualOption({
+                      label: DivText.manualOptionLabels[code - 1],
+                      selected: this.lines[index] === code,
+                      onAction: () => {
+                        const next = this.lines.slice()
+                        next[index] = code
+                        this.lines = next
+                      }
+                    })
+                      .layoutWeight(1)
+                  }, (code: number) => code.toString())
                 }
-              })
-            }, (code: number) => code.toString())
+                .layoutWeight(1)
+              }
+              .width('100%')
+              .padding({ top: 4, bottom: 4 })
+              .alignItems(VerticalAlign.Center)
+            }, (index: number) => index.toString())
+
+            Column().height(DesignDimens.SPACE_MD)
           }
+          .width('100%')
+          .alignItems(HorizontalAlign.Start)
         }
         .width('100%')
-        .padding({ top: 4, bottom: 4 })
-        .alignItems(VerticalAlign.Center)
-      }, (index: number) => index.toString())
+        .align(Alignment.TopStart)
+        .scrollBar(BarState.Off)
 
-      Column().height(DesignDimens.SPACE_MD)
-
+        // 装卦按钮置于滚动区外，常显可点（对齐安卓通栏主行动口径）
         DivGoldButton({
           text: DivText.manualConfirm,
-          btnHeight: 42,
-          fontSize: 13,
+          btnHeight: 52,
+          fontSize: 15,
           onAction: () => {
             this.onConfirm(this.lines)
             this.controller.close()
@@ -695,7 +718,8 @@ struct ManualLinesDialog {
     }
     .width('100%')
     .justifyContent(FlexAlign.Center)
-    .padding({ left: DesignDimens.SPACE_XL, right: DesignDimens.SPACE_XL })
+    // 弹窗左右留白 16（对齐安卓 DivAskPage.kt:401，compare-15 #3/#12）
+    .padding({ left: 16, right: 16 })
   }
 }
 
@@ -759,7 +783,8 @@ struct NumbersDialog {
 
         DivSerifText({
           text: DivText.numbersHint,
-          textSize: 11,
+          // 报数提示 11→12（对齐安卓 12sp，compare-15 #8）
+          textSize: 12,
           weight: 400,
           spacing: 0,
           color: DivPalette.textTertiary
@@ -825,8 +850,8 @@ struct NumbersDialog {
         DivGoldButton({
           text: DivText.manualConfirm,
           isEnabled: this.isValid(),
-          btnHeight: 42,
-          fontSize: 13,
+          btnHeight: 52,
+          fontSize: 15,
           onAction: () => {
             this.onConfirm(Number(this.first), Number(this.second))
             this.controller.close()

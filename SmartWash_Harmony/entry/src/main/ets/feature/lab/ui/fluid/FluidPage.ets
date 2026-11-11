@@ -13,23 +13,27 @@
  */
 
 import { image } from '@kit.ImageKit'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DarkModeStore } from '../../../../constant/DarkModeStore'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
-import { PageHeader } from '../../../../view/common/AppComponents'
+import { AppPillTabRow, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { FluidSimulator } from '../../core/FluidSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案（对齐安卓 strings_fluid.xml） */
 class FluidText {
-  static readonly title: string = '指尖流体'
-  static readonly hint: string = '手指划过，搅出彩色漩涡'
-  static readonly presetOxygen: string = '清氧水色'
-  static readonly presetFoam: string = '泡沫白'
-  static readonly presetSand: string = '落沙暖色'
-  static readonly reset: string = '清空重来'
-  static readonly play: string = '播放'
-  static readonly pause: string = '暂停'
+  static get title(): string { return resString('lab_toy_fluid') }
+  static get hint(): string { return resString('lab_toy_fluid_desc') }
+  static get presetOxygen(): string { return resString('lab_fluid_preset_oxygen') }
+  static get presetFoam(): string { return resString('lab_fluid_preset_foam') }
+  static get presetSand(): string { return resString('lab_fluid_preset_sand') }
+  static get reset(): string { return resString('lab_fluid_reset') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get pause(): string { return resString('lab_breath_pause') }
+  static get unsupported(): string { return resString('lab_fluid_unsupported') }
 }
 
 /** 首次进入顶部提示停留时长（ms） */
@@ -38,10 +42,13 @@ const HINT_STAY_MS: number = 3000
 /** 帧间隔（ms）：约 30fps */
 const FRAME_INTERVAL_MS: number = 33
 
-/** 画布底色：取 ON_PRIMARY_SOFT（对齐安卓 baseColorOf）。必须使用点即时求值——
- * 模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色 */
-function canvasBaseColor(): number {
-  return DesignColor.ON_PRIMARY_SOFT
+/**
+ * 画布底色（对齐安卓 baseColorOf）：浅色用深绿 ON_PRIMARY_SOFT #0B3625，
+ * 深色用次深表面 SURFACE_VARIANT #262A27——两套主题都保证足够暗，染料加法叠加后才显色。
+ * 必须使用点即时求值——模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色。
+ */
+function canvasBaseColor(isDark: boolean): number {
+  return isDark ? resColor('SURFACE_VARIANT') : resColor('ON_PRIMARY_SOFT')
 }
 
 /** ARGB 令牌色 → [r,g,b] 0..1（渲染层只认 0..1 通道） */
@@ -52,18 +59,35 @@ function rgbOf(color: number): number[] {
   return [red, green, blue]
 }
 
-/** 预设 → 调色板（全部取自清氧令牌，禁止写死色值；对齐安卓 paletteOf） */
-function paletteOf(presetIndex: number): number[][] {
+/**
+ * 预设 → 调色板（全部取自清氧令牌，禁止写死色值；对齐安卓 paletteOf）。
+ * 染料是画在深底（浅板 onPrimarySoft / 深板 surfaceVariant）上的加法叠加前景图形，
+ * 禁止用「容器浅底」令牌（深色下取深色容器值，对底仅 1.02-1.13:1 不可辨）：
+ * 容器系染料槽按 isDark 分流，深板改取配对前景/图形级亮色，逐槽对底核算 ≥1.5:1。
+ */
+function paletteOf(isDark: boolean, presetIndex: number): number[][] {
   switch (presetIndex) {
     case 1:
-      // 泡沫白：白 + 水色浅底 + 浅绿
-      return [rgbOf(DesignColor.SURFACE), rgbOf(DesignColor.WATER_SOFT), rgbOf(DesignColor.PRIMARY_SOFT)]
+      // 泡沫白：浅板白 + 水色浅底 + 浅绿；深板近白前景 + 水色 + 亮绿
+      return [
+        rgbOf(isDark ? resColor('TEXT_PRIMARY') : resColor('SURFACE')),
+        rgbOf(isDark ? resColor('WATER') : resColor('WATER_SOFT')),
+        rgbOf(isDark ? resColor('ON_PRIMARY_SOFT') : resColor('PRIMARY_SOFT')),
+      ]
     case 2:
-      // 落沙暖色：暖橙 + 朱红 + 暖沙浅底
-      return [rgbOf(DesignColor.ONGOING), rgbOf(DesignColor.DANGER), rgbOf(DesignColor.WARNING_CONTAINER)]
+      // 落沙暖色：暖橙 + 朱红 + 暖沙浅底；深板第三槽改亮暖橙前景
+      return [
+        rgbOf(resColor('ONGOING')),
+        rgbOf(resColor('DANGER')),
+        rgbOf(isDark ? resColor('ON_WARNING_CONTAINER') : resColor('WARNING_CONTAINER')),
+      ]
     default:
-      // 清氧水色：水蓝 + 自然绿 + 水色浅底
-      return [rgbOf(DesignColor.WATER), rgbOf(DesignColor.PRIMARY), rgbOf(DesignColor.WATER_SOFT)]
+      // 清氧水色：水蓝 + 自然绿 + 水色浅底；深板第三槽改亮绿前景
+      return [
+        rgbOf(resColor('WATER')),
+        rgbOf(resColor('PRIMARY')),
+        rgbOf(isDark ? resColor('ON_PRIMARY_SOFT') : resColor('WATER_SOFT')),
+      ]
   }
 }
 
@@ -91,13 +115,17 @@ export struct FluidPage {
   private dyePixels: Uint8Array = new Uint8Array(0)
   private pixelMap: image.PixelMap | null = null
   private pixelMapFailed: boolean = false
+  // 已注入调色板的主题/预设键（主题切换或预设切换时重建，避免每帧分配）
+  private paletteKey: string = ''
   // 触摸轨迹（位移换算注入速度）
   private lastX: number = 0
   private lastY: number = 0
 
   aboutToAppear(): void {
-    this.sim.setPalette(paletteOf(this.presetIndex))
-    this.sim.setBaseColor(rgbOf(canvasBaseColor()))
+    const isDark: boolean = DarkModeStore.getInstance().dark
+    this.sim.setPalette(paletteOf(isDark, this.presetIndex))
+    this.sim.setBaseColor(rgbOf(canvasBaseColor(isDark)))
+    this.paletteKey = `${isDark ? 'd' : 'l'}_${this.presetIndex}`
     if (!this.reduceMotion) {
       this.startLoop()
       this.hintTimerId = setTimeout(() => {
@@ -197,9 +225,15 @@ export struct FluidPage {
     if (this.canvasWidth <= 0 || this.canvasHeight <= 0) {
       return
     }
-    // 底色使用点即时求值：深浅色切换后（ThemeRefreshV2 重建 build）下一帧即取新令牌，
+    // 底色/调色板使用点即时求值：深浅色切换后（ThemeRefreshV2 重建 build）下一帧即取新令牌，
     // 同步回写 sim 内叠色基准，确保染料加法叠色与画布底色一致
-    const base: number = canvasBaseColor()
+    const isDark: boolean = DarkModeStore.getInstance().dark
+    const paletteKey: string = `${isDark ? 'd' : 'l'}_${this.presetIndex}`
+    if (paletteKey !== this.paletteKey) {
+      this.sim.setPalette(paletteOf(isDark, this.presetIndex))
+      this.paletteKey = paletteKey
+    }
+    const base: number = canvasBaseColor(isDark)
     this.sim.setBaseColor(rgbOf(base))
     this.ctx.fillStyle = base
     this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
@@ -254,7 +288,9 @@ export struct FluidPage {
 
   private selectPreset(index: number): void {
     this.presetIndex = index
-    this.sim.setPalette(paletteOf(index))
+    const isDark: boolean = DarkModeStore.getInstance().dark
+    this.sim.setPalette(paletteOf(isDark, index))
+    this.paletteKey = `${isDark ? 'd' : 'l'}_${index}`
     LabHaptic.selection()
   }
 
@@ -268,45 +304,20 @@ export struct FluidPage {
     LabHaptic.selection()
   }
 
-  /** 配色预设胶囊（3 套，语义档位对齐安卓 AppPillTabRow） */
-  @Builder
-  PresetTabs() {
-    Row({ space: DesignDimens.SPACE_SM }) {
-      ForEach([FluidText.presetOxygen, FluidText.presetFoam, FluidText.presetSand],
-        (label: string, index: number) => {
-          Text(label)
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontWeight(this.presetIndex === index ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
-            .fontColor(this.presetIndex === index ? DesignColor.ON_PRIMARY : DesignColor.TEXT_PRIMARY)
-            .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
-              top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
-            .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(this.presetIndex === index ? DesignColor.PRIMARY : DesignColor.SURFACE)
-            .borderWidth(1)
-            .borderColor(this.presetIndex === index ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-            .onClick(() => {
-              this.selectPreset(index)
-            })
-        }, (label: string) => label)
-    }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
-  }
-
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
         PageHeader({ title: FluidText.title })
 
-        Stack() {
+        Stack({ alignContent: Alignment.Center }) {
           Canvas(this.ctx)
             .width('100%')
             .height('100%')
-            .borderRadius(DesignDimens.CARD_RADIUS)
+            .borderRadius(DesignDimens.RADIUS_XL)
             .clip(true)
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
@@ -318,12 +329,13 @@ export struct FluidPage {
           if (this.hintVisible) {
             Column() {
               Text(FluidText.hint)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
-                .backgroundColor(DesignColor.SURFACE)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(resColor('TEXT_PRIMARY'))
+                .backgroundColor(resColor('SURFACE'))
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
+                .borderColor(resColor('OUTLINE'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             }
@@ -331,28 +343,48 @@ export struct FluidPage {
             .alignItems(HorizontalAlign.Center)
             .margin({ top: DesignDimens.SPACE_MD })
           }
+
+          // GL 失败态兜底：surface 衬底胶囊 + textPrimary 文案（对齐安卓 unsupported 路径）
+          if (this.pixelMapFailed) {
+            Text(FluidText.unsupported)
+              .fontSize(DesignFontSize.BODY_SMALL)
+              .fontColor(resColor('TEXT_PRIMARY'))
+              .backgroundColor(resColor('SURFACE'))
+              .borderRadius(DesignDimens.RADIUS_FULL)
+              .borderWidth(1)
+              .borderColor(resColor('OUTLINE'))
+              .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
+                top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+          }
         }
         .width('100%')
         .layoutWeight(1)
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-          top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_MD })
+          top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_XL })
 
         Column() {
-          this.PresetTabs()
+          // 配色预设：AppPillTabRow 自带页面左右边距与 48 热区（对齐安卓）
+          AppPillTabRow({
+            tabs: [FluidText.presetOxygen, FluidText.presetFoam, FluidText.presetSand],
+            selectedIndex: this.presetIndex,
+            tabSelected: (index: number) => {
+              this.selectPreset(index)
+            }
+          })
           Row() {
             // 清空重来：重铺静态种子
             Column() {
               Text(FluidText.reset)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
             }
             .layoutWeight(1)
             .justifyContent(FlexAlign.Center)
-            .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
+            .constraintSize({ minHeight: 48 })
             .borderRadius(DesignDimens.BUTTON_RADIUS)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderWidth(1)
-            .borderColor(DesignColor.OUTLINE)
+            .borderColor(resColor('OUTLINE'))
             .onClick(() => {
               this.sim.reset()
               this.drawFluid()
@@ -363,15 +395,15 @@ export struct FluidPage {
               Column() {
                 Text(this.playing ? FluidText.pause : FluidText.play)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
               }
               .layoutWeight(1)
               .justifyContent(FlexAlign.Center)
-              .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
+              .constraintSize({ minHeight: 48 })
               .borderRadius(DesignDimens.BUTTON_RADIUS)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
               .margin({ left: DesignDimens.SPACE_MD })
               .onClick(() => {
                 this.togglePlay()
@@ -379,16 +411,17 @@ export struct FluidPage {
             }
           }
           .width('100%')
+          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
+          .margin({ top: DesignDimens.SPACE_MD })
           .alignItems(VerticalAlign.Center)
         }
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-          top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_LG })
+        .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_LG })
       }
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

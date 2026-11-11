@@ -9,7 +9,7 @@
 
 import { common, Want } from '@kit.AbilityKit'
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BaseResponse } from '../../../network/BaseResponse'
 import { BizCode } from '../../../network/HttpUtil'
 import {
@@ -45,6 +45,7 @@ import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 输入框描边样式（width + color） */
 interface SubscriptionBorderStyle {
@@ -352,19 +353,19 @@ struct SubscriptionEditPage {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
   /** 输入框通用样式（surfaceVariant 底 + outline 描边 + 聚焦主色） */
   private inputBorder(focused: boolean): SubscriptionBorderStyle {
-    return { width: 1, color: focused ? DesignColor.PRIMARY : DesignColor.OUTLINE }
+    return { width: 1, color: focused ? resColor('PRIMARY') : resColor('OUTLINE') }
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -405,10 +406,10 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.name, placeholder: SubscriptionText.subscription_form_name_hint })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.nameFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.nameFocused = true
@@ -427,11 +428,13 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.amount, placeholder: SubscriptionText.subscription_form_amount_hint })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
+                  // 数字等宽（对齐安卓 fontFeatureSettings="tnum"，audit-14 同款）
+                  .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.NUMBER_DECIMAL)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.amountFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.amountFocused = true
@@ -471,11 +474,12 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.interval, placeholder: '1' })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
+                  .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.Number)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.intervalFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.intervalFocused = true
@@ -486,9 +490,12 @@ struct SubscriptionEditPage {
                   .onChange((value: string) => {
                     this.interval = value
                   })
+                // helper 是指导用户填写的可读正文：装饰档 textTertiary 仅 2.25:1 触 §10 红线，
+                // 12fp 弱化下限 textSecondary（4.90:1），字重对齐安卓 labelSmall 12/500（audit-14 #1）
                 Text(SubscriptionText.subscription_form_interval_helper)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_TERTIARY)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
 
                 Column().height(DesignDimens.SPACE_LG)
@@ -522,14 +529,20 @@ struct SubscriptionEditPage {
                     .layoutWeight(1)
 
                   if (this.trialEndDate.length > 0) {
-                    Text(SubscriptionText.subscription_form_trial_clear)
-                      .fontSize(DesignFontSize.BUTTON_TEXT)
-                      .fontWeight(DesignFontWeight.SEMI_BOLD)
-                      .fontColor(DesignColor.PRIMARY)
-                      .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 14, bottom: 14 })
-                      .onClick(() => {
-                        this.trialEndDate = ''
-                      })
+                    // 48×48 最小热区（DESIGN-SPEC §3，对齐安卓 heightIn/widthIn(min=48)），文字居中：
+                    // 外层容器扩热区，内层文字视觉不变；小号绿字走 TEXT_GREEN 深档（§10，audit-14）
+                    Column() {
+                      Text(SubscriptionText.subscription_form_trial_clear)
+                        .fontSize(DesignFontSize.BUTTON_TEXT)
+                        .fontWeight(DesignFontWeight.SEMI_BOLD)
+                        .fontColor(resColor('TEXT_GREEN'))
+                    }
+                    .constraintSize({ minWidth: 48, minHeight: 48 })
+                    .justifyContent(FlexAlign.Center)
+                    .alignItems(HorizontalAlign.Center)
+                    .onClick(() => {
+                      this.trialEndDate = ''
+                    })
                   }
                 }
                 .width('100%')
@@ -541,10 +554,11 @@ struct SubscriptionEditPage {
                   Column() {
                     Text(SubscriptionText.subscription_form_auto_renew_label)
                       .fontSize(DesignFontSize.BODY)
-                      .fontColor(DesignColor.TEXT_PRIMARY)
+                      .fontColor(resColor('TEXT_PRIMARY'))
                     Text(SubscriptionText.subscription_form_auto_renew_helper)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_TERTIARY)
+                      .fontWeight(DesignFontWeight.MEDIUM)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .margin({ top: DesignDimens.SPACE_XXS })
                   }
                   .alignItems(HorizontalAlign.Start)
@@ -567,11 +581,12 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.remindDays, placeholder: '3' })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
+                  .fontFeature(DesignFontFeature.TNUM)
                   .type(InputType.Number)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.remindDaysFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.remindDaysFocused = true
@@ -584,7 +599,8 @@ struct SubscriptionEditPage {
                   })
                 Text(SubscriptionText.subscription_form_remind_helper)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_TERTIARY)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
 
                 Column().height(DesignDimens.SPACE_LG)
@@ -594,10 +610,11 @@ struct SubscriptionEditPage {
                 TextInput({ text: this.cancelUrl, placeholder: SubscriptionText.subscription_form_cancel_url_hint })
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .fontFeature(DesignFontFeature.TNUM)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.cancelUrlFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.cancelUrlFocused = true
@@ -610,26 +627,37 @@ struct SubscriptionEditPage {
                   })
                 Text(SubscriptionText.subscription_form_cancel_url_helper)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_TERTIARY)
+                  .fontWeight(DesignFontWeight.MEDIUM)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XS })
                 if (this.cancelUrl.trim().length > 0) {
+                  // 行内动作 48×48 最小热区（对齐安卓 InlineTextAction heightIn/widthIn(min=48)），
+                  // 文字居中；小号绿字走 TEXT_GREEN（PRIMARY 3.4:1 不达标，§10）
                   Row({ space: DesignDimens.SPACE_MD }) {
-                    Text(SubscriptionText.subscription_action_open_browser)
-                      .fontSize(DesignFontSize.BUTTON_TEXT)
-                      .fontWeight(DesignFontWeight.SEMI_BOLD)
-                      .fontColor(DesignColor.PRIMARY)
-                      .padding({ top: 14, bottom: 14 })
-                      .onClick(() => {
-                        this.openInBrowser()
-                      })
-                    Text(SubscriptionText.subscription_action_copy)
-                      .fontSize(DesignFontSize.BUTTON_TEXT)
-                      .fontWeight(DesignFontWeight.SEMI_BOLD)
-                      .fontColor(DesignColor.PRIMARY)
-                      .padding({ top: 14, bottom: 14 })
-                      .onClick(() => {
-                        this.copyCancelUrl()
-                      })
+                    Column() {
+                      Text(SubscriptionText.subscription_action_open_browser)
+                        .fontSize(DesignFontSize.BUTTON_TEXT)
+                        .fontWeight(DesignFontWeight.SEMI_BOLD)
+                        .fontColor(resColor('TEXT_GREEN'))
+                    }
+                    .constraintSize({ minWidth: 48, minHeight: 48 })
+                    .justifyContent(FlexAlign.Center)
+                    .alignItems(HorizontalAlign.Center)
+                    .onClick(() => {
+                      this.openInBrowser()
+                    })
+                    Column() {
+                      Text(SubscriptionText.subscription_action_copy)
+                        .fontSize(DesignFontSize.BUTTON_TEXT)
+                        .fontWeight(DesignFontWeight.SEMI_BOLD)
+                        .fontColor(resColor('TEXT_GREEN'))
+                    }
+                    .constraintSize({ minWidth: 48, minHeight: 48 })
+                    .justifyContent(FlexAlign.Center)
+                    .alignItems(HorizontalAlign.Center)
+                    .onClick(() => {
+                      this.copyCancelUrl()
+                    })
                   }
                   .margin({ top: DesignDimens.SPACE_XS })
                 }
@@ -637,14 +665,18 @@ struct SubscriptionEditPage {
                 Column().height(DesignDimens.SPACE_LG)
 
                 // ---------- 取消步骤备忘 ----------
+                // 多行可换行输入（对齐安卓 minLines=2/maxLines=5，audit-14 #8）：TextArea 自适应高度，
+                // minHeight 96 兜底 2 行起点，maxLines 5 封顶内部滚动；描边/圆角/聚焦样式同单行档
                 this.FormLabel(SubscriptionText.subscription_form_cancel_steps_label)
-                TextInput({ text: this.cancelSteps, placeholder: SubscriptionText.subscription_form_cancel_steps_hint })
-                  .height(96)
+                TextArea({ text: this.cancelSteps, placeholder: SubscriptionText.subscription_form_cancel_steps_hint })
+                  // TextArea 高度默认自适应内容（SDK 17 无 autoHeight 属性，编译核实）
+                  .maxLines(5)
+                  .constraintSize({ minHeight: 96 })
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.cancelStepsFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.cancelStepsFocused = true
@@ -660,13 +692,15 @@ struct SubscriptionEditPage {
 
                 // ---------- 备注 ----------
                 this.FormLabel(SubscriptionText.subscription_form_note_label)
-                TextInput({ text: this.note, placeholder: SubscriptionText.subscription_form_note_hint })
-                  .height(96)
+                TextArea({ text: this.note, placeholder: SubscriptionText.subscription_form_note_hint })
+                  // TextArea 高度默认自适应内容（SDK 17 无 autoHeight 属性，编译核实）
+                  .maxLines(5)
+                  .constraintSize({ minHeight: 96 })
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .border(this.inputBorder(this.noteFocused))
-                  .placeholderColor(DesignColor.TEXT_TERTIARY)
+                  .placeholderColor(resColor('TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.BODY })
                   .onFocus(() => {
                     this.noteFocused = true
@@ -681,15 +715,16 @@ struct SubscriptionEditPage {
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               .borderWidth(1)
-              .borderColor(DesignColor.OUTLINE)
+              .borderColor(resColor('OUTLINE'))
 
               if (this.submitError.length > 0) {
+                // 错误文案 12fp（对齐安卓 bodySmall，与短链创建页 CAPTION 同口径）
                 Text(this.submitError)
-                  .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.ERROR)
+                  .fontSize(DesignFontSize.CAPTION)
+                  .fontColor(resColor('ERROR'))
                   .margin({ top: DesignDimens.SPACE_SM })
               }
 
@@ -702,7 +737,7 @@ struct SubscriptionEditPage {
                   this.submit()
                 }
               })
-                .margin({ top: DesignDimens.SPACE_MD })
+                .margin({ top: DesignDimens.SPACE_LG })
             }
             .width('100%')
             .padding({
@@ -726,7 +761,7 @@ struct SubscriptionEditPage {
       .height('100%')
       // 沉浸式：内容避让状态栏与底部手势条（背景延伸），保证提交按钮完整落在安全区内
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

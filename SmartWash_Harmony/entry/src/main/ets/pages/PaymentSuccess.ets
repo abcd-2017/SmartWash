@@ -7,9 +7,11 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, CircleIconBox, EmptyState, LoadingState } from "../view/common/AppComponents"
 import { PickupDeliveryParam } from "./PickupDelivery"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function PaymentSuccessBuilder() {
@@ -33,13 +35,13 @@ struct PayInfoLine {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
         .maxLines(1)
@@ -91,13 +93,13 @@ struct PaymentSuccess {
       } else {
         logger.warn('paymentSuccess', `订单信息加载失败 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "订单信息加载失败")
+        showToastSafety(res.message, resString('payment_success_1'))
         this.loadFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('payment_success_2'))
     } finally {
       this.isLoading = false
     }
@@ -139,7 +141,7 @@ struct PaymentSuccess {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_PRIMARY])
+          .fontColor([resColor('TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -149,10 +151,10 @@ struct PaymentSuccess {
         pathStack.pop()
       })
 
-      Text("支付成功")
+      Text($r('app.string.pay_success'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
     }
     .width("100%")
     .height(56)
@@ -169,7 +171,7 @@ struct PaymentSuccess {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack() {
@@ -188,33 +190,33 @@ struct PaymentSuccess {
               icon: $r('sys.symbol.checkmark'),
               sizeValue: 44,
               iconSize: 24,
-              containerColor: DesignColor.PRIMARY_LIGHT,
-              iconColor: DesignColor.PRIMARY
+              containerColor: resColor('PRIMARY_LIGHT'),
+              iconColor: resColor('PRIMARY')
             })
               .scale({ x: this.checkEntered ? 1 : 0.6, y: this.checkEntered ? 1 : 0.6 })
               .opacity(this.checkEntered ? 1 : 0)
 
-            Text("支付成功")
+            Text($r('app.string.pay_success'))
               .fontSize(DesignFontSize.HEADLINE)
               .fontWeight(DesignFontWeight.BOLD)
-              .fontColor(DesignColor.PRIMARY_DARK)
+              .fontColor(resColor('PRIMARY_DARK'))
               .margin({ top: 24 })
 
-            Text("感谢使用智慧洗衣")
+            Text($r('app.string.thanks_for_using'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: 8 })
           }
           .width("100%")
           .padding({ top: 40, bottom: 44 })
           // 对齐安卓 PaySuccessPage.kt:149-193：庆祝卡按 DESIGN-SPEC v0.4 §3.1 唯一卡片画法
           // 取 surface 白底 + 1px outline 描边 + level1 阴影（旧实现为无描边无阴影的 primaryLight 块）
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -223,37 +225,37 @@ struct PaymentSuccess {
           .alignItems(HorizontalAlign.Center)
 
           // 订单信息卡（recap §4-V4：bodySmall 12 + tnum、行高 16、行距 16）
-          Text("订单信息")
+          Text($r('app.string.order_info'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .width("100%")
             .margin({ top: DesignDimens.SECTION_SPACING, bottom: 12 })
 
           Column({ space: DesignDimens.SPACE_MD }) {
             // 订单号缺失兜底「—」（同支付页问题8口径）
-            PayInfoLine({ label: "订单编号", value: this.displayValue(this.orderInfo?.orderNo) })
-            PayInfoLine({ label: "支付金额", value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}` })
-            PayInfoLine({ label: "下单时间", value: this.displayValue(this.orderInfo?.createdAt) })
+            PayInfoLine({ label: resString('order_number'), value: this.displayValue(this.orderInfo?.orderNo) })
+            PayInfoLine({ label: resString('payment_amount'), value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}` })
+            PayInfoLine({ label: resString('order_time'), value: this.displayValue(this.orderInfo?.createdAt) })
           }
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
           // 对齐安卓 PaySuccessPage.kt:204-240：surface 白底 + 1px outline 描边 + level1 阴影
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
 
           // 寄存柜提示卡（recap §4-V5：补「已存入 X 号柜」行，共 4 行）
-          Text("寄存柜信息")
+          Text($r('app.string.locker_info'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .width("100%")
             .margin({ top: DesignDimens.SPACE_XL, bottom: 12 })
 
@@ -262,34 +264,34 @@ struct PaymentSuccess {
             Column() {
               SymbolGlyph($r('sys.symbol.truck_box_fill'))
                 .fontSize(20)
-                .fontColor([DesignColor.PRIMARY])
+                .fontColor([resColor('PRIMARY')])
             }
             .width(36)
             .height(36)
             .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-            .backgroundColor(DesignColor.PRIMARY_LIGHT)
+            .backgroundColor(resColor('PRIMARY_LIGHT'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
 
             Column({ space: DesignDimens.SPACE_XS }) {
-              Text("寄存柜信息")
+              Text($r('app.string.locker_info'))
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
 
               // 柜号空值兜底显示 "-"（空值语义），不再误显示 "-1柜"（评审 #34，安卓待对齐）
               Text(`已存入 ${this.orderInfo?.lockersVo?.lockerNumber ?? "-"} 号柜`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
 
               Text(`请前往寄存柜 ${this.orderInfo?.lockersVo?.lockerNumber ?? "-"}柜存放衣物`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
 
-              Text("寄存柜将在24小时内处理您的订单")
+              Text($r('app.string.locker_process_tip'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
@@ -299,12 +301,12 @@ struct PaymentSuccess {
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_MD })
           // 对齐安卓 PaySuccessPage.kt:252-300：surface 白底 + 1px outline 描边 + level1 阴影
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -325,21 +327,21 @@ struct PaymentSuccess {
       .width("100%")
       .align(Alignment.Top)
       .scrollBar(BarState.Off)
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
 
       // 固定底栏（对齐安卓 PaySuccessPage.kt:325-361）：移出 Scroll 后首屏即可见「返回首页」，
       // 不再被滚动内容裁切；主按钮 + 48dp 热区「返回首页」文字链
       Column() {
         AppButton({
-          text: "立即寄件",
+          text: resString('go_ship_now'),
           click: () => {
             this.goShipNow()
           }
         })
 
-        Text("返回首页")
+        Text($r('app.string.back_home'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .width("100%")
           .textAlign(TextAlign.Center)
           .padding({ top: 16, bottom: 16 })
@@ -374,7 +376,7 @@ struct PaymentSuccess {
           LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
         }
@@ -383,11 +385,11 @@ struct PaymentSuccess {
         if (!this.isLoading && this.loadFailed) {
           Column() {
             EmptyState({
-              message: "加载失败，请重试",
+              message: resString('pay_success_load_failed'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   click: () => {
                     this.loadOrder()
                   }
@@ -398,7 +400,7 @@ struct PaymentSuccess {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
@@ -406,7 +408,7 @@ struct PaymentSuccess {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

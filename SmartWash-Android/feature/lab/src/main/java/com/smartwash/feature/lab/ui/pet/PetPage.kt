@@ -130,8 +130,9 @@ fun PetPage(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                // 顶部留白：verticalScroll 会裁到视口边界，卡片外阴影需要容身空间
-                .padding(top = AppDimens.spaceSm)
+                // 顶部留白：verticalScroll 会裁到视口边界，卡片外阴影（blur 12dp）需要
+                // ≥12dp 容身空间，spaceSm(8dp) 会被视口裁掉一截，取 spaceMd(16dp)
+                .padding(top = AppDimens.spaceMd)
                 .padding(horizontal = AppDimens.pagePadding)
                 .padding(bottom = AppDimens.sectionSpacing),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -216,7 +217,8 @@ private fun PetCard(
             Text(
                 text = stringResource(R.string.lab_pet_interactions_format, snapshot.interactionCount),
                 style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-                color = scheme.textTertiary,
+                // 卡内可读计数属正文：textTertiary on 白卡仅 2.26:1，违反 §10 红线
+                color = scheme.textSecondary,
             )
         }
     }

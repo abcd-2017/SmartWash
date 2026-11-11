@@ -58,6 +58,13 @@ private const val SCALE_INHALED = 1.4f
 private const val SCALE_REDUCE_MOTION = 0.75f
 
 /**
+ * 圆心文字底衬的平台占比（径向渐变 0~该值内为纯色平台，之后渐隐至透明）。
+ * 相位文字为 2 字（半宽 ≈19dp）+ 倒计时数字（半高 ≈28dp），主笔画最远角 ≈29dp，
+ * 恰落在平台内；2 字相位的最远角 ≈34dp（88% 处）仍有约半强度底衬。
+ */
+private const val TEXT_PLATE_SOLID_RATIO = 0.75f
+
+/**
  * 呼吸引导页：模式选择（4-7-8 睡眠 / Box 4-4-4-4 专注，胶囊 chips）→
  * 全屏引导：中心 Canvas 圆环随相位放大/保持/缩小 + 相位文字 +
  * 倒计时数字（tnum）+ 相位切换轻触觉；可暂停/停止。
@@ -85,6 +92,9 @@ fun BreathPage(
                 selectedMode = mode,
                 onSelect = viewModel::selectMode,
                 onStart = { viewModel.start(mode) },
+                // 占满 PageHeader 之外剩余高度（与 GuideStage 同口径）：
+                // wrap 高度下组件内 Spacer(weight) 分得 0 高，开始按钮会紧贴节奏提示而非落底
+                modifier = Modifier.weight(1f),
             )
         } else {
             GuideStage(
@@ -101,15 +111,17 @@ fun BreathPage(
 
 /**
  * 模式选择态：两个胶囊 chip（[AppPillTabRow]）+ 一句节奏提示 + 开始按钮。
+ * [modifier] 由调用处传 weight(1f)：内部 Spacer(weight) 依赖父级给出确定高度才能推底。
  */
 @Composable
 private fun ModeSelector(
     selectedMode: BreathMode,
     onSelect: (BreathMode) -> Unit,
     onStart: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(top = AppDimens.spaceSm),
     ) {
@@ -215,6 +227,22 @@ private fun GuideStage(
                         radius = baseR * SCALE_INHALED,
                     ),
                     radius = baseR * scale.value,
+                )
+                // 圆心文字底衬（水色晕）：呼吸圆中心为纯 water 色，深色板上
+                // textPrimary（#E6E9E6）对 water（#5FAEE0）仅 1.99:1，倒计时/相位文字不可读。
+                // 渐变 water↔waterSoft 亮度跨约 15 倍，任何单一文字色都无法在全区间达标，
+                // 故以 waterSoft 中心晕把文字区背景固定到可控色上（双板通用，无需主题分支）：
+                // 深板圆心 textPrimary 对 waterSoft(#1C2F3B) ≈11.3:1、渐隐缘 ≈6.5:1；
+                // 浅板对 waterSoft(#DCEFF7) ≈14.4:1、渐隐缘 ≥5.8:1，两板均达标。
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        0f to scheme.waterSoft,
+                        TEXT_PLATE_SOLID_RATIO to scheme.waterSoft,
+                        1f to scheme.waterSoft.copy(alpha = 0f),
+                        center = center,
+                        radius = baseR,
+                    ),
+                    radius = baseR,
                 )
             }
             // 圆心：相位文字 + 倒计时数字（数字槽 tnum）

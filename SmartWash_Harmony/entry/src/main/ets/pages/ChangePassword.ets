@@ -5,10 +5,12 @@ import { setValue } from "../utils/StorageUtil"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { AppButton, PageHeader } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { HttpStatusCode } from "@ohos/axios"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /** 输入框描边样式（ArkTS 对象字面量需显式类型，Setting.ets 同款约定） */
 interface ChangePasswordBorderStyle {
@@ -35,7 +37,7 @@ struct PasswordFieldRow {
 
   /** 输入框通用描边（surfaceVariant 底 + outline 描边 + 聚焦主色，Setting.ets 同款） */
   private inputBorder(focused: boolean): ChangePasswordBorderStyle {
-    return { width: 1, color: focused ? DesignColor.PRIMARY : DesignColor.OUTLINE }
+    return { width: 1, color: focused ? resColor('PRIMARY') : resColor('OUTLINE') }
   }
 
   build() {
@@ -45,10 +47,10 @@ struct PasswordFieldRow {
         .maxLength(16)
         .height(48)
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .border(this.inputBorder(this.focused))
-        .placeholderColor(DesignColor.TEXT_TERTIARY)
+        .placeholderColor(resColor('TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .showPasswordIcon(false)
         .layoutWeight(1)
@@ -65,11 +67,11 @@ struct PasswordFieldRow {
       Stack({ alignContent: Alignment.Center }) {
         SymbolGlyph(this.showPlain ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
           .fontSize(20)
-          .fontColor([DesignColor.TEXT_SECONDARY])
+          .fontColor([resColor('TEXT_SECONDARY')])
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
-      .accessibilityDescription(this.showPlain ? '隐藏密码' : '显示密码')
+      .accessibilityDescription(this.showPlain ? resString('hide_password') : resString('show_password'))
       .onClick(() => {
         this.onTogglePlain()
       })
@@ -112,7 +114,7 @@ struct ChangePassword {
     Text(title)
       .fontSize(DesignFontSize.BODY_SMALL)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -121,7 +123,7 @@ struct ChangePassword {
   FieldError(message: string) {
     Text(message)
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(DesignColor.ERROR)
+      .fontColor(resColor('ERROR'))
       .margin({ top: DesignDimens.SPACE_XXS })
   }
 
@@ -166,18 +168,18 @@ struct ChangePassword {
       const res = await changePassword(form)
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功 toast（后端 Result<String>「密码修改成功」）
-        showToastSafety(res.data ?? "密码修改成功，请重新登录")
+        showToastSafety(res.data ?? resString('change_password_1'))
         this.clearForm()
         // 成功即登出：清双 token + 复位会话态，Index 切回登录根页
         await this.logoutAfterPasswordChange()
       } else {
         // 业务拒绝（原密码不正确等）：message 为服务端文案，留在本页便于修正重试
         logger.warn('changePassword', `修改密码被拒 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "密码修改失败")
+        showToastSafety(res.message, resString('change_password_2'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw（401 已由网络层统一清理并跳登录）
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('change_password_3'))
     } finally {
       this.submitting = false
     }
@@ -199,18 +201,18 @@ struct ChangePassword {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 公共页头 — 22/600 标题 + 48dp 返回热区
-        PageHeader({ title: "修改密码" })
+        PageHeader({ title: resString('change_password') })
 
         Scroll(this.scroller) {
           Column() {
-            this.FormLabel("原密码")
+            this.FormLabel(resString('old_password'))
             PasswordFieldRow({
-              placeholder: "请输入原密码",
+              placeholder: resString('error_old_password_empty'),
               focused: this.oldFocused,
               showPlain: this.oldVisible,
               onTextChange: (value: string) => {
@@ -225,14 +227,14 @@ struct ChangePassword {
               }
             })
             if (this.checkOld) {
-              this.FieldError("密码必须为6-16位")
+              this.FieldError(resString('invalid_password'))
             }
 
             Column().height(DesignDimens.SPACE_LG)
 
-            this.FormLabel("新密码")
+            this.FormLabel(resString('reset_new_password'))
             PasswordFieldRow({
-              placeholder: "6-16位新密码",
+              placeholder: resString('change_password_4'),
               focused: this.newFocused,
               showPlain: this.newVisible,
               onTextChange: (value: string) => {
@@ -251,14 +253,14 @@ struct ChangePassword {
               }
             })
             if (this.checkNew) {
-              this.FieldError("密码必须为6-16位")
+              this.FieldError(resString('invalid_password'))
             }
 
             Column().height(DesignDimens.SPACE_LG)
 
-            this.FormLabel("确认新密码")
+            this.FormLabel(resString('confirm_new_password'))
             PasswordFieldRow({
-              placeholder: "请再次输入新密码",
+              placeholder: resString('change_password_5'),
               focused: this.confirmFocused,
               showPlain: this.confirmVisible,
               onTextChange: (value: string) => {
@@ -274,12 +276,12 @@ struct ChangePassword {
               }
             })
             if (this.checkConfirm) {
-              this.FieldError("两次输入的新密码不一致")
+              this.FieldError(resString('change_password_6'))
             }
 
             // 修改成功后即登出回登录页，本页无后续动作，仅一个提交按钮
             AppButton({
-              text: "确认修改",
+              text: resString('confirm_change_password'),
               loading: this.submitting,
               click: () => {
                 this.submit()
@@ -303,7 +305,7 @@ struct ChangePassword {
       .width("100%")
       .height("100%")
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     // 隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（对齐 Setting.ets）

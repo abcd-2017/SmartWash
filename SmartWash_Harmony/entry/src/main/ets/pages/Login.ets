@@ -8,10 +8,12 @@ import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from "@ohos.vibrator"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
 // 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
@@ -114,7 +116,7 @@ struct Login {
         if (token === "") {
           // 信封异常降级：code 成功但 data.token 缺失
           logger.warn('login', '登录响应缺少 token，按登录失败处理')
-          showToastSafety(res.message, "登录失败，请稍后重试")
+          showToastSafety(res.message, resString('login_1'))
           return
         }
         // await 确保写入完成后，后续 getUserInfo 等请求才能带上新 token
@@ -126,7 +128,7 @@ struct Login {
         // 低频关键动作成功：登录成功（不带手机号，敏感红线）
         logger.info('login', '登录成功')
         // 登录成功 toast（对齐安卓 LoginPage.kt:140「登录成功」）
-        showToastSafety("登录成功")
+        showToastSafety(resString('login_success'))
         const infoRes = await getUserInfo()
         // 学校信息缺失判定对齐 Android LoginViewModel.schoolInfoMissing()（LoginViewModel.kt:72-83）：
         // schoolId <= 0 或 studentId 为空 → 去完善信息页（鸿蒙对应页 AddSchool，等价 Android UpdateUserInfo）；
@@ -152,7 +154,7 @@ struct Login {
       } else {
         // 业务拒绝（如密码错误/账号不存在）：warn 留痕，message 为服务端提示文案，无敏感字段
         logger.warn('login', `登录被拒绝 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "登录失败，请稍后重试")
+        showToastSafety(res.message, resString('login_1'))
       }
     } finally {
       this.loginLoading = false
@@ -162,7 +164,7 @@ struct Login {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       // 全屏渐变背景
@@ -179,15 +181,15 @@ struct Login {
         .width(96)
         .height(96)
         .borderRadius(48)
-        .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+        .backgroundColor(resColor('GLASS_BG_SUBTLE'))
         .border({
           width: 1,
-          color: DesignColor.GLASS_BORDER_SUBTLE,
+          color: resColor('GLASS_BORDER_SUBTLE'),
           style: BorderStyle.Solid
         })
 
         // 品牌文字（headlineLarge 28/36/700，对齐 Android LoginPage.kt:200-204）
-        Text("智能洗衣")
+        Text($r('app.string.brand_name'))
           .fontSize(DesignFontSize.HEADLINE)
           .fontWeight(DesignFontWeight.BOLD)
           .fontColor(Color.White)
@@ -195,7 +197,7 @@ struct Login {
           .margin({ top: 18 })
 
         // 副标题（12sp 白 + ls0.5，文案对齐 Android brand_subtitle）
-        Text("智慧校园 · 轻松洗衣")
+        Text($r('app.string.brand_subtitle'))
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.NORMAL)
           .fontColor(Color.White)
@@ -210,7 +212,7 @@ struct Login {
             SymbolGlyph($r('sys.symbol.phone'))
               .fontSize(16)
               .fontColor([this.checkPhoneNumber ? AUTH_ERROR : GLASS_PREFIX])
-            TextInput({ placeholder: "手机号" })
+            TextInput({ placeholder: resString('phone_number') })
               .type(InputType.PhoneNumber)
               .maxLength(11)
               .fontSize(DesignFontSize.BODY)
@@ -220,7 +222,7 @@ struct Login {
               .layoutWeight(1)
               .margin({ left: 12 })
               // 无障碍：placeholder 不进 a11y 树，补语义标签（读屏可播报输入框用途）
-              .accessibilityText('手机号')
+              .accessibilityText($r('app.string.phone_number'))
               .key("loginPhoneInput")
               .onChange((it: string) => {
                 this.phoneNumber = it
@@ -239,7 +241,7 @@ struct Login {
           .alignItems(VerticalAlign.Center)
 
           if (this.checkPhoneNumber) {
-            Text("请输入正确的手机号")
+            Text($r('app.string.invalid_phone'))
               .fontColor(AUTH_ERROR)
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
@@ -258,7 +260,7 @@ struct Login {
             SymbolGlyph($r('sys.symbol.lock'))
               .fontSize(16)
               .fontColor([this.checkPassword ? AUTH_ERROR : GLASS_PREFIX])
-            TextInput({ placeholder: "密码", controller: this.controller })
+            TextInput({ placeholder: resString('password'), controller: this.controller })
               .type(this.showPassword ? InputType.Normal : InputType.Password)
               .maxLength(16)
               .fontSize(DesignFontSize.BODY)
@@ -268,7 +270,7 @@ struct Login {
               .layoutWeight(1)
               .margin({ left: 12 })
               // 无障碍：placeholder 不进 a11y 树，补语义标签
-              .accessibilityText('密码')
+              .accessibilityText($r('app.string.password'))
               .key("loginPasswordInput")
               .showPasswordIcon(false)
               .onChange((it: string) => this.password = it)
@@ -282,7 +284,7 @@ struct Login {
             .width(48)
             .height(48)
             // 无障碍：密码可见性切换补语义（原仅图形，读屏无标签；accessibilityRole 需 SDK 18+，目标 API 17 不用）
-            .accessibilityDescription(this.showPassword ? '隐藏密码' : '显示密码')
+            .accessibilityDescription(this.showPassword ? resString('hide_password') : resString('show_password'))
             .onClick(() => {
               this.showPassword = !this.showPassword
             })
@@ -292,7 +294,7 @@ struct Login {
           .alignItems(VerticalAlign.Center)
 
           if (this.checkPassword) {
-            Text("密码必须为6-16位")
+            Text($r('app.string.invalid_password'))
               .fontColor(AUTH_ERROR)
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
@@ -303,10 +305,10 @@ struct Login {
           // 忘记密码入口 — 右对齐文本按钮（13sp·500 + 48dp 热区 + 800ms 节流，对齐注册入口的节流惯例）
           Row() {
             Blank()
-            Text("忘记密码？")
+            Text($r('app.string.forgot_password'))
               .fontSize(DesignFontSize.BUTTON_TEXT)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.GLASS_TEXT_ACTIVE)
+              .fontColor(resColor('GLASS_TEXT_ACTIVE'))
               .padding({ left: 4, right: 4, top: 16, bottom: 16 })
               .onClick(() => {
                 this.navDebouncer.throttle(() => {
@@ -326,7 +328,7 @@ struct Login {
                 .height(22)
                 .color(Color.White)
             } else {
-              Text("登 录")
+              Text($r('app.string.login_button'))
                 .fontSize(BUTTON_FONT_SIZE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
                 .fontColor(Color.White)
@@ -336,7 +338,7 @@ struct Login {
           .width("100%")
           .height(48)
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(DesignColor.PRIMARY)
+          .backgroundColor(resColor('PRIMARY'))
           .opacity(this.loginLoading ? 0.38 : 1)
           .scale({ x: this.ctaPressed ? 0.97 : 1, y: this.ctaPressed ? 0.97 : 1 })
           .animation({ duration: 100, curve: Curve.EaseOut })
@@ -357,7 +359,7 @@ struct Login {
         .backgroundColor(GLASS_CARD_BG)
         .border({
           width: 1,
-          color: DesignColor.GLASS_BORDER_SUBTLE,
+          color: resColor('GLASS_BORDER_SUBTLE'),
           style: BorderStyle.Solid
         })
         .padding({ left: 16, right: 16, top: 20, bottom: 20 })
@@ -365,11 +367,11 @@ struct Login {
 
         // 注册入口 — 仅「立即注册」可点（12sp + 48dp 热区 + 800ms 节流 + pressScale，对齐 Android LoginPage.kt:290-319）
         Row() {
-          Text("没有账号？")
+          Text($r('app.string.no_account'))
             .fontSize(DesignFontSize.CAPTION)
             .lineHeight(16)
             .fontColor(Color.White)
-          Text("立即注册")
+          Text($r('app.string.register_now'))
             .fontSize(DesignFontSize.CAPTION)
             .lineHeight(16)
             .fontWeight(DesignFontWeight.MEDIUM)
@@ -405,9 +407,9 @@ struct Login {
         direction: GradientDirection.Bottom,
         // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
         colors: [
-          [DesignColor.AUTH_GRADIENT_TOP, 0],
-          [DesignColor.AUTH_GRADIENT_MID, 0.5],
-          [DesignColor.AUTH_GRADIENT_BOTTOM, 1]
+          [resColor('AUTH_GRADIENT_TOP'), 0],
+          [resColor('AUTH_GRADIENT_MID'), 0.5],
+          [resColor('AUTH_GRADIENT_BOTTOM'), 1]
         ]
       })
       }

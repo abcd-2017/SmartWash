@@ -12,10 +12,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -102,8 +105,8 @@ private const val GRID_COLUMNS = 2
 /** 逐项入场错峰间隔（规范 §7：间隔 ≤60ms；40ms 取中段） */
 private const val TOOL_STAGGER_MS = 40
 
-/** 错峰索引上限（40ms × 8 = 320ms，留出入场时长仍在 §7 总预算 400ms 内） */
-private const val STAGGER_MAX_INDEX = 8
+/** 错峰索引上限（40ms × 6 + 单项入场 150ms = 390ms，§7 逐项入场总预算 400ms 内；审查 #14） */
+private const val STAGGER_MAX_INDEX = 6
 
 /** 单项入场淡入时长（reduced motion 由 motionSpec 自动降级 180ms 交叉淡变档） */
 private const val TOOL_ENTER_MS = 150
@@ -112,14 +115,19 @@ private const val TOOL_ENTER_MS = 150
  * 页面渲染块：服务端 type + sectionTitle 下发驱动的构图单元。
  * 按 sort 顺序把条目折成块——sectionTitle 变化处插区块标题，连续 row 归并进一张白卡，
  * 连续 tile 两列成行，wide/notice 各占一行。后台改 type/sort/section_title 即换构图。
+ * key 防碰撞：entryKey 已在 VM.withUniqueKeys 去重；Section 追加折块流水号 ordinal
+ * （服务端可配 A→B→A 同名分组序列，仅凭 title 拼 key 会重复崩溃，审查 #5）。
  */
 private sealed interface WorkbenchBlock {
-    /** LazyColumn 稳定 key（entryKey 已在 VM 去重，拼接不碰撞） */
+    /** LazyColumn 稳定 key */
     val key: String
 
-    /** 区块标题（服务端 sectionTitle 分组边界） */
-    data class Section(val title: String) : WorkbenchBlock {
-        override val key: String get() = "wb_section_$title"
+    /**
+     * 区块标题（服务端 sectionTitle 分组边界）。ordinal 为折块流水号：同名分组在
+     * A→B→A 序列下重现时序号递增，key 永不重复（参照 VM.withUniqueKeys 去重思想，审查 #5）。
+     */
+    data class Section(val title: String, val ordinal: Int) : WorkbenchBlock {
+        override val key: String get() = "wb_section_${ordinal}_$title"
     }
 
     /** 公告条（可关闭运营位） */
@@ -152,10 +160,12 @@ private sealed interface WorkbenchBlock {
 private fun List<WorkbenchTool>.toBlocks(): List<WorkbenchBlock> {
     val blocks = mutableListOf<WorkbenchBlock>()
     var currentSection: String? = null
+    // Section key 防碰撞流水号（审查 #5）：A→B→A 序列下同名分组重现时递增，key 永不重复
+    var sectionOrdinal = 0
     forEach { tool ->
         val section = tool.sectionTitle
         if (section != null && section != currentSection) {
-            blocks += WorkbenchBlock.Section(section)
+            blocks += WorkbenchBlock.Section(section, sectionOrdinal++)
             currentSection = section
         }
         when (tool.layout) {
@@ -239,21 +249,21 @@ fun WorkbenchPage(
         LazyColumn {
             item(key = "wb_title") {
                 // 标题区（顶部与其他 tab 页统一取状态栏下 16；副标题底→搜索框 20 为原特色卡节奏）
-                Column(
-                    modifier = Modifier.padding(
-                        start = AppDimens.pagePadding,
-                        end = AppDimens.pagePadding,
-                        top = 16.dp,
-                        bottom = 20.dp
-                    )
-                ) {
-                    Text(
-                        text = stringResource(R.string.workbench_title),
-                        style = AppTextStyles.RootTitle,
-                        color = AppColors.colorScheme.textPrimary
-                    )
-                    // 设计稿实测：大标题底→副标题 4
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Column(
+                        modifier = Modifier.padding(
+                            start = AppDimens.pagePadding,
+                            end = AppDimens.pagePadding,
+                            top = AppDimens.spaceMd,
+                            bottom = AppDimens.spaceLg
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.workbench_title),
+                            style = AppTextStyles.RootTitle,
+                            color = AppColors.colorScheme.textPrimary
+                        )
+                        // 设计稿实测：大标题底→副标题 4（spaceXxs，审查 #10 令牌化）
+                        Spacer(modifier = Modifier.height(AppDimens.spaceXxs))
                     Text(
                         text = stringResource(R.string.workbench_subtitle),
                         // 画板副标题 12/400（caption 400 档），非 captionStrong 500
@@ -342,8 +352,10 @@ fun WorkbenchPage(
                         TileRowContent(
                             tools = rowTools,
                             onToolClick = handleToolClick,
-                            // 首行与搜索框按区块节奏拉开（搜索框 bottom 16 + 此处 8 = 24）
-                            topSpacing = if (rowIndex == 0) AppDimens.spaceXs else 0.dp
+                            // 搜索框无 bottom padding（常态下观象台卡按设计稿 P07 以 12dp 贴合其下，
+                            // 搜索框不能加 bottom），首行自担 spaceXl(24)——真实间距 24 与注释一致
+                            //（审查 #3：原 spaceXs(8) 注释声称 24 与实现不符）
+                            topSpacing = if (rowIndex == 0) AppDimens.spaceXl else 0.dp
                         )
                     }
                 }
@@ -386,6 +398,16 @@ fun WorkbenchPage(
                 }
 
                 itemsIndexed(blocks, key = { _, block -> block.key }) { index, block ->
+                    // 间距责任统一（2026-11-11 审查 #1/#2）：内容块 top 按前置块判定——
+                    // Section 后 = 0（标题 bottom spaceSm=12 已承担标题→内容节奏，四种块型一致）；
+                    // 连续 tile 行 = 0（行距 16 由上一行 bottom cardSpacing 承担）；
+                    // 其余前置（观象台卡 / 其他卡片块）自担 sectionSpacing=32，消除 12/44 跳变
+                    // 与观象台卡→tile 0dp 贴合叠影。无分组时「全部工具」总标题 item 打头，
+                    // bottom spaceSm=12 同 Section，首块 top 亦为 0。
+                    val prev = blocks.getOrNull(index - 1)
+                    val afterSection = prev is WorkbenchBlock.Section
+                    val afterToolsHeader = prev == null && !hasSections
+                    val blockTop = if (afterSection || afterToolsHeader) 0.dp else AppDimens.sectionSpacing
                     when (block) {
                         is WorkbenchBlock.Section -> SectionHeader(title = block.title)
                         is WorkbenchBlock.Notice -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
@@ -395,7 +417,7 @@ fun WorkbenchPage(
                                 onDismiss = { workbenchViewModel.dismissNotice(block.tool) },
                                 modifier = Modifier
                                     .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = AppDimens.sectionSpacing, bottom = AppDimens.cardSpacing)
+                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                             )
                         }
                         is WorkbenchBlock.Wide -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
@@ -404,15 +426,18 @@ fun WorkbenchPage(
                                 onClick = { handleToolClick(block.tool) },
                                 modifier = Modifier
                                     .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = AppDimens.sectionSpacing, bottom = AppDimens.cardSpacing)
+                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                             )
                         }
                         is WorkbenchBlock.TileRow -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
                             TileRowContent(
                                 tools = block.tools,
                                 onToolClick = handleToolClick,
-                                // 常态间距全部由前置块（区块标题 bottom / 卡片 bottom cardSpacing）承担
-                                topSpacing = 0.dp
+                                topSpacing = if (afterSection || afterToolsHeader || prev is WorkbenchBlock.TileRow) {
+                                    0.dp
+                                } else {
+                                    AppDimens.sectionSpacing
+                                }
                             )
                         }
                         is WorkbenchBlock.RowGroup -> StaggerIn(index = index, modifier = Modifier.fillMaxWidth()) {
@@ -421,7 +446,7 @@ fun WorkbenchPage(
                                 onToolClick = handleToolClick,
                                 modifier = Modifier
                                     .padding(horizontal = AppDimens.pagePadding)
-                                    .padding(top = AppDimens.sectionSpacing, bottom = AppDimens.cardSpacing)
+                                    .padding(top = blockTop, bottom = AppDimens.cardSpacing)
                             )
                         }
                     }
@@ -442,8 +467,8 @@ fun WorkbenchPage(
                         .padding(
                             start = AppDimens.pagePadding,
                             end = AppDimens.pagePadding,
-                            top = 8.dp,
-                            bottom = 8.dp
+                            top = AppDimens.spaceXs,
+                            bottom = AppDimens.spaceXs
                         )
                 )
             }
@@ -643,7 +668,10 @@ private fun NoticeBar(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             color = scheme.onPrimarySoft,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            // 56dp 固定行高单行公告，长文案省略防溢出裁剪（审查 #9）
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         if (tool.target.isNotBlank()) {
             Icon(
@@ -664,7 +692,8 @@ private fun NoticeBar(
                 imageVector = Icons.Rounded.Close,
                 contentDescription = stringResource(R.string.workbench_notice_dismiss),
                 modifier = Modifier.size(16.dp),
-                tint = scheme.onPrimarySoft.copy(alpha = 0.6f)
+                // alpha 0.8：onPrimarySoft 合成 on primarySoft 约 7:1（审查 #8：原 0.6 仅 3.74:1 偏弱）
+                tint = scheme.onPrimarySoft.copy(alpha = 0.8f)
             )
         }
     }
@@ -733,7 +762,11 @@ private fun WideCard(
     }
 }
 
-/** 两列小卡行（连续 tile 归并产物；奇数个末位补空保持网格） */
+/**
+ * 两列小卡行（连续 tile 归并产物；奇数个末位补空保持网格）。
+ * 行高取 IntrinsicSize.Min + tile fillMaxHeight：同行两卡描述折行数不同也等高，
+ * 短卡底部自动补齐（审查 #4）；描述本身限两行截断，从源头杜绝超长文案拉高卡片。
+ */
 @Composable
 private fun TileRowContent(
     tools: List<WorkbenchTool>,
@@ -743,6 +776,7 @@ private fun TileRowContent(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .padding(
                 start = AppDimens.pagePadding,
                 end = AppDimens.pagePadding,
@@ -755,7 +789,8 @@ private fun TileRowContent(
             ToolTile(
                 tool = tool,
                 onClick = { onToolClick(tool) },
-                modifier = Modifier.weight(1f)
+                // 等高：IntrinsicSize.Min 行高下填满行高，与邻卡底部对齐（审查 #4）
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
         if (tools.size == 1) {
@@ -1095,7 +1130,8 @@ private fun DivinationCompass(modifier: Modifier = Modifier) {
 
 /**
  * 工具卡（type=tile，设计稿 tile3）：白卡 1px 描边 + level1 阴影 + 44dp 语义图标容器（icon.md 24）
- * + 14sp 标题 + 12sp 描述；可选配图（顶部 96dp 通铺，图卡不再叠图标容器）；右上角 badge 角标
+ * + 14sp/500 标题（与列表行/chip/公告标题同级字重统一，审查 #11）+ 12sp 描述（限两行，审查 #4）；
+ * 可选配图（顶部 96dp 通铺，图卡不再叠图标容器）；右上角 badge 角标
  * （清氧小胶囊：radiusFull、主色浅底/主色文字）。icon/color 由 WorkbenchTint 白名单映射（未知值兜底），
  * 触控整卡 ≥48dp、按压反馈走 pressable（scale 0.97 + indication = null，禁止 Material ripple）。
  * 描述为空不下发占位行（卡内节奏不因空文案错位）。
@@ -1137,6 +1173,8 @@ private fun ToolTile(
                     Text(
                         text = tool.title,
                         style = MaterialTheme.typography.bodyMedium,
+                        // 14/500：与列表行主文案/chip/公告标题同级统一（审查 #11）
+                        fontWeight = FontWeight.Medium,
                         color = scheme.textPrimary
                     )
                     if (tool.description.isNotBlank()) {
@@ -1144,7 +1182,10 @@ private fun ToolTile(
                         Text(
                             text = tool.description,
                             style = MaterialTheme.typography.labelSmall,
-                            color = scheme.textSecondary
+                            color = scheme.textSecondary,
+                            // 限两行 + 省略：超长描述不再无限拉高卡片（审查 #4B）
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

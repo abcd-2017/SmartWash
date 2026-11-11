@@ -10,13 +10,15 @@ import { LoadingFooter } from "../view/LoadingFooter"
 import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { AppConfirmDialog, EmptyState, LoadingState } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { logger } from "../utils/Logger"
 import { safeTopVp } from "../utils/SafeArea"
 import { cancelPickupReminderForOrder, ReminderSyncOrder, syncPickupReminderOrders } from "../utils/ReminderService"
 import vibrator from '@ohos.vibrator'
 import { bumpOrderRefresh, bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -50,7 +52,7 @@ struct OrderList {
   // 取消订单确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
   private confirmCancelController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      message: "确定要取消订单？",
+      message: resString('confirm_cancel_order'),
       onConfirm: () => {
         this.doCancelOrder()
       }
@@ -118,7 +120,7 @@ struct OrderList {
               this.sectionCache.set(this.orderStatus, [])
             }
           } else if (this.orderListLength() > 0) {
-            showToastSafety("没有更多数据了")
+            showToastSafety(resString('order_list_1'))
           }
           this.isLoading = false
           this.contentOpacity = 1
@@ -131,7 +133,7 @@ struct OrderList {
       }
       logger.warn('orderList', `订单列表加载失败 page=${page} status=${statusSnapshot} ` +
         `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "订单加载失败")
+      showToastSafety(res.message, resString('order_list_2'))
       this.isLoading = false
       this.contentOpacity = 1
       return false
@@ -141,7 +143,7 @@ struct OrderList {
       if (page === 1 && this.orderStatus === statusSnapshot) {
         this.sections = []
       }
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('order_list_3'))
       this.isLoading = false
       this.contentOpacity = 1
       return false
@@ -279,15 +281,15 @@ struct OrderList {
         // 其余页签切换时本就会重新拉取；同时同步用户中心订单计数
         bumpOrderRefresh()
         this.refreshOrder()
-        showToastSafety("取消成功")
+        showToastSafety(resString('cancel_success'))
       } else {
         logger.warn('orderList', `取消订单被拒 orderId=${this.pendingCancelOrderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "取消失败，订单状态可能已变更")
+        showToastSafety(res.message, resString('order_list_4'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并提示，避免 pendingCancelOrderId 卡死
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('order_list_3'))
     } finally {
       this.pendingCancelOrderId = null
     }
@@ -300,7 +302,7 @@ struct OrderList {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_PRIMARY])
+          .fontColor([resColor('TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -310,15 +312,15 @@ struct OrderList {
         pathStack.pop()
       })
 
-      Text("我的订单")
+      Text($r('app.string.my_orders'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
     }
     .width("100%")
     .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 
   /**
@@ -339,17 +341,17 @@ struct OrderList {
               Text(getShowOrderStatusDescription(title))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(index === this.currIndex ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
+                .fontColor(index === this.currIndex ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
             }
             .justifyContent(FlexAlign.Center)
             // 视觉胶囊 45（对齐安卓 AppPillTabRow：padding 在 background 之前，
             // 背景覆盖纵向 padding → 视觉高 = 行盒 + 上下 15 ≈ 45，与安卓 45.3dp 一致）
             .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 15, bottom: 15 })
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(index === this.currIndex ? DesignColor.PRIMARY : DesignColor.SURFACE)
+            .backgroundColor(index === this.currIndex ? resColor('PRIMARY') : resColor('SURFACE'))
             .border({
               width: 1,
-              color: index === this.currIndex ? DesignColor.PRIMARY : DesignColor.OUTLINE
+              color: index === this.currIndex ? resColor('PRIMARY') : resColor('OUTLINE')
             })
           }
           // 触控热区 48（对齐安卓 clickable 最小热区）；背景画在内层胶囊上，热区透明不影响视觉
@@ -391,13 +393,13 @@ struct OrderList {
     .width("100%")
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -429,7 +431,7 @@ struct OrderList {
                     Text(this.monthLabel(section.monthKey))
                       .fontSize(DesignFontSize.CAPTION)
                       .fontWeight(DesignFontWeight.MEDIUM)
-                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .letterSpacing(0.3)
                       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
                   }
@@ -496,7 +498,7 @@ struct OrderList {
           } else {
             // 空状态（对齐安卓 EmptyState：DrumMark 48 + 引导文案）
             Column() {
-              EmptyState({ message: "暂无订单" })
+              EmptyState({ message: resString('home_hero_no_order') })
             }
             .width("100%")
             .layoutWeight(1)
@@ -512,7 +514,7 @@ struct OrderList {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

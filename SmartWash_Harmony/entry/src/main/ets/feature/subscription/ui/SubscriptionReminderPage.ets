@@ -6,7 +6,7 @@
 //
 // 已知坑遵守：条目内容依赖状态 → @ComponentV2 + @Param/@Event。
 
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import { ReminderVo, SubscriptionText, listReminders, markReminderRead } from '../api'
 import {
@@ -23,12 +23,13 @@ import {
   subscriptionReminderTypeOf,
   subscriptionReminderTypeText
 } from './SubscriptionUiCommon'
-import { AppButton, EmptyState, IconBox, SkeletonList } from '../../../view/common/AppComponents'
+import { AppButton, EmptyState, IconBox, LoadingDots, SkeletonList } from '../../../view/common/AppComponents'
 import { logger } from '../../../utils/Logger'
 import { bumpSubscriptionRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionReminderPage'
@@ -44,6 +45,8 @@ struct SubscriptionReminderPage {
   @State items: Array<ReminderVo> = []
   @State isLoading: boolean = true
   @State isError: boolean = false
+  // 切换筛选/重拉时的非空加载指示（audit-16 #5：旧列表不得静默滞留冒充新结果）
+  @State isRefreshing: boolean = false
   // 正在标记已读的条目 id（防重复点击）
   @State markingId: number = -1
 
@@ -54,6 +57,7 @@ struct SubscriptionReminderPage {
 
   private async load(): Promise<void> {
     this.isLoading = this.items.length === 0
+    this.isRefreshing = true
     this.isError = false
     try {
       const res = await listReminders(this.unreadOnly)
@@ -70,6 +74,7 @@ struct SubscriptionReminderPage {
       this.isError = true
     } finally {
       this.isLoading = false
+      this.isRefreshing = false
     }
   }
 
@@ -112,7 +117,7 @@ struct SubscriptionReminderPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -136,6 +141,39 @@ struct SubscriptionReminderPage {
         }
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
         .margin({ bottom: DesignDimens.SPACE_XS })
+
+        // 切换筛选/重拉的可见反馈（audit-16 #5，对齐安卓）：旧列表非空时——
+        // 请求中渲染 LoadingDots；失败渲染错误行（文案 + small 重试），禁止静默滞留
+        if (this.items.length > 0 && this.isRefreshing) {
+          Row() {
+            LoadingDots()
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Center)
+          .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
+        } else if (this.items.length > 0 && this.isError) {
+          Row() {
+            Text(SubscriptionText.subscription_reminder_error_load)
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(resColor('ERROR'))
+              .layoutWeight(1)
+            AppButton({
+              small: true,
+              text: SubscriptionText.subscription_action_retry,
+              click: (): void => {
+                this.load()
+              }
+            })
+          }
+          .width('100%')
+          .alignItems(VerticalAlign.Center)
+          .padding({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_XS,
+            bottom: DesignDimens.SPACE_XS
+          })
+        }
 
         if (this.isLoading) {
           SkeletonList({ rows: 5 })
@@ -171,7 +209,8 @@ struct SubscriptionReminderPage {
           .layoutWeight(1)
           .justifyContent(FlexAlign.Center)
         } else {
-          List() {
+          // 卡片间距 16（对齐安卓 verticalArrangement spacedBy(cardSpacing)，原相邻卡描边贴合）
+          List({ space: DesignDimens.CARD_SPACING }) {
             ForEach(this.items, (reminder: ReminderVo) => {
               ListItem() {
                 ReminderRow({
@@ -184,8 +223,14 @@ struct SubscriptionReminderPage {
             }, (reminder: ReminderVo) => `${reminder.reminderId}`)
           }
           .width('100%')
-          .height('100%')
-          .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, bottom: 8 + safeBottomVp() })
+          .layoutWeight(1)
+          // 列表边距对齐安卓 contentPadding：top=spaceXs(8)、bottom=max(spaceSm,navBars)（audit-16 #4）
+          .padding({
+            left: DesignDimens.PAGE_PADDING,
+            right: DesignDimens.PAGE_PADDING,
+            top: DesignDimens.SPACE_XS,
+            bottom: DesignDimens.SPACE_SM + safeBottomVp()
+          })
           .divider({ strokeWidth: 0, color: Color.Transparent })
           .scrollBar(BarState.Off)
         }
@@ -194,7 +239,7 @@ struct SubscriptionReminderPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -233,15 +278,19 @@ export struct ReminderRow {
           Text(this.reminder.subscriptionName)
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.isUnread() ? DesignColor.TEXT_PRIMARY : DesignColor.TEXT_TERTIARY)
+            // 已读弱化止步 textSecondary（on 白卡 4.90:1）：textTertiary 2.25:1 禁作可读正文（§10，audit-16 #2）
+            .fontColor(this.isUnread() ? resColor('TEXT_PRIMARY') : resColor('TEXT_SECONDARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
 
           Text(subscriptionFormat(SubscriptionText.subscription_reminder_date_format,
-            this.reminder.remindDate ?? ''))
+            // remindDate 空值兜底「—」，禁止格式串留洞（audit-16 #9）
+            this.reminder.remindDate ?? SubscriptionText.subscription_value_none))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontFeature(DesignFontFeature.TNUM)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XXS })
         }
         .alignItems(HorizontalAlign.Start)
@@ -256,12 +305,19 @@ export struct ReminderRow {
           })
 
           if (this.isUnread()) {
-            SubscriptionStatusDot({ color: DesignColor.DANGER })
+            // 未读差异不能只靠颜色点：红点补读屏描述（DESIGN-SPEC §8/§10，audit-16 #6），
+            // 已读卡由「已读」文本标签承担同一对语义
+            SubscriptionStatusDot({
+              color: resColor('DANGER'),
+              accessibilityLabel: SubscriptionText.subscription_reminder_unread_dot
+            })
               .margin({ top: DesignDimens.SPACE_XXS })
           } else {
             Text(SubscriptionText.subscription_reminder_read_tag)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_TERTIARY)
+              .fontWeight(DesignFontWeight.MEDIUM)
+              // 「已读」为可读状态标签，与主文案同口径收敛 textSecondary（audit-16 #3）
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -274,13 +330,13 @@ export struct ReminderRow {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

@@ -1,5 +1,6 @@
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight, MotionTiming } from '../constant/DesignSystem'
 import vibrator from '@ohos.vibrator'
+import { resColor } from '../utils/ResourceColor'
 
 /** 底栏 tab 定义（对齐安卓 homeTabItems：图标对 + 文案） */
 export interface BottomNavTab {
@@ -30,7 +31,7 @@ export struct BottomNav {
       Divider()
         .width('100%')
         .strokeWidth(0.5)
-        .color(DesignColor.OUTLINE)
+        .color(resColor('OUTLINE'))
 
       Row() {
         ForEach(this.tabs, (tab: BottomNavTab, index: number) => {
@@ -47,13 +48,13 @@ export struct BottomNav {
       }
       .width('100%')
       .height(68)
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       // SpaceAround：4 项未铺满宽度时均分剩余空间（对齐安卓 Arrangement.SpaceAround）
       .justifyContent(FlexAlign.SpaceAround)
       .alignItems(VerticalAlign.Center)
     }
     .width('100%')
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
   }
 }
 
@@ -83,7 +84,7 @@ export struct BottomNavItem {
   @Local normalOpacity: number = 1
   @Local selectedOpacity: number = 0
   @Local iconScale: number = 1
-  @Local labelColor: number = DesignColor.TEXT_TERTIARY
+  @Local labelColor: number = resColor('TEXT_TERTIARY')
 
   aboutToAppear(): void {
     this.applyState(false)
@@ -105,13 +106,13 @@ export struct BottomNavItem {
         this.iconScale = this.isSelected ? 1.06 : 1
       })
       animateTo({ duration: 200, curve: Curve.Linear }, () => {
-        this.labelColor = this.isSelected ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY
+        this.labelColor = this.isSelected ? resColor('PRIMARY') : resColor('TEXT_TERTIARY')
       })
     } else {
       this.normalOpacity = this.isSelected ? 0 : 1
       this.selectedOpacity = this.isSelected ? 1 : 0
       this.iconScale = this.isSelected ? 1.06 : 1
-      this.labelColor = this.isSelected ? DesignColor.PRIMARY : DesignColor.TEXT_TERTIARY
+      this.labelColor = this.isSelected ? resColor('PRIMARY') : resColor('TEXT_TERTIARY')
     }
   }
 
@@ -131,12 +132,12 @@ export struct BottomNavItem {
       Stack() {
         SymbolGlyph(this.normalIcon)
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_TERTIARY])
+          .fontColor([resColor('TEXT_TERTIARY')])
           .opacity(this.normalOpacity)
 
         SymbolGlyph(this.selectedIcon)
           .fontSize(24)
-          .fontColor([DesignColor.PRIMARY])
+          .fontColor([resColor('PRIMARY')])
           .opacity(this.selectedOpacity)
       }
       .width(26)

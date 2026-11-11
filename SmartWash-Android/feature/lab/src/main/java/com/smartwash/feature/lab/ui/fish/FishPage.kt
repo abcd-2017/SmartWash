@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
@@ -215,6 +216,9 @@ private fun FishPool(
         modifier = modifier
             .clip(RoundedCornerShape(AppDimens.radiusLg))
             .background(scheme.waterSoft)
+            // 1dp outline 描边与沙盘池（SandPage）同画法：waterSoft on background
+            // 边界对比仅 ≈1.15:1，无描边时浅色下池界发虚
+            .border(1.dp, scheme.outline, RoundedCornerShape(AppDimens.radiusLg))
             .pointerInput(Unit) {
                 detectTapGestures(
                     onDoubleTap = { offset -> onPulse(offset.x, offset.y) },
@@ -266,7 +270,10 @@ private fun FirstRunHint(reduceMotion: Boolean, modifier: Modifier = Modifier) {
         Text(
             text = stringResource(R.string.lab_fish_hint),
             style = MaterialTheme.typography.labelMedium,
-            color = AppColors.colorScheme.onPrimarySoft,
+            // 白卡胶囊上的文字用「文字绿」深档 textGreen（R17 裁定，on 白 5.1:1；
+            // onPrimarySoft 语义是 primarySoft 浅绿容器配对字色，与此处 surface 白底错位；
+            // 色板无 onPrimaryContainer 令牌，编译核实）
+            color = AppColors.colorScheme.textGreen,
             modifier = modifier
                 .alpha(alpha)
                 .background(AppColors.colorScheme.surface, RoundedCornerShape(AppDimens.radiusFull))
@@ -276,7 +283,7 @@ private fun FirstRunHint(reduceMotion: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-/** reduced motion 播放/暂停开关（36dp 小按钮档：12dp 圆角 + pressable，无 ripple） */
+/** reduced motion 播放/暂停开关（12dp 圆角 + pressable 无 ripple；视觉胶囊不变，热区抬至 48dp 下限） */
 @Composable
 private fun PlayToggleButton(
     playing: Boolean,
@@ -286,6 +293,8 @@ private fun PlayToggleButton(
     val scheme = AppColors.colorScheme
     Row(
         modifier = modifier
+            // 仅 padding(spaceXs) + 20dp 图标实际高度 ≈36dp，低于 48dp 触控下限，sizeIn 兜底
+            .sizeIn(minHeight = 48.dp)
             .clip(RoundedCornerShape(AppDimens.radiusMd))
             .background(scheme.surface)
             .border(1.dp, scheme.outline, RoundedCornerShape(AppDimens.radiusMd))

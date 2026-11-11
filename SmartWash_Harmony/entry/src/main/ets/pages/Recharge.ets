@@ -1,6 +1,6 @@
 import { BusinessError } from '@kit.BasicServicesKit'
 import { KeyboardAvoidMode } from '@kit.ArkUI'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming } from "../constant/DesignSystem"
 import { RouteNames } from "../constant/RouteNames"
 import { PaymentMethod } from "../constant/PaymentMethod"
 import { RechargeType } from "../constant/RechargeType"
@@ -14,6 +14,8 @@ import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { bumpUserInfoRefresh } from "../utils/RefreshSignal"
 import { AppButton, AppConfirmDialog, IconBox, SelectionDot } from "../view/common/AppComponents"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 单笔充值金额上限：与后端 RechargeRecordsServiceImpl.MAX_RECHARGE_AMOUNT 保持一致（评审 #19）
 const MAX_RECHARGE_AMOUNT: number = 10000
@@ -50,7 +52,7 @@ struct Recharge {
   @State checkPayTypeMsg: string = ""
   @State checkPayNumber: boolean = false
   // 金额校验失败的具体文案（评审 #19：错误提示友好化）
-  @State checkPayNumberMsg: string = "请选择或输入充值金额"
+  @State checkPayNumberMsg: string = resString('select_or_input_amount')
   // 充值请求进行中标记：按钮 loading 并拦截连点（评审 #12）
   @State isRecharging: boolean = false
   // 账户余额（安卓页顶直出，无卡片；取数失败按 0 兜底，见裁决 #5）
@@ -117,7 +119,7 @@ struct Recharge {
       Text(`¥${amount}`)
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(this.isPresetSelected(index) ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_PRIMARY)
+        .fontColor(this.isPresetSelected(index) ? resColor('PRIMARY_DARK') : resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
 
       // 赠额随档常驻（对齐安卓 AmountGridCell：不只在选中时出现）
@@ -125,7 +127,7 @@ struct Recharge {
         Text(`送 ¥${this.bonusOf(amount)}`)
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.ONGOING_INK)
+          .fontColor(resColor('ONGOING_INK'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 2 })
       }
@@ -134,11 +136,11 @@ struct Recharge {
     .width("100%")
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
-    .backgroundColor(this.isPresetSelected(index) ? DesignColor.PRIMARY_SOFT : DesignColor.SURFACE)
+    .backgroundColor(this.isPresetSelected(index) ? resColor('PRIMARY_SOFT') : resColor('SURFACE'))
     .borderRadius(DesignDimens.BUTTON_RADIUS)
     .border({
       width: this.isPresetSelected(index) ? SELECTED_BORDER_WIDTH : 1,
-      color: this.isPresetSelected(index) ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+      color: this.isPresetSelected(index) ? resColor('PRIMARY') : resColor('OUTLINE'),
       radius: DesignDimens.BUTTON_RADIUS
     })
     .scale({ x: this.pressedKey === index ? 0.97 : 1, y: this.pressedKey === index ? 0.97 : 1 })
@@ -160,20 +162,20 @@ struct Recharge {
   @Builder
   CustomAmountCell() {
     Column() {
-      Text("自定义")
+      Text($r('app.string.custom'))
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(this.isCustomSelected ? DesignColor.PRIMARY_DARK : DesignColor.TEXT_SECONDARY)
+        .fontColor(this.isCustomSelected ? resColor('PRIMARY_DARK') : resColor('TEXT_SECONDARY'))
     }
     .height(72)
     .width("100%")
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
-    .backgroundColor(this.isCustomSelected ? DesignColor.PRIMARY_SOFT : DesignColor.SURFACE)
+    .backgroundColor(this.isCustomSelected ? resColor('PRIMARY_SOFT') : resColor('SURFACE'))
     .borderRadius(DesignDimens.BUTTON_RADIUS)
     .border({
       width: this.isCustomSelected ? SELECTED_BORDER_WIDTH : 1,
-      color: this.isCustomSelected ? DesignColor.PRIMARY : DesignColor.OUTLINE,
+      color: this.isCustomSelected ? resColor('PRIMARY') : resColor('OUTLINE'),
       radius: DesignDimens.BUTTON_RADIUS
     })
     .scale({ x: this.pressedKey === 5 ? 0.97 : 1, y: this.pressedKey === 5 ? 0.97 : 1 })
@@ -197,7 +199,7 @@ struct Recharge {
   AmountErrorLine() {
     if (this.checkPayNumber) {
       Text(this.checkPayNumberMsg)
-        .fontColor(DesignColor.ERROR)
+        .fontColor(resColor('ERROR'))
         .fontSize(DesignFontSize.CAPTION)
         .margin({ top: 8 })
         .alignSelf(ItemAlign.Start)
@@ -212,7 +214,7 @@ struct Recharge {
   PayTypeErrorLine() {
     if (this.checkPayType) {
       Text(this.checkPayTypeMsg)
-        .fontColor(DesignColor.ERROR)
+        .fontColor(resColor('ERROR'))
         .fontSize(DesignFontSize.CAPTION)
         .margin({ top: 8 })
         .alignSelf(ItemAlign.Start)
@@ -237,18 +239,18 @@ struct Recharge {
       Text() {
         Span(`充值 ¥${this.selectedAmount.toFixed(2)} · 到账 `)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
 
         Span(`¥${(this.selectedAmount + this.summaryBonus()).toFixed(2)}`)
           .fontSize(DesignFontSize.CAPTION)
           // CAPTION（12）属 font.caption 档，规范 weight=400/500；原 BOLD(700) 属滥用，收敛
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
 
         if (this.summaryBonus() > 0) {
           Span(`（含赠送 ¥${this.summaryBonus().toFixed(2)}）`)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
         }
       }
       .fontFeature(DesignFontFeature.TNUM)
@@ -261,15 +263,15 @@ struct Recharge {
   @Builder
   CustomAmountInput() {
     Column() {
-      TextInput({ text: $$this.customAmount, placeholder: "输入自定义金额" })
+      TextInput({ text: $$this.customAmount, placeholder: resString('custom_amount_placeholder') })
         .width("100%")
         .backgroundColor(Color.Transparent)
         .type(InputType.NUMBER_DECIMAL)
         .maxLength(8) // 8 位可完整输入上限金额 "10000.00"（含两位小数，评审 #19）
         .fontSize(DesignFontSize.BODY)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
-        .placeholderColor(DesignColor.TEXT_SECONDARY)
+        .placeholderColor(resColor('TEXT_SECONDARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .key(CUSTOM_INPUT_KEY)
         .onFocus(() => {
@@ -297,11 +299,11 @@ struct Recharge {
     // 文字内边距对齐安卓 M3 TextField 默认内容 padding 16dp
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
     .justifyContent(FlexAlign.Center)
-    .backgroundColor(this.isCustomSelected ? DesignColor.PRIMARY_SOFT : DesignColor.SURFACE_VARIANT)
+    .backgroundColor(this.isCustomSelected ? resColor('PRIMARY_SOFT') : resColor('SURFACE_VARIANT'))
     .borderRadius(DesignDimens.INPUT_RADIUS)
     .border({
       width: 1,
-      color: this.isCustomSelected ? DesignColor.PRIMARY : DesignColor.SURFACE_VARIANT,
+      color: this.isCustomSelected ? resColor('PRIMARY') : resColor('SURFACE_VARIANT'),
       radius: DesignDimens.INPUT_RADIUS
     })
     .margin({ top: 8 })
@@ -321,21 +323,21 @@ struct Recharge {
           .width(24)
           .height(24)
           .borderRadius(12)
-          .border({ width: 1, color: DesignColor.PRIMARY, style: BorderStyle.Solid })
+          .border({ width: 1, color: resColor('PRIMARY'), style: BorderStyle.Solid })
           .transition(TransitionEffect.OPACITY.animation(MotionTiming.ENTER))
         // 内圆：选中时出现
         Column()
           .width(12)
           .height(12)
           .borderRadius(6)
-          .backgroundColor(DesignColor.PRIMARY)
+          .backgroundColor(resColor('PRIMARY'))
           .transition(TransitionEffect.scale({ x: 0, y: 0 }).animation(MotionTiming.ENTER))
       } else {
         Column()
           .width(24)
           .height(24)
           .borderRadius(12)
-          .border({ width: 1, color: DesignColor.OUTLINE, style: BorderStyle.Solid })
+          .border({ width: 1, color: resColor('OUTLINE'), style: BorderStyle.Solid })
       }
     }
     .width(24)
@@ -356,13 +358,13 @@ struct Recharge {
       .height(36)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
       .backgroundColor(method === PaymentMethod.WECHAT ?
-        DesignColor.ICON_CONTAINER_GREEN : DesignColor.ICON_CONTAINER_BLUE)
+        resColor('ICON_CONTAINER_GREEN') : resColor('ICON_CONTAINER_BLUE'))
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
       Text(title)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .margin({ left: 12 })
         .layoutWeight(1)
 
@@ -388,8 +390,8 @@ struct Recharge {
   // 充值确认弹窗（对齐安卓 AppConfirmDialog，替代系统 promptAction 弹窗）
   private confirmDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      title: "提示",
-      message: "是否确认充值？",
+      title: resString('tip'),
+      message: resString('confirm_recharge_question'),
       onConfirm: () => {
         this.doRecharge()
       }
@@ -401,14 +403,14 @@ struct Recharge {
 
   // 提交按钮文案（对齐安卓「立即充值 ¥xx.00」，未选金额时不拼金额）
   private submitText(): string {
-    return this.selectedAmount === null ? "立即充值" : `立即充值 ¥${this.selectedAmount.toFixed(2)}`
+    return this.selectedAmount === null ? resString('recharge_now') : `立即充值 ¥${this.selectedAmount.toFixed(2)}`
   }
 
   check() {
     // 文案必须先于条件赋值（对齐 AmountErrorLine 的 validateAmount 先写 checkPayNumberMsg 再置
     // checkPayNumber）：If 分支体读取的 @State 文案与条件同帧变更时，框架按赋值顺序注册依赖，
     // 条件先置会让 If 以空文案重建分支，后续文案变更不再触发该分支重渲染（真机实测错误行不出现）。
-    this.checkPayTypeMsg = this.payType === null ? "请选择充值方式" : ""
+    this.checkPayTypeMsg = this.payType === null ? resString('select_payment_method') : ""
     this.checkPayType = this.payType === null
     // 金额精确校验（评审 #19）：不合法时 checkPayNumberMsg 已写入具体原因
     this.checkPayNumber = !this.validateAmount()
@@ -422,16 +424,16 @@ struct Recharge {
     if (this.isCustomSelected) {
       const raw = this.customAmount.trim()
       if (raw === "") {
-        this.checkPayNumberMsg = "请输入充值金额"
+        this.checkPayNumberMsg = resString('recharge_amount_empty')
         return false
       }
       if (!AMOUNT_PATTERN.test(raw)) {
-        this.checkPayNumberMsg = "金额格式不正确，最多支持两位小数"
+        this.checkPayNumberMsg = resString('recharge_amount_invalid_format')
         return false
       }
       const amount = parseFloat(raw)
       if (!Number.isFinite(amount) || amount <= 0) {
-        this.checkPayNumberMsg = "充值金额必须大于 0 元"
+        this.checkPayNumberMsg = resString('recharge_amount_not_positive')
         return false
       }
       if (amount > MAX_RECHARGE_AMOUNT) {
@@ -443,7 +445,7 @@ struct Recharge {
       return true
     }
     if (this.selectedAmount === null) {
-      this.checkPayNumberMsg = "请选择或输入充值金额"
+      this.checkPayNumberMsg = resString('select_or_input_amount')
       return false
     }
     this.payNum = this.selectedAmount
@@ -460,7 +462,7 @@ struct Recharge {
     if (this.checkPayType || this.checkPayNumber) {
       // 业务拒绝：提交校验未通过（未选支付方式/金额非法），仅记校验结论摘要
       logger.warn('recharge', `充值提交校验未通过 ` +
-        `payType=${this.payType === null ? "未选" : "已选"} reason=${this.checkPayNumberMsg}`)
+        `payType=${this.payType === null ? resString('recharge_1') : resString('recharge_2')} reason=${this.checkPayNumberMsg}`)
       return
     }
     // 防连点：请求进行中直接忽略
@@ -489,11 +491,11 @@ struct Recharge {
         // 低频关键动作成功：充值完成留 info
         logger.info('recharge', `充值成功 amount=${creditedAmount.toFixed(2)}(到账)`)
         pathStack.pop()
-        showToastSafety("充值成功")
+        showToastSafety(resString('recharge_success'))
       } else {
         logger.warn('recharge', `充值被拒绝 amount=${creditedAmount.toFixed(2)}(到账) ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "充值失败")
+        showToastSafety(res.message, resString('error_recharge_failed'))
       }
     } finally {
       this.isRecharging = false
@@ -503,7 +505,7 @@ struct Recharge {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -513,7 +515,7 @@ struct Recharge {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([DesignColor.ON_BACKGROUND])
+              .fontColor([resColor('ON_BACKGROUND')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -523,10 +525,10 @@ struct Recharge {
             pathStack.pop()
           })
 
-          Text("充值")
+          Text($r('app.string.service_recharge'))
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.ON_BACKGROUND)
+            .fontColor(resColor('ON_BACKGROUND'))
 
           Blank()
 
@@ -536,9 +538,9 @@ struct Recharge {
               icon: $r('sys.symbol.clock_arrow_2_circlepath'),
               sizeValue: 36,
               iconSize: 20,
-              containerColor: DesignColor.ICON_CONTAINER_TEAL,
-              iconColor: DesignColor.ICON_FOREGROUND_TEAL,
-              accessibilityLabel: '充值记录'
+              containerColor: resColor('ICON_CONTAINER_TEAL'),
+              iconColor: resColor('ICON_FOREGROUND_TEAL'),
+              accessibilityLabel: resString('recharge_record')
             })
           }
           .width(DesignDimens.BACK_HIT_AREA)
@@ -560,14 +562,14 @@ struct Recharge {
           Column({ space: DesignDimens.SPACE_XL }) {
             // 账户余额（安卓页顶直出，无卡片；bodySmall 12/400 + DataLarge 36 primaryDark）
             Column() {
-              Text("账户余额")
+              Text($r('app.string.account_balance_label'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               Text(`¥${this.balance.toFixed(2)}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
                 .fontWeight(DesignFontWeight.BOLD)
-                .fontColor(DesignColor.PRIMARY_DARK)
+                .fontColor(resColor('PRIMARY_DARK'))
                 .fontFeature(DesignFontFeature.TNUM)
                 .margin({ top: 4 })
             }
@@ -576,10 +578,10 @@ struct Recharge {
 
             // 充值金额（卡壳 + 3×2 网格 + 动态到账 + 独立输入框）
             Column() {
-              Text("充值金额")
+              Text($r('app.string.recharge_amount'))
                 .fontSize(DesignFontSize.SECTION_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .margin({ bottom: 12 })
 
               Column() {
@@ -602,9 +604,9 @@ struct Recharge {
 
                 this.SummaryLine()
 
-                Text("自定义金额")
+                Text($r('app.string.custom_amount'))
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.TEXT_SECONDARY)
+                  .fontColor(resColor('TEXT_SECONDARY'))
                   // 行盒对齐安卓 bodySmall 12/16
                   .lineHeight(16)
                   .margin({ top: 8 })
@@ -616,13 +618,13 @@ struct Recharge {
               // 安卓 Column 默认 TopStart（左对齐），此处补齐对齐属性
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.CARD_PADDING)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+              .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -633,30 +635,30 @@ struct Recharge {
 
             // 支付方式
             Column() {
-              Text("支付方式")
+              Text($r('app.string.payment_method'))
                 .fontSize(DesignFontSize.SECTION_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .margin({ bottom: 12 })
 
               Column() {
-                this.PayTypeCard(PaymentMethod.WECHAT, "微信支付", $r('app.media.wechat'), 0)
+                this.PayTypeCard(PaymentMethod.WECHAT, resString('weixin_pay'), $r('app.media.wechat'), 0)
 
                 Divider()
-                  .color(DesignColor.HAIRLINE)
+                  .color(resColor('HAIRLINE'))
                   .strokeWidth(0.5)
                   .padding({ left: 68, right: 20 })
 
-                this.PayTypeCard(PaymentMethod.ALIPAY, "支付宝", $r('app.media.alipay'), 1)
+                this.PayTypeCard(PaymentMethod.ALIPAY, resString('alipay'), $r('app.media.alipay'), 1)
               }
               .width("100%")
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: DesignColor.OUTLINE, radius: DesignDimens.CARD_RADIUS })
+              .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -679,7 +681,7 @@ struct Recharge {
         // 底部固定 CTA 条（对齐安卓 RechargePage.kt:344-361：surface 底 + 0.5 顶线 + 24/16/20）
         Column() {
           Divider()
-            .color(DesignColor.OUTLINE)
+            .color(resColor('OUTLINE'))
             .strokeWidth(0.5)
 
           AppButton({
@@ -700,7 +702,7 @@ struct Recharge {
           .margin({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 16, bottom: 20 + safeBottomVp() })
         }
         .width("100%")
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
       }
       .width("100%")
       .height("100%")
@@ -711,7 +713,7 @@ struct Recharge {
     .width("100%")
     .height("100%")
     .align(Alignment.Top)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
     .hideTitleBar(true)
   }
 }

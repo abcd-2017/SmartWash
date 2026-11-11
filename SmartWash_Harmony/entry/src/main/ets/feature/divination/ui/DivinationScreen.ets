@@ -1,7 +1,8 @@
 /**
  * 观象台页面根容器 —— 对齐安卓 ui/DivinationScreen.kt。
  *
- * 进入模块即切换宣纸/玄墨子主题（当前固定亮色模式，见 EntryAbility 决策 D1），
+ * 进入模块即进入观象台子主题（当前固定宣纸：背景渐变与 DivPalette 均取 *_LIGHT 令牌；
+ * 应用已随系统深浅色而本域玄墨未接入，域级主题断层待办见 DivTheme.ets 头注与 compare-08 #12），
  * 背景为原型口径的三段竖向渐变（0 / 0.46 / 1）；可选滚动，摇卦页传 scrollable=false。
  *
  * 安全区策略（沉浸式窗口后更新）：EntryAbility 已 setWindowLayoutFullScreen(true)，
@@ -42,7 +43,8 @@ export struct DivinationScreen {
       .padding({ top: safeTopVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,
-        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.46], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
+        // 宣纸档中段停靠 0.50（对齐安卓 DivinationScreen.kt，compare-15 #57；玄墨接入后双档）
+        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.50], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
       })
       .expandSafeArea(this.immersive ? [SafeAreaType.SYSTEM] : [],
         this.immersive ? [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM] : [])
@@ -56,7 +58,7 @@ export struct DivinationScreen {
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
       .linearGradient({
         direction: GradientDirection.Bottom,
-        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.46], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
+        colors: [[DivColor.BG_TOP_LIGHT, 0.0], [DivColor.BG_MID_LIGHT, 0.50], [DivColor.BG_BOTTOM_LIGHT, 1.0]]
       })
       .expandSafeArea(this.immersive ? [SafeAreaType.SYSTEM] : [],
         this.immersive ? [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM] : [])

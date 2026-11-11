@@ -1,6 +1,7 @@
 import { instance } from './Axios'
 import { BaseResponse } from './BaseResponse'
 import { AxiosResponse, FormData } from '@ohos/axios'
+import { resString } from '../utils/ResourceString'
 
 /**
  * 业务信封状态码（对齐 Android common/utils/model/HttpStatusCode.kt）。
@@ -15,9 +16,9 @@ export class BizCode {
 }
 
 // 业务失败兜底文案：后端 message 缺失/空串时使用（对齐安卓 error_network_fail 文案）
-const DEFAULT_FAIL_MESSAGE: string = "请求失败"
+function DEFAULT_FAIL_MESSAGE(): string { return resString('error_network_fail') }
 // 信封异常兜底文案：body 非信封结构（code 缺省）时使用（对齐安卓 error_unknown 文案）
-const DEFAULT_UNKNOWN_MESSAGE: string = "未知错误"
+function DEFAULT_UNKNOWN_MESSAGE(): string { return resString('error_unknown') }
 
 /**
  * 业务失败（code≠200）的用户可见文案取值策略（对齐安卓 ResponseInterceptor.resolveBusinessErrorMessage，
@@ -49,7 +50,7 @@ export function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
     const unknown: BaseResponse<T> = {
       data: null,
       code: BizCode.ERROR,
-      message: isBlankMessage(raw.message) ? DEFAULT_UNKNOWN_MESSAGE : raw.message
+      message: isBlankMessage(raw.message) ? DEFAULT_UNKNOWN_MESSAGE() : raw.message
     }
     return unknown
   }
@@ -60,7 +61,7 @@ export function decode<T>(raw: BaseResponse<T>): BaseResponse<T> {
     const failed: BaseResponse<T> = {
       data: raw.data,
       code: raw.code,
-      message: resolved.length > 0 ? resolved : DEFAULT_FAIL_MESSAGE
+      message: resolved.length > 0 ? resolved : DEFAULT_FAIL_MESSAGE()
     }
     return failed
   }

@@ -7,7 +7,7 @@
 // 已知坑遵守：内容依赖状态的卡片用 @ComponentV2 + @Param/@Event；输入态由表单自身持有；
 // 列表骨架/错误/空态齐备（规范 §3.6）。
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   AddCardForm,
@@ -41,6 +41,7 @@ import { bumpReviewRefresh } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'reviewMaterialList'
@@ -344,17 +345,18 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_title_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
         .margin({ bottom: DesignDimens.SPACE_XS })
 
+      // 弹性下限 48：130% 字体缩放时不裁切（对齐安卓 heightIn(min=48)，M12）
       TextInput({ text: this.formTitle, placeholder: ReviewText.review_material_form_title_hint })
-        .height(48)
+        .constraintSize({ minHeight: 48 })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(DesignColor.OUTLINE)
-        .placeholderColor(DesignColor.TEXT_TERTIARY)
+        .borderColor(resColor('OUTLINE'))
+        .placeholderColor(resColor('TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_TITLE_MAX)
         .onChange((value: string) => {
@@ -364,27 +366,29 @@ struct MaterialListPage {
       Text(ReviewText.review_material_form_raw_label)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(DesignColor.TEXT_SECONDARY)
-        .margin({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_XS })
+        .fontColor(resColor('TEXT_SECONDARY'))
+        .margin({ top: DesignDimens.SPACE_LG, bottom: DesignDimens.SPACE_XS })
 
-      TextInput({ text: this.formRawText, placeholder: ReviewText.review_material_form_raw_hint })
-        .height(120)
+      // 原文粘贴改多行 TextArea：单行 TextInput 内长文本无法换行回看（对齐安卓 minLines=4 弹性多行，M9）
+      TextArea({ text: this.formRawText, placeholder: ReviewText.review_material_form_raw_hint })
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(DesignColor.SURFACE_VARIANT)
+        .backgroundColor(resColor('SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .borderWidth(1)
-        .borderColor(DesignColor.OUTLINE)
-        .placeholderColor(DesignColor.TEXT_TERTIARY)
+        .borderColor(resColor('OUTLINE'))
+        .placeholderColor(resColor('TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .maxLength(REVIEW_RAW_TEXT_MAX)
+        .constraintSize({ minHeight: 96 })
         .onChange((value: string) => {
           this.formRawText = value
         })
 
       if (this.createError.length > 0) {
         Text(this.createError)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.ERROR)
+          .fontSize(DesignFontSize.CAPTION)
+          .lineHeight(DesignFontSize.CAPTION + 4)
+          .fontColor(resColor('ERROR'))
           .margin({ top: DesignDimens.SPACE_SM })
       }
 
@@ -399,10 +403,17 @@ struct MaterialListPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
+    // 表单容器补卡片档阴影（对齐安卓 GroupCard softCardShadow，M11）
+    .shadow({
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
+      color: resColor('SHADOW_COLOR_CARD'),
+      offsetX: 0,
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
+    })
     .alignItems(HorizontalAlign.Start)
   }
 
@@ -427,7 +438,7 @@ struct MaterialListPage {
     .padding({ top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
   }
 
-  /** 加载更多行：加载中骨架块 / 静态文字按钮 / 失败重试（对齐安卓 LoadMoreRow） */
+  /** 加载更多行：加载中骨架块 / 失败文案（行本身即重试入口）/ 静态文字按钮（对齐安卓 LoadMoreRow） */
   @Builder
   LoadMoreRow() {
     Row() {
@@ -436,22 +447,27 @@ struct MaterialListPage {
           .width(120)
           .height(14)
       } else if (this.loadMoreError) {
+        // 错误文案 13/600 dangerInk 居中（对齐安卓 LoadMoreRow Error 分支，M15）
         Text(ReviewText.review_error_load_more)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.DANGER_INK)
+          .fontSize(DesignFontSize.BUTTON_TEXT)
+          .fontWeight(DesignFontWeight.SEMI_BOLD)
+          .fontColor(resColor('DANGER_INK'))
+          .textAlign(TextAlign.Center)
       } else {
+        // 小号绿字走 TEXT_GREEN（PRIMARY 在页面底仅 3.22:1 破线，M4）
         Text(ReviewText.review_material_load_more)
           .fontSize(DesignFontSize.BUTTON_TEXT)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY)
+          .fontColor(resColor('TEXT_GREEN'))
       }
     }
     .width('100%')
-    .constraintSize({ minHeight: 44 })
+    .constraintSize({ minHeight: 48 })
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
     .onClick(() => {
-      if (!this.isLoadingMore && !this.loadMoreError) {
+      // 错误态行本身即重试入口，仅加载中拦截（对齐安卓 LoadMoreRow pressable 常开，M6）
+      if (!this.isLoadingMore) {
         this.loadMore()
       }
     })
@@ -460,7 +476,7 @@ struct MaterialListPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -487,7 +503,8 @@ struct MaterialListPage {
             .layoutWeight(1)
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
-            List() {
+            // 列表项间距 16：相邻卡片贴合仅隔描边（对齐安卓 spacedBy(cardSpacing)，M5）
+            List({ space: DesignDimens.CARD_SPACING }) {
               if (this.createVisible) {
                 ListItem() {
                   this.CreateMaterialForm()
@@ -550,7 +567,7 @@ struct MaterialListPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -585,31 +602,34 @@ struct MaterialCard {
 
   build() {
     Column() {
-      // 头部整行点击展开/收起
+      // 头部整行点击展开/收起（热区 ≥48，对齐安卓 heightIn(min=48)，M8）
       Row() {
         Column() {
           Text(this.material.title ?? '')
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
+          // 创建日期是可读信息（非装饰角标）：TEXT_TERTIARY 双主题均破 4.5:1（M1）
           Text(reviewCreatedDateOf(this.material.createdAt, '—'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
         .alignItems(HorizontalAlign.Start)
         .layoutWeight(1)
 
+        // 展开/收起：caption 12 + TEXT_GREEN（对齐安卓 labelMedium + textGreen，M4）
         Text(this.expanded ? ReviewText.review_material_collapse : ReviewText.review_material_expand)
-          .fontSize(DesignFontSize.BODY_SMALL)
+          .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(DesignColor.PRIMARY)
+          .fontColor(resColor('TEXT_GREEN'))
       }
       .width('100%')
+      .constraintSize({ minHeight: 48 })
       .alignItems(VerticalAlign.Center)
       .onClick(() => {
         this.onToggleExpand()
@@ -618,8 +638,9 @@ struct MaterialCard {
       if (this.material.rawText !== null && this.material.rawText !== undefined &&
         (this.material.rawText ?? '').length > 0) {
         Text(this.material.rawText ?? '')
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontSize(DesignFontSize.CAPTION)
+          .lineHeight(DesignFontSize.CAPTION + 4)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .maxLines(2)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -627,25 +648,28 @@ struct MaterialCard {
       }
 
       if (this.expanded) {
+        // 展开/收起过渡：淡入淡出保守档（对齐安卓 AnimatedVisibility fade+expand 的近似，M16）
         Column() {
           Divider()
             .strokeWidth(0.5)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
             .width('100%')
             .margin({ top: DesignDimens.SPACE_SM })
 
           Row() {
             Text(ReviewText.review_material_cards_header_format.replace('%d', `${this.cardsTotal}`))
-              .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontSize(DesignFontSize.CAPTION)
+              .lineHeight(DesignFontSize.CAPTION + 4)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .fontFeature(DesignFontFeature.TNUM)
               .layoutWeight(1)
 
             Text(ReviewText.review_material_add_card)
               .fontSize(DesignFontSize.BUTTON_TEXT)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.PRIMARY)
-              .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 8, bottom: 8 })
+              .fontColor(resColor('TEXT_GREEN'))
+              .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
+              .constraintSize({ minHeight: 48 })
               .onClick(() => {
                 this.onAddCard()
               })
@@ -662,10 +686,17 @@ struct MaterialCard {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
+    // 资料卡补卡片档阴影（对齐安卓 AppCard softCardShadow，M11）
+    .shadow({
+      radius: DesignElevation.CARD_SHADOW_RADIUS,
+      color: resColor('SHADOW_COLOR_CARD'),
+      offsetX: 0,
+      offsetY: DesignElevation.CARD_SHADOW_OFFSET
+    })
     .alignItems(HorizontalAlign.Start)
   }
 
@@ -679,8 +710,8 @@ struct MaterialCard {
             .width('70%')
             .height(14)
           SkeletonBlock()
-            .width('50%')
-            .height(12)
+            .width('70%')
+            .height(14)
         }
         .width('100%')
         .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
@@ -688,14 +719,16 @@ struct MaterialCard {
       } else if (this.cardsError) {
         Row() {
           Text(ReviewText.review_error_load)
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.DANGER_INK)
+            .fontSize(DesignFontSize.CAPTION)
+            .lineHeight(DesignFontSize.CAPTION + 4)
+            .fontColor(resColor('DANGER_INK'))
             .layoutWeight(1)
           Text(ReviewText.review_action_retry)
             .fontSize(DesignFontSize.BUTTON_TEXT)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(DesignColor.PRIMARY)
-            .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 8, bottom: 8 })
+            .fontColor(resColor('TEXT_GREEN'))
+            .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: DesignDimens.SPACE_XXS, bottom: DesignDimens.SPACE_XXS })
+            .constraintSize({ minHeight: 48 })
             .onClick(() => {
               this.onRetryCards()
             })
@@ -704,9 +737,11 @@ struct MaterialCard {
         .alignItems(VerticalAlign.Center)
         .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
       } else if (this.cards.length === 0) {
+        // 引导性正文（非装饰角标）：TEXT_TERTIARY 双主题均破 4.5:1（M2）
         Text(ReviewText.review_material_cards_empty)
-          .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          .fontSize(DesignFontSize.CAPTION)
+          .lineHeight(DesignFontSize.CAPTION + 4)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
       } else {
         ForEach(this.cards, (card: ReviewCardVo, index: number) => {
@@ -715,14 +750,14 @@ struct MaterialCard {
               Text(card.question ?? '')
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
 
               Text(card.answer ?? '')
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
                 .width('100%')
@@ -732,7 +767,7 @@ struct MaterialCard {
                 isNew: reviewIsNewCard(card),
                 state: card.state ?? 1
               })
-                .margin({ top: DesignDimens.SPACE_XS })
+                .margin({ top: DesignDimens.SPACE_XXS })
             }
             .width('100%')
             .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
@@ -741,7 +776,7 @@ struct MaterialCard {
             if (index < this.cards.length - 1) {
               Divider()
                 .strokeWidth(0.5)
-                .color(DesignColor.DIVIDER)
+                .color(resColor('DIVIDER'))
                 .width('100%')
             }
           }
@@ -758,20 +793,21 @@ struct MaterialCard {
             } else if (this.cardsAppendError) {
               Text(ReviewText.review_error_load_more)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.DANGER_INK)
+                .fontColor(resColor('DANGER_INK'))
             } else {
               Text(ReviewText.review_material_load_more)
                 .fontSize(DesignFontSize.BUTTON_TEXT)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.PRIMARY)
+                .fontColor(resColor('TEXT_GREEN'))
             }
           }
           .width('100%')
-          .constraintSize({ minHeight: 44 })
+          .constraintSize({ minHeight: 48 })
           .justifyContent(FlexAlign.Center)
           .alignItems(VerticalAlign.Center)
           .onClick(() => {
-            if (!this.cardsLoadingMore && !this.cardsAppendError) {
+            // 错误态行本身即重试入口，仅加载中拦截（对齐安卓整行常开可点，M6）
+            if (!this.cardsLoadingMore) {
               this.onLoadMoreCards()
             }
           })

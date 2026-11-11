@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -146,10 +147,12 @@ fun DivFollowUpPage(
                 itemsIndexed(state.history, key = { index, _ -> "h$index" }) { _, turn ->
                     ChatBubble(turn)
                 }
-                // 流式回复气泡（issue #78 SSE delta 增量上屏；空增量先出水波 + 「正在推演…」）
+                // 流式回复气泡（issue #78 SSE delta 增量上屏；空增量先出水波 + 「正在推演…」）；
+                // audit-23 #18：中断时保留已流出的部分回复（气泡灰显 + 「生成中断」标记），不再整体消失
                 state.streamingReply?.let { reply ->
                     item(key = "streaming") {
-                        if (reply.isBlank()) {
+                        val interrupted = state.streamInterrupted
+                        if (reply.isBlank() && !interrupted) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 WaveIcon(isLoading = true, tint = c.gold, size = 16.dp)
                                 Spacer(Modifier.width(8.dp))
@@ -161,14 +164,28 @@ fun DivFollowUpPage(
                                 )
                             }
                         } else {
-                            ChatBubble(
-                                turn = DivFollowUpTurn(role = "assistant", content = reply),
-                                streaming = true,
-                            )
+                            Column {
+                                ChatBubble(
+                                    turn = DivFollowUpTurn(role = "assistant", content = reply),
+                                    // 流式与中断态都跳过首帧入场动画（内容已在上屏过程中，避免重播）
+                                    streaming = true,
+                                    muted = interrupted,
+                                )
+                                if (interrupted) {
+                                    Text(
+                                        text = stringResource(R.string.div_followup_interrupted),
+                                        fontSize = 12.sp,
+                                        lineHeight = 16.sp,
+                                        color = c.textSecondary,
+                                        modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                // 错误行（error 帧/网络失败；用户轮保留可重发）；428 未配置附「去配置」引导
+                // 错误行（error 帧/网络失败；用户轮保留可重发）：audit-23 #20 正文走 secondary 槽位；
+                // 428 未配置（NEED_CONFIG）附「去配置」引导（PR #91 解读拦截闭环）
                 val errorState = state.followUpState as? RequestState.Error
                 if (errorState != null) {
                     item(key = "error") {
@@ -180,10 +197,11 @@ fun DivFollowUpPage(
                                 text = errorState.getMessage(context),
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = c.textTertiary,
+                                color = c.textSecondary,
                                 textAlign = TextAlign.Center,
                             )
                             if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
+                                // PR #91：428 未配置——去设置页配置模型（唯一出路）
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.div_reading_go_config),
@@ -199,6 +217,23 @@ fun DivFollowUpPage(
                                         })
                                         .padding(horizontal = 20.dp, vertical = 8.dp),
                                 )
+                            } else {
+                                // audit-23 #18：错误态出路——重试最近一次失败的追问（§3.6 双要素）；
+                                // 48dp 热区文字按钮（参照 DivSectionTitle 尾链做法）
+                                val debouncedRetry = rememberDebouncedClick { viewModel.retryLast() }
+                                Box(
+                                    modifier = Modifier
+                                        .heightIn(min = 48.dp)
+                                        .pressable(onClick = debouncedRetry),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.div_followup_retry),
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = c.goldText,
+                                    )
+                                }
                             }
                         }
                     }
@@ -232,10 +267,12 @@ fun DivFollowUpPage(
 }
 
 /** 聊天气泡（画板双板）：用户实金底右对齐（玄墨 gold.500 / 宣纸 gold.300、墨字、r16 无描边），
- *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 12/16，宽上限 220/240；新气泡首帧淡入。
- *  streaming=true 为 SSE 增量上屏中的回复（取消首帧淡入，避免每帧重启动画）。 */
+ *  回复卡面左对齐（surface + 1px 12% 金发丝描边、r16）；文字 14/20（audit-23 #21：正文下限），
+ *  宽上限 220/240；新气泡首帧淡入。
+ *  streaming=true 为 SSE 增量上屏中的回复（取消首帧淡入，避免每帧重启动画）；
+ *  muted=true 为中断保留的未完成回复（audit-23 #18：正文降为次级色灰显）。 */
 @Composable
-private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false) {
+private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false, muted: Boolean = false) {
     val c = DivColors.current
     val isUser = turn.role == "user"
     // 新气泡首帧 alpha 0→1（reduced motion 取消，直接呈现）；流式气泡跳过（增量逐帧重组会重启动画）
@@ -278,9 +315,13 @@ private fun ChatBubble(turn: DivFollowUpTurn, streaming: Boolean = false) {
         ) {
             Text(
                 text = turn.content,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = if (isUser) c.onGold else c.textPrimary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                color = when {
+                    isUser -> c.onGold
+                    muted -> c.textSecondary
+                    else -> c.textPrimary
+                },
             )
         }
     }
@@ -332,16 +373,19 @@ private fun FollowUpInputBar(
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
-                    textStyle = TextStyle(color = c.textPrimary, fontSize = 14.sp, lineHeight = 20.sp),
+                    // audit-23 #17：输入正文 16/24（§3.7 输入正文 16sp，禁用 14sp 及以下；行高 48dp 不变）
+                    textStyle = TextStyle(color = c.textPrimary, fontSize = 16.sp, lineHeight = 24.sp),
                     cursorBrush = SolidColor(c.gold),
                     modifier = Modifier.fillMaxWidth(),
                     decorationBox = { innerTextField ->
                         if (value.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.div_followup_input_hint),
-                                fontSize = 14.sp,
-                                lineHeight = 20.sp,
-                                color = c.textTertiary,
+                                fontSize = 16.sp,
+                                lineHeight = 24.sp,
+                                // audit-23 #16：占位符走 textSecondary（§3.7）——宣纸主题 textTertiary
+                                // 与 textPrimary 同值，占位符与已输入文字视觉无差，占位暗示失效
+                                color = c.textSecondary,
                             )
                         }
                         innerTextField()

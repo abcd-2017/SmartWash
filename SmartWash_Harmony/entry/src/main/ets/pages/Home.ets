@@ -3,13 +3,15 @@ import { Service } from "../view/Service"
 import { UserInfo } from "../view/UserInfo"
 import { Workbench } from "../feature/workbench/Workbench"
 import { BottomNav, BottomNavTab } from "../view/BottomNavBar"
-import { DesignColor } from "../constant/DesignSystem"
+
 import { safeBottomVp } from "../utils/SafeArea"
 import { handleDeepLink } from "../utils/deeplink/DeepLinkHandler"
 import { logger } from "../utils/Logger"
 import { bumpOrderRefresh, bumpUserInfoRefresh, HOME_TAB_BACK_TICK_KEY, ORDER_TICK_KEY, USER_INFO_TICK_KEY } from "../utils/RefreshSignal"
 import vibrator from '@ohos.vibrator'
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function HomeBuilder() {
@@ -103,24 +105,24 @@ struct Home {
 
   // 底栏 tab 定义（对齐安卓 homeTabItems：线性/实心图标对 + 文案）
   private tabs: BottomNavTab[] = [
-    { key: 'home', label: '首页', selectedIcon: $r('sys.symbol.house_fill'), normalIcon: $r('sys.symbol.house') },
+    { key: 'home', label: resString('tab_home'), selectedIcon: $r('sys.symbol.house_fill'), normalIcon: $r('sys.symbol.house') },
     {
-      key: 'service', label: '服务', selectedIcon: $r('sys.symbol.list_bullet_square_fill_1'),
+      key: 'service', label: resString('tab_service'), selectedIcon: $r('sys.symbol.list_bullet_square_fill_1'),
       normalIcon: $r('sys.symbol.list_bullet_square')
     },
     {
       // 过渡图标：安卓自绘「三方块 + 一圆」，SDK 5.0.5 无 square_grid_2x2_fill，
       // 选中态由文字色/品牌色实心图标区分
-      key: 'workbench', label: '工作台', selectedIcon: $r('sys.symbol.square_grid_2x2'),
+      key: 'workbench', label: resString('tab_workbench'), selectedIcon: $r('sys.symbol.square_grid_2x2'),
       normalIcon: $r('sys.symbol.square_grid_2x2')
     },
-    { key: 'mine', label: '我的', selectedIcon: $r('sys.symbol.person_fill'), normalIcon: $r('sys.symbol.person') }
+    { key: 'mine', label: resString('tab_mine'), selectedIcon: $r('sys.symbol.person_fill'), normalIcon: $r('sys.symbol.person') }
   ]
 
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -165,7 +167,7 @@ struct Home {
         // 底栏由下方自定义 BottomNav 承载，隐藏内置 bar（barHeight 0）
         .barOverlap(false)
         .barHeight(0)
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
         .layoutWeight(1)
 
         // 底栏规范 §4.5：68vp 高、纯白底、0.5vp outline 顶部分隔线（对齐安卓 BottomBar）
@@ -181,14 +183,14 @@ struct Home {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       }
     }
     .width("100%")
     .height("100%")
     // 沉浸式：底部手势条区域由底栏同色背景延伸填充，tab 内容与底栏仍在安全区内（问题5）
     .padding({ bottom: safeBottomVp() })
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .hideTitleBar(true)
     // 从子页（充值/订单详情/优惠券等）返回时刷新首页账户卡余额与订单（问题9）
     .onShown(() => {

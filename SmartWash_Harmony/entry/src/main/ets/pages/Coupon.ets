@@ -6,12 +6,14 @@ import { CouponStatus } from "../constant/CouponStatus"
 import { showToastSafety } from "../utils/ToastUtil"
 import { logger } from "../utils/Logger"
 import { Debouncer } from "../utils/DebounceUtil"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { AppButton, AppButtonVariant, AppPillTabRow, EmptyState, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { TicketDashedLine, TicketNotch } from "../view/TicketNotchShape"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import vibrator from '@ohos.vibrator'
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 领取动作的节流间隔（毫秒）：后端领券无幂等，连点会重复发请求（评审报告 P0 背景），
 // 前端节流 + loading 是唯二防线（对齐安卓 rememberDebouncedClick）
@@ -59,7 +61,7 @@ struct Coupon {
   private receiveDebouncer: Debouncer = new Debouncer()
 
   // Tab 标题（可用 tab 的计数在 tabLabel 中动态拼接；第三 tab 文案对齐安卓 historical_coupons「历史」）
-  private readonly tabTitles: string[] = ["可用", "已领取", "历史"]
+  private readonly tabTitles: string[] = [resString('coupon_1'), resString('claimed_coupons'), resString('historical_coupons')]
 
   async aboutToAppear() {
     logger.debug('coupon', '优惠券页挂载，拉取三类券列表')
@@ -88,13 +90,13 @@ struct Coupon {
       } else {
         logger.warn('coupon', `优惠券列表加载失败 code=${res.code} message=${res.message ?? ""}`)
         this.loadFailed = true
-        showToastSafety(res.message, "优惠券加载失败")
+        showToastSafety(res.message, resString('coupon_load_failed'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.isLoading = false
       this.loadFailed = true
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('coupon_2'))
     }
   }
 
@@ -147,14 +149,14 @@ struct Coupon {
         // 低频关键动作成功：领券完成留 info
         logger.info('coupon', `优惠券领取成功 couponId=${couponId}`)
         await this.loadAllCoupons()
-        showToastSafety("领取成功")
+        showToastSafety(resString('claim_success'))
       } else {
         logger.warn('coupon', `优惠券领取被拒 couponId=${couponId} code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "领取失败，请稍后重试")
+        showToastSafety(res.message, resString('coupon_3'))
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并按失败提示，避免 claimingCouponId 卡死
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('coupon_2'))
     } finally {
       this.claimingCouponId = null
     }
@@ -175,7 +177,7 @@ struct Coupon {
   @Builder
   availablePage() {
     if (this.availableCoupons.length === 0) {
-      this.emptyPlaceholder("暂无优惠券")
+      this.emptyPlaceholder(resString('no_coupons_available'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
         ForEach(this.availableCoupons, (coupon: CouponVo) => {
@@ -202,7 +204,7 @@ struct Coupon {
   @Builder
   claimedPage() {
     if (this.claimedCoupons.length === 0) {
-      this.emptyPlaceholder("暂无优惠券")
+      this.emptyPlaceholder(resString('no_coupons_available'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
         ForEach(this.claimedCoupons, (userCoupon: UserCouponVo) => {
@@ -221,7 +223,7 @@ struct Coupon {
   @Builder
   historicalPage() {
     if (this.historicalCoupons.length === 0) {
-      this.emptyPlaceholder("暂无使用优惠券")
+      this.emptyPlaceholder(resString('no_historical_coupons'))
     } else {
       List({ space: DesignDimens.CARD_SPACING }) {
         ForEach(this.historicalCoupons, (userCoupon: UserCouponVo) => {
@@ -240,12 +242,12 @@ struct Coupon {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // ========== 页头（公共 PageHeader：22/600 + 48 热区返回，对齐安卓 CouponPage.kt:148） ==========
-        PageHeader({ title: "优惠券" })
+        PageHeader({ title: resString('service_coupon') })
 
         // ========== 胶囊分段标签栏（公共 AppPillTabRow，对齐安卓 AppPillTabRow） ==========
         // 顶部间距对齐安卓：AppPillTabRow 自带 padding(top=12, bottom=4) + 其后 Spacer(8)
@@ -271,11 +273,11 @@ struct Coupon {
           // 首载失败态（对齐安卓 CouponContentState.Error：EmptyState + 重试次按钮）
           Column() {
             EmptyState({
-              message: "优惠券加载失败",
+              message: resString('coupon_load_failed'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.loadAllCoupons()
@@ -310,13 +312,13 @@ struct Coupon {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
     .width("100%")
     .height("100%")
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 }
 
@@ -348,7 +350,7 @@ struct AvailableCouponCard {
   // 门槛文案（对齐安卓 no_threshold / coupon_min_amount_format「满%s元可用」）
   private thresholdText(): string {
     return (this.coupon?.threshold ?? 0) === 0 ?
-      "无门槛" :
+      resString('no_threshold') :
       `满${formatFloatShort(this.coupon?.threshold)}元可用`
   }
 
@@ -358,7 +360,7 @@ struct AvailableCouponCard {
 
   private claimLabel(): string {
     // 对齐安卓 claim_now / claimed
-    return this.isReceived() ? "已领取" : "立即领取"
+    return this.isReceived() ? resString('claimed_coupons') : resString('claim_now')
   }
 
   private hapticSelection(): void {
@@ -396,7 +398,7 @@ struct AvailableCouponCard {
       }
       .height(36)
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(this.isReceived() ? DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY)
+      .backgroundColor(this.isReceived() ? resColor('TEXT_SECONDARY') : resColor('PRIMARY'))
       // wrap-content：宽度随文字自适应（对齐安卓 ClaimAction，无最小宽度）
       .padding({ left: 16, right: 16 })
     }
@@ -428,11 +430,11 @@ struct AvailableCouponCard {
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(DesignColor.PRIMARY_DARK)
-          Text("优惠券")
+            .fontColor(resColor('PRIMARY_DARK'))
+          Text($r('app.string.service_coupon'))
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.PRIMARY)
+            .fontColor(resColor('PRIMARY'))
             .margin({ top: 4 })
         }
         .width(this.amountWidth)
@@ -441,26 +443,26 @@ struct AvailableCouponCard {
         .alignSelf(ItemAlign.Stretch)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(DesignColor.PRIMARY_CONTAINER)
+        .backgroundColor(resColor('PRIMARY_CONTAINER'))
 
         // 右侧两行结构（对齐安卓 2026-11-01 实机修正）：上 = 标题/日期/门槛；下 = 领取按钮右对齐
         Column() {
           Text(this.coupon?.title ?? "")
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(DesignColor.TEXT_PRIMARY)
+            .fontColor(resColor('TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Text(this.dateText())
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: 4 })
 
           Text(this.thresholdText())
             .fontSize(DesignFontSize.CAPTION)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: 2 })
 
           Row() {
@@ -476,13 +478,13 @@ struct AvailableCouponCard {
       }
       .width("100%")
       .alignItems(VerticalAlign.Center)
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影（0 2px 12px rgba(20,40,30,.05)）
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: DesignColor.SHADOW_COLOR_CARD,
+        color: resColor('SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -491,7 +493,7 @@ struct AvailableCouponCard {
       // 中间虚线撕裂线（段 6 / 隔 4 / 上下留 12，对齐安卓 CouponPage.kt:250-266）
       // 卡高为 wrap-content，实高由 onAreaChange 捕获后再渲染（首帧 cardHeight=0 不绘制）
       if (this.cardHeight > 0) {
-        TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: DesignColor.OUTLINE })
+        TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: resColor('OUTLINE') })
           .position({ x: this.amountWidth - 0.5, y: 12 })
       }
 
@@ -523,29 +525,29 @@ struct CouponTicketCard {
   private cardHeight: number = 88
 
   private amountColor(): number {
-    return this.isHistorical ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK
+    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY_DARK')
   }
 
   private unitColor(): number {
-    return this.isHistorical ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY
+    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY')
   }
 
   private titleColor(): number {
-    return this.isHistorical ? DesignColor.TEXT_SECONDARY : DesignColor.TEXT_PRIMARY
+    return this.isHistorical ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY')
   }
 
   private statusColor(): number {
-    return this.isHistorical ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY
+    return this.isHistorical ? resColor('TEXT_TERTIARY') : resColor('PRIMARY')
   }
 
   private statusText(): string {
     // 历史态按 isUsed 区分「已使用/已过期」，已领取态恒为「可用」（对齐安卓）
-    return this.isHistorical ? (this.userCoupon?.isUsed ? "已使用" : "已过期") : "可用"
+    return this.isHistorical ? (this.userCoupon?.isUsed ? resString('used') : resString('expired')) : resString('coupon_1')
   }
 
   private thresholdText(): string {
     return (this.userCoupon?.couponVo?.threshold ?? 0) === 0 ?
-      "无门槛" :
+      resString('no_threshold') :
       `满${formatFloatShort(this.userCoupon?.couponVo?.threshold)}元可用`
   }
 
@@ -560,7 +562,7 @@ struct CouponTicketCard {
             .fontFeature(DesignFontFeature.TNUM)
             .fontColor(this.amountColor())
           // 单位对齐安卓 UserCouponCard 的 R.string.coupon「优惠券」
-          Text("优惠券")
+          Text($r('app.string.service_coupon'))
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontColor(this.unitColor())
@@ -570,7 +572,7 @@ struct CouponTicketCard {
         .height(this.cardHeight)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(this.isHistorical ? DesignColor.SURFACE_VARIANT : DesignColor.PRIMARY_CONTAINER)
+        .backgroundColor(this.isHistorical ? resColor('SURFACE_VARIANT') : resColor('PRIMARY_CONTAINER'))
 
         // 右侧内容区
         Column() {
@@ -584,13 +586,13 @@ struct CouponTicketCard {
           Text(this.thresholdText())
             .fontSize(DesignFontSize.CAPTION)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: 4 })
 
           // 有效期文案对齐安卓 valid_until「有效期至：%s」（含全角冒号）
           Text(`有效期至：${this.userCoupon?.expiredAt ?? ""}`)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .margin({ top: 4 })
         }
         .layoutWeight(1)
@@ -608,13 +610,13 @@ struct CouponTicketCard {
       .width("100%")
       .height(this.cardHeight)
       .alignItems(VerticalAlign.Center)
-      .backgroundColor(DesignColor.SURFACE)
+      .backgroundColor(resColor('SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 票券卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .shadow({
         radius: DesignElevation.LEVEL_1,
-        color: DesignColor.SHADOW_COLOR_CARD,
+        color: resColor('SHADOW_COLOR_CARD'),
         offsetX: 0,
         offsetY: 2
       })
@@ -622,7 +624,7 @@ struct CouponTicketCard {
       .opacity(this.isHistorical ? 0.55 : 1.0)
 
       // 中间虚线撕裂线（段 6 / 隔 4 / 上下留 12）
-      TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: DesignColor.OUTLINE })
+      TicketDashedLine({ dashHeight: this.cardHeight - 24, dashColor: resColor('OUTLINE') })
         .position({ x: this.amountWidth - 0.5, y: 12 })
 
       // 左右缘中点打孔（φ14，对齐安卓 TicketShape）

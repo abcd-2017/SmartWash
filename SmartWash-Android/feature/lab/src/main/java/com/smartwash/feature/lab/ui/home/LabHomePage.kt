@@ -154,7 +154,9 @@ private fun ToyEntryCard(
                     tint = iconTint,
                 )
             }
-            Spacer(modifier = Modifier.size(AppDimens.spaceMd))
+            // 图标盒-文字间距取 spaceSm(12)（DESIGN-SPEC v0.4.1 卡内口径 8/12，
+            // 原 spaceMd 16 超口径；鸿蒙端 2026-11-11 已同步 12，两端一致）
+            Spacer(modifier = Modifier.size(AppDimens.spaceSm))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,

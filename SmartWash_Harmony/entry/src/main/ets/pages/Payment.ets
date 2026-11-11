@@ -13,9 +13,11 @@ import { logger } from "../utils/Logger"
 import { PaymentType } from "../constant/PaymentType"
 import { Debouncer } from "../utils/DebounceUtil"
 import { AppButton, AppButtonVariant, AppConfirmDialog, EmptyState, LoadingState, SelectionDot } from "../view/common/AppComponents"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 @Builder
 export function PaymentBuilder() {
@@ -38,13 +40,13 @@ struct PayInfoLine {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(DesignColor.TEXT_SECONDARY)
+        .fontColor(resColor('TEXT_SECONDARY'))
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
         .maxLines(1)
@@ -84,7 +86,7 @@ struct Payment {
   // 勿复制安卓旧版「等 Success 才关窗」缺陷（确认键持续可点 + 后端无幂等 = 连点重复扣款入口）
   private confirmPayController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      message: "确定要支付？",
+      message: resString('confirm_pay_question'),
       onConfirm: () => {
         this.doPay()
       }
@@ -96,9 +98,9 @@ struct Payment {
   // 余额不足弹窗（对齐安卓 AppConfirmDialog「余额不足」→ 去充值）
   private insufficientDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
-      title: "余额不足",
-      message: "当前余额不足，请先充值",
-      confirmText: "去充值",
+      title: resString('insufficient_balance'),
+      message: resString('insufficient_balance_tip'),
+      confirmText: resString('go_recharge'),
       onConfirm: () => {
         pathStack.pushPathByName(RouteNames.RECHARGE, null)
       }
@@ -142,13 +144,13 @@ struct Payment {
       } else {
         logger.warn('payment', `支付页订单信息加载失败 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "订单信息加载失败")
+        showToastSafety(res.message, resString('payment_1'))
         this.loadFailed = true
       }
     } catch (err) {
       // 网络异常/401 拒绝时 promise 会 throw：兜住并进失败态，避免 isLoading 卡死永久骨架
       this.loadFailed = true
-      showToastSafety("网络异常，请稍后重试")
+      showToastSafety(resString('payment_2'))
     } finally {
       this.isLoading = false
     }
@@ -160,7 +162,7 @@ struct Payment {
       this.userInfo = res.data
     } else {
       logger.warn('payment', `用户信息加载失败 code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "用户信息加载失败")
+      showToastSafety(res.message, resString('payment_3'))
     }
   }
 
@@ -171,7 +173,7 @@ struct Payment {
     } else {
       logger.warn('payment', `可用优惠券加载失败 orderId=${this.orderId} ` +
         `code=${couponRes.code} message=${couponRes.message ?? ""}`)
-      showToastSafety(couponRes.message, "优惠券加载失败")
+      showToastSafety(couponRes.message, resString('coupon_load_failed'))
     }
   }
 
@@ -195,7 +197,7 @@ struct Payment {
       } else {
         logger.warn('payment', `优惠券试算失败 orderId=${this.orderId} ` +
           `couponId=${coupon?.userCouponId ?? 0} code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "优惠券试算失败")
+        showToastSafety(res.message, resString('payment_4'))
         this.amountVisible = true
       }
     } else {
@@ -262,7 +264,7 @@ struct Payment {
       } else {
         logger.warn('payment', `支付被拒绝 orderId=${this.orderId} ` +
           `code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "支付失败，请稍后重试")
+        showToastSafety(res.message, resString('payment_5'))
       }
     } finally {
       this.paying = false
@@ -304,7 +306,7 @@ struct Payment {
    */
   private thresholdText(coupon: UserCouponVo): string {
     return coupon.couponVo?.threshold === 0 ?
-      "无门槛" :
+      resString('no_threshold') :
       `满${coupon.couponVo?.threshold?.toFixed(0)}元可用`
   }
 
@@ -320,7 +322,7 @@ struct Payment {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([DesignColor.TEXT_PRIMARY])
+          .fontColor([resColor('TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -330,17 +332,17 @@ struct Payment {
         pathStack.pop()
       })
 
-      Text("支付")
+      Text($r('app.string.payment'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
     }
     .width("100%")
     .height(56)
     // 行首让位 12：48dp 热区盒居中后图形左缘落在 24，标题紧贴热区右缘（对齐安卓 PageHeader）
     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(DesignColor.BACKGROUND)
+    .backgroundColor(resColor('BACKGROUND'))
   }
 
   @Builder
@@ -352,27 +354,27 @@ struct Payment {
         .width(32)
         .height(4)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(DesignColor.OUTLINE)
+        .backgroundColor(resColor('OUTLINE'))
         .margin({ top: DesignDimens.SPACE_SM })
 
       // 标题栏（recap §3-V8：Android headlineSmall —— 按当前 AppTypography 该槽位为
       // 18sp/600，旧报告「24sp」为 Material3 默认值误读，此处对齐字重 600）
       Row() {
-        Text("选择优惠券")
+        Text($r('app.string.select_coupon'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.TEXT_PRIMARY)
+          .fontColor(resColor('TEXT_PRIMARY'))
 
         Blank()
 
         Row() {
-          Text("去领取")
+          Text($r('app.string.go_claim'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.PRIMARY)
+            .fontColor(resColor('PRIMARY'))
 
           SymbolGlyph($r('sys.symbol.chevron_right'))
             .fontSize(14)
-            .fontColor([DesignColor.PRIMARY])
+            .fontColor([resColor('PRIMARY')])
             .margin({ left: 4 })
         }
         // N8：Android 垂直 12 + 热区 44dp+；constraintSize 兜底最小热区
@@ -402,21 +404,21 @@ struct Payment {
 
       if (this.userCoupon === null || this.userCoupon.length === 0) {
         // 空态 — 规范 §3.6：滚筒圆母题 + 引导文案（替代裸 Text）
-        EmptyState({ message: "暂无优惠券" })
+        EmptyState({ message: resString('no_coupons_available') })
           .width("100%")
           .height(160)
       } else {
         // "不使用优惠券"选项（评审 #17）：默认选中，用于从已选优惠券切换回不使用
         Row() {
           Column() {
-            Text("不使用优惠券")
+            Text($r('app.string.do_not_use_coupon'))
               .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
 
-            Text("按订单原价支付")
+            Text($r('app.string.do_not_use_coupon_tip'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
               .margin({ top: 6 })
           }
           .alignItems(HorizontalAlign.Start)
@@ -428,12 +430,12 @@ struct Payment {
         }
         .width("100%")
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .backgroundColor(DesignColor.SURFACE)
+        .backgroundColor(resColor('SURFACE'))
         // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-        .border({ width: 1, color: DesignColor.OUTLINE })
+        .border({ width: 1, color: resColor('OUTLINE') })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: DesignColor.SHADOW_COLOR_CARD,
+          color: resColor('SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -462,14 +464,14 @@ struct Payment {
                     Text(`${coupon.couponVo?.discount?.toFixed(2)}元优惠券`)
                       .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(DesignFontWeight.SEMI_BOLD)
-                      .fontColor(DesignColor.TEXT_PRIMARY)
+                      .fontColor(resColor('TEXT_PRIMARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                   }
 
                   Row() {
                     Text(this.thresholdText(coupon))
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                       .margin({ top: 6, bottom: 6 })
                   }
@@ -477,7 +479,7 @@ struct Payment {
                   Row() {
                     Text(`有效期至${coupon.expiredAt}`)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_TERTIARY)
+                      .fontColor(resColor('TEXT_TERTIARY'))
                   }
                 }
                 .alignItems(HorizontalAlign.Start)
@@ -488,12 +490,12 @@ struct Payment {
               }
               .width("100%")
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -526,7 +528,7 @@ struct Payment {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack() {
@@ -537,22 +539,22 @@ struct Payment {
           // 分隔线
           Divider()
             .strokeWidth(1)
-            .color(DesignColor.DIVIDER)
+            .color(resColor('DIVIDER'))
 
           // 内容区域（recap §3-V1：外层 sectionSpacing 32 + 内层 cardSpacing 16）
           Column() {
             // ========== 应付金额卡片（recap §3-F1/V2/V3）==========
             Column() {
-              Text("应付金额")
+              Text($r('app.string.amount_due'))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
 
               // 金额两位小数（N1）：对齐 Android String.format("%.2f")；DataLarge 36/700 primaryDark + tnum
               Text(`¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
                 .fontWeight(DesignFontWeight.BOLD)
-                .fontColor(DesignColor.PRIMARY_DARK)
+                .fontColor(resColor('PRIMARY_DARK'))
                 .fontFeature(DesignFontFeature.TNUM)
                 // 金额变化淡入（recap §3-I2）
                 .opacity(this.amountVisible ? 1 : 0)
@@ -561,24 +563,24 @@ struct Payment {
               // 卡内行分隔线 = 0.5dp hairline，上下 16（recap §3-V3）
               Divider()
                 .strokeWidth(0.5)
-                .color(DesignColor.HAIRLINE)
+                .color(resColor('HAIRLINE'))
                 .margin({ top: 16, bottom: 16 })
 
               // 订单号/服务类型缺失时兜底「—」（问题8：老版后端可能不下发 orderNo/laundryPackageVo，
               // 空串观感是"数据丢了"，占位符语义为"暂无"）
-              PayInfoLine({ label: "订单编号", value: this.displayValue(this.orderInfo?.orderNo) })
-              PayInfoLine({ label: "服务类型", value: this.displayValue(this.orderInfo?.laundryPackageVo?.itemName) })
-              PayInfoLine({ label: "预计完成", value: "24小时内" })
+              PayInfoLine({ label: resString('order_number'), value: this.displayValue(this.orderInfo?.orderNo) })
+              PayInfoLine({ label: resString('service_type'), value: this.displayValue(this.orderInfo?.laundryPackageVo?.itemName) })
+              PayInfoLine({ label: resString('estimated_completion_time'), value: resString('within_24_hours') })
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-            .border({ width: 1, color: DesignColor.OUTLINE })
+            .border({ width: 1, color: resColor('OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: DesignColor.SHADOW_COLOR_CARD,
+              color: resColor('SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -586,10 +588,10 @@ struct Payment {
 
             // ========== 支付方式 + 优惠券（recap §3-F2/V4/V5/V6）==========
             Column() {
-              Text("支付方式")
+              Text($r('app.string.payment_method'))
                 .fontSize(DesignFontSize.SECTION_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .margin({ bottom: 12 })
 
               // 余额支付卡：选中态 primarySoft 底（recap §3-F2），整行可点（recap §3-I3）
@@ -601,29 +603,29 @@ struct Payment {
                   Column() {
                     SymbolGlyph($r('sys.symbol.label'))
                       .fontSize(20)
-                      .fontColor([DesignColor.PRIMARY])
+                      .fontColor([resColor('PRIMARY')])
                   }
                   .width(36)
                   .height(36)
                   .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
                   .backgroundColor(this.selectedPaymentMethod === "balance" ?
-                    DesignColor.SURFACE :
-                    DesignColor.ICON_CONTAINER_GREEN)
+                    resColor('SURFACE') :
+                    resColor('ICON_CONTAINER_GREEN'))
                   .justifyContent(FlexAlign.Center)
                   .alignItems(HorizontalAlign.Center)
 
                   Column() {
-                    Text("余额支付")
+                    Text($r('app.string.balance_payment'))
                       .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(DesignFontWeight.SEMI_BOLD)
                       .fontColor(this.selectedPaymentMethod === "balance" ?
-                        DesignColor.ON_PRIMARY_CONTAINER :
-                        DesignColor.TEXT_PRIMARY)
+                        resColor('ON_PRIMARY_CONTAINER') :
+                        resColor('TEXT_PRIMARY'))
 
                     // 余额两位小数（N1）+ tnum；文案对齐 Android current_balance_format「当前余额：¥%s」
                     Text(`当前余额：¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(DesignColor.TEXT_SECONDARY)
+                      .fontColor(resColor('TEXT_SECONDARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                       .margin({ top: 4 })
                   }
@@ -647,13 +649,13 @@ struct Payment {
               }
               .width("100%")
               .backgroundColor(this.selectedPaymentMethod === "balance" ?
-                DesignColor.PRIMARY_SOFT :
-                DesignColor.SURFACE)
+                resColor('PRIMARY_SOFT') :
+                resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -676,26 +678,26 @@ struct Payment {
                 Column() {
                   SymbolGlyph($r('sys.symbol.label'))
                     .fontSize(20)
-                    .fontColor([DesignColor.ICON_FOREGROUND_ORANGE])
+                    .fontColor([resColor('ICON_FOREGROUND_ORANGE')])
                 }
                 .width(36)
                 .height(36)
                 .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-                .backgroundColor(DesignColor.ICON_CONTAINER_ORANGE)
+                .backgroundColor(resColor('ICON_CONTAINER_ORANGE'))
                 .justifyContent(FlexAlign.Center)
                 .alignItems(HorizontalAlign.Center)
 
-                Text("优惠券")
+                Text($r('app.string.service_coupon'))
                   .fontSize(DesignFontSize.CARD_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(DesignColor.TEXT_PRIMARY)
+                  .fontColor(resColor('TEXT_PRIMARY'))
                   .layoutWeight(1)
                   .margin({ left: 12 })
 
                 // 折扣两位小数（N1）+ tnum；金额符号统一半角 ¥（G7）；色 onPrimaryContainer（V6）
-                Text(this.selectCoupon === null ? "不使用" : `-¥${this.selectCoupon.couponVo?.discount?.toFixed(2)}`)
+                Text(this.selectCoupon === null ? resString('do_not_use') : `-¥${this.selectCoupon.couponVo?.discount?.toFixed(2)}`)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(this.selectCoupon === null ? DesignColor.TEXT_SECONDARY : DesignColor.ON_PRIMARY_CONTAINER)
+                  .fontColor(this.selectCoupon === null ? resColor('TEXT_SECONDARY') : resColor('ON_PRIMARY_CONTAINER'))
                   .fontFeature(this.selectCoupon === null ? 'normal' : DesignFontFeature.TNUM)
                   // 券变化淡入（recap §3-I2，与金额共用同一淡入态）
                   .opacity(this.amountVisible ? 1 : 0)
@@ -704,19 +706,19 @@ struct Payment {
                 // Spacer(8.dp) + Icon(ChevronRight, 20.dp)）
                 SymbolGlyph($r('sys.symbol.chevron_right'))
                   .fontSize(20)
-                  .fontColor([DesignColor.TEXT_TERTIARY])
+                  .fontColor([resColor('TEXT_TERTIARY')])
                   .margin({ left: DesignDimens.SPACE_XS })
               }
               .width("100%")
               // 行内边距 16（对齐安卓 U-118：原 15 不在 §3 间距允许集）
               .padding({ left: 20, right: 20, top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-              .backgroundColor(DesignColor.SURFACE)
+              .backgroundColor(resColor('SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: DesignColor.OUTLINE })
+              .border({ width: 1, color: resColor('OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: DesignColor.SHADOW_COLOR_CARD,
+                color: resColor('SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -735,7 +737,7 @@ struct Payment {
                 // 容器色对齐 Android containerColor = surface；
                 // SheetOptions 未提供圆角令牌（V7 系统限制，保留系统默认顶部圆角）
                 height: "90%",
-                backgroundColor: DesignColor.SURFACE,
+                backgroundColor: resColor('SURFACE'),
                 showClose: false,
                 dragBar: false
               })
@@ -762,7 +764,7 @@ struct Payment {
             // 固定 CTA 条与滚动内容之间 0.5dp 分隔线（规范 §2.4 豁免）
             Divider()
               .strokeWidth(0.5)
-              .color(DesignColor.OUTLINE)
+              .color(resColor('OUTLINE'))
 
             // AppButton 自带 loading 防重；点击走 onPayClick：余额充足弹「确定要支付？」
             // 二次确认（确认即关窗），不足弹「余额不足」去充值。
@@ -776,21 +778,21 @@ struct Payment {
             })
           }
           .width("100%")
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .padding({ left: 24, right: 24, top: 16, bottom: 20 + safeBottomVp() })
         }
         .width("100%")
         .height("100%")
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(DesignColor.BACKGROUND)
+        .backgroundColor(resColor('BACKGROUND'))
 
         // 首载骨架（recap §3-F5/S1）：对齐 Android LoadingState，遮罩淡入淡出近似 Crossfade
         if (this.isLoading) {
           LoadingState()
             .width("100%")
             .height("100%")
-            .backgroundColor(DesignColor.BACKGROUND)
+            .backgroundColor(resColor('BACKGROUND'))
             .zIndex(2)
             .transition(TransitionEffect.OPACITY)
         }
@@ -799,11 +801,11 @@ struct Payment {
         if (!this.isLoading && this.loadFailed) {
           Column() {
             EmptyState({
-              message: "订单信息加载失败",
+              message: resString('payment_1'),
               action: () => {
                 AppButton({
                   small: true,
-                  text: "重试",
+                  text: resString('retry'),
                   variant: AppButtonVariant.SECONDARY,
                   click: () => {
                     this.loadOrderInfo()
@@ -815,7 +817,7 @@ struct Payment {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(DesignColor.BACKGROUND)
+          .backgroundColor(resColor('BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
@@ -823,7 +825,7 @@ struct Payment {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

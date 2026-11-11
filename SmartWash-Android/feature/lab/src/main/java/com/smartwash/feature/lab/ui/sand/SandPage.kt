@@ -204,18 +204,20 @@ fun SandPage(
         Text(
             text = stringResource(R.string.lab_sand_hint),
             style = MaterialTheme.typography.bodySmall,
-            color = scheme.textTertiary,
+            // 可读正文禁止 textTertiary（§10 红线：#A9AEA9 on background 仅 2.08:1）
+            color = scheme.textSecondary,
             modifier = Modifier
                 .padding(horizontal = AppDimens.pagePadding)
                 .padding(top = AppDimens.spaceXs),
         )
 
-        // 沙盒：weight(1f) 占据页头/调色板之外的剩余高度
+        // 沙盒：weight(1f) 占据页头/调色板之外的剩余高度；
+        // 水平边距与页头/提示/调色板统一 pagePadding（24dp），避免左右缘错位
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(horizontal = AppDimens.spaceMd)
+                .padding(horizontal = AppDimens.pagePadding)
                 .padding(top = AppDimens.spaceSm)
         ) {
             Canvas(
@@ -302,7 +304,7 @@ fun SandPage(
 
 /**
  * 元素调色板：9 元素两行（5 + 4）色块，选中态加粗品牌色描边。
- * 色块为颜色选择器（非功能图标），44dp 圆形 + 1dp 描边，整块 pressable。
+ * 色块为颜色选择器（非功能图标），48dp 圆形 + 1dp 描边（DESIGN-SPEC §3 触控 ≥48dp），整块 pressable。
  */
 @Composable
 private fun SandPalette(
@@ -347,7 +349,7 @@ private fun PaletteRow(
     }
 }
 
-/** 单个色块：44dp 圆形，选中态 3dp 品牌色描边，a11y 以元素名作 contentDescription */
+/** 单个色块：48dp 圆形（触控热区下限），选中态 3dp 品牌色描边，a11y 以元素名作 contentDescription */
 @Composable
 private fun PaletteSwatch(
     element: SandElement,
@@ -358,7 +360,7 @@ private fun PaletteSwatch(
     val label = stringResource(element.labelRes())
     Box(
         modifier = Modifier
-            .size(44.dp)
+            .size(48.dp)
             .clip(CircleShape)
             .background(element.swatchColorOf(scheme))
             .border(
@@ -371,7 +373,7 @@ private fun PaletteSwatch(
     )
 }
 
-/** 小按钮（文字胶囊）：44dp 最小触控高度 + 12dp 圆角，pressable 无 ripple */
+/** 小按钮（文字胶囊）：48dp 最小触控高度（DESIGN-SPEC §3）+ 12dp 圆角，pressable 无 ripple */
 @Composable
 private fun SandTextButton(
     text: String,
@@ -381,7 +383,7 @@ private fun SandTextButton(
     val scheme = AppColors.colorScheme
     Box(
         modifier = modifier
-            .heightIn(min = 44.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(AppDimens.radiusMd))
             .background(scheme.surfaceVariant)
             .pressable(onClick = onClick)
@@ -411,17 +413,29 @@ private fun SandElement.labelRes(): Int = when (this) {
     SandElement.STEAM -> R.string.lab_sand_element_steam
 }
 
-/** 沙盒渲染色（全部取清氧令牌，禁止写死色值；EMPTY 由页面特殊处理为透明） */
+/**
+ * 沙盒渲染色（全部取清氧令牌，禁止写死色值；EMPTY 由页面特殊处理为透明）。
+ *
+ * 沙盘底为 surfaceVariant 画板语义（浅 #EFF1EE / 深 #262A27），元素是画在底上的
+ * 前景图形，必须与其保持 ≥1.5:1 的图形可见差（§10：禁用容器浅底令牌作前景色）：
+ * - DETERGENT：iconForegroundBlue（浅板 4.5:1 / 深板 5.8:1；原 iconContainerBlue 是
+ *   「图标容器浅底」，画在沙盘上浅板 1.01:1、深板 0.96:1 形同透明）
+ * - FOAM：iconForegroundPurple（浅板 5.0:1 / 深板 6.1:1；原 surface 纯白 1.14:1 不可见，
+ *   报告候选 waterSoft/primaryLight 对两板均 ≈1.0-1.04:1 同样不可辨，取与其余 8 元素
+ *   色相最小差（≥36°）的唯一可达令牌；紫色亦合「柔顺剂/薰衣草泡沫」的洗衣语义）
+ * - STEAM：textSecondary（浅板 4.5:1 / 深板 6.5:1；原 textTertiary 浅板 1.99:1，
+ *   报告另一候选 outline 浅板仅 1.08:1 不可辨）
+ */
 private fun SandElement.colorOf(scheme: AppColorScheme): Color = when (this) {
     SandElement.EMPTY -> scheme.surfaceVariant
     SandElement.SAND -> scheme.warning
     SandElement.WATER -> scheme.water
-    SandElement.DETERGENT -> scheme.iconContainerBlue
-    SandElement.FOAM -> scheme.surface
+    SandElement.DETERGENT -> scheme.iconForegroundBlue
+    SandElement.FOAM -> scheme.iconForegroundPurple
     SandElement.STAIN -> scheme.iconForegroundPink
     SandElement.FABRIC -> scheme.primary
     SandElement.FIRE -> scheme.error
-    SandElement.STEAM -> scheme.textTertiary
+    SandElement.STEAM -> scheme.textSecondary
 }
 
 /** 调色板色块色（EMPTY 用表面次级色，避免与卡片底混淆） */

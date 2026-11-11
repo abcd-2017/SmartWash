@@ -10,11 +10,13 @@ import { showToastSafety } from "../utils/ToastUtil"
 import { PagingController } from "../utils/PagingUtil"
 import { BusinessError, pasteboard } from "@kit.BasicServicesKit"
 import vibrator from "@ohos.vibrator"
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { EmptyState, IconBox, LoadingState, PageHeader } from "../view/common/AppComponents"
 import { logger } from "../utils/Logger"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // 分页每页条数
 const PAGE_SIZE: number = 10
@@ -70,7 +72,7 @@ struct PickUp {
         }
         if (res.data === null || res.data.length === 0) {
           if (page > 1 && this.orderList.length > 0) {
-            showToastSafety("没有更多数据了")
+            showToastSafety(resString('pick_up_1'))
           }
           return false
         }
@@ -79,7 +81,7 @@ struct PickUp {
       }
       logger.warn('pickup', `可取订单加载失败 page=${page} ` +
         `code=${res.code} message=${res.message ?? ""}`)
-      showToastSafety(res.message, "取件订单加载失败")
+      showToastSafety(res.message, resString('pick_up_2'))
       return false
     } finally {
       this.isFirstLoading = false
@@ -99,7 +101,7 @@ struct PickUp {
     if (code === "") {
       // 无码分支只记事实，不记码值（敏感红线）
       logger.debug('pickup', '复制取件码跳过：当前订单无取件码')
-      showToastSafety("暂无取件码，请稍后再试")
+      showToastSafety(resString('no_pickup_code'))
       return
     }
     try {
@@ -109,10 +111,10 @@ struct PickUp {
     }
     const pasteData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, code)
     pasteboard.getSystemPasteboard().setData(pasteData).then(() => {
-      showToastSafety("取件码已复制")
+      showToastSafety(resString('copy_success'))
     }).catch((err: BusinessError) => {
       logger.error('pickup', '取件码复制到剪贴板失败', `${err.code} ${err.message}`)
-      showToastSafety("复制失败")
+      showToastSafety(resString('pick_up_3'))
     })
   }
 
@@ -136,14 +138,14 @@ struct PickUp {
         Column() {
           Text(`订单号: ${order.orderNo ?? ""}`)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Text(`寄存柜: ${order.lockersVo?.lockerNumber ?? ""}`)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(DesignColor.TEXT_SECONDARY)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -156,7 +158,7 @@ struct PickUp {
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .fontFeature(DesignFontFeature.TNUM)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
           .maxLines(1)
       }.width("100%")
       .alignItems(VerticalAlign.Center)
@@ -165,18 +167,18 @@ struct PickUp {
       Row()
         .width("100%")
         .height(0.5)
-        .backgroundColor(DesignColor.DIVIDER)
+        .backgroundColor(resColor('DIVIDER'))
         .margin({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
 
       // 取件码（recap §8-V3：标签 12sp + DataLarge 36 tnum 大字，对齐安卓）
       Row() {
-        Text("取件码")
+        Text($r('app.string.pickup_code'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
         Blank()
         Text(this.parsePickupCode(order))
           .fontSize(DesignFontSize.DATA_LARGE)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
           // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：取件码 700 + tnum），字重保持 BOLD；
           // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
           .fontWeight(DesignFontWeight.BOLD)
@@ -190,16 +192,16 @@ struct PickUp {
       if (this.parsePickupCode(order) !== "") {
         Row() {
           Row() {
-            Text("复制取件码")
+            Text($r('app.string.copy_pickup_code'))
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD })
           }
           .height(36)
           .justifyContent(FlexAlign.Center)
           .borderRadius(DesignDimens.RADIUS_MD)
-          .backgroundColor(DesignColor.SURFACE_VARIANT)
+          .backgroundColor(resColor('SURFACE_VARIANT'))
           .onTouch((event: TouchEvent) => {
             if (event.type === TouchType.Down) {
               this.actionPressed = true
@@ -219,13 +221,13 @@ struct PickUp {
     .width("100%")
     .alignItems(HorizontalAlign.Center)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -261,16 +263,16 @@ struct PickUp {
     Row() {
       // 次按钮 — 透明底 + 1dp outline 描边（安卓板实测无填充）
       Column() {
-        Text("联系客服")
+        Text($r('app.string.contact_service'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.PRIMARY_DARK)
+          .fontColor(resColor('PRIMARY_DARK'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .border({ width: 1, color: DesignColor.OUTLINE })
+      .border({ width: 1, color: resColor('OUTLINE') })
       .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
       .onTouch((event: TouchEvent) => {
@@ -282,21 +284,21 @@ struct PickUp {
       })
       .onClick(() => {
         // 客服功能未立项，先以 Toast 兜底（与安卓 contact_service_unavailable 约定一致）
-        showToastSafety("客服暂未开通，请稍后再试")
+        showToastSafety(resString('contact_service_unavailable'))
       })
 
       // 主按钮 — 纯色 primary 胶囊 + onPrimary 字
       Column() {
-        Text("复制取件码")
+        Text($r('app.string.copy_pickup_code'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(DesignColor.ON_PRIMARY)
+          .fontColor(resColor('ON_PRIMARY'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(DesignColor.PRIMARY)
+      .backgroundColor(resColor('PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
       .scale({ x: this.copyPressed ? 0.97 : 1, y: this.copyPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
@@ -323,12 +325,12 @@ struct PickUp {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
         // 页头（recap G4：22/600 + 48 返回热区，复用公共 PageHeader）
-        PageHeader({ title: "取件" })
+        PageHeader({ title: resString('service_pickup') })
 
         // 内容区三态：首载骨架 / 空态 / 内容（recap §8-F2）
         if (this.isFirstLoading && this.orderList.length === 0) {
@@ -344,12 +346,12 @@ struct PickUp {
                 icon: $r('sys.symbol.company'),
                 sizeValue: 32,
                 iconSize: 20,
-                containerColor: DesignColor.ICON_CONTAINER_BLUE,
-                iconColor: DesignColor.ICON_FOREGROUND_BLUE
+                containerColor: resColor('ICON_CONTAINER_BLUE'),
+                iconColor: resColor('ICON_FOREGROUND_BLUE')
               })
               Text(`${this.orderList[0]?.schoolsVo?.schoolName ?? ""}`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .margin({ left: DesignDimens.SPACE_XS })
             }
             .justifyContent(FlexAlign.Start)
@@ -397,7 +399,7 @@ struct PickUp {
         } else {
           // 空态（recap §8-V5：安卓 EmptyState DrumMark 母题；文案对齐 no_pickup_orders）
           Column() {
-            EmptyState({ message: "暂无可取订单" })
+            EmptyState({ message: resString('no_pickup_orders') })
           }
           .width("100%")
           .layoutWeight(1)
@@ -408,7 +410,7 @@ struct PickUp {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

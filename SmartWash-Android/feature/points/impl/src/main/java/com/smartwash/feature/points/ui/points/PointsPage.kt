@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +52,7 @@ import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.GroupCard
 import com.smartwash.common.ui.components.LoadingState
 import com.smartwash.common.ui.components.PageHeader
+import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.components.SmartWashAsyncImage
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
@@ -206,12 +210,15 @@ private fun PointsContent(
     onSignIn: () -> Unit,
     onRetryLeaderboard: () -> Unit,
 ) {
+    // 底部安全区：enableEdgeToEdge 后壳层无全局 insets 兜底，滚动末尾在区块间距之上叠加
+    // 导航栏高度避让（audit-20 #6；与 PageHeader 的 statusBarsPadding 对称，RechargePage 同款先例）
+    val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = AppDimens.pagePadding,
             end = AppDimens.pagePadding,
-            bottom = AppDimens.spaceXl,
+            bottom = AppDimens.spaceXl + bottomInset,
         ),
     ) {
         item(key = "hero") {
@@ -220,7 +227,7 @@ private fun PointsContent(
                 signInLoading = signInLoading,
                 onSignIn = onSignIn,
                 // 顶距 12 对齐优惠券页 AppPillTabRow 的 PageHeader 节奏补偿先例（PageHeader 自带 bottom 6，合计 18 ≈ 卡间距）
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier.padding(top = AppDimens.spaceSm),
             )
         }
         item(key = "leaderboard") {
@@ -231,14 +238,13 @@ private fun PointsContent(
                 modifier = Modifier.padding(top = AppDimens.sectionSpacing),
             )
         }
-        val ledger = overview.safeRecentLedger
-        if (ledger.isNotEmpty()) {
-            item(key = "ledger") {
-                LedgerSection(
-                    items = ledger,
-                    modifier = Modifier.padding(top = AppDimens.sectionSpacing),
-                )
-            }
+        // 流水区块恒驻：空时卡内空态引导（audit-20 #7——此前新用户流水为空时整个区块消失，
+        // 页面无引导；key 恒定也避免条件 item 引发的布局跳变）
+        item(key = "ledger") {
+            LedgerSection(
+                items = overview.safeRecentLedger,
+                modifier = Modifier.padding(top = AppDimens.sectionSpacing),
+            )
         }
     }
 }
@@ -274,12 +280,26 @@ private fun PointsHeroCard(
                     ),
                     shape = RoundedCornerShape(AppDimens.radiusXl),
                 )
+                // audit-20 #1（首页 U-101 同款回归）：次级文字白 78% 压渐变浅板 2.73:1、深板亮端
+                // #5BC894 上仅 1.77:1，违反 §10 正文 ≥4.5:1。复刻首页黑纱修法（IndexPage U-101）
+                // 并改纯白文字；报告初拟终点「黑 8~0%」逐点复核不足（深板亮端白字达标需 ≥34% 纱）
+                // 故上调至 35%——与渐变同对角线，浅板 5.13–8.10:1 / 深板 4.62–5.13:1，全部达标
+                .background(
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color.Black.copy(alpha = 0.20f),
+                            Color.Black.copy(alpha = 0.35f),
+                        )
+                    ),
+                    shape = RoundedCornerShape(AppDimens.radiusXl),
+                )
                 .padding(AppDimens.cardPadding)
         ) {
             Text(
                 text = stringResource(R.string.points_balance_label),
                 style = MaterialTheme.typography.labelMedium,
-                color = OnImageSecondary,
+                // hero 次级文字改纯白，由黑纱保证 ≥4.5:1（audit-20 #1）；白 78% 仅留已签禁用 CTA
+                color = Color.White,
             )
             Text(
                 text = "${overview.safeBalance}",
@@ -290,7 +310,7 @@ private fun PointsHeroCard(
             Text(
                 text = stringResource(R.string.points_total_earned_format, overview.safeTotalEarned),
                 style = MaterialTheme.typography.labelMedium,
-                color = OnImageSecondary,
+                color = Color.White,
                 modifier = Modifier.padding(top = AppDimens.spaceXxs),
             )
 
@@ -302,16 +322,19 @@ private fun PointsHeroCard(
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFeatureSettings = "tnum",
                     ),
-                    color = OnImageSecondary,
+                    color = Color.White,
                 )
                 Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-                // 连签周期进度条：轨道/填充同为白系 token（GlassInput = 白 30%），静态无动画
+                // 连签周期进度条：静态填充无动画。轨道高 6dp 为画板口径登记（细进度条专用尺寸，
+                // 4dp 过细 / 8dp 过粗，组件维度无 AppDimens 档位，同 top=spaceSm 节奏注释的留痕写法）
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(AppDimens.radiusFull))
-                        .background(GlassInput),
+                        // 轨道改恒定 18% 黑（audit-20 #13）：原 GlassInput 白 30% 轨道在深板亮端上
+                        // 与白填充仅 ~1.6:1 近乎隐形；改后两板填充/轨道 ≥3:1 图形级（叠 hero 纱后余量更大）
+                        .background(Color.Black.copy(alpha = 0.18f)),
                 ) {
                     Box(
                         modifier = Modifier
@@ -392,20 +415,59 @@ private fun LeaderboardSection(
             Text(
                 text = stringResource(R.string.points_leaderboard_title),
                 style = AppTextStyles.SectionTitle,
-                color = AppColors.colorScheme.textSecondary,
+                // 区块标题属主文案层级，对齐全 app SectionTitle=textPrimary 惯例（audit-20 #8）
+                color = AppColors.colorScheme.textPrimary,
                 modifier = Modifier.weight(1f),
             )
             if (monthLabel != null) {
                 Text(
                     text = monthLabel,
                     style = MaterialTheme.typography.labelMedium,
-                    color = AppColors.colorScheme.textTertiary,
+                    // 月份是榜单口径信息非装饰角标，textTertiary 压页面底仅 2.08:1 触 §10 红线（audit-20 #2）
+                    color = AppColors.colorScheme.textSecondary,
                 )
             }
         }
         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         GroupCard(contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)) {
             when {
+                // 首载/重试进行中且无数据：卡内骨架占位（audit-20 #5——此前 Idle/Loading 落入空榜
+                // 分支闪「本月还没有人上榜」误导；entries 非空的静默刷新不回骨架）。行形状对齐真实
+                // 榜单行（§3.6 骨架形状 = 内容形状），reduced motion 由 SkeletonBlock 内置静态降级
+                (leaderboardState is RequestState.Idle || leaderboardState is RequestState.Loading) &&
+                    entries.isEmpty() -> Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = AppDimens.cardPadding),
+                ) {
+                    repeat(2) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SkeletonBlock(
+                                modifier = Modifier.size(28.dp),
+                                shape = CircleShape,
+                            )
+                            Spacer(modifier = Modifier.width(AppDimens.spaceSm))
+                            SkeletonBlock(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(AppDimens.spaceMd),
+                            )
+                            Spacer(modifier = Modifier.width(AppDimens.spaceMd))
+                            SkeletonBlock(
+                                modifier = Modifier.size(
+                                    width = AppDimens.spaceXl,
+                                    height = AppDimens.spaceMd,
+                                ),
+                            )
+                        }
+                    }
+                }
+
                 // 首载失败且无数据：卡内错误小态（说明 + 重试），不伪装成空榜
                 leaderboardState is RequestState.Error && entries.isEmpty() -> Column(
                     modifier = Modifier
@@ -467,7 +529,8 @@ private fun LeaderboardRow(entry: LeaderboardEntryVo) {
             color = if (tier == RankTier.NORMAL) {
                 AppColors.colorScheme.textSecondary
             } else {
-                AppColors.colorScheme.primary
+                // TOP3 名次与积分值统一 primaryDark（audit-20 #9：同排语义对同色档）
+                AppColors.colorScheme.primaryDark
             },
         )
         Spacer(modifier = Modifier.width(AppDimens.spaceSm))
@@ -509,7 +572,8 @@ private fun LeaderboardRow(entry: LeaderboardEntryVo) {
         Text(
             text = stringResource(R.string.points_unit),
             style = MaterialTheme.typography.labelMedium,
-            color = AppColors.colorScheme.textTertiary,
+            // 单位是数值读数的一部分（可读内容非装饰），textTertiary 压白卡 2.25:1 触 §10 红线（audit-20 #3）
+            color = AppColors.colorScheme.textSecondary,
         )
     }
 }
@@ -542,7 +606,7 @@ private fun MyRankRow(my: MyRankVo?) {
     }
 }
 
-/** 积分明细区块：reason 文案 + delta 正负色 + 时间（append-only 流水，时间倒序） */
+/** 积分明细区块：reason 文案 + delta 正负色 + 时间（append-only 流水，时间倒序）；空流水卡内空态 */
 @Composable
 private fun LedgerSection(
     items: List<PointLedgerItemVo>,
@@ -552,15 +616,24 @@ private fun LedgerSection(
         Text(
             text = stringResource(R.string.points_ledger_title),
             style = AppTextStyles.SectionTitle,
-            color = AppColors.colorScheme.textSecondary,
+            color = AppColors.colorScheme.textPrimary,
         )
         Spacer(modifier = Modifier.height(AppDimens.spaceXs))
         GroupCard(contentPadding = PaddingValues(horizontal = AppDimens.cardPadding)) {
-            items.forEachIndexed { index, item ->
-                if (index > 0) {
-                    HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+            if (items.isEmpty()) {
+                // 空流水：滚筒母题空态（audit-20 #7：points_ledger_empty 既有文案接线；
+                // icon 仅占位不渲染，EmptyState 只画滚筒圆）
+                EmptyState(
+                    icon = Icons.Default.Refresh,
+                    message = stringResource(R.string.points_ledger_empty),
+                )
+            } else {
+                items.forEachIndexed { index, item ->
+                    if (index > 0) {
+                        HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
+                    }
+                    LedgerRow(item)
                 }
-                LedgerRow(item)
             }
         }
     }
@@ -600,7 +673,9 @@ private fun LedgerRow(item: PointLedgerItemVo) {
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontFeatureSettings = "tnum",
                     ),
-                    color = AppColors.colorScheme.textTertiary,
+                    // 时间戳是流水唯一时序信息，textTertiary 双板均 <4.5:1（audit-20 #4，
+                    // 照 NoticeInboxPage 审查19 P1-4 先例改 textSecondary）
+                    color = AppColors.colorScheme.textSecondary,
                 )
             }
         }

@@ -1,8 +1,7 @@
-// 主题重建宿主（深色模式审计补齐）：
-// ArkUI 状态管理不追踪静态类字段——applyDesignTheme 回写 DesignColor 令牌后，
-// build 内直读静态字段的节点不会因字段变更而刷新，必须让「子树整体重建」来重读新值。
-// 本组件以 if 双分支实现：darkMode 翻转 → 分支身份切换 → 子树销毁重建 →
-// 子树内所有 DesignColor.XXX 直读点重新求值，颜色即新。
+// 主题重建宿主（历史遗留，保留以兼容既有页面结构）：
+// 颜色已改为 base/dark 资源限定符，随系统配置自动切换，本组件的重建不再承担配色职责；
+// 保留原因：多处 NavDestination 内容层依赖它的 Stack 容器（100% 宽高），移除需逐页回归布局。
+// 本组件以 if 双分支实现：darkMode 翻转 → 分支身份切换 → 子树销毁重建。
 // 约束：子树内自定义组件会随重建重放 aboutToAppear/aboutToDisappear，
 // 因此只包「纯展示内容」——页面级数据请求保持在 ThemeRefresh 之外（页面组件本体不在子树内）。
 //
@@ -36,11 +35,18 @@ export struct ThemeRefresh {
   }
 
   build() {
-    if (this.branch === true) {
-      this.content()
-    } else {
-      this.content()
+    // key 强制分支切换时整棵子树销毁重建：ArkUI 对内容相同的 if 双分支会复用组件树，
+    // 导致第一次切换无响应、第二次才显示上一次的目标值（用户反馈「切换反了」的根因）。
+    Stack() {
+      if (this.branch === true) {
+        this.content()
+      } else {
+        this.content()
+      }
     }
+    .width('100%')
+    .height('100%')
+    .key(this.branch ? 'theme-branch-true' : 'theme-branch-false')
   }
 }
 
@@ -60,10 +66,17 @@ export struct ThemeRefreshV2 {
   }
 
   build() {
-    if (this.branch === true) {
-      this.content()
-    } else {
-      this.content()
+    // key 强制分支切换时整棵子树销毁重建（同 V1 版注释：ArkUI 对相同内容的双分支会复用，
+    // 导致第一次切换无响应、第二次才显示上一次的目标值）
+    Stack() {
+      if (this.branch === true) {
+        this.content()
+      } else {
+        this.content()
+      }
     }
+    .width('100%')
+    .height('100%')
+    .key(this.branch ? 'theme-branch-true' : 'theme-branch-false')
   }
 }

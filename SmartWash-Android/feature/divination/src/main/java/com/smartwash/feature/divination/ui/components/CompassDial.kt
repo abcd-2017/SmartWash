@@ -73,7 +73,8 @@ fun CompassDial(modifier: Modifier = Modifier, dialText: String = "卜") {
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 10f)),
                 ),
             )
-            // 十二支环文（画板：r=0.92、12sp、金/墨 70%）
+            // 十二支环文（画板：r=0.92、12sp；金/墨 75%——0.70 玄墨侧实算 ≈4.35:1 破 §10 正文 4.5 红线，
+            // 提至 0.75 后玄墨 ≈4.8:1、宣纸 ≈5.9:1 双主题分别核算达标，audit-11 #3）
             zhiLabels.forEachIndexed { index, label ->
                 val angle = Math.toRadians((index * 30.0) - 90.0)
                 val pos = center + Offset(
@@ -85,7 +86,7 @@ fun CompassDial(modifier: Modifier = Modifier, dialText: String = "卜") {
                     TextStyle(
                         fontFamily = FontFamily.Serif,
                         fontSize = 12.sp,
-                        color = c.goldText.copy(alpha = 0.7f),
+                        color = c.goldText.copy(alpha = 0.75f),
                     ),
                 )
                 drawText(measured, topLeft = pos - measured.size.center.toOffset())

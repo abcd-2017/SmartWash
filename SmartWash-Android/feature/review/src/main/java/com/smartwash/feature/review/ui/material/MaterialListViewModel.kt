@@ -69,8 +69,13 @@ class MaterialListViewModel @Inject constructor(
     // ---------- 资料列表 ----------
 
     fun load() {
+        // 已有列表的重拉（建资料成功后刷新）：保留旧列表静默刷新，避免整页骨架闪切（审查矩阵 #6）；
+        // 静默刷新失败同样保留旧列表（建资料已成功并 toast，重拉失败不推翻页面）
+        val isRefresh = _state.value.materials.isNotEmpty()
         viewModelScope.launch {
-            _state.update { it.copy(loadState = RequestState.Loading) }
+            if (!isRefresh) {
+                _state.update { it.copy(loadState = RequestState.Loading) }
+            }
             try {
                 val data = repository.pageMaterials(page = 1, size = ReviewConstant.PAGE_SIZE)
                 _state.update {
@@ -80,10 +85,14 @@ class MaterialListViewModel @Inject constructor(
                 throw e
             } catch (e: NetworkException) {
                 AppLogger.error(TAG, "MaterialListViewModel.load: ${e.message}", e)
-                _state.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
+                if (!isRefresh) {
+                    _state.update { it.copy(loadState = RequestState.Error(e.resId, e.message)) }
+                }
             } catch (e: Exception) {
                 AppLogger.error(TAG, "MaterialListViewModel.load: ${e.message}", e)
-                _state.update { it.copy(loadState = RequestState.Error(R.string.review_error_load)) }
+                if (!isRefresh) {
+                    _state.update { it.copy(loadState = RequestState.Error(R.string.review_error_load)) }
+                }
             }
         }
     }

@@ -7,9 +7,11 @@ import { setValue } from "../utils/StorageUtil"
 import { CommonConstants } from "../constant/CommonConstants"
 import { Debouncer } from "../utils/DebounceUtil"
 import { logger } from "../utils/Logger"
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignFontSize, DesignFontWeight } from "../constant/DesignSystem"
 import { safeBottomVp, safeTopVp } from "../utils/SafeArea"
 import { ThemeRefresh } from '../view/common/ThemeRefresh'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 // ================= 页面级设计常量（对齐 Android 认证页，DesignSystem.ets 暂无对应 token）=================
 // 主按钮文字 15sp·600·ls1sp 为组件级规格（DESIGN.md §3.3 / Android AuthCtaButton.kt:66-70），
@@ -120,11 +122,11 @@ struct Register {
       if (res.code === HttpStatusCode.Ok) {
         // 低频关键动作成功：验证码已发出（不打验证码值与手机号）
         logger.info('register', '验证码发送成功')
-        showToastSafety(res.data, "验证码已发送，请查看短信")
+        showToastSafety(res.data, resString('captcha_sent'))
       } else {
         // 发送被拒（频控/服务端拒绝）：回滚倒计时允许立即重试
         logger.warn('register', `验证码发送被拒 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "验证码获取失败")
+        showToastSafety(res.message, resString('error_get_captcha_failed'))
         this.resetCountDown()
       }
     } finally {
@@ -147,7 +149,7 @@ struct Register {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Stack({ alignContent: Alignment.Top }) {
@@ -159,9 +161,9 @@ struct Register {
             direction: GradientDirection.Bottom,
             // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
             colors: [
-              [DesignColor.AUTH_GRADIENT_TOP, 0.0],
-              [DesignColor.AUTH_GRADIENT_MID, 0.5],
-              [DesignColor.AUTH_GRADIENT_BOTTOM, 1.0]
+              [resColor('AUTH_GRADIENT_TOP'), 0.0],
+              [resColor('AUTH_GRADIENT_MID'), 0.5],
+              [resColor('AUTH_GRADIENT_BOTTOM'), 1.0]
             ]
           })
 
@@ -184,7 +186,7 @@ struct Register {
               }, NAV_THROTTLE_MS)
             })
 
-            Text("注 册")
+            Text($r('app.string.register'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(Color.White)
@@ -210,21 +212,21 @@ struct Register {
             .width(92)
             .height(92)
             .borderRadius(46)
-            .backgroundColor(DesignColor.GLASS_BG_SUBTLE)
+            .backgroundColor(resColor('GLASS_BG_SUBTLE'))
             .border({
               width: 1,
-              color: DesignColor.GLASS_BORDER_SUBTLE,
+              color: resColor('GLASS_BORDER_SUBTLE'),
               style: BorderStyle.Solid
             })
 
-            Text("创建账号")
+            Text($r('app.string.create_account'))
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
               .fontColor(Color.White)
               .lineHeight(28)
               .margin({ top: 12 })
 
-            Text("开启智能洗衣之旅")
+            Text($r('app.string.start_laundry_journey'))
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.NORMAL)
               .fontColor(Color.White)
@@ -264,7 +266,7 @@ struct Register {
               SymbolGlyph($r('sys.symbol.phone'))
                 .fontSize(16)
                 .fontColor([this.checkPhoneNumber ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ text: $$this.phoneNumber, placeholder: "手机号" })
+              TextInput({ text: $$this.phoneNumber, placeholder: resString('phone_number') })
                 .type(InputType.PhoneNumber)
                 .maxLength(11)
                 .fontSize(DesignFontSize.BODY)
@@ -289,7 +291,7 @@ struct Register {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkPhoneNumber) {
-              Text("请输入正确的手机号")
+              Text($r('app.string.invalid_phone'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -308,7 +310,7 @@ struct Register {
               SymbolGlyph($r('sys.symbol.key'))
                 .fontSize(16)
                 .fontColor([this.checkCode ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ text: $$this.verificationCode, placeholder: "验证码" })
+              TextInput({ text: $$this.verificationCode, placeholder: resString('verification_code') })
                 .type(InputType.Number)
                 .maxLength(6)
                 .fontSize(DesignFontSize.BODY)
@@ -333,7 +335,7 @@ struct Register {
 
               // 发送按钮 — 1dp 白30% 描边 + r12 + h40（对齐 Android RegisterPage.kt:553-568）
               Stack({ alignContent: Alignment.Center }) {
-                Text(this.countDown > 0 ? `重新发送(${this.countDown}s)` : "获取验证码")
+                Text(this.countDown > 0 ? `重新发送(${this.countDown}s)` : resString('get_verification_code'))
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.MEDIUM)
                   .fontColor(this.sendEnabled() ? GLASS_ICON_ACTIVE : GLASS_SEND_TEXT_DISABLED)
@@ -343,7 +345,7 @@ struct Register {
               .borderRadius(DesignDimens.RADIUS_MD)
               .border({
                 width: 1,
-                color: this.sendEnabled() ? DesignColor.GLASS_INPUT : GLASS_SEND_BORDER_DISABLED
+                color: this.sendEnabled() ? resColor('GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
               })
               .onClick(() => {
                 this.sendCaptcha()
@@ -354,7 +356,7 @@ struct Register {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkCode) {
-              Text("请输入正确的验证码")
+              Text($r('app.string.invalid_verification_code'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -373,7 +375,7 @@ struct Register {
               SymbolGlyph($r('sys.symbol.lock'))
                 .fontSize(16)
                 .fontColor([this.checkPassword ? AUTH_ERROR : GLASS_PREFIX])
-              TextInput({ text: $$this.password, placeholder: "设置密码" })
+              TextInput({ text: $$this.password, placeholder: resString('password_hint_register') })
                 .type(this.showPassword ? InputType.Normal : InputType.Password)
                 .maxLength(16)
                 .fontSize(DesignFontSize.BODY)
@@ -403,7 +405,7 @@ struct Register {
             .alignItems(VerticalAlign.Center)
 
             if (this.checkPassword) {
-              Text("密码必须为6-16位")
+              Text($r('app.string.invalid_password'))
                 .fontColor(AUTH_ERROR)
                 .fontSize(DesignFontSize.CAPTION)
                 .lineHeight(16)
@@ -419,7 +421,7 @@ struct Register {
                   .height(22)
                   .color(Color.White)
               } else {
-                Text("注 册")
+                Text($r('app.string.register'))
                   .fontSize(BUTTON_FONT_SIZE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
                   .fontColor(Color.White)
@@ -429,7 +431,7 @@ struct Register {
             .width("100%")
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(DesignColor.PRIMARY)
+            .backgroundColor(resColor('PRIMARY'))
             .opacity(this.registering ? 0.38 : 1)
             .onClick(() => {
               // 防连点：请求进行中直接忽略
@@ -452,7 +454,7 @@ struct Register {
           .backgroundColor(GLASS_CARD_BG)
           .border({
             width: 1,
-            color: DesignColor.GLASS_BORDER_SUBTLE,
+            color: resColor('GLASS_BORDER_SUBTLE'),
             style: BorderStyle.Solid
           })
           .padding({ left: 16, right: 16, top: 20, bottom: 20 })
@@ -460,11 +462,11 @@ struct Register {
 
           // 登录入口 — 仅「立即登录」可点（12sp + 48dp 热区 + 800ms 节流，对齐 Android RegisterPage.kt:443-465）
           Row() {
-            Text("已有账号？")
+            Text($r('app.string.has_account'))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
               .fontColor(Color.White)
-            Text("立即登录")
+            Text($r('app.string.login_now'))
               .fontSize(DesignFontSize.CAPTION)
               .lineHeight(16)
               .fontWeight(DesignFontWeight.MEDIUM)
@@ -504,13 +506,13 @@ struct Register {
         this.showPassword = false
         // 低频关键动作成功：注册成功
         logger.info('register', '注册成功')
-        showToastSafety("注册成功")
+        showToastSafety(resString('register_success'))
         // 注册即自动登录（双 token 契约升级）：信封 data 为 {token, refreshToken, role} 对象，
         // 不再是 token 字符串；token 缺失按注册失败降级处理（与登录页同语义）
         const token = res.data?.token ?? ""
         if (token === "") {
           logger.warn('register', '注册响应缺少 token，按注册失败处理')
-          showToastSafety(res.message, "注册失败，请稍后重试")
+          showToastSafety(res.message, resString('register_1'))
           return
         }
         // await 确保写入完成后，后续完善信息/首页请求才能带上新 token
@@ -523,7 +525,7 @@ struct Register {
       } else {
         // 注册业务拒绝（验证码错误/手机号已注册等）
         logger.warn('register', `注册被拒绝 code=${res.code} message=${res.message ?? ""}`)
-        showToastSafety(res.message, "注册失败")
+        showToastSafety(res.message, resString('register_2'))
       }
     } finally {
       this.registering = false

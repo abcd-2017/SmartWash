@@ -3,6 +3,642 @@
     {
       "name": "start_window_background",
       "value": "#FFFFFF"
+    },
+    {
+      "name": "PRIMARY",
+      "value": "#FF2D9B6A"
+    },
+    {
+      "name": "ON_PRIMARY",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "PRIMARY_CONTAINER",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "ON_PRIMARY_CONTAINER",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "PRIMARY_LIGHT",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "PRIMARY_SOFT",
+      "value": "#FFE8F6EF"
+    },
+    {
+      "name": "ON_PRIMARY_SOFT",
+      "value": "#FF0B3625"
+    },
+    {
+      "name": "PRIMARY_DARK",
+      "value": "#FF1E8C5C"
+    },
+    {
+      "name": "SECONDARY",
+      "value": "#FF8E8E93"
+    },
+    {
+      "name": "ON_SECONDARY",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "SECONDARY_CONTAINER",
+      "value": "#FFF2F2F7"
+    },
+    {
+      "name": "ON_SECONDARY_CONTAINER",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "TERTIARY",
+      "value": "#FF6B7280"
+    },
+    {
+      "name": "ON_TERTIARY",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "TERTIARY_CONTAINER",
+      "value": "#FFF2F2F7"
+    },
+    {
+      "name": "ON_TERTIARY_CONTAINER",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "BACKGROUND",
+      "value": "#FFF5F6F3"
+    },
+    {
+      "name": "ON_BACKGROUND",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "SURFACE",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "ON_SURFACE",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "SURFACE_VARIANT",
+      "value": "#FFEFF1EE"
+    },
+    {
+      "name": "ON_SURFACE_VARIANT",
+      "value": "#FF6B6E73"
+    },
+    {
+      "name": "GROUP_BACKGROUND",
+      "value": "#FFE7EAE4"
+    },
+    {
+      "name": "HAIRLINE",
+      "value": "#FFEFF1EE"
+    },
+    {
+      "name": "OUTLINE",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "OUTLINE_VARIANT",
+      "value": "#FFEFF1EE"
+    },
+    {
+      "name": "ERROR",
+      "value": "#FFA8435A"
+    },
+    {
+      "name": "ON_ERROR",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "ERROR_CONTAINER",
+      "value": "#FFF7E9EC"
+    },
+    {
+      "name": "ON_ERROR_CONTAINER",
+      "value": "#FFA8435A"
+    },
+    {
+      "name": "WARNING",
+      "value": "#FFD98A26"
+    },
+    {
+      "name": "ON_WARNING",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "WARNING_CONTAINER",
+      "value": "#FFFDF3E7"
+    },
+    {
+      "name": "ON_WARNING_CONTAINER",
+      "value": "#FF92400E"
+    },
+    {
+      "name": "ONGOING",
+      "value": "#FFD98A26"
+    },
+    {
+      "name": "ONGOING_INK",
+      "value": "#FFD98A26"
+    },
+    {
+      "name": "DANGER",
+      "value": "#FFA8435A"
+    },
+    {
+      "name": "DANGER_INK",
+      "value": "#FFA8435A"
+    },
+    {
+      "name": "SUCCESS",
+      "value": "#FF2D9B6A"
+    },
+    {
+      "name": "ON_SUCCESS",
+      "value": "#FFFFFFFF"
+    },
+    {
+      "name": "SUCCESS_CONTAINER",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "ON_SUCCESS_CONTAINER",
+      "value": "#FF17322B"
+    },
+    {
+      "name": "TEXT_PRIMARY",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "TEXT_SECONDARY",
+      "value": "#FF6B6E73"
+    },
+    {
+      "name": "TEXT_TERTIARY",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "TEXT_GREEN",
+      "value": "#FF177A4C"
+    },
+    {
+      "name": "TEXT_GREEN_ON_TINT",
+      "value": "#FF146841"
+    },
+    {
+      "name": "DIVIDER",
+      "value": "#FFEFF1EE"
+    },
+    {
+      "name": "WATER",
+      "value": "#FF4A9FD4"
+    },
+    {
+      "name": "WATER_SOFT",
+      "value": "#FFDCEFF7"
+    },
+    {
+      "name": "ICON_CONTAINER_GREEN",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "ICON_CONTAINER_BLUE",
+      "value": "#FFEEF2FB"
+    },
+    {
+      "name": "ICON_CONTAINER_ORANGE",
+      "value": "#FFFDF3E7"
+    },
+    {
+      "name": "ICON_CONTAINER_PINK",
+      "value": "#FFFDEEF0"
+    },
+    {
+      "name": "ICON_CONTAINER_TEAL",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "ICON_CONTAINER_PURPLE",
+      "value": "#FFF4F0FB"
+    },
+    {
+      "name": "ICON_FOREGROUND_GREEN",
+      "value": "#FF2D9B6A"
+    },
+    {
+      "name": "ICON_FOREGROUND_BLUE",
+      "value": "#FF4A67C9"
+    },
+    {
+      "name": "ICON_FOREGROUND_ORANGE",
+      "value": "#FFD98A26"
+    },
+    {
+      "name": "ICON_FOREGROUND_PINK",
+      "value": "#FFC9526B"
+    },
+    {
+      "name": "ICON_FOREGROUND_TEAL",
+      "value": "#FF3F9D78"
+    },
+    {
+      "name": "ICON_FOREGROUND_PURPLE",
+      "value": "#FF7C3AED"
+    },
+    {
+      "name": "AUTH_GRADIENT_TOP",
+      "value": "#FF1A9E6E"
+    },
+    {
+      "name": "AUTH_GRADIENT_MID",
+      "value": "#FF0D7A4A"
+    },
+    {
+      "name": "AUTH_GRADIENT_BOTTOM",
+      "value": "#FF0B5C3A"
+    },
+    {
+      "name": "GLASS_BG_SUBTLE",
+      "value": "#1AFFFFFF"
+    },
+    {
+      "name": "GLASS_BG",
+      "value": "#26FFFFFF"
+    },
+    {
+      "name": "GLASS_BORDER_SUBTLE",
+      "value": "#2EFFFFFF"
+    },
+    {
+      "name": "GLASS_BORDER",
+      "value": "#33FFFFFF"
+    },
+    {
+      "name": "GLASS_INPUT",
+      "value": "#4DFFFFFF"
+    },
+    {
+      "name": "GLASS_TEXT_SECONDARY",
+      "value": "#66FFFFFF"
+    },
+    {
+      "name": "GLASS_TEXT_HINT",
+      "value": "#99FFFFFF"
+    },
+    {
+      "name": "GLASS_TEXT_DISABLED",
+      "value": "#B3FFFFFF"
+    },
+    {
+      "name": "GLASS_TEXT_ACTIVE",
+      "value": "#CCFFFFFF"
+    },
+    {
+      "name": "WECHAT_GREEN",
+      "value": "#FF07C160"
+    },
+    {
+      "name": "ALIPAY_BLUE",
+      "value": "#FF1677FF"
+    },
+    {
+      "name": "WECHAT_GREEN_LIGHT",
+      "value": "#1A07C160"
+    },
+    {
+      "name": "ALIPAY_BLUE_LIGHT",
+      "value": "#1A1677FF"
+    },
+    {
+      "name": "SERVICE_WASH",
+      "value": "#FF2D9B6A"
+    },
+    {
+      "name": "SERVICE_WASH_LIGHT",
+      "value": "#FFF0FBF4"
+    },
+    {
+      "name": "SERVICE_DRY",
+      "value": "#FF4A67C9"
+    },
+    {
+      "name": "SERVICE_DRY_LIGHT",
+      "value": "#FFEEF2FB"
+    },
+    {
+      "name": "SERVICE_PRESS",
+      "value": "#FFE07B00"
+    },
+    {
+      "name": "SERVICE_PRESS_LIGHT",
+      "value": "#FFFFF7ED"
+    },
+    {
+      "name": "SERVICE_LUXURY",
+      "value": "#FF0EA5E9"
+    },
+    {
+      "name": "SERVICE_LUXURY_LIGHT",
+      "value": "#FFEFF6FF"
+    },
+    {
+      "name": "SERVICE_SHOES",
+      "value": "#FFDC2626"
+    },
+    {
+      "name": "SERVICE_SHOES_LIGHT",
+      "value": "#FFFEF2F2"
+    },
+    {
+      "name": "SCRIM_BLACK_20",
+      "value": "#33000000"
+    },
+    {
+      "name": "SCRIM_BLACK_35",
+      "value": "#59000000"
+    },
+    {
+      "name": "SCRIM_BLACK_18",
+      "value": "#2E000000"
+    },
+    {
+      "name": "HERO_GRADIENT_START",
+      "value": "#FF2D9B6A"
+    },
+    {
+      "name": "SCRIM_BLACK_50",
+      "value": "#80000000"
+    },
+    {
+      "name": "IMAGE_SCRIM",
+      "value": "#8C000000"
+    },
+    {
+      "name": "SHADOW_COLOR_CARD",
+      "value": "#0D14281E"
+    },
+    {
+      "name": "SHADOW_COLOR_FLOAT",
+      "value": "#1A14281E"
+    },
+    {
+      "name": "DARK_BACKGROUND",
+      "value": "#FF141614"
+    },
+    {
+      "name": "DARK_GROUP_BACKGROUND",
+      "value": "#FF1A1E1B"
+    },
+    {
+      "name": "DARK_TEXT_PRIMARY",
+      "value": "#FFE6E9E6"
+    },
+    {
+      "name": "DARK_ERROR",
+      "value": "#FFE795A5"
+    },
+    {
+      "name": "DARK_WARNING",
+      "value": "#FFE5AC5C"
+    },
+    {
+      "name": "DARK_TEXT_SECONDARY",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "DARK_WATER",
+      "value": "#FF5FAEE0"
+    },
+    {
+      "name": "DARK_ICON_FOREGROUND_PURPLE",
+      "value": "#FFB49CE8"
+    },
+    {
+      "name": "DARK_ICON_CONTAINER_PURPLE",
+      "value": "#FF272038"
+    },
+    {
+      "name": "DARK_SURFACE",
+      "value": "#FF1D201E"
+    },
+    {
+      "name": "DARK_OUTLINE",
+      "value": "#FF2C312D"
+    },
+    {
+      "name": "DIV_BG_TOP_DARK",
+      "value": "#FF201D18"
+    },
+    {
+      "name": "DIV_BG_MID_DARK",
+      "value": "#FF1A1917"
+    },
+    {
+      "name": "DIV_BG_BOTTOM_DARK",
+      "value": "#FF151412"
+    },
+    {
+      "name": "DIV_SURFACE_DARK",
+      "value": "#FF1A1917"
+    },
+    {
+      "name": "DIV_SURFACE_2_DARK",
+      "value": "#FF26241F"
+    },
+    {
+      "name": "DIV_TEXT_PRIMARY_DARK",
+      "value": "#FFEFE9DA"
+    },
+    {
+      "name": "DIV_GOLD_DARK",
+      "value": "#FFC9A961"
+    },
+    {
+      "name": "DIV_GOLD_HI_DARK",
+      "value": "#FFD4B878"
+    },
+    {
+      "name": "DIV_SEAL_DARK",
+      "value": "#FFC8504A"
+    },
+    {
+      "name": "DIV_SEAL_HI_DARK",
+      "value": "#FFD06054"
+    },
+    {
+      "name": "DIV_JADE_DARK",
+      "value": "#FF6FA593"
+    },
+    {
+      "name": "DIV_YAO_TOP_DARK",
+      "value": "#FFEFE9DA"
+    },
+    {
+      "name": "DIV_YAO_BOTTOM_DARK",
+      "value": "#FFC9C2B0"
+    },
+    {
+      "name": "DIV_BG_TOP_LIGHT",
+      "value": "#FFF8F3E7"
+    },
+    {
+      "name": "DIV_BG_MID_LIGHT",
+      "value": "#FFF5F1E8"
+    },
+    {
+      "name": "DIV_BG_BOTTOM_LIGHT",
+      "value": "#FFEBE3D1"
+    },
+    {
+      "name": "DIV_SURFACE_LIGHT",
+      "value": "#FFF8F3E7"
+    },
+    {
+      "name": "DIV_SURFACE_2_LIGHT",
+      "value": "#FFF1ECDD"
+    },
+    {
+      "name": "DIV_TEXT_SECONDARY_LIGHT",
+      "value": "#FF5A5E5A"
+    },
+    {
+      "name": "DIV_GOLD_LIGHT",
+      "value": "#FF8F7233"
+    },
+    {
+      "name": "DIV_GOLD_HI_LIGHT",
+      "value": "#FF6E5626"
+    },
+    {
+      "name": "DIV_SEAL_LIGHT",
+      "value": "#FFC8504A"
+    },
+    {
+      "name": "DIV_SEAL_HI_LIGHT",
+      "value": "#FFA63A30"
+    },
+    {
+      "name": "DIV_JADE_LIGHT",
+      "value": "#FF3F7261"
+    },
+    {
+      "name": "DIV_YAO_TOP_LIGHT",
+      "value": "#FF3A342A"
+    },
+    {
+      "name": "DIV_YAO_BOTTOM_LIGHT",
+      "value": "#FF26231C"
+    },
+    {
+      "name": "DIV_GOLD_LINE_DARK",
+      "value": "#4DC9A961"
+    },
+    {
+      "name": "DIV_GOLD_LINE_LIGHT",
+      "value": "#528F7233"
+    },
+    {
+      "name": "DIV_LINE_DARK",
+      "value": "#38C9A961"
+    },
+    {
+      "name": "DIV_LINE_LIGHT",
+      "value": "#388F7233"
+    },
+    {
+      "name": "DIV_HAIR_DARK",
+      "value": "#1FC9A961"
+    },
+    {
+      "name": "DIV_HAIR_LIGHT",
+      "value": "#1F8F7233"
+    },
+    {
+      "name": "DIV_GOLD_SOFT_DARK",
+      "value": "#14C9A961"
+    },
+    {
+      "name": "DIV_GOLD_SOFT_LIGHT",
+      "value": "#148F7233"
+    },
+    {
+      "name": "DIV_GOLD_14_DARK",
+      "value": "#24C9A961"
+    },
+    {
+      "name": "DIV_GOLD_14_LIGHT",
+      "value": "#268F7233"
+    },
+    {
+      "name": "DIV_GOLD_HAIR_DARK",
+      "value": "#24C9A961"
+    },
+    {
+      "name": "DIV_GOLD_HAIR_LIGHT",
+      "value": "#2E8F7233"
+    },
+    {
+      "name": "DIV_SPIRIT_QING",
+      "value": "#FF6FA593"
+    },
+    {
+      "name": "DIV_SPIRIT_CHI",
+      "value": "#FFD06054"
+    },
+    {
+      "name": "DIV_SPIRIT_BAI",
+      "value": "#FFC9C2B0"
+    },
+    {
+      "name": "DIV_SPIRIT_HEI",
+      "value": "#FF54679C"
+    },
+    {
+      "name": "DIV_SPIRIT_HUANG",
+      "value": "#FFC9A961"
+    },
+    {
+      "name": "DIV_SPIRIT_ZI",
+      "value": "#FF8A7A9C"
+    },
+    {
+      "name": "DIV_TEXT_SECONDARY_DARK",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "DIV_TEXT_TERTIARY_DARK",
+      "value": "#FFA9AEA9"
+    },
+    {
+      "name": "DIV_TEXT_PRIMARY_LIGHT",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "DIV_TEXT_TERTIARY_LIGHT",
+      "value": "#FF1C1C1E"
+    },
+    {
+      "name": "DIV_ON_GOLD",
+      "value": "#FF151412"
+    },
+    {
+      "name": "DIV_SEAL_DEEP",
+      "value": "#FFA63A30"
+    },
+    {
+      "name": "DIV_GOLD_GRADIENT_START",
+      "value": "#FFD4B878"
+    },
+    {
+      "name": "DIV_GOLD_GRADIENT_END",
+      "value": "#FFC9A961"
     }
   ]
 }

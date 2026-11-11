@@ -78,6 +78,8 @@ class DivAskViewModel @Inject constructor(
 
     /** 梅花时间卦：按当前时刻确定性起卦入库 */
     fun castMeiHuaTime(onSaved: (Long) -> Unit) {
+        // saving 并发护栏（audit-22 #4）：提交期间重复触发会产生重复卦例
+        if (_uiState.value.saving) return
         viewModelScope.launch {
             val chart = MeiHuaChart.timeChart(Solar.fromDate(Date()))
             saved(chart.lines, DivChartBundle(DivMethod.MEI_HUA.id, meihua = chart), onSaved)
@@ -86,6 +88,7 @@ class DivAskViewModel @Inject constructor(
 
     /** 梅花报数卦 */
     fun castMeiHuaNumbers(a: Int, b: Int, onSaved: (Long) -> Unit) {
+        if (_uiState.value.saving) return
         viewModelScope.launch {
             val chart = MeiHuaChart.numbersChart(a, b)
             saved(chart.lines, DivChartBundle(DivMethod.MEI_HUA.id, meihua = chart), onSaved)
@@ -94,6 +97,7 @@ class DivAskViewModel @Inject constructor(
 
     /** 奇门起局 */
     fun castQiMen(onSaved: (Long) -> Unit) {
+        if (_uiState.value.saving) return
         viewModelScope.launch {
             val chart = QiMenChart.compile(Solar.fromDate(Date()))
             saved(emptyList(), DivChartBundle(DivMethod.QI_MEN.id, qimen = chart), onSaved)
@@ -102,6 +106,7 @@ class DivAskViewModel @Inject constructor(
 
     /** 大六壬起课 */
     fun castLiuRen(onSaved: (Long) -> Unit) {
+        if (_uiState.value.saving) return
         viewModelScope.launch {
             val solar = Solar.fromDate(Date())
             val lunar = solar.lunar
@@ -118,6 +123,7 @@ class DivAskViewModel @Inject constructor(
 
     /** 手动输入爻值直接装卦（六爻「直接输入爻值」路径） */
     fun castManualLines(lines: List<Int>, onSaved: (Long) -> Unit) {
+        if (_uiState.value.saving) return
         if (lines.size != 6 || lines.any { it !in 1..4 }) return
         viewModelScope.launch {
             val solar = Solar.fromDate(Date())

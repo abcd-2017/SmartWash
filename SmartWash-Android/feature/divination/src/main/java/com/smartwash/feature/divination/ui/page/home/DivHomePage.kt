@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -84,6 +85,7 @@ fun DivHomePage(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val records by viewModel.recentRecords.collectAsState()
+    val signSaving by viewModel.signSaving.collectAsState()
     val view = currentView()
 
     // 2026-11-01 缺陷 7a：本页是观象台唯一未包 DivinationScreen 的页面——状态栏裸顶（时辰被挡）、
@@ -126,7 +128,7 @@ fun DivHomePage(
             CompassDial(modifier = Modifier.size(104.dp))
         }
 
-        // 四术玉牌（2026-11-01 缺陷 7b）：原型 .jade-grid 口径 = 2×2 等分网格（gap 14）、
+        // 四术玉牌（2026-11-01 缺陷 7b）：原型 .jade-grid 口径 = 2×2 等分网格（gap 12，令牌网格收敛，画板 14）、
         // 每术定制线描 glyph + 竖排术名 + 一句话定位 + 鎏金渐变描边，六爻居首（左上）+ 推荐 tag + 加大 glyph。
         //
         // 上一版把六爻拉成通栏主牌、其余三牌挤在一行：360dp 屏次牌仅 ~101dp 宽，
@@ -163,10 +165,17 @@ fun DivHomePage(
         // 今日一签
         val sign = uiState.todaySign
         if (sign != null) {
+            // 保存中（audit-11 #6）：禁用点击防重复提交 + 尾缀省略号作轻量 loading 反馈，
+            // 业务链路不变（本地建档 → GET /today 关联 → onSaved 导航）
+            val signAction: (() -> Unit)? = if (signSaving) {
+                null
+            } else {
+                { viewModel.ensureTodaySignSaved { id -> navController.navigate(DivRoute.Chart(id)) } }
+            }
             DivCard(
                 modifier = Modifier
                     .padding(horizontal = 20.dp, vertical = 12.dp),
-                onClick = { viewModel.ensureTodaySignSaved { id -> navController.navigate(DivRoute.Chart(id)) } },
+                onClick = signAction,
             ) {
                 Row(
                     Modifier.padding(start = 18.dp, top = 10.dp, end = 10.dp, bottom = 22.dp),
@@ -189,7 +198,11 @@ fun DivHomePage(
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
-                    Text("›", color = c.goldText.copy(alpha = 0.6f), fontSize = 16.sp)
+                    Text(
+                        text = if (signSaving) stringResource(R.string.div_sign_saving) else "›",
+                        color = c.goldText.copy(alpha = 0.6f),
+                        fontSize = 16.sp,
+                    )
                 }
             }
         }
@@ -209,12 +222,33 @@ fun DivHomePage(
                     label = "ledgerEmpty",
                 ) { empty ->
                     if (empty) {
-                        Text(
-                            text = stringResource(R.string.div_history_empty),
-                            fontSize = 12.sp,
-                            color = c.textTertiary,
-                            modifier = Modifier.padding(vertical = 18.dp),
-                        )
+                        Column(Modifier.padding(vertical = 18.dp)) {
+                            Text(
+                                text = stringResource(R.string.div_history_empty),
+                                fontSize = 12.sp,
+                                color = c.textTertiary,
+                            )
+                            // 空态行动按钮（规范 §3.6 空态三要素，audit-11 #5）：文案给了「且去起一卦」
+                            // 却无可达动作——补文字按钮跳问卦（默认六爻 = 推荐首选术），与「卦历 ›」尾链双出口
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .heightIn(min = 48.dp)
+                                    .pressable(onClick = {
+                                        view.performHaptic(HapticEffect.LIGHT)
+                                        navController.navigate(DivRoute.Ask(DivMethod.LIU_YAO.id))
+                                    }),
+                                contentAlignment = Alignment.CenterStart,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.div_home_ledger_go_ask),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 2.sp,
+                                    color = c.goldText,
+                                )
+                            }
+                        }
                     } else {
                         records.take(3).forEachIndexed { index, record ->
                             LedgerRow(record)
@@ -222,7 +256,8 @@ fun DivHomePage(
                                 Box(
                                     Modifier
                                         .fillMaxWidth()
-                                        .height(1.dp)
+                                        // 行间发丝线 0.5dp（规范 §3.4，audit-11 #8）
+                                        .height(0.5.dp)
                                         .background(c.hair)
                                 )
                             }
@@ -249,30 +284,43 @@ private fun LedgerRow(record: com.smartwash.feature.divination.database.DivRecor
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(dateText, fontSize = 12.sp, color = c.textTertiary, modifier = Modifier.width(44.dp))
+        // widthIn 让 130% 字体缩放下日期可自然加宽不截断（audit-11 #7）
+        Text(dateText, fontSize = 12.sp, color = c.textTertiary, modifier = Modifier.widthIn(min = 44.dp))
         Spacer(Modifier.width(4.dp))
+        // 状态色点 8dp 档（规范 §3.5，audit-11 #17）
         Box(
             Modifier
-                .size(7.dp)
+                .size(8.dp)
                 .background(c.gold, CircleShape)
         )
         Spacer(Modifier.width(12.dp))
         Text(
             text = record.question,
             fontSize = 12.sp,
-            lineHeight = 20.sp,
+            // v0.4 caption 档 12/16（audit-11 #9，与本页 desc/subLine 对齐）
+            lineHeight = 16.sp,
             color = c.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(8.dp))
+        // 画板口径术数名走 strings 资源（与玉牌同源 div_method_*_name），
+        // 禁止 DivMethod.name 直出英文枚举（audit-11 #1）
         Text(
-            text = DivMethod.fromId(record.method).name,
+            text = stringResource(methodNameRes(DivMethod.fromId(record.method))),
             style = divSerif(12.sp, FontWeight.Medium, 0.sp),
             color = c.goldText.copy(alpha = 0.75f),
         )
     }
+}
+
+/** 术数显示名资源（案卷行与玉牌共用 div_method_*_name；audit-11 #1：案卷行不得直出 DivMethod.name 枚举常量） */
+private fun methodNameRes(method: DivMethod): Int = when (method) {
+    DivMethod.LIU_YAO -> R.string.div_method_liuyao_name
+    DivMethod.MEI_HUA -> R.string.div_method_meihua_name
+    DivMethod.QI_MEN -> R.string.div_method_qimen_name
+    DivMethod.LIU_REN -> R.string.div_method_liuren_name
 }
 
 /**
@@ -354,8 +402,11 @@ private fun JadeEntryTile(
         Box(Modifier.height(16.dp)) {
             if (tag != null) {
                 Text(
+                    // v0.4 captionStrong 档 12/16/500（audit-11 #4：11sp「角标」档已明令作废，行内小字一律 12sp）
                     text = tag,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
                     letterSpacing = 2.sp,
                     color = c.goldText.copy(alpha = 0.75f),
                 )

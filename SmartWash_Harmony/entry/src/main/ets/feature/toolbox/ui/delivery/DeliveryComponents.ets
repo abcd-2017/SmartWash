@@ -4,7 +4,8 @@
 // 且条目行依赖 direction/kind/taken 状态渲染，按已知坑用 @ComponentV2 + @Param
 // （@Builder 按值传参不响应状态更新）。
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { resColor } from '../../../../utils/ResourceColor'
 import {
   DeliveryDirection,
   DeliveryItemKind,
@@ -100,12 +101,12 @@ export struct DeliveryItemRow {
       Column() {
         SymbolGlyph(this.kindIcon())
           .fontSize(20)
-          .fontColor([this.isTaken() ? DesignColor.TEXT_TERTIARY : DesignColor.ICON_FOREGROUND_BLUE])
+          .fontColor([this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('ICON_FOREGROUND_BLUE')])
       }
       .width(32)
       .height(32)
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(this.isTaken() ? DesignColor.SURFACE_VARIANT : DesignColor.ICON_CONTAINER_BLUE)
+      .backgroundColor(this.isTaken() ? resColor('SURFACE_VARIANT') : resColor('ICON_CONTAINER_BLUE'))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
@@ -113,14 +114,15 @@ export struct DeliveryItemRow {
         Text(this.item.title ?? this.kindName())
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(this.isTaken() ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_PRIMARY)
+          .fontColor(this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
 
         Text(this.metaText())
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_TERTIARY)
+          // 时间·大小为可读元信息，不用 textTertiary（compare-07 #5，对齐安卓 textSecondary）
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -134,13 +136,15 @@ export struct DeliveryItemRow {
       Column() {
         DeliveryTagChip({
           text: this.directionText(),
-          containerColor: this.isIncoming() ? DesignColor.ICON_CONTAINER_BLUE : DesignColor.SURFACE_VARIANT,
-          contentColor: this.isIncoming() ? DesignColor.ICON_FOREGROUND_BLUE : DesignColor.TEXT_SECONDARY
+          containerColor: this.isIncoming() ? resColor('ICON_CONTAINER_BLUE') : resColor('SURFACE_VARIANT'),
+          contentColor: this.isIncoming() ? resColor('ICON_FOREGROUND_BLUE') : resColor('TEXT_SECONDARY')
         })
         DeliveryTagChip({
           text: this.isTaken() ? DeliveryText.toolbox_delivery_state_taken : DeliveryText.toolbox_delivery_state_pending,
-          containerColor: this.isTaken() ? DesignColor.SURFACE_VARIANT : DesignColor.WARNING_CONTAINER,
-          contentColor: this.isTaken() ? DesignColor.TEXT_TERTIARY : DesignColor.ONGOING_INK
+          containerColor: this.isTaken() ? resColor('SURFACE_VARIANT') : resColor('WARNING_CONTAINER'),
+          // 功能色浅底 + 成对文字色（规范 §5）：#D98A26 on warningContainer 仅 2.51:1 违反 §10 红线
+          //（compare-07 #3，对齐安卓 onWarningContainer）
+          contentColor: this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('ON_WARNING_CONTAINER')
         })
         .margin({ top: DesignDimens.SPACE_XXS })
       }

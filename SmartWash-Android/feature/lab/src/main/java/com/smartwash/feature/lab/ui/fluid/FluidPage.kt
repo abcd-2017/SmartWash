@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,8 +83,8 @@ fun FluidPage(
     val effectivePlaying = if (reduceMotion) playing else true
 
     // 令牌色在组合层映射为渲染层可用的 RGB（渲染层不写死色值）
-    val palette = remember(preset, scheme) { paletteOf(scheme, preset) }
     val isDark = isSystemInDarkTheme()
+    val palette = remember(preset, scheme, isDark) { paletteOf(isDark, scheme, preset) }
     val baseColor = remember(scheme, isDark) { colorOf(baseColorOf(isDark, scheme)) }
 
     // 渲染器唯一实例：经构造注入 GL 视图，页面收集 state / 注入调色板都用同一对象。
@@ -133,6 +134,8 @@ fun FluidPage(
         modifier = Modifier
             .fillMaxSize()
             .background(scheme.background)
+            // edge-to-edge 下控制区（清空/播放按钮）避让系统手势区（对齐同模块页脚处理）
+            .navigationBarsPadding()
     ) {
         PageHeader(
             title = stringResource(R.string.lab_fluid_title),
@@ -145,10 +148,14 @@ fun FluidPage(
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(
-                    horizontal = AppDimens.pagePadding,
-                    vertical = AppDimens.spaceMd,
+                    start = AppDimens.pagePadding,
+                    top = AppDimens.spaceMd,
+                    end = AppDimens.pagePadding,
+                    // 画布与控制区之间拉开区块间距节奏（原上下 16 偏挤，规范区块间距 24-32）
+                    bottom = AppDimens.spaceXl,
                 )
-                .clip(RoundedCornerShape(AppDimens.radiusLg))
+                // hero/大容器圆角档 radiusXl（20），与绘画页画作 hero 同档
+                .clip(RoundedCornerShape(AppDimens.radiusXl))
         ) {
             AndroidView(
                 factory = { glView },
@@ -158,8 +165,15 @@ fun FluidPage(
                 Text(
                     text = stringResource(R.string.lab_fluid_unsupported),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.textSecondary,
-                    modifier = Modifier.align(Alignment.Center),
+                    color = scheme.textPrimary,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        // 失败态兜底底衬：unsupported 路径未 setRenderer，GL surface 呈黑底，
+                        // textSecondary 直接叠加仅 4.1:1；surface 卡片衬底把文字背景固定到
+                        // 可控色（与 FirstRunHint 同画法），textPrimary 对 surface 双板均 ≥4.5:1
+                        .background(scheme.surface, RoundedCornerShape(AppDimens.radiusFull))
+                        .border(1.dp, scheme.outline, RoundedCornerShape(AppDimens.radiusFull))
+                        .padding(horizontal = AppDimens.spaceMd, vertical = AppDimens.spaceXs),
                 )
             }
             FirstRunHint(
@@ -259,21 +273,38 @@ private fun colorOf(color: Color): FloatArray =
 private fun baseColorOf(isDark: Boolean, scheme: AppColorScheme): Color =
     if (isDark) scheme.surfaceVariant else scheme.onPrimarySoft
 
-/** 预设 → 调色板（全部取自清氧令牌，禁止写死色值） */
-private fun paletteOf(scheme: AppColorScheme, preset: FluidPreset): FluidPalette = when (preset) {
+/**
+ * 预设 → 调色板（全部取自清氧令牌，禁止写死色值）。
+ *
+ * 染料是画在深底（浅板 onPrimarySoft #0B3625 / 深板 surfaceVariant #262A27）上的加法
+ * 叠加前景图形，禁止用「容器浅底」令牌——它们在深色主题取深色容器值，对底仅 1.02-1.13:1
+ * （FOAM_WHITE 三色全灭、WARM_SAND 第三色灭、OXYGEN_WATER 第三色弱，§10 红线）。
+ * 故容器系染料槽按 [isDark] 分流：浅板保持原容器浅高光（对深绿底 ≥2.3:1），
+ * 深板改取配对前景/图形级亮色，逐槽对底核算：
+ * - onPrimarySoft（深 #B9E8CF）对 #262A27 ≈10.8:1、textPrimary（深 #E6E9E6）≈11.9:1、
+ *   onWarningContainer（深 #ECB36A）≈7.8:1、water/primary/ongoing/danger 深板 5.8-7.2:1
+ *   （报告附录实测），全部 ≥1.5:1 图形可见线；浅板各槽维持原值（water 4.59 / primary 3.84 /
+ *   ongoing 4.86 / danger 2.30 报告容忍，浅高光槽均 >11:1）。
+ */
+private fun paletteOf(
+    isDark: Boolean,
+    scheme: AppColorScheme,
+    preset: FluidPreset,
+): FluidPalette = when (preset) {
     FluidPreset.OXYGEN_WATER -> FluidPalette.of(
         colorOf(scheme.water),
         colorOf(scheme.primary),
-        colorOf(scheme.waterSoft),
+        if (isDark) colorOf(scheme.onPrimarySoft) else colorOf(scheme.waterSoft),
     )
     FluidPreset.FOAM_WHITE -> FluidPalette.of(
-        colorOf(scheme.surface),
-        colorOf(scheme.waterSoft),
-        colorOf(scheme.primarySoft),
+        // 深板「泡沫白」取近白前景档；surface 深色值是卡片深底，画在画布上不可见
+        if (isDark) colorOf(scheme.textPrimary) else colorOf(scheme.surface),
+        if (isDark) colorOf(scheme.water) else colorOf(scheme.waterSoft),
+        if (isDark) colorOf(scheme.onPrimarySoft) else colorOf(scheme.primarySoft),
     )
     FluidPreset.WARM_SAND -> FluidPalette.of(
         colorOf(scheme.ongoing),
         colorOf(scheme.danger),
-        colorOf(scheme.warningContainer),
+        if (isDark) colorOf(scheme.onWarningContainer) else colorOf(scheme.warningContainer),
     )
 }

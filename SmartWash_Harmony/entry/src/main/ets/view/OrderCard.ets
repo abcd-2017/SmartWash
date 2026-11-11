@@ -1,9 +1,11 @@
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from "../constant/DesignSystem"
 import { getOrderStatusDescription, OrderStatusEnum } from "../constant/OrderStatus"
 import { OrderInfo } from "../network/vo/OrderInfo"
 import { formatOrderTime } from "../utils/TimeUtil"
 import { Debouncer } from "../utils/DebounceUtil"
 import vibrator from '@ohos.vibrator'
+import { resColor } from '../utils/ResourceColor'
+import { resString } from '../utils/ResourceString'
 
 /** 行内小按钮字号 — 对齐安卓 OrderActionPill 13sp/600；设计系统 8 档无 13 档，按安卓代码取值为文件内常量 */
 const ACTION_FONT_SIZE: number = 13
@@ -56,15 +58,15 @@ export struct OrderMonthCard {
    */
   private iconColors(status: string | null | undefined): [number, number] {
     if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
-      return [DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE]
+      return [resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE')]
     }
     if (status === OrderStatusEnum.COMPLETED) {
-      return [DesignColor.PRIMARY_LIGHT, DesignColor.PRIMARY]
+      return [resColor('PRIMARY_LIGHT'), resColor('PRIMARY')]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return [DesignColor.ERROR_CONTAINER, DesignColor.ERROR]
+      return [resColor('ERROR_CONTAINER'), resColor('ERROR')]
     }
-    return [DesignColor.WARNING_CONTAINER, DesignColor.WARNING]
+    return [resColor('WARNING_CONTAINER'), resColor('WARNING')]
   }
 
   /**
@@ -73,15 +75,15 @@ export struct OrderMonthCard {
    */
   private badgeColors(status: string | null | undefined): [number, number] {
     if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
-      return [DesignColor.ICON_CONTAINER_BLUE, DesignColor.ICON_FOREGROUND_BLUE]
+      return [resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE')]
     }
     if (status === OrderStatusEnum.COMPLETED) {
-      return [DesignColor.PRIMARY_LIGHT, DesignColor.PRIMARY_DARK]
+      return [resColor('PRIMARY_LIGHT'), resColor('PRIMARY_DARK')]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return [DesignColor.ERROR_CONTAINER, DesignColor.ERROR]
+      return [resColor('ERROR_CONTAINER'), resColor('ERROR')]
     }
-    return [DesignColor.WARNING_CONTAINER, DesignColor.WARNING]
+    return [resColor('WARNING_CONTAINER'), resColor('WARNING')]
   }
 
   @Builder
@@ -90,14 +92,14 @@ export struct OrderMonthCard {
       Text(label)
         .fontSize(ACTION_FONT_SIZE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(DesignColor.ON_PRIMARY)
+        .fontColor(resColor('ON_PRIMARY'))
     }
     .height(36)
     .padding({ left: 16, right: 16 })
     .justifyContent(FlexAlign.Center)
     // 行内小按钮档：36 高 / radiusMd 12 / 13sp·600（对齐安卓 OrderActionPill）
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(DesignColor.PRIMARY)
+    .backgroundColor(resColor('PRIMARY'))
     // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms）
     .scale({ x: this.pressedActionKey === btnKey ? 0.97 : 1, y: this.pressedActionKey === btnKey ? 0.97 : 1 })
     .animation({ duration: 100, curve: Curve.EaseOut })
@@ -148,7 +150,7 @@ export struct OrderMonthCard {
         // 单号 · 套餐（bodySmall 12 + tnum；角标底→单号行 8）
         Text(`${order.orderNo ?? ""} · ${order.laundryPackageVo?.itemName ?? ""}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -157,7 +159,7 @@ export struct OrderMonthCard {
         // 相对时间（bodySmall 12 + tnum；单号→时间 8）
         Text(formatOrderTime(order.createdAt))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(DesignColor.TEXT_SECONDARY)
+          .fontColor(resColor('TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -175,22 +177,22 @@ export struct OrderMonthCard {
           // 金额两位小数（N1）+ tnum（G5）；已取消置灰（对齐安卓 textSecondary），余态 primaryDark（绿字红线）
           .fontFeature(DesignFontFeature.TNUM)
           .fontColor(order.status === OrderStatusEnum.CANCELED ?
-            DesignColor.TEXT_SECONDARY : DesignColor.PRIMARY_DARK)
+            resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK'))
 
         Column() {
           if (order.status === OrderStatusEnum.PENDING_PAYMENT) {
             // 待支付操作区（对齐安卓 OrderPage.kt:526-544）：去支付在上、取消订单在下，
             // 右对齐竖排，中间拉开 12；取消订单用 error 语义色（危险操作）
             Column() {
-              this.ActionButton("去支付", `${order.orderId}:pay`, () => {
+              this.ActionButton(resString('go_pay'), `${order.orderId}:pay`, () => {
                 this.paymentClick(order)
               })
 
               // 取消订单 — 自绘文字动作，热区 44（安卓 OrderPage.kt:486-494，原 40 不达标）
               Row() {
-                Text("取消订单")
+                Text($r('app.string.cancel_order'))
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(DesignColor.ERROR)
+                  .fontColor(resColor('ERROR'))
               }
               .constraintSize({ minHeight: 44 })
               .padding({ left: 4, right: 4 })
@@ -216,21 +218,21 @@ export struct OrderMonthCard {
             }
             .alignItems(HorizontalAlign.End)
           } else if (order.status === OrderStatusEnum.PENDING_SHIPMENT) {
-            this.ActionButton("去寄件", `${order.orderId}:ship`, () => {
+            this.ActionButton(resString('go_ship'), `${order.orderId}:ship`, () => {
               this.shipmentClick(order)
             })
           } else if (order.status === OrderStatusEnum.WASHING) {
-            Text("清洗中")
+            Text($r('app.string.step_washing'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
           } else if (order.status === OrderStatusEnum.READY_FOR_PICKUP) {
-            this.ActionButton("去取件", `${order.orderId}:pickup`, () => {
+            this.ActionButton(resString('go_pickup'), `${order.orderId}:pickup`, () => {
               this.pickupClick(order)
             })
           } else {
             Text(getOrderStatusDescription(order.status))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.TEXT_SECONDARY)
+              .fontColor(resColor('TEXT_SECONDARY'))
           }
         }
         .alignItems(HorizontalAlign.End)
@@ -271,18 +273,18 @@ export struct OrderMonthCard {
         if (index < this.orders.length - 1) {
           Divider()
             .strokeWidth(0.5)
-            .color(DesignColor.HAIRLINE)
+            .color(resColor('HAIRLINE'))
             .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
       }, (order: OrderInfo) => order.orderId?.toString())
     }
     .width("100%")
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: DesignColor.OUTLINE })
+    .border({ width: 1, color: resColor('OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })

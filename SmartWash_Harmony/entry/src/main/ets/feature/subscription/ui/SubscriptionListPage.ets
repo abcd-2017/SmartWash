@@ -10,7 +10,7 @@
 // 已知坑遵守：条目卡内容依赖状态 → @ComponentV2 + @Param/@Event（@Builder 按值传参不响应更新）。
 
 import { RouteNames } from '../../../constant/RouteNames'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../../constant/DesignSystem'
 import { BizCode } from '../../../network/HttpUtil'
 import {
   SUBSCRIPTION_PAGE_SIZE,
@@ -29,10 +29,14 @@ import {
   SubscriptionTagChip,
   subscriptionAmountText,
   subscriptionCycleDescription,
+  subscriptionFormat,
+  subscriptionRenewCenterTextColor,
   subscriptionRenewFraction,
   subscriptionRenewRelativeColor,
   subscriptionRenewRelativeText,
   subscriptionRenewRingColor,
+  subscriptionStatusChipContainer,
+  subscriptionStatusChipContent,
   subscriptionStatusContainerColor,
   subscriptionStatusIcon,
   subscriptionStatusIconColor,
@@ -49,6 +53,7 @@ import { SUBSCRIPTION_TICK_KEY } from '../../../utils/RefreshSignal'
 import { showToastSafety } from '../../../utils/ToastUtil'
 import { safeBottomVp, safeTopVp } from '../../../utils/SafeArea'
 import { ThemeRefresh } from '../../../view/common/ThemeRefresh'
+import { resColor } from '../../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'subscriptionListPage'
@@ -73,6 +78,10 @@ struct SubscriptionListPage {
   @State isLoadingMore: boolean = false
   @State appendError: boolean = false
   @State statusFilter: SubscriptionStatus | null = null
+  // 刷新会话门控（对齐安卓 2026-11-06 闪空态回归修复）：变更信号/筛选切换/下拉刷新都会重拉列表，
+  // 会话期间「清空后、新加载尚未开始」的帧会命中空态分支闪一帧——会话期间列表非空保旧数据、
+  // 列表为空走骨架；只有本轮加载结束（有数据，或确认空结果）才允许真实空态
+  @State isRefreshSession: boolean = false
   // 跨页刷新信号（自增 tick）：新建/编辑/删除/状态流转/标记已读成功后 bump
   @StorageLink(SUBSCRIPTION_TICK_KEY) @Watch('onSubscriptionTick') subscriptionTick: number = 0
   private hasShown: boolean = false
@@ -92,9 +101,10 @@ struct SubscriptionListPage {
     this.isLoadingFirst = false
   }
 
-  /** 消费订阅变更 tick：重拉列表（自增保证每次变更都触发） */
+  /** 消费订阅变更 tick：重拉列表（自增保证每次变更都触发；会话门控防闪空态） */
   private onSubscriptionTick(): void {
     logger.debug(TAG, '消费到订阅变更信号，重拉列表')
+    this.isRefreshSession = true
     this.loadFirst()
   }
 
@@ -120,22 +130,26 @@ struct SubscriptionListPage {
       if (res.code === BizCode.SUCCESS && res.data !== null) {
         const records: Array<SubscriptionVo> = res.data.records
         if (page === 1) {
-          this.list = []
+          // 刷新会话门控：新数据就绪后才替换旧列表（等待网络期间保留旧数据防闪「空态 + 去新建」）；
+          // 空结果也在此放行（会话结束 → 真实空态）
           this.isFirstError = false
+          this.isRefreshSession = false
+          this.list = records
         }
         if (records.length === 0) {
           logger.debug(TAG, `分页封底 page=${page} 本页无数据`)
           this.appendError = false
           return false
         }
-        this.list.push(...records)
         this.appendError = false
         logger.debug(TAG, `分页加载成功 page=${page} count=${records.length} total=${res.data.total}`)
         return true
       }
       if (page === 1) {
+        // 首刷/刷新失败：错误结束会话；已有数据保留（isFirstError 仅在列表为空时展示错误态）
         logger.warn(TAG, `订阅首刷失败 code=${res.code ?? 0} msg=${res.message ?? ''}`)
         this.isFirstError = true
+        this.isRefreshSession = false
         showToastSafety(res.message, SubscriptionText.subscription_error_load)
         return false
       }
@@ -147,6 +161,7 @@ struct SubscriptionListPage {
       // 网络异常/401 拒绝时 promise 会 throw：与「追加失败」同语义（reject 供分页器记失败页）
       if (page === 1) {
         this.isFirstError = true
+        this.isRefreshSession = false
         showToastSafety('', SubscriptionText.subscription_error_load)
         return false
       }
@@ -156,30 +171,33 @@ struct SubscriptionListPage {
     }
   }
 
-  /** 整列表重置重拉（变更信号/筛选切换/下拉刷新共用，不亮 Refresh 指示器） */
+  /**
+   * 整列表重置重拉（变更信号/筛选切换/下拉刷新/错误重试共用，不亮 Refresh 指示器）。
+   * 刷新会话门控：不在请求前清空列表（旧数据保留防闪空态），新数据在 fetchPage 成功后整体替换；
+   * 会话开闭由各入口置位、fetchPage(1) 成功/失败复位。
+   */
   async loadFirst(): Promise<void> {
     this.appendError = false
     this.paging.reset()
-    this.list = []
     await this.fetchPage(1)
   }
 
-  /** 下拉刷新：保持列表语义由 Refresh 指示器承担 */
+  /** 下拉刷新：进入刷新会话，保持列表语义由 Refresh 指示器承担 */
   private async refreshList(): Promise<void> {
     this.isRefreshing = true
+    this.isRefreshSession = true
     await this.loadFirst()
     this.isRefreshing = false
   }
 
-  /** 状态筛选切换：重建分页（对齐安卓 pagingFlow 重触发） */
+  /** 状态筛选切换：重建分页（对齐安卓 pagingFlow 重触发；切筛选同属刷新清空窗口，进入会话门控） */
   private onSelectFilter(status: SubscriptionStatus | null): void {
     if (this.statusFilter === status) {
       return
     }
     this.statusFilter = status
-    this.isLoadingFirst = this.list.length === 0
+    this.isRefreshSession = true
     this.loadFirst()
-    this.isLoadingFirst = false
   }
 
   private goDetail(vo: SubscriptionVo): void {
@@ -198,7 +216,7 @@ struct SubscriptionListPage {
   @Builder
   FilterRow() {
     Scroll() {
-      Row() {
+      Row({ space: DesignDimens.SPACE_XS }) {
         ForEach(this.filterOptions(), (option: FilterOption) => {
           SubscriptionSelectableChip({
             text: option.label,
@@ -207,7 +225,6 @@ struct SubscriptionListPage {
               this.onSelectFilter(option.status)
             }
           })
-            .margin({ right: DesignDimens.SPACE_XS })
         }, (option: FilterOption) => option.label)
       }
       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
@@ -216,6 +233,7 @@ struct SubscriptionListPage {
     .align(Alignment.Start)
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
+    .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
   /** 空态/错误态（规范 §3.6：滚筒圆母题 + 引导文案 + 行动按钮） */
@@ -229,6 +247,9 @@ struct SubscriptionListPage {
             text: actionText,
             click: (): void => {
               if (isError) {
+                // 重试进入刷新会话（对齐安卓 retry → Loading → 骨架）：等待期显示骨架而非停留错误态
+                this.isFirstError = false
+                this.isRefreshSession = true
                 this.loadFirst()
               } else {
                 this.goEdit()
@@ -247,7 +268,7 @@ struct SubscriptionListPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Column() {
@@ -265,19 +286,23 @@ struct SubscriptionListPage {
 
         this.FilterRow()
 
-        if (this.isLoadingFirst) {
+        // 四态分支（对齐安卓刷新会话门控）：
+        // 错误分支前置（门控不得掩盖真实错误，否则刷新失败时先闪一帧骨架）；
+        // 骨架覆盖首刷与刷新会话清空帧；空态必为会话结束后的真实空结果
+        if (this.isFirstError && this.list.length === 0) {
+          this.Placeholder(SubscriptionText.subscription_error_load,
+            SubscriptionText.subscription_action_retry, true)
+        } else if (this.list.length === 0 && (this.isLoadingFirst || this.isRefreshSession)) {
           SkeletonList({ rows: 5 })
             .width('100%')
             .layoutWeight(1)
-        } else if (this.isFirstError && this.list.length === 0) {
-          this.Placeholder(SubscriptionText.subscription_error_load,
-            SubscriptionText.subscription_action_retry, true)
         } else if (this.list.length === 0) {
           this.Placeholder(SubscriptionText.subscription_empty_message,
             SubscriptionText.subscription_empty_action, false)
         } else {
           Refresh({ refreshing: $$this.isRefreshing }) {
-            List() {
+            // space = 卡片间距 16（对齐安卓 spacedBy(cardSpacing)，缺失时卡片贴死）
+            List({ space: DesignDimens.CARD_SPACING }) {
               ForEach(this.list, (vo: SubscriptionVo) => {
                 ListItem() {
                   SubscriptionCard({
@@ -301,12 +326,17 @@ struct SubscriptionListPage {
                   .padding({ top: 12, bottom: 12 })
                   .justifyContent(FlexAlign.Center)
                 } else if (this.appendError) {
+                  // 重试是错误态唯一出路：上下 padding 16 凑足 48 热区（DESIGN-SPEC §3），字重对齐安卓 MEDIUM
                   Text(SubscriptionText.subscription_error_load)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(DesignColor.DANGER_INK)
+                    .fontWeight(DesignFontWeight.MEDIUM)
+                    .fontColor(resColor('DANGER_INK'))
                     .width('100%')
                     .textAlign(TextAlign.Center)
-                    .padding({ top: 12, bottom: 12 })
+                    .padding({
+                      top: DesignDimens.SPACE_MD,
+                      bottom: DesignDimens.SPACE_MD
+                    })
                     .onClick(() => {
                       this.paging.retry()
                     })
@@ -334,7 +364,7 @@ struct SubscriptionListPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -407,25 +437,33 @@ export struct SubscriptionCard {
 
         Column() {
           Row() {
+            // flexShrink 替代 layoutWeight：名称占内容宽可压缩省略（近似安卓 weight(fill=false)），红点紧跟名称
             Text(this.vo.name)
               .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_PRIMARY)
+              .fontColor(this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('TEXT_PRIMARY'))
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .layoutWeight(1)
+              .flexShrink(1)
 
             if (this.vo.unreadReminderCount > 0) {
-              SubscriptionStatusDot({ color: DesignColor.DANGER })
+              // 未读红点补读屏语义（§10 颜色不是唯一信息载体）：朗读「N 条未读提醒」
+              SubscriptionStatusDot({
+                color: resColor('DANGER'),
+                accessibilityLabel: subscriptionFormat(SubscriptionText.subscription_unread_reminders_format,
+                  this.vo.unreadReminderCount)
+              })
                 .margin({ left: DesignDimens.SPACE_XS })
             }
+
+            Blank()
           }
           .width('100%')
           .alignItems(VerticalAlign.Center)
 
           Text(subscriptionCycleDescription(subscriptionCycleTypeFromRaw(this.vo.cycleType), this.vo.cycleInterval))
-            .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.TEXT_SECONDARY)
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(resColor('TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -434,10 +472,12 @@ export struct SubscriptionCard {
         .margin({ left: DesignDimens.SPACE_SM })
 
         if (this.showProgress()) {
+          // 环线/环心拆色：环线走图形口径，环心 12fp 数字走文字级达标令牌（§10 ≥4.5:1）
           RenewProgressRing({
             fraction: this.progressFraction(),
             daysLeft: this.daysLeft(),
-            ringColor: subscriptionRenewRingColor(this.vo)
+            ringColor: subscriptionRenewRingColor(this.vo),
+            centerTextColor: subscriptionRenewCenterTextColor(this.vo)
           })
             .margin({ left: DesignDimens.SPACE_XS })
         }
@@ -449,7 +489,8 @@ export struct SubscriptionCard {
         Text(subscriptionAmountText(this.vo.amount))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(this.isTerminal() ? DesignColor.TEXT_TERTIARY : DesignColor.PRIMARY_DARK)
+          // 终态弱化止步 textSecondary（on 白卡 4.9:1）：装饰档 textTertiary 禁作可读正文（DESIGN-SPEC §10）
+          .fontColor(this.isTerminal() ? resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK'))
           .fontFeature(DesignFontFeature.TNUM)
 
         if (this.trialBadgeText().length > 0) {
@@ -464,10 +505,11 @@ export struct SubscriptionCard {
         Blank()
 
         if (this.status() !== SubscriptionStatus.ACTIVE) {
+          // 状态 chip 消费专用配色（原误接线图标盒配色：PAUSED 2.52 / CANCELED 3.81 / FINISHED 3.30:1 不达标）
           SubscriptionTagChip({
             text: subscriptionStatusText(this.status()),
-            containerColor: subscriptionStatusContainerColor(this.status()),
-            contentColor: subscriptionStatusIconColor(this.status())
+            containerColor: subscriptionStatusChipContainer(this.status()),
+            contentColor: subscriptionStatusChipContent(this.status())
           })
         }
       }
@@ -476,7 +518,7 @@ export struct SubscriptionCard {
       .margin({ top: DesignDimens.SPACE_SM })
 
       Text(subscriptionRenewRelativeText(this.vo))
-        .fontSize(DesignFontSize.BODY_SMALL)
+        .fontSize(DesignFontSize.CAPTION)
         .fontColor(subscriptionRenewRelativeColor(this.vo))
         .fontFeature(DesignFontFeature.TNUM)
         .width('100%')
@@ -485,13 +527,13 @@ export struct SubscriptionCard {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: DesignColor.SHADOW_COLOR_CARD,
+      color: resColor('SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

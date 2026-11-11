@@ -16,7 +16,7 @@ import { fileIo as fs, fileUri } from '@kit.CoreFileKit'
 import { common } from '@kit.AbilityKit'
 import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import { util } from '@kit.ArkTS'
-import { DesignColor, DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontFeature, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { AppButton, PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
@@ -25,21 +25,23 @@ import { Bird, Boat, House, InkRole, MistBand, MountainLayer, PaintingGenerator,
   PaintingScene, Pt, Seal, Sun, Tree, TreeStyle, WaterLine, paintingSeedFromDate,
   paintingSeedRandom } from '../../core/PaintingGenerator'
 import { LabHaptic } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案（对齐安卓 strings_painting.xml） */
 class PaintingText {
-  static readonly title: string = '今日一画'
-  static readonly seedFormat: string = '种子 '
-  static readonly todaySuffix: string = ' · 今日'
-  static readonly randomLabel: string = '随机种子'
-  static readonly hint: string = '同一数字种子，生成同一幅山水'
-  static readonly random: string = '换一张'
-  static readonly backToday: string = '回到今日'
-  static readonly applySeed: string = '应用'
-  static readonly seedPlaceholder: string = '种子数字'
-  static readonly seedInvalid: string = '请输入有效的数字种子'
-  static readonly saveSuccess: string = '已保存到相册'
-  static readonly saveFailed: string = '保存失败，请重试'
+  static get title(): string { return resString('lab_toy_painting') }
+  static get seedFormat(): string { return resString('painting_text_seed_format') }
+  static get todaySuffix(): string { return resString('painting_text_today_suffix') }
+  static get randomLabel(): string { return resString('lab_painting_random_label') }
+  static get hint(): string { return resString('lab_painting_hint') }
+  static get random(): string { return resString('lab_painting_random') }
+  static get backToday(): string { return resString('lab_painting_back_today') }
+  static get applySeed(): string { return resString('painting_text_apply_seed') }
+  static get seedPlaceholder(): string { return resString('lab_painting_seed_label') }
+  static get seedInvalid(): string { return resString('lab_painting_seed_invalid') }
+  static get saveSuccess(): string { return resString('lab_painting_save_success') }
+  static get saveFailed(): string { return resString('lab_painting_save_failed') }
 }
 
 /** ARGB 令牌色替换 alpha 通道（画布 draw 用） */
@@ -130,15 +132,15 @@ export struct PaintingPage {
   private inkOf(role: InkRole): number {
     switch (role) {
       case InkRole.INK_PALE:
-        return DesignColor.TEXT_TERTIARY
+        return resColor('TEXT_TERTIARY')
       case InkRole.INK_LIGHT:
-        return DesignColor.TEXT_SECONDARY
+        return resColor('TEXT_SECONDARY')
       case InkRole.CINNABAR:
-        return DesignColor.DANGER
+        return resColor('DANGER')
       case InkRole.VERDIGRIS:
-        return DesignColor.PRIMARY
+        return resColor('PRIMARY')
       default:
-        return DesignColor.TEXT_PRIMARY
+        return resColor('TEXT_PRIMARY')
     }
   }
 
@@ -152,7 +154,7 @@ export struct PaintingPage {
     const w: number = this.canvasWidth
     const h: number = this.canvasHeight
     ctx.globalAlpha = 1
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     ctx.fillRect(0, 0, w, h)
 
     if (scene.sun !== null) {
@@ -234,7 +236,7 @@ export struct PaintingPage {
     const h: number = this.canvasHeight
     const bandHeight: number = band.height * h
     ctx.globalAlpha = band.alpha
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     ctx.beginPath()
     this.capsulePath(ctx, band.x * w, band.y * h, band.width * w, bandHeight)
     ctx.fill()
@@ -328,7 +330,7 @@ export struct PaintingPage {
       ctx.moveTo(baseX, baseY)
       ctx.lineTo(topX, topY)
       ctx.stroke()
-      ctx.fillStyle = withAlpha(DesignColor.PRIMARY, tree.alpha)
+      ctx.fillStyle = withAlpha(resColor('PRIMARY'), tree.alpha)
       for (const dot of tree.foliage) {
         ctx.beginPath()
         ctx.arc(dot.x * w, dot.y * h, w * 0.012, 0, 2 * Math.PI)
@@ -356,9 +358,9 @@ export struct PaintingPage {
     ctx.lineTo(right, bottom)
     ctx.closePath()
     ctx.globalAlpha = 1
-    ctx.fillStyle = DesignColor.SURFACE_VARIANT
+    ctx.fillStyle = resColor('SURFACE_VARIANT')
     ctx.fill()
-    ctx.strokeStyle = DesignColor.TEXT_PRIMARY
+    ctx.strokeStyle = resColor('TEXT_PRIMARY')
     ctx.lineWidth = w * 0.0028
     ctx.stroke()
 
@@ -369,11 +371,11 @@ export struct PaintingPage {
     ctx.lineTo(right + overhang, bodyTop)
     ctx.closePath()
     ctx.globalAlpha = 0.88
-    ctx.fillStyle = DesignColor.TEXT_PRIMARY
+    ctx.fillStyle = resColor('TEXT_PRIMARY')
     ctx.fill()
 
     ctx.globalAlpha = 1
-    ctx.strokeStyle = DesignColor.TEXT_PRIMARY
+    ctx.strokeStyle = resColor('TEXT_PRIMARY')
     ctx.lineWidth = Math.max(1, w * 0.0025)
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -404,7 +406,7 @@ export struct PaintingPage {
 
     const mastTop: number = cy - boat.sailHeight * h
     ctx.globalAlpha = 1
-    ctx.strokeStyle = DesignColor.TEXT_PRIMARY
+    ctx.strokeStyle = resColor('TEXT_PRIMARY')
     ctx.lineWidth = Math.max(1, w * 0.0025)
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -418,7 +420,7 @@ export struct PaintingPage {
     ctx.lineTo(cx, mastTop + boat.sailHeight * h * 0.70)
     ctx.closePath()
     ctx.globalAlpha = 0.70
-    ctx.fillStyle = DesignColor.DANGER
+    ctx.fillStyle = resColor('DANGER')
     ctx.fill()
     ctx.globalAlpha = 1
   }
@@ -470,7 +472,7 @@ export struct PaintingPage {
     ctx.fill()
 
     ctx.globalAlpha = 1
-    ctx.strokeStyle = DesignColor.SURFACE_VARIANT
+    ctx.strokeStyle = resColor('SURFACE_VARIANT')
     ctx.lineWidth = Math.max(1, side * 0.11)
     ctx.lineCap = 'round'
     const inkLeft: number = left + side * 0.22
@@ -546,7 +548,7 @@ export struct PaintingPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值，
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值，
       // 画布经重建后的 onAreaChange 以新令牌重绘（机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
@@ -560,7 +562,8 @@ export struct PaintingPage {
               .aspectRatio(0.75)
               .borderRadius(DesignDimens.RADIUS_XL)
               .clip(true)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .accessibilityDescription(resString('painting_page_1'))
               .onAreaChange((oldValue: Area, newValue: Area) => {
                 this.onCanvasAreaChange(oldValue, newValue)
               })
@@ -569,11 +572,11 @@ export struct PaintingPage {
               Text(`${PaintingText.seedFormat}${this.seed}`)
                 .fontSize(DesignFontSize.AMOUNT_MEDIUM)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(DesignColor.TEXT_PRIMARY)
+                .fontColor(resColor('TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
               Text(this.isToday ? this.dateLabel() : PaintingText.randomLabel)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.TEXT_SECONDARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XXS })
 
               Row({ space: DesignDimens.SPACE_SM }) {
@@ -590,7 +593,7 @@ export struct PaintingPage {
                 // 保存到相册：安全控件（点击即临时授权，无需权限弹窗）
                 SaveButton()
                   .width(132)
-                  .height(44)
+                  .height(48)
                   .onClick((event: ClickEvent, result: SaveButtonOnClickResult) => {
                     if (result === SaveButtonOnClickResult.SUCCESS) {
                       this.performSave()
@@ -607,7 +610,7 @@ export struct PaintingPage {
               Row() {
                 Text(PaintingText.backToday)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.PRIMARY)
+                  .fontColor(resColor('TEXT_GREEN'))
                   .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM,
                     top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                   .visibility(this.isToday ? Visibility.None : Visibility.Visible)
@@ -623,21 +626,26 @@ export struct PaintingPage {
                 TextInput({ placeholder: PaintingText.seedPlaceholder, text: this.seedInput })
                   .type(InputType.Number)
                   .layoutWeight(1)
-                  .height(40)
+                  .height(48)
                   .fontSize(DesignFontSize.BODY_SMALL)
                   .borderRadius(DesignDimens.INPUT_RADIUS)
-                  .backgroundColor(DesignColor.SURFACE_VARIANT)
+                  .backgroundColor(resColor('SURFACE_VARIANT'))
                   .onChange((value: string) => {
                     this.seedInput = value
                   })
-                Text(PaintingText.applySeed)
-                  .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(DesignColor.PRIMARY)
-                  .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
-                  .onClick(() => {
-                    this.confirmSeedInput()
-                  })
+                // 「应用」文字热区外扩到 48（对齐安卓 48dp 下限）
+                Column() {
+                  Text(PaintingText.applySeed)
+                    .fontSize(DesignFontSize.BODY_SMALL)
+                    .fontColor(resColor('TEXT_GREEN'))
+                    .fontWeight(DesignFontWeight.SEMI_BOLD)
+                    .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
+                }
+                .constraintSize({ minHeight: 48 })
+                .justifyContent(FlexAlign.Center)
+                .onClick(() => {
+                  this.confirmSeedInput()
+                })
               }
               .width('100%')
               .margin({ top: DesignDimens.SPACE_XS })
@@ -645,21 +653,27 @@ export struct PaintingPage {
 
               Text(PaintingText.hint)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(DesignColor.TEXT_TERTIARY)
+                .fontColor(resColor('TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
             }
             .width('100%')
             .padding(DesignDimens.CARD_PADDING)
             .margin({ top: DesignDimens.SPACE_XXL })
-            .backgroundColor(DesignColor.SURFACE)
+            .backgroundColor(resColor('SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             .borderWidth(1)
-            .borderColor(DesignColor.OUTLINE)
+            .borderColor(resColor('OUTLINE'))
+            .shadow({
+              radius: 12,
+              color: resColor('SHADOW_COLOR_CARD'),
+              offsetX: 0,
+              offsetY: 2
+            })
             .alignItems(HorizontalAlign.Start)
           }
           .width('100%')
           .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
-            top: DesignDimens.SPACE_XS, bottom: DesignDimens.SECTION_SPACING })
+            top: DesignDimens.SPACE_XL, bottom: DesignDimens.SECTION_SPACING })
         }
         .width('100%')
         .layoutWeight(1)
@@ -669,7 +683,7 @@ export struct PaintingPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

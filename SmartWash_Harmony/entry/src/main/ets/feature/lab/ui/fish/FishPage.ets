@@ -7,19 +7,21 @@
  * reduced motion：默认静帧 + 用户主动「播放/暂停」开关（当前 SDK 无等价 API，常量 false）。
  */
 
-import { DesignColor, DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
+import { DesignDimens, DesignFontSize, DesignFontWeight } from '../../../../constant/DesignSystem'
 import { safeBottomVp, safeTopVp } from '../../../../utils/SafeArea'
 import { PageHeader } from '../../../../view/common/AppComponents'
 import { ThemeRefreshV2 } from '../../../../view/common/ThemeRefresh'
 import { BoidsSimulator } from '../../core/BoidsSimulator'
 import { LabHaptic, labReduceMotion } from '../../core/LabCommon'
+import { resColor } from '../../../../utils/ResourceColor'
+import { resString } from '../../../../utils/ResourceString'
 
 /** 页面文案 */
 class FishText {
-  static readonly title: string = '指尖鱼群'
-  static readonly hint: string = '按住吸引 · 长按驱散 · 双击炸开'
-  static readonly play: string = '播放'
-  static readonly pause: string = '暂停'
+  static get title(): string { return resString('lab_toy_fish') }
+  static get hint(): string { return resString('lab_fish_hint') }
+  static get play(): string { return resString('lab_fish_play') }
+  static get pause(): string { return resString('lab_breath_pause') }
 }
 
 /** 首次进入顶部提示停留时长（ms） */
@@ -40,7 +42,7 @@ const LONG_PRESS_SLOP: number = 20
 /** 鱼色组（primary / water / primaryDark 令牌系）：使用点即时求值——
  * 模块级 const 会在加载时冻结令牌值，深浅色切换后模拟循环仍拿旧色 */
 function fishColorPalette(): number[] {
-  return [DesignColor.PRIMARY, DesignColor.WATER, DesignColor.PRIMARY_DARK]
+  return [resColor('PRIMARY'), resColor('WATER'), resColor('PRIMARY_DARK')]
 }
 
 @Builder
@@ -207,7 +209,7 @@ export struct FishPage {
       return
     }
     ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = DesignColor.WATER_SOFT
+    ctx.fillStyle = resColor('WATER_SOFT')
     ctx.fillRect(0, 0, width, height)
     // 鱼色每帧求值一次（非逐鱼，避免高频路径重复分配数组）：
     // 深浅色切换（ThemeRefreshV2 重建子树）后下一帧即取新令牌
@@ -231,17 +233,23 @@ export struct FishPage {
   /** reduced motion 播放/暂停开关 */
   @Builder
   PlayToggleButton() {
-    Row() {
+    Row({ space: DesignDimens.SPACE_XS }) {
+      SymbolGlyph(this.playing ? $r('sys.symbol.pause') : $r('sys.symbol.play'))
+        .fontSize(20)
+        .fontColor([resColor('PRIMARY')])
+
       Text(this.playing ? FishText.pause : FishText.play)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(DesignColor.TEXT_PRIMARY)
+        .fontColor(resColor('TEXT_PRIMARY'))
     }
+    // 视觉胶囊不变，热区抬到 48dp 下限（对齐安卓 sizeIn(minHeight=48)）
+    .constraintSize({ minHeight: 48 })
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
       top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(DesignColor.SURFACE)
+    .backgroundColor(resColor('SURFACE'))
     .borderWidth(1)
-    .borderColor(DesignColor.OUTLINE)
+    .borderColor(resColor('OUTLINE'))
     .onClick(() => {
       this.manualPlaying = !this.manualPlaying
       if (this.manualPlaying) {
@@ -256,7 +264,7 @@ export struct FishPage {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计补齐）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefreshV2() {
       Column() {
@@ -268,6 +276,8 @@ export struct FishPage {
             .height('100%')
             .borderRadius(DesignDimens.CARD_RADIUS)
             .clip(true)
+            .borderWidth(1)
+            .borderColor(resColor('OUTLINE'))
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
             })
@@ -281,12 +291,13 @@ export struct FishPage {
           if (this.hintVisible) {
             Column() {
               Text(FishText.hint)
-                .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(DesignColor.ON_PRIMARY_SOFT)
-                .backgroundColor(DesignColor.SURFACE)
+                .fontSize(DesignFontSize.CAPTION)
+                .fontWeight(DesignFontWeight.MEDIUM)
+                .fontColor(resColor('TEXT_GREEN'))
+                .backgroundColor(resColor('SURFACE'))
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)
-                .borderColor(DesignColor.OUTLINE)
+                .borderColor(resColor('OUTLINE'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             }
@@ -314,7 +325,7 @@ export struct FishPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       }
     }
     .hideTitleBar(true)

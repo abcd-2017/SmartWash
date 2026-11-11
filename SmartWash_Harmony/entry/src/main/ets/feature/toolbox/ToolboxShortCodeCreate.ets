@@ -5,7 +5,7 @@
 // 校验只在提交时内联展示（规范 §3.7 基线⑤）；成功后 toast + 置变更信号 + 返回列表（列表 onShown 重拉）。
 
 import { HttpStatusCode } from '@ohos/axios'
-import { DesignColor, DesignDimens, DesignElevation, DesignFontSize, DesignFontWeight } from '../../constant/DesignSystem'
+import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight } from '../../constant/DesignSystem'
 import {
   AddShortCodeForm,
   createShortCode,
@@ -20,8 +20,9 @@ import { AppButton, AppButtonVariant } from '../../view/common/AppComponents'
 import { logger } from '../../utils/Logger'
 import { pathStack } from '../../utils/PathStackUtil'
 import { showToastSafety } from '../../utils/ToastUtil'
-import { safeTopVp } from '../../utils/SafeArea'
+import { safeBottomVp, safeTopVp } from '../../utils/SafeArea'
 import { ThemeRefresh } from '../../view/common/ThemeRefresh'
+import { resColor } from '../../utils/ResourceColor'
 
 /** 日志 TAG（Logger 统一拼接 SmartWash/ 前缀） */
 const TAG: string = 'toolboxShortCodeCreate'
@@ -139,41 +140,48 @@ struct ToolboxShortCodeCreate {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(DesignColor.TEXT_SECONDARY)
+      .fontColor(resColor('TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
   /**
    * 可选预设 chip（选中 = 品牌底白字，未选中 = 白底描边；对齐安卓 ToolboxSelectableChip）。
-   * 垂直内边距 6 → 17：可点区即 Text，原热区仅 27.7vp（58×27.7），抬到 ≥48vp
-   * （文字行盒约 15.5vp + 上下 17vp ≈ 49.5vp，实测 174px/3.52 密度）；
-   * 写法与投递页 DeliveryDurationChip 一致（padding 扩热区，不动高度/视觉比例）。
+   * 双层结构对齐安卓 defaultMinSize(48×48) 扩热区：外层容器承接点击（48 最小高，内容居中），
+   * 内层胶囊恢复纵向 padding 6（视觉高 ≈28，对齐安卓；原 v17 使视觉高近乎翻倍）。
+   * chip 内含数字（「7 天」等）：tnum 数字等宽（规范 §2.2）。
    */
   @Builder
   SelectableChip(text: string, selected: boolean, chipId: number) {
-    Text(text)
-      .fontSize(DesignFontSize.CAPTION)
-      // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
-      .fontWeight(DesignFontWeight.SEMI_BOLD)
-      .fontColor(selected ? DesignColor.ON_PRIMARY : DesignColor.TEXT_SECONDARY)
-      .padding({ left: 16, right: 16, top: 17, bottom: 17 })
-      .backgroundColor(selected ? DesignColor.PRIMARY : DesignColor.SURFACE)
-      .borderWidth(1)
-      .borderColor(selected ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-      .borderRadius(DesignDimens.RADIUS_FULL)
-      .scale({ x: this.pressedChipId === chipId ? 0.97 : 1, y: this.pressedChipId === chipId ? 0.97 : 1 })
-      .onTouch((event: TouchEvent) => {
-        if (event.type === TouchType.Down) {
-          this.pressedChipId = chipId
-        } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
-          this.pressedChipId = -1
-        }
-      })
-      .onClick(() => {
-        this.onChipSelect(chipId)
-      })
-      // 200ms 颜色过渡（对齐安卓 selectedColor）
-      .animation({ duration: 200, curve: Curve.EaseInOut })
+    Column() {
+      Text(text)
+        .fontSize(DesignFontSize.CAPTION)
+        // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
+        .fontWeight(DesignFontWeight.SEMI_BOLD)
+        .fontColor(selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+        .fontFeature(DesignFontFeature.TNUM)
+        .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
+        .backgroundColor(selected ? resColor('PRIMARY') : resColor('SURFACE'))
+        .borderWidth(1)
+        .borderColor(selected ? resColor('PRIMARY') : resColor('OUTLINE'))
+        .borderRadius(DesignDimens.RADIUS_FULL)
+        // 200ms 颜色过渡（对齐安卓 selectedColor）
+        .animation({ duration: 200, curve: Curve.EaseInOut })
+    }
+    .constraintSize({ minHeight: 48 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .scale({ x: this.pressedChipId === chipId ? 0.97 : 1, y: this.pressedChipId === chipId ? 0.97 : 1 })
+    .onTouch((event: TouchEvent) => {
+      if (event.type === TouchType.Down) {
+        this.pressedChipId = chipId
+      } else if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+        this.pressedChipId = -1
+      }
+    })
+    .onClick(() => {
+      this.onChipSelect(chipId)
+    })
+    .animation({ duration: 200, curve: Curve.EaseInOut })
   }
 
   /** chip 点击分流：0/1 为可见性（公开/私有），2..5 为有效期预设（永久/7天/30天/自定义） */
@@ -196,7 +204,7 @@ struct ToolboxShortCodeCreate {
   build() {
     NavDestination() {
       // 深浅色实时跟随（深色模式审计）：主题重建宿主包裹本页内容——
-      // 色模式翻转时 if 双分支重建子树，子树内 DesignColor 静态令牌直读点重读新值
+      // 色模式翻转时 if 双分支重建子树，子树内资源色直读点重读新值
       // （静态字段变更不驱动 UI 刷新，机制见 view/common/ThemeRefresh.ets）
       ThemeRefresh() {
       Scroll() {
@@ -206,7 +214,7 @@ struct ToolboxShortCodeCreate {
             Column() {
               SymbolGlyph($r('sys.symbol.chevron_left'))
                 .fontSize(24)
-                .fontColor([DesignColor.TEXT_PRIMARY])
+                .fontColor([resColor('TEXT_PRIMARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
@@ -219,7 +227,7 @@ struct ToolboxShortCodeCreate {
             Text(ToolboxText.toolbox_create_title)
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(DesignColor.TEXT_PRIMARY)
+              .fontColor(resColor('TEXT_PRIMARY'))
           }
           .width('100%')
           .height(56)
@@ -233,12 +241,14 @@ struct ToolboxShortCodeCreate {
             TextInput({ text: this.target, placeholder: ToolboxText.toolbox_target_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              // URL 键盘（「/」「.com」便捷键，对齐安卓 KeyboardType.Uri，audit-17 #11）
+              .type(InputType.URL)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.targetFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .borderColor(this.targetFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.targetFocused = true
@@ -252,8 +262,9 @@ struct ToolboxShortCodeCreate {
             Text(ToolboxText.toolbox_target_helper)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_TERTIARY)
-              .margin({ top: 6 })
+              // helper 为用户必读说明文字：textTertiary ≈2.3:1 破 §10 红线，收敛 textSecondary（audit-17 #1）
+              .fontColor(resColor('TEXT_SECONDARY'))
+              .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
               .height(DesignDimens.SPACE_LG)
@@ -263,12 +274,12 @@ struct ToolboxShortCodeCreate {
             TextInput({ text: this.customCode, placeholder: ToolboxText.toolbox_custom_code_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .backgroundColor(resColor('SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.customCodeFocused ? DesignColor.PRIMARY : DesignColor.OUTLINE)
-              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .borderColor(this.customCodeFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
+              .placeholderColor(resColor('TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.customCodeFocused = true
@@ -293,24 +304,33 @@ struct ToolboxShortCodeCreate {
               : ToolboxText.toolbox_visibility_private_desc)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(DesignColor.TEXT_TERTIARY)
-              .margin({ top: 6 })
+              // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
+              .fontColor(resColor('TEXT_SECONDARY'))
+              .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
               .height(DesignDimens.SPACE_LG)
 
             // ---------- 有效期预设 ----------
             this.FormLabel(ToolboxText.toolbox_expiry_label)
-            Row({ space: DesignDimens.SPACE_XS }) {
-              this.SelectableChip(ToolboxText.toolbox_expiry_preset_permanent,
-                this.preset === ExpiryPreset.PERMANENT, 2)
-              this.SelectableChip(ToolboxText.toolbox_expiry_preset_7d,
-                this.preset === ExpiryPreset.DAYS_7, 3)
-              this.SelectableChip(ToolboxText.toolbox_expiry_preset_30d,
-                this.preset === ExpiryPreset.DAYS_30, 4)
-              this.SelectableChip(ToolboxText.toolbox_expiry_preset_custom,
-                this.preset === ExpiryPreset.CUSTOM, 5)
+            // 横向可滚动兜底（对齐安卓 horizontalScroll，audit-17 T4 同口径）：
+            // 窄屏/字体放大时 chips 超宽不挤压末位 chip，内容放得下时视觉与固定行一致
+            Scroll() {
+              Row({ space: DesignDimens.SPACE_XS }) {
+                this.SelectableChip(ToolboxText.toolbox_expiry_preset_permanent,
+                  this.preset === ExpiryPreset.PERMANENT, 2)
+                this.SelectableChip(ToolboxText.toolbox_expiry_preset_7d,
+                  this.preset === ExpiryPreset.DAYS_7, 3)
+                this.SelectableChip(ToolboxText.toolbox_expiry_preset_30d,
+                  this.preset === ExpiryPreset.DAYS_30, 4)
+                this.SelectableChip(ToolboxText.toolbox_expiry_preset_custom,
+                  this.preset === ExpiryPreset.CUSTOM, 5)
+              }
             }
+            .scrollable(ScrollDirection.Horizontal)
+            .align(Alignment.Start)
+            .width('100%')
+            .scrollBar(BarState.Off)
 
             if (this.preset === ExpiryPreset.CUSTOM) {
               // 自定义日期按钮：AppButton SECONDARY 胶囊 48（对齐安卓）
@@ -327,14 +347,14 @@ struct ToolboxShortCodeCreate {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(DesignColor.SURFACE)
+          .backgroundColor(resColor('SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
           // 表单卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
           // （卡内输入框/预设 chip 的 1px 描边属控件自身规格，不受此规则约束）
-          .border({ width: 1, color: DesignColor.OUTLINE })
+          .border({ width: 1, color: resColor('OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: DesignColor.SHADOW_COLOR_CARD,
+            color: resColor('SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -343,7 +363,7 @@ struct ToolboxShortCodeCreate {
           if (this.errorMessage.length > 0) {
             Text(this.errorMessage)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.ERROR)
+              .fontColor(resColor('ERROR'))
               .width('100%')
               .margin({ top: DesignDimens.SPACE_SM })
           }
@@ -360,7 +380,14 @@ struct ToolboxShortCodeCreate {
           })
         }
         .width('100%')
-        .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 8, bottom: 24 })
+        // 底部手势条避让（对齐安卓 navigationBarsPadding，audit-17 #3）：沉浸式窗口下
+        // 指示器区域原会压住提交按钮；键盘避让已走窗口级 RESIZE，无叠加问题
+        .padding({
+          left: DesignDimens.PAGE_PADDING,
+          right: DesignDimens.PAGE_PADDING,
+          top: DesignDimens.SPACE_XS,
+          bottom: DesignDimens.SPACE_XL + safeBottomVp()
+        })
         .alignItems(HorizontalAlign.Start)
       }
       .scrollBar(BarState.Off)
@@ -369,7 +396,7 @@ struct ToolboxShortCodeCreate {
       .align(Alignment.TopStart)
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(DesignColor.BACKGROUND)
+      .backgroundColor(resColor('BACKGROUND'))
       // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；
       // 原 expandSafeArea(KEYBOARD, BOTTOM) 是反向语义（把内容伸进键盘区），已移除
       }

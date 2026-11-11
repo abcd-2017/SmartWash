@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,7 +60,8 @@ import com.smartwash.common.ui.components.SkeletonBlock
 import com.smartwash.common.ui.theme.AppColors
 import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.AppTextStyles
-import com.smartwash.common.utils.CROSSFADE_ALT_MS
+import com.smartwash.common.utils.DURATION_MICRO_MS
+import com.smartwash.common.utils.enterTween
 import com.smartwash.common.utils.generateQrCodeBitmap
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.motionSpec
@@ -74,7 +76,6 @@ import com.smartwash.feature.toolbox.ui.ToolboxTagChip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 
 /**
  * 设备投递发起页：表单态（有效期预设 + 可选进入密码）→ 会话态
@@ -90,6 +91,7 @@ fun DeliveryCreatePage(
     val context = LocalContext.current
     val form by viewModel.form.collectAsState()
     val createState by viewModel.createState.collectAsState()
+    val passwordError by viewModel.passwordError.collectAsState()
     val session by viewModel.session.collectAsState()
     val closeState by viewModel.closeState.collectAsState()
 
@@ -101,7 +103,8 @@ fun DeliveryCreatePage(
                 viewModel.resetCloseState()
             }
             is RequestState.Error -> {
-                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_SHORT).show()
+                // 错误类提示用 LONG（≈3.5s，规范 §8 Toast 3-5s；成功提示保持 SHORT）
+                Toast.makeText(context, state.getMessage(context), Toast.LENGTH_LONG).show()
                 viewModel.resetCloseState()
             }
             else -> {}
@@ -113,6 +116,9 @@ fun DeliveryCreatePage(
             .fillMaxSize()
             .background(AppColors.colorScheme.background)
             .imePadding()
+            // 规范 §4：底部固定 CTA 必须避开手势条——滚动到底时提交按钮不再贴手势条
+            // （audit-07 P1-3，与 OrderDetailPage/PickupPage 底栏同款）
+            .navigationBarsPadding()
     ) {
         PageHeader(
             title = stringResource(R.string.toolbox_delivery_title),
@@ -130,6 +136,7 @@ fun DeliveryCreatePage(
                 DeliveryCreateForm(
                     form = form,
                     createState = createState,
+                    passwordError = passwordError,
                     onDurationChange = viewModel::updateDuration,
                     onPasswordChange = viewModel::updatePassword,
                     onSubmit = viewModel::createSession,
@@ -159,6 +166,7 @@ fun DeliveryCreatePage(
 private fun DeliveryCreateForm(
     form: DeliveryCreateViewModel.FormState,
     createState: RequestState,
+    passwordError: Boolean,
     onDurationChange: (Int) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSubmit: () -> Unit,
@@ -183,9 +191,10 @@ private fun DeliveryCreateForm(
             }
         }
         Text(
-            text = stringResource(R.string.toolbox_delivery_duration_desc),
+            text = stringResource(R.string.toolbox_delivery_duration_desc, form.durationMinutes),
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.colorScheme.textTertiary,
+            // 可读说明文字走 textSecondary（audit-07 P0-4：textTertiary 白卡 2.26:1 违反 §10）
+            color = AppColors.colorScheme.textSecondary,
             modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
 
@@ -206,6 +215,10 @@ private fun DeliveryCreateForm(
             textStyle = MaterialTheme.typography.bodyLarge,
             singleLine = true,
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            // P1-4：密码端侧校验错误挂到字段本身（isError 红描边 §3.1），错误文案显示在字段
+            // 正下方（§7）。不用 supportingText：它与固定 48dp 行高（§3.7）冲突（文本会画到
+            // 输入框外与下方内容重叠），错误行复用下方 helper 槽位；网络类错误仍走表单底行
+            isError = passwordError,
             trailingIcon = {
                 // §3.7：尾缀可见性切换图标化，48dp 热区，禁止文字替代
                 Box(
@@ -216,7 +229,9 @@ private fun DeliveryCreateForm(
                 ) {
                     Crossfade(
                         targetState = showPassword,
-                        animationSpec = tween(CROSSFADE_ALT_MS),
+                        // 常态走 micro 档 enterTween（audit-07 P2-5：CROSSFADE_ALT_MS 语义是
+                        // reduced motion 降级专用）；reduced motion 经 motionSpec 自动落 180ms
+                        animationSpec = motionSpec(enterTween(DURATION_MICRO_MS)),
                         label = "deliveryPasswordVisibility",
                     ) { visible ->
                         // 无障碍：图标动作必须有语义描述，随可见态切换（§3.7 尾缀图标化）
@@ -242,9 +257,15 @@ private fun DeliveryCreateForm(
             colors = tokenTextFieldColors(),
         )
         Text(
-            text = stringResource(R.string.toolbox_delivery_password_helper),
+            text = stringResource(
+                if (passwordError) {
+                    R.string.toolbox_delivery_error_invalid_password
+                } else {
+                    R.string.toolbox_delivery_password_helper
+                }
+            ),
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.colorScheme.textTertiary,
+            color = if (passwordError) AppColors.colorScheme.error else AppColors.colorScheme.textTertiary,
             modifier = Modifier.padding(top = AppDimens.spaceXs),
         )
 
@@ -344,7 +365,8 @@ private fun CreatedSessionCard(
                 DeliveryCountdownText(
                     expireAt = session.expireAt,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.colorScheme.ongoingInk,
+                    // 常态色不用 ongoingInk（白卡 2.76:1 违反 §10 红线，audit-07 P0-1）
+                    color = AppColors.colorScheme.onWarningContainer,
                 )
             }
             Spacer(modifier = Modifier.width(AppDimens.spaceSm))
@@ -352,7 +374,8 @@ private fun CreatedSessionCard(
                 ToolboxTagChip(
                     text = stringResource(R.string.toolbox_delivery_has_password),
                     containerColor = AppColors.colorScheme.iconContainerTeal,
-                    contentColor = AppColors.colorScheme.iconForegroundTeal,
+                    // 12sp 文字不用图标前景令牌（#3F9D78 on #F0FBF4 仅 3.14:1，audit-07 P0-3）
+                    contentColor = AppColors.colorScheme.textGreenOnTint,
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -360,7 +383,7 @@ private fun CreatedSessionCard(
                 Text(
                     text = stringResource(R.string.toolbox_delivery_clicks_format, session.clickCount),
                     style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
-                    color = AppColors.colorScheme.textTertiary,
+                    color = AppColors.colorScheme.textSecondary,
                 )
             }
         }
