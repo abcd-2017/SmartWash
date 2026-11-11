@@ -20,6 +20,8 @@
     <string name="confirm_booking_format">确认预约 · %s</string>
     <string name="please_select_package">请选择套餐</string>
     <string name="change_school_contact_service">更换学校信息请联系客服！</string>
+    <!-- 投递柜卡片：学校信息未就绪时的空值占位（对齐 subscription_value_none 惯例，AND-B-010） -->
+    <string name="school_info_placeholder">—</string>
 
     <!-- 错误 -->
     <string name="error_network_fail">请求失败</string>

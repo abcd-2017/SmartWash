@@ -94,6 +94,7 @@ import com.smartwash.feature.payment.api.PaymentRoute
 import com.smartwash.feature.points.api.PointsRoute
 import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.feature.user.impl.R
+import java.util.Locale
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -423,7 +424,9 @@ fun UserInfoPage(
                                 color = AppColors.colorScheme.textPrimary
                             )
                             Text(
-                                text = userInfo?.schoolVo?.schoolName ?: "",
+                                // 学校未就绪时空值占位「—」，防空 Text 占位塌陷（AND-B-010）
+                                text = userInfo?.schoolVo?.schoolName?.takeIf { it.isNotBlank() }
+                                    ?: stringResource(R.string.user_school_placeholder),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AppColors.colorScheme.textSecondary,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -479,7 +482,7 @@ fun UserInfoPage(
                                     color = AppColors.colorScheme.textSecondary
                                 )
                                 Text(
-                                    text = stringResource(R.string.currency_format, String.format("%.2f", userInfo?.balance ?: 0f)),
+                                    text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", userInfo?.balance ?: 0f)),
                                     style = AppTextStyles.DataLarge,
                                     // 设计稿余额大字取品牌绿 primary（深色模式 primary 即提亮绿，§6.5）
                                     color = AppColors.colorScheme.primary,

@@ -202,10 +202,11 @@ fun DivFollowUpPage(
                             )
                             if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
                                 // PR #91：428 未配置——去设置页配置模型（唯一出路）
+                                // 字号 14sp：v0.4 无 13sp 夹档，与解读页同款「去配置」按钮（DivReadingPage）对齐
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = stringResource(R.string.div_reading_go_config),
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = c.goldText,
                                     modifier = Modifier

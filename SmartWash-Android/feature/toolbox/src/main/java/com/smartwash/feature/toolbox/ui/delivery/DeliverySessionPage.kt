@@ -51,6 +51,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -571,6 +573,9 @@ private fun DeliverySendArea(
                         .padding(bottom = AppDimens.spaceXxs)
                         .size(44.dp)
                         .alpha(if (canSend) 1f else 0.5f)
+                        // 禁用态给读屏 disabled 语义（视觉仍是 0.5 降透明度），
+                        // 避免 TalkBack 聚焦到无动作的「发送」读出可点击误导
+                        .then(if (canSend) Modifier else Modifier.semantics { disabled() })
                         .then(if (canSend) Modifier.pressable(onClick = onSend) else Modifier)
                         .background(AppColors.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center,

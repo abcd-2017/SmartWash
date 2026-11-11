@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -515,6 +517,8 @@ private fun NumberField(value: String, onChange: (String) -> Unit, modifier: Mod
     TextField(
         value = value,
         onValueChange = { text -> onChange(text.filter { it.isDigit() }.take(3)) },
+        // 报数输入走数字键盘（校验逻辑仍由 onValueChange 过滤 + 提交前 1..999 区间拦截）
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color.Transparent,
             unfocusedContainerColor = Color.Transparent,

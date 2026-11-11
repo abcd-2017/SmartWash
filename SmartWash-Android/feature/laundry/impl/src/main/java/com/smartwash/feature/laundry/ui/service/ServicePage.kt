@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Checkroom
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DryCleaning
 import androidx.compose.material.icons.rounded.LocalLaundryService
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,6 +60,7 @@ import com.smartwash.common.utils.pressable
 import com.smartwash.feature.laundry.R
 import com.smartwash.feature.laundry.api.LaundryRoute
 import com.smartwash.feature.laundry.network.vo.LaundryItem
+import java.util.Locale
 
 @Composable
 fun ServicePage(
@@ -188,12 +190,11 @@ private fun ServiceListCard(
             items.forEachIndexed { index, item ->
                 ServiceItemRow(item = item, onReserve = onReserve)
                 if (index < items.lastIndex) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .height(1.dp)
-                            .background(AppColors.colorScheme.hairline)
+                    // 发丝线 0.5dp（规范 §1.3/§3.4；对齐 OrderPage MonthGroupCard 的 HorizontalDivider 口径）
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        thickness = 0.5.dp,
+                        color = AppColors.colorScheme.hairline
                     )
                 }
             }
@@ -247,7 +248,7 @@ private fun ServiceItemRow(
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = stringResource(R.string.currency_format, String.format("%.2f", item.basePrice)),
+                text = stringResource(R.string.currency_format, String.format(Locale.CHINA, "%.2f", item.basePrice)),
                 // 价格色 primaryDark（18sp 金额档，≥18sp 绿字按大字 3:1 豁免，2026-11-06 评审 R17 保留）
                 style = AppTextStyles.AmountMedium,
                 color = AppColors.colorScheme.primaryDark

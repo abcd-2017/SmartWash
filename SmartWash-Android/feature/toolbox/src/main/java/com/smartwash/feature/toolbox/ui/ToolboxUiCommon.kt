@@ -66,7 +66,8 @@ fun ToolboxTagChip(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
-            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = 2.dp),
+            // 纵向微间距走 space2xs（2dp 徽标档，AppDimens 既有令牌）
+            modifier = Modifier.padding(horizontal = AppDimens.spaceXs, vertical = AppDimens.space2xs),
         )
     }
 }
