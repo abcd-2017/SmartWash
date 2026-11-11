@@ -50,8 +50,10 @@ import androidx.compose.ui.unit.sp
 import com.smartwash.feature.coupon.R
 import com.smartwash.feature.coupon.network.vo.coupon.CouponVo
 import com.smartwash.feature.coupon.repository.CouponSource
+import java.util.Locale
 import com.smartwash.feature.coupon.ui.coupon.CouponOfflineHint
 import com.smartwash.feature.coupon.ui.coupon.CouponSectionError
+import com.smartwash.feature.coupon.ui.coupon.TicketFaceWidth
 import com.smartwash.common.ui.components.EmptyState
 import com.smartwash.common.ui.components.softCardShadow
 import com.smartwash.common.ui.theme.AppColors
@@ -138,10 +140,10 @@ fun CouponCard(
         modifier = Modifier
             .fillMaxWidth()
             .drawBehind {
-                // 中间虚线 — 同票券：1dp 竖线、段 6 / 隔 4，上下 margin 12（x=88 face 右缘）
+                // 中间虚线 — 同票券：1dp 竖线、段 6 / 隔 4，上下 margin 12（x=面额区右缘与打孔同轴）
                 val dashWidth = 6.dp.toPx()
                 val dashGap = 4.dp.toPx()
-                val x = 88.dp.toPx()
+                val x = TicketFaceWidth.toPx()
                 val strokeWidth = 1.dp.toPx()
                 var y = 12.dp.toPx()
                 val maxY = size.height - 12.dp.toPx()
@@ -171,7 +173,7 @@ fun CouponCard(
             // 左侧金额区 — 票券 face：画板面额区无填充（随卡身透明）+ 面额 + 单位字（纵向贯通两行）
             Box(
                 modifier = Modifier
-                    .width(88.dp)
+                    .width(TicketFaceWidth)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
@@ -213,7 +215,8 @@ fun CouponCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = if (coupon.threshold == 0f) stringResource(R.string.no_threshold) else stringResource(R.string.coupon_min_amount_format, "${coupon.threshold}"),
+                    // 门槛两位小数（对齐 PaymentPage UserCouponItem 口径）：原 Float 直拼出「满59.0元可用」
+                    text = if (coupon.threshold == 0f) stringResource(R.string.no_threshold) else stringResource(R.string.coupon_min_amount_format, String.format(Locale.CHINA, "%.2f", coupon.threshold)),
                     // 门槛是金额，开 tnum（规范 §2.2）
                     style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
                     color = AppColors.colorScheme.textSecondary
@@ -236,7 +239,11 @@ fun CouponCard(
 
 /**
  * 领取按钮 — "立即领取 / 已领取 / 领取中"三态共用同一个容器，避免状态切换时布局跳变：
- * - 底色经 [selectedColor] 过渡（primary → textSecondary），不再随整屏刷新硬切；
+ * - 底色/文字色经 [selectedColor] 过渡（primary+白 ↔ surfaceVariant+textSecondary），
+ *   不再随整屏刷新硬切；
+ * - 「已领取」态对齐 [com.smartwash.feature.coupon.ui.coupon.UserCouponCard] 已使用徽标
+ *   的成对令牌（surfaceVariant 底 + textSecondary 字）：原 textSecondary 浅灰底 + 硬编码
+ *   白字在深色主题（#A9AEA9 底）对比仅 ≈1.9:1，且白字不经令牌双主题换不了色（AND-B-001）；
  * - 领取中：文字保持占位（alpha 0）换 14dp 圆环并禁点，防重复提交；
  * - reduced motion：圆环静止（规范 §8 取消无限旋转），颜色过渡降级 180ms。
  */
@@ -247,7 +254,11 @@ private fun ClaimAction(
     onClaimClick: () -> Unit,
 ) {
     val containerColor = selectedColor(
-        if (claimed) AppColors.colorScheme.textSecondary else AppColors.colorScheme.primary
+        if (claimed) AppColors.colorScheme.surfaceVariant else AppColors.colorScheme.primary
+    )
+    // 文字色成对过渡：领取中/可领 = 白（品牌底，AppButton 主按钮同口径），已领取 = textSecondary
+    val labelColor = selectedColor(
+        if (claimed) AppColors.colorScheme.textSecondary else Color.White
     )
     val clickable = !claimed && !isClaiming
 
@@ -284,7 +295,7 @@ private fun ClaimAction(
             ) { isClaimed ->
                 Text(
                     text = stringResource(if (isClaimed) R.string.claimed else R.string.claim_now),
-                    color = Color.White,
+                    color = labelColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.alpha(if (isClaiming) 0f else 1f)

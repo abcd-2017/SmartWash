@@ -241,7 +241,9 @@ private fun ImageReadyBody(state: PreviewState.ImageReady) {
     Text(
         text = stringResource(R.string.toolbox_delivery_preview_image_hint),
         style = MaterialTheme.typography.labelSmall,
-        color = AppColors.colorScheme.ongoingInk,
+        // 12sp 可读小字橙语义走 onWarningContainer 深档（ongoingInk #D98A26 白卡 2.76:1 违反 §10，
+        // audit-07 P0-1 既有口径——与 SessionStrip 倒计时/待取走角标同档，原漏改此处）
+        color = AppColors.colorScheme.onWarningContainer,
     )
 }
 
@@ -289,9 +291,11 @@ private fun PreviewActionRow(
 
             is PreviewState.TextReady -> {
                 if (state.text == null) {
+                    // 焚毁态「关闭」= 中性动作（与 ImageReady 的关闭同色）；
+                    // textGreen 保留给主动作（复制并取走/保存），不赋予关闭
                     PreviewDialogAction(
                         text = stringResource(R.string.toolbox_delivery_action_close),
-                        color = AppColors.colorScheme.textGreen,
+                        color = AppColors.colorScheme.textSecondary,
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
                     )
