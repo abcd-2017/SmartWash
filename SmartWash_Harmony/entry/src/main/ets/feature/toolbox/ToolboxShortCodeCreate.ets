@@ -140,7 +140,7 @@ struct ToolboxShortCodeCreate {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(resColor('TEXT_SECONDARY'))
+      .fontColor($r('app.color.TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -157,12 +157,12 @@ struct ToolboxShortCodeCreate {
         .fontSize(DesignFontSize.CAPTION)
         // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+        .fontColor(selected ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
-        .backgroundColor(selected ? resColor('PRIMARY') : resColor('SURFACE'))
+        .backgroundColor(selected ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
         .borderWidth(1)
-        .borderColor(selected ? resColor('PRIMARY') : resColor('OUTLINE'))
+        .borderColor(selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
         // 200ms 颜色过渡（对齐安卓 selectedColor）
         .animation({ duration: 200, curve: Curve.EaseInOut })
@@ -214,7 +214,7 @@ struct ToolboxShortCodeCreate {
             Column() {
               SymbolGlyph($r('sys.symbol.chevron_left'))
                 .fontSize(24)
-                .fontColor([resColor('TEXT_PRIMARY')])
+                .fontColor([$r('app.color.TEXT_PRIMARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
@@ -227,7 +227,7 @@ struct ToolboxShortCodeCreate {
             Text(ToolboxText.toolbox_create_title)
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
           }
           .width('100%')
           .height(56)
@@ -243,12 +243,12 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.BODY)
               // URL 键盘（「/」「.com」便捷键，对齐安卓 KeyboardType.Uri，audit-17 #11）
               .type(InputType.URL)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.targetFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
-              .placeholderColor(resColor('TEXT_TERTIARY'))
+              .borderColor(this.targetFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+              .placeholderColor($r('app.color.TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.targetFocused = true
@@ -263,7 +263,7 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // helper 为用户必读说明文字：textTertiary ≈2.3:1 破 §10 红线，收敛 textSecondary（audit-17 #1）
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
@@ -274,12 +274,12 @@ struct ToolboxShortCodeCreate {
             TextInput({ text: this.customCode, placeholder: ToolboxText.toolbox_custom_code_hint })
               .height(48)
               .fontSize(DesignFontSize.BODY)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               // 输入档圆角对齐安卓 ShortCodeCreatePage 的 radiusMd 12（规范 §3 radius.input）
               .borderRadius(DesignDimens.RADIUS_MD)
               .borderWidth(1)
-              .borderColor(this.customCodeFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
-              .placeholderColor(resColor('TEXT_TERTIARY'))
+              .borderColor(this.customCodeFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+              .placeholderColor($r('app.color.TEXT_TERTIARY'))
               .placeholderFont({ size: DesignFontSize.BODY_SMALL })
               .onFocus(() => {
                 this.customCodeFocused = true
@@ -305,7 +305,7 @@ struct ToolboxShortCodeCreate {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // 可见性说明是用户必读语义：与 helper 同口径收敛 textSecondary（audit-17 #2）
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
 
             Column()
@@ -347,14 +347,14 @@ struct ToolboxShortCodeCreate {
           .width('100%')
           .alignItems(HorizontalAlign.Start)
           .padding(DesignDimens.CARD_PADDING)
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
           // 表单卡同标准卡画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
           // （卡内输入框/预设 chip 的 1px 描边属控件自身规格，不受此规则约束）
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -363,7 +363,7 @@ struct ToolboxShortCodeCreate {
           if (this.errorMessage.length > 0) {
             Text(this.errorMessage)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('ERROR'))
+              .fontColor($r('app.color.ERROR'))
               .width('100%')
               .margin({ top: DesignDimens.SPACE_SM })
           }
@@ -396,7 +396,7 @@ struct ToolboxShortCodeCreate {
       .align(Alignment.TopStart)
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       // 键盘避让走窗口级 KeyboardAvoidMode.RESIZE（EntryAbility 统一设置）；
       // 原 expandSafeArea(KEYBOARD, BOTTOM) 是反向语义（把内容伸进键盘区），已移除
       }

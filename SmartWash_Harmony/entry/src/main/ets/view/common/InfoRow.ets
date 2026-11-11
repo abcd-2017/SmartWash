@@ -13,7 +13,7 @@ import { resColor } from '../../utils/ResourceColor'
 export struct InfoRow {
   @Param label: string = ''
   @Param value: string = ''
-  @Param valueColor: number = resColor('TEXT_PRIMARY')
+  @Param valueColor: ResourceColor = $r('app.color.TEXT_PRIMARY')
   @Param valueSize: number = DesignFontSize.CAPTION
   @Param valueWeight: number = DesignFontWeight.NORMAL
   @Param valueTnum: boolean = false
@@ -24,7 +24,7 @@ export struct InfoRow {
     Row() {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .width(this.labelWidth > 0 ? this.labelWidth : 'auto')
 
       Text(this.value)

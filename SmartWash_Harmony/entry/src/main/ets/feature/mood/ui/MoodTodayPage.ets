@@ -196,7 +196,7 @@ struct MoodTodayPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -209,7 +209,7 @@ struct MoodTodayPage {
           Text(MoodText.mood_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Blank()
 
@@ -249,14 +249,14 @@ struct MoodTodayPage {
                     Row() {
                       Text(MoodText.mood_error_load)
                         .fontSize(DesignFontSize.BODY_SMALL)
-                        .fontColor(resColor('ERROR'))
+                        .fontColor($r('app.color.ERROR'))
                         .layoutWeight(1)
 
                       MoodSmallAction({
                         text: MoodText.mood_action_retry,
                         // 小号绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #3：PRIMARY on
                         // SURFACE_VARIANT 浅底仅 3.08:1 跌破 AA；深色随主题切 #5BC894）
-                        contentColor: resColor('TEXT_GREEN_ON_TINT'),
+                        contentColor: $r('app.color.TEXT_GREEN_ON_TINT'),
                         onAction: (): void => {
                           this.load()
                         }
@@ -275,11 +275,11 @@ struct MoodTodayPage {
                 Text(MoodText.mood_today_question)
                   .fontSize(DesignFontSize.SECTION_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
 
                 Text(formatTodayText())
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .margin({ top: DesignDimens.SPACE_XXS })
               }
               .width('100%')
@@ -300,14 +300,14 @@ struct MoodTodayPage {
                   Text(this.hasRecord ? MoodText.mood_today_recorded : MoodText.mood_today_hint)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
                     .margin({ top: DesignDimens.SPACE_SM })
 
                   if (this.saveError.length > 0) {
                     // 错误行 = caption 12 档（对齐安卓 bodySmall 12/400，报告 #39 口径映射）
                     Text(this.saveError)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(resColor('ERROR'))
+                      .fontColor($r('app.color.ERROR'))
                       .margin({ top: DesignDimens.SPACE_XS })
                   }
                 }
@@ -322,7 +322,7 @@ struct MoodTodayPage {
                   Text(MoodText.mood_word_section_title)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
 
                   Flex({ wrap: FlexWrap.Wrap }) {
                     ForEach(MOOD_WORDS, (word: string) => {
@@ -349,16 +349,16 @@ struct MoodTodayPage {
                   Text(MoodText.mood_note_section_title)
                     .fontSize(DesignFontSize.CARD_TITLE)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
 
                   TextInput({ text: this.note, placeholder: MoodText.mood_note_hint })
                     .height(48)
                     .fontSize(DesignFontSize.BODY)
-                    .backgroundColor(resColor('SURFACE_VARIANT'))
+                    .backgroundColor($r('app.color.SURFACE_VARIANT'))
                     .borderRadius(DesignDimens.INPUT_RADIUS)
                     .borderWidth(1)
-                    .borderColor(this.noteFocused ? resColor('PRIMARY') : resColor('OUTLINE'))
-                    .placeholderColor(resColor('TEXT_TERTIARY'))
+                    .borderColor(this.noteFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
+                    .placeholderColor($r('app.color.TEXT_TERTIARY'))
                     .placeholderFont({ size: DesignFontSize.BODY })
                     .maxLength(MOOD_NOTE_MAX_LENGTH)
                     .margin({ top: DesignDimens.SPACE_SM })
@@ -398,7 +398,7 @@ struct MoodTodayPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

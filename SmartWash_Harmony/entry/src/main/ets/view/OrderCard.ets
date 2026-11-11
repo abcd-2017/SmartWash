@@ -56,34 +56,34 @@ export struct OrderMonthCard {
    * 订单状态 → 左侧图标容器语义色（对齐安卓 OrderRow 397-405）：
    * 待寄件/清洗中 = 蓝；已完成 = primaryLight + primary；已取消 = errorContainer + error；其余 = 橙。
    */
-  private iconColors(status: string | null | undefined): [number, number] {
+  private iconColors(status: string | null | undefined): [ResourceColor, ResourceColor] {
     if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
-      return [resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE')]
+      return [$r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE')]
     }
     if (status === OrderStatusEnum.COMPLETED) {
-      return [resColor('PRIMARY_LIGHT'), resColor('PRIMARY')]
+      return [$r('app.color.PRIMARY_LIGHT'), $r('app.color.PRIMARY')]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return [resColor('ERROR_CONTAINER'), resColor('ERROR')]
+      return [$r('app.color.ERROR_CONTAINER'), $r('app.color.ERROR')]
     }
-    return [resColor('WARNING_CONTAINER'), resColor('WARNING')]
+    return [$r('app.color.WARNING_CONTAINER'), $r('app.color.WARNING')]
   }
 
   /**
    * 状态角标胶囊语义色（对齐安卓 OrderRow 418-426）：
    * 与图标容器同语义，但已完成角标文字用 primaryDark（#1E8C5C）。
    */
-  private badgeColors(status: string | null | undefined): [number, number] {
+  private badgeColors(status: string | null | undefined): [ResourceColor, ResourceColor] {
     if (status === OrderStatusEnum.PENDING_SHIPMENT || status === OrderStatusEnum.WASHING) {
-      return [resColor('ICON_CONTAINER_BLUE'), resColor('ICON_FOREGROUND_BLUE')]
+      return [$r('app.color.ICON_CONTAINER_BLUE'), $r('app.color.ICON_FOREGROUND_BLUE')]
     }
     if (status === OrderStatusEnum.COMPLETED) {
-      return [resColor('PRIMARY_LIGHT'), resColor('PRIMARY_DARK')]
+      return [$r('app.color.PRIMARY_LIGHT'), $r('app.color.PRIMARY_DARK')]
     }
     if (status === OrderStatusEnum.CANCELED) {
-      return [resColor('ERROR_CONTAINER'), resColor('ERROR')]
+      return [$r('app.color.ERROR_CONTAINER'), $r('app.color.ERROR')]
     }
-    return [resColor('WARNING_CONTAINER'), resColor('WARNING')]
+    return [$r('app.color.WARNING_CONTAINER'), $r('app.color.WARNING')]
   }
 
   @Builder
@@ -92,14 +92,14 @@ export struct OrderMonthCard {
       Text(label)
         .fontSize(ACTION_FONT_SIZE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('ON_PRIMARY'))
+        .fontColor($r('app.color.ON_PRIMARY'))
     }
     .height(36)
     .padding({ left: 16, right: 16 })
     .justifyContent(FlexAlign.Center)
     // 行内小按钮档：36 高 / radiusMd 12 / 13sp·600（对齐安卓 OrderActionPill）
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(resColor('PRIMARY'))
+    .backgroundColor($r('app.color.PRIMARY'))
     // 按压反馈（对齐安卓 pressable scale 0.97 + 100ms）
     .scale({ x: this.pressedActionKey === btnKey ? 0.97 : 1, y: this.pressedActionKey === btnKey ? 0.97 : 1 })
     .animation({ duration: 100, curve: Curve.EaseOut })
@@ -150,7 +150,7 @@ export struct OrderMonthCard {
         // 单号 · 套餐（bodySmall 12 + tnum；角标底→单号行 8）
         Text(`${order.orderNo ?? ""} · ${order.laundryPackageVo?.itemName ?? ""}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -159,7 +159,7 @@ export struct OrderMonthCard {
         // 相对时间（bodySmall 12 + tnum；单号→时间 8）
         Text(formatOrderTime(order.createdAt))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ top: 8 })
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -177,7 +177,7 @@ export struct OrderMonthCard {
           // 金额两位小数（N1）+ tnum（G5）；已取消置灰（对齐安卓 textSecondary），余态 primaryDark（绿字红线）
           .fontFeature(DesignFontFeature.TNUM)
           .fontColor(order.status === OrderStatusEnum.CANCELED ?
-            resColor('TEXT_SECONDARY') : resColor('PRIMARY_DARK'))
+            $r('app.color.TEXT_SECONDARY') : $r('app.color.PRIMARY_DARK'))
 
         Column() {
           if (order.status === OrderStatusEnum.PENDING_PAYMENT) {
@@ -192,7 +192,7 @@ export struct OrderMonthCard {
               Row() {
                 Text($r('app.string.cancel_order'))
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(resColor('ERROR'))
+                  .fontColor($r('app.color.ERROR'))
               }
               .constraintSize({ minHeight: 44 })
               .padding({ left: 4, right: 4 })
@@ -224,7 +224,7 @@ export struct OrderMonthCard {
           } else if (order.status === OrderStatusEnum.WASHING) {
             Text($r('app.string.step_washing'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
           } else if (order.status === OrderStatusEnum.READY_FOR_PICKUP) {
             this.ActionButton(resString('go_pickup'), `${order.orderId}:pickup`, () => {
               this.pickupClick(order)
@@ -232,7 +232,7 @@ export struct OrderMonthCard {
           } else {
             Text(getOrderStatusDescription(order.status))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
           }
         }
         .alignItems(HorizontalAlign.End)
@@ -273,18 +273,18 @@ export struct OrderMonthCard {
         if (index < this.orders.length - 1) {
           Divider()
             .strokeWidth(0.5)
-            .color(resColor('HAIRLINE'))
+            .color($r('app.color.HAIRLINE'))
             .margin({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING })
         }
       }, (order: OrderInfo) => order.orderId?.toString())
     }
     .width("100%")
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })

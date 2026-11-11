@@ -151,9 +151,9 @@ struct ResetPassword {
           .linearGradient({
             direction: GradientDirection.Bottom,
             colors: [
-              [resColor('AUTH_GRADIENT_TOP'), 0.0],
-              [resColor('AUTH_GRADIENT_MID'), 0.5],
-              [resColor('AUTH_GRADIENT_BOTTOM'), 1.0]
+              [$r('app.color.AUTH_GRADIENT_TOP'), 0.0],
+              [$r('app.color.AUTH_GRADIENT_MID'), 0.5],
+              [$r('app.color.AUTH_GRADIENT_BOTTOM'), 1.0]
             ]
           })
 
@@ -203,10 +203,10 @@ struct ResetPassword {
             .width(92)
             .height(92)
             .borderRadius(46)
-            .backgroundColor(resColor('GLASS_BG_SUBTLE'))
+            .backgroundColor($r('app.color.GLASS_BG_SUBTLE'))
             .border({
               width: 1,
-              color: resColor('GLASS_BORDER_SUBTLE'),
+              color: $r('app.color.GLASS_BORDER_SUBTLE'),
               style: BorderStyle.Solid
             })
 
@@ -315,7 +315,7 @@ struct ResetPassword {
               .borderRadius(DesignDimens.RADIUS_MD)
               .border({
                 width: 1,
-                color: this.sendEnabled() ? resColor('GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
+                color: this.sendEnabled() ? $r('app.color.GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
               })
               .onClick(() => {
                 this.sendCaptcha()
@@ -405,7 +405,7 @@ struct ResetPassword {
             .width("100%")
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(resColor('PRIMARY'))
+            .backgroundColor($r('app.color.PRIMARY'))
             .opacity(this.submitting ? 0.38 : 1)
             .onClick(() => {
               // 防连点：请求进行中直接忽略
@@ -428,7 +428,7 @@ struct ResetPassword {
           .backgroundColor(GLASS_CARD_BG)
           .border({
             width: 1,
-            color: resColor('GLASS_BORDER_SUBTLE'),
+            color: $r('app.color.GLASS_BORDER_SUBTLE'),
             style: BorderStyle.Solid
           })
           .padding({ left: 16, right: 16, top: 20, bottom: 20 })

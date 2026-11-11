@@ -89,58 +89,58 @@ export struct LabHomePage {
    * 实时读资源色而非构造期快照——深浅色切换经 ThemeRefreshV2
    * 子树重建后此处重读新值（跨端对比 04 #1 P0 修复）。
    */
-  private containerColorOf(kind: LabEntryKind): number {
+  private containerColorOf(kind: LabEntryKind): ResourceColor {
     switch (kind) {
       case LabEntryKind.BUBBLE_WRAP:
-        return resColor('ICON_CONTAINER_GREEN')
+        return $r('app.color.ICON_CONTAINER_GREEN')
       case LabEntryKind.BREATH:
-        return resColor('ICON_CONTAINER_BLUE')
+        return $r('app.color.ICON_CONTAINER_BLUE')
       case LabEntryKind.FISH:
-        return resColor('ICON_CONTAINER_TEAL')
+        return $r('app.color.ICON_CONTAINER_TEAL')
       case LabEntryKind.SAND:
-        return resColor('ICON_CONTAINER_ORANGE')
+        return $r('app.color.ICON_CONTAINER_ORANGE')
       case LabEntryKind.FLUID:
-        return resColor('ICON_CONTAINER_PURPLE')
+        return $r('app.color.ICON_CONTAINER_PURPLE')
       case LabEntryKind.DRUM:
-        return resColor('ICON_CONTAINER_PINK')
+        return $r('app.color.ICON_CONTAINER_PINK')
       case LabEntryKind.PAINTING:
-        return resColor('ICON_CONTAINER_GREEN')
+        return $r('app.color.ICON_CONTAINER_GREEN')
       case LabEntryKind.SOUNDSCAPE:
-        return resColor('ICON_CONTAINER_BLUE')
+        return $r('app.color.ICON_CONTAINER_BLUE')
       case LabEntryKind.PET:
-        return resColor('ICON_CONTAINER_PINK')
+        return $r('app.color.ICON_CONTAINER_PINK')
       case LabEntryKind.STAR_MAP:
-        return resColor('ICON_CONTAINER_PURPLE')
+        return $r('app.color.ICON_CONTAINER_PURPLE')
       default:
-        return resColor('ICON_CONTAINER_GREEN')
+        return $r('app.color.ICON_CONTAINER_GREEN')
     }
   }
 
   /** 入口卡图标前景色（与 containerColorOf 成对，六色语义对齐安卓 LabHomePage.kt:113-124） */
-  private iconColorOf(kind: LabEntryKind): number {
+  private iconColorOf(kind: LabEntryKind): ResourceColor {
     switch (kind) {
       case LabEntryKind.BUBBLE_WRAP:
-        return resColor('ICON_FOREGROUND_GREEN')
+        return $r('app.color.ICON_FOREGROUND_GREEN')
       case LabEntryKind.BREATH:
-        return resColor('ICON_FOREGROUND_BLUE')
+        return $r('app.color.ICON_FOREGROUND_BLUE')
       case LabEntryKind.FISH:
-        return resColor('ICON_FOREGROUND_TEAL')
+        return $r('app.color.ICON_FOREGROUND_TEAL')
       case LabEntryKind.SAND:
-        return resColor('ICON_FOREGROUND_ORANGE')
+        return $r('app.color.ICON_FOREGROUND_ORANGE')
       case LabEntryKind.FLUID:
-        return resColor('ICON_FOREGROUND_PURPLE')
+        return $r('app.color.ICON_FOREGROUND_PURPLE')
       case LabEntryKind.DRUM:
-        return resColor('ICON_FOREGROUND_PINK')
+        return $r('app.color.ICON_FOREGROUND_PINK')
       case LabEntryKind.PAINTING:
-        return resColor('ICON_FOREGROUND_GREEN')
+        return $r('app.color.ICON_FOREGROUND_GREEN')
       case LabEntryKind.SOUNDSCAPE:
-        return resColor('ICON_FOREGROUND_BLUE')
+        return $r('app.color.ICON_FOREGROUND_BLUE')
       case LabEntryKind.PET:
-        return resColor('ICON_FOREGROUND_PINK')
+        return $r('app.color.ICON_FOREGROUND_PINK')
       case LabEntryKind.STAR_MAP:
-        return resColor('ICON_FOREGROUND_PURPLE')
+        return $r('app.color.ICON_FOREGROUND_PURPLE')
       default:
-        return resColor('ICON_FOREGROUND_GREEN')
+        return $r('app.color.ICON_FOREGROUND_GREEN')
     }
   }
 
@@ -175,7 +175,7 @@ export struct LabHomePage {
         Text(entry.title)
           .fontSize(DesignFontSize.CARD_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           // 行高显式化（跨端对比 04 #7）：对齐安卓 CardTitle 18/24/600
           .lineHeight(24)
           .maxLines(1)
@@ -184,7 +184,7 @@ export struct LabHomePage {
 
         Text(entry.desc)
           .fontSize(DesignFontSize.BODY_SMALL)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           // 行高显式化（跨端对比 04 #7）：对齐安卓 bodyMedium 14/20/400
           .lineHeight(20)
           .maxLines(1)
@@ -201,16 +201,16 @@ export struct LabHomePage {
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     // 卡片阴影档（规范 §2.4：0 2px 12px）——blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
     // （1vp 模糊不可见，与 GameCard/AppCard 统一口径，跨端对比 04 #3）；
     // 阴影色 SHADOW_COLOR_CARD 走资源限定符，深色自动切深色变体
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -297,7 +297,7 @@ export struct LabHomePage {
         .height('100%')
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

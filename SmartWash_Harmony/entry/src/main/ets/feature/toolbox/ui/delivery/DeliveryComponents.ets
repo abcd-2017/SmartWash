@@ -21,8 +21,8 @@ import {
 @ComponentV2
 export struct DeliveryTagChip {
   @Require @Param text: string
-  @Require @Param containerColor: number
-  @Require @Param contentColor: number
+  @Require @Param containerColor: ResourceColor
+  @Require @Param contentColor: ResourceColor
 
   build() {
     Text(this.text)
@@ -101,12 +101,12 @@ export struct DeliveryItemRow {
       Column() {
         SymbolGlyph(this.kindIcon())
           .fontSize(20)
-          .fontColor([this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('ICON_FOREGROUND_BLUE')])
+          .fontColor([this.isTaken() ? $r('app.color.TEXT_TERTIARY') : $r('app.color.ICON_FOREGROUND_BLUE')])
       }
       .width(32)
       .height(32)
       .borderRadius(DesignDimens.RADIUS_MD)
-      .backgroundColor(this.isTaken() ? resColor('SURFACE_VARIANT') : resColor('ICON_CONTAINER_BLUE'))
+      .backgroundColor(this.isTaken() ? $r('app.color.SURFACE_VARIANT') : $r('app.color.ICON_CONTAINER_BLUE'))
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
 
@@ -114,7 +114,7 @@ export struct DeliveryItemRow {
         Text(this.item.title ?? this.kindName())
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('TEXT_PRIMARY'))
+          .fontColor(this.isTaken() ? $r('app.color.TEXT_TERTIARY') : $r('app.color.TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -122,7 +122,7 @@ export struct DeliveryItemRow {
         Text(this.metaText())
           .fontSize(DesignFontSize.CAPTION)
           // 时间·大小为可读元信息，不用 textTertiary（compare-07 #5，对齐安卓 textSecondary）
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -136,15 +136,15 @@ export struct DeliveryItemRow {
       Column() {
         DeliveryTagChip({
           text: this.directionText(),
-          containerColor: this.isIncoming() ? resColor('ICON_CONTAINER_BLUE') : resColor('SURFACE_VARIANT'),
-          contentColor: this.isIncoming() ? resColor('ICON_FOREGROUND_BLUE') : resColor('TEXT_SECONDARY')
+          containerColor: this.isIncoming() ? $r('app.color.ICON_CONTAINER_BLUE') : $r('app.color.SURFACE_VARIANT'),
+          contentColor: this.isIncoming() ? $r('app.color.ICON_FOREGROUND_BLUE') : $r('app.color.TEXT_SECONDARY')
         })
         DeliveryTagChip({
           text: this.isTaken() ? DeliveryText.toolbox_delivery_state_taken : DeliveryText.toolbox_delivery_state_pending,
-          containerColor: this.isTaken() ? resColor('SURFACE_VARIANT') : resColor('WARNING_CONTAINER'),
+          containerColor: this.isTaken() ? $r('app.color.SURFACE_VARIANT') : $r('app.color.WARNING_CONTAINER'),
           // 功能色浅底 + 成对文字色（规范 §5）：#D98A26 on warningContainer 仅 2.51:1 违反 §10 红线
           //（compare-07 #3，对齐安卓 onWarningContainer）
-          contentColor: this.isTaken() ? resColor('TEXT_TERTIARY') : resColor('ON_WARNING_CONTAINER')
+          contentColor: this.isTaken() ? $r('app.color.TEXT_TERTIARY') : $r('app.color.ON_WARNING_CONTAINER')
         })
         .margin({ top: DesignDimens.SPACE_XXS })
       }

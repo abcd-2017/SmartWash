@@ -37,7 +37,7 @@ struct PasswordFieldRow {
 
   /** 输入框通用描边（surfaceVariant 底 + outline 描边 + 聚焦主色，Setting.ets 同款） */
   private inputBorder(focused: boolean): ChangePasswordBorderStyle {
-    return { width: 1, color: focused ? resColor('PRIMARY') : resColor('OUTLINE') }
+    return { width: 1, color: focused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE') }
   }
 
   build() {
@@ -47,10 +47,10 @@ struct PasswordFieldRow {
         .maxLength(16)
         .height(48)
         .fontSize(DesignFontSize.BODY)
-        .backgroundColor(resColor('SURFACE_VARIANT'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
         .borderRadius(DesignDimens.INPUT_RADIUS)
         .border(this.inputBorder(this.focused))
-        .placeholderColor(resColor('TEXT_TERTIARY'))
+        .placeholderColor($r('app.color.TEXT_TERTIARY'))
         .placeholderFont({ size: DesignFontSize.BODY })
         .showPasswordIcon(false)
         .layoutWeight(1)
@@ -67,7 +67,7 @@ struct PasswordFieldRow {
       Stack({ alignContent: Alignment.Center }) {
         SymbolGlyph(this.showPlain ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
           .fontSize(20)
-          .fontColor([resColor('TEXT_SECONDARY')])
+          .fontColor([$r('app.color.TEXT_SECONDARY')])
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
@@ -114,7 +114,7 @@ struct ChangePassword {
     Text(title)
       .fontSize(DesignFontSize.BODY_SMALL)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(resColor('TEXT_SECONDARY'))
+      .fontColor($r('app.color.TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -123,7 +123,7 @@ struct ChangePassword {
   FieldError(message: string) {
     Text(message)
       .fontSize(DesignFontSize.CAPTION)
-      .fontColor(resColor('ERROR'))
+      .fontColor($r('app.color.ERROR'))
       .margin({ top: DesignDimens.SPACE_XXS })
   }
 
@@ -305,7 +305,7 @@ struct ChangePassword {
       .width("100%")
       .height("100%")
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     // 隐藏系统标题栏，避免与自绘 PageHeader 出现双返回按钮（对齐 Setting.ets）

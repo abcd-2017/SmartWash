@@ -226,7 +226,7 @@ struct DeliveryCreatePage {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
-      .fontColor(resColor('TEXT_SECONDARY'))
+      .fontColor($r('app.color.TEXT_SECONDARY'))
       .margin({ bottom: DesignDimens.SPACE_XS })
   }
 
@@ -255,12 +255,12 @@ struct DeliveryCreatePage {
     Column() {
       Text(DeliveryText.toolbox_delivery_code_label)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
 
       Text(session.code ?? '')
         .fontSize(DesignFontSize.DATA_LARGE)
         .fontWeight(DesignFontWeight.BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_XXS })
 
@@ -270,7 +270,7 @@ struct DeliveryCreatePage {
 
       Text(session.enterUrl ?? '')
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
         .maxLines(2)
@@ -283,27 +283,27 @@ struct DeliveryCreatePage {
           Text(DeliveryText.toolbox_delivery_session_expired)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('DANGER_INK'))
+            .fontColor($r('app.color.DANGER_INK'))
         } else {
           // 倒计时常态色不用 ongoingInk（白卡 2.76:1 违反 §10 红线，compare-07 #1），
           // ≤60s 切 dangerInk 紧迫档（#2，对齐安卓 DeliveryCountdown.kt 两档逻辑）
           Text(`${DeliveryText.toolbox_delivery_countdown_prefix}${this.remainSeconds !== null ? formatRemain(this.remainSeconds) : '--:--'}`)
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.isCountdownUrgent() ? resColor('DANGER_INK') : resColor('ON_WARNING_CONTAINER'))
+            .fontColor(this.isCountdownUrgent() ? $r('app.color.DANGER_INK') : $r('app.color.ON_WARNING_CONTAINER'))
             .fontFeature(DesignFontFeature.TNUM)
         }
         if (session.hasPassword === true) {
           // 12fp 文字不用图标前景令牌（#3F9D78 on #F0FBF4 仅 3.14:1，compare-07 #4）
           DeliveryTagChip({ text: DeliveryText.toolbox_delivery_has_password,
-            containerColor: resColor('ICON_CONTAINER_TEAL'),
-            contentColor: resColor('TEXT_GREEN_ON_TINT') })
+            containerColor: $r('app.color.ICON_CONTAINER_TEAL'),
+            contentColor: $r('app.color.TEXT_GREEN_ON_TINT') })
         }
         Blank()
         if (this.clickCountOf(session) > 0) {
           Text(clicksFormat(this.clickCountOf(session)))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
         }
       }
@@ -343,7 +343,7 @@ struct DeliveryCreatePage {
         AppButton({
           text: DeliveryText.toolbox_delivery_action_close,
           variant: AppButtonVariant.SECONDARY,
-          contentColor: resColor('DANGER_INK'),
+          contentColor: $r('app.color.DANGER_INK'),
           loading: this.closing,
           click: () => {
             this.closeDialogController.open()
@@ -369,7 +369,7 @@ struct DeliveryCreatePage {
             Column() {
               SymbolGlyph($r('sys.symbol.chevron_left'))
                 .fontSize(24)
-                .fontColor([resColor('TEXT_PRIMARY')])
+                .fontColor([$r('app.color.TEXT_PRIMARY')])
             }
             .width(DesignDimens.BACK_HIT_AREA)
             .height(DesignDimens.BACK_HIT_AREA)
@@ -382,7 +382,7 @@ struct DeliveryCreatePage {
             Text(DeliveryText.toolbox_delivery_title)
               .fontSize(DesignFontSize.ROOT_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
           }
           .width('100%')
           .height(56)
@@ -420,7 +420,7 @@ struct DeliveryCreatePage {
               Text(DeliveryText.durationDesc(this.durationMinutes))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
 
               Column()
@@ -436,13 +436,13 @@ struct DeliveryCreatePage {
                   .type(this.showPassword ? InputType.Normal : InputType.Password)
                   .height(48)
                   .fontSize(DesignFontSize.BODY)
-                  .backgroundColor(resColor('SURFACE_VARIANT'))
+                  .backgroundColor($r('app.color.SURFACE_VARIANT'))
                   .borderRadius(DesignDimens.INPUT_RADIUS)
                   .borderWidth(1)
                   // 描边三态：字段校验错误 error > 聚焦 primary > 常态 outline（对齐安卓 isError，compare-07 #6）
-                  .borderColor(this.passwordError ? resColor('ERROR')
-                    : (this.passwordFocused ? resColor('PRIMARY') : resColor('OUTLINE')))
-                  .placeholderColor(resColor('TEXT_TERTIARY'))
+                  .borderColor(this.passwordError ? $r('app.color.ERROR')
+                    : (this.passwordFocused ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')))
+                  .placeholderColor($r('app.color.TEXT_TERTIARY'))
                   .placeholderFont({ size: DesignFontSize.CAPTION })
                   .showPasswordIcon(false)
                   .layoutWeight(1)
@@ -464,7 +464,7 @@ struct DeliveryCreatePage {
                 Stack({ alignContent: Alignment.Center }) {
                   SymbolGlyph(this.showPassword ? $r('sys.symbol.eye_slash') : $r('sys.symbol.eye'))
                     .fontSize(20)
-                    .fontColor([resColor('TEXT_SECONDARY')])
+                    .fontColor([$r('app.color.TEXT_SECONDARY')])
                 }
                 .width(DesignDimens.BACK_HIT_AREA)
                 .height(DesignDimens.BACK_HIT_AREA)
@@ -482,7 +482,7 @@ struct DeliveryCreatePage {
                 : DeliveryText.toolbox_delivery_password_helper)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(this.passwordError ? resColor('ERROR') : resColor('TEXT_TERTIARY'))
+                .fontColor(this.passwordError ? $r('app.color.ERROR') : $r('app.color.TEXT_TERTIARY'))
                 .margin({ top: DesignDimens.SPACE_XS })
 
               Column()
@@ -492,23 +492,23 @@ struct DeliveryCreatePage {
               Column() {
                 Text(DeliveryText.toolbox_delivery_privacy_notice)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
               }
               .width('100%')
               .alignItems(HorizontalAlign.Start)
               .padding(DesignDimens.SPACE_MD)
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .borderRadius(DesignDimens.RADIUS_MD)
             }
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: resColor('OUTLINE') })
+            .border({ width: 1, color: $r('app.color.OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -517,7 +517,7 @@ struct DeliveryCreatePage {
             if (this.errorMessage.length > 0) {
               Text(this.errorMessage)
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('ERROR'))
+                .fontColor($r('app.color.ERROR'))
                 .width('100%')
                 .margin({ top: DesignDimens.SPACE_SM })
             }
@@ -540,12 +540,12 @@ struct DeliveryCreatePage {
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: resColor('OUTLINE') })
+            .border({ width: 1, color: $r('app.color.OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -563,7 +563,7 @@ struct DeliveryCreatePage {
       .height('100%')
       .align(Alignment.TopStart)
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -591,12 +591,12 @@ struct DeliveryDurationChip {
         .fontSize(DesignFontSize.CAPTION)
         // 字重恒 SemiBold：字重随选中切换会让文字宽度跳变（对齐安卓注释）
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(this.selected ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+        .fontColor(this.selected ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
         // 上下 6 为视觉内边距（无独立令牌，对齐安卓视觉 h16/v6）
         .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 6, bottom: 6 })
-        .backgroundColor(this.selected ? resColor('PRIMARY') : resColor('SURFACE'))
+        .backgroundColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
         .borderWidth(1)
-        .borderColor(this.selected ? resColor('PRIMARY') : resColor('OUTLINE'))
+        .borderColor(this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
         .borderRadius(DesignDimens.RADIUS_FULL)
     }
     .justifyContent(FlexAlign.Center)
@@ -710,7 +710,7 @@ struct DeliveryQrImage {
         Column()
           .width('100%')
           .height('100%')
-          .backgroundColor(resColor('SURFACE_VARIANT'))
+          .backgroundColor($r('app.color.SURFACE_VARIANT'))
           .borderRadius(DesignDimens.RADIUS_MD)
       }
     }

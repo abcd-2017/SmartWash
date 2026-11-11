@@ -224,14 +224,14 @@ export struct HeroCard {
                 Circle()
                   .width(8)
                   .height(8)
-                  .backgroundColor(index <= this.currentStep ? Color.White : resColor('OUTLINE'))
+                  .backgroundColor(index <= this.currentStep ? Color.White : $r('app.color.OUTLINE'))
                   .animation(MotionTiming.ENTER)
 
                 if (index < HERO_STEPS().length - 1) {
                   Row()
                     .layoutWeight(1)
                     .height(2)
-                    .backgroundColor(index < this.currentStep ? Color.White : resColor('OUTLINE'))
+                    .backgroundColor(index < this.currentStep ? Color.White : $r('app.color.OUTLINE'))
                     .animation(MotionTiming.ENTER)
                 }
               }, (label: string) => label)
@@ -261,7 +261,7 @@ export struct HeroCard {
               // 行盒对齐安卓 bodyLarge 16/24：上下 padding 12 + 行高 24 = 48 高（对齐安卓 U-102）
               .lineHeight(DesignFontSize.BODY + 8)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('PRIMARY_DARK'))
+              .fontColor($r('app.color.PRIMARY_DARK'))
               .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
               .borderRadius(DesignDimens.RADIUS_FULL)
               .backgroundColor(Color.White)
@@ -279,7 +279,7 @@ export struct HeroCard {
         // 透明端必须用 Color.Transparent：数值 0x00000000 在渐变 stop 上会被当作不透明黑。
         .linearGradient({
           angle: 135,
-          colors: [[resColor('SCRIM_BLACK_20'), 0], [Color.Transparent, 1]]
+          colors: [[$r('app.color.SCRIM_BLACK_20'), 0], [Color.Transparent, 1]]
         })
       }
       .width('100%')
@@ -288,7 +288,7 @@ export struct HeroCard {
       .clip(true)
       .linearGradient({
         angle: 135,
-        colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
+        colors: [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
       })
       .onClick(() => {
         if (this.hasOrder) {

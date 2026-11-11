@@ -120,15 +120,15 @@ struct RechargeRecord {
         } else {
           SymbolGlyph($r('sys.symbol.creditcard'))
             .fontSize(24)
-            .fontColor([resColor('PRIMARY')])
+            .fontColor([$r('app.color.PRIMARY')])
         }
       }
       .width(44)
       .height(44)
       .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
       // 微信/余额 = primaryContainer(#F0FBF4)、支付宝 = iconContainerBlue(#EEF2FB)（对齐安卓 RechargeRecordCard）
-      .backgroundColor(record.rechargeType === RechargeType.WECHAT ? resColor('ICON_CONTAINER_GREEN') :
-        record.rechargeType === RechargeType.ALIPAY ? resColor('ICON_CONTAINER_BLUE') : resColor('ICON_CONTAINER_GREEN'))
+      .backgroundColor(record.rechargeType === RechargeType.WECHAT ? $r('app.color.ICON_CONTAINER_GREEN') :
+        record.rechargeType === RechargeType.ALIPAY ? $r('app.color.ICON_CONTAINER_BLUE') : $r('app.color.ICON_CONTAINER_GREEN'))
       .justifyContent(FlexAlign.Center)
       .alignItems(VerticalAlign.Center)
 
@@ -138,11 +138,11 @@ struct RechargeRecord {
           record.rechargeType === RechargeType.ALIPAY ? resString('alipay') : resString('service_recharge'))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
 
         Text(this.formatRechargeTime(record.rechargeTime ?? ""))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .margin({ top: 4 })
@@ -157,20 +157,20 @@ struct RechargeRecord {
         .fontSize(DesignFontSize.AMOUNT_MEDIUM)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontFeature(DesignFontFeature.TNUM)
-        .fontColor(resColor('PRIMARY_DARK'))
+        .fontColor($r('app.color.PRIMARY_DARK'))
         .margin({ left: 12 })
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Clip })
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
+    .border({ width: 1, color: $r('app.color.OUTLINE'), radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -233,7 +233,7 @@ struct RechargeRecord {
     .width("100%")
     .height("100%")
     .align(Alignment.Top)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
     .hideTitleBar(true)
   }
 }

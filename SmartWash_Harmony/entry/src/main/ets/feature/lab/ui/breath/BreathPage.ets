@@ -306,7 +306,7 @@ export struct BreathPage {
 
       Text(this.mode === BreathMode.SLEEP ? BreathText.modeSleepHint : BreathText.modeBoxHint)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING,
           top: DesignDimens.SPACE_XS })
 
@@ -344,12 +344,12 @@ export struct BreathPage {
           Text(this.phaseLabel(phasesOf(this.mode)[this.phaseIndex].type))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Text(this.countdownText())
             .fontSize(DesignFontSize.STATUS_LARGE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: DesignDimens.SPACE_XXS })
         }
@@ -361,7 +361,7 @@ export struct BreathPage {
       Text(this.cyclesText())
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_MD })
 
@@ -424,7 +424,7 @@ export struct BreathPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

@@ -167,7 +167,7 @@ struct Home {
         // 底栏由下方自定义 BottomNav 承载，隐藏内置 bar（barHeight 0）
         .barOverlap(false)
         .barHeight(0)
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
         .layoutWeight(1)
 
         // 底栏规范 §4.5：68vp 高、纯白底、0.5vp outline 顶部分隔线（对齐安卓 BottomBar）
@@ -183,14 +183,14 @@ struct Home {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       }
     }
     .width("100%")
     .height("100%")
     // 沉浸式：底部手势条区域由底栏同色背景延伸填充，tab 内容与底栏仍在安全区内（问题5）
     .padding({ bottom: safeBottomVp() })
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .hideTitleBar(true)
     // 从子页（充值/订单详情/优惠券等）返回时刷新首页账户卡余额与订单（问题9）
     .onShown(() => {

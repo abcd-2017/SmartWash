@@ -14,6 +14,7 @@ import { MeiHuaChart } from '../../core/meihua/MeiHuaChart'
 import { QiMenChart } from '../../core/qimen/QiMenChart'
 import { LiuRenChart, LiuRenCourse } from '../../core/liuren/LiuRenChart'
 import { Trigram } from '../../core/DivinationCommon'
+import { resolveArgb } from '../../../../utils/ResourceColor'
 import {
   DivCard,
   DivPalette,
@@ -47,7 +48,7 @@ interface MeiHuaCardData {
   label: string
   name: string
   mark: string
-  barColor: number
+  barColor: ResourceColor
   chip: string
   chipGold: boolean
 }
@@ -628,24 +629,24 @@ export struct LiurenPan {
 
     // 外环天盘 / 中环 / 内环地盘
     this.ctx.lineWidth = 1.2
-    this.ctx.strokeStyle = DivPalette.goldLine
+    this.ctx.strokeStyle = resolveArgb(DivPalette.goldLine)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, rOuter - 0.6, 0, Math.PI * 2, false)
     this.ctx.stroke()
 
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldHair
+    this.ctx.strokeStyle = resolveArgb(DivPalette.goldHair)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, rOuter * 0.72, 0, Math.PI * 2, false)
     this.ctx.stroke()
 
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldLine
+    this.ctx.strokeStyle = resolveArgb(DivPalette.goldLine)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, rInner, 0, Math.PI * 2, false)
     this.ctx.stroke()
 
-    this.ctx.fillStyle = DivPalette.surface2
+    this.ctx.fillStyle = resolveArgb(DivPalette.surface2)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, rInner - 1, 0, Math.PI * 2, false)
     this.ctx.fill()
@@ -661,7 +662,7 @@ export struct LiurenPan {
       const angle = (diIndex * 30 - 90) * Math.PI / 180
       const posX = cx + rOuter * 0.84 * Math.cos(angle)
       const posY = cy + rOuter * 0.84 * Math.sin(angle)
-      this.drawCenterText(label, posX, posY, 13, DivPalette.gold)
+      this.drawCenterText(label, posX, posY, 13, resolveArgb(DivPalette.gold))
     }
 
     // 内环（地盘支，固定）
@@ -669,12 +670,12 @@ export struct LiurenPan {
       const angle = (index * 30 - 90) * Math.PI / 180
       const posX = cx + rInner * 0.72 * Math.cos(angle)
       const posY = cy + rInner * 0.72 * Math.sin(angle)
-      this.drawCenterText(LIUREN_ZHI()[index], posX, posY, 12, DivPalette.textTertiary)
+      this.drawCenterText(LIUREN_ZHI()[index], posX, posY, 12, resolveArgb(DivPalette.textTertiary))
     }
 
     // 四正刻线
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.goldHair
+    this.ctx.strokeStyle = resolveArgb(DivPalette.goldHair)
     const ticks: number[] = [0, 90, 180, 270]
     for (let i = 0; i < ticks.length; i++) {
       const rad = ticks[i] * Math.PI / 180
@@ -685,7 +686,7 @@ export struct LiurenPan {
     }
 
     // 天心
-    this.ctx.fillStyle = DivPalette.gold
+    this.ctx.fillStyle = resolveArgb(DivPalette.gold)
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, 3.5, 0, Math.PI * 2, false)
     this.ctx.fill()

@@ -206,9 +206,9 @@ struct ToolboxShortCodeList {
   }
 
   /** 过期态颜色（对齐安卓：常态 textSecondary，过期 dangerInk） */
-  private expiryColorOf(vo: ShortCodeVo): number {
+  private expiryColorOf(vo: ShortCodeVo): ResourceColor {
     return expiryStateOf(vo.expireAt, new Date()) === ExpiryState.EXPIRED
-      ? resColor('DANGER_INK') : resColor('TEXT_SECONDARY')
+      ? $r('app.color.DANGER_INK') : $r('app.color.TEXT_SECONDARY')
   }
 
   /** 过期态字重（对齐安卓：过期 labelSmall 12/500，其余 bodySmall 12/400） */
@@ -219,7 +219,7 @@ struct ToolboxShortCodeList {
 
   /** 静态标签 chip（对齐安卓 ToolboxTagChip：胶囊 + labelSmall 12/500 captionStrong 档） */
   @Builder
-  TagChip(text: string, containerColor: number, contentColor: number) {
+  TagChip(text: string, containerColor: ResourceColor, contentColor: ResourceColor) {
     Text(text)
       .fontSize(DesignFontSize.CAPTION)
       .fontWeight(DesignFontWeight.MEDIUM)
@@ -241,9 +241,9 @@ struct ToolboxShortCodeList {
       Text(text)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_GREEN'))
+        .fontColor($r('app.color.TEXT_GREEN'))
         .padding({ left: 14, right: 14, top: 8, bottom: 8 })
-        .border({ width: 1, color: resColor('OUTLINE') })
+        .border({ width: 1, color: $r('app.color.OUTLINE') })
         .borderRadius(DesignDimens.RADIUS_FULL)
     }
     .padding({ left: 4, right: 4, top: 8, bottom: 8 })
@@ -302,32 +302,32 @@ struct ToolboxShortCodeList {
           icon: $r('sys.symbol.link'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: resColor('ICON_CONTAINER_BLUE'),
-          iconColor: resColor('ICON_FOREGROUND_BLUE')
+          containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+          iconColor: $r('app.color.ICON_FOREGROUND_BLUE')
         })
 
         Column() {
           Text(vo.code ?? "")
             .fontSize(DesignFontSize.CARD_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
           Row({ space: 4 }) {
             this.TagChip(ToolboxText.toolbox_type_short_link,
-              resColor('SURFACE_VARIANT'), resColor('TEXT_SECONDARY'))
+              $r('app.color.SURFACE_VARIANT'), $r('app.color.TEXT_SECONDARY'))
             if (this.isPublicOf(vo)) {
               // 公开 = primaryContainer/onPrimaryContainer（对齐安卓）
               this.TagChip(ToolboxText.toolbox_visibility_public_value,
-                resColor('PRIMARY_CONTAINER'), resColor('ON_PRIMARY_CONTAINER'))
+                $r('app.color.PRIMARY_CONTAINER'), $r('app.color.ON_PRIMARY_CONTAINER'))
             } else {
               // 私有 = warningContainer 底 + onWarningContainer 字（对齐安卓配对字色）——
               // 前景误用主档橙 WARNING（浅 #D98A26/橙底 2.52:1 触红线），改 ON_WARNING_CONTAINER
               // （浅 #92400E 6.47:1 / 深 #ECB36A 7.63:1 均达标）
               this.TagChip(ToolboxText.toolbox_visibility_private_value,
-                resColor('WARNING_CONTAINER'), resColor('ON_WARNING_CONTAINER'))
+                $r('app.color.WARNING_CONTAINER'), $r('app.color.ON_WARNING_CONTAINER'))
             }
           }
           .margin({ top: DesignDimens.SPACE_XXS })
@@ -352,7 +352,7 @@ struct ToolboxShortCodeList {
         Column() {
           Text(toolboxClicksFormat(vo.clickCount ?? 0))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
           this.CopyPillButton(ToolboxText.toolbox_action_copy, vo)
         }
@@ -366,7 +366,7 @@ struct ToolboxShortCodeList {
       if ((vo.target ?? "").length > 0) {
         Text(vo.target ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -377,15 +377,15 @@ struct ToolboxShortCodeList {
     .alignItems(HorizontalAlign.Start)
     // 画板实测：内边距左/上/右 20，底部 12 留给链接行（对齐安卓 ShortCodeCard）
     .padding({ left: DesignDimens.CARD_PADDING, top: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, bottom: DesignDimens.SPACE_SM })
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + 卡片阴影档（§2.4：0 2px 12px）——
     // blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1（1vp 模糊不可见，与 AppCard 统一口径）；
     // 阴影色随主题切深色档 rgba(0,0,0,0.28)
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -418,7 +418,7 @@ struct ToolboxShortCodeList {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -431,14 +431,14 @@ struct ToolboxShortCodeList {
           Text(ToolboxText.toolbox_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Blank()
 
           Text(ToolboxText.toolbox_action_new)
             .fontSize(DesignFontSize.PAGE_HEADER)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
             .padding({ left: 12, right: 12, top: 12, bottom: 12 })
             .onClick(() => {
               this.goCreate()
@@ -492,7 +492,7 @@ struct ToolboxShortCodeList {
                   Text(ToolboxText.toolbox_error_load)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(resColor('DANGER_INK'))
+                    .fontColor($r('app.color.DANGER_INK'))
                     .width('100%')
                     .textAlign(TextAlign.Center)
                     // 分页失败唯一显式重试入口：上下 16 × 2 + 行高 16 = 48vp 热区
@@ -544,7 +544,7 @@ struct ToolboxShortCodeList {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

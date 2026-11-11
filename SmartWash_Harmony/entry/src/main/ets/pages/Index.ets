@@ -190,7 +190,7 @@ struct Index {
             LoadingProgress()
               .width(48)
               .height(48)
-              .color(resColor('PRIMARY'))
+              .color($r('app.color.PRIMARY'))
           }
           .width('100%')
           .height('100%')
@@ -203,7 +203,7 @@ struct Index {
           HomeBuilder()
         }
         }
-      }.backgroundColor(resColor('BACKGROUND'))
+      }.backgroundColor($r('app.color.BACKGROUND'))
       .hideTitleBar(true)
       .mode(NavigationMode.Stack)
     }.height('100%')

@@ -161,9 +161,9 @@ struct Register {
             direction: GradientDirection.Bottom,
             // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
             colors: [
-              [resColor('AUTH_GRADIENT_TOP'), 0.0],
-              [resColor('AUTH_GRADIENT_MID'), 0.5],
-              [resColor('AUTH_GRADIENT_BOTTOM'), 1.0]
+              [$r('app.color.AUTH_GRADIENT_TOP'), 0.0],
+              [$r('app.color.AUTH_GRADIENT_MID'), 0.5],
+              [$r('app.color.AUTH_GRADIENT_BOTTOM'), 1.0]
             ]
           })
 
@@ -212,10 +212,10 @@ struct Register {
             .width(92)
             .height(92)
             .borderRadius(46)
-            .backgroundColor(resColor('GLASS_BG_SUBTLE'))
+            .backgroundColor($r('app.color.GLASS_BG_SUBTLE'))
             .border({
               width: 1,
-              color: resColor('GLASS_BORDER_SUBTLE'),
+              color: $r('app.color.GLASS_BORDER_SUBTLE'),
               style: BorderStyle.Solid
             })
 
@@ -345,7 +345,7 @@ struct Register {
               .borderRadius(DesignDimens.RADIUS_MD)
               .border({
                 width: 1,
-                color: this.sendEnabled() ? resColor('GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
+                color: this.sendEnabled() ? $r('app.color.GLASS_INPUT') : GLASS_SEND_BORDER_DISABLED
               })
               .onClick(() => {
                 this.sendCaptcha()
@@ -431,7 +431,7 @@ struct Register {
             .width("100%")
             .height(48)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(resColor('PRIMARY'))
+            .backgroundColor($r('app.color.PRIMARY'))
             .opacity(this.registering ? 0.38 : 1)
             .onClick(() => {
               // 防连点：请求进行中直接忽略
@@ -454,7 +454,7 @@ struct Register {
           .backgroundColor(GLASS_CARD_BG)
           .border({
             width: 1,
-            color: resColor('GLASS_BORDER_SUBTLE'),
+            color: $r('app.color.GLASS_BORDER_SUBTLE'),
             style: BorderStyle.Solid
           })
           .padding({ left: 16, right: 16, top: 20, bottom: 20 })

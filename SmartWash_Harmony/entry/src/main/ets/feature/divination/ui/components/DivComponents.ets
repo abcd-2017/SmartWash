@@ -11,7 +11,7 @@
 import vibrator from '@ohos.vibrator'
 import { DivColor } from '../../../../constant/DivTheme'
 import { DesignDimens, DesignElevation } from '../../../../constant/DesignSystem'
-import { resColor } from '../../../../utils/ResourceColor'
+import { resolveArgb } from '../../../../utils/ResourceColor'
 import { resString } from '../../../../utils/ResourceString'
 
 // ========== 文案（对齐安卓 res/values/strings.xml 的 div_* 键；纯中文 demo 暂用字面量） ==========
@@ -165,29 +165,29 @@ export class DivText {
  * 系统深色下清氧域转暗、观象台域仍固定宣纸，为已知域级主题断层（compare-08 #12）。
  */
 export class DivPalette {
-  static get textPrimary(): number { return resColor('DIV_TEXT_PRIMARY_LIGHT') }
-  static get textSecondary(): number { return resColor('DIV_TEXT_SECONDARY_LIGHT') }
-  static get textTertiary(): number { return resColor('DIV_TEXT_TERTIARY_LIGHT') }
-  static get gold(): number { return resColor('DIV_GOLD_LIGHT') }
-  static get goldHi(): number { return resColor('DIV_GOLD_HI_LIGHT') }
-  static get goldLine(): number { return resColor('DIV_GOLD_LINE_LIGHT') }
-  static get goldHair(): number { return resColor('DIV_GOLD_HAIR_LIGHT') }
-  static get goldSoft(): number { return resColor('DIV_GOLD_SOFT_LIGHT') }
-  static get gold14(): number { return resColor('DIV_GOLD_14_LIGHT') }
-  static get surface(): number { return resColor('DIV_SURFACE_LIGHT') }
-  static get surface2(): number { return resColor('DIV_SURFACE_2_LIGHT') }
-  static get seal(): number { return resColor('DIV_SEAL_LIGHT') }
-  static get sealHi(): number { return resColor('DIV_SEAL_HI_LIGHT') }
-  static get jade(): number { return resColor('DIV_JADE_LIGHT') }
-  static get hair(): number { return resColor('DIV_HAIR_LIGHT') }
-  static get line(): number { return resColor('DIV_LINE_LIGHT') }
-  static get yaoTop(): number { return resColor('DIV_YAO_TOP_LIGHT') }
-  static get yaoBottom(): number { return resColor('DIV_YAO_BOTTOM_LIGHT') }
-  static get goldText(): number { return resColor('DIV_TEXT_PRIMARY_LIGHT') }
-  static get onGold(): number { return resColor('DIV_ON_GOLD') }
-  static get sealDeep(): number { return resColor('DIV_SEAL_DEEP') }
-  static get goldGradientStart(): number { return resColor('DIV_GOLD_GRADIENT_START') }
-  static get goldGradientEnd(): number { return resColor('DIV_GOLD_GRADIENT_END') }
+  static get textPrimary(): ResourceColor { return $r('app.color.DIV_TEXT_PRIMARY_LIGHT') }
+  static get textSecondary(): ResourceColor { return $r('app.color.DIV_TEXT_SECONDARY_LIGHT') }
+  static get textTertiary(): ResourceColor { return $r('app.color.DIV_TEXT_TERTIARY_LIGHT') }
+  static get gold(): ResourceColor { return $r('app.color.DIV_GOLD_LIGHT') }
+  static get goldHi(): ResourceColor { return $r('app.color.DIV_GOLD_HI_LIGHT') }
+  static get goldLine(): ResourceColor { return $r('app.color.DIV_GOLD_LINE_LIGHT') }
+  static get goldHair(): ResourceColor { return $r('app.color.DIV_GOLD_HAIR_LIGHT') }
+  static get goldSoft(): ResourceColor { return $r('app.color.DIV_GOLD_SOFT_LIGHT') }
+  static get gold14(): ResourceColor { return $r('app.color.DIV_GOLD_14_LIGHT') }
+  static get surface(): ResourceColor { return $r('app.color.DIV_SURFACE_LIGHT') }
+  static get surface2(): ResourceColor { return $r('app.color.DIV_SURFACE_2_LIGHT') }
+  static get seal(): ResourceColor { return $r('app.color.DIV_SEAL_LIGHT') }
+  static get sealHi(): ResourceColor { return $r('app.color.DIV_SEAL_HI_LIGHT') }
+  static get jade(): ResourceColor { return $r('app.color.DIV_JADE_LIGHT') }
+  static get hair(): ResourceColor { return $r('app.color.DIV_HAIR_LIGHT') }
+  static get line(): ResourceColor { return $r('app.color.DIV_LINE_LIGHT') }
+  static get yaoTop(): ResourceColor { return $r('app.color.DIV_YAO_TOP_LIGHT') }
+  static get yaoBottom(): ResourceColor { return $r('app.color.DIV_YAO_BOTTOM_LIGHT') }
+  static get goldText(): ResourceColor { return $r('app.color.DIV_TEXT_PRIMARY_LIGHT') }
+  static get onGold(): ResourceColor { return $r('app.color.DIV_ON_GOLD') }
+  static get sealDeep(): ResourceColor { return $r('app.color.DIV_SEAL_DEEP') }
+  static get goldGradientStart(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_START') }
+  static get goldGradientEnd(): ResourceColor { return $r('app.color.DIV_GOLD_GRADIENT_END') }
 }
 
 // 画板：观象台域页面水平边距 20（compare-08 #10；勿改全局 DesignDimens.PAGE_PADDING=24，清氧域仍用 24）
@@ -198,7 +198,7 @@ export const DIV_PAGE_PADDING: number = 20
 function SPIRIT6(): string[] { return [resString('div_components_3'), resString('div_components_4'), resString('div_components_5'), resString('div_components_6'), resString('div_components_7'), resString('div_components_8')] }
 
 /** 六神色点（青/赤/白/黑/黄/紫，对齐安卓 DivColors.spirits） */
-export function divSpiritColor(liuShen: string): number {
+export function divSpiritColor(liuShen: string): ResourceColor {
   const index = SPIRIT6().indexOf(liuShen)
   if (index === 0) {
     return DivColor.SPIRIT_QING
@@ -271,7 +271,7 @@ export struct DivSerifText {
   @Param textSize: number = 15
   @Param weight: number = 600
   @Param spacing: number = 2
-  @Param color: number = DivPalette.textPrimary
+  @Param color: ResourceColor = DivPalette.textPrimary
   @Param textAlign: TextAlign = TextAlign.Start
   @Param maxLines: number = 0
   @Param overflow: TextOverflow = TextOverflow.Ellipsis
@@ -370,7 +370,7 @@ export struct MethodGlyph {
   // 命名注意：不能叫 size（与 CustomComponent 基类的 size() 属性方法冲突导致编译错误），
   // 同 AppComponents.ets IconBox 的 sizeValue 约定
   @Param sizeValue: number = 34
-  @Param tint: number = DivPalette.gold
+  @Param tint: ResourceColor = DivPalette.gold
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
 
   aboutToAppear(): void {
@@ -389,7 +389,7 @@ export struct MethodGlyph {
     this.ctx.lineJoin = 'round'
     // 造型规范 §4.2「2dp 描边」：固定 2vp 与牌尺寸解耦（compare-10 #11：原 2*unit 随 34/40 牌放大 40-65%）
     this.ctx.lineWidth = 2
-    this.ctx.strokeStyle = this.tint
+    this.ctx.strokeStyle = resolveArgb(this.tint)
 
     if (this.method === 'liuyao') {
       // 方孔铜钱：外圆 + 圆角方孔
@@ -409,7 +409,7 @@ export struct MethodGlyph {
         this.ctx.arc(px, py, p(3.2), 0, Math.PI * 2, false)
         this.ctx.stroke()
       }
-      this.ctx.fillStyle = this.tint
+      this.ctx.fillStyle = resolveArgb(this.tint)
       this.ctx.beginPath()
       this.ctx.arc(cx, cy, p(1.2), 0, Math.PI * 2, false)
       this.ctx.fill()
@@ -442,7 +442,7 @@ export struct MethodGlyph {
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, p(3), 0, Math.PI * 2, false)
     this.ctx.stroke()
-    this.ctx.fillStyle = this.tint
+    this.ctx.fillStyle = resolveArgb(this.tint)
     const dirs: number[][] = [[0, -1], [0, 1], [-1, 0], [1, 0]]
     for (let i = 0; i < dirs.length; i++) {
       this.ctx.beginPath()
@@ -743,8 +743,8 @@ export struct DivGoldButton {
 
 @ComponentV2
 export struct DivCard {
-  @Param bgColor: number | null = null
-  @Param lineColor: number | null = null
+  @Param bgColor: ResourceColor | null = null
+  @Param lineColor: ResourceColor | null = null
   @Param clickable: boolean = false
   @BuilderParam content: () => void = emptyContent
   @Event onAction: () => void = () => {
@@ -767,7 +767,7 @@ export struct DivCard {
     // 全仓唯一的玄墨深色卡是 Workbench 的观象台特色卡，不经 DivCard，本身即无投影。
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -933,7 +933,7 @@ export struct DivWaveIcon {
   // 命名注意：不能叫 size（与 CustomComponent 基类的 size() 属性方法冲突导致编译错误），
   // 同 AppComponents.ets IconBox 的 sizeValue 约定
   @Param sizeValue: number = 18
-  @Param tint: number = DivPalette.gold
+  @Param tint: ResourceColor = DivPalette.gold
   @Local phase: number = 0
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
   private timerId: number = -1
@@ -967,7 +967,7 @@ export struct DivWaveIcon {
       const shift: number = this.phase + layer * 0.9
       this.ctx.beginPath()
       this.ctx.lineWidth = layer === 0 ? 2 : 1.4
-      this.ctx.strokeStyle = this.hexWithAlpha(this.tint, alpha)
+      this.ctx.strokeStyle = this.hexWithAlpha(resolveArgb(this.tint), alpha)
       for (let x = 0; x <= size; x++) {
         const y = midY + amp * Math.sin((x / size) * Math.PI * 2 + shift)
         if (x === 0) {
@@ -1057,7 +1057,7 @@ export struct CompassDial {
     // 内虚线环：12% 金发丝（安卓 c.hair）；安卓 dashPathEffect(6f,10f) 为 px 单位（3x 屏 ≈2/3.3dp），
     // 此处 vp 单位取 [2, 3.3] 对齐 3x 密度观感（compare-10 #9，需真机目视校准后定值）
     this.ctx.lineWidth = 1
-    this.ctx.strokeStyle = DivPalette.hair
+    this.ctx.strokeStyle = resolveArgb(DivPalette.hair)
     this.ctx.setLineDash([2, 3.3])
     this.ctx.beginPath()
     this.ctx.arc(cx, cy, radius * 0.85, 0, Math.PI * 2, false)
@@ -1079,7 +1079,7 @@ export struct CompassDial {
 
     // 中宫「卜」（不随罗盘旋转，画板 22sp 衬线半粗、主题金；compare-10 #8 补 600 字重对齐安卓 SemiBold）
     this.ctx.font = `600 ${22 * size / 104}px serif`
-    this.ctx.fillStyle = DivPalette.goldText
+    this.ctx.fillStyle = resolveArgb(DivPalette.goldText)
     const dial = this.ctx.measureText(this.dialText)
     this.ctx.fillText(this.dialText, cx - dial.width / 2, cy + dial.actualBoundingBoxAscent / 2)
   }

@@ -224,7 +224,7 @@ struct ReviewStudyPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -241,7 +241,7 @@ struct ReviewStudyPage {
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
         .lineHeight(DesignFontSize.CAPTION + 4)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .margin({ top: DesignDimens.SPACE_XS })
 
@@ -258,8 +258,8 @@ struct ReviewStudyPage {
                 Row({ space: DesignDimens.SPACE_XXS }) {
                   ReviewTagChip({
                     text: this.currentMaterialTitle(),
-                    containerColor: resColor('SURFACE_VARIANT'),
-                    contentColor: resColor('TEXT_SECONDARY')
+                    containerColor: $r('app.color.SURFACE_VARIANT'),
+                    contentColor: $r('app.color.TEXT_SECONDARY')
                   })
                   CardStateChip({ state: this.currentCard()?.state ?? 1 })
                 }
@@ -268,21 +268,21 @@ struct ReviewStudyPage {
                   Text(this.currentCard()?.question ?? '')
                     .fontSize(DesignFontSize.AMOUNT_MEDIUM)
                     .fontWeight(DesignFontWeight.SEMI_BOLD)
-                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_MD })
 
                   // 引导操作的可读正文（非装饰）：TEXT_TERTIARY 双主题均破 4.5:1（S1）
                   Text(ReviewText.review_study_question_hint)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_LG })
                 } else {
                   // 背面问题放宽到 4 行便于长问题回看全文（S3）
                   Text(this.currentCard()?.question ?? '')
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_SECONDARY'))
                     .maxLines(4)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
                     .width('100%')
@@ -292,13 +292,13 @@ struct ReviewStudyPage {
                   Text(ReviewText.review_study_answer_label)
                     .fontSize(DesignFontSize.CAPTION)
                     .fontWeight(DesignFontWeight.MEDIUM)
-                    .fontColor(resColor('TEXT_GREEN'))
+                    .fontColor($r('app.color.TEXT_GREEN'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_MD })
 
                   Text(this.currentCard()?.answer ?? '')
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(resColor('TEXT_PRIMARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
                     .width('100%')
                     .margin({ top: DesignDimens.SPACE_XS })
                 }

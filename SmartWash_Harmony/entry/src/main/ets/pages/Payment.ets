@@ -40,13 +40,13 @@ struct PayInfoLine {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
         .maxLines(1)
@@ -322,7 +322,7 @@ struct Payment {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([resColor('TEXT_PRIMARY')])
+          .fontColor([$r('app.color.TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -335,14 +335,14 @@ struct Payment {
       Text($r('app.string.payment'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
     }
     .width("100%")
     .height(56)
     // 行首让位 12：48dp 热区盒居中后图形左缘落在 24，标题紧贴热区右缘（对齐安卓 PageHeader）
     .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 
   @Builder
@@ -354,7 +354,7 @@ struct Payment {
         .width(32)
         .height(4)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .backgroundColor(resColor('OUTLINE'))
+        .backgroundColor($r('app.color.OUTLINE'))
         .margin({ top: DesignDimens.SPACE_SM })
 
       // 标题栏（recap §3-V8：Android headlineSmall —— 按当前 AppTypography 该槽位为
@@ -363,18 +363,18 @@ struct Payment {
         Text($r('app.string.select_coupon'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
 
         Blank()
 
         Row() {
           Text($r('app.string.go_claim'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('PRIMARY'))
+            .fontColor($r('app.color.PRIMARY'))
 
           SymbolGlyph($r('sys.symbol.chevron_right'))
             .fontSize(14)
-            .fontColor([resColor('PRIMARY')])
+            .fontColor([$r('app.color.PRIMARY')])
             .margin({ left: 4 })
         }
         // N8：Android 垂直 12 + 热区 44dp+；constraintSize 兜底最小热区
@@ -414,11 +414,11 @@ struct Payment {
             Text($r('app.string.do_not_use_coupon'))
               .fontSize(DesignFontSize.CARD_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
 
             Text($r('app.string.do_not_use_coupon_tip'))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: 6 })
           }
           .alignItems(HorizontalAlign.Start)
@@ -430,12 +430,12 @@ struct Payment {
         }
         .width("100%")
         .borderRadius(DesignDimens.CARD_RADIUS)
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-        .border({ width: 1, color: resColor('OUTLINE') })
+        .border({ width: 1, color: $r('app.color.OUTLINE') })
         .shadow({
           radius: DesignElevation.LEVEL_1,
-          color: resColor('SHADOW_COLOR_CARD'),
+          color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })
@@ -464,14 +464,14 @@ struct Payment {
                     Text(`${coupon.couponVo?.discount?.toFixed(2)}元优惠券`)
                       .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(DesignFontWeight.SEMI_BOLD)
-                      .fontColor(resColor('TEXT_PRIMARY'))
+                      .fontColor($r('app.color.TEXT_PRIMARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                   }
 
                   Row() {
                     Text(this.thresholdText(coupon))
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(resColor('TEXT_SECONDARY'))
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                       .margin({ top: 6, bottom: 6 })
                   }
@@ -479,7 +479,7 @@ struct Payment {
                   Row() {
                     Text(`有效期至${coupon.expiredAt}`)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(resColor('TEXT_TERTIARY'))
+                      .fontColor($r('app.color.TEXT_TERTIARY'))
                   }
                 }
                 .alignItems(HorizontalAlign.Start)
@@ -490,12 +490,12 @@ struct Payment {
               }
               .width("100%")
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .backgroundColor(resColor('SURFACE'))
+              .backgroundColor($r('app.color.SURFACE'))
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: resColor('SHADOW_COLOR_CARD'),
+                color: $r('app.color.SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -539,7 +539,7 @@ struct Payment {
           // 分隔线
           Divider()
             .strokeWidth(1)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
 
           // 内容区域（recap §3-V1：外层 sectionSpacing 32 + 内层 cardSpacing 16）
           Column() {
@@ -548,13 +548,13 @@ struct Payment {
               Text($r('app.string.amount_due'))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
 
               // 金额两位小数（N1）：对齐 Android String.format("%.2f")；DataLarge 36/700 primaryDark + tnum
               Text(`¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`)
                 .fontSize(DesignFontSize.DATA_LARGE)
                 .fontWeight(DesignFontWeight.BOLD)
-                .fontColor(resColor('PRIMARY_DARK'))
+                .fontColor($r('app.color.PRIMARY_DARK'))
                 .fontFeature(DesignFontFeature.TNUM)
                 // 金额变化淡入（recap §3-I2）
                 .opacity(this.amountVisible ? 1 : 0)
@@ -563,7 +563,7 @@ struct Payment {
               // 卡内行分隔线 = 0.5dp hairline，上下 16（recap §3-V3）
               Divider()
                 .strokeWidth(0.5)
-                .color(resColor('HAIRLINE'))
+                .color($r('app.color.HAIRLINE'))
                 .margin({ top: 16, bottom: 16 })
 
               // 订单号/服务类型缺失时兜底「—」（问题8：老版后端可能不下发 orderNo/laundryPackageVo，
@@ -574,13 +574,13 @@ struct Payment {
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-            .border({ width: 1, color: resColor('OUTLINE') })
+            .border({ width: 1, color: $r('app.color.OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -591,7 +591,7 @@ struct Payment {
               Text($r('app.string.payment_method'))
                 .fontSize(DesignFontSize.SECTION_TITLE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .margin({ bottom: 12 })
 
               // 余额支付卡：选中态 primarySoft 底（recap §3-F2），整行可点（recap §3-I3）
@@ -603,14 +603,14 @@ struct Payment {
                   Column() {
                     SymbolGlyph($r('sys.symbol.label'))
                       .fontSize(20)
-                      .fontColor([resColor('PRIMARY')])
+                      .fontColor([$r('app.color.PRIMARY')])
                   }
                   .width(36)
                   .height(36)
                   .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
                   .backgroundColor(this.selectedPaymentMethod === "balance" ?
-                    resColor('SURFACE') :
-                    resColor('ICON_CONTAINER_GREEN'))
+                    $r('app.color.SURFACE') :
+                    $r('app.color.ICON_CONTAINER_GREEN'))
                   .justifyContent(FlexAlign.Center)
                   .alignItems(HorizontalAlign.Center)
 
@@ -619,13 +619,13 @@ struct Payment {
                       .fontSize(DesignFontSize.CARD_TITLE)
                       .fontWeight(DesignFontWeight.SEMI_BOLD)
                       .fontColor(this.selectedPaymentMethod === "balance" ?
-                        resColor('ON_PRIMARY_CONTAINER') :
-                        resColor('TEXT_PRIMARY'))
+                        $r('app.color.ON_PRIMARY_CONTAINER') :
+                        $r('app.color.TEXT_PRIMARY'))
 
                     // 余额两位小数（N1）+ tnum；文案对齐 Android current_balance_format「当前余额：¥%s」
                     Text(`当前余额：¥${(this.userInfo?.balance ?? 0).toFixed(2)}`)
                       .fontSize(DesignFontSize.CAPTION)
-                      .fontColor(resColor('TEXT_SECONDARY'))
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
                       .fontFeature(DesignFontFeature.TNUM)
                       .margin({ top: 4 })
                   }
@@ -649,13 +649,13 @@ struct Payment {
               }
               .width("100%")
               .backgroundColor(this.selectedPaymentMethod === "balance" ?
-                resColor('PRIMARY_SOFT') :
-                resColor('SURFACE'))
+                $r('app.color.PRIMARY_SOFT') :
+                $r('app.color.SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: resColor('SHADOW_COLOR_CARD'),
+                color: $r('app.color.SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -678,26 +678,26 @@ struct Payment {
                 Column() {
                   SymbolGlyph($r('sys.symbol.label'))
                     .fontSize(20)
-                    .fontColor([resColor('ICON_FOREGROUND_ORANGE')])
+                    .fontColor([$r('app.color.ICON_FOREGROUND_ORANGE')])
                 }
                 .width(36)
                 .height(36)
                 .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-                .backgroundColor(resColor('ICON_CONTAINER_ORANGE'))
+                .backgroundColor($r('app.color.ICON_CONTAINER_ORANGE'))
                 .justifyContent(FlexAlign.Center)
                 .alignItems(HorizontalAlign.Center)
 
                 Text($r('app.string.service_coupon'))
                   .fontSize(DesignFontSize.CARD_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
                   .layoutWeight(1)
                   .margin({ left: 12 })
 
                 // 折扣两位小数（N1）+ tnum；金额符号统一半角 ¥（G7）；色 onPrimaryContainer（V6）
                 Text(this.selectCoupon === null ? resString('do_not_use') : `-¥${this.selectCoupon.couponVo?.discount?.toFixed(2)}`)
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(this.selectCoupon === null ? resColor('TEXT_SECONDARY') : resColor('ON_PRIMARY_CONTAINER'))
+                  .fontColor(this.selectCoupon === null ? $r('app.color.TEXT_SECONDARY') : $r('app.color.ON_PRIMARY_CONTAINER'))
                   .fontFeature(this.selectCoupon === null ? 'normal' : DesignFontFeature.TNUM)
                   // 券变化淡入（recap §3-I2，与金额共用同一淡入态）
                   .opacity(this.amountVisible ? 1 : 0)
@@ -706,19 +706,19 @@ struct Payment {
                 // Spacer(8.dp) + Icon(ChevronRight, 20.dp)）
                 SymbolGlyph($r('sys.symbol.chevron_right'))
                   .fontSize(20)
-                  .fontColor([resColor('TEXT_TERTIARY')])
+                  .fontColor([$r('app.color.TEXT_TERTIARY')])
                   .margin({ left: DesignDimens.SPACE_XS })
               }
               .width("100%")
               // 行内边距 16（对齐安卓 U-118：原 15 不在 §3 间距允许集）
               .padding({ left: 20, right: 20, top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
-              .backgroundColor(resColor('SURFACE'))
+              .backgroundColor($r('app.color.SURFACE'))
               .borderRadius(DesignDimens.CARD_RADIUS)
               // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .shadow({
                 radius: DesignElevation.LEVEL_1,
-                color: resColor('SHADOW_COLOR_CARD'),
+                color: $r('app.color.SHADOW_COLOR_CARD'),
                 offsetX: 0,
                 offsetY: 2
               })
@@ -737,7 +737,7 @@ struct Payment {
                 // 容器色对齐 Android containerColor = surface；
                 // SheetOptions 未提供圆角令牌（V7 系统限制，保留系统默认顶部圆角）
                 height: "90%",
-                backgroundColor: resColor('SURFACE'),
+                backgroundColor: $r('app.color.SURFACE'),
                 showClose: false,
                 dragBar: false
               })
@@ -764,7 +764,7 @@ struct Payment {
             // 固定 CTA 条与滚动内容之间 0.5dp 分隔线（规范 §2.4 豁免）
             Divider()
               .strokeWidth(0.5)
-              .color(resColor('OUTLINE'))
+              .color($r('app.color.OUTLINE'))
 
             // AppButton 自带 loading 防重；点击走 onPayClick：余额充足弹「确定要支付？」
             // 二次确认（确认即关窗），不足弹「余额不足」去充值。
@@ -778,21 +778,21 @@ struct Payment {
             })
           }
           .width("100%")
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .padding({ left: 24, right: 24, top: 16, bottom: 20 + safeBottomVp() })
         }
         .width("100%")
         .height("100%")
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
 
         // 首载骨架（recap §3-F5/S1）：对齐 Android LoadingState，遮罩淡入淡出近似 Crossfade
         if (this.isLoading) {
           LoadingState()
             .width("100%")
             .height("100%")
-            .backgroundColor(resColor('BACKGROUND'))
+            .backgroundColor($r('app.color.BACKGROUND'))
             .zIndex(2)
             .transition(TransitionEffect.OPACITY)
         }
@@ -817,7 +817,7 @@ struct Payment {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
@@ -825,7 +825,7 @@ struct Payment {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

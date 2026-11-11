@@ -15,7 +15,7 @@ export struct LoadingFooter {
         LoadingProgress()
           .height(28)
           .width(28)
-          .color(resColor('PRIMARY'))
+          .color($r('app.color.PRIMARY'))
       }
       .width("100%")
       .height(56)

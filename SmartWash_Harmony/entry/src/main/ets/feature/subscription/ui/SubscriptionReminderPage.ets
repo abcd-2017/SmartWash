@@ -155,7 +155,7 @@ struct SubscriptionReminderPage {
           Row() {
             Text(SubscriptionText.subscription_reminder_error_load)
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('ERROR'))
+              .fontColor($r('app.color.ERROR'))
               .layoutWeight(1)
             AppButton({
               small: true,
@@ -239,7 +239,7 @@ struct SubscriptionReminderPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)
@@ -279,7 +279,7 @@ export struct ReminderRow {
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
             // 已读弱化止步 textSecondary（on 白卡 4.90:1）：textTertiary 2.25:1 禁作可读正文（§10，audit-16 #2）
-            .fontColor(this.isUnread() ? resColor('TEXT_PRIMARY') : resColor('TEXT_SECONDARY'))
+            .fontColor(this.isUnread() ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -290,7 +290,7 @@ export struct ReminderRow {
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
             .fontFeature(DesignFontFeature.TNUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ top: DesignDimens.SPACE_XXS })
         }
         .alignItems(HorizontalAlign.Start)
@@ -308,7 +308,7 @@ export struct ReminderRow {
             // 未读差异不能只靠颜色点：红点补读屏描述（DESIGN-SPEC §8/§10，audit-16 #6），
             // 已读卡由「已读」文本标签承担同一对语义
             SubscriptionStatusDot({
-              color: resColor('DANGER'),
+              color: $r('app.color.DANGER'),
               accessibilityLabel: SubscriptionText.subscription_reminder_unread_dot
             })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -317,7 +317,7 @@ export struct ReminderRow {
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
               // 「已读」为可读状态标签，与主文案同口径收敛 textSecondary（audit-16 #3）
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: DesignDimens.SPACE_XXS })
           }
         }
@@ -330,13 +330,13 @@ export struct ReminderRow {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })

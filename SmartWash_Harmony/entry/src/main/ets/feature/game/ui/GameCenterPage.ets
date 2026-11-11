@@ -220,42 +220,42 @@ struct GameCard {
   }
 
   /** 图标容器浅底色（后端 color 白名单 → 资源色 ICON_CONTAINER_*，未知兜底 GREEN） */
-  private containerColor(tint: GameTint): number {
+  private containerColor(tint: GameTint): ResourceColor {
     switch (tint) {
       case GameTint.GREEN:
-        return resColor('ICON_CONTAINER_GREEN')
+        return $r('app.color.ICON_CONTAINER_GREEN')
       case GameTint.BLUE:
-        return resColor('ICON_CONTAINER_BLUE')
+        return $r('app.color.ICON_CONTAINER_BLUE')
       case GameTint.ORANGE:
-        return resColor('ICON_CONTAINER_ORANGE')
+        return $r('app.color.ICON_CONTAINER_ORANGE')
       case GameTint.PINK:
-        return resColor('ICON_CONTAINER_PINK')
+        return $r('app.color.ICON_CONTAINER_PINK')
       case GameTint.TEAL:
-        return resColor('ICON_CONTAINER_TEAL')
+        return $r('app.color.ICON_CONTAINER_TEAL')
       case GameTint.PURPLE:
-        return resColor('ICON_CONTAINER_PURPLE')
+        return $r('app.color.ICON_CONTAINER_PURPLE')
       default:
-        return resColor('ICON_CONTAINER_GREEN')
+        return $r('app.color.ICON_CONTAINER_GREEN')
     }
   }
 
   /** 图标前景色（后端 color 白名单 → 资源色 ICON_FOREGROUND_*，未知兜底 GREEN） */
-  private iconColor(tint: GameTint): number {
+  private iconColor(tint: GameTint): ResourceColor {
     switch (tint) {
       case GameTint.GREEN:
-        return resColor('ICON_FOREGROUND_GREEN')
+        return $r('app.color.ICON_FOREGROUND_GREEN')
       case GameTint.BLUE:
-        return resColor('ICON_FOREGROUND_BLUE')
+        return $r('app.color.ICON_FOREGROUND_BLUE')
       case GameTint.ORANGE:
-        return resColor('ICON_FOREGROUND_ORANGE')
+        return $r('app.color.ICON_FOREGROUND_ORANGE')
       case GameTint.PINK:
-        return resColor('ICON_FOREGROUND_PINK')
+        return $r('app.color.ICON_FOREGROUND_PINK')
       case GameTint.TEAL:
-        return resColor('ICON_FOREGROUND_TEAL')
+        return $r('app.color.ICON_FOREGROUND_TEAL')
       case GameTint.PURPLE:
-        return resColor('ICON_FOREGROUND_PURPLE')
+        return $r('app.color.ICON_FOREGROUND_PURPLE')
       default:
-        return resColor('ICON_FOREGROUND_GREEN')
+        return $r('app.color.ICON_FOREGROUND_GREEN')
     }
   }
 
@@ -273,7 +273,7 @@ struct GameCard {
               .objectFit(ImageFit.Cover)
               // 加载中占位底（对齐安卓 placeholder = surfaceVariant 灰档）：弱网下封面区不留白板；
               // 深浅色档随主题切换（DARK_SURFACE_VARIANT）
-              .backgroundColor(resColor('SURFACE_VARIANT'))
+              .backgroundColor($r('app.color.SURFACE_VARIANT'))
               .onError(() => {
                 this.onServerCoverError(this.game.gameKey)
               })
@@ -290,11 +290,11 @@ struct GameCard {
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('TEXT_PRIMARY'))
-              .backgroundColor(resColor('SURFACE'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
+              .backgroundColor($r('app.color.SURFACE'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               // 1px outline 描边与卡片描边同语言：封面接近白色时胶囊轮廓不消失（对齐安卓）
-              .border({ width: 1, color: resColor('OUTLINE') })
+              .border({ width: 1, color: $r('app.color.OUTLINE') })
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM })
           }
@@ -307,7 +307,7 @@ struct GameCard {
         Column() {
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -315,7 +315,7 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
@@ -339,7 +339,7 @@ struct GameCard {
           })
           Text(this.game.title)
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .width('100%')
@@ -348,7 +348,7 @@ struct GameCard {
             Text(this.game.description)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .maxLines(2)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
               .width('100%')
@@ -360,8 +360,8 @@ struct GameCard {
             Text(this.game.badge)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('TEXT_GREEN_ON_TINT'))
-              .backgroundColor(resColor('PRIMARY_LIGHT'))
+              .fontColor($r('app.color.TEXT_GREEN_ON_TINT'))
+              .backgroundColor($r('app.color.PRIMARY_LIGHT'))
               .borderRadius(DesignDimens.RADIUS_FULL)
               .padding({ left: DesignDimens.SPACE_SM, right: DesignDimens.SPACE_SM, top: 2, bottom: 2 })
               .margin({ top: DesignDimens.SPACE_XXS })
@@ -374,13 +374,13 @@ struct GameCard {
     }
     .width('100%')
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .border({ width: 1, color: resColor('OUTLINE') })
-    .backgroundColor(resColor('SURFACE'))
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
+    .backgroundColor($r('app.color.SURFACE'))
     // 卡片阴影档（规范 §2.4：0 2px 12px）——blur 取 CARD_SHADOW_RADIUS(12)，非海拔档位号 LEVEL_1
     // （1vp 模糊不可见，与 AppCard 统一口径）；阴影色随主题切深色档 rgba(0,0,0,0.28)
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -607,7 +607,7 @@ export struct GameCenterPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

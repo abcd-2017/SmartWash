@@ -64,7 +64,7 @@ export struct ToolboxDatePickerDialog {
         Text(this.title)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .width('100%')
         .margin({ bottom: 12 })
 
@@ -85,7 +85,7 @@ export struct ToolboxDatePickerDialog {
           .layoutWeight(1)
           .height(44)
           .backgroundColor(Color.Transparent)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .fontSize(DesignFontSize.BODY)
           .borderRadius(0)
           .onClick(() => {
@@ -95,7 +95,7 @@ export struct ToolboxDatePickerDialog {
 
         Divider()
           .vertical(true)
-          .color(resColor('DIVIDER'))
+          .color($r('app.color.DIVIDER'))
           .strokeWidth(0.5)
           .height(44)
 
@@ -104,7 +104,7 @@ export struct ToolboxDatePickerDialog {
           .layoutWeight(1)
           .height(44)
           .backgroundColor(Color.Transparent)
-          .fontColor(resColor('PRIMARY'))
+          .fontColor($r('app.color.PRIMARY'))
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
@@ -126,12 +126,12 @@ export struct ToolboxDatePickerDialog {
       .width('100%')
       // 横向留白由外层容器统一给出，卡片只保留纵向内边距（问题16）
       .padding({ top: 20, bottom: 20 })
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       // 弹窗圆角收敛到 radiusLg 16（安卓弹窗统一档；原 RADIUS_XL 20 属 hero/大容器档）
       .borderRadius(DesignDimens.CARD_RADIUS)
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_FLOAT'),
+        color: $r('app.color.SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

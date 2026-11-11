@@ -213,19 +213,19 @@ struct PickupDelivery {
       Column() {
         Text(`${i}`)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('ON_PRIMARY_CONTAINER'))
+          .fontColor($r('app.color.ON_PRIMARY_CONTAINER'))
           .fontWeight(DesignFontWeight.NORMAL)
       }
       .width(20)
       .height(20)
       .borderRadius(10)
       .justifyContent(FlexAlign.Center)
-      .backgroundColor(resColor('ICON_CONTAINER_GREEN'))
+      .backgroundColor($r('app.color.ICON_CONTAINER_GREEN'))
       .margin({ right: DesignDimens.SPACE_XS })
 
       Text(content)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .layoutWeight(1)
     }.width("100%")
     .alignItems(VerticalAlign.Center)
@@ -248,20 +248,20 @@ struct PickupDelivery {
             LoadingProgress()
               .width(28)
               .height(28)
-              .color(resColor('PRIMARY'))
+              .color($r('app.color.PRIMARY'))
             Text($r('app.string.loading'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: 8 })
           } else {
             Text(this.qrFailed ? resString('pickup_delivery_6') : resString('pickup_delivery_7'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
             if (this.qrFailed) {
               Text($r('app.string.pickup_delivery_8'))
                 .fontSize(DesignFontSize.BODY_SMALL)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('PRIMARY'))
+                .fontColor($r('app.color.PRIMARY'))
                 .margin({ top: 8 })
             }
           }
@@ -269,7 +269,7 @@ struct PickupDelivery {
         .size({ width: 80, height: 80 })
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(resColor('SURFACE'))
+        .backgroundColor($r('app.color.SURFACE'))
         .borderRadius(DesignDimens.CARD_RADIUS)
         .transition(TransitionEffect.OPACITY)
         .onClick(() => {
@@ -295,20 +295,20 @@ struct PickupDelivery {
           icon: $r('sys.symbol.exclamationmark_triangle_fill'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: resColor('ICON_CONTAINER_ORANGE'),
-          iconColor: resColor('ICON_FOREGROUND_ORANGE')
+          containerColor: $r('app.color.ICON_CONTAINER_ORANGE'),
+          iconColor: $r('app.color.ICON_FOREGROUND_ORANGE')
         })
         Column() {
           // 标题 titleSmall 14/500（BODY_SMALL + MEDIUM）；正文 bodySmall 12/400 无顶部间距
           Text($r('app.string.notes'))
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('ON_WARNING_CONTAINER'))
+            .fontColor($r('app.color.ON_WARNING_CONTAINER'))
           Text($r('app.string.pickup_delivery_9') +
             resString('pickup_delivery_10') +
             resString('pickup_delivery_11'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('ON_WARNING_CONTAINER'))
+            .fontColor($r('app.color.ON_WARNING_CONTAINER'))
             .lineHeight(16)
         }
         .alignItems(HorizontalAlign.Start)
@@ -321,13 +321,13 @@ struct PickupDelivery {
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('WARNING_CONTAINER'))
+    .backgroundColor($r('app.color.WARNING_CONTAINER'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -343,7 +343,7 @@ struct PickupDelivery {
       Text(`${this.isPickup ? resString('pickup_code') : resString('delivery_code')}`)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
         .fontSize(DesignFontSize.SECTION_TITLE)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         // 字距 0（对齐安卓 U-116：v0.4 字阶已废字距，原 0.3 已删）
         .margin({ top: 20 })
 
@@ -352,19 +352,19 @@ struct PickupDelivery {
         // DATA_LARGE（36）属 font.display 档（DESIGN-SPEC §2：寄件码 700 + tnum），字重保持 BOLD；
         // 由裸 FontWeight 枚举收敛为设计令牌，与全站一致
         .fontWeight(DesignFontWeight.BOLD)
-        .fontColor(resColor('PRIMARY_DARK'))
+        .fontColor($r('app.color.PRIMARY_DARK'))
         .fontFeature(DesignFontFeature.TNUM)
         .maxLines(1)
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -381,13 +381,13 @@ struct PickupDelivery {
           icon: $r('sys.symbol.company'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: resColor('PRIMARY_LIGHT'),
-          iconColor: resColor('PRIMARY')
+          containerColor: $r('app.color.PRIMARY_LIGHT'),
+          iconColor: $r('app.color.PRIMARY')
         })
         Text($r('app.string.locker_info'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           // 图标与标题间距 12（对齐安卓 InfoSection 的 Spacer(12)）
           .margin({ left: DesignDimens.SPACE_SM })
       }
@@ -404,13 +404,13 @@ struct PickupDelivery {
       .width("100%")
     }
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -424,7 +424,7 @@ struct PickupDelivery {
         Text($r('app.string.operation_guide'))
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
       }
       .justifyContent(FlexAlign.Start)
       .width("100%")
@@ -439,13 +439,13 @@ struct PickupDelivery {
       .width("100%")
     }
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -465,13 +465,13 @@ struct PickupDelivery {
         Text($r('app.string.contact_service'))
           .fontSize(DesignFontSize.AMOUNT_MEDIUM)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('PRIMARY_DARK'))
+          .fontColor($r('app.color.PRIMARY_DARK'))
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .border({ width: 1, color: resColor('OUTLINE') })
+      .border({ width: 1, color: $r('app.color.OUTLINE') })
       .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
       .onTouch((event: TouchEvent) => {
@@ -492,20 +492,20 @@ struct PickupDelivery {
           LoadingProgress()
             .width(20)
             .height(20)
-            .color(resColor('ON_PRIMARY'))
+            .color($r('app.color.ON_PRIMARY'))
         } else {
           // 文字 titleMedium 18/600（对齐安卓 PickupDeliveryActionBar：MaterialTheme.titleMedium）
           Text(this.isPickup ? resString('confirm_picked_up') : resString('confirm_delivered'))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('ON_PRIMARY'))
+            .fontColor($r('app.color.ON_PRIMARY'))
         }
       }
       .layoutWeight(1)
       .height(48)
       .justifyContent(FlexAlign.Center)
       .borderRadius(DesignDimens.RADIUS_FULL)
-      .backgroundColor(resColor('PRIMARY'))
+      .backgroundColor($r('app.color.PRIMARY'))
       .margin({ left: DesignDimens.SPACE_SM })
       .scale({ x: this.primaryPressed ? 0.97 : 1, y: this.primaryPressed ? 0.97 : 1 })
       .animation({ duration: 100, curve: Curve.EaseOut })
@@ -618,7 +618,7 @@ struct PickupDelivery {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

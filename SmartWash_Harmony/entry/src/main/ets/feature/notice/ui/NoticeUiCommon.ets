@@ -34,7 +34,7 @@ export struct NoticePageHeader {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([resColor('TEXT_PRIMARY')])
+          .fontColor([$r('app.color.TEXT_PRIMARY')])
       }
       .width(DesignDimens.BACK_HIT_AREA)
       .height(DesignDimens.BACK_HIT_AREA)
@@ -48,14 +48,14 @@ export struct NoticePageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
 
       Blank()
 
       // 未读数是数量，开 tabular numbers（规范 §2.2 硬规则，避免数字变化左右跳）
       Text(this.unreadText)
         .fontSize(DesignFontSize.CAPTION)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
 
       AppButton({
@@ -81,8 +81,8 @@ export struct NoticePageHeader {
 @ComponentV2
 export struct NoticeTagChip {
   @Param text: string = ''
-  @Param containerColor: number = resColor('SURFACE_VARIANT')
-  @Param contentColor: number = resColor('TEXT_SECONDARY')
+  @Param containerColor: ResourceColor = $r('app.color.SURFACE_VARIANT')
+  @Param contentColor: ResourceColor = $r('app.color.TEXT_SECONDARY')
 
   build() {
     Text(this.text)

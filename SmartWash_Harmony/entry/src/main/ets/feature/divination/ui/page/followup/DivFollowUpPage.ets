@@ -111,7 +111,7 @@ struct ChatBubbleView {
         .shadow({
           // 回复气泡卡面阴影 blur 12（对齐安卓 softCardShadow，compare-15 #52）
           radius: DesignElevation.CARD_SHADOW_RADIUS,
-          color: resColor('SHADOW_COLOR_CARD'),
+          color: $r('app.color.SHADOW_COLOR_CARD'),
           offsetX: 0,
           offsetY: 2
         })

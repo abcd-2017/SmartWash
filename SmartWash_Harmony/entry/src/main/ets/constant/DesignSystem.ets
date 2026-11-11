@@ -3,7 +3,7 @@
 // 2026-10-29 全量对齐安卓 v0.4：字阶收敛 8 档、background/surfaceVariant 互换、
 // outline/textTertiary/error/danger/success 取值、图标容器绿色系改 #F0FBF4。
 // 决策 D1（已更新）：应用深浅色跟随系统——颜色全部经 base/dark 资源限定符（color.json）
-// 自动切换，UI 侧用 $r('app.color.XXX') / resColor('XXX') 读取，不再手动回写令牌。
+// 自动切换，UI 侧用 $r('app.color.XXX') / $r('app.color.XXX') 读取，不再手动回写令牌。
 // 认证页品牌渐变深浅同款（对齐 Android LoginPage.kt:89-94）。
 
 import { curves } from '@kit.ArkUI'

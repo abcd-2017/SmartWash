@@ -4,7 +4,7 @@
 import { DesignDimens, DesignElevation, DesignFontSize, DesignFontFeature, DesignFontWeight, MotionTiming, toColorString } from '../../constant/DesignSystem'
 import { pathStack } from '../../utils/PathStackUtil'
 import vibrator from '@ohos.vibrator'
-import { resColor } from '../../utils/ResourceColor'
+import { resColor, resolveArgb } from '../../utils/ResourceColor'
 import { resString } from '../../utils/ResourceString'
 
 // @BuilderParam 的默认空插槽（ArkTS 要求默认值必须是 @Builder 函数，不能用内联箭头函数）
@@ -29,7 +29,7 @@ export struct PageHeader {
         Column() {
           SymbolGlyph($r('sys.symbol.chevron_left'))
             .fontSize(24)
-            .fontColor([resColor('ON_BACKGROUND')])
+            .fontColor([$r('app.color.ON_BACKGROUND')])
         }
         .width(DesignDimens.BACK_HIT_AREA)
         .height(DesignDimens.BACK_HIT_AREA)
@@ -47,7 +47,7 @@ export struct PageHeader {
       Text(this.title)
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('ON_BACKGROUND'))
+        .fontColor($r('app.color.ON_BACKGROUND'))
 
       Blank()
 
@@ -72,8 +72,8 @@ export struct IconBox {
   @Require @Param icon: Resource
   @Param sizeValue: number = 44
   @Param iconSize: number = 24
-  @Param containerColor: number = resColor('PRIMARY_LIGHT')
-  @Param iconColor: number = resColor('PRIMARY')
+  @Param containerColor: ResourceColor = $r('app.color.PRIMARY_LIGHT')
+  @Param iconColor: ResourceColor = $r('app.color.PRIMARY')
   @Param radius: number = DesignDimens.ICON_CONTAINER_RADIUS
   // 无障碍语义（图标按钮调用点传入，如「设置」「充值记录」；纯展示场景留空）
   // 命名避开基类内置 accessibilityText 属性方法（同 sizeValue 约定）
@@ -103,8 +103,8 @@ export struct CircleIconBox {
   @Require @Param icon: Resource
   @Param sizeValue: number = 40
   @Param iconSize: number = 20
-  @Param containerColor: number = resColor('PRIMARY_LIGHT')
-  @Param iconColor: number = resColor('PRIMARY')
+  @Param containerColor: ResourceColor = $r('app.color.PRIMARY_LIGHT')
+  @Param iconColor: ResourceColor = $r('app.color.PRIMARY')
 
   build() {
     Column() {
@@ -144,14 +144,14 @@ export struct AppCard {
       this.content()
     }
     .width('100%')
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(this.cardRadius)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .padding(this.paddingValue)
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -192,7 +192,7 @@ export struct AppButton {
   /** 主按钮纯色底（对齐安卓 AuthCtaButton）：默认 false 走 135° 品牌渐变 */
   @Param solid: boolean = false
   /** 次按钮文字语义色覆盖（如退出登录 dangerInk）；仅 SECONDARY 生效，容器形态不变 */
-  @Param contentColor: number | null = null
+  @Param contentColor: ResourceColor | null = null
   /** 小按钮档（§3.3：36vp / 12vp 圆角 / 横向 16vp / 文字 13sp·600），按内容宽度居中；用于空态/错误态行动按钮 */
   @Param small: boolean = false
   @Event click: () => void = () => {
@@ -203,15 +203,15 @@ export struct AppButton {
   }
 
   /** 文字/spinner 色 — 主=onPrimary；次=contentColor ?? textPrimary；文字态=textGreen */
-  private contentTint(): number {
+  private contentTint(): ResourceColor {
     if (this.variant === AppButtonVariant.PRIMARY) {
-      return resColor('ON_PRIMARY')
+      return $r('app.color.ON_PRIMARY')
     }
     if (this.variant === AppButtonVariant.SECONDARY) {
-      return this.contentColor ?? resColor('TEXT_PRIMARY')
+      return this.contentColor ?? $r('app.color.TEXT_PRIMARY')
     }
     // TEXT 变体：primary 绿字在页面底仅 3.22:1 触红线，改文字级 TEXT_GREEN（深色档随主题回写）
-    return resColor('TEXT_GREEN')
+    return $r('app.color.TEXT_GREEN')
   }
 
   private triggerClick(): void {
@@ -275,12 +275,12 @@ export struct AppButton {
       // 次 = surfaceVariant 底；主 = 135° 品牌渐变（对齐安卓 Brush.linearGradient(primary→primaryDark)）；
       // solid = 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA 形态）
       .backgroundColor(this.variant === AppButtonVariant.SECONDARY
-        ? resColor('SURFACE_VARIANT')
-        : (this.solid ? resColor('PRIMARY') : Color.Transparent))
+        ? $r('app.color.SURFACE_VARIANT')
+        : (this.solid ? $r('app.color.PRIMARY') : Color.Transparent))
       .linearGradient({
         angle: 135,
         colors: this.variant === AppButtonVariant.PRIMARY && !this.solid
-          ? [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
+          ? [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
           : [[Color.Transparent, 0], [Color.Transparent, 1]]
       })
       .opacity(this.isActive() ? 1 : 0.5)
@@ -339,13 +339,13 @@ export struct AppInfoDialog {
             Text(this.title)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .margin({ bottom: 12 })
           }
 
           Text(this.message)
             .fontSize(DesignFontSize.BODY)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
         }
         .width('100%')
         .padding({
@@ -356,7 +356,7 @@ export struct AppInfoDialog {
         })
 
         Divider()
-          .color(resColor('DIVIDER'))
+          .color($r('app.color.DIVIDER'))
           .strokeWidth(0.5)
 
         Button(this.buttonText)
@@ -364,7 +364,7 @@ export struct AppInfoDialog {
           .width('100%')
           .height(48)
           .backgroundColor(Color.Transparent)
-          .fontColor(resColor('PRIMARY'))
+          .fontColor($r('app.color.PRIMARY'))
           .fontSize(DesignFontSize.BODY)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
           .borderRadius(0)
@@ -374,12 +374,12 @@ export struct AppInfoDialog {
           })
       }
       .width('100%')
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_FLOAT'),
+        color: $r('app.color.SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
@@ -416,7 +416,7 @@ export struct AppTabBar {
           Text(title)
             .fontSize(DesignFontSize.BODY_SMALL)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(this.selectedIndex === index ? resColor('PRIMARY') : resColor('TEXT_SECONDARY'))
+            .fontColor(this.selectedIndex === index ? $r('app.color.PRIMARY') : $r('app.color.TEXT_SECONDARY'))
             .padding({ left: 12, right: 12, top: 8, bottom: 8 })
             .animation(MotionTiming.ENTER)
 
@@ -425,7 +425,7 @@ export struct AppTabBar {
             .width(this.selectedIndex === index ? 20 : 0)
             .height(3)
             .borderRadius(1.5)
-            .backgroundColor(resColor('PRIMARY'))
+            .backgroundColor($r('app.color.PRIMARY'))
             .animation(MotionTiming.ENTER)
         }
         .alignItems(HorizontalAlign.Center)
@@ -470,17 +470,17 @@ export struct AppPillTabRow {
             Text(title)
               .fontSize(DesignFontSize.CAPTION)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(this.selectedIndex === index ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+              .fontColor(this.selectedIndex === index ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
           }
           .justifyContent(FlexAlign.Center)
           // 垂直 9 → 14 → 16 把触控热区从 43.7vp 抬到 48vp（规范 §2.3；
           // padding 在 background/border 之后只扩热区，不改胶囊视觉高 34）
           .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 16, bottom: 16 })
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(this.selectedIndex === index ? resColor('PRIMARY') : resColor('SURFACE'))
+          .backgroundColor(this.selectedIndex === index ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
           .border({
             width: 1,
-            color: this.selectedIndex === index ? resColor('PRIMARY') : resColor('OUTLINE')
+            color: this.selectedIndex === index ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
           })
           .margin({ right: DesignDimens.SPACE_XS })
           .animation(MotionTiming.ENTER)
@@ -529,7 +529,7 @@ export struct SelectionDot {
         .borderRadius(this.dotSize / 2)
         .border({
           width: 1,
-          color: this.selected ? resColor('PRIMARY') : resColor('OUTLINE'),
+          color: this.selected ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'),
           style: BorderStyle.Solid
         })
         .animation(MotionTiming.ENTER)
@@ -539,7 +539,7 @@ export struct SelectionDot {
         .width(this.dotSize / 2)
         .height(this.dotSize / 2)
         .borderRadius(this.dotSize / 4)
-        .backgroundColor(resColor('PRIMARY'))
+        .backgroundColor($r('app.color.PRIMARY'))
         .scale({ x: this.selected ? 1 : 0, y: this.selected ? 1 : 0 })
         .animation(MotionTiming.ENTER)
     }
@@ -565,7 +565,7 @@ export struct SkeletonBlock {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor(resColor('SURFACE_VARIANT'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
 
       Column()
         .width('100%')
@@ -573,7 +573,7 @@ export struct SkeletonBlock {
         .linearGradient({
           angle: 90,
           // 高光端点透明色色相跟随 SURFACE（& 0x00FFFFFF 清 alpha 位）：暗色下高光带不再泛白边
-          colors: [[toColorString(resColor('SURFACE') & 0x00FFFFFF), 0], [resColor('SURFACE'), 0.5], [toColorString(resColor('SURFACE') & 0x00FFFFFF), 1]]
+          colors: [[toColorString(resColor('SURFACE') & 0x00FFFFFF), 0], [$r('app.color.SURFACE'), 0.5], [toColorString(resColor('SURFACE') & 0x00FFFFFF), 1]]
         })
         .opacity(this.glow ? 1 : 0.3)
         .animation({
@@ -663,17 +663,17 @@ export struct LoadingDots {
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(resColor('OUTLINE'))
+        .backgroundColor($r('app.color.OUTLINE'))
       Column()
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(resColor('OUTLINE'))
+        .backgroundColor($r('app.color.OUTLINE'))
       Column()
         .width(5)
         .height(5)
         .borderRadius(2.5)
-        .backgroundColor(resColor('OUTLINE'))
+        .backgroundColor($r('app.color.OUTLINE'))
     }
     .justifyContent(FlexAlign.Center)
     .alignItems(VerticalAlign.Center)
@@ -697,8 +697,8 @@ export struct LoadingDots {
 @ComponentV2
 export struct DrumMark {
   @Param sizeValue: number = 48
-  @Param tint: number = resColor('PRIMARY')
-  @Param trackTint: number | null = null
+  @Param tint: ResourceColor = $r('app.color.PRIMARY')
+  @Param trackTint: ResourceColor | null = null
   @Param innerRingTint: number | null = null
   @Param progress: number | null = null
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true))
@@ -713,7 +713,7 @@ export struct DrumMark {
     const scaleFactor: number = size / 64
     const cx: number = size / 2
     const cy: number = size / 2
-    const track: number = this.trackTint ?? this.tint
+    const track: number = resolveArgb(this.trackTint ?? this.tint)
 
     this.ctx.clearRect(0, 0, size, size)
     this.ctx.lineCap = 'round'
@@ -731,7 +731,7 @@ export struct DrumMark {
       const clamped: number = Math.min(1, Math.max(0, progressValue))
       if (clamped > 0) {
         this.ctx.lineWidth = 2.5 * scaleFactor
-        this.ctx.strokeStyle = this.tint
+        this.ctx.strokeStyle = resolveArgb(this.tint)
         this.ctx.beginPath()
         this.ctx.arc(cx, cy, 28 * scaleFactor, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamped, false)
         this.ctx.stroke()
@@ -750,7 +750,7 @@ export struct DrumMark {
 
     // 单条水波线（穿过圆环）— 设计稿 M23 32c3-3.5 6 2 9-.5s6 1.5 9-1，中心 32,32
     this.ctx.lineWidth = 2.4 * scaleFactor
-    this.ctx.strokeStyle = this.tint
+    this.ctx.strokeStyle = resolveArgb(this.tint)
     this.ctx.beginPath()
     this.ctx.moveTo(cx - 9 * scaleFactor, cy)
     this.ctx.bezierCurveTo(
@@ -808,14 +808,14 @@ export struct EmptyState {
       // 母题 — 滚筒圆（DrumMark）静止态；48vp + primary（规范 §3.6 母题色）
       DrumMark({
         sizeValue: 48,
-        tint: resColor('PRIMARY')
+        tint: $r('app.color.PRIMARY')
       })
         .margin({ bottom: DesignDimens.SPACE_MD })
 
       // 引导文案 — 空态主文案档 bodyLarge(16)
       Text(this.message)
         .fontSize(DesignFontSize.BODY)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
 
       // 行动按钮（可选；间距由调用方在插槽内自行给出，未传时零占位）。
       // 安卓 EmptyState 的行动按钮通栏无水平 padding（问题14 修复回退，以安卓为准）：
@@ -899,14 +899,14 @@ export struct AppConfirmDialog {
             Text(this.title)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .margin({ bottom: 12 })
           }
 
           // 内容
           Text(this.message)
             .fontSize(DesignFontSize.BODY)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .margin({ bottom: 20 })
         }
         .width("100%")
@@ -919,7 +919,7 @@ export struct AppConfirmDialog {
 
         // 分隔线
         Divider()
-          .color(resColor('DIVIDER'))
+          .color($r('app.color.DIVIDER'))
           .strokeWidth(0.5)
 
         // 按钮行
@@ -929,7 +929,7 @@ export struct AppConfirmDialog {
             .layoutWeight(1)
             .height(48)
             .backgroundColor(Color.Transparent)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontSize(DesignFontSize.BODY)
             .borderRadius(0)
             .onClick(() => {
@@ -939,7 +939,7 @@ export struct AppConfirmDialog {
 
           Divider()
             .vertical(true)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
@@ -949,7 +949,7 @@ export struct AppConfirmDialog {
             .height(48)
             .backgroundColor(Color.Transparent)
             // 危险操作确认键用 dangerInk（#A8435A），普通确认用品牌绿
-            .fontColor(this.isDanger ? resColor('DANGER_INK') : resColor('PRIMARY'))
+            .fontColor(this.isDanger ? $r('app.color.DANGER_INK') : $r('app.color.PRIMARY'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
             .borderRadius(0)
@@ -963,12 +963,12 @@ export struct AppConfirmDialog {
         .width("100%")
       }
       .width("100%")
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）；原 #33000000 黑 20% 不符
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_FLOAT'),
+        color: $r('app.color.SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })

@@ -236,20 +236,20 @@ export struct FishPage {
     Row({ space: DesignDimens.SPACE_XS }) {
       SymbolGlyph(this.playing ? $r('sys.symbol.pause') : $r('sys.symbol.play'))
         .fontSize(20)
-        .fontColor([resColor('PRIMARY')])
+        .fontColor([$r('app.color.PRIMARY')])
 
       Text(this.playing ? FishText.pause : FishText.play)
         .fontSize(DesignFontSize.BODY_SMALL)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
     }
     // 视觉胶囊不变，热区抬到 48dp 下限（对齐安卓 sizeIn(minHeight=48)）
     .constraintSize({ minHeight: 48 })
     .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
       top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
     .borderRadius(DesignDimens.RADIUS_MD)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .onClick(() => {
       this.manualPlaying = !this.manualPlaying
       if (this.manualPlaying) {
@@ -277,7 +277,7 @@ export struct FishPage {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .clip(true)
             .borderWidth(1)
-            .borderColor(resColor('OUTLINE'))
+            .borderColor($r('app.color.OUTLINE'))
             .onAreaChange((oldValue: Area, newValue: Area) => {
               this.onCanvasAreaChange(oldValue, newValue)
             })
@@ -293,11 +293,11 @@ export struct FishPage {
               Text(FishText.hint)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_GREEN'))
-                .backgroundColor(resColor('SURFACE'))
+                .fontColor($r('app.color.TEXT_GREEN'))
+                .backgroundColor($r('app.color.SURFACE'))
                 .borderRadius(DesignDimens.RADIUS_FULL)
                 .borderWidth(1)
-                .borderColor(resColor('OUTLINE'))
+                .borderColor($r('app.color.OUTLINE'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             }
@@ -325,7 +325,7 @@ export struct FishPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

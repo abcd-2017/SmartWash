@@ -302,7 +302,7 @@ struct OrderList {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([resColor('TEXT_PRIMARY')])
+          .fontColor([$r('app.color.TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -315,12 +315,12 @@ struct OrderList {
       Text($r('app.string.my_orders'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
     }
     .width("100%")
     .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
     .alignItems(VerticalAlign.Center)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 
   /**
@@ -341,17 +341,17 @@ struct OrderList {
               Text(getShowOrderStatusDescription(title))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(index === this.currIndex ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+                .fontColor(index === this.currIndex ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
             }
             .justifyContent(FlexAlign.Center)
             // 视觉胶囊 45（对齐安卓 AppPillTabRow：padding 在 background 之前，
             // 背景覆盖纵向 padding → 视觉高 = 行盒 + 上下 15 ≈ 45，与安卓 45.3dp 一致）
             .padding({ left: DesignDimens.SPACE_XS, right: DesignDimens.SPACE_XS, top: 15, bottom: 15 })
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(index === this.currIndex ? resColor('PRIMARY') : resColor('SURFACE'))
+            .backgroundColor(index === this.currIndex ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
             .border({
               width: 1,
-              color: index === this.currIndex ? resColor('PRIMARY') : resColor('OUTLINE')
+              color: index === this.currIndex ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE')
             })
           }
           // 触控热区 48（对齐安卓 clickable 最小热区）；背景画在内层胶囊上，热区透明不影响视觉
@@ -393,7 +393,7 @@ struct OrderList {
     .width("100%")
     .scrollable(ScrollDirection.Horizontal)
     .scrollBar(BarState.Off)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
   }
 
   build() {
@@ -431,7 +431,7 @@ struct OrderList {
                     Text(this.monthLabel(section.monthKey))
                       .fontSize(DesignFontSize.CAPTION)
                       .fontWeight(DesignFontWeight.MEDIUM)
-                      .fontColor(resColor('TEXT_SECONDARY'))
+                      .fontColor($r('app.color.TEXT_SECONDARY'))
                       .letterSpacing(0.3)
                       .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING })
                   }
@@ -514,7 +514,7 @@ struct OrderList {
       .height("100%")
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

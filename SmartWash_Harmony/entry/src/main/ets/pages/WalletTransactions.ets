@@ -87,8 +87,8 @@ struct WalletTransactions {
 
   /** 金额色：充值 = primaryDark（22 大字豁免内取更优档 4.23:1）/ 消费 = textPrimary
    *  （金额正负已有 +/− 符号双通道，负金额非「错误」警示语义；均对齐安卓 audit-21 修后值） */
-  private amountColor(item: TransactionVo): number {
-    return item.type === TYPE_RECHARGE ? resColor('PRIMARY_DARK') : resColor('TEXT_PRIMARY')
+  private amountColor(item: TransactionVo): ResourceColor {
+    return item.type === TYPE_RECHARGE ? $r('app.color.PRIMARY_DARK') : $r('app.color.TEXT_PRIMARY')
   }
 
   /**
@@ -173,11 +173,11 @@ struct WalletTransactions {
       IconBox({
         icon: item.type === TYPE_RECHARGE ? $r('sys.symbol.creditcard') : $r('sys.symbol.laundry'),
         containerColor: item.type === TYPE_RECHARGE
-          ? resColor('ICON_CONTAINER_TEAL')
-          : resColor('ICON_CONTAINER_GREEN'),
+          ? $r('app.color.ICON_CONTAINER_TEAL')
+          : $r('app.color.ICON_CONTAINER_GREEN'),
         iconColor: item.type === TYPE_RECHARGE
-          ? resColor('ICON_FOREGROUND_TEAL')
-          : resColor('ICON_FOREGROUND_GREEN')
+          ? $r('app.color.ICON_FOREGROUND_TEAL')
+          : $r('app.color.ICON_FOREGROUND_GREEN')
       })
 
       // 中间：描述 + 时间
@@ -185,13 +185,13 @@ struct WalletTransactions {
         Text(item.description ?? "")
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontWeight(DesignFontWeight.NORMAL)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
 
         Text(this.formatTransactionTime(item.transactionTime ?? ""))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .margin({ top: 4 })
@@ -214,7 +214,7 @@ struct WalletTransactions {
         Text(this.statusText(item.status ?? ""))
           .fontSize(DesignFontSize.CAPTION)
           // 状态是决策所需可读信息（textTertiary 浅色 2.25:1 击穿 §10 红线，audit-21 #1）
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: 4 })
       }
       .alignItems(HorizontalAlign.End)
@@ -222,13 +222,13 @@ struct WalletTransactions {
     }
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // DESIGN-SPEC §3.1 唯一卡片画法：1px outline 描边 + 卡片档阴影（对齐充值记录页）
-    .border({ width: 1, color: resColor('OUTLINE'), radius: DesignDimens.CARD_RADIUS })
+    .border({ width: 1, color: $r('app.color.OUTLINE'), radius: DesignDimens.CARD_RADIUS })
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: DesignElevation.CARD_SHADOW_OFFSET
     })
@@ -266,7 +266,7 @@ struct WalletTransactions {
                 Column() {
                   Text($r('app.string.record_append_failed'))
                     .fontSize(DesignFontSize.BODY_SMALL)
-                    .fontColor(resColor('DANGER_INK'))
+                    .fontColor($r('app.color.DANGER_INK'))
                 }
                 .width("100%")
                 .constraintSize({ minHeight: 48 })
@@ -352,7 +352,7 @@ struct WalletTransactions {
     .width("100%")
     .height("100%")
     .align(Alignment.Top)
-    .backgroundColor(resColor('BACKGROUND'))
+    .backgroundColor($r('app.color.BACKGROUND'))
     .hideTitleBar(true)
   }
 }

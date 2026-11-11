@@ -17,7 +17,7 @@ import { DivPalette } from './DivComponents'
 export struct DivRichText {
   @Param lines: Array<DivRichLine> = []
   @Param textSize: number = 12
-  @Param color: number = DivPalette.textPrimary
+  @Param color: ResourceColor = DivPalette.textPrimary
 
   /** 行内 Span 组：**加粗** → weight 600；`code` → 等宽 + 14% 金底；链接 → 金text + 下划线 */
   @Builder

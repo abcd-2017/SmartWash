@@ -313,12 +313,12 @@ export struct DrumPage {
           Text(DrumText.bpmLabel)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
 
           Text(this.bpm.toString())
             .fontSize(DesignFontSize.DATA_LARGE)
             .fontWeight(DesignFontWeight.BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .fontFeature(DesignFontFeature.TNUM)
         }
         .alignItems(HorizontalAlign.Start)
@@ -358,20 +358,20 @@ export struct DrumPage {
       Text(DrumText.patternLabel)
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .margin({ top: DesignDimens.SPACE_MD })
 
       Row({ space: DesignDimens.SPACE_XS }) {
         ForEach([0, 1, 2, 3], (index: number) => {
           Text(this.patternLabel(index))
             .fontSize(DesignFontSize.BODY_SMALL)
-            .fontColor(this.activePattern === index ? resColor('ON_PRIMARY') : resColor('TEXT_SECONDARY'))
+            .fontColor(this.activePattern === index ? $r('app.color.ON_PRIMARY') : $r('app.color.TEXT_SECONDARY'))
             .width(36)
             .height(36)
             .borderRadius(DesignDimens.RADIUS_FULL)
-            .backgroundColor(this.activePattern === index ? resColor('PRIMARY') : resColor('SURFACE'))
+            .backgroundColor(this.activePattern === index ? $r('app.color.PRIMARY') : $r('app.color.SURFACE'))
             .borderWidth(1)
-            .borderColor(this.activePattern === index ? resColor('PRIMARY') : resColor('OUTLINE'))
+            .borderColor(this.activePattern === index ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
             .textAlign(TextAlign.Center)
             .onClick(() => {
               this.selectPattern(index)
@@ -383,13 +383,13 @@ export struct DrumPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: 12,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -406,7 +406,7 @@ export struct DrumPage {
       Text(DrumText.presetsLabel)
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
 
       Scroll() {
         Row() {
@@ -416,13 +416,13 @@ export struct DrumPage {
               Text(this.presetLabel(index))
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(DesignFontWeight.MEDIUM)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD,
                   top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
                 .borderRadius(DesignDimens.RADIUS_FULL)
-                .backgroundColor(resColor('SURFACE_VARIANT'))
+                .backgroundColor($r('app.color.SURFACE_VARIANT'))
                 .borderWidth(1)
-                .borderColor(resColor('OUTLINE'))
+                .borderColor($r('app.color.OUTLINE'))
             }
             .padding({ top: DesignDimens.SPACE_XS, bottom: DesignDimens.SPACE_XS })
             .margin({ right: DesignDimens.SPACE_XS })
@@ -452,7 +452,7 @@ export struct DrumPage {
           Column() {
             Text(this.voiceLabel(voice))
               .fontSize(DesignFontSize.CAPTION)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .width(CELL_LABEL_WIDTH)
               .maxLines(1)
               .textAlign(TextAlign.End)
@@ -482,13 +482,13 @@ export struct DrumPage {
     }
     .width('100%')
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     .borderWidth(1)
-    .borderColor(resColor('OUTLINE'))
+    .borderColor($r('app.color.OUTLINE'))
     .shadow({
       radius: 12,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -511,22 +511,22 @@ export struct DrumPage {
   }
 
   /** 步进格状态色（触发 primary / 播放头 water / 拍位 outline / 空 surfaceVariant） */
-  private stepCellColor(voice: number, step: number): number {
+  private stepCellColor(voice: number, step: number): ResourceColor {
     const pattern: DrumPattern | undefined = this.patterns[this.activePattern]
     const active: boolean = pattern !== undefined && pattern.isEnabled(voice, step)
     const isCurrent: boolean = step === this.currentStep
     if (active && isCurrent) {
-      return resColor('WATER')
+      return $r('app.color.WATER')
     }
     if (active) {
-      return resColor('PRIMARY')
+      return $r('app.color.PRIMARY')
     }
     // 空格播放头不再染 primarySoft（对空格底仅 1.02/1.07:1 不可辨），
     // 底色保持空格原色，由 primary 描边环承担指示
     if (step % 4 === 0) {
-      return resColor('OUTLINE')
+      return $r('app.color.OUTLINE')
     }
-    return resColor('SURFACE_VARIANT')
+    return $r('app.color.SURFACE_VARIANT')
   }
 
   private stepCellActive(voice: number, step: number): boolean {
@@ -560,7 +560,7 @@ export struct DrumPage {
           .borderRadius(DesignDimens.RADIUS_SMALL)
           .backgroundColor(this.stepCellColor(voice, step))
           .borderWidth(this.stepCellBorderWidth(voice, step))
-          .borderColor(resColor('PRIMARY'))
+          .borderColor($r('app.color.PRIMARY'))
       }
       .scale({ x: this.stepCellScale(voice, step), y: this.stepCellScale(voice, step) })
       .animation({ duration: 200, curve: Curve.EaseOut })
@@ -602,7 +602,7 @@ export struct DrumPage {
       .width('100%')
       .height('100%')
       .padding({ top: safeTopVp(), bottom: safeBottomVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

@@ -35,13 +35,13 @@ struct PayInfoLine {
       Text(this.label)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
 
       // 值侧占满剩余宽度 + 单行省略：长单号不得把标签挤没或溢出（问题6）
       Text(this.value)
         .fontSize(DesignFontSize.CAPTION)
         .lineHeight(16)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .layoutWeight(1)
         .maxLines(1)
@@ -141,7 +141,7 @@ struct PaymentSuccess {
       Column() {
         SymbolGlyph($r('sys.symbol.chevron_left'))
           .fontSize(24)
-          .fontColor([resColor('TEXT_PRIMARY')])
+          .fontColor([$r('app.color.TEXT_PRIMARY')])
       }
       .width(48)
       .height(48)
@@ -154,7 +154,7 @@ struct PaymentSuccess {
       Text($r('app.string.pay_success'))
         .fontSize(DesignFontSize.ROOT_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
     }
     .width("100%")
     .height(56)
@@ -190,8 +190,8 @@ struct PaymentSuccess {
               icon: $r('sys.symbol.checkmark'),
               sizeValue: 44,
               iconSize: 24,
-              containerColor: resColor('PRIMARY_LIGHT'),
-              iconColor: resColor('PRIMARY')
+              containerColor: $r('app.color.PRIMARY_LIGHT'),
+              iconColor: $r('app.color.PRIMARY')
             })
               .scale({ x: this.checkEntered ? 1 : 0.6, y: this.checkEntered ? 1 : 0.6 })
               .opacity(this.checkEntered ? 1 : 0)
@@ -199,24 +199,24 @@ struct PaymentSuccess {
             Text($r('app.string.pay_success'))
               .fontSize(DesignFontSize.HEADLINE)
               .fontWeight(DesignFontWeight.BOLD)
-              .fontColor(resColor('PRIMARY_DARK'))
+              .fontColor($r('app.color.PRIMARY_DARK'))
               .margin({ top: 24 })
 
             Text($r('app.string.thanks_for_using'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: 8 })
           }
           .width("100%")
           .padding({ top: 40, bottom: 44 })
           // 对齐安卓 PaySuccessPage.kt:149-193：庆祝卡按 DESIGN-SPEC v0.4 §3.1 唯一卡片画法
           // 取 surface 白底 + 1px outline 描边 + level1 阴影（旧实现为无描边无阴影的 primaryLight 块）
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -228,7 +228,7 @@ struct PaymentSuccess {
           Text($r('app.string.order_info'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .width("100%")
             .margin({ top: DesignDimens.SECTION_SPACING, bottom: 12 })
 
@@ -241,12 +241,12 @@ struct PaymentSuccess {
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_XL })
           // 对齐安卓 PaySuccessPage.kt:204-240：surface 白底 + 1px outline 描边 + level1 阴影
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -255,7 +255,7 @@ struct PaymentSuccess {
           Text($r('app.string.locker_info'))
             .fontSize(DesignFontSize.SECTION_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
             .width("100%")
             .margin({ top: DesignDimens.SPACE_XL, bottom: 12 })
 
@@ -264,34 +264,34 @@ struct PaymentSuccess {
             Column() {
               SymbolGlyph($r('sys.symbol.truck_box_fill'))
                 .fontSize(20)
-                .fontColor([resColor('PRIMARY')])
+                .fontColor([$r('app.color.PRIMARY')])
             }
             .width(36)
             .height(36)
             .borderRadius(DesignDimens.ICON_CONTAINER_RADIUS)
-            .backgroundColor(resColor('PRIMARY_LIGHT'))
+            .backgroundColor($r('app.color.PRIMARY_LIGHT'))
             .justifyContent(FlexAlign.Center)
             .alignItems(HorizontalAlign.Center)
 
             Column({ space: DesignDimens.SPACE_XS }) {
               Text($r('app.string.locker_info'))
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
 
               // 柜号空值兜底显示 "-"（空值语义），不再误显示 "-1柜"（评审 #34，安卓待对齐）
               Text(`已存入 ${this.orderInfo?.lockersVo?.lockerNumber ?? "-"} 号柜`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
 
               Text(`请前往寄存柜 ${this.orderInfo?.lockersVo?.lockerNumber ?? "-"}柜存放衣物`)
                 .fontSize(DesignFontSize.BODY_SMALL)
-                .fontColor(resColor('TEXT_PRIMARY'))
+                .fontColor($r('app.color.TEXT_PRIMARY'))
                 .fontFeature(DesignFontFeature.TNUM)
 
               Text($r('app.string.locker_process_tip'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
             }
             .alignItems(HorizontalAlign.Start)
             .layoutWeight(1)
@@ -301,12 +301,12 @@ struct PaymentSuccess {
           .width("100%")
           .padding({ left: DesignDimens.CARD_PADDING, right: DesignDimens.CARD_PADDING, top: DesignDimens.SPACE_XL, bottom: DesignDimens.SPACE_MD })
           // 对齐安卓 PaySuccessPage.kt:252-300：surface 白底 + 1px outline 描边 + level1 阴影
-          .backgroundColor(resColor('SURFACE'))
+          .backgroundColor($r('app.color.SURFACE'))
           .borderRadius(DesignDimens.CARD_RADIUS)
-          .border({ width: 1, color: resColor('OUTLINE') })
+          .border({ width: 1, color: $r('app.color.OUTLINE') })
           .shadow({
             radius: DesignElevation.LEVEL_1,
-            color: resColor('SHADOW_COLOR_CARD'),
+            color: $r('app.color.SHADOW_COLOR_CARD'),
             offsetX: 0,
             offsetY: 2
           })
@@ -327,7 +327,7 @@ struct PaymentSuccess {
       .width("100%")
       .align(Alignment.Top)
       .scrollBar(BarState.Off)
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
 
       // 固定底栏（对齐安卓 PaySuccessPage.kt:325-361）：移出 Scroll 后首屏即可见「返回首页」，
       // 不再被滚动内容裁切；主按钮 + 48dp 热区「返回首页」文字链
@@ -341,7 +341,7 @@ struct PaymentSuccess {
 
         Text($r('app.string.back_home'))
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .width("100%")
           .textAlign(TextAlign.Center)
           .padding({ top: 16, bottom: 16 })
@@ -376,7 +376,7 @@ struct PaymentSuccess {
           LoadingState()
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
         }
@@ -400,7 +400,7 @@ struct PaymentSuccess {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(2)
           .transition(TransitionEffect.OPACITY)
@@ -408,7 +408,7 @@ struct PaymentSuccess {
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

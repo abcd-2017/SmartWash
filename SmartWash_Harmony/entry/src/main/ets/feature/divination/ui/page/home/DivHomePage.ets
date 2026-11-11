@@ -351,7 +351,7 @@ struct DivHomePage {
     // 规范 §2.4/§3.1 卡片唯一画法：1px 描边 + blur 12 轻阴影（compare-10 #12 对齐安卓 softCardShadow）
     .shadow({
       radius: DesignElevation.CARD_SHADOW_RADIUS,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })

@@ -488,31 +488,31 @@ struct ToolboxShortCodeDetail {
   @Builder
   InfoCard() {
     Column() {
-      InfoRow({ label: ToolboxText.toolbox_label_code, value: this.param?.code ?? "", valueColor: resColor('TEXT_PRIMARY'), valueTnum: true })
-      InfoRow({ label: ToolboxText.toolbox_label_type, value: ToolboxText.toolbox_type_short_link, valueColor: resColor('TEXT_PRIMARY'), valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_code, value: this.param?.code ?? "", valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: true })
+      InfoRow({ label: ToolboxText.toolbox_label_type, value: ToolboxText.toolbox_type_short_link, valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: false })
       // 12fp 小字语义色走深档（对比度红线 §10）：公开=TEXT_GREEN（≈5.1:1）、私有=ON_WARNING_CONTAINER；
       // success(3.4:1)/ongoingInk(2.76:1) 作小字不达标（audit-18）
-      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? resColor('TEXT_GREEN') : resColor('ON_WARNING_CONTAINER'), valueTnum: false })
-      InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: resColor('TEXT_GREEN'), valueTnum: true })
-      InfoRow({ label: ToolboxText.toolbox_label_created, value: this.displayCreated(), valueColor: resColor('TEXT_PRIMARY'), valueTnum: true })
+      InfoRow({ label: ToolboxText.toolbox_label_visibility, value: this.isPublicCode() ? ToolboxText.toolbox_visibility_public_value : ToolboxText.toolbox_visibility_private_value, valueColor: this.isPublicCode() ? $r('app.color.TEXT_GREEN') : $r('app.color.ON_WARNING_CONTAINER'), valueTnum: false })
+      InfoRow({ label: ToolboxText.toolbox_label_clicks, value: toolboxClicksFormat(this.param?.clickCount ?? 0), valueColor: $r('app.color.TEXT_GREEN'), valueTnum: true })
+      InfoRow({ label: ToolboxText.toolbox_label_created, value: this.displayCreated(), valueColor: $r('app.color.TEXT_PRIMARY'), valueTnum: true })
 
       if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.PERMANENT) {
         // 「永久」12fp 小字绿用 TEXT_GREEN 深档（success 3.4:1 不达标，§10，audit-18）
-        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_permanent, valueColor: resColor('TEXT_GREEN'), valueTnum: false })
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_permanent, valueColor: $r('app.color.TEXT_GREEN'), valueTnum: false })
       } else if (expiryStateOf(this.param?.expireAt, new Date()) === ExpiryState.ACTIVE) {
-        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), valueColor: resColor('TEXT_SECONDARY'), valueTnum: true })
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: toolboxExpiryUntil(formatDisplayDateTime(this.param?.expireAt)), valueColor: $r('app.color.TEXT_SECONDARY'), valueTnum: true })
       } else {
-        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_expired, valueColor: resColor('DANGER_INK'), valueTnum: false })
+        InfoRow({ label: ToolboxText.toolbox_label_expiry, value: ToolboxText.toolbox_expiry_expired, valueColor: $r('app.color.DANGER_INK'), valueTnum: false })
       }
 
       if ((this.param?.target ?? "").length > 0) {
         Text(ToolboxText.toolbox_label_target)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: DesignDimens.SPACE_XS })
         Text(this.param?.target ?? "")
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .maxLines(5)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -529,7 +529,7 @@ struct ToolboxShortCodeDetail {
           Text(ToolboxText.toolbox_action_renew)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_GREEN'))
+            .fontColor($r('app.color.TEXT_GREEN'))
         }
         .constraintSize({ minWidth: 48, minHeight: 48 })
         .justifyContent(FlexAlign.Center)
@@ -552,13 +552,13 @@ struct ToolboxShortCodeDetail {
     .width('100%')
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -574,7 +574,7 @@ struct ToolboxShortCodeDetail {
       Text(ToolboxText.toolbox_qr_section_title)
         .fontSize(DesignFontSize.CARD_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .width('100%')
         .margin({ bottom: DesignDimens.SPACE_MD })
 
@@ -596,18 +596,18 @@ struct ToolboxShortCodeDetail {
         Column() {
           Text(ToolboxText.toolbox_qr_failed)
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
           Text(ToolboxText.toolbox_action_retry)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('PRIMARY'))
+            .fontColor($r('app.color.PRIMARY'))
             .margin({ top: 8 })
         }
         .width(200)
         .height(200)
         .justifyContent(FlexAlign.Center)
         .alignItems(HorizontalAlign.Center)
-        .backgroundColor(resColor('SURFACE_VARIANT'))
+        .backgroundColor($r('app.color.SURFACE_VARIANT'))
         .borderRadius(DesignDimens.RADIUS_MD)
         .scale({ x: this.pressedKey === 'qr-retry' ? 0.97 : 1, y: this.pressedKey === 'qr-retry' ? 0.97 : 1 })
         .onTouch((event: TouchEvent) => {
@@ -628,7 +628,7 @@ struct ToolboxShortCodeDetail {
       Text(this.getShortUrl())
         .fontSize(DesignFontSize.CAPTION)
         .fontWeight(DesignFontWeight.MEDIUM)
-        .fontColor(resColor('TEXT_SECONDARY'))
+        .fontColor($r('app.color.TEXT_SECONDARY'))
         .fontFeature(DesignFontFeature.TNUM)
         .textAlign(TextAlign.Center)
         .maxLines(2)
@@ -641,7 +641,7 @@ struct ToolboxShortCodeDetail {
         Text(ToolboxText.toolbox_private_open_hint)
           .fontSize(DesignFontSize.CAPTION)
           // 私有码提示为用户必读正文：ongoingInk 压白 2.76:1 不达标，改 onWarningContainer（§10，audit-18）
-          .fontColor(resColor('ON_WARNING_CONTAINER'))
+          .fontColor($r('app.color.ON_WARNING_CONTAINER'))
           .textAlign(TextAlign.Center)
           .width('100%')
           .margin({ top: DesignDimens.SPACE_XS })
@@ -673,13 +673,13 @@ struct ToolboxShortCodeDetail {
     .width('100%')
     .alignItems(HorizontalAlign.Center)
     .padding(DesignDimens.CARD_PADDING)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     .borderRadius(DesignDimens.CARD_RADIUS)
     // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -694,11 +694,11 @@ struct ToolboxShortCodeDetail {
         Circle()
           .width(8)
           .height(8)
-          .fill(resColor('WATER'))
+          .fill($r('app.color.WATER'))
         Text(formatDisplayDateTime(stat.createdAt))
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .fontFeature(DesignFontFeature.TNUM)
           .margin({ left: DesignDimens.SPACE_XS })
         Blank()
@@ -707,9 +707,9 @@ struct ToolboxShortCodeDetail {
         Text(stat.ipHash ?? "—")
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-          .backgroundColor(resColor('SURFACE_VARIANT'))
+          .backgroundColor($r('app.color.SURFACE_VARIANT'))
           .borderRadius(DesignDimens.RADIUS_FULL)
       }
       .width('100%')
@@ -720,7 +720,7 @@ struct ToolboxShortCodeDetail {
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
           // UA 是访问记录数据值而非装饰角标：textTertiary ≈2.3:1 不达标（§10），改 textSecondary（audit-18）
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -730,7 +730,7 @@ struct ToolboxShortCodeDetail {
         Text(stat.referer ?? "")
           .fontSize(DesignFontSize.CAPTION)
           .fontWeight(DesignFontWeight.MEDIUM)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .width('100%')
@@ -755,7 +755,7 @@ struct ToolboxShortCodeDetail {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -768,14 +768,14 @@ struct ToolboxShortCodeDetail {
           Text(ToolboxText.toolbox_detail_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Blank()
 
           Text(ToolboxText.toolbox_action_delete)
             .fontSize(DesignFontSize.PAGE_HEADER)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('DANGER_INK'))
+            .fontColor($r('app.color.DANGER_INK'))
             .padding({ left: 12, right: 12, top: 12, bottom: 12 })
             .scale({ x: this.pressedKey === 'delete' ? 0.97 : 1, y: this.pressedKey === 'delete' ? 0.97 : 1 })
             .onTouch((event: TouchEvent) => {
@@ -808,7 +808,7 @@ struct ToolboxShortCodeDetail {
             Text(ToolboxText.toolbox_stats_title)
               .fontSize(DesignFontSize.SECTION_TITLE)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('TEXT_PRIMARY'))
+              .fontColor($r('app.color.TEXT_PRIMARY'))
               .width('100%')
           }
 
@@ -820,7 +820,7 @@ struct ToolboxShortCodeDetail {
               } else if (this.statsError && this.statsList.length === 0) {
                 Text(ToolboxText.toolbox_stats_error_load)
                   .fontSize(DesignFontSize.BODY)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .width('100%')
                   .textAlign(TextAlign.Center)
                   .padding({ top: 8 })
@@ -828,7 +828,7 @@ struct ToolboxShortCodeDetail {
                 Text(ToolboxText.toolbox_action_retry)
                   .fontSize(DesignFontSize.CAPTION)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(resColor('PRIMARY'))
+                  .fontColor($r('app.color.PRIMARY'))
                   .width('100%')
                   .textAlign(TextAlign.Center)
                   .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
@@ -841,7 +841,7 @@ struct ToolboxShortCodeDetail {
                 // textTertiary ≈2.3:1 不达标（§10），与同页骨架/错误分支一致降档 textSecondary（audit-18）
                 Text(ToolboxText.toolbox_stats_empty)
                   .fontSize(DesignFontSize.BODY_SMALL)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .width('100%')
                   .textAlign(TextAlign.Center)
                   .padding({ top: 16, bottom: 16 })
@@ -850,7 +850,7 @@ struct ToolboxShortCodeDetail {
                   if (index > 0) {
                     Divider()
                       .strokeWidth(0.5)
-                      .color(resColor('HAIRLINE'))
+                      .color($r('app.color.HAIRLINE'))
                   }
                   this.StatRow(stat)
                 }, (stat: ShortCodeStatsVo, index: number) => `${index}`)
@@ -865,7 +865,7 @@ struct ToolboxShortCodeDetail {
                   // 已有数据补拉失败用含解决指引的独立文案（audit-18）；热区 48（16×2 + 行高）
                   Text(ToolboxText.toolbox_stats_error_retry)
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('DANGER_INK'))
+                    .fontColor($r('app.color.DANGER_INK'))
                     .width('100%')
                     .textAlign(TextAlign.Center)
                     .padding({ top: DesignDimens.SPACE_MD, bottom: DesignDimens.SPACE_MD })
@@ -883,13 +883,13 @@ struct ToolboxShortCodeDetail {
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
             // 卡片唯一画法（规范 §3.1）：1px OUTLINE 描边 + level1 卡片阴影
-            .border({ width: 1, color: resColor('OUTLINE') })
+            .border({ width: 1, color: $r('app.color.OUTLINE') })
             .shadow({
               radius: DesignElevation.LEVEL_1,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: 2
             })
@@ -913,7 +913,7 @@ struct ToolboxShortCodeDetail {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

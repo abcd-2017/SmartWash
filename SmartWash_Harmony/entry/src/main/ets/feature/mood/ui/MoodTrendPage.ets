@@ -38,7 +38,7 @@ const TAG: string = 'moodTrendPage'
 interface MoodBarModel {
   level: number
   label: string
-  color: number
+  color: ResourceColor
   count: number
   fraction: number
 }
@@ -158,7 +158,7 @@ struct MoodTrendPage {
           Column() {
             SymbolGlyph($r('sys.symbol.chevron_left'))
               .fontSize(24)
-              .fontColor([resColor('TEXT_PRIMARY')])
+              .fontColor([$r('app.color.TEXT_PRIMARY')])
           }
           .width(DesignDimens.BACK_HIT_AREA)
           .height(DesignDimens.BACK_HIT_AREA)
@@ -171,7 +171,7 @@ struct MoodTrendPage {
           Text(MoodText.mood_trend_title)
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
         }
         .width('100%')
         .height(56)
@@ -208,10 +208,10 @@ struct MoodTrendPage {
               Column() {
                 MoodSmallAction({
                   text: MoodText.mood_trend_empty_action,
-                  containerColor: resColor('PRIMARY_LIGHT'),
+                  containerColor: $r('app.color.PRIMARY_LIGHT'),
                   // 行动绿字走 TEXT_GREEN_ON_TINT 深档（对齐安卓审查 #27：PRIMARY on
                   // PRIMARY_LIGHT 仅 3.29:1 跌破 AA；#146841 on #F0FBF4 6.41:1 达标）
-                  contentColor: resColor('TEXT_GREEN_ON_TINT'),
+                  contentColor: $r('app.color.TEXT_GREEN_ON_TINT'),
                   onAction: (): void => {
                     pathStack.pushPathByName(RouteNames.MOOD_TODAY, null)
                   }
@@ -268,7 +268,7 @@ struct MoodTrendPage {
                 Text(MoodText.mood_trend_distribution_title)
                   .fontSize(DesignFontSize.BODY)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
 
                 Column({ space: DesignDimens.SPACE_SM }) {
                   ForEach(this.barModels(), (model: MoodBarModel) => {
@@ -301,7 +301,7 @@ struct MoodTrendPage {
       .height('100%')
       // 沉浸式：内容避让状态栏（背景延伸）
       .padding({ top: safeTopVp() })
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

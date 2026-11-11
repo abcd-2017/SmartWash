@@ -181,10 +181,10 @@ struct Login {
         .width(96)
         .height(96)
         .borderRadius(48)
-        .backgroundColor(resColor('GLASS_BG_SUBTLE'))
+        .backgroundColor($r('app.color.GLASS_BG_SUBTLE'))
         .border({
           width: 1,
-          color: resColor('GLASS_BORDER_SUBTLE'),
+          color: $r('app.color.GLASS_BORDER_SUBTLE'),
           style: BorderStyle.Solid
         })
 
@@ -308,7 +308,7 @@ struct Login {
             Text($r('app.string.forgot_password'))
               .fontSize(DesignFontSize.BUTTON_TEXT)
               .fontWeight(DesignFontWeight.MEDIUM)
-              .fontColor(resColor('GLASS_TEXT_ACTIVE'))
+              .fontColor($r('app.color.GLASS_TEXT_ACTIVE'))
               .padding({ left: 4, right: 4, top: 16, bottom: 16 })
               .onClick(() => {
                 this.navDebouncer.throttle(() => {
@@ -338,7 +338,7 @@ struct Login {
           .width("100%")
           .height(48)
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(resColor('PRIMARY'))
+          .backgroundColor($r('app.color.PRIMARY'))
           .opacity(this.loginLoading ? 0.38 : 1)
           .scale({ x: this.ctaPressed ? 0.97 : 1, y: this.ctaPressed ? 0.97 : 1 })
           .animation({ duration: 100, curve: Curve.EaseOut })
@@ -359,7 +359,7 @@ struct Login {
         .backgroundColor(GLASS_CARD_BG)
         .border({
           width: 1,
-          color: resColor('GLASS_BORDER_SUBTLE'),
+          color: $r('app.color.GLASS_BORDER_SUBTLE'),
           style: BorderStyle.Solid
         })
         .padding({ left: 16, right: 16, top: 20, bottom: 20 })
@@ -407,9 +407,9 @@ struct Login {
         direction: GradientDirection.Bottom,
         // 三段渐变对齐安卓（160deg #1A9E6E → #0D7A4A@50% → #0B5C3A，差异分析 2026-10-27）
         colors: [
-          [resColor('AUTH_GRADIENT_TOP'), 0],
-          [resColor('AUTH_GRADIENT_MID'), 0.5],
-          [resColor('AUTH_GRADIENT_BOTTOM'), 1]
+          [$r('app.color.AUTH_GRADIENT_TOP'), 0],
+          [$r('app.color.AUTH_GRADIENT_MID'), 0.5],
+          [$r('app.color.AUTH_GRADIENT_BOTTOM'), 1]
         ]
       })
       }

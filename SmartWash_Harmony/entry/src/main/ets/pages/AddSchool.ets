@@ -250,7 +250,7 @@ struct AddSchool {
                 // Hero 图标对齐安卓 Icons.Rounded.School（D25）
                 SymbolGlyph($r('sys.symbol.graduationcap'))
                   .fontSize(28)
-                  .fontColor([resColor('ON_PRIMARY')])
+                  .fontColor([$r('app.color.ON_PRIMARY')])
               }
               .width(64)
               .height(64)
@@ -263,13 +263,13 @@ struct AddSchool {
               Text($r('app.string.complete_info'))
                 .fontSize(DesignFontSize.STATUS_LARGE)
                 .fontWeight(DesignFontWeight.SEMI_BOLD)
-                .fontColor(resColor('ON_PRIMARY'))
+                .fontColor($r('app.color.ON_PRIMARY'))
                 .margin({ top: 14 })
 
               // 标题→副标题间距 14dp（对齐安卓 verticalArrangement.spacedBy(14)；D19）
               Text($r('app.string.fill_school_info'))
                 .fontSize(DesignFontSize.BODY)
-                .fontColor(resColor('ON_PRIMARY'))
+                .fontColor($r('app.color.ON_PRIMARY'))
                 .margin({ top: 14 })
             }
             .width("100%")
@@ -277,7 +277,7 @@ struct AddSchool {
             .borderRadius(DesignDimens.CARD_RADIUS)
             .linearGradient({
               angle: 135,
-              colors: [[resColor('PRIMARY'), 0], [resColor('PRIMARY_DARK'), 1]]
+              colors: [[$r('app.color.PRIMARY'), 0], [$r('app.color.PRIMARY_DARK'), 1]]
             })
             .alignItems(HorizontalAlign.Center)
             .margin({ top: DesignDimens.SPACE_XXL })
@@ -288,7 +288,7 @@ struct AddSchool {
               // 学校标签（12/400 textSecondary）
               Text($r('app.string.search_school'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
 
               // 学校输入组件（输入行 + 错误文案 + 下拉列表，紧贴输入框）
               Column() {
@@ -297,14 +297,14 @@ struct AddSchool {
                   // 前缀图标对齐安卓 Icons.Rounded.School（D25）
                   SymbolGlyph($r('sys.symbol.graduationcap'))
                     .fontSize(16)
-                    .fontColor([resColor('PRIMARY')])
+                    .fontColor([$r('app.color.PRIMARY')])
                     .opacity(0.5)
 
                   TextInput({ text: this.schoolName, placeholder: resString('search_school') })
                     .type(InputType.Normal)
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(resColor('TEXT_PRIMARY'))
-                    .placeholderColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
+                    .placeholderColor($r('app.color.TEXT_SECONDARY'))
                     .backgroundColor(Color.Transparent)
                     .layoutWeight(1)
                     .margin({ left: 12 })
@@ -331,7 +331,7 @@ struct AddSchool {
                   Column() {
                     SymbolGlyph($r('sys.symbol.xmark'))
                       .fontSize(20)
-                      .fontColor([resColor('TEXT_SECONDARY')])
+                      .fontColor([$r('app.color.TEXT_SECONDARY')])
                   }
                   .width(48)
                   .height(48)
@@ -345,8 +345,8 @@ struct AddSchool {
                 .width("100%")
                 .height(48)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
-                .backgroundColor(resColor('SURFACE_VARIANT'))
-                .border({ width: 1, color: this.checkSchoolId ? resColor('ERROR') : resColor('OUTLINE') })
+                .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                .border({ width: 1, color: this.checkSchoolId ? $r('app.color.ERROR') : $r('app.color.OUTLINE') })
                 .padding({ left: 12, right: 4 })
                 .alignItems(VerticalAlign.Center)
 
@@ -354,7 +354,7 @@ struct AddSchool {
                 if (this.checkSchoolId) {
                   Text($r('app.string.please_select_school'))
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('ERROR'))
+                    .fontColor($r('app.color.ERROR'))
                     .width("100%")
                     .margin({ top: 4 })
                 }
@@ -368,21 +368,21 @@ struct AddSchool {
                           Row() {
                             Text(school.schoolName)
                               .fontSize(12)
-                              .fontColor(this.schoolId === school.schoolId ? resColor('PRIMARY_DARK') : resColor('TEXT_PRIMARY'))
+                              .fontColor(this.schoolId === school.schoolId ? $r('app.color.PRIMARY_DARK') : $r('app.color.TEXT_PRIMARY'))
                               .layoutWeight(1)
                           }
                           .width("100%")
                           .height(56)
                           .padding({ left: 12, right: 12 })
                           .alignItems(VerticalAlign.Center)
-                          .backgroundColor(this.schoolId === school.schoolId ? resColor('PRIMARY_CONTAINER') : Color.Transparent)
+                          .backgroundColor(this.schoolId === school.schoolId ? $r('app.color.PRIMARY_CONTAINER') : Color.Transparent)
                           .animation(MotionTiming.ENTER)
                           .onClick(() => {
                             this.selectSchool(school)
                           })
 
                           Divider()
-                            .color(resColor('HAIRLINE'))
+                            .color($r('app.color.HAIRLINE'))
                             .strokeWidth(0.5)
                             .margin({ left: 14, right: 14 })
                         }
@@ -393,12 +393,12 @@ struct AddSchool {
                   .width("100%")
                   // 行高 56（对齐安卓 56dp 行；原 57 多 1；D24）
                   .height(Math.min(this.schoolList.length * 56, 200))
-                  .backgroundColor(resColor('SURFACE'))
+                  .backgroundColor($r('app.color.SURFACE'))
                   .borderRadius(DesignDimens.CARD_RADIUS)
-                  .border({ width: 1, color: resColor('OUTLINE') })
+                  .border({ width: 1, color: $r('app.color.OUTLINE') })
                   .shadow({
                     radius: DesignElevation.CARD_SHADOW_RADIUS,
-                    color: resColor('SHADOW_COLOR_CARD'),
+                    color: $r('app.color.SHADOW_COLOR_CARD'),
                     offsetX: 0,
                     offsetY: DesignElevation.CARD_SHADOW_OFFSET
                   })
@@ -413,7 +413,7 @@ struct AddSchool {
               // 学号标签
               Text($r('app.string.student_id'))
                 .fontSize(DesignFontSize.CAPTION)
-                .fontColor(resColor('TEXT_SECONDARY'))
+                .fontColor($r('app.color.TEXT_SECONDARY'))
 
               // 学号输入组件（输入行 + 错误文案）
               Column() {
@@ -422,15 +422,15 @@ struct AddSchool {
                   // 前缀图标对齐安卓 Icons.Rounded.Badge（D25，ID 卡语义）
                   SymbolGlyph($r('sys.symbol.person_text_rectangle'))
                     .fontSize(16)
-                    .fontColor([resColor('PRIMARY')])
+                    .fontColor([$r('app.color.PRIMARY')])
                     .opacity(0.5)
 
                   TextInput({ text: this.studentId, placeholder: resString('student_id') })
                     .type(InputType.Number)
                     .maxLength(16)
                     .fontSize(DesignFontSize.BODY)
-                    .fontColor(resColor('TEXT_PRIMARY'))
-                    .placeholderColor(resColor('TEXT_SECONDARY'))
+                    .fontColor($r('app.color.TEXT_PRIMARY'))
+                    .placeholderColor($r('app.color.TEXT_SECONDARY'))
                     .backgroundColor(Color.Transparent)
                     .layoutWeight(1)
                     .margin({ left: 12 })
@@ -443,8 +443,8 @@ struct AddSchool {
                 .width("100%")
                 .height(48)
                 .borderRadius(DesignDimens.INPUT_RADIUS)
-                .backgroundColor(resColor('SURFACE_VARIANT'))
-                .border({ width: 1, color: this.checkStudentId ? resColor('ERROR') : resColor('OUTLINE') })
+                .backgroundColor($r('app.color.SURFACE_VARIANT'))
+                .border({ width: 1, color: this.checkStudentId ? $r('app.color.ERROR') : $r('app.color.OUTLINE') })
                 .padding({ left: 12, right: 12 })
                 .alignItems(VerticalAlign.Center)
 
@@ -452,7 +452,7 @@ struct AddSchool {
                 if (this.checkStudentId) {
                   Text($r('app.string.invalid_student_id'))
                     .fontSize(DesignFontSize.CAPTION)
-                    .fontColor(resColor('ERROR'))
+                    .fontColor($r('app.color.ERROR'))
                     .width("100%")
                     .margin({ top: 4 })
                 }
@@ -462,12 +462,12 @@ struct AddSchool {
             }
             .width("100%")
             .padding(DesignDimens.CARD_PADDING)
-            .backgroundColor(resColor('SURFACE'))
+            .backgroundColor($r('app.color.SURFACE'))
             .borderRadius(DesignDimens.CARD_RADIUS)
-            .border({ width: 1, color: resColor('OUTLINE') })
+            .border({ width: 1, color: $r('app.color.OUTLINE') })
             .shadow({
               radius: DesignElevation.CARD_SHADOW_RADIUS,
-              color: resColor('SHADOW_COLOR_CARD'),
+              color: $r('app.color.SHADOW_COLOR_CARD'),
               offsetX: 0,
               offsetY: DesignElevation.CARD_SHADOW_OFFSET
             })
@@ -491,7 +491,7 @@ struct AddSchool {
         Column() {
           Text($r('app.string.school_info_locked_hint'))
             .fontSize(DesignFontSize.CAPTION)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .width("100%")
 
           // 纯色 primary 底（对齐安卓 AuthCtaButton 认证页 CTA；D22）
@@ -509,11 +509,11 @@ struct AddSchool {
         .width("100%")
         // CTA 栏顶部内距 0（对齐安卓 CTA Column 无 top padding；D21）
         .padding({ left: DesignDimens.PAGE_PADDING, right: DesignDimens.PAGE_PADDING, top: 0, bottom: 16 + safeBottomVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
       }
       .width("100%")
       .height("100%")
-      .backgroundColor(resColor('BACKGROUND'))
+      .backgroundColor($r('app.color.BACKGROUND'))
       }
     }
     .hideTitleBar(true)

@@ -31,7 +31,7 @@ export function OrderDetailBuilder() {
  */
 class StatusMeta {
   text: string = ""
-  color: number = resColor('PRIMARY')
+  color: ResourceColor = $r('app.color.PRIMARY')
   description: string = ""
 }
 
@@ -158,60 +158,60 @@ struct OrderDetail {
     switch (this.orderInfo?.status) {
       case OrderStatusEnum.PENDING_PAYMENT:
         meta.text = resString('pending_payment')
-        meta.color = resColor('WARNING')
+        meta.color = $r('app.color.WARNING')
         meta.description = resString('please_pay_soon')
         break
       case OrderStatusEnum.PENDING_SHIPMENT:
         meta.text = resString('pending_shipment')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('please_ship_soon')
         break
       // 中间态（对齐安卓 OrderDetailPage.kt:539-550）：已收取/已烘干/配送中归入清洗→取件阶段，
       // 安卓均有提示语；鸿蒙原落 default 显示「-」
       case OrderStatusEnum.RECEIVED:
         meta.text = resString('order_status_received')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('received_hint')
         break
       case OrderStatusEnum.WASHING:
         meta.text = resString('step_washing')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('washing_in_progress_hint')
         break
       case OrderStatusEnum.DRIED:
         meta.text = resString('order_status_dried')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('dried_hint')
         break
       case OrderStatusEnum.IN_DELIVERY:
         meta.text = resString('order_status_in_delivery')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('in_delivery_hint')
         break
       case OrderStatusEnum.READY_FOR_PICKUP:
         meta.text = resString('step_pickup')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         meta.description = resString('clothes_in_locker')
         break
       case OrderStatusEnum.COMPLETED:
         meta.text = resString('completed')
-        meta.color = resColor('PRIMARY_DARK')
+        meta.color = $r('app.color.PRIMARY_DARK')
         // 安卓此处为 completion_time「完成时间」（疑似占位文案），保留语义化文案
         meta.description = resString('order_detail_4')
         break
       case OrderStatusEnum.CANCELED:
         meta.text = resString('cancelled')
-        meta.color = resColor('DANGER')
+        meta.color = $r('app.color.DANGER')
         meta.description = resString('cancelled')
         break
       case OrderStatusEnum.REFUNDED:
         meta.text = resString('order_status_refunded')
-        meta.color = resColor('DANGER')
+        meta.color = $r('app.color.DANGER')
         meta.description = resString('refunded_hint')
         break
       default:
         meta.text = getOrderStatusDescription(this.orderInfo?.status)
-        meta.color = resColor('TEXT_SECONDARY')
+        meta.color = $r('app.color.TEXT_SECONDARY')
         meta.description = "-"
         break
     }
@@ -280,7 +280,7 @@ struct OrderDetail {
       if (this.statusMeta().description !== "") {
         Text(this.statusMeta().description)
           .fontSize(DesignFontSize.CAPTION)
-          .fontColor(resColor('TEXT_SECONDARY'))
+          .fontColor($r('app.color.TEXT_SECONDARY'))
           .margin({ top: 6 })
       }
     }
@@ -300,7 +300,7 @@ struct OrderDetail {
       Text($r('app.string.progress_timeline'))
         .fontSize(DesignFontSize.SECTION_TITLE)
         .fontWeight(DesignFontWeight.SEMI_BOLD)
-        .fontColor(resColor('TEXT_PRIMARY'))
+        .fontColor($r('app.color.TEXT_PRIMARY'))
         .letterSpacing(0.3)
         .margin({ bottom: 6 })
 
@@ -314,7 +314,7 @@ struct OrderDetail {
               // 避免相邻段首尾相接成一条通线
               .padding({ left: 6, right: 6 })
               .height(2)
-              .backgroundColor(index < this.currentIndex() ? resColor('PRIMARY') : resColor('HAIRLINE'))
+              .backgroundColor(index < this.currentIndex() ? $r('app.color.PRIMARY') : $r('app.color.HAIRLINE'))
           }, (index: number) => index.toString())
         }
         .width("100%")
@@ -333,20 +333,20 @@ struct OrderDetail {
                     .width(20)
                     .height(20)
                     .borderRadius(10)
-                    .backgroundColor(resColor('WATER'))
+                    .backgroundColor($r('app.color.WATER'))
                     .opacity(0.12)
                   Column()
                     .width(12)
                     .height(12)
                     .borderRadius(6)
-                    .backgroundColor(resColor('WATER'))
+                    .backgroundColor($r('app.color.WATER'))
                 } else {
                   // done → primary 实心；未完成 → outline 实心
                   Column()
                     .width(12)
                     .height(12)
                     .borderRadius(6)
-                    .backgroundColor(index < this.currentIndex() ? resColor('PRIMARY') : resColor('OUTLINE'))
+                    .backgroundColor(index < this.currentIndex() ? $r('app.color.PRIMARY') : $r('app.color.OUTLINE'))
                 }
               }
               .width(20)
@@ -355,8 +355,8 @@ struct OrderDetail {
               Text(node.label)
                 .fontSize(DesignFontSize.CAPTION)
                 .fontWeight(index === this.currentIndex() ? DesignFontWeight.SEMI_BOLD : DesignFontWeight.NORMAL)
-                .fontColor(index === this.currentIndex() ? resColor('ON_PRIMARY_CONTAINER') :
-                  (index < this.currentIndex() ? resColor('TEXT_PRIMARY') : resColor('TEXT_TERTIARY')))
+                .fontColor(index === this.currentIndex() ? $r('app.color.ON_PRIMARY_CONTAINER') :
+                  (index < this.currentIndex() ? $r('app.color.TEXT_PRIMARY') : $r('app.color.TEXT_TERTIARY')))
                 .textAlign(TextAlign.Center)
                 .maxLines(1)
                 .margin({ top: 6 })
@@ -365,7 +365,7 @@ struct OrderDetail {
               if (index === 0 && this.firstNodeTime() !== "") {
                 Text(this.firstNodeTime())
                   .fontSize(DesignFontSize.CAPTION)
-                  .fontColor(resColor('TEXT_SECONDARY'))
+                  .fontColor($r('app.color.TEXT_SECONDARY'))
                   .fontFeature(DesignFontFeature.TNUM)
                   .textAlign(TextAlign.Center)
                   .margin({ top: 2 })
@@ -384,12 +384,12 @@ struct OrderDetail {
     .alignItems(HorizontalAlign.Start)
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
     // DESIGN-SPEC v0.4 §3.1 / §2.4 唯一卡片画法：1px outline 描边 + level1 阴影
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -408,14 +408,14 @@ struct OrderDetail {
           icon: $r('sys.symbol.list_square_bill'),
           sizeValue: 36,
           iconSize: 20,
-          containerColor: resColor('ICON_CONTAINER_BLUE'),
-          iconColor: resColor('ICON_FOREGROUND_BLUE')
+          containerColor: $r('app.color.ICON_CONTAINER_BLUE'),
+          iconColor: $r('app.color.ICON_FOREGROUND_BLUE')
         })
 
         Text($r('app.string.order_info'))
           .fontSize(DesignFontSize.SECTION_TITLE)
           .fontWeight(DesignFontWeight.SEMI_BOLD)
-          .fontColor(resColor('TEXT_PRIMARY'))
+          .fontColor($r('app.color.TEXT_PRIMARY'))
           .margin({ left: 12 })
       }
       .width("100%")
@@ -439,7 +439,7 @@ struct OrderDetail {
         InfoRow({
           label: resString('actual_payment'),
           value: `¥${(this.orderInfo?.payPrice ?? 0).toFixed(2)}`,
-          valueColor: resColor('PRIMARY_DARK'),
+          valueColor: $r('app.color.PRIMARY_DARK'),
           valueSize: DesignFontSize.AMOUNT_MEDIUM,
           // 对齐安卓 OrderDetailPage.kt:215：AmountMedium.copy(fontWeight = Bold)
           valueWeight: DesignFontWeight.BOLD,
@@ -452,11 +452,11 @@ struct OrderDetail {
     .width("100%")
     .padding(DesignDimens.CARD_PADDING)
     .borderRadius(DesignDimens.CARD_RADIUS)
-    .backgroundColor(resColor('SURFACE'))
-    .border({ width: 1, color: resColor('OUTLINE') })
+    .backgroundColor($r('app.color.SURFACE'))
+    .border({ width: 1, color: $r('app.color.OUTLINE') })
     .shadow({
       radius: DesignElevation.LEVEL_1,
-      color: resColor('SHADOW_COLOR_CARD'),
+      color: $r('app.color.SHADOW_COLOR_CARD'),
       offsetX: 0,
       offsetY: 2
     })
@@ -467,7 +467,7 @@ struct OrderDetail {
     Column() {
       Divider()
         .strokeWidth(1)
-        .color(resColor('OUTLINE'))
+        .color($r('app.color.OUTLINE'))
 
       Row() {
         // 联系客服（次按钮：透明底 + 1dp outline 描边 + primaryDark 字，D-OD12 先以 toast 兜底）
@@ -475,13 +475,13 @@ struct OrderDetail {
           Text($r('app.string.contact_service'))
             .fontSize(DesignFontSize.AMOUNT_MEDIUM)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('PRIMARY_DARK'))
+            .fontColor($r('app.color.PRIMARY_DARK'))
         }
         .layoutWeight(1)
         .height(48)
         .justifyContent(FlexAlign.Center)
         .borderRadius(DesignDimens.RADIUS_FULL)
-        .border({ width: 1, color: resColor('OUTLINE') })
+        .border({ width: 1, color: $r('app.color.OUTLINE') })
         .scale({ x: this.contactPressed ? 0.97 : 1, y: this.contactPressed ? 0.97 : 1 })
         .animation({ duration: 100, curve: Curve.EaseOut })
         .onTouch((event: TouchEvent) => {
@@ -502,14 +502,14 @@ struct OrderDetail {
             Text($r('app.string.view_pickup_code'))
               .fontSize(DesignFontSize.AMOUNT_MEDIUM)
               .fontWeight(DesignFontWeight.SEMI_BOLD)
-              .fontColor(resColor('ON_PRIMARY'))
+              .fontColor($r('app.color.ON_PRIMARY'))
               .letterSpacing(1)
           }
           .layoutWeight(1)
           .height(48)
           .justifyContent(FlexAlign.Center)
           .borderRadius(DesignDimens.RADIUS_FULL)
-          .backgroundColor(resColor('PRIMARY'))
+          .backgroundColor($r('app.color.PRIMARY'))
           .margin({ left: 12 })
           .scale({ x: this.pickupPressed ? 0.97 : 1, y: this.pickupPressed ? 0.97 : 1 })
           .animation({ duration: 100, curve: Curve.EaseOut })
@@ -545,7 +545,7 @@ struct OrderDetail {
       })
     }
     .width("100%")
-    .backgroundColor(resColor('SURFACE'))
+    .backgroundColor($r('app.color.SURFACE'))
   }
 
   build() {
@@ -563,7 +563,7 @@ struct OrderDetail {
                 Column() {
                   SymbolGlyph($r('sys.symbol.chevron_left'))
                     .fontSize(24)
-                    .fontColor([resColor('TEXT_PRIMARY')])
+                    .fontColor([$r('app.color.TEXT_PRIMARY')])
                 }
                 .width(48)
                 .height(48)
@@ -576,7 +576,7 @@ struct OrderDetail {
                 Text($r('app.string.order_detail'))
                   .fontSize(DesignFontSize.ROOT_TITLE)
                   .fontWeight(DesignFontWeight.SEMI_BOLD)
-                  .fontColor(resColor('TEXT_PRIMARY'))
+                  .fontColor($r('app.color.TEXT_PRIMARY'))
               }
               .width("100%")
               .padding({ left: 12, right: DesignDimens.PAGE_PADDING, top: 2, bottom: 6 })
@@ -621,7 +621,7 @@ struct OrderDetail {
         .height("100%")
         // 沉浸式：内容避让状态栏（背景延伸）
         .padding({ top: safeTopVp() })
-        .backgroundColor(resColor('BACKGROUND'))
+        .backgroundColor($r('app.color.BACKGROUND'))
         // 骨架↔内容 Crossfade 近似（对齐安卓 Crossfade 300ms）：加载态整列淡隐 + 禁命中，
         // 骨架层以 TransitionEffect.OPACITY 淡入淡出（§2-I2）
         .opacity(this.isLoading ? 0 : 1)
@@ -634,7 +634,7 @@ struct OrderDetail {
           LoadingState()
             .width("100%")
             .height("100%")
-            .backgroundColor(resColor('BACKGROUND'))
+            .backgroundColor($r('app.color.BACKGROUND'))
             .zIndex(2)
             .transition(TransitionEffect.OPACITY)
         }
@@ -659,7 +659,7 @@ struct OrderDetail {
           }
           .width("100%")
           .height("100%")
-          .backgroundColor(resColor('BACKGROUND'))
+          .backgroundColor($r('app.color.BACKGROUND'))
           .justifyContent(FlexAlign.Center)
           .zIndex(3)
           .transition(TransitionEffect.OPACITY)
@@ -728,12 +728,12 @@ export struct PickupCodeDialog {
           Text($r('app.string.pickup_code'))
             .fontSize(DesignFontSize.ROOT_TITLE)
             .fontWeight(DesignFontWeight.SEMI_BOLD)
-            .fontColor(resColor('TEXT_PRIMARY'))
+            .fontColor($r('app.color.TEXT_PRIMARY'))
 
           Text(`寄存柜: ${this.lockerNumber}`)
             .fontSize(DesignFontSize.CAPTION)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .fontFeature(DesignFontFeature.TNUM)
             .margin({ top: 4 })
 
@@ -742,14 +742,14 @@ export struct PickupCodeDialog {
             Text(this.pickupCode)
               .fontSize(DesignFontSize.DATA_LARGE)
               .fontWeight(DesignFontWeight.BOLD)
-              .fontColor(resColor('PRIMARY_DARK'))
+              .fontColor($r('app.color.PRIMARY_DARK'))
               .fontFeature(DesignFontFeature.TNUM)
               .maxLines(1)
               .margin({ top: 12 })
           } else {
             Text($r('app.string.no_pickup_code'))
               .fontSize(DesignFontSize.BODY_SMALL)
-              .fontColor(resColor('TEXT_SECONDARY'))
+              .fontColor($r('app.color.TEXT_SECONDARY'))
               .margin({ top: 12 })
           }
         }
@@ -764,7 +764,7 @@ export struct PickupCodeDialog {
 
         // 分隔线（0.5dp，切动作区）
         Divider()
-          .color(resColor('DIVIDER'))
+          .color($r('app.color.DIVIDER'))
           .strokeWidth(0.5)
 
         // 底部分区动作（对齐安卓 DialogAction：48 高 / bodyLarge 16/500）
@@ -772,7 +772,7 @@ export struct PickupCodeDialog {
           Text($r('app.string.cancel'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('TEXT_SECONDARY'))
+            .fontColor($r('app.color.TEXT_SECONDARY'))
             .layoutWeight(1)
             .height(48)
             .textAlign(TextAlign.Center)
@@ -783,14 +783,14 @@ export struct PickupCodeDialog {
 
           Divider()
             .vertical(true)
-            .color(resColor('DIVIDER'))
+            .color($r('app.color.DIVIDER'))
             .strokeWidth(0.5)
             .height(48)
 
           Text($r('app.string.copy_pickup_code'))
             .fontSize(DesignFontSize.BODY)
             .fontWeight(DesignFontWeight.MEDIUM)
-            .fontColor(resColor('PRIMARY'))
+            .fontColor($r('app.color.PRIMARY'))
             .layoutWeight(1)
             .height(48)
             .textAlign(TextAlign.Center)
@@ -801,12 +801,12 @@ export struct PickupCodeDialog {
         .width("100%")
       }
       .width("100%")
-      .backgroundColor(resColor('SURFACE'))
+      .backgroundColor($r('app.color.SURFACE'))
       .borderRadius(DesignDimens.CARD_RADIUS)
       // 浮层档阴影（§2.4 CSS 0 10px 24px rgba(20,40,30,.10)）
       .shadow({
         radius: DesignElevation.FLOAT_SHADOW_RADIUS,
-        color: resColor('SHADOW_COLOR_FLOAT'),
+        color: $r('app.color.SHADOW_COLOR_FLOAT'),
         offsetX: 0,
         offsetY: DesignElevation.FLOAT_SHADOW_OFFSET
       })
