@@ -255,13 +255,16 @@ export const instance: AxiosInstance = axios.create({
 
 /**
  * 该 401 请求是否具备静默续签资格：
- * - 会话态必须仍为已登录（未登录时 handleUnauthorized 自带静默语义，直接收尾不续签）；
+ * - 仅「已确认未登录」（isLoggedIn === false，登出后）跳过续签：轮询等高频请求不再触发
+ *   无谓刷新。冷启动分流期间 isLoggedIn 尚未写入（undefined）——此时本地有 token、
+ *   refreshToken 大概率有效，必须尝试续签（对齐安卓 recoverFromUnauthorized：不看登录态标记，
+ *   只由 refreshToken 是否存在/有效决定），否则 access token 过期的用户每次冷启动都被踢回登录页；
  * - 已重发过的请求不再续签（重发标记头判定，防「新 token 仍被拒 → 无限刷新」循环）；
  * - /auth/** 认证端点自身（登录/注册/验证码/刷新/登出）的 401 不续签——登录失败不得触发续签；
  * - 仅业务认证接口（/web 前缀、需注入 token 的请求）才续签（公开只读接口不注入 token，无续签语义）。
  */
 function isRefreshRetryable(config: InternalAxiosRequestConfig): boolean {
-  if (AppStorage.get<boolean>("isLoggedIn") !== true) {
+  if (AppStorage.get<boolean>("isLoggedIn") === false) {
     return false
   }
   if (config.headers.get(RETRY_MARKER_HEADER) === RETRY_MARKER_VALUE) {
