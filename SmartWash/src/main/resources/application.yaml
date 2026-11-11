@@ -73,11 +73,9 @@ minio:
   bucket-name: ${MINIO_BUCKET:smartwash}
 
 # 观象台（占卜模块）配置
-# 密钥一律走环境变量注入，下方仅作占位/兜底；生产必须通过环境变量覆盖
+# 密钥一律走环境变量注入（DIV_MASTER_KEY）；模型目录在管理端维护（div_model_config），
+# 平台零兜底：解读只消费用户 BYOK 配置，无任何服务端兜底模型
 div:
-  llm:
-    # bootstrap 兜底：仅当 DB 平台配置(div_model_config)缺失/事故时启用
-    providers: []
   master-key-env: DIV_MASTER_KEY
   limit:
     interpret-per-user-day: 20

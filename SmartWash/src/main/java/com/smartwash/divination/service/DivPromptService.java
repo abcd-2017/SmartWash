@@ -1,13 +1,12 @@
 package com.smartwash.divination.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartwash.divination.entity.DivPromptVersion;
 import com.smartwash.divination.mapper.DivPromptVersionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Prompt 版本管理服务。
@@ -33,13 +32,10 @@ public class DivPromptService {
     }
 
     /**
-     * 获取指定方法的 prompt 版本列表。
+     * 分页查询 prompt 版本（管理端列表，条件由调用方组装）。
      */
-    public List<DivPromptVersion> listByMethod(String method) {
-        LambdaQueryWrapper<DivPromptVersion> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DivPromptVersion::getMethod, method);
-        wrapper.orderByDesc(DivPromptVersion::getCreatedAt);
-        return promptVersionMapper.selectList(wrapper);
+    public Page<DivPromptVersion> listPage(Page<DivPromptVersion> page, LambdaQueryWrapper<DivPromptVersion> wrapper) {
+        return promptVersionMapper.selectPage(page, wrapper);
     }
 
     /**

@@ -3,107 +3,52 @@ package com.smartwash.divination.llm;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 
 /**
- * LLM 网关：路由（主备+熔断）+ 重试 + token 计量。
+ * LLM 网关：熔断 + 计量（路由已零兜底化）。
  *
- * 三层密钥解析（每请求）：
- *   1. 用户 BYOK（div_user_api_config，enabled 且 verified）
- *   2. 平台默认模型（div_platform_setting.default_model_id → div_model_config）
- *   3. yml bootstrap 兜底
+ * <p>平台不给兜底：解读只消费用户 BYOK 配置（{@code div_user_api_config}），
+ * 由 Service 层查库解密构造后传入 {@link #resolveProvider}。用户未配置
+ * （null / disabled）抛 {@link NoProviderConfiguredException}，解读链路转 SSE 428
+ * 引导客户端跳设置页；无平台默认模型、无 yml bootstrap 兜底。</p>
  *
- * 熔断：按供应商滑动窗口错误率熔断（简易实现，不引 resilience4j）。
+ * <p>熔断：按供应商滑动窗口错误率熔断（简易实现，不引 resilience4j）。
  * 熔断键用 {@link OpenAiCompatProvider#getCircuitKey()}（与显示名分离）：
- * BYOK 按用户 configId 隔离，避免同名 custom_model 跨用户互相污染、或与平台目录同名互撞。
+ * BYOK 按用户 configId 隔离，不同用户同名模型互不污染。</p>
  */
 @Slf4j
 @Component
 public class LlmGateway {
 
-    private final LlmProperties llmProperties;
-
     /** 熔断计数窗口：provider → {errors, total} */
     private final ConcurrentHashMap<String, ErrorWindow> circuitWindows = new ConcurrentHashMap<>();
 
-    /** 熔断阈值：错误率 > 50% 且请求数 >= 10 时熔断 */
+    /** 熔断阈值：错误率 > 50% 且请求数 >= 10 时熔断（MIN_REQUESTS 包可见供单测引用） */
     private static final double CIRCUIT_BREAK_THRESHOLD = 0.5;
-    private static final int CIRCUIT_BREAK_MIN_REQUESTS = 10;
+    static final int CIRCUIT_BREAK_MIN_REQUESTS = 10;
     /** 熔断冷却时间（ms） */
     private static final long CIRCUIT_BREAK_COOLDOWN_MS = 60_000;
 
-    public LlmGateway(LlmProperties llmProperties) {
-        this.llmProperties = llmProperties;
-    }
-
     /**
-     * 解析当前请求应使用的供应商（三层密钥解析）。
+     * 解析当前请求应使用的供应商（仅用户 BYOK，零兜底）。
      *
-     * <p>优先级：用户 BYOK → 平台默认模型 → yml bootstrap 兜底，全失败抛 {@link IllegalStateException}。
-     * 平台默认以 {@link Supplier} 懒加载注入（由 Service 层查库解密构造），
-     * 仅在 BYOK 未配置/未启用/熔断时才会触发查库，避免每次请求多查两张表。</p>
-     *
-     * @param userConfig              用户 BYOK 配置（可为 null；平台关闭 BYOK 或用户未配置时为 null）
-     * @param platformDefaultSupplier 平台默认模型懒加载提供者（可返回 null 表示平台未配置可用模型）
+     * @param userConfig 用户 BYOK 供应商（Service 层查库解密构造；未配置/无效为 null）
      * @return 解析结果（含供应商 + 来源标记 + 配置 ID）
+     * @throws NoProviderConfiguredException 用户未配置或配置无效（解读链路转 428）
+     * @throws IllegalStateException         配置存在但供应商熔断中（解读链路转 503）
      */
-    public ResolvedProvider resolveProvider(OpenAiCompatProvider userConfig,
-                                            Supplier<OpenAiCompatProvider> platformDefaultSupplier) {
-        // 优先级 1：用户 BYOK
-        if (userConfig != null && userConfig.isEnabled()) {
-            if (!isCircuitBroken(circuitKeyOf(userConfig))) {
-                return new ResolvedProvider(userConfig, "user", userConfig.getConfigId());
-            }
-            log.warn("用户 BYOK 供应商熔断中，降级到平台默认: {}", userConfig.getName());
+    public ResolvedProvider resolveProvider(OpenAiCompatProvider userConfig) {
+        if (userConfig == null || !userConfig.isEnabled()) {
+            throw new NoProviderConfiguredException();
         }
-
-        // 优先级 2：平台默认模型（Service 层懒加载：div_platform_setting.default_model_id → div_model_config）
-        if (platformDefaultSupplier != null) {
-            OpenAiCompatProvider platformDefault = platformDefaultSupplier.get();
-            if (platformDefault != null && platformDefault.isEnabled()) {
-                if (!isCircuitBroken(circuitKeyOf(platformDefault))) {
-                    return new ResolvedProvider(platformDefault, "platform", platformDefault.getConfigId());
-                }
-                log.warn("平台默认模型熔断中，降级到 bootstrap: {}", platformDefault.getName());
-            }
+        if (isCircuitBroken(circuitKeyOf(userConfig))) {
+            log.warn("用户模型供应商熔断中, provider: {}", userConfig.getName());
+            throw new IllegalStateException("用户模型供应商熔断中");
         }
-
-        // 优先级 3：yml bootstrap 兜底
-        List<OpenAiCompatProvider> bootstrapProviders = getBootstrapProviders();
-        for (OpenAiCompatProvider provider : bootstrapProviders) {
-            if (!isCircuitBroken(circuitKeyOf(provider))) {
-                return new ResolvedProvider(provider, "platform", null);
-            }
-        }
-
-        throw new IllegalStateException("暂无可用 LLM 供应商，所有供应商均熔断或未配置");
-    }
-
-    /**
-     * 获取 bootstrap 供应商列表（按优先级排序）。
-     */
-    public List<OpenAiCompatProvider> getBootstrapProviders() {
-        List<OpenAiCompatProvider> providers = new ArrayList<>();
-        if (llmProperties.getProviders() != null) {
-            for (LlmProperties.ProviderConfig cfg : llmProperties.getProviders()) {
-                if (cfg.isEnabled() && StringUtils.hasText(cfg.getApiKey())) {
-                    providers.add(new OpenAiCompatProvider(
-                            cfg.getName(), cfg.getBaseUrl(), cfg.getApiKey(),
-                            cfg.getModel(), cfg.getPriority(), true, "bootstrap", null,
-                            "bootstrap:" + cfg.getName()
-                    ));
-                }
-            }
-        }
-        providers.sort(Comparator.comparingInt(OpenAiCompatProvider::getPriority));
-        return providers;
+        return new ResolvedProvider(userConfig, "user", userConfig.getConfigId());
     }
 
     /** 记录供应商调用结果（用于熔断判断）：按 provider 的熔断键聚合（与显示名无关） */
@@ -137,12 +82,19 @@ public class LlmGateway {
         if (total < CIRCUIT_BREAK_MIN_REQUESTS) return false;
         double errorRate = (double) errors / total;
         if (errorRate > CIRCUIT_BREAK_THRESHOLD) {
-            // 检查是否已过冷却期
+            // 首次触发熔断：标记冷却起点（原实现 lastBreakTime 初始为 0 导致 elapsed 恒超冷却期、
+            // 直接 reset 清窗口——熔断从未真正生效，坏配置会被反复试呼）
+            if (window.lastBreakTime == 0) {
+                window.lastBreakTime = System.currentTimeMillis();
+                log.warn("供应商错误率 {} 超阈值，熔断 {}ms: {}", errorRate, CIRCUIT_BREAK_COOLDOWN_MS, providerName);
+                return true;
+            }
+            // 冷却期内
             long elapsed = System.currentTimeMillis() - window.lastBreakTime;
             if (elapsed < CIRCUIT_BREAK_COOLDOWN_MS) {
                 return true;
             }
-            // 冷却期过，重置窗口
+            // 冷却期过，重置窗口（半开放行探测）
             window.reset();
         }
         return false;

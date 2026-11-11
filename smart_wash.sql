@@ -1108,55 +1108,140 @@ CREATE TABLE `div_usage_daily` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='每日用量';
 
 -- ----------------------------
--- Table structure for div_model_config（平台模型目录）
+-- Table structure for div_model_config（平台模型目录，扁平存储）
+-- 一厂商 × 一模型 = 一行；vendor 为分组字段（客户端按 vendor 分组树形展示）。
+-- base_url 统一为 OpenAI 兼容接入点（后端按 {base_url}/chat/completions 试呼与转发），
+-- api_key_cipher 恒为空串占位（BYOK 模式下密钥由用户自带，目录不存任何密钥）。
+-- priority 语义：行展示权重（升序）——厂商顺序 = 组内最小 priority，模型顺序 = 行 priority。
 -- ----------------------------
 DROP TABLE IF EXISTS `div_model_config`;
 CREATE TABLE `div_model_config` (
   `id`             BIGINT       NOT NULL AUTO_INCREMENT,
-  `name`           VARCHAR(64)  NOT NULL COMMENT '显示名,如 GLM-4.7',
-  `provider`       VARCHAR(32)  NOT NULL DEFAULT 'openai_compat',
+  `vendor`         VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '厂商名（客户端两级选择的一级分组）',
+  `name`           VARCHAR(64)  NOT NULL COMMENT '模型显示名,如 GLM-5.3',
+  `provider`       VARCHAR(32)  NOT NULL DEFAULT 'openai_compat' COMMENT '接入协议（当前仅 openai_compat）',
   `base_url`       VARCHAR(255) NOT NULL,
   `model_id`       VARCHAR(64)  NOT NULL COMMENT '供应商模型标识',
-  `api_key_cipher` VARCHAR(512) NOT NULL COMMENT 'AES-256-GCM 密文 v{ver}:{iv}:{ct}',
-  `api_key_mask`   VARCHAR(32)  NOT NULL COMMENT '掩码 sk-****abc4',
-  `priority`       INT          NOT NULL DEFAULT 100 COMMENT '越小越优先',
+  `api_key_cipher` VARCHAR(512) NOT NULL COMMENT 'AES-256-GCM 密文 v{ver}:{iv}:{ct}（目录模式恒空串）',
+  `api_key_mask`   VARCHAR(32)  NOT NULL COMMENT '掩码 sk-****abc4（目录模式恒空串）',
+  `priority`       INT          NOT NULL DEFAULT 100 COMMENT '行展示权重，越小越靠前（厂商顺序=组内最小值）',
   `enabled`        TINYINT      NOT NULL DEFAULT 1,
   `key_version`    INT          NOT NULL DEFAULT 1 COMMENT '加密主密钥版本',
   `last_test_at`   DATETIME     NULL,
   `last_test_ok`   TINYINT      NULL,
   `created_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_vendor_enabled` (`vendor`, `enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台模型目录';
 
 -- ----------------------------
 -- Records of div_model_config
--- key 由管理端模型管理页录入，种子不含密钥（安全红线）；api_key_cipher/api_key_mask 以空串占位，last_test_* 待连通性测试回填
+-- 完整目录来源：cc-switch 模型定价目录（model_pricing，228 个模型）中国内可直连厂商的全量模型；
+-- 用户自带 Key：客户端选厂商 → 选模型后填自己的 API Key，服务端按所选行 base_url + model_id 转发。
+-- 厂商块 priority 100 步进，模型行 10 步进（厂商顺序 = 组内最小 priority）。
 -- ----------------------------
-INSERT INTO `div_model_config` VALUES (1, 'DeepSeek 官方', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-flash', '', '', 10, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
-INSERT INTO `div_model_config` VALUES (2, 'DeepSeek 官方 Pro', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-pro', '', '', 20, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
-INSERT INTO `div_model_config` VALUES (3, 'LongCat', 'openai_compat', 'https://api.longcat.chat/openai', 'LongCat-2.5', '', '', 30, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (1, 'DeepSeek', 'DeepSeek Chat', 'openai_compat', 'https://api.deepseek.com', 'deepseek-chat', '', '', 10, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (2, 'DeepSeek', 'DeepSeek V4.1 Flash', 'openai_compat', 'https://api.deepseek.com', 'deepseek-flash', '', '', 20, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (3, 'DeepSeek', 'DeepSeek Reasoner', 'openai_compat', 'https://api.deepseek.com', 'deepseek-reasoner', '', '', 30, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (4, 'DeepSeek', 'DeepSeek V3', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v3', '', '', 40, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (5, 'DeepSeek', 'DeepSeek V3.1', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v3.1', '', '', 50, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (6, 'DeepSeek', 'DeepSeek V3.2', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v3.2', '', '', 60, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (7, 'DeepSeek', 'DeepSeek V4 Flash', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-flash', '', '', 70, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (8, 'DeepSeek', 'DeepSeek V4 Flash 0731', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-flash-0731', '', '', 80, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (9, 'DeepSeek', 'DeepSeek V4 Flash Vision', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-flash-vision-exp', '', '', 90, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (10, 'DeepSeek', 'DeepSeek V4 Pro', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4-pro', '', '', 100, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (11, 'DeepSeek', 'DeepSeek V4.1 Flash', 'openai_compat', 'https://api.deepseek.com', 'deepseek-v4.1-flash', '', '', 110, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (12, '智谱 GLM', 'GLM-4.6', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-4.6', '', '', 120, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (13, '智谱 GLM', 'GLM-4.7', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-4.7', '', '', 130, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (14, '智谱 GLM', 'GLM-5', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5', '', '', 140, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (15, '智谱 GLM', 'GLM-5 Turbo', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5-turbo', '', '', 150, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (16, '智谱 GLM', 'GLM-5.1', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5.1', '', '', 160, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (17, '智谱 GLM', 'GLM-5.2', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5.2', '', '', 170, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (18, '智谱 GLM', 'GLM-5.3', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5.3', '', '', 180, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (19, '智谱 GLM', 'GLM-5.3 Flash', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5.3-flash', '', '', 190, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (20, '智谱 GLM', 'GLM-5.3 FlashX', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5.3-flashx', '', '', 200, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (21, '智谱 GLM', 'GLM-5V Turbo', 'openai_compat', 'https://open.bigmodel.cn/api/paas/v4', 'glm-5v-turbo', '', '', 210, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (22, 'Kimi', 'Kimi K2', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2-0905', '', '', 220, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (23, 'Kimi', 'Kimi K2 Thinking', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2-thinking', '', '', 230, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (24, 'Kimi', 'Kimi K2 Turbo', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2-turbo', '', '', 240, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (25, 'Kimi', 'Kimi K2.5', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2.5', '', '', 250, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (26, 'Kimi', 'Kimi K2.6', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2.6', '', '', 260, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (27, 'Kimi', 'Kimi K2.7 Code', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2.7-code', '', '', 270, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (28, 'Kimi', 'Kimi K2.7 Code HighSpeed', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k2.7-code-highspeed', '', '', 280, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (29, 'Kimi', 'Kimi K3', 'openai_compat', 'https://api.moonshot.cn/v1', 'kimi-k3', '', '', 290, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (30, '阿里百炼', 'Qwen3 235B-A22B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-235b-a22b', '', '', 300, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (31, '阿里百炼', 'Qwen3 32B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-32b', '', '', 310, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (32, '阿里百炼', 'Qwen3 Coder 480B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-480b', '', '', 320, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (33, '阿里百炼', 'Qwen3 Coder Flash', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-flash', '', '', 330, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (34, '阿里百炼', 'Qwen3 Coder Next', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-next', '', '', 340, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (35, '阿里百炼', 'Qwen3 Coder Plus', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-plus', '', '', 350, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (36, '阿里百炼', 'Qwen3 Max', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-max', '', '', 360, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (37, '阿里百炼', 'Qwen3.5 Plus', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.5-plus', '', '', 370, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (38, '阿里百炼', 'Qwen3.6 27B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.6-27b', '', '', 380, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (39, '阿里百炼', 'Qwen3.6 Flash', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.6-flash', '', '', 390, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (40, '阿里百炼', 'Qwen3.6 Plus', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.6-plus', '', '', 400, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (41, '阿里百炼', 'Qwen3.7 Flash', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.7-flash', '', '', 410, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (42, '阿里百炼', 'Qwen3.7 Max', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.7-max', '', '', 420, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (43, '阿里百炼', 'Qwen3.7 Plus', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.7-plus', '', '', 430, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (44, '阿里百炼', 'Qwen3.8 2.4T-A95B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.8-2.4t-a95b', '', '', 440, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (45, '阿里百炼', 'Qwen3.8 27B', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.8-27b', '', '', 450, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (46, '阿里百炼', 'Qwen3.8 Flash', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.8-flash', '', '', 460, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (47, '阿里百炼', 'Qwen3.8 Max', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.8-max', '', '', 470, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (48, '阿里百炼', 'Qwen3.8 Omni Flash', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3.8-omni-flash', '', '', 480, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (49, 'MiniMax', 'MiniMax M2', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2', '', '', 490, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (50, 'MiniMax', 'MiniMax M2.1', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.1', '', '', 500, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (51, 'MiniMax', 'MiniMax M2.1 Lightning', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.1-lightning', '', '', 510, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (52, 'MiniMax', 'MiniMax M2.5', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.5', '', '', 520, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (53, 'MiniMax', 'MiniMax M2.5 Lightning', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.5-lightning', '', '', 530, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (54, 'MiniMax', 'MiniMax M2.7', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.7', '', '', 540, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (55, 'MiniMax', 'MiniMax M2.7 Highspeed', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m2.7-highspeed', '', '', 550, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (56, 'MiniMax', 'MiniMax M3', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m3', '', '', 560, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (57, 'MiniMax', 'MiniMax M3.1 Flash', 'openai_compat', 'https://api.minimax.cn/v1', 'minimax-m3.1-flash', '', '', 570, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (58, '火山方舟', 'Doubao Seed 2.0 Code', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-0-code', '', '', 580, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (59, '火山方舟', 'Doubao Seed 2.0 Code Preview', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-0-code-preview-latest', '', '', 590, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (60, '火山方舟', 'Doubao Seed 2.0 Lite', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-0-lite', '', '', 600, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (61, '火山方舟', 'Doubao Seed 2.0 Mini', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-0-mini', '', '', 610, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (62, '火山方舟', 'Doubao Seed 2.0 Pro', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-0-pro', '', '', 620, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (63, '火山方舟', 'Doubao Seed 2.1 Pro', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-1-pro', '', '', 630, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (64, '火山方舟', 'Doubao Seed 2.1 Turbo', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-2-1-turbo', '', '', 640, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (65, '火山方舟', 'Doubao Seed Code', 'openai_compat', 'https://ark.cn-beijing.volces.com/api/v3', 'doubao-seed-code', '', '', 650, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (66, '小米 MiMo', 'MiMo V2 Flash', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2-flash', '', '', 660, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (67, '小米 MiMo', 'MiMo V2 Pro', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2-pro', '', '', 670, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (68, '小米 MiMo', 'MiMo V2.5', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2.5', '', '', 680, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (69, '小米 MiMo', 'MiMo V2.5 Pro', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2.5-pro', '', '', 690, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (70, '小米 MiMo', 'MiMo V2.6 Flash', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2.6-flash', '', '', 700, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (71, '小米 MiMo', 'MiMo V2.6 Pro', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2.6-pro', '', '', 710, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (72, '小米 MiMo', 'MiMo V2.6 Pro UltraSpeed', 'openai_compat', 'https://api.xiaomimimo.com/v1', 'mimo-v2.6-pro-ultraspeed', '', '', 720, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (73, '阶跃星辰', 'Step 3.5 Flash', 'openai_compat', 'https://api.stepfun.com/v2', 'step-3.5-flash', '', '', 730, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (74, '阶跃星辰', 'Step 3.5 Flash 2603', 'openai_compat', 'https://api.stepfun.com/v2', 'step-3.5-flash-2603', '', '', 740, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (75, '阶跃星辰', 'Step 3.7 Flash', 'openai_compat', 'https://api.stepfun.com/v2', 'step-3.7-flash', '', '', 750, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (76, '阶跃星辰', 'Step 5 Preview', 'openai_compat', 'https://api.stepfun.com/v2', 'step-5-preview', '', '', 760, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (77, '腾讯混元', 'Hunyuan Hy3', 'openai_compat', 'https://api.lkeap.cloud.tencent.com/v3', 'hunyuan-hy3', '', '', 770, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (78, '腾讯混元', 'Hunyuan Hy4 Preview', 'openai_compat', 'https://api.lkeap.cloud.tencent.com/v3', 'hy4-preview', '', '', 780, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (79, 'LongCat', 'LongCat 2.5', 'openai_compat', 'https://api.longcat.chat/openai', 'LongCat-2.5', '', '', 790, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (80, '讯飞星火', 'Spark X2.6', 'openai_compat', 'https://maas-api.cn-huabei-1.xf-yun.com/v1', 'spark-x2.6', '', '', 800, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
+INSERT INTO `div_model_config` VALUES (81, '阿里百炼', 'Qwen3 Coder 480B-A35B Instruct', 'openai_compat', 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'qwen3-coder-480b-a35b-instruct', '', '', 325, 1, 1, NULL, NULL, '2026-11-07 00:00:00', '2026-11-07 00:00:00');
 
 -- ----------------------------
 -- Table structure for div_platform_setting（平台全局设置）
+-- 平台零兜底：解读只消费用户 BYOK 配置，无平台默认/备用模型（default/fallback 列已移除）；
+-- div_use_enabled 为观星台 AI 解读总开关（0=客户端隐藏入口并拦截，1=按用户自配模型解读）
 -- ----------------------------
 DROP TABLE IF EXISTS `div_platform_setting`;
 CREATE TABLE `div_platform_setting` (
-  `id`                   BIGINT NOT NULL,
-  `default_model_id`     BIGINT NOT NULL COMMENT 'div_model_config.id',
-  `fallback_model_id`    BIGINT NULL COMMENT '备用模型',
-  `byok_enabled`         TINYINT NOT NULL DEFAULT 0 COMMENT '是否允许用户自带key',
-  `byok_daily_limit`     INT    NOT NULL DEFAULT 50,
-  `platform_daily_limit` INT    NOT NULL DEFAULT 20,
-  `updated_at`           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`               BIGINT  NOT NULL,
+  `div_use_enabled`  TINYINT NOT NULL DEFAULT 1 COMMENT '观星台 AI 解读总开关',
+  `byok_daily_limit` INT     NOT NULL DEFAULT 50 COMMENT '每用户每日解读次数',
+  `updated_at`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='占卜平台全局设置';
 
 -- ----------------------------
 -- Records of div_platform_setting
--- 单例 id=1：默认模型=DeepSeek 官方(1)，备用=DeepSeek 官方 Pro(2)，对应 div_model_config 种子 id
+-- 单例 id=1：功能默认开启，每用户每日 30 次
 -- ----------------------------
-INSERT INTO `div_platform_setting` VALUES (1, 1, 2, 1, 30, 10, '2026-11-07 00:00:00');
+INSERT INTO `div_platform_setting` VALUES (1, 1, 30, '2026-11-07 00:00:00');
 
 -- ----------------------------
 -- Table structure for div_user_api_config（用户自带API BYOK）
