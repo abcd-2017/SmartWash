@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,18 +32,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.data.DivChartCodec
 import com.smartwash.feature.divination.data.DivMarkdownParser
 import com.smartwash.feature.divination.data.DivReadingSection
+import com.smartwash.feature.divination.data.DivStreamEvent
 import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivCard
@@ -51,7 +57,9 @@ import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.feature.divination.ui.components.buildDivRichText
 import com.smartwash.feature.divination.ui.components.divSerif
 import com.smartwash.feature.divination.DivRoute
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.DivColors
+import com.smartwash.feature.user.api.UserRoute
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
 import com.smartwash.common.utils.LocalReduceMotion
@@ -85,6 +93,17 @@ fun DivReadingPage(
     viewModel: DivReadingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // 「返回自动继续」：428 未配置 → 去设置页配置 → 返回本页（ON_RESUME）自动重试解读。
+    // 守卫在 VM（仅 NEED_CONFIG 错误态触发），首次进入的 ON_RESUME 是 no-op
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.retryIfNeedConfig()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     DivinationScreen {
         // 颜色必须在 DivinationScreen 之内读取（默认玄墨，包根外读会让加载/空态文案在浅色系统下不可见）
@@ -133,7 +152,8 @@ fun DivReadingPage(
                         is RequestState.Loading -> StreamingReadingContent(state.streamText)
 
                         is RequestState.Error -> {
-                            // error 帧 message 优先（服务端分流/限额/降级文案），无则用兜底资源
+                            // error 帧 message 优先（服务端分流/限额/降级文案），无则用兜底资源；
+                            // 428 未配置（2026-11-11 平台零兜底）附「去配置」引导直达设置页弹层
                             val context = LocalContext.current
                             DivCard(Modifier.padding(horizontal = 20.dp)) {
                                 Column(
@@ -147,6 +167,22 @@ fun DivReadingPage(
                                         color = c.textTertiary,
                                         textAlign = TextAlign.Center,
                                     )
+                                    if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
+                                        Spacer(Modifier.height(12.dp))
+                                        Text(
+                                            text = stringResource(R.string.div_reading_go_config),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = c.goldText,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(AppDimens.radiusFull))
+                                                .background(c.gold14)
+                                                .pressable(onClick = {
+                                                    navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                                })
+                                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                                        )
+                                    }
                                 }
                             }
                         }

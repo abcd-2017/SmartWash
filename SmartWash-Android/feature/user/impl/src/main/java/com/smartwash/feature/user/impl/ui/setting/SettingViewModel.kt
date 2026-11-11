@@ -9,7 +9,8 @@ import com.smartwash.common.utils.HapticSettings
 import com.smartwash.common.utils.SharePreferenceUtils
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.user.impl.R
-import com.smartwash.feature.user.impl.network.vo.div.PlatformModelVo
+import com.smartwash.feature.user.impl.network.entity.div.SaveUserApiConfig
+import com.smartwash.feature.user.impl.network.vo.div.PlatformVendorGroupVo
 import com.smartwash.feature.user.impl.network.vo.div.UserApiConfigVo
 import com.smartwash.feature.user.impl.repository.DivSettingRepository
 import com.smartwash.feature.user.impl.session.SessionEventBus
@@ -22,7 +23,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** BYOK 表单字段（字段级校验错误的定位键） */
-enum class ApiConfigField { BASE_URL, MODEL, API_KEY }
+enum class ApiConfigField { MODEL_CONFIG, BASE_URL, MODEL, API_KEY }
+
+/** 解读模型配置模式（2026-11-11 双模式契约）：目录模式点选条目回传 id，自定义模式自输接入点 */
+enum class ApiConfigMode {
+    /** 目录模式（默认）：GET /models 分步选择（厂商→模型条目），服务端取接入点/模型名 */
+    CATALOG,
+
+    /** 自定义模式：自输 baseUrl + 模型名 + apiKey */
+    CUSTOM,
+}
+
+/** 目录模式分步选择（2026-11-11 契约）：第一步选厂商、第二步选该厂商的模型 */
+enum class ApiConfigCatalogStep {
+    /** 第一步：厂商列表（点选进入第二步） */
+    VENDOR,
+
+    /** 第二步：当前厂商的模型列表（可「上一步」返回） */
+    MODEL,
+}
 
 /** BYOK 表单校验错误（仅在提交时展示；输入即清除，规范 §3.7「输入中不报错」） */
 data class ApiConfigFieldError(
@@ -56,7 +75,7 @@ class SettingViewModel @Inject constructor(
 
     // ==================== 观象台 BYOK（解读模型，issue #79） ====================
 
-    /** 用户 BYOK 配置（null = 未配置，解读走平台默认模型） */
+    /** 用户解读模型配置（null = 未配置；平台零兜底，未配置解读统一 428） */
     private val _apiConfig = MutableStateFlow<UserApiConfigVo?>(null)
     val apiConfig = _apiConfig.asStateFlow()
 
@@ -64,8 +83,8 @@ class SettingViewModel @Inject constructor(
     private val _apiConfigState = MutableStateFlow<RequestState>(RequestState.Idle)
     val apiConfigState = _apiConfigState.asStateFlow()
 
-    /** 平台模型目录（「模型名称」输入建议；拉取失败静默降级为空，不阻塞表单） */
-    private val _platformModels = MutableStateFlow<List<PlatformModelVo>>(emptyList())
+    /** 平台模型目录树（目录模式分步选择：厂商→模型；拉取失败静默降级为空，不阻塞表单） */
+    private val _platformModels = MutableStateFlow<List<PlatformVendorGroupVo>>(emptyList())
     val platformModels = _platformModels.asStateFlow()
 
     /** 连通性测试状态（POST test；成功/失败均在弹层内即时反馈） */
@@ -95,8 +114,8 @@ class SettingViewModel @Inject constructor(
                 // 降级：读取失败保持默认值（开启）
                 .onFailure { AppLogger.warn(TAG, "触感反馈开关初值读取失败，使用默认值", it) }
         }
-        // 首进即拉 BYOK 配置（2026-11-07 双轴审查 B1）：原先仅在弹层打开/保存/删除后刷新，
-        // 已配置用户首进看不到掩码回显、byokEnabled=0 的行内置灰也不生效
+        // 首进即拉解读模型配置（2026-11-07 双轴审查 B1）：原先仅在弹层打开/保存/删除后刷新，
+        // 已配置用户首进看不到掩码回显、divUseEnabled=0 的行内置灰也不生效
         refreshApiConfig()
     }
 
@@ -150,7 +169,7 @@ class SettingViewModel @Inject constructor(
         }
     }
 
-    /** 拉取平台模型目录（输入建议；失败静默为空——建议属可选增强，不阻塞表单） */
+    /** 拉取平台模型目录树（目录模式分步选择；失败静默为空——目录属可选增强，可切自定义模式） */
     fun loadPlatformModels() {
         viewModelScope.launch {
             try {
@@ -170,36 +189,78 @@ class SettingViewModel @Inject constructor(
         if (_apiFieldError.value?.field == field) _apiFieldError.value = null
     }
 
+    /** 清空全部字段级校验错误（切换模式时两模式字段集不同，旧模式的报错不再适用） */
+    fun clearFieldErrors() {
+        _apiFieldError.value = null
+    }
+
     /**
-     * 表单校验：三字段服务端均必填，baseUrl 须 https 前缀（与服务端 SSRF 校验同口径，
-     * 端上先拦一次给即时文案）。错误置 [apiFieldError]，通过返回 true。
+     * 表单校验（双模式，2026-11-11 契约）：apiKey 两模式均必填；目录模式须选中目录条目
+     * （modelConfigId），自定义模式三字段均必填且 baseUrl 须 https 前缀（与服务端 SSRF
+     * 校验同口径，端上先拦一次给即时文案）。错误置 [apiFieldError]，通过返回 true。
      */
-    private fun validate(baseUrl: String, model: String, apiKey: String): Boolean {
-        val error = when {
-            baseUrl.isBlank() ->
-                ApiConfigFieldError(ApiConfigField.BASE_URL, R.string.api_config_error_base_url_empty)
-            !baseUrl.trim().startsWith("https://") ->
-                ApiConfigFieldError(ApiConfigField.BASE_URL, R.string.api_config_error_base_url_https)
-            model.isBlank() ->
-                ApiConfigFieldError(ApiConfigField.MODEL, R.string.api_config_error_model_empty)
-            apiKey.isBlank() ->
-                ApiConfigFieldError(ApiConfigField.API_KEY, R.string.api_config_error_key_empty)
-            else -> null
+    private fun validate(
+        mode: ApiConfigMode,
+        modelConfigId: Long?,
+        baseUrl: String,
+        model: String,
+        apiKey: String,
+    ): Boolean {
+        val error = when (mode) {
+            ApiConfigMode.CATALOG -> when {
+                modelConfigId == null ->
+                    ApiConfigFieldError(ApiConfigField.MODEL_CONFIG, R.string.api_config_error_model_config_empty)
+                apiKey.isBlank() ->
+                    ApiConfigFieldError(ApiConfigField.API_KEY, R.string.api_config_error_key_empty)
+                else -> null
+            }
+            ApiConfigMode.CUSTOM -> when {
+                baseUrl.isBlank() ->
+                    ApiConfigFieldError(ApiConfigField.BASE_URL, R.string.api_config_error_base_url_empty)
+                !baseUrl.trim().startsWith("https://") ->
+                    ApiConfigFieldError(ApiConfigField.BASE_URL, R.string.api_config_error_base_url_https)
+                model.isBlank() ->
+                    ApiConfigFieldError(ApiConfigField.MODEL, R.string.api_config_error_model_empty)
+                apiKey.isBlank() ->
+                    ApiConfigFieldError(ApiConfigField.API_KEY, R.string.api_config_error_key_empty)
+                else -> null
+            }
         }
         _apiFieldError.value = error
         return error == null
+    }
+
+    /** 按模式组装请求体（双模式二选一；apiKey 明文仅存在于本次请求体内存态） */
+    private fun buildRequest(
+        mode: ApiConfigMode,
+        modelConfigId: Long?,
+        baseUrl: String,
+        model: String,
+        apiKey: String,
+    ): SaveUserApiConfig = if (mode == ApiConfigMode.CATALOG) {
+        SaveUserApiConfig(modelConfigId = modelConfigId, apiKey = apiKey)
+    } else {
+        SaveUserApiConfig(baseUrl = baseUrl.trim(), model = model.trim(), apiKey = apiKey)
     }
 
     /**
      * 连通性测试（POST test，不保存）：后端试呼失败也回 200 信封（data=false），
      * 需端上自行转失败文案；网络异常经 NetworkException 带可读 message。
      */
-    fun testApiConnection(baseUrl: String, model: String, apiKey: String) {
-        if (!validate(baseUrl, model, apiKey)) return
+    fun testApiConnection(
+        mode: ApiConfigMode,
+        modelConfigId: Long?,
+        baseUrl: String,
+        model: String,
+        apiKey: String,
+    ) {
+        if (!validate(mode, modelConfigId, baseUrl, model, apiKey)) return
         _apiTestState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                val passed = divSettingRepository.testApiConfig(baseUrl.trim(), model.trim(), apiKey)
+                val passed = divSettingRepository.testApiConfig(
+                    buildRequest(mode, modelConfigId, baseUrl, model, apiKey),
+                )
                 _apiTestState.value =
                     if (passed) RequestState.Success
                     else RequestState.Error(R.string.api_config_test_fail)
@@ -215,17 +276,26 @@ class SettingViewModel @Inject constructor(
     }
 
     /**
-     * 保存配置（PUT）：服务端先真实试呼，失败信封 data 带原因文案（ResponseInterceptor
-     * 已解析进 NetworkException.message）。成功后刷新配置供行内掩码/徽标更新。
+     * 保存配置（PUT，双模式二选一）：服务端先真实试呼，失败信封 data 带原因文案
+     * （ResponseInterceptor 已解析进 NetworkException.message）。成功后刷新配置供
+     * 行内掩码/徽标更新。
      */
-    fun saveApiConfig(baseUrl: String, model: String, apiKey: String) {
-        if (!validate(baseUrl, model, apiKey)) return
+    fun saveApiConfig(
+        mode: ApiConfigMode,
+        modelConfigId: Long?,
+        baseUrl: String,
+        model: String,
+        apiKey: String,
+    ) {
+        if (!validate(mode, modelConfigId, baseUrl, model, apiKey)) return
         _apiSaveState.value = RequestState.Loading
         viewModelScope.launch {
             try {
-                divSettingRepository.saveApiConfig(baseUrl.trim(), model.trim(), apiKey)
+                divSettingRepository.saveApiConfig(
+                    buildRequest(mode, modelConfigId, baseUrl, model, apiKey),
+                )
                 // 成功日志不含任何密钥信息（掩码由服务端生成下发）
-                AppLogger.info(TAG, "解读模型 BYOK 配置保存成功")
+                AppLogger.info(TAG, "解读模型配置保存成功 mode=$mode")
                 _apiSaveState.value = RequestState.Success
                 refreshApiConfig()
             } catch (e: CancellationException) {
@@ -233,7 +303,7 @@ class SettingViewModel @Inject constructor(
             } catch (e: NetworkException) {
                 _apiSaveState.value = RequestState.Error(e.resId, e.message)
             } catch (e: Exception) {
-                AppLogger.warn(TAG, "解读模型 BYOK 保存失败", e)
+                AppLogger.warn(TAG, "解读模型配置保存失败", e)
                 _apiSaveState.value = RequestState.Error(R.string.error_network_fail)
             }
         }

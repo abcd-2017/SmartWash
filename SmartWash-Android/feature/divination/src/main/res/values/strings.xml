@@ -98,6 +98,9 @@
     <string name="div_chart_missing">未找到卦盘记录</string>
     <string name="div_chart_interpret">解 读</string>
     <string name="div_chart_saved">已 保 存</string>
+    <!-- 解读入口拦截（2026-11-11 平台零兜底：点击先查用户模型配置） -->
+    <string name="div_interpret_need_config">请先配置解读模型</string>
+    <string name="div_interpret_platform_disabled">观星台 AI 解读暂未开放</string>
     <string name="div_liuyao_yongshen">用神</string>
     <string name="div_liuyao_facts">规则事实</string>
     <string name="div_meihua_tiyong">体用生克（规则层）</string>
@@ -117,14 +120,17 @@
     <string name="div_reading_section_fallback">解读</string>
     <string name="div_reading_endseal">观</string>
 
-    <!-- 解读错误（issue #78 error 帧映射：message 优先、以下为兜底） -->
+    <!-- 解读错误（issue #78 error 帧映射：message 优先、以下为兜底；2026-11-11 加 428 未配置） -->
     <string name="div_error_record_missing">卦例不存在或已失效</string>
-    <string name="div_error_refused">该问题涉及高风险领域，请咨询专业机构</string>
+    <string name="div_error_refused">观星台 AI 解读暂未开放，请联系管理员</string>
+    <string name="div_error_need_config">尚未配置解读模型，请先在设置中选择模型并填写 API Key</string>
     <string name="div_error_rate_limited">今日解读次数已达上限，请明日再来</string>
     <string name="div_error_service_unavailable">解读服务暂不可用，请稍后重试</string>
     <string name="div_error_network">网络连接失败，请稍后重试</string>
     <string name="div_error_create_record">解读建档失败，请稍后重试</string>
     <string name="div_error_unauthorized">登录已失效，请重新登录</string>
+    <!-- 428 错误卡引导（跳设置页直达「解读模型」弹层） -->
+    <string name="div_reading_go_config">去配置</string>
 
     <!-- 应验反馈（issue #78：POST /records/{id}/feedback，评分 1-5） -->
     <string name="div_feedback_title">应验反馈</string>

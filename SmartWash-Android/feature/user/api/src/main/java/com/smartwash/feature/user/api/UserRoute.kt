@@ -37,10 +37,16 @@ sealed interface UserRoute : SmartWashRoute {
     @SerialName("UpdateUserInfoPage")
     data object UpdateUserInfo : UserRoute
 
-    /** 设置页（含登出入口） */
+    /**
+     * 设置页（含登出入口）。
+     *
+     * @param openApiConfig true = 进入即弹起「解读模型」配置弹层（观象台解读 428 拦截
+     *   与卦盘页「解读」入口跳入时直达表单，省一次查找）；默认 false 兼容既有导航调用，
+     *   与 DivRoute.Ask(method 缺省) 同款「默认值 → 可选 query」形态。
+     */
     @Serializable
     @SerialName("Setting")
-    data object Setting : UserRoute
+    data class Setting(val openApiConfig: Boolean = false) : UserRoute
 
     /** 权限管理页（设置页跳入：查看/申请应用权限、跳系统设置对应页） */
     @Serializable

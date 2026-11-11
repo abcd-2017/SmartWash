@@ -35,6 +35,10 @@ dependencies {
     // common:ui 对 common:utils 是 implementation，不传递，本模块直接消费须显式声明）
     implementation project(':common:utils')
 
+    // 用户域路由常量（UserRoute；解读未配置模型 428 拦截跳设置页直达「解读模型」弹层，
+    // feature 间仅 impl→他人 api 铁律先例：DivinationApi:63-65 getModels 同为跨域契约）
+    implementation project(':feature:user:api')
+
     // Room：runtime/ktx 经 common:database 的 api 传递；DivinationDatabase 在本模块编译，
     // ksp 处理器须自持（与 common:database 编译 AppDatabase 同模式）
     implementation project(':common:database')

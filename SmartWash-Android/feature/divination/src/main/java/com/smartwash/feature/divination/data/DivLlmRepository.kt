@@ -57,8 +57,11 @@ sealed class DivStreamEvent {
             /** 404 卦例不存在（含建档失败查无此卦） */
             RECORD_NOT_FOUND,
 
-            /** 403 高风险问题分流拦截 */
+            /** 403 双语义（2026-11-11 契约）：高风险问题分流拦截，或平台总开关关闭暂未开放——以服务端 message 原样透传区分 */
             REFUSED,
+
+            /** 428 用户未配置解读模型（2026-11-11 契约：平台零兜底，UI 需引导去配置） */
+            NEED_CONFIG,
 
             /** 429 当日解读限额 */
             RATE_LIMITED,
@@ -200,7 +203,7 @@ class DivLlmRepository @Inject constructor(
                     val frame = runCatching { gson.fromJson(data, ErrorFrame::class.java) }.getOrNull()
                     val code = frame?.code ?: 500
                     // error 帧后服务端 emitter.complete() 是正常关闭——置位防终态重复补发，
-                    // 避免 403/429/503 语义被终态兜底文案覆盖
+                    // 避免 403/428/429/503 语义被终态兜底文案覆盖
                     failureSent.set(true)
                     onEvent(DivStreamEvent.Failure(reasonOf(code), frame?.message, resOf(code)))
                 }
@@ -252,10 +255,11 @@ class DivLlmRepository @Inject constructor(
         }
     }
 
-    /** reason 映射（与后端 SseBridge/LlmErrorMapping 的错误码契约对齐） */
+    /** reason 映射（与后端 SseBridge/LlmErrorMapping 的错误码契约对齐；2026-11-11 加 428） */
     private fun reasonOf(code: Int): DivStreamEvent.Failure.Reason = when (code) {
         404 -> DivStreamEvent.Failure.Reason.RECORD_NOT_FOUND
         403 -> DivStreamEvent.Failure.Reason.REFUSED
+        428 -> DivStreamEvent.Failure.Reason.NEED_CONFIG
         429 -> DivStreamEvent.Failure.Reason.RATE_LIMITED
         503 -> DivStreamEvent.Failure.Reason.SERVICE_UNAVAILABLE
         else -> DivStreamEvent.Failure.Reason.SERVER_ERROR
@@ -265,6 +269,7 @@ class DivLlmRepository @Inject constructor(
     private fun resOf(code: Int): Int = when (code) {
         404 -> R.string.div_error_record_missing
         403 -> R.string.div_error_refused
+        428 -> R.string.div_error_need_config
         429 -> R.string.div_error_rate_limited
         503 -> R.string.div_error_service_unavailable
         else -> R.string.div_reading_error

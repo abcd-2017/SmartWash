@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.smartwash.common.utils.CROSSFADE_ALT_MS
 import com.smartwash.common.utils.DURATION_CARD_MS
 import com.smartwash.common.utils.DURATION_MICRO_MS
@@ -68,8 +69,13 @@ fun NavGraphBuilder.userGraph(
     composable<UserRoute.UpdateUserInfo> {
         UpdateUserInfoPage(navController)
     }
-    composable<UserRoute.Setting> {
-        SettingPage(navController, checkUpdateContent)
+    composable<UserRoute.Setting> { entry ->
+        // openApiConfig：观象台解读拦截跳入时直达「解读模型」弹层（默认 false 行为不变）
+        SettingPage(
+            navController,
+            openApiConfig = entry.toRoute<UserRoute.Setting>().openApiConfig,
+            checkUpdateContent = checkUpdateContent,
+        )
     }
     composable<UserRoute.PermissionManagement> {
         PermissionManagementPage(navController)
