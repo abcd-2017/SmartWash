@@ -83,6 +83,7 @@
         :data="gameList"
         fit
         highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="42" />
@@ -155,10 +156,11 @@
         <el-table-column label="更新时间" min-width="170">
           <template #default="{ row }">{{ formatTime(row.updatedAt || row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -1396,13 +1398,13 @@ onMounted(() => {
   display: inline-block;
   width: 12px;
   height: 12px;
-  border-radius: 4px;
+  border-radius: 6px; /* 对齐 rounded.sm（WEB-012：4px 低于阶梯最小档） */
   flex-shrink: 0;
 }
 
 /* gameKey 等宽字体（对齐跳转路由页 host 单元格） */
 .key-text {
-  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-family: var(--font-mono);
   color: var(--text-body);
 }
 
@@ -1512,8 +1514,8 @@ onMounted(() => {
   width: 44px;
   height: 25px;
   object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid var(--border);
+  border-radius: 6px; /* 对齐 rounded.sm，低阶梯最小档 */
+  border: 1px solid var(--border-color);
   flex: none;
 }
 
@@ -1526,7 +1528,7 @@ onMounted(() => {
   width: 160px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
 }
 
 .cover-preview img {

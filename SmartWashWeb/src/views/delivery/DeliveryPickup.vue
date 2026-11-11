@@ -246,11 +246,9 @@ function handleBackToEnter() {
   width: 420px;
   max-width: 100%;
   padding: 40px 36px 28px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow:
-    0 4px 32px rgba(99, 102, 241, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-brand); /* 品牌光阴影：仅登录/404/投递面板允许（base.css token） */
   animation: delivery-card-in var(--motion-slow) var(--ease-decelerate) both;
   text-align: center;
 }
@@ -269,7 +267,7 @@ function handleBackToEnter() {
 }
 
 .enter-name {
-  font-size: 15px;
+  font-size: 14px; /* 对齐 body 档（原 15px off-ramp） */
   font-weight: 700;
   color: var(--text-primary);
 }

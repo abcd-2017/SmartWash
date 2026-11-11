@@ -136,15 +136,15 @@ const handleLogin = async () => {
   box-shadow: var(--shadow-brand);
 }
 
-/* --- 左侧品牌区（暗面板：文字用暗侧专属灰阶，不走亮色 token） --- */
+/* --- 左侧品牌区（暗面板：文字用暗侧专属灰阶 token，不走亮色 token） --- */
 .brand-panel {
   display: flex;
   flex-direction: column;
   width: 46%;
   padding: 48px 40px;
-  /* 墨色外壳渐变（外壳即墨色规则）：暗面板专属文字色见上方注释 */
-  background: linear-gradient(135deg, var(--sidebar-bg), #1e293b, #312e81);
-  color: #f1f5f9;
+  /* 墨色外壳渐变（外壳即墨色规则） */
+  background: var(--sidebar-gradient);
+  color: var(--sidebar-text-strong);
 }
 
 .brand-logo-row {
@@ -167,7 +167,7 @@ const handleLogin = async () => {
 .brand-slogan {
   margin-top: 8px;
   font-size: 13px;
-  color: #cbd5e1;
+  color: var(--sidebar-text);
 }
 
 .brand-features {
@@ -175,13 +175,13 @@ const handleLogin = async () => {
   padding: 0;
   list-style: none;
   font-size: 14px;
-  color: #cbd5e1;
+  color: var(--sidebar-text);
   line-height: 2.2;
 }
 
 .brand-footer {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--sidebar-text-sub); /* 暗面板弱化字：不再混用亮侧 --text-muted（外壳即墨色规则） */
 }
 
 /* --- 右侧表单区 --- */

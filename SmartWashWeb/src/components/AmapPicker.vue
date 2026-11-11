@@ -328,7 +328,7 @@ function handleDialogClosed() {
   max-height: 400px;
   overflow-y: auto;
   background: var(--bg-card);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-popover); /* 气泡浮层走阴影词汇表（原字面量不在词汇表内） */
   border-radius: 8px;
   z-index: 10;
 }
