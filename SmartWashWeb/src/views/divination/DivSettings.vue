@@ -3,7 +3,9 @@
     <div class="table-card settings-card">
       <div class="settings-header">
         <h2>平台设置</h2>
-        <p class="settings-sub">观象台全局配置：AI 解读开关、用户每日限额与主密钥轮换（平台零兜底，模型由用户自行配置）</p>
+        <p class="settings-sub">
+          观象台全局配置：AI 解读开关、用户每日限额与主密钥轮换（平台零兜底，模型由用户自行配置）
+        </p>
       </div>
 
       <el-form
@@ -64,11 +66,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
-import {
-  getPlatformSettings,
-  updatePlatformSettings,
-  rotateMasterKey,
-} from '@/api/divination';
+import { getPlatformSettings, updatePlatformSettings, rotateMasterKey } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
 
