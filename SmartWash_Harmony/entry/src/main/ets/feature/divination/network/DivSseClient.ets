@@ -4,7 +4,8 @@
  * 后端契约（DivinationWebController，前缀 /web/auth/div，SseEmitter）：
  *   event: delta   data: {"text":"…流式片段…"}
  *   event: done    data: {"interpretationId":123,"cached":false}
- *   event: error   data: {"code":404|403|429|503|500,"message":"…"}
+ *   event: error   data: {"code":428|404|403|429|503|500,"message":"…"}
+ *                  （428=用户未配置解读模型；403=安全分流或平台总开关关闭，message 原样透传）
  *
  * 两种接收模式（流式优先）：
  * - 流式：@ohos.net.http requestInStream + on('dataReceive') 逐块到手后按 SSE 帧解析

@@ -107,6 +107,8 @@ struct DivReadingPage {
   @Local interpretationId: number = 0
   /** error 态用户文案（error 帧各码映射 / 传输失败兜底） */
   @Local errorText: string = DivText.readingError
+  /** error 帧业务码（428 未配置模型时错误态追加「去配置」入口；其余码不显示） */
+  @Local errorCode: number = 0
   /** 反馈面板展开态 */
   @Local feedbackOpen: boolean = false
   /** 评分 1-5（0 未选）与应验回填 1/2/3（0 未选） */
@@ -235,6 +237,7 @@ struct DivReadingPage {
           if (seq !== that.sseSeq) {
             return
           }
+          that.errorCode = code
           that.errorText = message
           that.readingState = 'error'
           logger.warn('divReadingPage', `解读 error 帧 serverRecordId=${serverId} code=${code}`)
@@ -243,6 +246,8 @@ struct DivReadingPage {
           if (seq !== that.sseSeq) {
             return
           }
+          // 传输层失败非业务 error 帧：清业务码，不显示「去配置」入口
+          that.errorCode = 0
           that.errorText = message
           that.readingState = 'error'
           logger.warn('divReadingPage', `解读通道失败 serverRecordId=${serverId}: ${message}`)
@@ -252,6 +257,7 @@ struct DivReadingPage {
       if (seq !== this.sseSeq) {
         return
       }
+      this.errorCode = 0
       this.errorText = DivText.readingError
       this.readingState = 'error'
       logger.error('divReadingPage', `解读发起异常 localId=${record.id}, ${err instanceof Error ? err.message : ''}`)
@@ -263,10 +269,16 @@ struct DivReadingPage {
     this.streamingMd = ''
     this.parsed = { sections: [], disclaimer: '', hasTitles: false }
     this.interpretationId = 0
+    this.errorCode = 0
     this.errorText = DivText.readingError
     this.feedbackOpen = false
     this.rating = 0
     this.outcome = 0
+  }
+
+  /** 428（未配置解读模型）：错误态追加「去配置」入口，跳设置页（鸿蒙端不自动弹层） */
+  private goModelSetting(): void {
+    pathStack.pushPathByName(RouteNames.SETTING, null)
   }
 
   // ========== 反馈（done 帧后的评分与应验回填） ==========
@@ -454,6 +466,19 @@ struct DivReadingPage {
                     color: DivPalette.textTertiary,
                     textAlign: TextAlign.Center
                   })
+                  // 428（未配置解读模型）：追加「去配置」入口直达设置页
+                  if (this.errorCode === 428) {
+                    DivGoldButton({
+                      text: DivText.readingGoConfig,
+                      soft: true,
+                      btnHeight: 36,
+                      fontSize: 12,
+                      isEnabled: true,
+                      onAction: () => {
+                        this.goModelSetting()
+                      }
+                    })
+                  }
                   DivGoldButton({
                     text: DivText.readingRetry,
                     soft: true,
@@ -492,7 +517,7 @@ struct DivReadingPage {
                     .padding({ top: DesignDimens.SPACE_SM, bottom: DesignDimens.SPACE_SM })
                 }
 
-                // 流中断（已有部分内容后又失败）：错误条 + 重试
+                // 流中断（已有部分内容后又失败）：错误条 + 重试（428 追加「去配置」）
                 if (this.readingState === 'error') {
                   Column({ space: 12 }) {
                     DivSerifText({
@@ -503,6 +528,18 @@ struct DivReadingPage {
                       color: DivPalette.textTertiary,
                       textAlign: TextAlign.Center
                     })
+                    if (this.errorCode === 428) {
+                      DivGoldButton({
+                        text: DivText.readingGoConfig,
+                        soft: true,
+                        btnHeight: 36,
+                        fontSize: 12,
+                        isEnabled: true,
+                        onAction: () => {
+                          this.goModelSetting()
+                        }
+                      })
+                    }
                     DivGoldButton({
                       text: DivText.readingRetry,
                       soft: true,
@@ -568,5 +605,15 @@ struct DivReadingPage {
       }
     }
     .hideTitleBar(true)
+    // 「返回自动继续」（对齐安卓 retryIfNeedConfig）：428 未配置 → 去设置页配好模型 →
+    // 返回本页（onShown）自动重试解读，无需手动点重试。
+    // 守卫 readingState==='error' && errorCode===428：首帧显示与成功态均 no-op；
+    // 403/429/503 等其他错误不自动重试（避免限额/分流文案被无声重置）
+    .onShown(() => {
+      if (this.readingState === 'error' && this.errorCode === 428) {
+        logger.info('divReadingPage', '解读页返回自动重试（428 配置闭环）')
+        this.startReading()
+      }
+    })
   }
 }

@@ -6,7 +6,8 @@
  * 关键约束：
  * - 从 Room 读记录 + DivChartCodec 解码（DivChartReader 还原为类实例）；禁止重算（当前时刻已变会漂移）。
  * - loading 文案态 / missing 空态（对齐安卓 DivChartPage.kt:59-82）。
- * - 「求解读」跳 DivReading/{recordId}；「存入卦历」disabled 占位（入库已在起卦时完成）。
+ * - 「求解读」先前置拦截解读模型配置（观星台零兜底：未配置跳设置页 / 平台总开关关闭提示），
+ *   再建档（幂等）跳 DivReading/{recordId}；「存入卦历」disabled 占位（入库已在起卦时完成）。
  * - 奇门专属口径徽标；六壬无三传时显示 unsupportedNote。
  */
 
@@ -23,6 +24,7 @@ import {
 } from '../../../data/DivChartReader'
 import { decodeBundle, decodeBundleFromJson, DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import { buildCreateRecordForm, createDivRecord } from '../../../network/DivinationApi'
+import { getDivUserApiConfig } from '../../../network/DivSettingsApi'
 import { showToastSafety } from '../../../../../utils/ToastUtil'
 import { DivChartParam } from '../../DivChartParam'
 import {
@@ -201,7 +203,49 @@ struct DivChartPage {
   // ========== 求解读：先服务端建档（幂等）再进解读页 ==========
 
   /**
+   * 求解读前置拦截（观星台零兜底：用户未配置模型时服务端解读一律 428，无平台默认模型）。
+   * - GET settings/api 查询失败 → 视为无法确认可解读，阻断并提示（不静默放行）；
+   * - data 为 null 或 apiKeyMask 为空 → 未配置：toast 引导 + 跳设置页（不自动弹层）；
+   * - divUseEnabled === 0（旧响应缺省视为开启）→ 平台总开关关闭：toast 提示，不跳转；
+   * - 已配置且开启 → 放行走原建档+跳解读链路。
+   * 返回 true = 放行。日志只记判定结果，不落 baseUrl/model/key（敏感红线）。
+   */
+  private async ensureModelConfigReady(): Promise<boolean> {
+    try {
+      const resp = await getDivUserApiConfig()
+      if (resp.code !== 200) {
+        logger.warn('divChartPage', `解读配置获取失败 code=${resp.code} message=${resp.message ?? ''}`)
+        showToastSafety(resp.message, DivText.chartConfigCheckFailed)
+        return false
+      }
+      const config = resp.data
+      if (config === null) {
+        showToastSafety(null, DivText.chartModelMissing)
+        pathStack.pushPathByName(RouteNames.SETTING, null)
+        return false
+      }
+      if (config.divUseEnabled === 0) {
+        // 观星台 AI 解读总开关关闭（旧响应缺省视为开启）：提示但不跳设置页
+        showToastSafety(null, DivText.chartDivUseClosed)
+        return false
+      }
+      if ((config.apiKeyMask ?? '').length === 0) {
+        showToastSafety(null, DivText.chartModelMissing)
+        pathStack.pushPathByName(RouteNames.SETTING, null)
+        return false
+      }
+      return true
+    } catch (err) {
+      logger.error('divChartPage', '解读配置获取异常',
+        err instanceof Error ? err.message : '')
+      showToastSafety(null, DivText.chartConfigCheckFailed)
+      return false
+    }
+  }
+
+  /**
    * 「求解读」入口（#80）：
+   * 0. 前置拦截解读模型配置（观星台零兜底，见 ensureModelConfigReady）；
    * 1. 本地行已关联服务端卦例（serverRecordId>0）→ 直接进解读页；
    * 2. 未关联 → POST /records 建档（lines/clientChart 由 DivChartCodec 盘面映射），
    *    成功后回写本地 serverRecordId 再进解读页（保证解读/追问/反馈用服务端 id）；
@@ -213,12 +257,20 @@ struct DivChartPage {
     if (record === null || this.building) {
       return
     }
-    if (record.serverRecordId > 0) {
-      this.openReading(record.id)
-      return
-    }
     this.building = true
     try {
+      // ① 前置拦截：未配置模型 / 平台总开关关闭均不进解读链路
+      if (!(await this.ensureModelConfigReady())) {
+        this.building = false
+        return
+      }
+      // ② 已关联服务端卦例 → 直接进解读页
+      if (record.serverRecordId > 0) {
+        this.building = false
+        this.openReading(record.id)
+        return
+      }
+      // ③ 未关联 → 建档回写后进解读页
       const resp = await createDivRecord(buildCreateRecordForm(record))
       if (resp.code !== 200 || resp.data === null) {
         showToastSafety(resp.message, DivText.chartBuildFailed)

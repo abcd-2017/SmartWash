@@ -17,6 +17,7 @@ import { buildCreateRecordForm, createDivRecord, DivMessage } from '../../../net
 import { followUpMarkdown, isLlmMock } from '../../../data/DivLlmRepository'
 import { DivRecordRepository, DivRecordRow } from '../../../data/DivinationStore'
 import {
+  DivGoldButton,
   DivPageHeader,
   DivPalette,
   DivSerifText,
@@ -125,6 +126,8 @@ struct DivFollowUpPage {
   @Local streamingReply: string = ''
   /** 本轮流式错误文案（非空时尾部显示错误行） */
   @Local streamingError: string = ''
+  /** 本轮 error 帧业务码（428 未配置模型时错误行追加「去配置」入口；其余码不显示） */
+  @Local streamingErrorCode: number = 0
   private scroller: Scroller = new Scroller()
 
   async aboutToAppear(): Promise<void> {
@@ -206,6 +209,7 @@ struct DivFollowUpPage {
     this.sending = true
     this.streamingReply = ''
     this.streamingError = ''
+    this.streamingErrorCode = 0
     try {
       const serverId = await this.ensureServerRecordId(record)
       if (serverId === 0) {
@@ -224,28 +228,38 @@ struct DivFollowUpPage {
           this.historyLength = this.history.length
           this.streamingReply = ''
           this.streamingError = ''
+          this.streamingErrorCode = 0
           this.sending = false
           // 低频关键动作：追问提交成功（追问内容只记长度，不打全文）
           logger.info('divFollowUpPage', `追问提交成功 serverRecordId=${serverId} ` +
             `interpretationId=${interpretationId} turn=${turn} chars=${reply.content.length}`)
         },
         onSseError: (code: number, message: string): void => {
+          this.streamingErrorCode = code
           this.streamingError = message
           this.sending = false
           logger.warn('divFollowUpPage', `追问 error 帧 serverRecordId=${serverId} code=${code}`)
         },
         onFail: (message: string): void => {
+          // 传输层失败非业务 error 帧：清业务码，不显示「去配置」入口
+          this.streamingErrorCode = 0
           this.streamingError = message
           this.sending = false
           logger.warn('divFollowUpPage', `追问通道失败 serverRecordId=${serverId}: ${message}`)
         }
       })
     } catch (err) {
+      this.streamingErrorCode = 0
       this.streamingError = '追问通道不可用，请稍后重试'
       this.sending = false
       logger.error('divFollowUpPage', `追问发起异常 localId=${record.id}, ` +
         `${err instanceof Error ? err.message : ''}`)
     }
+  }
+
+  /** 428（未配置解读模型）：错误行追加「去配置」入口，跳设置页（鸿蒙端不自动弹层） */
+  private goModelSetting(): void {
+    pathStack.pushPathByName(RouteNames.SETTING, null)
   }
 
   /**
@@ -407,18 +421,35 @@ struct DivFollowUpPage {
 
               if (this.streamingError.length > 0) {
                 ListItem() {
-                  Row() {
-                    DivSerifText({
-                      text: this.streamingError,
-                      textSize: 12,
-                      weight: 400,
-                      spacing: 0,
-                      color: DivPalette.textTertiary,
-                      textAlign: TextAlign.Center
-                    })
+                  Column({ space: 8 }) {
+                    Row() {
+                      DivSerifText({
+                        text: this.streamingError,
+                        textSize: 12,
+                        weight: 400,
+                        spacing: 0,
+                        color: DivPalette.textTertiary,
+                        textAlign: TextAlign.Center
+                      })
+                    }
+                    .width('100%')
+                    .justifyContent(FlexAlign.Center)
+                    // 428（未配置解读模型）：错误行下追加「去配置」入口直达设置页
+                    if (this.streamingErrorCode === 428) {
+                      DivGoldButton({
+                        text: DivText.readingGoConfig,
+                        soft: true,
+                        btnHeight: 36,
+                        fontSize: 12,
+                        isEnabled: true,
+                        onAction: () => {
+                          this.goModelSetting()
+                        }
+                      })
+                    }
                   }
                   .width('100%')
-                  .justifyContent(FlexAlign.Center)
+                  .alignItems(HorizontalAlign.Center)
                   .padding({ top: 8, bottom: 8 })
                 }
               }
