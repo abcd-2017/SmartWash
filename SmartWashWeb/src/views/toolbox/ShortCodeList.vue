@@ -82,10 +82,11 @@
         <el-table-column label="创建时间" min-width="170">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button link size="small" @click="handleDetail(row)">详情</el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -279,7 +280,7 @@ onMounted(() => {
 <style scoped>
 /* 短码是机器标识符：按 DESIGN.md mono 规则用等宽字体 */
 .code-cell {
-  font-family: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.02em;
 }

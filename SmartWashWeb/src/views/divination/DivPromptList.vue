@@ -53,7 +53,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="promptList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="promptList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column label="术数方法" min-width="120">
           <template #default="{ row }">{{ methodText(row.method) }}</template>
@@ -78,11 +84,12 @@
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button
               v-if="row.status !== 1"
+              link
               size="small"
               type="success"
               :loading="activatingId === row.id"
@@ -90,7 +97,12 @@
             >
               激活
             </el-button>
-            <el-button size="small" :loading="deletingId === row.id" @click="handleDelete(row)">
+            <el-button
+              link
+              size="small"
+              :loading="deletingId === row.id"
+              @click="handleDelete(row)"
+            >
               退役
             </el-button>
           </template>

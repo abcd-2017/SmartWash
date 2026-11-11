@@ -21,7 +21,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="blockedList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="blockedList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="userId" label="用户ID" min-width="100" />
         <el-table-column prop="question" label="拦截问题" min-width="280" show-overflow-tooltip />

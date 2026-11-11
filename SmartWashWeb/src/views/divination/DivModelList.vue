@@ -37,7 +37,13 @@
 
     <!-- 数据表格 -->
     <div class="table-card">
-      <el-table v-loading="listLoading" :data="modelList" fit highlight-current-row>
+      <el-table
+        v-loading="listLoading"
+        :data="modelList"
+        fit
+        highlight-current-row
+        empty-text="暂无数据，试试调整筛选条件"
+      >
         <el-table-column prop="id" label="ID" min-width="80" />
         <el-table-column prop="vendor" label="厂商" min-width="120" />
         <el-table-column prop="name" label="显示名" min-width="160" />
@@ -66,9 +72,9 @@
         <el-table-column prop="updatedAt" label="更新时间" min-width="180">
           <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link size="small" @click="handleEdit(row)">编辑</el-button>
             <el-tooltip
               :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
               :disabled="!!row.apiKeyMask"
@@ -76,6 +82,7 @@
             >
               <span>
                 <el-button
+                  link
                   size="small"
                   type="primary"
                   @click="handleTest(row)"
@@ -87,6 +94,7 @@
               </span>
             </el-tooltip>
             <el-button
+              link
               size="small"
               :type="row.enabled === 1 ? 'warning' : 'success'"
               :loading="togglingId === row.id"
@@ -95,6 +103,7 @@
               {{ row.enabled === 1 ? '停用' : '启用' }}
             </el-button>
             <el-button
+              link
               size="small"
               type="danger"
               :loading="deletingId === row.id"
@@ -122,8 +131,8 @@
     <!-- 批量导入弹窗 -->
     <el-dialog title="批量导入模型目录" v-model="importVisible" width="640px">
       <p class="import-tip">
-        粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选 <code>priority</code>），
-        非法条目自动跳过。目录密钥由用户自带，此处无需填 API Key。
+        粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选
+        <code>priority</code>）， 非法条目自动跳过。目录密钥由用户自带，此处无需填 API Key。
       </p>
       <el-input
         v-model="importJson"
@@ -152,7 +161,10 @@
           <el-input v-model="tempModel.name" placeholder="如 GLM-5.3" />
         </el-form-item>
         <el-form-item label="Base URL" prop="baseUrl">
-          <el-input v-model="tempModel.baseUrl" placeholder="https://api.example.com/v1（OpenAI 兼容端点）" />
+          <el-input
+            v-model="tempModel.baseUrl"
+            placeholder="https://api.example.com/v1（OpenAI 兼容端点）"
+          />
         </el-form-item>
         <el-form-item label="模型标识" prop="modelId">
           <el-input v-model="tempModel.modelId" placeholder="如 glm-5.3" />
@@ -417,7 +429,12 @@ const handleToggle = async (row) => {
   try {
     const targetEnabled = row.enabled === 1 ? 0 : 1;
     await updateModel(row.id, { enabled: targetEnabled });
-    logger.info(`模型${action}成功`, `id=${row.id}`, `name=${row.name}`, `enabled=${targetEnabled}`);
+    logger.info(
+      `模型${action}成功`,
+      `id=${row.id}`,
+      `name=${row.name}`,
+      `enabled=${targetEnabled}`
+    );
     ElMessage.success(`${action}成功`);
     fetchData();
   } catch (error) {
@@ -445,8 +462,8 @@ const handleToggle = async (row) => {
 
 .import-tip code {
   padding: 1px 4px;
-  background: var(--bg-secondary, #f5f7fa);
-  border-radius: 3px;
+  background: var(--bg-subtle);
+  border-radius: 6px; /* 对齐 rounded.sm（原 3px 低于阶梯最小档） */
   font-size: 12px;
 }
 </style>
