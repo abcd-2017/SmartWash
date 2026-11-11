@@ -1,7 +1,9 @@
 package com.smartwash.feature.user.impl.ui.setting
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,8 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,21 +65,26 @@ import com.smartwash.common.utils.performHaptic
 import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.feature.user.impl.R
+import com.smartwash.feature.user.impl.network.vo.div.PlatformVendorGroupVo
 
 /**
- * 「解读模型」BYOK 编辑弹层（issue #79，设置页观象台分组入口）。
+ * 「解读模型」配置编辑弹层（issue #79，设置页观象台分组入口；2026-11-11 双模式契约）。
  *
  * 交互形态对齐 PaymentPage 优惠券弹层（项目唯一 ModalBottomSheet 先例）：surface 令牌底、
- * tonalElevation 归零、顶部 radiusXl 圆角、自绘拖拽指示条。表单三字段端上均必填
- * （服务端 PUT 三字段必填，编辑态占位引导重输 key）；「测试连接」走 POST test 即时反馈，
+ * tonalElevation 归零、顶部 radiusXl 圆角、自绘拖拽指示条。表单双模式二选一：
+ * - 目录模式（默认）：GET /models 一次返回「厂商 → 模型」目录树，分步选择——
+ *   第一步点选厂商进入第二步，第二步本地过滤该厂商的模型条目点选回填 modelConfigId，
+ *   接入点/模型名由服务端从目录取（不显示 baseUrl 输入）；
+ * - 自定义模式：baseUrl + 模型名 + apiKey 三输入（OpenAI 兼容接入点）。
+ * apiKey 两模式均必填（编辑态恒不回显，占位引导重输）；「测试连接」走 POST test 即时反馈，
  * 「保存」走 PUT（服务端真实试呼，失败回业务失败信封，文案经 ResponseInterceptor
  * 解析为用户可读 message）；已配置时提供「删除配置」二次确认（AppConfirmDialog）。
  *
  * 隐私红线：明文 API Key 只存在于输入框内存态（组合内 remember），不落 DataStore、
  * 不进日志；列表回显一律掩码。
  *
- * 动效：仅按钮 loading spinner（ButtonSpinner 内置 reduced motion 降级）与展开/收起
- * 高度变化（直接显隐，无自定义动效需降级分支）；无新增无限动画。
+ * 动效：仅按钮 loading spinner（ButtonSpinner 内置 reduced motion 降级）；
+ * 目录分步切换为直接显隐，无自定义动效需降级分支；无新增无限动画。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,14 +105,31 @@ fun ApiConfigSheet(
     val fieldError by settingViewModel.apiFieldError.collectAsState()
 
     // 表单内存态（仅编辑期存在；明文 key 不持久化）
+    var mode by remember { mutableStateOf(ApiConfigMode.CATALOG) }
+    // 目录模式分步选择：第一步选厂商、第二步选模型（目录树由服务端一次返回，第二步本地过滤）
+    var catalogStep by remember { mutableStateOf(ApiConfigCatalogStep.VENDOR) }
+    var selectedVendorIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedModelConfigId by remember { mutableStateOf<Long?>(null) }
     var baseUrl by remember { mutableStateOf("") }
     var model by remember { mutableStateOf("") }
     var apiKey by remember { mutableStateOf("") }
     var showKey by remember { mutableStateOf(false) }
-    var catalogExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     // 首次配置回填标记：回填只发生在首次拉取完成且用户尚未被覆盖输入之前
     var formInitialized by remember { mutableStateOf(false) }
+
+    // 目录树已由服务端按厂商分组；端上只按选中厂商本地过滤（第二步无二次请求）。
+    // 选中标识用列表索引（显示名可能同名，索引稳定唯一）；厂商显示名 vendor 优先、provider 兜底
+    val vendorFallback = stringResource(R.string.other)
+    val selectedGroup = remember(platformModels, selectedVendorIndex) {
+        platformModels.getOrNull(selectedVendorIndex ?: -1)
+    }
+    val selectedEntryGroup = remember(platformModels, selectedModelConfigId) {
+        platformModels.firstOrNull { group ->
+            group.models.any { entry -> entry.id == selectedModelConfigId }
+        }
+    }
+    val selectedEntry = selectedEntryGroup?.models?.firstOrNull { it.id == selectedModelConfigId }
 
     // 关闭统一收口：重置弹层瞬态（测试/保存/删除/校验反馈），再交给页面收起
     val closeSheet = {
@@ -118,21 +142,32 @@ fun ApiConfigSheet(
         settingViewModel.refreshApiConfig()
         settingViewModel.loadPlatformModels()
     }
-    // 平台级开关关闭（byokEnabled=0）兜底拦截（2026-11-07 双轴审查 B2）：设置页行内置灰
-    // 依赖已加载的 apiConfig，首拉失败/未返回时行仍可点进弹层——弹层内拉到 byokEnabled=0
+    // 平台总开关关闭（divUseEnabled=0）兜底拦截（2026-11-07 双轴审查 B2）：设置页行内置灰
+    // 依赖已加载的 apiConfig，首拉失败/未返回时行仍可点进弹层——弹层内拉到 divUseEnabled=0
     // 即收口关闭，不再展示编辑表单
     LaunchedEffect(config) {
-        if (config?.byokEnabled == 0) closeSheet()
+        if (config?.divUseEnabled == 0) closeSheet()
     }
 
-    // 编辑态预填：GET 返回后回填 baseUrl/model；apiKey 始终留空（占位「重新输入 API Key」）
+    // 编辑态预填：GET 返回后按配置回显模式与字段；apiKey 始终留空（占位「重新输入 API Key」）
     LaunchedEffect(config, configState) {
         if (!formInitialized && (config != null || configState is RequestState.Success)) {
             formInitialized = true
             config?.let { cfg ->
+                mode = if (cfg.modelConfigId != null) ApiConfigMode.CATALOG else ApiConfigMode.CUSTOM
+                selectedModelConfigId = cfg.modelConfigId
                 baseUrl = cfg.customBaseUrl.orEmpty()
                 model = cfg.customModel.orEmpty()
             }
+        }
+    }
+    // 编辑态回填补位：目录模式下按 modelConfigId 在目录树中定位所属厂商（平台目录异步到达后补位，
+    // 不覆盖用户后续手动选择）；停在第一步，厂商行高亮即已选厂商
+    LaunchedEffect(platformModels, selectedModelConfigId) {
+        if (selectedVendorIndex == null && selectedModelConfigId != null) {
+            selectedVendorIndex = platformModels
+                .indexOfFirst { group -> group.models.any { it.id == selectedModelConfigId } }
+                .takeIf { it >= 0 }
         }
     }
 
@@ -195,7 +230,7 @@ fun ApiConfigSheet(
                 color = AppColors.colorScheme.textPrimary,
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceXs))
-            // 说明文案：与「隐私与免责声明」口径一致（issue #79 第 3 点）
+            // 说明文案：与「隐私与免责声明」口径一致（issue #79 第 3 点；零兜底表述）
             Text(
                 text = stringResource(R.string.api_config_privacy_note),
                 style = MaterialTheme.typography.bodySmall,
@@ -203,8 +238,10 @@ fun ApiConfigSheet(
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-            // 已配置摘要（仅掩码回显，帮助理解为何编辑需重输 key）
+            // 已配置摘要（仅掩码回显，帮助理解为何编辑需重输 key）：
+            // 目录模式「vendor · modelName」，自定义模式 customModel + customBaseUrl
             config?.let { cfg ->
+                val isCatalog = cfg.modelConfigId != null
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -215,7 +252,13 @@ fun ApiConfigSheet(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = cfg.customModel.orEmpty(),
+                                text = if (isCatalog) {
+                                    listOfNotNull(cfg.vendor, cfg.modelName)
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" · ")
+                                } else {
+                                    cfg.customModel.orEmpty()
+                                },
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                                 color = AppColors.colorScheme.textPrimary,
                                 maxLines = 1,
@@ -227,7 +270,7 @@ fun ApiConfigSheet(
                                 VerifiedBadge()
                             }
                         }
-                        if (!cfg.customBaseUrl.isNullOrBlank()) {
+                        if (!isCatalog && !cfg.customBaseUrl.isNullOrBlank()) {
                             Text(
                                 text = cfg.customBaseUrl.orEmpty(),
                                 style = MaterialTheme.typography.labelSmall,
@@ -274,51 +317,80 @@ fun ApiConfigSheet(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             }
 
-            // 接入点地址（服务端校验 https 且非内网；端上先拦 https 前缀给即时文案）
-            ApiConfigTextField(
-                label = stringResource(R.string.api_config_base_url_label),
-                value = baseUrl,
-                onValueChange = {
-                    baseUrl = it
-                    settingViewModel.clearFieldError(ApiConfigField.BASE_URL)
-                },
-                placeholder = stringResource(R.string.api_config_base_url_hint),
-                isError = fieldError?.field == ApiConfigField.BASE_URL,
-                errorMessage = fieldError?.takeIf { it.field == ApiConfigField.BASE_URL }
-                    ?.let { stringResource(it.messageRes) },
-                keyboardType = KeyboardType.Uri,
+            // 选择模式（2026-11-11 双模式契约）：目录模式默认；切换清两模式不兼容的字段报错
+            Text(
+                text = stringResource(R.string.api_config_mode_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = AppColors.colorScheme.textSecondary,
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ModeChip(
+                    selected = mode == ApiConfigMode.CATALOG,
+                    label = stringResource(R.string.api_config_mode_catalog),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (mode != ApiConfigMode.CATALOG) {
+                        mode = ApiConfigMode.CATALOG
+                        // 切换模式清空已选状态（两模式字段集不同，旧选择不再适用）
+                        catalogStep = ApiConfigCatalogStep.VENDOR
+                        selectedVendorIndex = null
+                        selectedModelConfigId = null
+                        settingViewModel.clearFieldErrors()
+                    }
+                }
+                ModeChip(
+                    selected = mode == ApiConfigMode.CUSTOM,
+                    label = stringResource(R.string.api_config_mode_custom),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (mode != ApiConfigMode.CUSTOM) {
+                        mode = ApiConfigMode.CUSTOM
+                        // 切换模式清空已选状态（两模式字段集不同，旧选择不再适用）
+                        catalogStep = ApiConfigCatalogStep.VENDOR
+                        selectedVendorIndex = null
+                        selectedModelConfigId = null
+                        settingViewModel.clearFieldErrors()
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-            // 模型名称（BYOK 不限平台目录，输入框独立填写；目录仅作建议）
-            ApiConfigTextField(
-                label = stringResource(R.string.api_config_model_label),
-                value = model,
-                onValueChange = {
-                    model = it
-                    settingViewModel.clearFieldError(ApiConfigField.MODEL)
-                },
-                placeholder = stringResource(R.string.api_config_model_hint),
-                isError = fieldError?.field == ApiConfigField.MODEL,
-                errorMessage = fieldError?.takeIf { it.field == ApiConfigField.MODEL }
-                    ?.let { stringResource(it.messageRes) },
-                keyboardType = KeyboardType.Text,
-            )
-
-            // 平台模型目录建议（可选）：展开列表点选回填 modelId；自绘列表（无 DropdownMenu，
-            // 避免键盘遮挡与 M3 交互组件 state layer）
-            Text(
-                text = stringResource(
-                    if (catalogExpanded) R.string.api_config_model_catalog_collapse
-                    else R.string.api_config_model_catalog_expand
-                ),
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                color = AppColors.colorScheme.primary,
-                modifier = Modifier
-                    .pressable(onClick = { catalogExpanded = !catalogExpanded }, debounce = false)
-                    .padding(vertical = 8.dp),
-            )
-            if (catalogExpanded) {
+            if (mode == ApiConfigMode.CATALOG) {
+                // 目录模式分步选择（2026-11-11 契约）：第一步选厂商 → 第二步选该厂商的模型；
+                // 目录树由服务端一次返回，第二步仅本地过滤，无二次请求；接入点由服务端从目录取
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (catalogStep == ApiConfigCatalogStep.VENDOR) {
+                            stringResource(R.string.api_config_catalog_step_vendor)
+                        } else {
+                            stringResource(
+                                R.string.api_config_catalog_step_model_format,
+                                selectedGroup?.displayVendor(vendorFallback).orEmpty(),
+                            )
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.colorScheme.textSecondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (catalogStep == ApiConfigCatalogStep.MODEL) {
+                        Text(
+                            text = stringResource(R.string.api_config_catalog_back),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = AppColors.colorScheme.primary,
+                            modifier = Modifier
+                                .pressable(
+                                    onClick = { catalogStep = ApiConfigCatalogStep.VENDOR },
+                                    debounce = false,
+                                )
+                                .padding(horizontal = AppDimens.spaceSm, vertical = 8.dp),
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 if (platformModels.isEmpty()) {
                     Text(
                         text = stringResource(R.string.api_config_model_catalog_empty),
@@ -330,57 +402,172 @@ fun ApiConfigSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 180.dp)
+                            .heightIn(max = 260.dp)
                             .verticalScroll(rememberScrollState())
                             .clip(RoundedCornerShape(AppDimens.radiusMd))
                             .background(AppColors.colorScheme.surfaceVariant)
                             .padding(horizontal = AppDimens.spaceMd),
                     ) {
-                        platformModels.forEach { item ->
-                            val modelId = item.modelId.orEmpty()
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .pressable(onClick = {
-                                        if (modelId.isNotBlank()) {
-                                            model = modelId
-                                            settingViewModel.clearFieldError(ApiConfigField.MODEL)
+                        if (catalogStep == ApiConfigCatalogStep.VENDOR) {
+                            // 第一步：厂商列表（点选进入第二步；baseUrl 作次要信息小字）
+                            platformModels.forEachIndexed { index, group ->
+                                val vendorName = group.displayVendor(vendorFallback)
+                                val selected = index == selectedVendorIndex
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(AppDimens.radiusSmall))
+                                        .background(
+                                            if (selected) AppColors.colorScheme.primarySoft
+                                            else Color.Transparent
+                                        )
+                                        .pressable(onClick = {
+                                            // 换厂商即清空旧模型选择（模型归属旧厂商）
+                                            if (selectedVendorIndex != index) {
+                                                selectedModelConfigId = null
+                                            }
+                                            selectedVendorIndex = index
+                                            catalogStep = ApiConfigCatalogStep.MODEL
+                                            settingViewModel.clearFieldError(ApiConfigField.MODEL_CONFIG)
+                                        }, debounce = false)
+                                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = vendorName,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = AppColors.colorScheme.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        group.baseUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                                            Text(
+                                                text = url,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = AppColors.colorScheme.textTertiary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
                                         }
-                                        catalogExpanded = false
-                                    })
-                                    .padding(vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.name.orEmpty(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = AppColors.colorScheme.textPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    Text(
-                                        text = modelId,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AppColors.colorScheme.textTertiary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                                    }
+                                    if (selected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = AppColors.colorScheme.primary,
+                                        )
+                                    }
                                 }
-                                Icon(
-                                    imageVector = Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = AppColors.colorScheme.textTertiary,
-                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        } else {
+                            // 第二步：当前厂商的模型条目（点选回填 modelConfigId，选中高亮 + 对勾）
+                            selectedGroup?.models?.forEach { entry ->
+                                val selected = entry.id == selectedModelConfigId
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(AppDimens.radiusSmall))
+                                        .background(
+                                            if (selected) AppColors.colorScheme.primarySoft
+                                            else Color.Transparent
+                                        )
+                                        .pressable(onClick = {
+                                            selectedModelConfigId = entry.id
+                                            settingViewModel.clearFieldError(ApiConfigField.MODEL_CONFIG)
+                                        }, debounce = false)
+                                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = entry.name.orEmpty(),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = AppColors.colorScheme.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            text = entry.modelId.orEmpty(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = AppColors.colorScheme.textTertiary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    if (selected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = AppColors.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
                             }
                         }
                     }
+                    // 已选回显（点选即时反馈；未选时留空由提交校验给「请选择解读模型」）
+                    selectedEntry?.let { entry ->
+                        Text(
+                            text = stringResource(
+                                R.string.api_config_selected_format,
+                                selectedEntryGroup?.displayVendor(vendorFallback) ?: vendorFallback,
+                                entry.name.orEmpty(),
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.colorScheme.primary,
+                            modifier = Modifier.padding(top = AppDimens.spaceXs),
+                        )
+                    }
                 }
+                // 目录模式字段级错误（未选中条目）
+                if (fieldError?.field == ApiConfigField.MODEL_CONFIG) {
+                    Text(
+                        text = stringResource(R.string.api_config_error_model_config_empty),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = AppColors.colorScheme.error,
+                        modifier = Modifier.padding(top = AppDimens.spaceXs),
+                    )
+                }
+            } else {
+                // 自定义模式：接入点地址（服务端校验 https 且非内网；端上先拦 https 前缀给即时文案）
+                ApiConfigTextField(
+                    label = stringResource(R.string.api_config_base_url_label),
+                    value = baseUrl,
+                    onValueChange = {
+                        baseUrl = it
+                        settingViewModel.clearFieldError(ApiConfigField.BASE_URL)
+                    },
+                    placeholder = stringResource(R.string.api_config_base_url_hint),
+                    isError = fieldError?.field == ApiConfigField.BASE_URL,
+                    errorMessage = fieldError?.takeIf { it.field == ApiConfigField.BASE_URL }
+                        ?.let { stringResource(it.messageRes) },
+                    keyboardType = KeyboardType.Uri,
+                )
+                Spacer(modifier = Modifier.height(AppDimens.spaceMd))
+
+                // 模型名称（自定义接入不限平台目录，独立填写）
+                ApiConfigTextField(
+                    label = stringResource(R.string.api_config_model_label),
+                    value = model,
+                    onValueChange = {
+                        model = it
+                        settingViewModel.clearFieldError(ApiConfigField.MODEL)
+                    },
+                    placeholder = stringResource(R.string.api_config_model_hint),
+                    isError = fieldError?.field == ApiConfigField.MODEL,
+                    errorMessage = fieldError?.takeIf { it.field == ApiConfigField.MODEL }
+                        ?.let { stringResource(it.messageRes) },
+                    keyboardType = KeyboardType.Text,
+                )
             }
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-            // API Key（密码框可切换明文；编辑态占位引导重输——服务端三字段必填，端上简化为必填）
+            // API Key（两模式均必填；密码框可切换明文；编辑态占位引导重输）
             ApiConfigTextField(
                 label = stringResource(R.string.api_config_key_label),
                 value = apiKey,
@@ -419,11 +606,11 @@ fun ApiConfigSheet(
             )
             Spacer(modifier = Modifier.height(AppDimens.spaceMd))
 
-            // 测试连接（POST test，不保存；失败后端回 200 信封 data=false，端上转失败文案）
+            // 测试连接（POST test，不保存；双模式同请求体；失败后端回 200 信封 data=false，端上转失败文案）
             AppButton(
                 text = stringResource(R.string.api_config_test),
                 onClick = {
-                    settingViewModel.testApiConnection(baseUrl, model, apiKey)
+                    settingViewModel.testApiConnection(mode, selectedModelConfigId, baseUrl, model, apiKey)
                 },
                 variant = AppButtonVariant.SECONDARY,
                 loading = testState is RequestState.Loading,
@@ -462,10 +649,12 @@ fun ApiConfigSheet(
                 Spacer(modifier = Modifier.height(AppDimens.spaceSm))
             }
 
-            // 保存（PUT：服务端真实试呼，失败信封文案经 ResponseInterceptor 解析）
+            // 保存（PUT 双模式：服务端真实试呼，失败信封文案经 ResponseInterceptor 解析）
             AppButton(
                 text = stringResource(R.string.api_config_save),
-                onClick = { settingViewModel.saveApiConfig(baseUrl, model, apiKey) },
+                onClick = {
+                    settingViewModel.saveApiConfig(mode, selectedModelConfigId, baseUrl, model, apiKey)
+                },
                 loading = saveState is RequestState.Loading,
             )
 
@@ -501,6 +690,40 @@ fun ApiConfigSheet(
                 settingViewModel.deleteApiConfig()
             },
             onDismiss = { showDeleteConfirm = false },
+        )
+    }
+}
+
+/**
+ * 模式切换胶囊（目录 / 自定义）：selected=primarySoft 底 + primary 描边与文字，
+ * 未选=surfaceVariant 底 + outline 描边；pressable 自绘（§7 禁 M3 交互组件 state layer）。
+ */
+@Composable
+private fun ModeChip(
+    selected: Boolean,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(AppDimens.radiusMd)
+    Box(
+        modifier = modifier
+            .height(40.dp)
+            .clip(shape)
+            .background(if (selected) AppColors.colorScheme.primarySoft else AppColors.colorScheme.surfaceVariant)
+            .border(
+                BorderStroke(1.dp, if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.outline),
+                shape,
+            )
+            .pressable(onClick = onClick, debounce = false),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = if (selected) AppColors.colorScheme.primary else AppColors.colorScheme.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -577,3 +800,10 @@ internal fun VerifiedBadge() {
             .padding(horizontal = 6.dp, vertical = 1.dp),
     )
 }
+
+/**
+ * 厂商显示名：vendor 优先、provider 兜底、再降「其他」。
+ * 目录模式第一步分组与第二步过滤共用，保证同一分组键唯一稳定。
+ */
+private fun PlatformVendorGroupVo.displayVendor(fallback: String): String =
+    vendor?.takeIf { it.isNotBlank() } ?: provider?.takeIf { it.isNotBlank() } ?: fallback

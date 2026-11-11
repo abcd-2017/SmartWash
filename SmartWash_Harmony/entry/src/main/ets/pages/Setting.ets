@@ -16,6 +16,7 @@ import { getAppVersion } from "../network/api/AppVersionApi"
 import { showToastSafety } from "../utils/ToastUtil"
 import {
   DivModelVo,
+  DivVendorGroupVo,
   SaveDivUserApiForm,
   deleteDivUserApiConfig,
   getDivModels,
@@ -40,12 +41,33 @@ const PRIVACY_DISCLAIMER: string =
   "以上数据均传输与存储于平台自有服务器，不向任何第三方共享，不用于广告。你可在系统设置中随时撤回通知等权限，或联系客服注销账号并删除数据。\n\n" +
   "免责声明：观象台提供的卦象解读属传统文化娱乐内容，不构成任何现实决策建议，请理性看待。"
 
-// 解读模型（BYOK）说明文案（对齐安卓 #79；与上方隐私声明「解读请求经平台网关转发大模型」口径一致）
+// 解读模型说明文案（观星台零兜底口径：无平台默认模型，解读由用户配置的模型完成；
+// 与上方隐私声明「解读请求经平台网关转发大模型」口径一致）
 const BYOK_NOTICE: string =
-  "API Key 经平台网关加密存储，仅用于后端转发解读请求；不配置则由平台默认模型解读；支持任意 OpenAI 兼容接入点。"
+  "API Key 经平台网关加密存储，仅用于后端转发解读请求；解读由你配置的模型完成，费用经你自己的 API Key 计费；" +
+  "可从平台模型目录选择，也可接入自定义 OpenAI 兼容端点。"
 
-// 平台关闭 BYOK 的入口行提示（后端 GET settings/api 下发 byokEnabled=0 时置灰展示）
-const BYOK_DISABLED_NOTICE: string = "平台已关闭自带模型"
+// 平台总开关关闭（GET settings/api 下发 divUseEnabled=0）的入口行提示（入口置灰展示）
+const BYOK_DISABLED_NOTICE: string = "观星台 AI 解读暂未开放"
+
+// 未配置引导文案（零兜底：未配置模型不能 AI 解读，替代旧「未配置，使用平台默认模型」）
+const BYOK_UNCONFIGURED_NOTICE: string = "未配置，解读前请先配置模型"
+
+// 删除配置确认弹窗文案（零兜底：删除后无默认模型可回落，需重新配置才能 AI 解读）
+const BYOK_DELETE_CONFIRM: string =
+  "删除后需重新配置模型才能使用 AI 解读，已保存的密钥将从服务端清除。"
+
+// 编辑层「选择模式」分段文案（目录模式默认）
+const BYOK_MODE_CATALOG: string = "平台模型目录"
+const BYOK_MODE_CUSTOM: string = "自定义接入"
+
+// 目录模式分步选择文案（第一步选厂商 → 第二步在该厂商内选模型；目录树一次拉取、第二步本地过滤）
+const BYOK_STEP_VENDOR: string = "第一步：选择厂商"
+const BYOK_STEP_VENDOR_HINT: string = "选择厂商后进入下一步，仅显示该厂商的模型"
+const BYOK_STEP_MODEL: string = "第二步：选择模型"
+const BYOK_STEP_CURRENT_VENDOR: string = "当前厂商："
+const BYOK_STEP_BACK: string = "上一步"
+const BYOK_SELECT_MODEL_REQUIRED: string = "请先选择厂商与模型"
 
 // ========== 设置页面（对齐安卓 SettingPage.kt）==========
 @Builder
@@ -68,26 +90,40 @@ struct Setting {
   // 「发现新版本」弹窗内容（open 前赋值，弹窗以当次值初始化）
   @State updateDialogMessage: string = ""
 
-  // ===== 解读模型（BYOK）配置态（#81）：仅从后端 GET 拉取展示，端上不持久化 key（key 只在服务端密文）=====
+  // ===== 解读模型（BYOK）配置态（#81 重构契约）：仅从后端 GET 拉取展示，端上不持久化 key（key 只在服务端密文）=====
   // 首次 GET 是否已返回（返回前行尾不显示摘要，避免加载中误显「未配置」）
   @State configLoaded: boolean = false
   @State loadingConfig: boolean = false
   @State hasApiConfig: boolean = false
-  // 行尾摘要字段（对齐安卓两行 trailing：model + 徽标 / mask）
+  // 当前配置是否目录模式（modelConfigId 非 null；否则为自定义接入）
+  @State configIsCatalog: boolean = false
+  // 目录模式条目 id（自定义模式为 0）
+  @State configModelConfigId: number = 0
+  // 目录模式厂商名（编辑态预填源：打开弹层时定位第二步并回显选中模型）
+  @State configVendor: string = ""
+  // 行尾摘要字段（对齐安卓两行 trailing：摘要行 + 徽标 / mask）：
+  // 目录模式 = 「vendor · modelName」；自定义模式 = customModel（缺省兜底 customBaseUrl）
   @State configModel: string = ""
   @State configMask: string = ""
   @State configVerified: boolean = false
-  // 平台级 BYOK 开关（byokEnabled===0 关闭）：入口置灰 + 不可进编辑层；
+  // 观星台 AI 解读总开关（divUseEnabled===0 关闭）：入口置灰 + 不可进编辑层；
   // =1 / 字段缺失（旧响应兼容）均视为开启，行为不变
   @State byokDisabled: boolean = false
-  // 编辑态预填源（编辑弹层打开时回填；key 不回填，后端仅回掩码）
+  // 编辑态预填源（自定义模式；编辑弹层打开时回填；key 不回填，后端仅回掩码）
   @State configBaseUrl: string = ""
-  // 编辑态预填源：customModel 原文。configModel 行尾摘要缺失时兜底 providerName 显示名，
-  // 直接回填会把「平台预设」等供应方名当模型名提交（对齐安卓编辑态回填 customModel 原文）
+  // 编辑态预填源：customModel 原文（新契约下自定义模式的 modelName 即 customModel 原文）
   @State configCustomModel: string = ""
 
   // ===== 解读模型编辑半模态态：表单值只在内存 @State，不落任何本地存储 =====
   @State showModelSheet: boolean = false
+  // 选择模式：true = 目录模式（默认，按厂商分组两级选择，无需输 url）/ false = 自定义接入
+  @State editModeCatalog: boolean = true
+  // 目录模式已选条目 id（0 = 未选；apiKey 恒不回显）
+  @State editSelectedModelId: number = 0
+  // 目录模式分步选择：当前步骤（1 = 选择厂商，2 = 选择模型）
+  @State catalogStep: number = 1
+  // 目录模式分步选择：已选厂商名（空串 = 未选，停留在第一步）
+  @State selectedVendor: string = ""
   @State editBaseUrl: string = ""
   @State editModel: string = ""
   @State editApiKey: string = ""
@@ -98,9 +134,11 @@ struct Setting {
   // 「测试连接」即时反馈（空串 = 无反馈；ok/fail 决定图标与颜色）
   @State testFeedback: string = ""
   @State testFeedbackOk: boolean = false
-  // 平台模型目录建议（拉取一次缓存；BYOK 不限于该目录；折叠展开交互对齐安卓 #79）
-  @State platformModels: Array<DivModelVo> = []
+  // 平台模型目录（树形整包缓存；目录模式分步选择数据源 + 自定义模式输入建议）
+  @State platformModels: Array<DivVendorGroupVo> = []
   @State modelsLoaded: boolean = false
+  @State modelsLoading: boolean = false
+  @State modelsLoadFailed: boolean = false
   @State modelsExpanded: boolean = false
   // 目录拉取成功但为空（显示「暂无平台模型目录」，对齐安卓 api_config_model_catalog_empty）
   @State modelsEmpty: boolean = false
@@ -158,11 +196,11 @@ struct Setting {
     customStyle: true
   })
 
-  // 删除解读模型配置二次确认弹窗（对齐安卓 #79「删除配置」需确认；不可逆操作走 dangerInk）
+  // 删除解读模型配置二次确认弹窗（对齐安卓「删除配置」需确认；不可逆操作走 dangerInk）
   private deleteConfigDialogController: CustomDialogController = new CustomDialogController({
     builder: AppConfirmDialog({
       title: "删除解读模型配置？",
-      message: "删除后将恢复使用平台默认模型解读，已保存的密钥将从服务端清除。",
+      message: BYOK_DELETE_CONFIRM,
       confirmText: "删除",
       cancelText: "取消",
       isDanger: true,
@@ -305,7 +343,7 @@ struct Setting {
   }
 
   /**
-   * 拉取 BYOK 配置回显（仅掩码，端上不持久化）。
+   * 拉取解读模型配置回显（仅掩码，端上不持久化；新契约双模式 VO）。
    * 业务失败/网络异常静默留痕不打断设置页首屏（401 已由 Axios 拦截器统一处理）。
    */
   private async loadApiConfig(): Promise<void> {
@@ -318,20 +356,37 @@ struct Setting {
       if (res.code === HttpStatusCode.Ok) {
         const config = res.data
         this.hasApiConfig = config !== null
+        // 模式判定：modelConfigId 非 null = 目录模式；null = 自定义模式
+        const catalogId = config?.modelConfigId ?? null
+        this.configIsCatalog = catalogId !== null
+        this.configModelConfigId = catalogId ?? 0
+        // 目录模式厂商名（编辑态预填：打开弹层直接回显第二步选中模型）
+        this.configVendor = catalogId !== null ? (config?.vendor ?? "") : ""
         this.configBaseUrl = config?.customBaseUrl ?? ""
-        // 行尾摘要（对齐安卓两行 trailing）：模型名缺失兜底平台预设名，掩码独立一行；
-        // 编辑态预填一律用 customModel 原文（providerName 是显示名，非可提交的模型名）
-        const model = config?.customModel ?? ""
-        const providerName = config?.providerName ?? ""
-        this.configCustomModel = model
-        this.configModel = model !== "" ? model : providerName
+        // 编辑态预填（自定义模式）：customModel 原文
+        const customModel = config?.customModel ?? ""
+        this.configCustomModel = customModel
+        // 行尾摘要（对齐安卓两行 trailing）：目录模式 = 「vendor · modelName」；
+        // 自定义模式 = customModel（缺省兜底 customBaseUrl，保证摘要行不空）；掩码独立一行
+        if (this.configIsCatalog) {
+          const vendor = config?.vendor ?? ""
+          const modelName = config?.modelName ?? ""
+          if (vendor !== "" && modelName !== "") {
+            this.configModel = `${vendor} · ${modelName}`
+          } else {
+            this.configModel = vendor !== "" ? vendor : modelName
+          }
+        } else {
+          this.configModel = customModel !== "" ? customModel : this.configBaseUrl
+        }
         this.configMask = config?.apiKeyMask ?? ""
         this.configVerified = config?.verified === 1
-        // 平台开关：仅 === 0 关闭；1 / undefined / null（旧响应）均视为开启（additive 兼容）
-        this.byokDisabled = config !== null && config.byokEnabled === 0
+        // 观星台 AI 解读总开关：仅 === 0 关闭；1 / undefined / null（旧响应）均视为开启（兼容）
+        this.byokDisabled = config !== null && config.divUseEnabled === 0
         this.configLoaded = true
         // 回显仅掩码，日志不含 baseUrl/model/key（敏感红线：明文不留存不进日志）
-        logger.debug('setting', `解读模型配置回显 hasConfig=${config !== null} verified=${this.configVerified}`)
+        logger.debug('setting', `解读模型配置回显 hasConfig=${config !== null} ` +
+          `catalog=${this.configIsCatalog} verified=${this.configVerified}`)
       } else {
         logger.warn('setting', `解读模型配置获取失败 code=${res.code} message=${res.message ?? ""}`)
       }
@@ -343,16 +398,22 @@ struct Setting {
   }
 
   /**
-   * 打开编辑半模态（对齐安卓 #79 编辑态预填）：baseUrl/model 回填已配置值，
-   * key 一律置空——后端 PUT 三字段均必填，占位文案引导「重新输入 API Key」。
+   * 打开编辑半模态（双模式预填）：已配置目录模式 → 回显选中条目；已配置自定义 → 回填
+   * baseUrl/customModel；未配置 → 默认目录模式。key 一律置空——后端 PUT apiKey 必填，
+   * 占位文案引导「重新输入 API Key」。
    */
   private openModelEditor(): void {
-    // 平台已关闭 BYOK：入口行置灰不可进（ModelConfigRow 已不响应点击，此处双保险）
+    // 平台已关闭 AI 解读：入口行置灰不可进（ModelConfigRow 已不响应点击，此处双保险）
     if (this.byokDisabled) {
       return
     }
-    this.editBaseUrl = this.hasApiConfig ? this.configBaseUrl : ""
-    this.editModel = this.hasApiConfig ? this.configCustomModel : ""
+    this.editModeCatalog = this.hasApiConfig ? this.configIsCatalog : true
+    this.editSelectedModelId = this.hasApiConfig && this.configIsCatalog ? this.configModelConfigId : 0
+    // 分步选择：已配置目录模式且厂商已知 → 直接回显第二步；否则从第一步开始
+    this.selectedVendor = this.hasApiConfig && this.configIsCatalog ? this.configVendor : ""
+    this.catalogStep = this.selectedVendor !== "" ? 2 : 1
+    this.editBaseUrl = this.hasApiConfig && !this.configIsCatalog ? this.configBaseUrl : ""
+    this.editModel = this.hasApiConfig && !this.configIsCatalog ? this.configCustomModel : ""
     this.editApiKey = ""
     this.showApiKeyPlain = false
     this.testFeedback = ""
@@ -362,43 +423,139 @@ struct Setting {
     this.fetchModelSuggestions()
   }
 
-  /** 平台模型目录建议（可选参考）：拉取一次缓存，失败静默降级为无建议 */
-  private async fetchModelSuggestions(): Promise<void> {
-    if (this.modelsLoaded) {
+  /** 切换选择模式：目录模式（默认，分步选择）/ 自定义接入（url + 模型名自填） */
+  private switchMode(catalog: boolean): void {
+    if (this.editModeCatalog === catalog) {
       return
     }
+    this.editModeCatalog = catalog
+    // 模式切换后旧选择与试呼反馈不再适用，全部清空（分步状态归位第一步）
+    this.catalogStep = 1
+    this.selectedVendor = ""
+    this.editSelectedModelId = 0
+    this.testFeedback = ""
+    this.testFeedbackOk = false
+    if (catalog) {
+      this.fetchModelSuggestions()
+    }
+  }
+
+  /**
+   * 第一步选中厂商：进入第二步。切换厂商时清空旧模型选择与试呼反馈（避免跨厂商残留）；
+   * 重进同一厂商（从第一步返回后再点回）保留已选模型，避免选择丢失。
+   */
+  private selectVendor(vendor: string): void {
+    if (vendor === "") {
+      return
+    }
+    const isSameVendor = this.selectedVendor === vendor
+    this.selectedVendor = vendor
+    this.catalogStep = 2
+    if (!isSameVendor) {
+      this.editSelectedModelId = 0
+      this.testFeedback = ""
+      this.testFeedbackOk = false
+    }
+  }
+
+  /** 第二步返回第一步：保留厂商与已选模型（便于核对/改选），仅切换步骤 */
+  private backToVendorStep(): void {
+    this.catalogStep = 1
+  }
+
+  /** 目录模式选中模型条目：记录 modelConfigId（接入点/模型名由服务端按条目取，端上不输 url） */
+  private selectCatalogModel(model: DivModelVo): void {
+    const id = model.id ?? 0
+    if (id <= 0) {
+      return
+    }
+    this.editSelectedModelId = id
+    // 切换选择后旧试呼反馈不再适用，清除
+    this.testFeedback = ""
+    this.testFeedbackOk = false
+  }
+
+  /**
+   * 平台模型目录拉取：目录模式分步选择的数据源（树形整包，第二步本地过滤；自定义模式下
+   * 仍作模型名输入建议，现状交互保留）。拉取一次缓存；失败置 modelsLoadFailed，可点击重试。
+   */
+  private async fetchModelSuggestions(force: boolean = false): Promise<void> {
+    if (this.modelsLoaded && !force) {
+      return
+    }
+    if (this.modelsLoading) {
+      return
+    }
+    this.modelsLoading = true
+    this.modelsLoadFailed = false
     try {
       const res = await getDivModels()
       if (res.code === HttpStatusCode.Ok && res.data !== null) {
         this.platformModels = res.data
         this.modelsEmpty = res.data.length === 0
         this.modelsLoaded = true
-        logger.debug('setting', `平台模型目录已加载 ${res.data.length} 条`)
+        logger.debug('setting', `平台模型目录已加载 ${res.data.length} 个厂商`)
+      } else {
+        this.modelsLoadFailed = true
+        logger.debug('setting', `平台模型目录拉取失败 code=${res.code}`)
       }
     } catch (err) {
-      // 建议是增强功能，失败不打扰用户
-      logger.debug('setting', '平台模型目录拉取失败，降级为无建议')
+      this.modelsLoadFailed = true
+      logger.debug('setting', '平台模型目录拉取失败')
+    } finally {
+      this.modelsLoading = false
     }
   }
 
-  /** 展开/收起平台模型目录（对齐安卓 api_config_model_catalog_expand/collapse） */
+  /** 展开/收起自定义模式下的平台目录建议（对齐安卓 api_config_model_catalog_expand/collapse） */
   private toggleModelsExpanded(): void {
     this.modelsExpanded = !this.modelsExpanded
   }
 
   /**
-   * 表单预校验（镜像服务端 SaveUserApiFrom @NotBlank + SSRF 的 https 规则），
+   * 平台目录扁平化（自定义模式模型名建议数据源）：树形目录按厂商分组，建议 chip 只需
+   * modelId。build 内调用：每次渲染重算（目录量级小，不改动 @State 原数组）。
+   */
+  private flattenPlatformModels(): Array<DivModelVo> {
+    const models: Array<DivModelVo> = []
+    for (const group of this.platformModels) {
+      for (const model of group.models) {
+        models.push(model)
+      }
+    }
+    return models
+  }
+
+  /** 当前选中厂商分组（第二步数据源；未选/目录未加载返回 null） */
+  private selectedVendorGroup(): DivVendorGroupVo | null {
+    for (const group of this.platformModels) {
+      if ((group.vendor ?? "") === this.selectedVendor) {
+        return group
+      }
+    }
+    return null
+  }
+
+  /**
+   * 表单预校验（镜像服务端双模式校验）：目录模式 modelConfigId 必选；自定义模式镜像
+   * SaveUserApiFrom @NotBlank + SSRF 的 https 规则。apiKey 两模式均必填。
    * 返回错误文案；空串 = 通过。
    */
   private validateForm(): string {
-    if (this.editBaseUrl.trim() === "") {
-      return "请输入接入点地址"
-    }
-    if (!this.editBaseUrl.trim().startsWith("https://")) {
-      return "接入点必须以 https:// 开头"
-    }
-    if (this.editModel.trim() === "") {
-      return "请输入模型名称"
+    if (this.editModeCatalog) {
+      if (this.editSelectedModelId <= 0) {
+        return BYOK_SELECT_MODEL_REQUIRED
+      }
+    } else {
+      if (this.editBaseUrl.trim() === "") {
+        return "请输入接入点地址"
+      }
+      if (!this.editBaseUrl.trim().startsWith("https://")) {
+        return "接入点必须以 https:// 开头"
+      }
+      if (this.editModel.trim() === "") {
+        return "请输入模型名称"
+      }
     }
     if (this.editApiKey.trim() === "") {
       return "请输入 API Key"
@@ -406,13 +563,21 @@ struct Setting {
     return ""
   }
 
-  /** 组请求体（trim 后提交；key 明文仅进请求体，不落日志） */
+  /** 组请求体（双模式二选一，trim 后提交；key 明文仅进请求体，不落日志） */
   private buildForm(): SaveDivUserApiForm {
-    return {
+    if (this.editModeCatalog) {
+      // 目录模式：{modelConfigId, apiKey}，接入点/模型名服务端从目录取
+      const form: SaveDivUserApiForm = { apiKey: this.editApiKey.trim() }
+      form.modelConfigId = this.editSelectedModelId
+      return form
+    }
+    // 自定义模式：{baseUrl, model, apiKey}
+    const custom: SaveDivUserApiForm = {
       baseUrl: this.editBaseUrl.trim(),
       model: this.editModel.trim(),
       apiKey: this.editApiKey.trim()
     }
+    return custom
   }
 
   /** 测试连接（不保存，独立试呼）：即时反馈走弹层内文案，成功/失败都留在原处便于修正 */
@@ -487,7 +652,7 @@ struct Setting {
     }
   }
 
-  /** 删除 BYOK（删除确认弹窗二次确认后进入）：成功回落未配置态（平台默认模型） */
+  /** 删除解读模型配置（删除确认弹窗二次确认后进入）：成功回落未配置态（零兜底，需重新配置才能 AI 解读） */
   private async deleteConfig(): Promise<void> {
     if (this.deleting) {
       return
@@ -496,7 +661,7 @@ struct Setting {
     try {
       const res = await deleteDivUserApiConfig()
       if (res.code === HttpStatusCode.Ok) {
-        logger.info('setting', '解读模型配置已删除，回落平台默认模型')
+        logger.info('setting', '解读模型配置已删除，需重新配置模型才能使用 AI 解读')
         // 文案对齐安卓 api_config_delete_success
         showToastSafety("已删除配置")
         this.showModelSheet = false
@@ -549,10 +714,206 @@ struct Setting {
       })
   }
 
+  /** 选择模式分段 chip（目录模式默认；选中主色浅底 + 描边，未选中 surfaceVariant，参照 ModelChip 风格） */
+  @Builder
+  EditModeChip(label: string, selected: boolean, onSelect: () => void) {
+    Text(label)
+      .fontSize(DesignFontSize.BODY_SMALL)
+      .fontWeight(selected ? DesignFontWeight.MEDIUM : DesignFontWeight.NORMAL)
+      .fontColor(selected ? DesignColor.PRIMARY : DesignColor.TEXT_SECONDARY)
+      .textAlign(TextAlign.Center)
+      .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 8, bottom: 8 })
+      .borderRadius(DesignDimens.RADIUS_FULL)
+      .backgroundColor(selected ? DesignColor.PRIMARY_LIGHT : DesignColor.SURFACE_VARIANT)
+      .border({ width: 1, color: selected ? DesignColor.PRIMARY : DesignColor.OUTLINE })
+      .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
+      .onClick(() => {
+        onSelect()
+      })
+  }
+
   /**
-   * 解读模型编辑半模态（#81，对齐安卓 #79 编辑弹层）：
-   * 自绘 handle（bindSheet dragBar 关闭，样式走令牌，Payment.ets 同款）+ 说明文案 + 三字段表单 +
-   * 测试连接即时反馈 + 保存 + 已配置时的删除入口。
+   * 目录模式：平台模型目录分步选择（第一步选厂商，第二步在该厂商内选模型；
+   * 树形目录一次拉取，第二步本地过滤，无二次请求）。
+   */
+  @Builder
+  CatalogSelector() {
+    Column({ space: DesignDimens.SPACE_XS }) {
+      if (!this.modelsLoaded) {
+        if (this.modelsLoadFailed) {
+          Text("模型目录加载失败，点击重试")
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(DesignColor.PRIMARY)
+            // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3）
+            .padding({ top: 14, bottom: 14 })
+            .onClick(() => {
+              this.fetchModelSuggestions(true)
+            })
+        } else {
+          Text("模型目录加载中…")
+            .fontSize(DesignFontSize.CAPTION)
+            .fontColor(DesignColor.TEXT_TERTIARY)
+            .padding({ top: 14, bottom: 14 })
+        }
+      } else if (this.modelsEmpty) {
+        Text("暂无平台模型目录，可切换自定义接入")
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_TERTIARY)
+          .padding({ top: 14, bottom: 14 })
+      } else if (this.catalogStep === 1) {
+        // ---- 第一步：选择厂商 ----
+        this.FormLabel(BYOK_STEP_VENDOR)
+        ForEach(this.platformModels, (group: DivVendorGroupVo) => {
+          this.VendorStepRow(group)
+        }, (group: DivVendorGroupVo) => `vendor-${group.vendor ?? ""}`)
+        Text(BYOK_STEP_VENDOR_HINT)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_TERTIARY)
+          .margin({ top: DesignDimens.SPACE_XS })
+      } else {
+        // ---- 第二步：选择该厂商的模型 ----
+        Row() {
+          Row({ space: DesignDimens.SPACE_XXS }) {
+            SymbolGlyph($r('sys.symbol.chevron_left'))
+              .fontSize(16)
+              .fontColor([DesignColor.PRIMARY])
+            Text(BYOK_STEP_BACK)
+              .fontSize(DesignFontSize.BODY_SMALL)
+              .fontColor(DesignColor.PRIMARY)
+          }
+          .padding({ top: 12, bottom: 12 })
+          .onClick(() => {
+            this.backToVendorStep()
+          })
+          Text(BYOK_STEP_MODEL)
+            .fontSize(DesignFontSize.BODY_SMALL)
+            .fontWeight(DesignFontWeight.MEDIUM)
+            .fontColor(DesignColor.TEXT_SECONDARY)
+            .margin({ left: DesignDimens.SPACE_SM })
+        }
+        .width("100%")
+        .alignItems(VerticalAlign.Center)
+
+        Text(`${BYOK_STEP_CURRENT_VENDOR}${this.selectedVendor}`)
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_TERTIARY)
+          .margin({ top: DesignDimens.SPACE_XXS })
+
+        ForEach(this.selectedVendorGroup()?.models ?? [], (model: DivModelVo) => {
+          this.CatalogModelRow(model)
+        }, (model: DivModelVo) => `catalog-model-${model.id ?? 0}`)
+      }
+    }
+    .width("100%")
+    .margin({ top: DesignDimens.SPACE_XS })
+  }
+
+  /** 第一步厂商行：厂商名 + 接入点次要信息 + 模型数；选中高亮（返回第一步时保留厂商选择） */
+  @Builder
+  VendorStepRow(group: DivVendorGroupVo) {
+    Row() {
+      Column({ space: 2 }) {
+        Text(group.vendor ?? "")
+          .fontSize(DesignFontSize.BODY)
+          .fontWeight(DesignFontWeight.MEDIUM)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(group.baseUrl ?? "")
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_TERTIARY)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+      .margin({ right: DesignDimens.SPACE_SM })
+
+      Text(`${group.models.length} 个模型`)
+        .fontSize(DesignFontSize.CAPTION)
+        .fontColor(DesignColor.TEXT_TERTIARY)
+
+      if (this.selectedVendor === (group.vendor ?? "")) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(16)
+          .fontColor([DesignColor.PRIMARY])
+          .margin({ left: DesignDimens.SPACE_XS })
+      }
+    }
+    .width("100%")
+    .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
+    .padding({ left: DesignDimens.SPACE_MD, right: DesignDimens.SPACE_MD, top: 10, bottom: 10 })
+    .borderRadius(DesignDimens.INPUT_RADIUS)
+    .backgroundColor(DesignColor.SURFACE)
+    .border({
+      width: 1,
+      color: this.selectedVendor === (group.vendor ?? "") ? DesignColor.PRIMARY : DesignColor.OUTLINE
+    })
+    .onClick(() => {
+      this.selectVendor(group.vendor ?? "")
+    })
+  }
+
+  /** 二级模型条目：目录显示名 + modelId 副行 + 「使用中」徽标 + 选中勾 */
+  @Builder
+  CatalogModelRow(model: DivModelVo) {
+    Row() {
+      Column({ space: 2 }) {
+        Text(model.name ?? "")
+          .fontSize(DesignFontSize.BODY)
+          .fontColor(DesignColor.TEXT_PRIMARY)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(model.modelId ?? "")
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.TEXT_TERTIARY)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+      .margin({ right: DesignDimens.SPACE_SM })
+
+      if (model.active) {
+        Text("使用中")
+          .fontSize(DesignFontSize.CAPTION)
+          .fontColor(DesignColor.ON_SUCCESS_CONTAINER)
+          .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+          .borderRadius(DesignDimens.RADIUS_FULL)
+          .backgroundColor(DesignColor.SUCCESS_CONTAINER)
+      }
+
+      if (this.editSelectedModelId === (model.id ?? 0)) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(16)
+          .fontColor([DesignColor.PRIMARY])
+          .margin({ left: DesignDimens.SPACE_XS })
+      }
+    }
+    .width("100%")
+    .constraintSize({ minHeight: DesignDimens.TOUCH_TARGET_MIN })
+    .padding({
+      left: DesignDimens.SPACE_MD,
+      right: DesignDimens.SPACE_MD,
+      top: 10,
+      bottom: 10
+    })
+    .borderRadius(DesignDimens.INPUT_RADIUS)
+    .backgroundColor(DesignColor.SURFACE)
+    .border({
+      width: 1,
+      color: this.editSelectedModelId === (model.id ?? 0) ? DesignColor.PRIMARY : DesignColor.OUTLINE
+    })
+    .onClick(() => {
+      this.selectCatalogModel(model)
+    })
+  }
+
+  /**
+   * 解读模型编辑半模态（#81 重构契约，对齐安卓编辑弹层）：
+   * 自绘 handle（bindSheet dragBar 关闭，样式走令牌，Payment.ets 同款）+ 说明文案 +
+   * 选择模式（目录默认 / 自定义接入）双模式表单 + 测试连接即时反馈 + 保存 +
+   * 已配置时的删除入口。
    */
   @Builder
   ModelEditorSheet() {
@@ -585,85 +946,106 @@ struct Setting {
       // 表单（可滚动）
       Scroll() {
         Column() {
-          // ---- 接入点（label/hint 对齐安卓 api_config_base_url_label/hint）----
-          this.FormLabel("接入点地址")
-          TextInput({ text: this.editBaseUrl, placeholder: "https://api.example.com" })
-            .height(48)
-            .fontSize(DesignFontSize.BODY)
-            .backgroundColor(DesignColor.SURFACE_VARIANT)
-            .borderRadius(DesignDimens.INPUT_RADIUS)
-            .border(this.inputBorder(this.baseUrlFocused))
-            .placeholderColor(DesignColor.TEXT_TERTIARY)
-            .placeholderFont({ size: DesignFontSize.BODY })
-            .onFocus(() => {
-              this.baseUrlFocused = true
+          // ---- 选择模式（目录模式默认：分步选择厂商/模型免输 url；自定义接入保留三输入现状交互）----
+          this.FormLabel("选择模式")
+          Row({ space: DesignDimens.SPACE_SM }) {
+            this.EditModeChip(BYOK_MODE_CATALOG, this.editModeCatalog, (): void => {
+              this.switchMode(true)
             })
-            .onBlur(() => {
-              this.baseUrlFocused = false
+            this.EditModeChip(BYOK_MODE_CUSTOM, !this.editModeCatalog, (): void => {
+              this.switchMode(false)
             })
-            .onChange((value: string) => {
-              this.editBaseUrl = value
-            })
+          }
+          .width("100%")
 
-          Text("支持任意 OpenAI 兼容接入点，需 HTTPS")
-            .fontSize(DesignFontSize.CAPTION)
-            .fontColor(DesignColor.TEXT_TERTIARY)
-            .margin({ top: DesignDimens.SPACE_XS })
-
-          Column().height(DesignDimens.SPACE_LG)
-
-          // ---- 模型名称 ----
-          this.FormLabel("模型名称")
-          TextInput({ text: this.editModel, placeholder: "如 deepseek-chat" })
-            .height(48)
-            .fontSize(DesignFontSize.BODY)
-            .backgroundColor(DesignColor.SURFACE_VARIANT)
-            .borderRadius(DesignDimens.INPUT_RADIUS)
-            .border(this.inputBorder(this.modelFocused))
-            .placeholderColor(DesignColor.TEXT_TERTIARY)
-            .placeholderFont({ size: DesignFontSize.BODY })
-            .onFocus(() => {
-              this.modelFocused = true
-            })
-            .onBlur(() => {
-              this.modelFocused = false
-            })
-            .onChange((value: string) => {
-              this.editModel = value
-            })
-
-          // ---- 平台模型目录（折叠展开，交互对齐安卓 #79；BYOK 不限目录，仅为输入建议）----
-          if (this.modelsLoaded && this.platformModels.length > 0) {
-            Text(this.modelsExpanded ? "收起平台模型目录" : "从平台模型目录选择")
-              .fontSize(DesignFontSize.CAPTION)
-              .fontColor(DesignColor.PRIMARY)
-              // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3，Payment「去领取」同款处理）
-              .padding({ top: 14, bottom: 14 })
-              .margin({ top: 4 })
-              .onClick(() => {
-                this.toggleModelsExpanded()
-              })
-            if (this.modelsExpanded) {
-              Scroll() {
-                Row() {
-                  ForEach(this.platformModels, (model: DivModelVo) => {
-                    this.ModelChip(model)
-                  }, (model: DivModelVo) => `model-${model.id ?? model.modelId ?? ""}`)
-                }
-                .width("100%")
-              }
-              .width("100%")
-              .scrollable(ScrollDirection.Horizontal)
-              .scrollBar(BarState.Off)
-              .align(Alignment.Start)
-              .margin({ top: DesignDimens.SPACE_XS })
-            }
-          } else if (this.modelsLoaded && this.modelsEmpty) {
-            // 目录拉取成功但为空（对齐安卓 api_config_model_catalog_empty）
-            Text("暂无平台模型目录")
+          if (this.editModeCatalog) {
+            // ---- 目录模式：分步选择厂商 → 模型（接入点/模型名服务端从目录取，不显示 url 输入）----
+            this.CatalogSelector()
+            Text("接入点与模型名由平台目录提供，无需填写")
               .fontSize(DesignFontSize.CAPTION)
               .fontColor(DesignColor.TEXT_TERTIARY)
               .margin({ top: DesignDimens.SPACE_XS })
+          } else {
+            // ---- 自定义接入（现状交互保留）：接入点 + 模型名（label/hint 对齐安卓 api_config_base_url_label/hint）----
+            this.FormLabel("接入点地址")
+            TextInput({ text: this.editBaseUrl, placeholder: "https://api.example.com" })
+              .height(48)
+              .fontSize(DesignFontSize.BODY)
+              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .borderRadius(DesignDimens.INPUT_RADIUS)
+              .border(this.inputBorder(this.baseUrlFocused))
+              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .placeholderFont({ size: DesignFontSize.BODY })
+              .onFocus(() => {
+                this.baseUrlFocused = true
+              })
+              .onBlur(() => {
+                this.baseUrlFocused = false
+              })
+              .onChange((value: string) => {
+                this.editBaseUrl = value
+              })
+
+            Text("支持任意 OpenAI 兼容接入点，需 HTTPS")
+              .fontSize(DesignFontSize.CAPTION)
+              .fontColor(DesignColor.TEXT_TERTIARY)
+              .margin({ top: DesignDimens.SPACE_XS })
+
+            Column().height(DesignDimens.SPACE_LG)
+
+            // ---- 模型名称 ----
+            this.FormLabel("模型名称")
+            TextInput({ text: this.editModel, placeholder: "如 deepseek-chat" })
+              .height(48)
+              .fontSize(DesignFontSize.BODY)
+              .backgroundColor(DesignColor.SURFACE_VARIANT)
+              .borderRadius(DesignDimens.INPUT_RADIUS)
+              .border(this.inputBorder(this.modelFocused))
+              .placeholderColor(DesignColor.TEXT_TERTIARY)
+              .placeholderFont({ size: DesignFontSize.BODY })
+              .onFocus(() => {
+                this.modelFocused = true
+              })
+              .onBlur(() => {
+                this.modelFocused = false
+              })
+              .onChange((value: string) => {
+                this.editModel = value
+              })
+
+            // ---- 平台目录建议（现状交互保留：折叠展开，点击回填模型名；目录为树形，先扁平化）----
+            if (this.modelsLoaded && this.flattenPlatformModels().length > 0) {
+              Text(this.modelsExpanded ? "收起平台模型目录" : "从平台模型目录选择")
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.PRIMARY)
+                // 上下 14 + 行高 16 = 44 触控热区（规范 §2.3，Payment「去领取」同款处理）
+                .padding({ top: 14, bottom: 14 })
+                .margin({ top: 4 })
+                .onClick(() => {
+                  this.toggleModelsExpanded()
+                })
+              if (this.modelsExpanded) {
+                Scroll() {
+                  Row() {
+                    ForEach(this.flattenPlatformModels(), (model: DivModelVo) => {
+                      this.ModelChip(model)
+                    }, (model: DivModelVo) => `model-${model.id ?? model.modelId ?? ""}`)
+                  }
+                  .width("100%")
+                }
+                .width("100%")
+                .scrollable(ScrollDirection.Horizontal)
+                .scrollBar(BarState.Off)
+                .align(Alignment.Start)
+                .margin({ top: DesignDimens.SPACE_XS })
+              }
+            } else if (this.modelsLoaded && this.modelsEmpty) {
+              // 目录拉取成功但为空（对齐安卓 api_config_model_catalog_empty）
+              Text("暂无平台模型目录")
+                .fontSize(DesignFontSize.CAPTION)
+                .fontColor(DesignColor.TEXT_TERTIARY)
+                .margin({ top: DesignDimens.SPACE_XS })
+            }
           }
 
           Column().height(DesignDimens.SPACE_LG)
@@ -867,9 +1249,9 @@ struct Setting {
             // 解读模型（BYOK）编辑半模态挂在外层容器（bindSheet 双向绑定 showModelSheet）
             Column() {
               SettingGroupCard() {
-                // 解读模型入口行（#81，对齐安卓 #79 自定义 trailing 摘要）：
-                // 已配置 = 第一行 customModel +「已验证」徽标、第二行 apiKeyMask（仅掩码）；
-                // 未配置 = 「未配置，使用平台默认模型」；byokEnabled=0 = 置灰提示不可进编辑层。
+                // 解读模型入口行（#81 重构契约，自定义 trailing 摘要）：
+                // 目录模式 = 「vendor · modelName」+「已验证」徽标 / 掩码；自定义模式 = customModel + 掩码；
+                // 未配置 = 引导配置文案；divUseEnabled=0（总开关关闭）= 置灰提示不可进编辑层。
                 // 配置仅从后端 GET 回显，端上不持久化 key。
                 ModelConfigRow({
                   icon: $r('sys.symbol.key'),
@@ -1104,10 +1486,11 @@ struct SettingRow {
 }
 
 /**
- * 解读模型入口行（#81，对齐安卓 #79 SettingRow(apiConfig) 的自定义 trailing 摘要）：
- * 已配置 = 右对齐两行（第一行 customModel +「已验证」徽标，第二行 apiKeyMask 仅掩码）；
- * 未配置 = 单行「未配置，使用平台默认模型」；
- * 平台关闭 BYOK（byokEnabled=0）= 置灰 + 提示「平台已关闭自带模型」，不可点击进入编辑层。
+ * 解读模型入口行（#81 重构契约，自定义 trailing 摘要）：
+ * 已配置 = 右对齐两行（目录模式「vendor · modelName」/ 自定义模式 customModel，+「已验证」徽标，
+ * 第二行 apiKeyMask 仅掩码）；
+ * 未配置 = 单行「未配置，解读前请先配置模型」；
+ * 平台总开关关闭（divUseEnabled=0）= 置灰 + 提示「观星台 AI 解读暂未开放」，不可点击进入编辑层。
  * 其余视觉与 SettingRow 一致（64dp 高 / ib32 图标容器 / 按压铺 surfaceVariant）。
  */
 @Component
@@ -1121,7 +1504,8 @@ struct ModelConfigRow {
   @Prop maskText: string = ""
   @Prop verified: boolean = false
   @Prop loading: boolean = false
-  // 平台关闭 BYOK：整行置灰（降透明 0.5，对齐 AppButton 禁用惯例）、去 chevron、不响应点击
+  // 平台总开关关闭（divUseEnabled=0）：整行置灰（降透明 0.5，对齐 AppButton 禁用惯例）、
+  // 去 chevron、不响应点击
   @Prop disabled: boolean = false
   onRowClick: () => void = () => {
   }
@@ -1156,7 +1540,7 @@ struct ModelConfigRow {
           .height(16)
           .color(DesignColor.TEXT_SECONDARY)
       } else if (this.disabled) {
-        // 平台关闭 BYOK：提示文案（对齐安卓「入口隐藏或置灰提示」的置灰分支）
+        // 平台总开关关闭：提示文案（入口置灰分支）
         Text(BYOK_DISABLED_NOTICE)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
@@ -1199,8 +1583,8 @@ struct ModelConfigRow {
         }
         .alignItems(HorizontalAlign.End)
       } else {
-        // 未配置引导文案（对齐安卓 api_config_unconfigured）
-        Text("未配置，使用平台默认模型")
+        // 未配置引导文案（零兜底口径：无平台默认模型，需配置后才能 AI 解读）
+        Text(BYOK_UNCONFIGURED_NOTICE)
           .fontSize(DesignFontSize.BODY_SMALL)
           .fontColor(DesignColor.TEXT_SECONDARY)
       }

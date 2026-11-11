@@ -289,7 +289,7 @@ fun UserInfoPage(
                                 .clip(RoundedCornerShape(AppDimens.radiusFull))
                                 .background(AppColors.colorScheme.iconContainerTeal)
                                 .pressable(
-                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting) },
+                                    onClick = rememberDebouncedClick { navController.navigate(UserRoute.Setting()) },
                                     debounce = false,
                                 ),
                             contentAlignment = Alignment.Center
@@ -711,7 +711,7 @@ fun UserInfoPage(
                                     tint = AppColors.colorScheme.textTertiary
                                 )
                             },
-                            onClick = { navController.navigate(UserRoute.Setting) }
+                            onClick = { navController.navigate(UserRoute.Setting()) }
                         )
                     }
 

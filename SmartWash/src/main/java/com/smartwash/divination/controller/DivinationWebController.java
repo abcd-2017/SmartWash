@@ -12,10 +12,10 @@ import com.smartwash.divination.service.DivUserApiConfigService;
 import com.smartwash.divination.service.IDivInterpretationService;
 import com.smartwash.divination.service.IDivRecordService;
 import com.smartwash.divination.vo.MethodVo;
-import com.smartwash.divination.vo.ModelVo;
 import com.smartwash.divination.vo.RecordDetailVo;
 import com.smartwash.divination.vo.RecordVo;
 import com.smartwash.divination.vo.UserApiConfigVo;
+import com.smartwash.divination.vo.VendorGroupVo;
 import com.smartwash.utils.LoginUser;
 import com.smartwash.utils.UserContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
@@ -114,39 +114,28 @@ public class DivinationWebController {
         return Result.ok(methods);
     }
 
-    @Operation(summary = "可选模型目录", description = "获取平台启用的模型目录")
+    @Operation(summary = "可选模型目录（树形）", description = "一次返回整棵目录树：厂商为一级（含接入点），模型为二级挂在厂商下；密钥由用户自带")
     @GetMapping("/models")
-    public Result<java.util.List<ModelVo>> getModels() {
-        java.util.List<ModelVo> models = new java.util.ArrayList<>();
-        modelConfigService.listEnabled().forEach(config -> {
-            ModelVo vo = new ModelVo();
-            vo.setId(config.getId());
-            vo.setName(config.getName());
-            vo.setProvider(config.getProvider());
-            vo.setModelId(config.getModelId());
-            vo.setPriority(config.getPriority());
-            vo.setActive(Boolean.FALSE);
-            models.add(vo);
-        });
-        return Result.ok(models);
+    public Result<java.util.List<VendorGroupVo>> getModels() {
+        return Result.ok(modelConfigService.listEnabledTree());
     }
 
-    @Operation(summary = "获取用户 BYOK 配置", description = "仅返回掩码，无明文/密文")
+    @Operation(summary = "获取用户模型配置", description = "仅返回掩码，无明文/密文；apiKey 只写不读")
     @GetMapping("/settings/api")
     public Result<UserApiConfigVo> getUserApiConfig() {
         LoginUser user = UserContextHolder.getUser();
         return Result.ok(userApiConfigService.getUserConfig(user.getUserId()));
     }
 
-    @Operation(summary = "保存/更换 BYOK", description = "连通性校验 → AES-GCM 加密入库")
+    @Operation(summary = "保存/更换用户模型配置", description = "目录模式（modelConfigId+apiKey）或自定义模式（baseUrl+model+apiKey）；连通性校验 → AES-GCM 加密入库")
     @PutMapping("/settings/api")
     public Result<String> saveUserApiConfig(@RequestBody SaveUserApiFrom from) {
         LoginUser user = UserContextHolder.getUser();
-        userApiConfigService.saveUserConfig(user.getUserId(), from.getBaseUrl(), from.getModel(), from.getApiKey());
+        userApiConfigService.saveUserConfig(user.getUserId(), from);
         return Result.ok("保存成功");
     }
 
-    @Operation(summary = "删除 BYOK", description = "删除用户自带 API 配置")
+    @Operation(summary = "删除用户模型配置", description = "删除用户自带 API 配置（删除后解读将被拦截，需重新配置）")
     @DeleteMapping("/settings/api")
     public Result<String> deleteUserApiConfig() {
         LoginUser user = UserContextHolder.getUser();
@@ -154,16 +143,30 @@ public class DivinationWebController {
         return Result.ok("删除成功");
     }
 
-    @Operation(summary = "连通性测试", description = "不保存，独立限流")
+    @Operation(summary = "连通性测试", description = "不保存，独立限流；目录模式按目录条目接入点试呼，自定义模式按传入接入点试呼")
     @PostMapping("/settings/api/test")
     // 限流：连通性测试独立计数（与方法注释约定一致），按 userId 防高频试呼外部 LLM 网关
     @RateLimit(name = "div-api-test", window = 60, limit = 3, message = "连通性测试过于频繁，请稍后再试")
     public Result<Boolean> testUserApi(@RequestBody SaveUserApiFrom from) {
-        // 平台关闭 BYOK 时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
-        if (!userApiConfigService.isByokEnabled()) {
+        // 功能总开关关闭时不允许试呼：返回 ok(false) 与「试呼失败」同语义，客户端无需新增错误分支
+        if (!userApiConfigService.isDivUseEnabled()) {
             return Result.ok(false);
         }
-        boolean ok = modelConfigService.testConnectivity(from.getBaseUrl(), from.getApiKey(), from.getModel());
+        String baseUrl;
+        String model;
+        if (from.getModelConfigId() != null) {
+            // 目录模式：接入点/模型名服务端从目录取
+            com.smartwash.divination.entity.DivModelConfig catalog = modelConfigService.getById(from.getModelConfigId());
+            if (catalog == null || catalog.getEnabled() == null || catalog.getEnabled() != 1) {
+                return Result.ok(false);
+            }
+            baseUrl = catalog.getBaseUrl();
+            model = catalog.getModelId();
+        } else {
+            baseUrl = from.getBaseUrl();
+            model = from.getModel();
+        }
+        boolean ok = modelConfigService.testConnectivity(baseUrl, from.getApiKey(), model);
         return Result.ok(ok);
     }
 

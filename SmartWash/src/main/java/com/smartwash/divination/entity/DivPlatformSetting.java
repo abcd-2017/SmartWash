@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 
 /**
  * 平台全局设置（单例 id=1，管理端维护）。
+ *
+ * <p>平台零兜底：解读只消费用户 BYOK 配置，不存在平台默认/备用模型；
+ * 本表仅承载功能总开关与每用户日限额。</p>
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -24,17 +27,11 @@ public class DivPlatformSetting implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    /** div_model_config.id */
-    private Long defaultModelId;
+    /** 观星台 AI 解读总开关：0=客户端隐藏入口并拦截，1=按用户自配模型解读 */
+    private Integer divUseEnabled;
 
-    private Long fallbackModelId;
-
-    /** 是否允许用户自带 key */
-    private Integer byokEnabled;
-
+    /** 每用户每日解读次数限额 */
     private Integer byokDailyLimit;
-
-    private Integer platformDailyLimit;
 
     private LocalDateTime updatedAt;
 }

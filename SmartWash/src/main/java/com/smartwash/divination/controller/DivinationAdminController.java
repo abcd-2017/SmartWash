@@ -11,6 +11,7 @@ import com.smartwash.divination.entity.DivPromptVersion;
 import com.smartwash.divination.entity.DivRagDocument;
 import com.smartwash.divination.entity.DivUsageDaily;
 import com.smartwash.divination.from.RagUploadFrom;
+import com.smartwash.divination.from.SaveModelFrom;
 import com.smartwash.divination.mapper.DivBlockedQuestionMapper;
 import com.smartwash.divination.mapper.DivInterpretationMapper;
 import com.smartwash.divination.mapper.DivRagDocumentMapper;
@@ -19,8 +20,10 @@ import com.smartwash.divination.service.DivModelConfigService;
 import com.smartwash.divination.service.DivPlatformSettingService;
 import com.smartwash.divination.service.DivPromptService;
 import com.smartwash.divination.service.DivRagService;
+import com.smartwash.divination.vo.DivModelConfigAdminVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
@@ -77,10 +80,21 @@ public class DivinationAdminController {
 
     // ==================== Prompt 版本管理 ====================
 
-    @Operation(summary = "Prompt 版本列表", description = "按术数方法查询 prompt 版本")
+    @Operation(summary = "Prompt 版本分页列表", description = "按术数方法（可选）与版本（可选）分页查询 prompt 版本")
     @GetMapping("/prompts")
-    public Result<List<DivPromptVersion>> listPrompts(@RequestParam String method) {
-        return Result.ok(promptService.listByMethod(method));
+    public Result<Page<DivPromptVersion>> listPrompts(
+            @RequestParam(value = "method", required = false) String method,
+            @RequestParam(value = "version", required = false) String version,
+            @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        Page<DivPromptVersion> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<DivPromptVersion> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(method)) wrapper.eq(DivPromptVersion::getMethod, method);
+        if (StringUtils.hasText(version)) wrapper.eq(DivPromptVersion::getVersion, version);
+        if (status != null) wrapper.eq(DivPromptVersion::getStatus, status);
+        wrapper.orderByDesc(DivPromptVersion::getCreatedAt);
+        return Result.ok(promptService.listPage(pageObj, wrapper));
     }
 
     @Operation(summary = "保存 Prompt 版本", description = "新增或更新 prompt 版本")
@@ -143,16 +157,48 @@ public class DivinationAdminController {
 
     // ==================== 平台模型目录管理 ====================
 
-    @Operation(summary = "模型目录列表", description = "查询所有模型配置（仅掩码）")
+    @Operation(summary = "模型目录分页列表", description = "按厂商/名称/启用态筛选（均可选），返回分页结构（仅掩码，无密文）")
     @GetMapping("/models")
-    public Result<List<DivModelConfig>> listModels() {
-        return Result.ok(modelConfigService.listAll());
+    public Result<Page<DivModelConfigAdminVo>> listModels(
+            @RequestParam(value = "vendor", required = false) String vendor,
+            @RequestParam(value = "name", required = false) String name,
+            @RequestParam(value = "enabled", required = false) Integer enabled,
+            @RequestParam(value = "page", defaultValue = "1") Integer page,
+            @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        Page<DivModelConfig> pageObj = new Page<>(page, size);
+        LambdaQueryWrapper<DivModelConfig> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(vendor)) wrapper.like(DivModelConfig::getVendor, vendor);
+        if (StringUtils.hasText(name)) wrapper.like(DivModelConfig::getName, name);
+        if (enabled != null) wrapper.eq(DivModelConfig::getEnabled, enabled);
+        wrapper.orderByAsc(DivModelConfig::getPriority);
+        Page<DivModelConfig> result = modelConfigService.listPage(pageObj, wrapper);
+        // 实体 → VO 裁剪密文与主密钥版本（密文永不出接口）
+        Page<DivModelConfigAdminVo> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(modelConfigService::toAdminVo).collect(java.util.stream.Collectors.toList()));
+        return Result.ok(voPage);
     }
 
-    @Operation(summary = "保存模型配置", description = "新增或更新模型（密钥加密入库）")
+    @Operation(summary = "保存模型目录条目", description = "新增或更新目录条目（明文密钥加密入库，编辑留空表示不更换）")
     @PostMapping("/models")
-    public Result<Long> saveModel(@RequestBody DivModelConfig config) {
-        return Result.ok(modelConfigService.save(config));
+    public Result<Long> saveModel(@RequestBody @Valid SaveModelFrom from) {
+        return Result.ok(modelConfigService.save(from));
+    }
+
+    @Operation(summary = "批量导入模型目录", description = "JSON 数组批量入库（vendor/name/baseUrl/modelId 必填，apiKey 可选）；非法条目跳过，返回成功导入数")
+    @PostMapping("/models/import")
+    public Result<Integer> importModels(@RequestBody List<SaveModelFrom> items) {
+        int imported = 0;
+        for (SaveModelFrom from : items) {
+            if (from == null || !StringUtils.hasText(from.getVendor()) || !StringUtils.hasText(from.getName())
+                    || !StringUtils.hasText(from.getBaseUrl()) || !StringUtils.hasText(from.getModelId())) {
+                continue;
+            }
+            modelConfigService.save(from);
+            imported++;
+        }
+        log.info("批量导入模型目录, 总数: {}, 成功: {}", items.size(), imported);
+        return Result.ok(imported);
     }
 
     @Operation(summary = "删除模型配置", description = "删除指定模型")

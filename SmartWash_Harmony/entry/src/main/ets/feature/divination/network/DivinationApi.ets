@@ -32,7 +32,7 @@ import { logger } from '../../../utils/Logger'
 import { decodeBundle, decodeBundleFromJson, DivRecordRow } from '../data/DivinationStore'
 import { DivSseCallbacks, divSsePost } from './DivSseClient'
 // 平台模型目录与 BYOK 设置同属 /web/auth/div 域，已由 #81 在 DivSettingsApi 实现，此处转发复用（勿重复定义）
-export { getDivModels, DivModelVo } from './DivSettingsApi'
+export { getDivModels, DivModelVo, DivVendorGroupVo } from './DivSettingsApi'
 
 // ========== 请求体 ==========
 

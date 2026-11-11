@@ -27,6 +27,8 @@ data class DivReadingUiState(
     val bundle: DivChartBundle? = null,
     val reading: DivReading? = null,
     val readingState: RequestState = RequestState.Idle,
+    /** 最近一次失败原因（2026-11-11：NEED_CONFIG 时错误卡附「去配置」引导；成功/加载中置空） */
+    val errorReason: DivStreamEvent.Failure.Reason? = null,
     /** SSE delta 累积原文（流式逐段上屏；done 后切分为 reading） */
     val streamText: String = "",
     val loadingRecord: Boolean = true,
@@ -40,7 +42,7 @@ data class DivReadingUiState(
  * 解读页 VM（issue #78 真连）：从 Room 读原盘 → 调 [DivLlmRepository.interpret]（SSE 流式，
  * 内部先确保服务端建档）。delta 增量累积进 streamText 供页面逐段渲染，done 后
  * [DivMarkdownParser.parse] 切分为 [DivReading]（四段映射章节卡/断语卡/总结卡）；
- * error 帧映射 UI 错误态（403 拦截 / 429 限额 / 503 降级 / 404 记录不存在）。
+ * error 帧映射 UI 错误态（428 未配置 / 403 拦截与开关关闭 / 429 限额 / 503 降级 / 404 记录不存在）。
  */
 @HiltViewModel
 class DivReadingViewModel @Inject constructor(
@@ -77,7 +79,11 @@ class DivReadingViewModel @Inject constructor(
     }
 
     private suspend fun interpret(record: DivRecordEntity, bundle: DivChartBundle?) {
-        _uiState.value = _uiState.value.copy(readingState = RequestState.Loading, streamText = "")
+        _uiState.value = _uiState.value.copy(
+            readingState = RequestState.Loading,
+            streamText = "",
+            errorReason = null,
+        )
         try {
             llmRepository.interpret(record) { event -> onStreamEvent(event) }
         } catch (e: CancellationException) {
@@ -91,6 +97,19 @@ class DivReadingViewModel @Inject constructor(
                 ),
             )
         }
+    }
+
+    /**
+     * 「返回自动继续」：428 未配置（NEED_CONFIG）错误态下用户跳设置页配好模型，
+     * 返回本页（ON_RESUME）时自动重试解读，无需手动点重试。
+     * 双重守卫：仅 NEED_CONFIG 错误态 + 记录已加载；首次进入页面的 ON_RESUME（errorReason=null）是 no-op。
+     */
+    fun retryIfNeedConfig() {
+        val current = _uiState.value
+        if (current.errorReason != DivStreamEvent.Failure.Reason.NEED_CONFIG) return
+        val record = current.record ?: return
+        AppLogger.info(TAG, "解读页返回自动重试（428 配置闭环）recordId=$recordId")
+        viewModelScope.launch { interpret(record, current.bundle) }
     }
 
     private fun onStreamEvent(event: DivStreamEvent) {
@@ -126,6 +145,7 @@ class DivReadingViewModel @Inject constructor(
                         messageResId = event.messageResId,
                         message = event.message,
                     ),
+                    errorReason = event.reason,
                 )
             }
         }

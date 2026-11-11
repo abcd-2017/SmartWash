@@ -28,6 +28,8 @@ data class DivFollowUpUiState(
     /** 当前流式回复（delta 增量累积；null=无进行中回复，空串=已发起尚无增量） */
     val streamingReply: String? = null,
     val followUpState: RequestState = RequestState.Idle,
+    /** 最近一次失败原因（2026-11-11：NEED_CONFIG 时错误行附「去配置」引导；成功置空） */
+    val errorReason: DivStreamEvent.Failure.Reason? = null,
     val loadingRecord: Boolean = true,
 )
 
@@ -84,6 +86,7 @@ class DivFollowUpViewModel @Inject constructor(
                 history = newHistory,
                 streamingReply = "",
                 followUpState = RequestState.Loading,
+                errorReason = null,
             )
 
             try {
@@ -133,6 +136,7 @@ class DivFollowUpViewModel @Inject constructor(
                         messageResId = event.messageResId,
                         message = event.message,
                     ),
+                    errorReason = event.reason,
                 )
             }
         }

@@ -98,6 +98,7 @@ import com.smartwash.common.utils.pressable
 @Composable
 fun SettingPage(
     navController: NavController,
+    openApiConfig: Boolean = false,
     checkUpdateContent: (@Composable () -> Unit)? = null,
     settingViewModel: SettingViewModel = hiltViewModel(),
 ) {
@@ -134,10 +135,11 @@ fun SettingPage(
     val hapticEnabled by settingViewModel.hapticEnabled.collectAsState()
     // 解读模型 BYOK 配置（null = 未配置，行尾显示引导文案；仅掩码回显，issue #79）
     val apiConfig by settingViewModel.apiConfig.collectAsState()
-    // 平台级 BYOK 开关（2026-11-07 契约追加 byokEnabled 0/1）：仅响应明确返回 0 时关闭，
-    // 字段缺失（旧响应）或 data=null（未配置）均视为开启——additive 向后兼容
-    val byokDisabled = apiConfig?.byokEnabled == 0
-    var showApiConfigSheet by remember { mutableStateOf(false) }
+    // 平台级 AI 解读总开关（契约更名 divUseEnabled 0/1，替代原 byokEnabled）：仅响应明确
+    // 返回 0 时关闭，字段缺失（旧响应）或 data=null（未配置）均视为开启——additive 向后兼容
+    val divUseDisabled = apiConfig?.divUseEnabled == 0
+    // 观象台解读拦截跳入（UserRoute.Setting(openApiConfig=true)）→ 进入即弹起配置弹层
+    var showApiConfigSheet by remember { mutableStateOf(openApiConfig) }
     // 版本号：关于行尾注与关于弹窗同源（D-ST5）
     val versionName = remember {
         try {
@@ -227,16 +229,16 @@ fun SettingPage(
             Spacer(modifier = Modifier.height(8.dp))
             SettingGroupCard(modifier = Modifier.padding(horizontal = AppDimens.pagePadding)) {
                 // 解读模型 BYOK 入口（issue #79，替换 2026-11-01 移除的假数据行）：
-                // 已配置回显 customModel + apiKeyMask（仅掩码，verified 徽标），
-                // 未配置显示引导文案；点击进编辑弹层（查/存/删/试呼，见 ApiConfigSheet）。
-                // 平台级开关 byokEnabled=0 时整行置灰、显示关闭提示且弹层不可进入
+                // 已配置回显（仅掩码，verified 徽标）——目录模式「vendor · modelName」、
+                // 自定义模式 customModel；未配置显示引导文案；点击进编辑弹层（查/存/删/试呼，
+                // 见 ApiConfigSheet）。平台总开关 divUseEnabled=0 时整行置灰、显示关闭提示且弹层不可进入
                 SettingRow(
                     icon = Icons.Default.Psychology,
                     containerColor = AppColors.colorScheme.iconContainerPurple,
                     iconForegroundColor = AppColors.colorScheme.iconForegroundPurple,
                     title = stringResource(R.string.api_config_title),
                     trailing = {
-                        if (byokDisabled) {
+                        if (divUseDisabled) {
                             Text(
                                 text = stringResource(R.string.api_config_platform_disabled),
                                 style = MaterialTheme.typography.bodySmall,
@@ -251,7 +253,12 @@ fun SettingPage(
                                 if (cfg != null) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = cfg.customModel.orEmpty(),
+                                            // 目录模式回显「厂商 · 模型名」，自定义回显模型名
+                                            text = if (cfg.modelConfigId != null) {
+                                                listOfNotNull(cfg.vendor, cfg.modelName).joinToString(" · ")
+                                            } else {
+                                                cfg.customModel.orEmpty()
+                                            },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = AppColors.colorScheme.textSecondary,
                                             maxLines = 1,
@@ -283,7 +290,7 @@ fun SettingPage(
                             IconChevron()
                         }
                     },
-                    enabled = !byokDisabled,
+                    enabled = !divUseDisabled,
                     onClick = { showApiConfigSheet = true }
                 )
                 HorizontalDivider(thickness = 0.5.dp, color = AppColors.colorScheme.hairline)
@@ -445,7 +452,7 @@ private fun SettingRow(
     iconForegroundColor: Color,
     title: String,
     trailing: @Composable () -> Unit = { IconChevron() },
-    // 置灰禁用（2026-11-07 byokEnabled=0）：移除点击热区并整行降透明度，
+    // 置灰禁用（2026-11-07 引入，2026-11-11 契约更名 divUseEnabled=0）：移除点击热区并整行降透明度，
     // 语义同 ListRow「onClick=null 不可点」，避免调用方传空 onClick 造成可点假象
     enabled: Boolean = true,
     onClick: () -> Unit,

@@ -30,6 +30,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleCreate">新增模型</el-button>
+          <el-button @click="importVisible = true">批量导入</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -38,12 +39,12 @@
     <div class="table-card">
       <el-table v-loading="listLoading" :data="modelList" fit highlight-current-row>
         <el-table-column prop="id" label="ID" min-width="80" />
+        <el-table-column prop="vendor" label="厂商" min-width="120" />
         <el-table-column prop="name" label="显示名" min-width="160" />
-        <el-table-column prop="provider" label="供应商" min-width="120" />
         <el-table-column prop="baseUrl" label="Base URL" min-width="220" show-overflow-tooltip />
         <el-table-column prop="modelId" label="模型标识" min-width="160" />
-        <el-table-column label="API Key" min-width="160">
-          <template #default="{ row }">{{ row.apiKeyMask || '***' }}</template>
+        <el-table-column label="API Key" min-width="140">
+          <template #default="{ row }">{{ row.apiKeyMask || '用户自带' }}</template>
         </el-table-column>
         <el-table-column label="优先级" min-width="100" align="right">
           <template #default="{ row }">{{ row.priority }}</template>
@@ -68,14 +69,23 @@
         <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button
-              size="small"
-              type="primary"
-              @click="handleTest(row)"
-              :loading="testingId === row.id"
+            <el-tooltip
+              :content="row.apiKeyMask ? '' : '该条目未录入 API Key（用户自带密钥模式），无法测试'"
+              :disabled="!!row.apiKeyMask"
+              placement="top"
             >
-              测试
-            </el-button>
+              <span>
+                <el-button
+                  size="small"
+                  type="primary"
+                  @click="handleTest(row)"
+                  :loading="testingId === row.id"
+                  :disabled="!row.apiKeyMask"
+                >
+                  测试
+                </el-button>
+              </span>
+            </el-tooltip>
             <el-button
               size="small"
               :type="row.enabled === 1 ? 'warning' : 'success'"
@@ -109,6 +119,24 @@
       </div>
     </div>
 
+    <!-- 批量导入弹窗 -->
+    <el-dialog title="批量导入模型目录" v-model="importVisible" width="640px">
+      <p class="import-tip">
+        粘贴 JSON 数组（每条含 <code>vendor / name / baseUrl / modelId</code>，可选 <code>priority</code>），
+        非法条目自动跳过。目录密钥由用户自带，此处无需填 API Key。
+      </p>
+      <el-input
+        v-model="importJson"
+        type="textarea"
+        :rows="12"
+        placeholder='[{"vendor":"DeepSeek","name":"DeepSeek Flash","baseUrl":"https://api.deepseek.com","modelId":"deepseek-flash","priority":10}]'
+      />
+      <template #footer>
+        <el-button @click="importVisible = false">取消</el-button>
+        <el-button type="primary" :loading="importing" @click="submitImport">导入</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 新增/编辑弹窗 -->
     <el-dialog
       :title="dialogType === 'create' ? '新增模型' : '编辑模型'"
@@ -117,23 +145,23 @@
       @closed="handleDialogClosed"
     >
       <el-form ref="formRef" :model="tempModel" label-width="120px" :rules="rules">
-        <el-form-item label="显示名" prop="name">
-          <el-input v-model="tempModel.name" placeholder="如 GLM-4.7" />
+        <el-form-item label="厂商" prop="vendor">
+          <el-input v-model="tempModel.vendor" placeholder="如 DeepSeek（客户端一级分组）" />
         </el-form-item>
-        <el-form-item label="供应商" prop="provider">
-          <el-input v-model="tempModel.provider" placeholder="如 openai_compat" />
+        <el-form-item label="显示名" prop="name">
+          <el-input v-model="tempModel.name" placeholder="如 GLM-5.3" />
         </el-form-item>
         <el-form-item label="Base URL" prop="baseUrl">
-          <el-input v-model="tempModel.baseUrl" placeholder="https://api.example.com/v1" />
+          <el-input v-model="tempModel.baseUrl" placeholder="https://api.example.com/v1（OpenAI 兼容端点）" />
         </el-form-item>
         <el-form-item label="模型标识" prop="modelId">
-          <el-input v-model="tempModel.modelId" placeholder="如 glm-4.7" />
+          <el-input v-model="tempModel.modelId" placeholder="如 glm-5.3" />
         </el-form-item>
         <el-form-item label="API Key" prop="apiKey">
           <el-input
             v-model="tempModel.apiKey"
             type="password"
-            :placeholder="dialogType === 'edit' ? '留空则不更换 API Key' : '粘贴 API Key'"
+            placeholder="留空（推荐）：密钥由用户自带，仅录入后可对该条目做连通性测试"
             show-password
           />
         </el-form-item>
@@ -166,6 +194,7 @@ import {
   createModel,
   updateModel,
   deleteModel,
+  importModels,
   testModelConnectivity,
 } from '@/api/divination';
 import { formatTime } from '@/utils/format';
@@ -180,6 +209,9 @@ const testingId = ref(null);
 const submitting = ref(false); // 弹窗确认按钮 loading，防连点
 const togglingId = ref(null); // 行内「停用/启用」按钮 loading
 const deletingId = ref(null); // 行内「删除」按钮 loading
+const importVisible = ref(false); // 批量导入弹窗
+const importing = ref(false); // 批量导入提交 loading
+const importJson = ref(''); // 粘贴的目录 JSON 原文
 
 const {
   list: modelList,
@@ -208,6 +240,7 @@ const {
 
 const tempModel = reactive({
   id: null,
+  vendor: '',
   name: '',
   provider: 'openai_compat',
   baseUrl: '',
@@ -218,23 +251,15 @@ const tempModel = reactive({
 });
 
 const rules = reactive({
+  vendor: [{ required: true, message: '请输入厂商', trigger: 'blur' }],
   name: [{ required: true, message: '请输入显示名', trigger: 'blur' }],
-  provider: [{ required: true, message: '请输入供应商', trigger: 'blur' }],
   baseUrl: [
     { required: true, message: '请输入 Base URL', trigger: 'blur' },
     { pattern: /^https?:\/\/.+/, message: 'URL 需以 http(s):// 开头', trigger: 'blur' },
   ],
   modelId: [{ required: true, message: '请输入模型标识', trigger: 'blur' }],
-  apiKey: [{ required: true, message: '请输入 API Key', trigger: 'blur' }],
+  // API Key 可留空（BYOK 模式密钥由用户自带）；录入后仅用于该条目的连通性测试
 });
-
-// 编辑态 API Key 留空表示不更换（提交时已跳过该字段），不能强制必填
-const setApiKeyRuleForDialog = () => {
-  rules.apiKey =
-    dialogType.value === 'edit'
-      ? []
-      : [{ required: true, message: '请输入 API Key', trigger: 'blur' }];
-};
 
 onMounted(() => {
   fetchData();
@@ -242,10 +267,10 @@ onMounted(() => {
 
 const handleCreate = () => {
   dialogType.value = 'create';
-  setApiKeyRuleForDialog();
   dialogVisible.value = true;
   Object.assign(tempModel, {
     id: null,
+    vendor: '',
     name: '',
     provider: 'openai_compat',
     baseUrl: '',
@@ -258,13 +283,13 @@ const handleCreate = () => {
 
 const handleEdit = (row) => {
   dialogType.value = 'edit';
-  setApiKeyRuleForDialog();
   dialogVisible.value = true;
   // 编辑时 API Key 不回显明文，留空表示不更换
   Object.assign(tempModel, {
     id: row.id,
+    vendor: row.vendor,
     name: row.name,
-    provider: row.provider,
+    provider: row.provider || 'openai_compat',
     baseUrl: row.baseUrl,
     modelId: row.modelId,
     apiKey: '',
@@ -276,6 +301,35 @@ const handleEdit = (row) => {
 const handleDialogClosed = () => {
   formRef.value?.resetFields();
   formRef.value?.clearValidate();
+};
+
+// 批量导入：前端只做 JSON 解析与基础结构校验，字段级校验与去重由后端处理
+const submitImport = async () => {
+  let items;
+  try {
+    items = JSON.parse(importJson.value);
+  } catch {
+    ElMessage.error('JSON 格式不正确，请检查后重试');
+    return;
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    ElMessage.error('需要为非空 JSON 数组');
+    return;
+  }
+  importing.value = true;
+  try {
+    const res = await importModels(items);
+    logger.info('模型目录批量导入完成', `total=${items.length}`, `imported=${res}`);
+    ElMessage.success(`导入完成：成功 ${res} 条 / 共 ${items.length} 条`);
+    importVisible.value = false;
+    importJson.value = '';
+    fetchData();
+  } catch (error) {
+    logger.error('模型目录批量导入失败:', error);
+    ElMessage.error(error.message || '导入失败');
+  } finally {
+    importing.value = false;
+  }
 };
 
 const submitForm = async () => {
@@ -380,5 +434,19 @@ const handleToggle = async (row) => {
   margin-left: 8px;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.import-tip {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.import-tip code {
+  padding: 1px 4px;
+  background: var(--bg-secondary, #f5f7fa);
+  border-radius: 3px;
+  font-size: 12px;
 }
 </style>

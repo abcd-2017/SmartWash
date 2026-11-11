@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,18 +51,22 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.data.DivFollowUpTurn
+import com.smartwash.feature.divination.data.DivStreamEvent
 import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.DivinationScreen
 import com.smartwash.feature.divination.ui.components.DivPageHeader
 import com.smartwash.common.ui.components.softCardShadow
+import com.smartwash.common.ui.theme.AppDimens
 import com.smartwash.common.ui.theme.DivColors
 import com.smartwash.common.utils.HapticEffect
 import com.smartwash.common.utils.LocalReduceMotion
 import com.smartwash.common.utils.currentView
 import com.smartwash.common.utils.model.RequestState
 import com.smartwash.common.utils.performHaptic
+import com.smartwash.common.utils.pressable
 import com.smartwash.common.utils.pressScale
 import com.smartwash.common.utils.rememberDebouncedClick
+import com.smartwash.feature.user.api.UserRoute
 
 /** 新气泡首帧淡入时长 */
 private const val BUBBLE_FADE_MS = 120
@@ -163,18 +168,39 @@ fun DivFollowUpPage(
                         }
                     }
                 }
-                // 错误行（error 帧/网络失败；用户轮保留可重发）
+                // 错误行（error 帧/网络失败；用户轮保留可重发）；428 未配置附「去配置」引导
                 val errorState = state.followUpState as? RequestState.Error
                 if (errorState != null) {
                     item(key = "error") {
-                        Text(
-                            text = errorState.getMessage(context),
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            color = c.textTertiary,
-                            textAlign = TextAlign.Center,
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                        )
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = errorState.getMessage(context),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = c.textTertiary,
+                                textAlign = TextAlign.Center,
+                            )
+                            if (state.errorReason == DivStreamEvent.Failure.Reason.NEED_CONFIG) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.div_reading_go_config),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = c.goldText,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(AppDimens.radiusFull))
+                                        .background(c.gold14)
+                                        .border(BorderStroke(1.dp, c.hair), RoundedCornerShape(AppDimens.radiusFull))
+                                        .pressable(onClick = {
+                                            navController.navigate(UserRoute.Setting(openApiConfig = true))
+                                        })
+                                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                                )
+                            }
+                        }
                     }
                 }
                 // 流尾常驻脚注（画板：—— 继续追问将沿用本卦盘推演 ——）

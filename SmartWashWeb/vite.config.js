@@ -56,6 +56,8 @@ export default defineConfig({
   },
   test: {
     environment: 'happy-dom',
+    // Node 22 实验性全局 localStorage 会遮蔽 happy-dom 注入，测试统一兜底内存版 stub
+    setupFiles: ['src/__tests__/setup.dom.js'],
     server: {
       deps: {
         // Element Plus 按需引入会注入 .css，内联后由 vitest 忽略样式，

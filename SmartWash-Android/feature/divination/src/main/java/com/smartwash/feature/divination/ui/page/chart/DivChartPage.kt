@@ -8,12 +8,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import android.widget.Toast
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +31,8 @@ import com.smartwash.feature.divination.R
 import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.liuyao.LiuYaoChart
 import com.smartwash.feature.divination.ui.DivinationScreen
+import com.smartwash.feature.user.api.UserRoute
+import kotlinx.coroutines.launch
 import com.smartwash.common.ui.components.WaveIcon
 import com.smartwash.feature.divination.ui.components.DivCard
 import com.smartwash.feature.divination.ui.components.DivFooterNote
@@ -274,6 +282,11 @@ fun DivChartPage(
         Spacer(Modifier.height(16.dp))
         // 画板（2026-11-05 卦盘）：底部双按钮各 156×52 r14（x20/x184、卡距 8），
         // 「解 读」鎏金实底、「已 保 存」14% 金禁用态；取 DivGoldButton 默认（52/r14/15sp）不再单侧覆写
+        // 「解 读」入口拦截（2026-11-11 平台零兜底）：先查用户模型配置——未配置 Toast 引导并
+        // 跳设置页直达「解读模型」弹层；平台开关关闭仅提示；已配置/查询失败正常进入解读页
+        val scope = rememberCoroutineScope()
+        val context = LocalContext.current
+        var gateChecking by remember { mutableStateOf(false) }
         Row(
             Modifier.padding(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -282,7 +295,32 @@ fun DivChartPage(
                 text = stringResource(R.string.div_chart_interpret),
                 modifier = Modifier.weight(1f),
                 onClick = {
-                    navController.navigate(DivRoute.Reading(recordId))
+                    // 防重入：拦截查询在途时忽略后续点击（VM 侧 AtomicBoolean 双保险）
+                    if (gateChecking) return@DivGoldButton
+                    gateChecking = true
+                    scope.launch {
+                        when (val gate = viewModel.resolveInterpretGate()) {
+                            InterpretGate.PROCEED ->
+                                navController.navigate(DivRoute.Reading(recordId))
+                            InterpretGate.NEED_CONFIG -> {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.div_interpret_need_config),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                                navController.navigate(UserRoute.Setting(openApiConfig = true))
+                            }
+                            InterpretGate.PLATFORM_DISABLED ->
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.div_interpret_platform_disabled),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            // 上一次查询仍在途（防重入），忽略
+                            null -> Unit
+                        }
+                        gateChecking = false
+                    }
                 },
             )
             DivGoldButton(

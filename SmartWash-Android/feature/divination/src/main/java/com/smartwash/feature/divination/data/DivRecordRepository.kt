@@ -6,6 +6,7 @@ import com.smartwash.feature.divination.core.DivMethod
 import com.smartwash.feature.divination.core.meihua.MeiHuaChart
 import com.smartwash.feature.divination.database.DivRecordDao
 import com.smartwash.feature.divination.database.DivRecordEntity
+import com.smartwash.feature.divination.network.DivUserApiConfigVo
 import com.smartwash.feature.divination.network.DivinationApi
 import com.smartwash.feature.divination.network.DivRecordVo
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +51,15 @@ class DivRecordRepository @Inject constructor(
     suspend fun markInterpretation(localId: Long, interpretationId: Long) {
         if (interpretationId > 0) dao.updateInterpretationId(localId, interpretationId)
     }
+
+    /**
+     * 用户解读模型配置（2026-11-11 契约，解读入口拦截用）：成功时 data=null = 未配置
+     * （平台零兜底，解读统一 428）。查询失败走 Result.failure——拦截属前置体验优化，
+     * 不因网络抖动把用户误拦在卦盘页（调用方失败时放行，SSE 侧 428/403 帧仍有兜底文案）。
+     */
+    suspend fun getUserApiConfig(): Result<DivUserApiConfigVo?> =
+        runCatching { api.getUserApiConfig().data }
+            .onFailure { AppLogger.warn(TAG, "解读模型配置查询失败（放行走 SSE 兜底）: ${it.message}") }
 
     /**
      * 卦历对账（issue #78，自 DivHistoryViewModel 下沉）：静默拉服务端分页首页，把

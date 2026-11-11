@@ -5,7 +5,7 @@
  * - 调度 SSE 通道（DivinationApi.streamInterpret / streamFollowUp），
  *   delta 帧在此累积，向 UI 回调「累积后的全文」（流式逐帧刷新 / 攒流一次性整段）；
  * - done 帧存 interpretationId（供追问与反馈）；
- * - error 帧映射 UI 文案（403/429/503/404）；
+ * - error 帧映射 UI 文案（428 未配置模型 / 403 安全分流·平台关闭双语义 / 429 / 503 / 404）；
  * - Mock 回退：USE_MOCK_LLM 常量开关切回本地模板文本（分小段定时回调模拟流式），
  *   与真连同构（同回调、同 Markdown 结构），页面零改动。
  *
@@ -45,10 +45,18 @@ export interface DivLlmCallbacks {
   onFail: (message: string) => void
 }
 
+/** 428 固定文案（用户未配置解读模型；观星台零兜底，无平台默认模型可回落） */
+export const SSE_ERROR_UNCONFIGURED: string = '尚未配置解读模型，请先到设置中配置'
+
 /** error 帧业务码 → 用户可见文案（对齐后端 LlmErrorMapping 的下发语义） */
 function sseErrorText(code: number, serverMessage: string): string {
+  if (code === 428) {
+    // 用户未配置解读模型：观星台零兜底（无平台默认模型），固定文案 + 页面「去配置」入口
+    return SSE_ERROR_UNCONFIGURED
+  }
   if (code === 403) {
-    // 安全分流拒绝：服务端 message 即分流文案（如医疗/安全类问题引导），原样采用
+    // 双语义：安全分流拒绝（如医疗/安全类问题引导）或平台总开关关闭（「观星台 AI 解读
+    // 暂未开放，请联系管理员」）——两种语义服务端 message 均已明确，原样透传展示
     return serverMessage.length > 0 ? serverMessage : '该问题不适合以卜筮作答，请寻求现实帮助'
   }
   if (code === 429) {

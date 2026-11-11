@@ -5,8 +5,10 @@ node_modules/
 dist/
 coverage/
 
-# 测试用例仅本地运行，不入库
-src/__tests__/
+# 测试用例入库（vitest，npm test）；历史备份等非测试文件除外
+src/__tests__/*
+!src/__tests__/*.test.js
+!src/__tests__/setup.dom.js
 
 # 本地环境文件
 *.local

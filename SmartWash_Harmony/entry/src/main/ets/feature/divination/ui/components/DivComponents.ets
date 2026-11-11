@@ -94,6 +94,10 @@ export class DivText {
   static readonly chartSaved: string = '已存入卦历'
   static readonly chartBuilding: string = '正在建档…'
   static readonly chartBuildFailed: string = '解读建档失败，请稍后重试'
+  // 观星台零兜底拦截文案（求解读前置检查；无平台默认模型，未配置一律引导去设置页）
+  static readonly chartDivUseClosed: string = '观星台 AI 解读暂未开放'
+  static readonly chartModelMissing: string = '请先配置解读模型'
+  static readonly chartConfigCheckFailed: string = '解读配置获取失败，请稍后重试'
   static readonly liuyaoYongshen: string = '用神'
   static readonly liuyaoFacts: string = '规则事实'
   static readonly meihuaTiyong: string = '体用生克（规则层）'
@@ -108,6 +112,8 @@ export class DivText {
   static readonly readingLoading: string = '正在推演解读…'
   static readonly readingError: string = '解读暂不可用，请稍后重试'
   static readonly readingRetry: string = '重 新 解 读'
+  // SSE error 帧 code=428（未配置解读模型）专属引导：跳设置页配置模型
+  static readonly readingGoConfig: string = '去 配 置 模 型'
   static readonly readingEndseal: string = '观'
   static readonly disclaimerReading: string =
     '本内容基于玄学体系生成，仅供文化爱好与思维参考，不构成任何重大人生决策的专业建议。'

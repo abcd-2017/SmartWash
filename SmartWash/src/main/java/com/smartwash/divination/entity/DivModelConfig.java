@@ -24,6 +24,9 @@ public class DivModelConfig implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /** 厂商名（客户端两级选择的一级分组），如 DeepSeek */
+    private String vendor;
+
     /** 显示名，如 GLM-4.7 */
     private String name;
 

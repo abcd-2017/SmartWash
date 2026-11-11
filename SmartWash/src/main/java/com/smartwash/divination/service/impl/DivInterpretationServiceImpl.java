@@ -10,6 +10,7 @@ import com.smartwash.divination.llm.LlmCallException;
 import com.smartwash.divination.llm.LlmChatResult;
 import com.smartwash.divination.llm.LlmErrorMapping;
 import com.smartwash.divination.llm.LlmGateway;
+import com.smartwash.divination.llm.NoProviderConfiguredException;
 import com.smartwash.divination.llm.OpenAiCompatClient;
 import com.smartwash.divination.llm.OpenAiCompatProvider;
 import com.smartwash.divination.llm.SseBridge;
@@ -118,28 +119,40 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
             return;
         }
 
-        // 3. 解析供应商（先解析再限额：BYOK 与平台 key 的日限额数值不同，限额需按解析出的 keySource 区分）
+        // 3. 解析供应商（平台零兜底：只消费用户 BYOK 配置）
         DivPlatformSetting setting = platformSettingService.getSetting();
-        OpenAiCompatProvider userProvider = null;
-        if (setting.getByokEnabled() != null && setting.getByokEnabled() == 1) {
-            // 平台开启 BYOK 才查用户配置（enabled=1 且 verified=1），关闭时不查不传
-            userProvider = userApiConfigService.resolveUserProvider(userId);
+        if (setting.getDivUseEnabled() == null || setting.getDivUseEnabled() != 1) {
+            // 功能总开关关闭：403，客户端提示平台未开放
+            log.info("观星台 AI 解读总开关关闭，SSE 403, recordId: {}, userId: {}", recordId, userId);
+            sseBridge.sendError(emitter, 403, "观星台 AI 解读暂未开放，请联系管理员");
+            return;
+        }
+        OpenAiCompatProvider userProvider = userApiConfigService.resolveUserProvider(userId);
+        if (userProvider == null) {
+            // 平台零兜底：用户未配置模型 → SSE 428（Precondition Required），
+            // 客户端按该码路由拦截跳设置页（区别于 503 服务故障）
+            log.info("用户未配置解读模型，SSE 428 引导设置, recordId: {}, userId: {}", recordId, userId);
+            sseBridge.sendError(emitter, 428, "尚未配置解读模型，请先在设置中选择模型并填写 API Key");
+            return;
         }
         LlmGateway.ResolvedProvider resolved;
         try {
-            // 平台默认模型以 Supplier 懒加载：仅 BYOK 未配置/未启用/熔断时才查库解密
-            resolved = llmGateway.resolveProvider(userProvider,
-                    () -> modelConfigService.resolvePlatformDefaultProvider());
+            resolved = llmGateway.resolveProvider(userProvider);
+        } catch (NoProviderConfiguredException e) {
+            // 防御：userProvider 非空不应触发；触发则同 428 语义
+            log.warn("供应商解析为未配置（防御分支）, recordId: {}, userId: {}", recordId, userId);
+            sseBridge.sendError(emitter, 428, "尚未配置解读模型，请先在设置中选择模型并填写 API Key");
+            return;
         } catch (IllegalStateException e) {
-            // 供应商解析失败 = 服务降级（SSE 返回 503），warn 留痕便于排查密钥/平台配置问题
-            log.warn("LLM 供应商解析失败，SSE 降级返回 503, recordId: {}, userId: {}, 原因: {}",
+            // 配置存在但供应商熔断中 = 服务降级（SSE 返回 503）
+            log.warn("LLM 供应商熔断中，SSE 降级返回 503, recordId: {}, userId: {}, 原因: {}",
                     recordId, userId, e.getMessage());
             sseBridge.sendError(emitter, 503, "解读服务暂不可用，请稍后再试");
             return;
         }
 
-        // 4. 限额：按密钥来源三分流取对应日限额（BYOK / 平台 key / yml bootstrap）
-        int dailyLimit = resolveDailyLimit(setting, resolved);
+        // 4. 限额：每用户每日解读次数（平台零兜底后仅 BYOK 一种来源）
+        int dailyLimit = resolveDailyLimit(setting);
         if (!usageService.tryConsumeUserLimit(userId, dailyLimit)) {
             sseBridge.sendError(emitter, 429, "今日解读次数已达上限，请明日再来");
             return;
@@ -219,27 +232,17 @@ public class DivInterpretationServiceImpl implements IDivInterpretationService {
     }
 
     /**
-     * 按密钥来源解析用户每日解读限额（三分流）：
-     *   1. BYOK 请求（keySource=user）→ {@code div_platform_setting.byok_daily_limit}
-     *   2. 平台 key 请求（keySource=platform 且 provider.source=platform）→ {@code platform_daily_limit}
-     *   3. yml bootstrap 兜底请求（provider.source=bootstrap）→ 不读平台 DB 设置，
-     *      直接用 yml 兜底值（bootstrap 是平台配置全失效时的最后防线，限额不应依赖可能异常的 DB 设置）
+     * 解析用户每日解读次数限额（平台零兜底后仅 BYOK 一种来源）。
      *
-     * <p>DB 单例尚未初始化对应字段时统一兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
+     * <p>DB 单例尚未初始化对应字段时兜底 yml 配置（div.llm.limit.interpret-per-user-day）。</p>
      *
-     * @param setting  平台设置（单例）
-     * @param resolved 供应商解析结果（含 keySource 与 provider.source）
+     * @param setting 平台设置（单例）
      * @return 每日限额
      */
-    private int resolveDailyLimit(DivPlatformSetting setting, LlmGateway.ResolvedProvider resolved) {
-        if ("bootstrap".equals(resolved.getProvider().getSource())) {
-            log.debug("yml bootstrap 兜底供应商请求，日限额直接用 yml 默认值: {}", interpretPerUserDay);
-            return interpretPerUserDay;
-        }
-        boolean byokRequest = "user".equals(resolved.getKeySource());
-        Integer limit = byokRequest ? setting.getByokDailyLimit() : setting.getPlatformDailyLimit();
+    private int resolveDailyLimit(DivPlatformSetting setting) {
+        Integer limit = setting.getByokDailyLimit();
         if (limit == null || limit <= 0) {
-            log.debug("平台设置未配置{}日限额，兜底 yml 默认值", byokRequest ? "BYOK" : "平台");
+            log.debug("平台设置未配置每日限额，兜底 yml 默认值: {}", interpretPerUserDay);
             return interpretPerUserDay;
         }
         return limit;

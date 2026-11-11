@@ -3,7 +3,7 @@
     <div class="table-card settings-card">
       <div class="settings-header">
         <h2>平台设置</h2>
-        <p class="settings-sub">占卜模块全局配置：默认模型、BYOK 开关、限额与主密钥轮换</p>
+        <p class="settings-sub">观象台全局配置：AI 解读开关、用户每日限额与主密钥轮换（平台零兜底，模型由用户自行配置）</p>
       </div>
 
       <el-form
@@ -14,73 +14,27 @@
         class="settings-form"
         v-loading="loading"
       >
-        <!-- 模型配置 -->
-        <el-divider content-position="left">模型配置</el-divider>
+        <!-- 功能开关 -->
+        <el-divider content-position="left">AI 解读</el-divider>
 
-        <el-form-item label="默认模型" prop="defaultModelId">
-          <el-select
-            v-model="settings.defaultModelId"
-            placeholder="选择默认模型"
-            filterable
-            style="width: 300px"
-          >
-            <el-option
-              v-for="model in modelOptions"
-              :key="model.id"
-              :label="model.name"
-              :value="model.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="备用模型" prop="fallbackModelId">
-          <el-select
-            v-model="settings.fallbackModelId"
-            placeholder="选择备用模型（可选）"
-            filterable
-            clearable
-            style="width: 300px"
-          >
-            <el-option
-              v-for="model in modelOptions"
-              :key="model.id"
-              :label="model.name"
-              :value="model.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <!-- BYOK 配置 -->
-        <el-divider content-position="left">BYOK（用户自带密钥）</el-divider>
-
-        <el-form-item label="BYOK 开关" prop="byokEnabled">
+        <el-form-item label="AI 解读开关" prop="divUseEnabled">
           <el-switch
-            v-model="settings.byokEnabled"
+            v-model="settings.divUseEnabled"
             :active-value="1"
             :inactive-value="0"
-            active-text="允许用户自带 API Key"
-            inactive-text="关闭"
+            active-text="开放（用户配置自己的模型后可解读）"
+            inactive-text="关闭（客户端隐藏解读入口并拦截）"
           />
         </el-form-item>
 
-        <el-form-item label="BYOK 每日限额" prop="byokDailyLimit">
+        <el-form-item label="每日解读限额" prop="byokDailyLimit">
           <el-input-number
             v-model="settings.byokDailyLimit"
             :min="1"
             :max="999"
             controls-position="right"
           />
-          <span class="form-tip">次/用户/天（BYOK 用户费用自担，限额可更高）</span>
-        </el-form-item>
-
-        <el-form-item label="平台每日限额" prop="platformDailyLimit">
-          <el-input-number
-            v-model="settings.platformDailyLimit"
-            :min="1"
-            :max="999"
-            controls-position="right"
-          />
-          <span class="form-tip">次/用户/天（使用平台默认模型的限额）</span>
+          <span class="form-tip">次/用户/天（解读费用由用户自带的 API Key 承担）</span>
         </el-form-item>
 
         <!-- 操作按钮 -->
@@ -114,7 +68,6 @@ import {
   getPlatformSettings,
   updatePlatformSettings,
   rotateMasterKey,
-  getModelList,
 } from '@/api/divination';
 import { useConfirm } from '@/composables/useConfirm';
 import logger from '@/utils/logger';
@@ -123,47 +76,27 @@ const formRef = ref(null);
 const loading = ref(false);
 const submitting = ref(false);
 const rotating = ref(false);
-const modelOptions = ref([]);
 
 const settings = reactive({
-  defaultModelId: null,
-  fallbackModelId: null,
-  byokEnabled: 0,
+  divUseEnabled: 1,
   byokDailyLimit: 50,
-  platformDailyLimit: 20,
 });
 
 const rules = reactive({
-  defaultModelId: [{ required: true, message: '请选择默认模型', trigger: 'change' }],
-  byokDailyLimit: [{ required: true, message: '请输入 BYOK 每日限额', trigger: 'blur' }],
-  platformDailyLimit: [{ required: true, message: '请输入平台每日限额', trigger: 'blur' }],
+  byokDailyLimit: [{ required: true, message: '请输入每日解读限额', trigger: 'blur' }],
 });
 
-onMounted(async () => {
-  await fetchModelOptions();
-  await fetchSettings();
+onMounted(() => {
+  fetchSettings();
 });
-
-const fetchModelOptions = async () => {
-  try {
-    const res = await getModelList({ page: 1, size: 100 });
-    modelOptions.value = res.records || [];
-  } catch (error) {
-    logger.error('获取模型选项失败:', error);
-    ElMessage.error(error.message || '获取模型列表失败');
-  }
-};
 
 const fetchSettings = async () => {
   loading.value = true;
   try {
     const res = await getPlatformSettings();
     Object.assign(settings, {
-      defaultModelId: res.defaultModelId ?? null,
-      fallbackModelId: res.fallbackModelId ?? null,
-      byokEnabled: res.byokEnabled ?? 0,
+      divUseEnabled: res.divUseEnabled ?? 1,
       byokDailyLimit: res.byokDailyLimit ?? 50,
-      platformDailyLimit: res.platformDailyLimit ?? 20,
     });
   } catch (error) {
     logger.error('获取平台设置失败:', error);
@@ -181,10 +114,8 @@ const submitForm = async () => {
     // settings 不含密钥字段，业务键可安全入日志
     logger.info(
       '平台设置保存成功',
-      `defaultModelId=${settings.defaultModelId}`,
-      `byokEnabled=${settings.byokEnabled}`,
-      `byokDailyLimit=${settings.byokDailyLimit}`,
-      `platformDailyLimit=${settings.platformDailyLimit}`
+      `divUseEnabled=${settings.divUseEnabled}`,
+      `byokDailyLimit=${settings.byokDailyLimit}`
     );
     ElMessage.success('保存成功');
   } catch (error) {

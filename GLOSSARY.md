@@ -395,26 +395,26 @@
   - Web：`views/divination/DivAuditList.vue`（卦例审核）。
 - **易混淆点**：`server_chart` 是权威，`client_chart` 只是快照；两端不一致时 `chart_verified=0`，不要以端上盘面为准。
 
-### 6.3 BYOK 与平台模型（div_user_api_config / div_model_config）
+### 6.3 模型目录与用户模型配置（div_model_config / div_user_api_config）
 
-- **代码标识**：`div_user_api_config`（BYOK）、`div_model_config`（平台目录）、`DIV_MASTER_KEY`、`key_version`
-- **定义**：两类 LLM 密钥：平台目录密钥（`div_model_config`）与用户自带密钥（BYOK，`div_user_api_config`，支持自定义 `custom_base_url`）。BYOK 的 API Key 以 AES-256-GCM 加密入库，列格式 `v{keyVersion}:{base64(iv)}:{base64(ciphertext+tag)}`；主密钥走 `DIV_MASTER_KEY` 环境变量，启动即校验。
+- **代码标识**：`div_model_config`（模型目录：vendor/name/base_url/model_id，**不存密钥**）、`div_user_api_config`（用户 BYOK 配置，双模式：`model_config_id` 目录引用 / `custom_base_url`+`custom_model` 自定义）、`div_platform_setting`（`div_use_enabled` 总开关 + `byok_daily_limit`）、`DIV_MASTER_KEY`、`key_version`
+- **定义**：平台**零兜底**——解读只消费用户 BYOK 配置，用户未配置时后端 SSE error **428**（客户端路由拦截跳设置页）；无平台默认/备用模型（2026-11-11 起 `default_model_id`/`fallback_model_id`/`platform_daily_limit` 已移除）。用户在客户端**分步选择**：第一步选厂商、第二步选该厂商的模型（目录模式，接入点服务端从目录取）或全自定义（url 自填）；保存前服务端真实 1-token 试呼，通过才 AES-256-GCM 加密入库，列格式 `v{keyVersion}:{base64(iv)}:{base64(ciphertext+tag)}`；主密钥走 `DIV_MASTER_KEY` 环境变量。
 - **四端对应物**：
-  - 后端：`divination/service/AesGcmCipher.java`、`DivUserApiConfigService`、`DivModelConfigService`。
-  - Android：`:feature:user:impl` `DivSettingApi.kt`（设置页「解读模型」入口，掩码回显 + 试呼校验）。
-  - 鸿蒙：`feature/divination/network/DivSettingsApi.ets` + 设置页。
-  - Web：`views/divination/DivSettings.vue`（BYOK 设置）、`DivModelList.vue`（平台模型目录）。
-- **易混淆点**：保存即 `verified=0`（诚实落库，试呼未接入）；列表/回显只出掩码 `****` + 明文尾 4 位，**永不出明文与密文**；必须对明文掩码（对密文掩码无意义）。
+  - 后端：`divination/service/AesGcmCipher.java`、`DivUserApiConfigService`（双模式保存/解析）、`DivModelConfigService`（目录管理+批量导入+树形组装 `listEnabledTree`）、`llm/NoProviderConfiguredException`；用户端目录接口 `GET /web/auth/div/models` 返回**树形** `VendorGroupVo{vendor, provider, baseUrl, priority, models[]}`（一次请求返回整棵树，客户端本地过滤分步选择）。
+  - Android：`:feature:user:impl` `DivSettingApi.kt` + `ApiConfigSheet.kt`（设置页「解读模型」，目录模式分步：厂商 → 模型）、`:feature:divination` `DivinationApi.kt`（配置查询+428 拦截）。
+  - 鸿蒙：`feature/divination/network/DivSettingsApi.ets` + `pages/Setting.ets`（同分步）、解读页 428 跳设置。
+  - Web：`views/divination/DivModelList.vue`（目录管理+批量导入）、`DivSettings.vue`（总开关+限额）。
+- **易混淆点**：`div_model_config` 为**扁平存储**（一厂商 × 一模型 = 一行，vendor 分组字段），树形是**接口层组装**（`listEnabledTree`：单条 SQL + 内存 O(n) 分组，一次请求全量返回，无 N+1、当前量级不加缓存）；`api_key_cipher` 恒空串占位（目录不存密钥，管理端录入 key 仅用于该条目连通性测试）；列表/回显只出掩码 `****` + 明文尾 4 位，**永不出明文与密文**（管理端列表走 `DivModelConfigAdminVo` 裁剪密文）；`divUseEnabled` 是功能总开关（0=客户端隐藏入口并拦截），不是 BYOK 子开关。
 - → ADR-0006
 
 ### 6.4 SSRF 校验边界（DivUrlSafetyValidator）
 
-- **代码标识**：`DivUrlSafetyValidator`、`followRedirect(false)`
-- **定义**：BYOK 与平台目录共用的外呼 URL 校验（fail-closed）：仅 HTTPS、拒绝 userinfo、内网域名快拒；主机做 DNS 解析后**每一个**解析 IP 都必须在外网段（拒绝环回/私网/链路本地/唯一本地/CGNAT）；IP 字面量经 JDK 规范化。
+- **代码标识**：`DivUrlSafetyValidator`（`divination/support/`）、`div.ssrf.dns-check`（DNS 层开关，默认 true）
+- **定义**：观星台外呼 URL 校验（fail-closed），校验链：① 结构（仅 HTTPS、拒绝 userinfo、host 非空、端口合法）② 主机快拒（localhost 变体 / `*.local` / `*.internal` / `*.home.arpa`）③ IP 字面量本地判定 + 域名 DNS **全解析逐 IP** 判定（任一内网 IP 即整体拒绝；解析失败拒绝）④ IP 禁段：环回/任意本地/链路本地/RFC1918/CGNAT(100.64/10)/0.0.0.0/组播/ULA(fc00::/7)/IPv4 映射内网/**benchmark 保留段(198.18/15、2001:2::/64)**。校验对象覆盖用户 BYOK 自定义接入点与管理端目录 base_url（试呼入口统一在 `DivModelConfigService.testConnectivity`）。
 - **四端对应物**：
-  - 后端：`divination/support/DivUrlSafetyValidator.java`。
+  - 后端：`divination/support/DivUrlSafetyValidator.java`（单测 `DivUrlSafetyValidatorTest` 9 例）。
   - Android / 鸿蒙 / Web：无对应实现（纯服务端校验）。
-- **易混淆点**：**只覆盖首跳**——接入真实外呼必须 `followRedirect(false)`，否则 https 302 跳内网可绕过全部校验；DNS 重绑定窗口未根治，真实外呼需 pin IP + SNI。
+- **易混淆点**：① `div.ssrf.dns-check=false` 仅限本机 Fake-IP 代理调试环境（Fake-IP 把一切域名劫持到 198.18/15，DNS 层必然误报），生产不得关闭；② DNS 校验通过到真实外呼之间存在 DNS 重绑定窗口（TOCTOU），彻底根治需外呼 pin IP + SNI——Reactor Netty 默认不跟随重定向（首跳即终跳）已消除 302 绕过；③ IPv4 映射 v6（`::ffff:10.0.0.5`）按内嵌 v4 再判（`isIPv4MappedAddress` 包私有，手写字节判定）。
 - → ADR-0006
 
 ---

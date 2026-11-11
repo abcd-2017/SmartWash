@@ -127,6 +127,14 @@ class SseClient @Inject constructor(
                                 handleSessionExpired()
                                 continuation.resume(Outcome.Unauthorized)
                             }
+                            response != null && response.code == 200 -> {
+                                // HTTP 200 + onFailure：服务端 SseEmitter complete() 后直接关 TCP 时，
+                                // okhttp-sse 以 EOF 走 onFailure 而非 onClosed（实测必现）。HTTP 层成功
+                                // 说明服务端已按 SSE 协议完成推流，按正常完成上报；内容是否完整
+                                // （done 帧是否收到）由上层 doneReceived 兜底判定，不在此吞语义
+                                AppLogger.debug(TAG, "SSE: $url — 流收尾（HTTP 200，连接关闭）")
+                                continuation.resume(Outcome.Completed)
+                            }
                             response != null -> {
                                 AppLogger.warn(TAG, "SSE: $url — HTTP ${response.code}")
                                 continuation.resume(Outcome.HttpError(response.code))
