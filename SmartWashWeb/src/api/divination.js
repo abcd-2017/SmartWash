@@ -112,6 +112,15 @@ export function deleteModel(id) {
   });
 }
 
+// 批量导入模型目录条目（JSON 数组，非法条目后端跳过，返回成功数）
+export function importModels(items) {
+  return request({
+    url: '/admin/div/models/import',
+    method: 'post',
+    data: items,
+  });
+}
+
 export function testModelConnectivity(id) {
   return request({
     url: `/admin/div/models/${id}/test`,
